@@ -2245,31 +2245,34 @@
                           </div>
                         </td>
                       </tr>
-                      <!-- Bulk Dispatch Button Row -->
-                      <tr v-if="detailRecord.items && detailRecord.items.some(i => i.selected)">
-                        <td :colspan="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved' ? 4 : 3"></td>
-                        <td style="padding: 10px 12px !important">
-                          <button
-                            class="btn-create-inline"
-                            style="
-                              padding: 8px 16px !important;
-                              font-size: 0.8rem !important;
-                              font-weight: 700;
-                              border-radius: 20px;
-                              background: var(--primary-color);
-                              color: white;
-                              box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
-                            "
-                            @click="handleDispatch(detailRecord)"
-                            title="Dispatch Selected Items"
-                          >
-                            <i class="fas fa-truck-fast" style="margin-right: 6px"></i>
-                            Dispatch
-                          </button>
-                        </td>
-                      </tr>
                     </tbody>
                   </table>
+                </div>
+                <!-- Bulk Dispatch Button (Moved outside table) -->
+                <div
+                  v-if="detailRecord.items && detailRecord.items.some(i => i.selected)"
+                  style="display: flex; justify-content: flex-end; margin-top: 16px"
+                >
+                  <button
+                    class="btn-create-inline"
+                    style="
+                      padding: 10px 24px !important;
+                      font-size: 0.85rem !important;
+                      font-weight: 700;
+                      border-radius: 20px;
+                      background: var(--primary-color);
+                      color: white;
+                      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                    @click="handleDispatch(detailRecord)"
+                    title="Dispatch Selected Items"
+                  >
+                    <i class="fas fa-truck-fast"></i>
+                    <span>Dispatch Selected Items</span>
+                  </button>
                 </div>
               </div>
               <div
