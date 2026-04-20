@@ -457,6 +457,41 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
+    """
+    API to fetch Branch Stock data (reusing report logic)
+    """
+    from sahayog.procurement.report.branch_stock.branch_stock import execute
+    
+    filters = {}
+    if warehouse:
+        filters["warehouse"] = warehouse
+    
+    _, data = execute(filters)
+    
+    if search_text:
+        search_text = search_text.lower()
+        data = [
+            row for row in data 
+            if search_text in str(row.get("item_code", "")).lower() or 
+               search_text in str(row.get("item_name", "")).lower() or 
+               search_text in str(row.get("warehouse", "")).lower()
+        ]
+        
+    total_count = len(data)
+    
+    # Apply manual pagination since execute returns all
+    start = int(start)
+    limit = int(limit)
+    paginated_data = data[start:start+limit]
+    
+    return {
+        "data": paginated_data,
+        "total": total_count
+    }
+
+
+@frappe.whitelist()
 def get_user_branch_warehouse():
     """
     Get the warehouse linked to the current user's branch
@@ -494,3 +529,21 @@ def get_item_quantities_for_warehouse(warehouse=None):
     """, (warehouse,), as_dict=True)
     
     return {bin.item_code: bin.qty for bin in bins}
+
+@frappe.whitelist()
+def get_portal_master_data():
+    """
+    Unified API to fetch all master data for the portal in one request.
+    This bypasses standard permissions for portal users while remaining secure.
+    """
+    return {
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name"]),
+        "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
+        "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom"], filters={"disabled": 0}),
+        "item_groups": [g.name for g in frappe.get_all("Item Group")],
+        "item_departments": [d.name for d in frappe.get_all("Item Department")],
+        "uoms": [u.name for u in frappe.get_all("UOM")],
+        "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
+        "hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
+    }

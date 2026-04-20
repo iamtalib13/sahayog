@@ -768,7 +768,7 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
       <div
-        v-for="(section, sIdx) in sidebar.sections"
+        v-for="(section, sIdx) in computedSidebarSections"
         :key="sIdx"
         class="nav-section"
       >
@@ -858,9 +858,9 @@
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="getBadgeClass(detailRecord, detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')"
+            :class="getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))"
           >
-            [[ getBadgeText(detailRecord, detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status') ]]
+            [[ getBadgeText(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')) ]]
           </span>
         </h1>
       </div>
@@ -889,7 +889,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward')"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
@@ -897,12 +897,52 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests')"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
           style="background: var(--primary-color)"
           @click="submitDetailRecord()"
         >
           <i class="fas fa-check-double"></i>
           <span>Submit</span>
+        </button>
+
+        <!-- Workflow Buttons for Reporting Person -->
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)"
+          style="background: #10b981"
+          @click="handleWorkflowAction('Approve')"
+        >
+          <i class="fas fa-check"></i>
+          <span>Approve</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)"
+          style="background: #ef4444"
+          @click="handleWorkflowAction('Reject')"
+        >
+          <i class="fas fa-times"></i>
+          <span>Reject</span>
+        </button>
+
+        <!-- Workflow Buttons for HO Officer -->
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)"
+          style="background: #10b981"
+          @click="handleWorkflowAction('Approve')"
+        >
+          <i class="fas fa-check"></i>
+          <span>Approve</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)"
+          style="background: #ef4444"
+          @click="handleWorkflowAction('Reject')"
+        >
+          <i class="fas fa-times"></i>
+          <span>Reject</span>
         </button>
         <button
           class="btn-create"
@@ -1711,12 +1751,12 @@
           v-if="detailRecord"
           :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
         >
-          <!-- 3-Column Layout specifically for Requests -->
+          <!-- Standard Multi-Column Layout -->
           <div
-            v-if="activeItem === 'Requests'"
+            v-if="detailFields && detailFields.length"
             style="
               display: grid;
-              grid-template-columns: 260px minmax(450px, 1fr) 360px;
+              grid-template-columns: 280px minmax(300px, 1fr) 360px;
               gap: 24px;
               overflow-x: auto;
               height: 663px;
@@ -1736,7 +1776,7 @@
                   letter-spacing: 0.05em;
                 "
               >
-                Request Detail
+                [[ activeItem ]] Detail
               </h4>
               <div
                 class="detail-grid"
@@ -1946,7 +1986,7 @@
                   letter-spacing: 0.05em;
                 "
               >
-                Requested Items
+                [[ activeItem ]] Items
               </h4>
               <div
                 v-if="detailRecord.items && detailRecord.items.length"
@@ -1991,6 +2031,17 @@
                           "
                         >
                           Qty
+                        </th>
+                        <th
+                          v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                          class="text-right"
+                          style="
+                            text-align: right;
+                            padding: 10px 12px !important;
+                            font-size: 0.75rem !important;
+                          "
+                        >
+                          Approved Qty
                         </th>
                         <th
                           style="
@@ -2055,6 +2106,14 @@
                             class="form-input"
                             style="padding: 4px 8px !important; height: 30px"
                             v-model="item.quantity"
+                          />
+                        </td>
+                        <td v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'" style="padding: 10px 12px !important">
+                          <input
+                            type="number"
+                            class="form-input"
+                            style="padding: 4px 8px !important; height: 30px"
+                            v-model="item.approved_quantity"
                           />
                         </td>
                         <td style="padding: 10px 12px !important">
@@ -2150,6 +2209,17 @@
                             >[[ item.uom ]]</span
                           >
                         </td>
+                        <td
+                          v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                          class="text-right font-medium"
+                          style="
+                            text-align: right;
+                            font-weight: 800;
+                            padding: 10px 12px !important;
+                          "
+                        >
+                          [[ item.approved_quantity || 0 ]]
+                        </td>
                         <td style="padding: 10px 12px !important">
                           <span
                             class="badge"
@@ -2159,25 +2229,41 @@
                               font-size: 0.7rem !important;
                             "
                           >
-                            [[ item.status ]]
+                            [[ item.status === 'Dispatch' ? 'Dispatch' : detailRecord.status ]]
                           </span>
                         </td>
                         <td
                           v-if="detailRecord.status === 'Approved'"
                           style="padding: 10px 12px !important"
                         >
+                          <div style="display: flex; justify-content: center; align-items: center;" v-if="item.status === 'Approved'">
+                            <input
+                              type="checkbox"
+                              v-model="item.selected"
+                              style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-color);"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      <!-- Bulk Dispatch Button Row -->
+                      <tr v-if="detailRecord.items && detailRecord.items.some(i => i.selected)">
+                        <td :colspan="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved' ? 4 : 3"></td>
+                        <td style="padding: 10px 12px !important">
                           <button
                             class="btn-create-inline"
                             style="
-                              padding: 6px 12px !important;
-                              font-size: 0.75rem !important;
+                              padding: 8px 16px !important;
+                              font-size: 0.8rem !important;
                               font-weight: 700;
                               border-radius: 20px;
-                              box-shadow: none;
+                              background: var(--primary-color);
+                              color: white;
+                              box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
                             "
                             @click="handleDispatch(detailRecord)"
-                            title="Dispatch"
+                            title="Dispatch Selected Items"
                           >
+                            <i class="fas fa-truck-fast" style="margin-right: 6px"></i>
                             Dispatch
                           </button>
                         </td>
@@ -2199,7 +2285,7 @@
                   padding: 40px 20px;
                 "
               >
-                No items requested.
+                No items found.
               </div>
             </div>
 
@@ -2390,7 +2476,7 @@
                     background: var(--gray-50);
                   "
                 >
-                  <button class="btn-create-inline" @click="addComment">
+                  <button class="btn-create-inline" @click="addComment()">
                     <i class="fas fa-paper-plane"></i>
                     <span style="margin-left: 6px">Post Comment</span>
                   </button>
@@ -2617,11 +2703,11 @@
       </div>
 
       <div
-        v-else-if="currentView.doctype || activeItem === 'Analytics' || currentView.isReportSection"
+        v-else-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
         class="list-view-container"
       >
         <!-- Analytics Dashboard -->
-        <div v-if="activeItem === 'Analytics'" class="analytics-dashboard">
+        <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard">
           <div class="analytics-cards">
             <div
               class="analytics-card card-draft"
@@ -2897,9 +2983,8 @@
                   class="status-badge"
                   :class="getBadgeClass(row, col.key)"
                 >
-                  [[ getBadgeText(row, col.key) ]]
-                </span>
-                <span v-else-if="col.type === 'button'" class="row-action">
+                  [[ col.isCustomStatus && col.getValue ? col.getValue(row) : (col.isCustomStatus ? ( (row.items && row.items.filter(i => i.status === 'Dispatch').length === row.items.length) ? 'Dispatch' : (row.items && row.items.some(i => i.status === 'Dispatch') ? 'Partially Dispatched' : getBadgeText(row, col.key)) ) : getBadgeText(row, col.key)) ]]
+                </span>                <span v-else-if="col.type === 'button'" class="row-action">
                   <button
                     class="btn-list-action"
                     @click.stop="handleDispatch(row)"
@@ -2955,6 +3040,94 @@
       </div>
     </section>
   </main>
+  <!-- Workflow Action Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showWorkflowModal"
+    @click.self="showWorkflowModal = false"
+  >
+    <div
+      class="profile-modal"
+      :style="workflowActionData.step === 1 ? 'max-width: 800px' : 'max-width: 500px'"
+    >
+      <div class="profile-modal-header">
+        <h3>[[ workflowActionData.action ]] Request [[ workflowActionData.step === 1 ? '(Step 1/2)' : '(Step 2/2)' ]]</h3>
+        <button class="profile-close" @click="showWorkflowModal = false">
+          &times;
+        </button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px">
+        <!-- Step 1: Approved Quantities (HO Only) -->
+        <div v-if="workflowActionData.step === 1">
+          <p class="form-label" style="margin-bottom: 16px">Confirm Approved Quantities for HO Approval</p>
+          <div class="table-responsive" style="margin-bottom: 24px">
+            <table class="items-table" style="width: 100%">
+              <thead>
+                <tr style="background: var(--sidebar-hover)">
+                  <th style="padding: 8px">Item Code</th>
+                  <th style="padding: 8px; text-align: right">Requested Qty</th>
+                  <th style="padding: 8px; text-align: right">Approved Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in workflowActionData.items" :key="item.name" style="border-top: 1px solid var(--border-color)">
+                  <td style="padding: 8px">[[ item.item_code ]]</td>
+                  <td style="padding: 8px; text-align: right">[[ item.quantity ]] [[ item.uom ]]</td>
+                  <td style="padding: 8px">
+                    <input
+                      type="number"
+                      class="form-input"
+                      style="text-align: right; height: 32px; padding: 4px 8px !important"
+                      v-model.number="item.approved_quantity"
+                      :max="item.quantity"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Step 2: Remarks -->
+        <div v-if="workflowActionData.step === 2">
+          <div class="form-group">
+            <label class="form-label">Remarks</label>
+            <textarea
+              class="form-input"
+              v-model="workflowActionData.remarks"
+              placeholder="Enter any remarks (optional)..."
+              style="height: 120px; padding: 12px !important"
+            ></textarea>
+          </div>
+        </div>
+
+        <div
+          class="form-actions"
+          style="display: flex; gap: 12px; margin-top: 12px"
+        >
+          <button
+            class="btn-create"
+            :style="workflowActionData.action === 'Approve' ? 'background: #10b981' : 'background: #ef4444'"
+            @click="submitWorkflowAction"
+          >
+            <i
+              class="fas"
+              :class="workflowActionData.step === 1 ? 'fa-arrow-right' : (workflowActionData.action === 'Approve' ? 'fa-check' : 'fa-times')"
+            ></i>
+            <span>[[ workflowActionData.step === 1 ? 'Next: Add Remarks' : workflowActionData.action ]]</span>
+          </button>
+          <button
+            class="btn-view-toggle"
+            style="background: var(--sidebar-hover); color: var(--text-main)"
+            @click="showWorkflowModal = false"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Profile Modal -->
   <div
     class="profile-modal-overlay"
@@ -5015,13 +5188,18 @@
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
+  // Patch for highlight.js deprecation in Frappe framework
+  window.initHighlighting = window.initHighlighting || function() {
+    if (typeof hljs !== "undefined" && typeof hljs.highlightAll === "function") {
+      hljs.highlightAll();
+    }
+  };
   function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
       isEditing: false,
       showInwardCreateView: false,
       showOutwardCreateView: false,
-      showItemCreateView: false,
       sidebar: {
         header: {
           title: "StockIO",
@@ -5035,7 +5213,7 @@
         sections: [
           {
             label: "General",
-            items: [{ label: "Analytics", color: "#6366f1" }],
+            items: [{ label: "Dashboard", color: "#6366f1" }],
           },
           {
             label: "Inventory",
@@ -5052,6 +5230,11 @@
               },
               { label: "Outward", color: "#ef4444", doctype: "Stock Entry" },
               { label: "Items", color: "#8b5cf6", doctype: "Item" },
+              { 
+                label: "Branch Stock", 
+                color: "#3b82f6", 
+                doctype: "Branch Stock" 
+              },
             ],
           },
           {
@@ -5075,13 +5258,27 @@
       },
 
       sectionViews: {
-        Analytics: {
+        Dashboard: {
           doctype: null,
           createDoctype: null,
           emptyIcon: "fa-chart-line",
-          emptyTitle: "Analytics",
+          emptyTitle: "Dashboard",
           emptyMessage:
             "This panel is reserved for charts and summary widgets.",
+        },
+        "Branch Stock": {
+          doctype: "Branch Stock",
+          emptyIcon: "fa-boxes-stacked",
+          emptyTitle: "No stock found",
+          
+          emptyMessage: "Your branch has no items in stock.",
+          searchableFields: ["item_code", "item_name", "warehouse"],
+          columns: [
+            { label: "Item", key: "item_code", width: 2, type: "avatar" },
+            { label: "Item Name", key: "item_name", width: 2.5 },
+            { label: "Warehouse", key: "warehouse", width: 1.5 },
+            { label: "Stock Balance", key: "stock_balance", width: 1 },
+          ],
         },
         Requests: {
           doctype: "Employee Material Request",
@@ -5106,7 +5303,20 @@
             { label: "Owner", key: "employee", width: 1.5 },
             { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
-            { label: "Status", key: "status", width: 1, type: "badge" },
+            { 
+              label: "Status", 
+              key: "status", 
+              width: 1, 
+              type: "badge",
+              isCustomStatus: true,
+              getValue: (row) => {
+                if (!row.items || row.items.length === 0) return row.status;
+                const dispatchedCount = row.items.filter(i => i.status === 'Dispatch').length;
+                if (dispatchedCount === row.items.length) return 'Dispatch';
+                if (dispatchedCount > 0) return 'Partially Dispatched';
+                return row.status;
+              }
+            },
             { label: "Created", key: "creation", width: 1 },
             { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
           ],
@@ -5321,7 +5531,9 @@
       showProfileModal: false,
       profileData: null,
       showCreateItemModal: false,
+      showItemCreateView: false,
       showDispatchModal: false,
+      showWorkflowModal: false,
       dispatchForm: {
         name: "",
         source_warehouse: "",
@@ -5389,10 +5601,18 @@
       hasMore: false,
       itemView: "list",
       userWarehouse: null,
+      userEmployeeId: null,
       itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
       showEMRCreateView: false,
+      showWorkflowModal: false,
+      workflowActionData: {
+        action: "",
+        remarks: "",
+        items: [],
+        step: 1,
+      },
       showEMRMoreDetails: false,
       detailRecord: null,
       detailFields: [],
@@ -5436,6 +5656,19 @@
           ...i,
           percentage: (i.value / total) * 100,
         }));
+      },
+
+      get computedSidebarSections() {
+        const allowedOutward = ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
+        return this.sidebar.sections.map(section => {
+          if (section.label === "Inventory") {
+            return {
+              ...section,
+              items: section.items.filter(item => item.label !== "Outward" || allowedOutward)
+            };
+          }
+          return section;
+        });
       },
 
       // Searchable select filtered options
@@ -5511,7 +5744,7 @@
           this.hasMore = this.loadedRows < this.totalRows;
         },
         activeItem() {
-          if (this.activeItem === "Analytics") {
+          if (this.activeItem === "Dashboard") {
             this.fetchRequestStats();
           }
           if (this.activeItem !== "Items") {
@@ -5524,7 +5757,7 @@
         this.applyTheme();
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
         // Check if user is admin
-        this.isAdmin = frappe.session.user === "Administrator";
+        this.isAdmin = frappe.session.user === "Administrator" || (frappe.user_roles && frappe.user_roles.includes("Administrator"));
         // Fetch user's full name from User doctype
         try {
           const res = await frappe.call({
@@ -5548,15 +5781,44 @@
         } catch (e) {
           console.warn("Warehouse fetch failed:", e);
         }
+
+        // Fetch user's Employee ID
+        try {
+          const empRes = await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+              doctype: "Employee",
+              filters: { user_id: frappe.session.user },
+              fieldname: "name",
+            },
+          });
+          if (empRes.message) {
+            this.userEmployeeId = empRes.message.name;
+          }
+        } catch (e) {
+          console.warn("Employee ID fetch failed:", e);
+        }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
+
+        // Reset create views
+        this.showEMRCreateView = false;
+        this.showInwardCreateView = false;
+        this.showOutwardCreateView = false;
+        this.showItemCreateView = false;
+        this.showCreateItemModal = false;
+        this.showDispatchModal = false;
+        this.showWorkflowModal = false;
+        this.showProfileModal = false;
+        this.showUserMenu = false;
+        
         const defaultItem =
           this.findSidebarItem(this.activeItem) ||
           this.findSidebarItem("Items");
         if (defaultItem) {
           await this.setPage(defaultItem);
         }
-        if (this.activeItem === "Analytics") {
+        if (this.activeItem === "Dashboard") {
           await this.fetchRequestStats();
         }
         markStockioAppReady();
@@ -5578,7 +5840,7 @@
         this.showItemCreateView = false;
         this.showEMRMoreDetails = false;
 
-        if (item.label === "Analytics") {
+        if (item.label === "Dashboard") {
           await this.fetchRequestStats();
         }
 
@@ -5688,6 +5950,28 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_movement_list",
               args: {
+                limit: this.pageSize,
+                start: start,
+                search_text: this.searchText,
+              },
+            });
+
+            if (res.message) {
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows += data.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Branch Stock") {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: this.userWarehouse,
                 limit: this.pageSize,
                 start: start,
                 search_text: this.searchText,
@@ -5946,170 +6230,23 @@
 
       async fetchItemGroupsAndDepartments() {
         try {
-          // Fetch Employees
-          const empRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Employee",
-              fields: ["name", "employee_name"],
-              limit_page_length: 5000,
-            },
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_portal_master_data",
           });
-          if (empRes.message) {
-            this.employees = empRes.message;
+          if (res.message) {
+            const data = res.message;
+            this.employees = data.employees || [];
+            this.warehouses = data.warehouses || [];
+            this.suppliers = data.suppliers || [];
+            this.itemsList = data.items || [];
+            this.itemGroups = data.item_groups || [];
+            this.itemDepartments = data.item_departments || [];
+            this.stockUOMs = data.uoms && data.uoms.length ? data.uoms : ["Nos", "Box", "Piece", "Kg", "Liter", "Meter"];
+            this.assetCategories = data.asset_categories || [];
+            this.hsnCodes = data.hsn_codes || [];
           }
         } catch (e) {
-          console.error("Error fetching employees:", e);
-          this.employees = [];
-        }
-
-        try {
-          // Fetch Warehouses
-          const whRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Warehouse",
-              fields: ["name"],
-              filters: { disabled: 0 },
-              limit_page_length: 1000,
-            },
-          });
-          if (whRes.message) {
-            this.warehouses = whRes.message.map((w) => w.name);
-          }
-        } catch (e) {
-          console.error("Error fetching warehouses:", e);
-          this.warehouses = [];
-        }
-
-        try {
-          // Fetch Suppliers
-          const supRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Supplier",
-              fields: ["name", "supplier_name"],
-              filters: { disabled: 0 },
-              limit_page_length: 2000,
-            },
-          });
-          if (supRes.message) {
-            this.suppliers = supRes.message;
-          }
-        } catch (e) {
-          console.error("Error fetching suppliers:", e);
-          this.suppliers = [];
-        }
-
-        try {
-          // Fetch Items for dropdown
-          const itemRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Item",
-              fields: ["name", "item_name", "stock_uom"],
-              filters: { disabled: 0 },
-              limit_page_length: 5000,
-            },
-          });
-          if (itemRes.message) {
-            this.itemsList = itemRes.message;
-          }
-        } catch (e) {
-          console.error("Error fetching items:", e);
-          this.itemsList = [];
-        }
-
-        try {
-          // Fetch Item Groups
-          const groupsRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Item Group",
-              fields: ["name"],
-              limit_page_length: 1000,
-            },
-          });
-          if (groupsRes.message) {
-            this.itemGroups = groupsRes.message.map((g) => g.name);
-          }
-        } catch (e) {
-          console.error("Error fetching item groups:", e);
-        }
-
-        try {
-          // Fetch Item Departments
-          const deptRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Item Department",
-              fields: ["name"],
-              limit_page_length: 1000,
-            },
-          });
-          if (deptRes.message) {
-            this.itemDepartments = deptRes.message.map((d) => d.name);
-          }
-        } catch (e) {
-          console.error("Error fetching item departments:", e);
-          this.itemDepartments = [];
-        }
-
-        try {
-          // Fetch UOMs
-          const uomRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "UOM",
-              fields: ["name"],
-              limit_page_length: 200,
-            },
-          });
-          if (uomRes.message) {
-            this.stockUOMs = uomRes.message.map((u) => u.name);
-          }
-        } catch (e) {
-          console.error("Error fetching UOMs:", e);
-          this.stockUOMs = ["Nos", "Box", "Piece", "Kg", "Liter", "Meter"];
-        }
-
-        try {
-          // Fetch Asset Categories
-          const catRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Asset Category",
-              fields: ["name"],
-              limit_page_length: 200,
-            },
-          });
-          if (catRes.message) {
-            this.assetCategories = catRes.message.map((c) => c.name);
-          }
-        } catch (e) {
-          console.error("Error fetching asset categories:", e);
-          this.assetCategories = [];
-        }
-
-        try {
-          // Fetch HSN/SAC Codes
-          const hsnRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "GST HSN Code",
-              fields: ["name", "description"],
-              limit_page_length: 5000,
-            },
-          });
-          if (hsnRes.message) {
-            this.hsnCodes = hsnRes.message.map((h) => ({
-              name: h.name,
-              description: h.description,
-            }));
-          }
-        } catch (e) {
-          console.error("Error fetching HSN codes:", e);
-          this.hsnCodes = [];
+          console.error("Error fetching portal master data:", e);
         }
       },
 
@@ -6221,6 +6358,20 @@
       },
       async saveRequest() {
         if (!this.detailRecord) return;
+
+        // Validation for Employee Material Request
+        if (this.activeItem === "Requests" && this.detailRecord.items) {
+          for (let item of this.detailRecord.items) {
+            if (item.approved_quantity > item.quantity) {
+              frappe.show_alert({
+                message: `Approved quantity cannot be greater than requested quantity for item ${item.item_code}`,
+                indicator: "red",
+              });
+              return;
+            }
+          }
+        }
+
         this.loading = true;
         try {
           const res = await frappe.call({
@@ -6249,22 +6400,70 @@
       },
       async submitDetailRecord() {
         if (!this.detailRecord) return;
+
+        // Validation for Employee Material Request submission
+        if (this.activeItem === "Requests") {
+          const isOwner = this.detailRecord.owner === frappe.session.user;
+          const isEMREmployee = this.detailRecord.employee === this.userEmployeeId;
+          const isDraft = (this.detailRecord.status === "Draft" || this.detailRecord.docstatus === 0);
+
+          if (!this.isAdmin && !isOwner && !isEMREmployee) {
+            frappe.show_alert({
+              message: "Only the Admin, record owner, or the employee on this request can submit it.",
+              indicator: "red",
+            });
+            return;
+          }
+
+          if (!isDraft) {
+            frappe.show_alert({
+              message: "Only draft records can be submitted.",
+              indicator: "red",
+            });
+            return;
+          }
+        }
         
+        const isEMR = this.activeItem === "Requests";
+        const isDraft = isEMR && (this.detailRecord.status === "Draft" || this.detailRecord.docstatus === 0);
+
+        const confirmMsg = isDraft 
+          ? "Are you sure you want to send this request for approval?"
+          : `Are you sure you want to permanently submit this ${this.activeItem} record?`;
+
         frappe.confirm(
-          `Are you sure you want to permanently submit this ${this.activeItem} record?`,
+          confirmMsg,
           async () => {
             this.loading = true;
             try {
-              const res = await frappe.call({
-                method: "frappe.client.submit",
-                args: {
-                  doc: this.detailRecord,
-                },
-              });
+              let res;
+              if (isDraft) {
+                // For EMR Drafts, we just update the status to start the workflow
+                this.detailRecord.status = "Pending Reporting Person";
+                res = await frappe.call({
+                  method: "frappe.client.save",
+                  args: {
+                    doc: this.detailRecord,
+                  },
+                });
+              } else {
+                // For other doctypes or non-draft EMRs, perform formal submission
+                res = await frappe.call({
+                  method: "frappe.client.submit",
+                  args: {
+                    doc: this.detailRecord,
+                  },
+                });
+              }
+
               if (res.message) {
                 this.detailRecord = res.message;
+                const successMsg = isDraft 
+                  ? "Request sent for approval successfully"
+                  : `${this.activeItem} submitted successfully`;
+                
                 frappe.show_alert({
-                  message: `${this.activeItem} submitted successfully`,
+                  message: successMsg,
                   indicator: "green",
                 });
                 await this.fetchData(this.currentView.doctype); // Refresh list view
@@ -6279,6 +6478,111 @@
           }
         );
       },
+
+      handleWorkflowAction(action) {
+        if (!this.detailRecord || !this.detailRecord.name) return;
+        this.workflowActionData.action = action;
+        this.workflowActionData.remarks = "";
+        this.workflowActionData.items = [];
+        this.workflowActionData.step = 2; // Default to remarks
+
+        // For HO Approval - Step 1: Input Approved Qty
+        const isHO = this.activeItem === "Requests" && 
+                     this.detailRecord.status === 'Pending HO Approval' && 
+                     (this.detailRecord.head_office_officer === frappe.session.user || this.isAdmin);
+
+        if (isHO && action === "Approve") {
+          this.workflowActionData.items = JSON.parse(JSON.stringify(this.detailRecord.items)).map(i => ({
+            ...i,
+            approved_quantity: i.approved_quantity || i.quantity
+          }));
+          this.workflowActionData.step = 1;
+        }
+        
+        this.showWorkflowModal = true;
+      },
+
+      async submitWorkflowAction() {
+        if (this.workflowActionData.step === 1) {
+          // Validation for step 1
+          for (let item of this.workflowActionData.items) {
+            if (item.approved_quantity > item.quantity) {
+              frappe.show_alert({
+                message: `Approved quantity cannot exceed requested quantity for ${item.item_code}`,
+                indicator: "red"
+              });
+              return;
+            }
+          }
+          this.workflowActionData.step = 2;
+          return;
+        }
+
+        const action = this.workflowActionData.action;
+        const remarks = this.workflowActionData.remarks;
+        
+        this.loading = true;
+        this.showWorkflowModal = false;
+        try {
+          // If HO approval, update the approved quantities in detailRecord first
+          if (this.workflowActionData.items.length > 0) {
+            const itemMap = {};
+            this.workflowActionData.items.forEach(i => { itemMap[i.name] = i.approved_quantity; });
+            
+            this.detailRecord.items.forEach(i => {
+              if (itemMap[i.name] !== undefined) {
+                i.approved_quantity = itemMap[i.name];
+                if (action === "Approve") {
+                  i.status = "Approved";
+                }
+              }
+            });
+            
+            // Explicitly save the doc first to sync quantities
+            await frappe.call({
+              method: "frappe.client.save",
+              args: { doc: this.detailRecord }
+            });
+          }
+
+          const res = await frappe.call({
+            method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.workflow_action_update_status",
+            args: {
+              docname: this.detailRecord.name,
+              action: action,
+              remark: remarks || "",
+            },
+          });
+          
+          frappe.show_alert({
+            message: `Request ${action}d successfully`,
+            indicator: "green",
+          });
+          
+          // Post remark as comment if available
+          if (remarks && remarks.trim()) {
+            await this.addComment(remarks);
+          }
+          
+          // Re-fetch record
+          const freshRes = await frappe.call({
+            method: "frappe.client.get",
+            args: {
+              doctype: "Employee Material Request",
+              name: this.detailRecord.name
+            }
+          });
+          if(freshRes.message) {
+            this.detailRecord = freshRes.message;
+          }
+          await this.fetchData(this.currentView.doctype);
+        } catch (e) {
+          console.error("Workflow error:", e);
+          frappe.msgprint(e.message || "Error updating workflow status");
+        } finally {
+          this.loading = false;
+        }
+      },
       formatCurrency(value) {
         const amount = Number(value || 0);
         return new Intl.NumberFormat("en-IN", {
@@ -6292,7 +6596,7 @@
         this.dispatchForm.name = row.name;
         this.dispatchForm.source_warehouse = row.source_warehouse;
         this.dispatchForm.target_warehouse = row.target_warehouse;
-        this.dispatchForm.stock_entry_type = "Material Issue";
+        this.dispatchForm.stock_entry_type = "Material Transfer";
         this.dispatchForm.items = [];
         this.dispatchForm.loading = true;
         this.showDispatchModal = true;
@@ -6304,13 +6608,20 @@
             name: row.name,
           },
           callback: (res) => {
-            if (res.message && res.message.items) {
-              // Pre-fill dispatch_qty with exact quantity from request, filter Stock Items
+            if (res.message) {
+              // Override target warehouse from the full document
+              this.dispatchForm.target_warehouse = res.message.target_warehouse || row.target_warehouse;
+
+              // Pre-fill with selected items only
+              const selectedNames = this.detailRecord.items
+                .filter((item) => item.selected)
+                .map((item) => item.name);
+
               this.dispatchForm.items = res.message.items
-                .filter((i) => i.item_category === "Stock Item")
+                .filter((i) => i.item_category === "Stock Item" && selectedNames.includes(i.name))
                 .map((item) => ({
                   ...item,
-                  dispatch_qty: item.quantity, // Same as Qty, now editable in table input
+                  dispatch_qty: item.quantity,
                 }));
             }
             this.dispatchForm.loading = false;
@@ -6332,11 +6643,16 @@
           stock_entry_type: this.dispatchForm.stock_entry_type,
           from_warehouse: this.dispatchForm.source_warehouse,
           to_warehouse: this.dispatchForm.target_warehouse,
+          custom_material_request_doctype: "Employee Material Request",
+          custom_material_request: this.detailRecord.name,
           items: this.dispatchForm.items
             .filter((item) => (item.dispatch_qty || 0) > 0)
             .map((item) => ({
               item_code: item.item_code,
               qty: item.dispatch_qty,
+              uom: item.uom,
+              s_warehouse: this.dispatchForm.source_warehouse,
+              t_warehouse: this.dispatchForm.target_warehouse,
             })),
         };
 
@@ -6347,10 +6663,41 @@
         });
 
         if (res.message) {
-          frappe.msgprint(
-            `Stock Entry <a href="/app/stock-entry/${res.message.name}">${res.message.name}</a> created!`,
-          );
+          // Submit the Stock Entry
+          try {
+            await frappe.call({
+              method: "frappe.client.submit",
+              args: { doc: res.message },
+            });
+
+            // Update item statuses to 'Dispatch' in EMR
+            const itemMap = this.dispatchForm.items.reduce((acc, d) => {
+              const originalItem = this.detailRecord.items.find(i => i.item_code === d.item_code);
+              if (originalItem) acc[originalItem.name] = 'Dispatch';
+              return acc;
+            }, {});
+
+            await frappe.call({
+              method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+              args: {
+                docname: this.detailRecord.name,
+                item_status_map: itemMap
+              }
+            });
+
+            frappe.show_alert({
+              message: `Stock Entry ${res.message.name} created, submitted, and EMR items updated!`,
+              indicator: "green",
+            });
+          } catch (e) {
+            frappe.show_alert({
+              message: `Stock Entry ${res.message.name} created, but submission or status update failed.`,
+              indicator: "orange",
+            });
+          }
           this.showDispatchModal = false;
+          // Refresh data to show updated statuses
+          await this.fetchData(this.currentView.doctype);
         }
       },
       async onEmployeeChange() {
@@ -6684,7 +7031,7 @@
         }
       },
       async openRecord(row) {
-        if (!row || !row.name || !this.currentView.doctype) return;
+        if (!row || !this.currentView.doctype) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         // Show detail view inline for Requests
@@ -6701,9 +7048,7 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
-              if (this.activeItem === "Requests") {
-                this.fetchComments(row.name);
-              }
+              this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
             }
@@ -6716,12 +7061,20 @@
           this.detailFields = this.currentView.detailFields;
           return;
         } // Fallback: redirect to Frappe desk for other doctypes
-        const slug = String(this.currentView.doctype)
+        let doctype = this.currentView.doctype;
+        let docname = row.name;
+
+        if (this.activeItem === "Branch Stock") {
+          doctype = "Item";
+          docname = row.item_code;
+        }
+
+        const slug = String(doctype)
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
-        window.location.href = `/app/${slug}/${encodeURIComponent(row.name)}`;
+        window.location.href = `/app/${slug}/${encodeURIComponent(docname)}`;
       },
 
       closeDetailView() {
@@ -6739,7 +7092,7 @@
             args: {
               doctype: "Comment",
               filters: {
-                reference_doctype: "Employee Material Request",
+                reference_doctype: this.currentView.doctype,
                 reference_name: name,
                 comment_type: "Comment",
               },
@@ -6761,11 +7114,14 @@
         }
       },
 
-      async addComment() {
+      async addComment(explicitContent) {
+        if (explicitContent && typeof explicitContent !== "string") {
+          explicitContent = null;
+        }
         const editor = document.getElementById("comment-editor");
-        const content = editor.innerHTML;
+        const content = explicitContent || (editor ? editor.innerHTML : "");
         if (!content || content.trim() === "<br>" || content.trim() === "") {
-          frappe.msgprint("Comment cannot be empty");
+          if (!explicitContent) frappe.msgprint("Comment cannot be empty");
           return;
         }
 
@@ -6773,14 +7129,14 @@
           await frappe.call({
             method: "frappe.desk.form.utils.add_comment",
             args: {
-              reference_doctype: "Employee Material Request",
+              reference_doctype: this.currentView.doctype,
               reference_name: this.detailRecord.name,
               content: content,
               comment_email: frappe.session.user,
               comment_by: this.sidebar.header.subtitle,
             },
           });
-          editor.innerHTML = "";
+          if (!explicitContent && editor) editor.innerHTML = "";
           await this.fetchComments(this.detailRecord.name);
         } catch (e) {
           console.error("Error adding comment:", e);

@@ -181,6 +181,21 @@ class EmployeeMaterialRequest(Document):
             self.db_set("ho_officer_status", self.ho_officer_status)
             frappe.db.commit()
 
+@frappe.whitelist()
+def update_emr_item_status(docname, item_status_map):
+    """
+    Updates status for specific items in the EMR without saving the submitted parent.
+    item_status_map format: '{"item_child_row_name": "Dispatch"}' (passed as JSON string)
+    """
+    if isinstance(item_status_map, str):
+        item_status_map = frappe.parse_json(item_status_map)
+        
+    for row_name, status in item_status_map.items():
+        frappe.db.set_value("Material Request Items", row_name, "status", status)
+            
+    frappe.db.commit()
+    return {"success": True}
+
 # Whitelisted API Methods
 
 @frappe.whitelist()
