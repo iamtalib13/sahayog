@@ -6666,7 +6666,7 @@
                   ...this.detailRecord,
                   items: this.detailRecord.items.map(item => {
                     const dispatched = this.dispatchForm.items.find(d => d.name === item.name);
-                    return dispatched ? { ...item, status: 'Dispatched' } : item;
+                    return dispatched ? { ...item, status: 'Dispatch' } : item;
                   })
                 }
               }
