@@ -360,7 +360,46 @@ frappe.ui.form.on('Approval Request', {
         frm.clear_custom_buttons();
         frm.page.clear_inner_toolbar();
 
-        // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        // // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
+        // // ONLY show the Submit button if it is editable AND the user is the original owner
+        // if (is_editable && is_owner) {
+        //     // Forcefully clear the dirty flag on fresh load so the button shows up
+        //     if (frm.doc.__unsaved === 1 && !frm.is_new() && !frm.__employee_fetching) {
+        //         frm.doc.__unsaved = 0;
+        //     }
+
+        //     // Only add the Submit button if the form has NO unsaved changes
+        //     if (!frm.is_dirty()) {
+        //         let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+        //             frappe.confirm(__('Are you sure you want to submit this request?'), function() {
+        //                 frappe.call({
+        //                     method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
+        //                     args: { docname: frm.doc.name },
+        //                     freeze: true,
+        //                     freeze_message: 'Submitting...',
+        //                     callback: function(r) {
+        //                         if (!r.exc) {
+        //                             frappe.show_alert({message: 'Request Submitted Successfully', indicator: 'green'});
+        //                             frm.reload_doc();
+        //                         }
+        //                     }
+        //                 });
+        //             });
+        //         });
+        //         submit_btn.removeClass('btn-default').addClass('btn-primary').css({'color': 'white', 'font-weight': 'bold'});
+        //     }
+
+        //     // BULLETPROOF DIRTY WATCHER
+        //     if (frm._dirty_watcher) clearInterval(frm._dirty_watcher);
+        //     frm._dirty_watcher = setInterval(() => {
+        //         if (frm.is_dirty() && !frm.__employee_fetching) {
+        //             frm.page.remove_inner_button(__('Submit Request'));
+        //             clearInterval(frm._dirty_watcher); 
+        //         }
+        //     }, 300);
+        // }
+
+                // --- ADD "SUBMIT REQUEST" AS A STANDALONE INNER BUTTON ---
         // ONLY show the Submit button if it is editable AND the user is the original owner
         if (is_editable && is_owner) {
             // Forcefully clear the dirty flag on fresh load so the button shows up
@@ -371,6 +410,23 @@ frappe.ui.form.on('Approval Request', {
             // Only add the Submit button if the form has NO unsaved changes
             if (!frm.is_dirty()) {
                 let submit_btn = frm.page.add_inner_button(__('Submit Request'), function() {
+                    
+                    // =========================================================================
+                    // VALIDATION: Enforce at least 1 valid approver before submitting
+                    // =========================================================================
+                    const valid_approvers = (frm.doc.approvers || []).filter(row => row.approver);
+                    
+                    if (valid_approvers.length === 0) {
+                        frappe.msgprint({
+                            title: __('Missing Approver'),
+                            indicator: 'red',
+                            message: __('You must add at least one Approver in the table before submitting this request.')
+                        });
+                        // Stop execution right here so the confirm dialog never appears
+                        return; 
+                    }
+                    // =========================================================================
+
                     frappe.confirm(__('Are you sure you want to submit this request?'), function() {
                         frappe.call({
                             method: 'sahayog.sahayog.doctype.approval_request.approval_request.submit_for_approval',
