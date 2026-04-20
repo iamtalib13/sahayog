@@ -321,8 +321,13 @@
     transition: all var(--transition-normal) !important;
     box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
   }
-  .btn-create:hover,
-  .btn-create-inline:hover {
+  .btn-create:disabled,
+  .btn-create-inline:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .btn-create:hover:not(:disabled),
+  .btn-create-inline:hover:not(:disabled) {
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45) !important;
   }
@@ -330,9 +335,9 @@
   /* Content Containers */
   .page-content {
     padding: 0px;
-    max-width: 1600px;
-    /* margin: 0 auto; */
     width: 100%;
+    margin: 0 auto;
+    transition: max-width var(--transition-normal);
   }
 
   .profile-modal,
@@ -388,7 +393,12 @@
     width: 100%;
     box-sizing: border-box;
   }
-  .form-input:focus {
+  .form-input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: rgba(100, 116, 139, 0.1) !important;
+  }
+  .form-input:focus:not(:disabled) {
     border-color: var(--primary-color) !important;
     background: var(--bg-surface) !important;
     box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
@@ -672,6 +682,48 @@
     accent-color: var(--primary-color);
     cursor: pointer;
   }
+
+  /* Glitch Fix: Missing Button Styles */
+  .btn-action {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .btn-action:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+  .btn-list-action {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .btn-list-action:hover {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: var(--shadow-sm);
+  }
+  [data-theme="dark"] .btn-action {
+    background: rgba(248, 113, 113, 0.1);
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.2);
+  }
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -916,7 +968,7 @@
       </div>
     </header>
 
-    <section class="page-content">
+    <section class="page-content" :style="{ maxWidth: sidebarCollapsed ? '1850px' : '1680px' }">
       <!-- EMR Inline Creation View -->
       <div v-if="showEMRCreateView" class="detail-view-container">
         <div class="detail-card">
@@ -1706,7 +1758,11 @@
           </div>
         </div>
       </div>
-      <div v-if="showDetailView" class="detail-view-container">
+            <!-- Split View Wrapper -->
+      <div v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+           :style="(activeItem === 'Items' && showDetailView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'">
+
+        <div v-if="showDetailView" class="detail-view-container" :style="(activeItem === 'Items' && showDetailView) ? 'flex: 0 0 360px; max-width: 360px;' : ''">
         <div
           class="detail-card"
           v-if="detailRecord"
@@ -1715,13 +1771,7 @@
           <!-- Standard Multi-Column Layout -->
           <div
             v-if="detailFields && detailFields.length"
-            style="
-              display: grid;
-              grid-template-columns: 280px minmax(300px, 1fr) 360px;
-              gap: 24px;
-              overflow-x: auto;
-              height: 663px;
-            "
+            :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 360px; gap: 24px; overflow-x: auto; height: 663px;'"
           >
             <!-- Column 1: Request Detail -->
             <div class="detail-col-1">
@@ -2021,6 +2071,7 @@
 
             <!-- Column 2: Requested Items -->
             <div
+              v-show="activeItem !== 'Items'"
               class="detail-col-2"
               style="
                 border-left: 1px solid var(--border-color);
@@ -2349,6 +2400,7 @@
 
             <!-- Column 3: Comments Section -->
             <div
+              v-show="activeItem !== 'Items'"
               class="detail-col-3"
               style="display: flex; flex-direction: column; height: 100%"
             >
@@ -2761,8 +2813,10 @@
       </div>
 
       <div
-        v-else-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+        v-show="!showDetailView || activeItem === 'Items'"
+        v-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
         class="list-view-container"
+        :style="(activeItem === 'Items' && showDetailView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
       >
         <!-- Analytics Dashboard -->
         <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard">
@@ -3084,7 +3138,9 @@
         </div>
       </div>
 
-      <div v-else class="content-container">
+      </div> <!-- End of Split View Wrapper -->
+
+      <div v-if="!showDetailView && !currentView.doctype && activeItem !== 'Dashboard' && !currentView.isReportSection" class="content-container">
         <div class="empty-state-card">
           <div class="empty-visual">
             <div class="grid-pattern"></div>
@@ -4371,29 +4427,30 @@
     gap: 12px;
   }
   .btn-load-more {
-    background: var(--blue-600);
-    color: #ffffff;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+    color: #ffffff !important;
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 12px;
-    display: flex;
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-weight: 700;
+    font-size: 13px;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all var(--transition-fast) !important;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
   }
   .btn-load-more:hover:not(:disabled) {
-    background: var(--blue-700);
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 18px rgba(6, 182, 212, 0.35);
   }
   .btn-load-more:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
   .btn-load-more i {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   /* ANALYTICS DASHBOARD */
