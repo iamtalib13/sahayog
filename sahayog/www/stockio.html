@@ -858,9 +858,9 @@
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))"
+            :class="getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null)"
           >
-            [[ getBadgeText(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')) ]]
+            [[ activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord) || getBadgeText(detailRecord, 'status')) : getBadgeText(detailRecord, detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status') ]]
           </span>
         </h1>
       </div>
@@ -2981,9 +2981,9 @@
                 <span
                   v-else-if="col.type === 'badge'"
                   class="status-badge"
-                  :class="getBadgeClass(row, col.key)"
+                  :class="getBadgeClass(row, col.key, col.getValue ? col.getValue(row) : null)"
                 >
-                  [[ col.isCustomStatus && col.getValue ? col.getValue(row) : (col.isCustomStatus ? ( (row.items && row.items.filter(i => i.status === 'Dispatch').length === row.items.length) ? 'Dispatch' : (row.items && row.items.some(i => i.status === 'Dispatch') ? 'Partially Dispatched' : getBadgeText(row, col.key)) ) : getBadgeText(row, col.key)) ]]
+                  [[ col.getValue ? col.getValue(row) : getBadgeText(row, col.key) ]]
                 </span>                <span v-else-if="col.type === 'button'" class="row-action">
                   <button
                     class="btn-list-action"
@@ -5310,10 +5310,24 @@
               type: "badge",
               isCustomStatus: true,
               getValue: (row) => {
+                const postApprovalStates = ['Approved', 'Partially Dispatched', 'Dispatch', 'Received', 'Partially Received'];
+                if (!postApprovalStates.includes(row.status)) return row.status;
+                
                 if (!row.items || row.items.length === 0) return row.status;
-                const dispatchedCount = row.items.filter(i => i.status === 'Dispatch').length;
-                if (dispatchedCount === row.items.length) return 'Dispatch';
-                if (dispatchedCount > 0) return 'Partially Dispatched';
+                
+                const itemStatuses = row.items.map(i => i.status);
+                
+                // If all items have exactly the same status 'Dispatch' or 'Received'
+                if (itemStatuses.every(s => s === 'Received')) return 'Received';
+                if (itemStatuses.every(s => s === 'Dispatch')) return 'Dispatch';
+                
+                // If there's a mix or some are still just 'Approved'
+                const hasReceived = itemStatuses.some(s => s === 'Received');
+                const hasDispatched = itemStatuses.some(s => s === 'Dispatch');
+                
+                if (hasReceived) return 'Partially Received';
+                if (hasDispatched) return 'Partially Dispatched';
+                
                 return row.status;
               }
             },
@@ -7317,20 +7331,21 @@
         return this.getFieldValue(row, key);
       },
 
-      getBadgeClass(row, key) {
+      getBadgeClass(row, key, value = null) {
         if (key === "docstatus") {
           const status = row.docstatus;
           return status === 1 ? "active" : "disabled";
         }
         if (key === "disabled") return row.disabled ? "disabled" : "active";
-        const value = this.getFieldValue(row, key);
-        const normalized = String(value || "").toLowerCase();
-        if (normalized.includes("pending")) return "pending";
+
+        const val = value || this.getFieldValue(row, key);
+        const normalized = String(val || "").toLowerCase();
+
+        if (normalized.includes("pending") || normalized.includes("partial")) return "pending";
         if (["cancelled", "rejected", "disabled", "draft"].includes(normalized))
           return "disabled";
         return "active";
       },
-
       toggleUserMenu() {
         this.showUserMenu = !this.showUserMenu;
       },
