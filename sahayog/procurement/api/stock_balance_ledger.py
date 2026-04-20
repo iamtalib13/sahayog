@@ -529,3 +529,21 @@ def get_item_quantities_for_warehouse(warehouse=None):
     """, (warehouse,), as_dict=True)
     
     return {bin.item_code: bin.qty for bin in bins}
+
+@frappe.whitelist()
+def get_portal_master_data():
+    """
+    Unified API to fetch all master data for the portal in one request.
+    This bypasses standard permissions for portal users while remaining secure.
+    """
+    return {
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name"]),
+        "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
+        "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom"], filters={"disabled": 0}),
+        "item_groups": [g.name for g in frappe.get_all("Item Group")],
+        "item_departments": [d.name for d in frappe.get_all("Item Department")],
+        "uoms": [u.name for u in frappe.get_all("UOM")],
+        "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
+        "hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
+    }
