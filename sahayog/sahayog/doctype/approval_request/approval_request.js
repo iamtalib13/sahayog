@@ -1,3 +1,55 @@
+
+// ==============================================================================
+// --- FORCE PUBLIC ATTACHMENTS (HIDE PRIVATE TOGGLES IN UPLOADER) ---
+// ==============================================================================
+
+// 1. HIDE PRIVACY TOGGLE BUTTONS GLOBALLY FOR THIS FORM
+frappe.dom.set_style(`
+    /* Hide standard sidebar lock/unlock icons and Make Private actions */
+    body.approval-active-form [data-action="toggle_private"],
+    body.approval-active-form [data-action="make_private"],
+    body.approval-active-form .btn-private,
+    body.approval-active-form .btn-public,
+    /* Hide dynamically tagged Vue elements inside the Uploader */
+    body.approval-active-form .force-hide-privacy-btn {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+`, 'approval-file-privacy-css');
+
+// 2. VUE INTERCEPTOR (MUTATION OBSERVER)
+// Continuously monitors the File Uploader modal and actively hides the Private toggles
+const privacyObserver = new MutationObserver((mutations) => {
+    // Only run if we are on the Approval form AND a modal is open
+    if ($('body').hasClass('approval-active-form') && $('.modal-dialog').length > 0) {
+        
+        // Target buttons and checkboxes inside the modal that aren't hidden yet
+        $('.modal-dialog label.frappe-checkbox:not(.force-hide-privacy-btn), .modal-dialog button:not(.force-hide-privacy-btn)').each(function() {
+            let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+            
+            if (text === 'private' || text === 'set all private' || text === 'set all public') {
+                $(this).addClass('force-hide-privacy-btn');
+            }
+        });
+    }
+});
+
+// Start observing the DOM
+privacyObserver.observe(document.body, { childList: true, subtree: true });
+
+// Listen to route changes to safely add/remove the CSS scope
+frappe.router.on('change', () => {
+    if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Approval Request') {
+        $('body').addClass('approval-active-form');
+    } else {
+        $('body').removeClass('approval-active-form');
+    }
+});
+// ==============================================================================
+
+
+
 // Override Frappe's default Employee link formatter 
 frappe.form.link_formatters['Employee'] = function(value, doc) {
     return value;
@@ -75,8 +127,32 @@ function prompt_remark(frm, action) {
 
 // --- Main Document Events ---
 frappe.ui.form.on('Approval Request', {
-    setup: function(frm) {
+    // setup: function(frm) {
+    //     frm.meta.is_submittable = 0;
+    //     if (frm.is_new()) fill_branch_user_details(frm);
+    // },
+        setup: function(frm) {
         frm.meta.is_submittable = 0;
+
+        // --- CUSTOM FILE UPLOADER OVERRIDE ---
+        // Override Attach Control to force public uploads and remove the 'Private' checkbox
+        if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype._original_set_upload_options) {
+            
+            frappe.ui.form.ControlAttach.prototype._original_set_upload_options = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+            
+            frappe.ui.form.ControlAttach.prototype.set_upload_options = function() {
+                this._original_set_upload_options();
+                
+                // Only apply this customization if we are inside Approval Request
+                if (this.frm && this.frm.doctype === "Approval Request") {
+                    // Force attachment to be Public by default
+                    this.upload_options.make_attachments_public = true;
+                    // Completely hide/disable the "Private" checkbox from the Vue modal natively
+                    this.upload_options.allow_toggle_private = false;
+                }
+            };
+        }
+
         if (frm.is_new()) fill_branch_user_details(frm);
     },
     
