@@ -2983,7 +2983,7 @@
                   class="status-badge"
                   :class="getBadgeClass(row, col.key)"
                 >
-                  [[ col.isCustomStatus ? ( (row.items && row.items.filter(i => i.status === 'Dispatch').length === row.items.length) ? 'Dispatch' : (row.items && row.items.some(i => i.status === 'Dispatch') ? 'Partially Dispatched' : getBadgeText(row, col.key)) ) : getBadgeText(row, col.key) ]]
+                  [[ col.isCustomStatus && col.getValue ? col.getValue(row) : (col.isCustomStatus ? ( (row.items && row.items.filter(i => i.status === 'Dispatch').length === row.items.length) ? 'Dispatch' : (row.items && row.items.some(i => i.status === 'Dispatch') ? 'Partially Dispatched' : getBadgeText(row, col.key)) ) : getBadgeText(row, col.key)) ]]
                 </span>                <span v-else-if="col.type === 'button'" class="row-action">
                   <button
                     class="btn-list-action"
@@ -5308,7 +5308,14 @@
               key: "status", 
               width: 1, 
               type: "badge",
-              isCustomStatus: true
+              isCustomStatus: true,
+              getValue: (row) => {
+                if (!row.items || row.items.length === 0) return row.status;
+                const dispatchedCount = row.items.filter(i => i.status === 'Dispatch').length;
+                if (dispatchedCount === row.items.length) return 'Dispatch';
+                if (dispatchedCount > 0) return 'Partially Dispatched';
+                return row.status;
+              }
             },
             { label: "Created", key: "creation", width: 1 },
             { label: "Dispatch", key: "dispatch", width: 1, type: "button" },
