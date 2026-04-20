@@ -6764,11 +6764,15 @@
           stock_entry_type: this.dispatchForm.stock_entry_type,
           from_warehouse: this.dispatchForm.source_warehouse,
           to_warehouse: this.dispatchForm.target_warehouse,
+          custom_material_request_doctype: "Employee Material Request",
+          custom_material_request: this.detailRecord.name,
           items: this.dispatchForm.items
             .filter((item) => (item.dispatch_qty || 0) > 0)
             .map((item) => ({
               item_code: item.item_code,
               qty: item.dispatch_qty,
+              s_warehouse: this.dispatchForm.source_warehouse,
+              t_warehouse: this.dispatchForm.target_warehouse,
             })),
         };
 
