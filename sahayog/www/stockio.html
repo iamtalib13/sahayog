@@ -979,6 +979,25 @@
                 <input type="text" class="form-input" v-model="emrForm.target_warehouse"
                   placeholder="Target Warehouse" />
               </div>
+              <div class="form-group">
+                <label class="form-label">Reporting Person <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input type="text" class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'emr_reporting_person' }" v-model="emrForm.reporting_person_display"
+                    @focus="onFocusSearchable('emr_reporting_person')" @blur="onBlurSearchable('emr_reporting_person')"
+                    placeholder="Search Reporting Person" />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'emr_reporting_person'">
+                    <div v-for="emp in employees.filter(e => !emrForm.reporting_person_display || e.employee_name.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()) || e.user_id.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()))" 
+                      :key="emp.user_id" class="searchable-select-option"
+                      @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;">
+                      [[ emp.employee_name ]] ([[ emp.user_id ]])
+                    </div>
+                    <div v-if="employees.length === 0" class="searchable-select-no-results">
+                      No employees found
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- More Details Toggle -->
@@ -4940,6 +4959,7 @@
         target_warehouse: "",
         target_location: "",
         reporting_person: "",
+        reporting_person_display: "",
         remark: "",
       },
       employees: [],
@@ -5568,6 +5588,7 @@
             target_location: "",
             remark: "",
             reporting_person: "",
+            reporting_person_display: "",
           };
           this.emrItems = [
             { item_code: "", item_code_display: "", uom: "", quantity: 1 },
@@ -6150,8 +6171,8 @@
           });
           if (res.message) {
             const emp = res.message;
-            this.emrForm.target_location = emp.sol_id;
-            this.emrForm.target_warehouse = emp.sol_id;
+            this.emrForm.target_location = emp.sol_id || "";
+            this.emrForm.target_warehouse = emp.sol_id || "";
 
             if (emp.reports_to) {
               const resp = await frappe.call({
@@ -6159,12 +6180,25 @@
                 args: {
                   doctype: "Employee",
                   filters: { name: emp.reports_to },
-                  fieldname: "user_id",
+                  fieldname: ["user_id", "employee_name"],
                 },
               });
               if (resp.message) {
-                this.emrForm.reporting_person = resp.message.user_id;
+                if (resp.message.user_id) {
+                  this.emrForm.reporting_person = resp.message.user_id;
+                  this.emrForm.reporting_person_display = resp.message.employee_name;
+                } else {
+                  this.emrForm.reporting_person = "";
+                  this.emrForm.reporting_person_display = "";
+                  frappe.show_alert({
+                    message: `Manager ${resp.message.employee_name} has no User ID linked. Please select reporting person manually.`,
+                    indicator: "orange",
+                  });
+                }
               }
+            } else {
+              this.emrForm.reporting_person = "";
+              this.emrForm.reporting_person_display = "";
             }
           }
         } catch (e) {
@@ -6285,13 +6319,14 @@
           const emrDoc = {
             doctype: "Employee Material Request",
             naming_series: "EMR-.YYYY.-",
-            requested_by: "3130@sahayog.com",
+            requested_by: frappe.session.user,
             employee: this.emrForm.employee,
             source_warehouse: this.emrForm.source_warehouse,
             target_warehouse: this.emrForm.target_warehouse,
             target_location: this.emrForm.target_location,
             remark: this.emrForm.remark,
             reporting_person: this.emrForm.reporting_person,
+            head_office_officer: "2800@sahayog.com",
             items: this.emrItems.map((item) => ({
               item_code: item.item_code,
               uom: item.uom,
