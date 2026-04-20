@@ -15,6 +15,9 @@
 
 <!-- Premium UI Styles for StockIO -->
 <style>
+  [v-cloak] {
+    display: none !important;
+  }
   :root {
     --primary-color: #45e7e7;
     --primary-hover: #008080;
@@ -501,49 +504,6 @@
   .grid-card:hover {
     transform: translateY(-8px) scale(1.02) !important;
     box-shadow: var(--shadow-xl) !important;
-  }
-
-  /* Preloader Enhancement */
-  .stockio-loading-overlay {
-    background: var(--bg-surface) !important;
-    z-index: 99999;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .stockio-loading-shell {
-    animation: scale-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
-  }
-  .stockio-loading-text {
-    font-family: "Inter", sans-serif;
-    font-size: 1.5rem;
-    font-weight: 900;
-    color: var(--primary-color);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  @keyframes scale-pulse {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
-      filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.4));
-    }
-    50% {
-      transform: scale(0.95);
-      opacity: 0.7;
-      filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.1));
-    }
   }
 
   /* Custom Scrollbar */
@@ -3823,7 +3783,7 @@
   .stockio-loading-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: 99999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3915,9 +3875,6 @@
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
     font-size: 14px;
-  }
-  [v-cloak] {
-    display: none;
   }
   footer.web-footer,
   .navbar {
