@@ -1132,11 +1132,10 @@
                 <i class="fas fa-spinner fa-spin" v-else></i>
                 <span>[[ creatingEMR ? 'Submitting...' : 'Submit Request' ]]</span>
               </button>
-              <button class="btn-view-toggle" style="background: var(--bg-card); color: var(--text-main)"
+              <button class="btn-cancel"
                 @click="showEMRCreateView = false">
                 Cancel
-              </button>
-            </div>
+              </button>            </div>
           </div>
         </div>
       </div>
@@ -1261,10 +1260,9 @@
                 <i class="fas fa-spinner fa-spin" v-else></i>
                 <span>[[ creatingInward ? 'Submitting...' : 'Submit Receipt' ]]</span>
               </button>
-              <button class="btn-view-toggle" @click="showInwardCreateView = false">
+              <button class="btn-cancel" @click="showInwardCreateView = false">
                 Cancel
-              </button>
-            </div>
+              </button>            </div>
           </div>
         </div>
       </div>
@@ -1377,10 +1375,9 @@
                 <i class="fas fa-spinner fa-spin" v-else></i>
                 <span>[[ creatingOutward ? 'Submitting...' : 'Submit Entry' ]]</span>
               </button>
-              <button class="btn-view-toggle" @click="showOutwardCreateView = false">
+              <button class="btn-cancel" @click="showOutwardCreateView = false">
                 Cancel
-              </button>
-            </div>
+              </button>            </div>
           </div>
         </div>
       </div>
@@ -1519,9 +1516,8 @@
                 <i class="fas" :class="creatingItem ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
                 <span>[[ creatingItem ? 'Creating...' : 'Create Item' ]]</span>
               </button>
-              <button class="btn-view-toggle" @click="showItemCreateView = false"
-                :disabled="creatingItem">Cancel</button>
-            </div>
+              <button class="btn-cancel" @click="showItemCreateView = false"
+                :disabled="creatingItem">Cancel</button>            </div>
           </div>
         </div>
       </div>
@@ -2510,8 +2506,7 @@
               :class="workflowActionData.step === 1 ? 'fa-arrow-right' : (workflowActionData.action === 'Approve' ? 'fa-check' : 'fa-times')"></i>
             <span>[[ workflowActionData.step === 1 ? 'Next: Add Remarks' : workflowActionData.action ]]</span>
           </button>
-          <button class="btn-view-toggle" style="background: var(--sidebar-hover); color: var(--text-main)"
-            @click="showWorkflowModal = false">
+          <button class="btn-cancel" @click="showWorkflowModal = false">
             Cancel
           </button>
         </div>
@@ -4507,6 +4502,7 @@
     font-size: 14px;
     cursor: pointer;
     transition: var(--transition);
+    width: 99px;
   }
 
   .btn-cancel:hover {
