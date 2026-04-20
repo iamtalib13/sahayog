@@ -2026,7 +2026,7 @@
                           font-size: 0.85rem;
                           color: var(--text-main);
                         "
-                        >[[ detailRecord.reporting_person || '-' ]]</span
+                        >[[ getEmployeeName(detailRecord.reporting_person) ]]</span
                       >
                     </div>
                     <div
@@ -2050,7 +2050,7 @@
                           font-size: 0.85rem;
                           color: var(--text-main);
                         "
-                        >[[ detailRecord.head_office_officer || '-' ]]</span
+                        >[[ getEmployeeName(detailRecord.head_office_officer) ]]</span
                       >
                     </div>
                   </div>
@@ -7419,6 +7419,11 @@
           .toUpperCase();
       },
 
+      getEmployeeName(id) {
+        if (!id || id === "-") return "-";
+        const emp = this.employees.find(e => e.user_id === id || e.name === id);
+        return emp ? emp.employee_name : id;
+      },
       getBadgeText(row, key) {
         if (key === "docstatus") {
           const status = row.docstatus;

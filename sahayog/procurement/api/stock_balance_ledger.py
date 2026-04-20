@@ -566,7 +566,7 @@ def get_portal_master_data():
         pass
 
     return {
-        "employees": frappe.get_all("Employee", fields=["name", "employee_name"]),
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
         "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom"], filters={"disabled": 0}),
