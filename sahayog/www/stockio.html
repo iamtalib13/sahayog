@@ -7446,16 +7446,27 @@
                 res.message.target_warehouse || row.target_warehouse;
 
               // Pre-fill with selected items only
-              const selectedNames = this.detailRecord.items
-                .filter((item) => item.selected)
-                .map((item) => item.name);
+              let selectedNames = [];
+              if (
+                this.detailRecord &&
+                this.detailRecord.name === row.name &&
+                this.detailRecord.items
+              ) {
+                selectedNames = this.detailRecord.items
+                  .filter((item) => item.selected)
+                  .map((item) => item.name);
+              }
 
               this.dispatchForm.items = res.message.items
-                .filter(
-                  (i) =>
-                    i.item_category === "Stock Item" &&
-                    selectedNames.includes(i.name),
-                )
+                .filter((i) => {
+                  if (selectedNames.length > 0) {
+                    return (
+                      i.item_category === "Stock Item" &&
+                      selectedNames.includes(i.name)
+                    );
+                  }
+                  return i.item_category === "Stock Item" && i.status === "Approved";
+                })
                 .map((item) => ({
                   ...item,
                   dispatch_qty: item.approved_quantity || 0,
@@ -7505,7 +7516,7 @@
           from_warehouse: this.dispatchForm.source_warehouse,
           to_warehouse: this.dispatchForm.target_warehouse,
           custom_material_request_doctype: "Employee Material Request",
-          custom_material_request: this.detailRecord.name,
+          custom_material_request: this.dispatchForm.name,
           items: this.dispatchForm.items
             .filter((item) => (item.dispatch_qty || 0) > 0)
             .map((item) => ({
@@ -7533,10 +7544,9 @@
 
             // Update item statuses to 'Dispatch' in EMR
             const itemMap = this.dispatchForm.items.reduce((acc, d) => {
-              const originalItem = this.detailRecord.items.find(
-                (i) => i.item_code === d.item_code,
-              );
-              if (originalItem) acc[originalItem.name] = "Dispatch";
+              if (d.dispatch_qty > 0) {
+                acc[d.name] = "Dispatch";
+              }
               return acc;
             }, {});
 
@@ -7544,7 +7554,7 @@
               method:
                 "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
               args: {
-                docname: this.detailRecord.name,
+                docname: this.dispatchForm.name,
                 item_status_map: itemMap,
               },
             });
