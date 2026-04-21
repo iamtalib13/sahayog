@@ -3497,6 +3497,7 @@
                     col.key) ]]
                   </span>
                   <span v-else-if="col.type === 'button'" class="row-action">
+                    <!-- Requests Buttons -->
                     <button
                       class="btn-create-inline"
                       @click.stop="handleDispatch(row, true)"
@@ -3511,6 +3512,24 @@
                       v-if="activeItem === 'Requests' && row.items && row.items.length > 0 && row.items.every(i => i.status === 'Dispatch')"
                     >
                       Proforma
+                    </button>
+
+                    <!-- Inward Buttons -->
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--primary-color); border-color: var(--primary-color);"
+                      @click.stop="submitRowRecord(row)"
+                      v-if="activeItem === 'Inward' && (row.status === 'Draft' || row.docstatus === 0)"
+                    >
+                      Submit
+                    </button>
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--green-600); border-color: var(--green-600);"
+                      @click.stop="handleProforma(row)"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0"
+                    >
+                      PROFORMA
                     </button>
                   </span>
                   <span
@@ -6175,6 +6194,7 @@
             { label: "Supplier", key: "supplier", width: 1.8 },
             { label: "Date", key: "posting_date", width: 1 },
             { label: "Status", key: "status", width: 1, type: "badge" },
+            { label: "Action", key: "action", width: 1.2, type: "button" },
           ],
           detailFields: [
             { label: "Supplier", key: "supplier" },
@@ -7555,9 +7575,43 @@
       },
       handleProforma(row) {
         if (!row || !row.name) return;
-        // Open the proforma print view for the Employee Material Request
-        const url = `/printview?doctype=Employee%20Material%20Request&name=${encodeURIComponent(row.name)}&format=Proforma&trigger_print=1`;
+        // Open the proforma print view
+        const isInward = this.activeItem === "Inward";
+        const doctype = isInward
+          ? "Purchase Receipt"
+          : "Employee Material Request";
+        const format = isInward ? "Proforma Inward" : "Proforma";
+        const url = `/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(row.name)}&format=${encodeURIComponent(format)}&trigger_print=1`;
         window.open(url, "_blank");
+      },
+      async submitRowRecord(row) {
+        if (!row || !row.name) return;
+        const doctype = this.currentView.doctype;
+
+        frappe.confirm(`Are you sure you want to submit ${row.name}?`, async () => {
+          this.loading = true;
+          try {
+            await frappe.call({
+              method: "frappe.client.submit",
+              args: {
+                doc: {
+                  doctype: doctype,
+                  name: row.name,
+                },
+              },
+            });
+            frappe.show_alert({
+              message: `${row.name} submitted successfully`,
+              indicator: "green",
+            });
+            await this.fetchData(doctype);
+          } catch (e) {
+            console.error("Submission error:", e);
+            frappe.msgprint(e.message || "Error submitting record");
+          } finally {
+            this.loading = false;
+          }
+        });
       },
       async submitDispatch() {
         // Quick validation
