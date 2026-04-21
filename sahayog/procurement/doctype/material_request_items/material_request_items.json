@@ -12,6 +12,7 @@
   "quantity",
   "uom",
   "approved_quantity",
+  "rate",
   "asset_details_section",
   "asset",
   "serial_no",
@@ -262,12 +263,19 @@
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Approved Quantity"
+  },
+  {
+   "fetch_from": "item_code.valuation_rate",
+   "fieldname": "rate",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rate"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-20 14:52:55.855844",
+ "modified": "2026-04-21 23:51:39.845682",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Material Request Items",

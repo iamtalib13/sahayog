@@ -125,22 +125,32 @@
                     <th>Item Code</th>
                     <th>Item Name</th>
                     <th>Description</th>
-                    <th>Category</th>
-                    <th style="text-align: right;">Dispatch Qty</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th style="text-align: right;">Rate</th>
+                    <th style="text-align: right;">Total</th>
                 </tr>
             </thead>
             <tbody>
+                {% set grand_total = [0] %}
                 {% for item in doc.items %}
                 <tr>
                     <td>{{ loop.index }}</td>
                     <td>{{ item.item_code }}</td>
                     <td>{{ item.item_name }}</td>
                     <td>{{ item.description or "" }}</td>
-                    <td>{{ item.item_category }}</td>
                     <td style="text-align: right;">{{ item.approved_quantity or 0 }}</td>
+                    <td style="text-align: right;">{{ frappe.format(item.rate, "Currency") if item.rate else 0 }}</td>
+                    <td style="text-align: right;">{{ frappe.format((item.approved_quantity or 0) * (item.rate|float or 0), "Currency") }}</td>
                 </tr>
+                {% if grand_total.append(grand_total.pop() + ((item.approved_quantity or 0) * (item.rate|float or 0))) %}{% endif %}
                 {% endfor %}
             </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background-color: #f8f9fa;">
+                    <td colspan="6" style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">Grand Total</td>
+                    <td style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">{{ frappe.format(grand_total[0], "Currency") }}</td>
+                </tr>
+            </tfoot>
         </table>
 
         {% if doc.remark %}
