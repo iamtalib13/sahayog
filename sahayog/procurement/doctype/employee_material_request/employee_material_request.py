@@ -224,16 +224,14 @@ def workflow_action_update_status(docname, action, remark=None):
 
     # Update internal status fields before applying workflow action
     if can_approve_rp:
-        if action_lower == "approve": doc.reporting_person_status = "Approved"
-        elif action_lower == "reject": doc.reporting_person_status = "Rejected"
-        else: doc.reporting_person_status = "Skip"
-        doc.save() # Save status fields
+        if action_lower == "approve": doc.db_set("reporting_person_status", "Approved")
+        elif action_lower == "reject": doc.db_set("reporting_person_status", "Rejected")
+        else: doc.db_set("reporting_person_status", "Skip")
     
     elif can_approve_ho:
-        if action_lower == "approve": doc.ho_officer_status = "Approved"
-        elif action_lower == "reject": doc.ho_officer_status = "Rejected"
-        else: doc.ho_officer_status = "Skip"
-        doc.save() # Save status fields
+        if action_lower == "approve": doc.db_set("ho_officer_status", "Approved")
+        elif action_lower == "reject": doc.db_set("ho_officer_status", "Rejected")
+        else: doc.db_set("ho_officer_status", "Skip")
 
     # Apply Workflow Action
     # This will handle status updates, docstatus changes, and validations defined in the Workflow
@@ -243,16 +241,23 @@ def workflow_action_update_status(docname, action, remark=None):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), _("Workflow Error"))
         # Fallback for manual update if workflow fails or doesn't exist
+        new_status = doc.status
+        new_docstatus = doc.docstatus
+        
         if action_lower == "approve":
             if doc.status == "Pending Reporting Person":
-                doc.status = "Pending HO Approval"
+                new_status = "Pending HO Approval"
             elif doc.status == "Pending HO Approval":
-                doc.status = "Approved"
-                doc.docstatus = 1
+                new_status = "Approved"
+                new_docstatus = 1
         elif action_lower == "reject":
-            doc.status = "Rejected"
+            new_status = "Rejected"
         
-        doc.save()
+        # Use db_set to bypass Workflow validation in fallback
+        doc.db_set("status", new_status)
+        if new_docstatus != doc.docstatus:
+            doc.db_set("docstatus", new_docstatus)
+        
         frappe.db.commit()
 
 @frappe.whitelist()

@@ -360,6 +360,14 @@ def get_emr_list(limit=20, start=0, search_text=None):
         LIMIT %(limit)s OFFSET %(offset)s
     """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
 
+    # Fetch child items for status calculation
+    for row in data:
+        row["items"] = frappe.get_all(
+            "Material Request Items",
+            filters={"parent": row.name},
+            fields=["status", "item_code", "quantity"]
+        )
+
     return {
         "data": data,
         "total": total_count
@@ -531,13 +539,34 @@ def get_item_quantities_for_warehouse(warehouse=None):
     return {bin.item_code: bin.qty for bin in bins}
 
 @frappe.whitelist()
+def get_warehouse_company(warehouse):
+    """
+    Returns the company linked to a specific warehouse.
+    """
+    if not warehouse:
+        return None
+    return frappe.db.get_value("Warehouse", warehouse, "company")
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.
     This bypasses standard permissions for portal users while remaining secure.
     """
+    # Handle potential missing DocType for HSN codes
+    hsn_codes = []
+    try:
+        hsn_codes = frappe.get_all("GST HSN Code", fields=["name", "description"])
+    except frappe.db.TableMissingError:
+        try:
+            hsn_codes = frappe.get_all("HSN Code", fields=["name", "description"])
+        except Exception:
+            pass
+    except Exception:
+        pass
+
     return {
-        "employees": frappe.get_all("Employee", fields=["name", "employee_name"]),
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
         "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom"], filters={"disabled": 0}),
@@ -545,5 +574,5 @@ def get_portal_master_data():
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
         "uoms": [u.name for u in frappe.get_all("UOM")],
         "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
-        "hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
+        "hsn_codes": hsn_codes,
     }
