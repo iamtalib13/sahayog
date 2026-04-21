@@ -140,8 +140,8 @@
                     <td>{{ item.item_name }}</td>
                     <td>{{ item.description or "" }}</td>
                     <td style="text-align: right;">{{ item.approved_quantity or 0 }}</td>
-                    <td style="text-align: right;">{{ frappe.format(item.rate, "Currency") if item.rate else 0 }}</td>
-                    <td style="text-align: right;">{{ frappe.format((item.approved_quantity or 0) * (item.rate|float or 0), "Currency") }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format(item.rate, "Currency") if item.rate else 0 }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format((item.approved_quantity or 0) * (item.rate|float or 0), "Currency") }}</td>
                 </tr>
                 {% if grand_total.append(grand_total.pop() + ((item.approved_quantity or 0) * (item.rate|float or 0))) %}{% endif %}
                 {% endfor %}
@@ -149,7 +149,7 @@
             <tfoot>
                 <tr style="font-weight: bold; background-color: #f8f9fa;">
                     <td colspan="6" style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">Grand Total</td>
-                    <td style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">{{ frappe.format(grand_total[0], "Currency") }}</td>
+                    <td style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363; white-space: nowrap;">{{ frappe.format(grand_total[0], "Currency") }}</td>
                 </tr>
             </tfoot>
         </table>
