@@ -3502,7 +3502,7 @@
                       @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
-                      [[ col.label ]]
+                      [[ col.key === 'dispatch' ? 'Dispatch' : col.label ]]
                     </button>
                   </span>
                   <span
