@@ -3506,7 +3506,7 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      style="background: var(--green-600); border-color: var(--green-600);"
+                      style="background: var(--green-600); border-color: var(--green-600); margin: 0 4px;"
                       @click.stop="handleProforma(row)"
                       v-if="activeItem === 'Requests' && row.items && row.items.length > 0 && row.items.every(i => i.status === 'Dispatch')"
                     >
