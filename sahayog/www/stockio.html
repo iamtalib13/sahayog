@@ -2215,7 +2215,15 @@
           :style="(activeItem === 'Items' && showDetailView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''">
           <!-- Analytics Dashboard -->
           <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard">
-            <div class="analytics-cards">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+              <select class="form-input" style="width: auto; font-size: 13px; font-weight: 600; cursor: pointer;" v-model="dashboardDisplayMode">
+                <option value="both">Show Both</option>
+                <option value="cards">Show Cards Only</option>
+                <option value="chart">Show Chart Only</option>
+              </select>
+            </div>
+
+            <div class="analytics-cards" v-if="dashboardDisplayMode === 'cards' || dashboardDisplayMode === 'both'">
               <div class="analytics-card card-draft" @click="navigateTo('Requests')">
                 <div class="card-icon">
                   <i class="fas fa-file"></i>
@@ -2290,7 +2298,7 @@
             </div>
 
             <!-- Custom Chart Section -->
-            <div class="analytics-chart-container mt-4">
+            <div class="analytics-chart-container mt-4" v-if="dashboardDisplayMode === 'chart' || dashboardDisplayMode === 'both'">
               <div class="chart-header">
                 <h3>Request Distribution by Status</h3>
               </div>
@@ -4585,6 +4593,7 @@
   function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
+      dashboardDisplayMode: "both",
       isEditing: false,
       showInwardCreateView: false,
       showOutwardCreateView: false,
