@@ -2031,8 +2031,98 @@
       <!-- Split View Wrapper -->
       <div
         v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
-        :style="(activeItem === 'Items' && showDetailView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
+        :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
+        <!-- Branch Stock Side View -->
+        <div
+          v-if="showBranchStockUseView && activeItem === 'Branch Stock'"
+          class="detail-view-container"
+          style="flex: 0 0 450px; max-width: 450px; padding: 0 0 24px 0"
+        >
+          <div class="detail-card" style="padding: 24px">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+              "
+            >
+              <h4
+                class="section-subtitle"
+                style="
+                  margin: 0;
+                  font-size: 1.1rem;
+                  font-weight: 800;
+                  color: var(--text-main);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Use Items
+              </h4>
+              <button
+                @click="showBranchStockUseView = false"
+                style="
+                  background: transparent;
+                  border: none;
+                  color: var(--text-muted);
+                  font-size: 1.25rem;
+                  cursor: pointer;
+                  padding: 4px;
+                "
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div class="table-responsive" style="margin-bottom: 20px">
+              <table class="items-table" style="font-size: 13px">
+                <thead>
+                  <tr
+                    style="background: var(--sidebar-hover); text-align: left"
+                  >
+                    <th style="padding: 8px">Item</th>
+                    <th style="padding: 8px; text-align: right">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="item in useForm.items"
+                    :key="item.name"
+                    style="border-top: 1px solid var(--border-color)"
+                  >
+                    <td style="padding: 8px">
+                      <div style="font-weight: 600">[[ item.item_code ]]</div>
+                      <div style="font-size: 11px; color: var(--text-muted)">
+                        [[ item.warehouse ]]
+                      </div>
+                    </td>
+                    <td style="padding: 8px; text-align: right">
+                      <input
+                        type="number"
+                        v-model.number="item.use_qty"
+                        :min="1"
+                        :max="item.stock_balance"
+                        class="form-input"
+                        style="width: 70px; padding: 4px 8px !important; text-align: right;"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              class="btn-create"
+              style="width: 100%; justify-content: center"
+              @click="submitUse()"
+            >
+              <span>Proceed to Use</span>
+            </button>
+          </div>
+        </div>
+
         <div
           v-if="showDetailView"
           class="detail-view-container"
@@ -3531,16 +3621,6 @@
                     >
                       PROFORMA
                     </button>
-
-                    <!-- Branch Stock Buttons -->
-                    <button
-                      class="btn-create-inline"
-                      style="background: var(--primary-color); border-color: var(--primary-color);"
-                      @click.stop="handleUse(row)"
-                      v-if="activeItem === 'Branch Stock'"
-                    >
-                      Use
-                    </button>
                   </span>
                   <span
                     v-else
@@ -3570,6 +3650,15 @@
                 <i class="fas fa-spinner fa-spin" v-if="loading"></i>
                 <i class="fas fa-plus" v-else></i>
                 <span>Load More</span>
+              </button>
+              <button
+                v-if="activeItem === 'Branch Stock' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="margin-left: auto; background: var(--primary-color); border-color: var(--primary-color);"
+                @click="handleUse(null)"
+              >
+                <i class="fas fa-hand-pointer"></i>
+                <span>Use ([[ selectedRows.length ]])</span>
               </button>
             </div>
           </div>
@@ -3759,67 +3848,6 @@
           </div>
         </div>
         <div v-else class="profile-loading">Loading profile...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Use Items Modal -->
-  <div
-    class="profile-modal-overlay"
-    v-if="showUseModal"
-    @click.self="showUseModal = false"
-  >
-    <div class="profile-modal">
-      <div class="profile-modal-header">
-        <h3>Use Items</h3>
-        <div class="profile-modal-header-right">
-          <button class="btn-create-inline" @click="submitUse()">
-            <span>Proceed</span>
-          </button>
-          <button class="profile-close" @click="showUseModal = false">
-            &times;
-          </button>
-        </div>
-      </div>
-
-      <div class="profile-modal-body">
-        <div class="table-responsive">
-          <table class="items-table">
-            <thead>
-              <tr
-                style="background: var(--sidebar-hover); text-align: left"
-              >
-                <th style="padding: 8px">Item</th>
-                <th style="padding: 8px">Warehouse</th>
-                <th style="padding: 8px; text-align: right">Balance</th>
-                <th style="padding: 8px; text-align: right">Qty</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="item in useForm.items"
-                :key="item.name"
-                style="border-top: 1px solid var(--border-color)"
-              >
-                <td style="padding: 8px">[[ item.item_code ]]</td>
-                <td style="padding: 8px">[[ item.warehouse ]]</td>
-                <td style="padding: 8px; text-align: right">
-                  [[ item.stock_balance ]]
-                </td>
-                <td style="padding: 8px; text-align: right">
-                  <input
-                    type="number"
-                    v-model.number="item.use_qty"
-                    :min="1"
-                    :max="item.stock_balance"
-                    class="form-input"
-                    style="width: 80px; padding: 4px 8px !important"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   </div>
@@ -6175,7 +6203,6 @@
             { label: "Item Name", key: "item_name", width: 2.5 },
             { label: "Warehouse", key: "warehouse", width: 1.5 },
             { label: "Stock Balance", key: "stock_balance", width: 1 },
-            { label: "Action", key: "use_action", width: 0.8, type: "button" },
           ],
         },
         Requests: {
@@ -6469,7 +6496,7 @@
         isFromList: false,
       },
 
-      showUseModal: false,
+      showBranchStockUseView: false,
       useForm: {
         items: [],
         loading: false,
@@ -6809,6 +6836,7 @@
         this.showOutwardCreateView = false;
         this.showItemCreateView = false;
         this.showEMRMoreDetails = false;
+        this.showBranchStockUseView = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -7674,7 +7702,7 @@
           this.useForm.items = [{ ...row, use_qty: 1 }];
         }
 
-        this.showUseModal = true;
+        this.showBranchStockUseView = true;
       },
       submitUse() {
         if (this.useForm.items.length === 0) return;
@@ -7688,7 +7716,7 @@
           indicator: "green",
         });
 
-        this.showUseModal = false;
+        this.showBranchStockUseView = false;
         this.selectedRows = [];
       },
       async submitRowRecord(row) {
