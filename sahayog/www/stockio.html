@@ -3504,6 +3504,14 @@
                     >
                       [[ col.key === 'dispatch' ? 'Dispatch' : col.label ]]
                     </button>
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--green-600); border-color: var(--green-600);"
+                      @click.stop="handleProforma(row)"
+                      v-if="activeItem === 'Requests' && row.items && row.items.length > 0 && row.items.every(i => i.status === 'Dispatch')"
+                    >
+                      Proforma
+                    </button>
                   </span>
                   <span
                     v-else
@@ -7503,6 +7511,12 @@
             this.dispatchForm.loading = false;
           },
         });
+      },
+      handleProforma(row) {
+        if (!row || !row.name) return;
+        // Open the proforma print view for the Employee Material Request
+        const url = `/printview?doctype=Employee%20Material%20Request&name=${encodeURIComponent(row.name)}&format=Proforma&trigger_print=1`;
+        window.open(url, "_blank");
       },
       async submitDispatch() {
         // Quick validation
