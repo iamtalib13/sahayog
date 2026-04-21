@@ -3531,6 +3531,16 @@
                     >
                       PROFORMA
                     </button>
+
+                    <!-- Branch Stock Buttons -->
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--primary-color); border-color: var(--primary-color);"
+                      @click.stop="handleUse(row)"
+                      v-if="activeItem === 'Branch Stock'"
+                    >
+                      Use
+                    </button>
                   </span>
                   <span
                     v-else
@@ -3749,6 +3759,67 @@
           </div>
         </div>
         <div v-else class="profile-loading">Loading profile...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Use Items Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showUseModal"
+    @click.self="showUseModal = false"
+  >
+    <div class="profile-modal">
+      <div class="profile-modal-header">
+        <h3>Use Items</h3>
+        <div class="profile-modal-header-right">
+          <button class="btn-create-inline" @click="submitUse()">
+            <span>Proceed</span>
+          </button>
+          <button class="profile-close" @click="showUseModal = false">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <div class="profile-modal-body">
+        <div class="table-responsive">
+          <table class="items-table">
+            <thead>
+              <tr
+                style="background: var(--sidebar-hover); text-align: left"
+              >
+                <th style="padding: 8px">Item</th>
+                <th style="padding: 8px">Warehouse</th>
+                <th style="padding: 8px; text-align: right">Balance</th>
+                <th style="padding: 8px; text-align: right">Qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in useForm.items"
+                :key="item.name"
+                style="border-top: 1px solid var(--border-color)"
+              >
+                <td style="padding: 8px">[[ item.item_code ]]</td>
+                <td style="padding: 8px">[[ item.warehouse ]]</td>
+                <td style="padding: 8px; text-align: right">
+                  [[ item.stock_balance ]]
+                </td>
+                <td style="padding: 8px; text-align: right">
+                  <input
+                    type="number"
+                    v-model.number="item.use_qty"
+                    :min="1"
+                    :max="item.stock_balance"
+                    class="form-input"
+                    style="width: 80px; padding: 4px 8px !important"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -6104,6 +6175,7 @@
             { label: "Item Name", key: "item_name", width: 2.5 },
             { label: "Warehouse", key: "warehouse", width: 1.5 },
             { label: "Stock Balance", key: "stock_balance", width: 1 },
+            { label: "Action", key: "use_action", width: 0.8, type: "button" },
           ],
         },
         Requests: {
@@ -6395,6 +6467,12 @@
         items: [],
         loading: false,
         isFromList: false,
+      },
+
+      showUseModal: false,
+      useForm: {
+        items: [],
+        loading: false,
       },
 
       emrForm: {
@@ -7583,6 +7661,35 @@
         const format = isInward ? "Proforma Inward" : "Proforma";
         const url = `/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(row.name)}&format=${encodeURIComponent(format)}&trigger_print=1`;
         window.open(url, "_blank");
+      },
+      handleUse(row) {
+        if (!row && this.selectedRows.length === 0) return;
+
+        if (this.selectedRows.length > 0) {
+          // Filter the actual row data for selected names
+          this.useForm.items = this.rows
+            .filter((r) => this.selectedRows.includes(r.name))
+            .map((r) => ({ ...r, use_qty: 1 }));
+        } else {
+          this.useForm.items = [{ ...row, use_qty: 1 }];
+        }
+
+        this.showUseModal = true;
+      },
+      submitUse() {
+        if (this.useForm.items.length === 0) return;
+
+        // Implementation of item usage logic
+        const itemsList = this.useForm.items
+          .map((i) => `${i.item_code} (${i.use_qty})`)
+          .join(", ");
+        frappe.show_alert({
+          message: `Using ${this.useForm.items.length} items: ${itemsList}`,
+          indicator: "green",
+        });
+
+        this.showUseModal = false;
+        this.selectedRows = [];
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
