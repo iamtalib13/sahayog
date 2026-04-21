@@ -2214,15 +2214,7 @@
           class="list-view-container"
           :style="(activeItem === 'Items' && showDetailView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''">
           <!-- Analytics Dashboard -->
-          <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard">
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-              <select class="form-input" style="width: auto; font-size: 13px; font-weight: 600; cursor: pointer;" v-model="dashboardDisplayMode">
-                <option value="both">Show Both</option>
-                <option value="cards">Show Cards Only</option>
-                <option value="chart">Show Chart Only</option>
-              </select>
-            </div>
-
+          <div v-if="activeItem === 'Dashboard'" class="analytics-dashboard" style="position: relative; height: 100%; min-height: 400px; padding-bottom: 60px;">
             <div class="analytics-cards" v-if="dashboardDisplayMode === 'cards' || dashboardDisplayMode === 'both'">
               <div class="analytics-card card-draft" @click="navigateTo('Requests')">
                 <div class="card-icon">
@@ -2314,6 +2306,13 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <div style="position: absolute; bottom: 20px; right: 20px; z-index: 10;">
+              <select class="form-input" style="width: auto; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background-color: var(--bg-surface);" v-model="dashboardDisplayMode">
+                <option value="cards">Show Cards Only</option>
+                <option value="chart">Show Chart Only</option>
+                <option value="both">Show Both</option>
+              </select>
             </div>
           </div>
 
@@ -4593,7 +4592,7 @@
   function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
-      dashboardDisplayMode: "both",
+      dashboardDisplayMode: "cards",
       isEditing: false,
       showInwardCreateView: false,
       showOutwardCreateView: false,
