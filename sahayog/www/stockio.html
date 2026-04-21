@@ -2405,8 +2405,8 @@
                     :class="getBadgeClass(row, col.key, col.getValue ? col.getValue(row) : null)">
                     [[ col.getValue ? col.getValue(row) : getBadgeText(row, col.key) ]]
                   </span> <span v-else-if="col.type === 'button'" class="row-action">
-                    <button class="btn-list-action" @click.stop="handleDispatch(row)"
-                      v-if="activeItem === 'Requests' && row.status === 'Approved'">
+                    <button class="btn-create-inline" @click.stop="handleDispatch(row)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))">
                       [[ col.label ]]
                     </button>
                   </span>
