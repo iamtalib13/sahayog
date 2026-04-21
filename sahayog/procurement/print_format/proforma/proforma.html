@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @media print {
+            @page { 
+                margin: 0; 
+            }
+            body { 
+                margin: 1mm 7mm 1.5cm 7mm; 
+            }
+        }
+        .proforma-container {
+            padding: 10px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #006363;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #006363;
+            margin: 0;
+            font-size: 24px;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            width: 48%;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #555;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            color: #006363;
+        }
+        .items-table td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+        }
+        @media print {
+            .footer {
+                position: fixed;
+                bottom: 10px;
+                left: 0;
+                right: 0;
+                text-align: center;
+                margin-top: 0;
+            }
+        }
+        .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 200px;
+            border-top: 1px solid #333;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="proforma-container">
+        <div class="header" style="border-bottom: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <img src="/assets/sahayog/images/sahayog_logo_2025.png" alt="Sahayog Logo" style="height: 45px; width: auto;">
+                <div style="text-align: right;">
+                    <h1 style="margin: 0; color: #006363; font-size: 28px; letter-spacing: 2px;">PROFORMA</h1>
+                    <p style="margin: 0; font-size: 12px; color: #666;">Employee Material Request</p>
+                </div>
+            </div>
+        </div>
+        <hr style="border: none; border-top: 2px solid #006363; margin: 10px 0 20px 0;">
+
+        <div class="info-section">
+            <div class="info-box">
+                <p><strong>Employee:</strong> {{ doc.employee }}</p>
+                <p><strong>Request Type:</strong> {{ doc.request_type }}</p>
+                <p><strong>Target Warehouse:</strong> {{ doc.target_warehouse }}</p>
+            </div>
+            <div class="info-box" style="text-align: right;">
+                <p><strong>Status:</strong> {{ doc.status }}</p>
+                <p><strong>Required By:</strong> {{ frappe.utils.format_date(doc.required_by_date) }}</p>
+            </div>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th style="text-align: right;">Dispatch Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in doc.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.item_code }}</td>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.description or "" }}</td>
+                    <td>{{ item.item_category }}</td>
+                    <td style="text-align: right;">{{ item.approved_quantity or 0 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if doc.remark %}
+        <div style="margin-top: 30px;">
+            <p><strong>Remarks:</strong></p>
+            <p style="font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 3px solid #006363;">{{ doc.remark }}</p>
+        </div>
+        {% endif %}
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {{ frappe.db.get_value("User", doc.requested_by, "full_name") or doc.requested_by or "" }}
+                </div>
+                <strong>Requested By</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {% if doc.reporting_person_status == "Approved" or doc.reporting_person_status == "Skip" %}
+                        {{ frappe.db.get_value("User", doc.reporting_person, "full_name") or doc.reporting_person }}<br>
+                        <small style="color: green;">{{ doc.reporting_person_status }} on {{ frappe.utils.format_date(doc.reporting_person_approval_date) if doc.reporting_person_approval_date else "" }}</small>
+                    {% else %}
+                        <span style="color: #999;">{{ doc.reporting_person_status or "Pending" }}</span>
+                    {% endif %}
+                </div>
+                <strong>Reporting Person</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {% if doc.ho_officer_status == "Approved" or doc.ho_officer_status == "Skip" %}
+                        {{ frappe.db.get_value("User", doc.head_office_officer, "full_name") or doc.head_office_officer }}<br>
+                        <small style="color: green;">{{ doc.ho_officer_status }} on {{ frappe.utils.format_date(doc.ho_officer_approval_date) if doc.ho_officer_approval_date else "" }}</small>
+                    {% else %}
+                        <span style="color: #999;">{{ doc.ho_officer_status or "Pending" }}</span>
+                    {% endif %}
+                </div>
+                <strong>HO Approval</strong>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated on {{ frappe.utils.format_datetime(frappe.utils.now_datetime()) }}</p>
+        </div>
+    </div>
+</body>
+</html>
