@@ -100,7 +100,6 @@
                 <img src="/assets/sahayog/images/sahayog_logo_2025.png" alt="Sahayog Logo" style="height: 45px; width: auto;">
                 <div style="text-align: right;">
                     <h1 style="margin: 0; color: #006363; font-size: 28px; letter-spacing: 2px;">PROFORMA</h1>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Employee Material Request</p>
                 </div>
             </div>
         </div>
@@ -108,7 +107,9 @@
 
         <div class="info-section">
             <div class="info-box">
-                <p><strong>Employee:</strong> {{ doc.employee }}</p>
+                <p><strong>Request ID:</strong> {{ doc.name }}</p>
+                {% set employee = frappe.get_doc("Employee", doc.employee) %}
+                <p><strong>Employee:</strong> {{ employee.employee_name }} ({{ employee.employee_number }})</p>
                 <p><strong>Request Type:</strong> {{ doc.request_type }}</p>
                 <p><strong>Target Warehouse:</strong> {{ doc.target_warehouse }}</p>
             </div>
