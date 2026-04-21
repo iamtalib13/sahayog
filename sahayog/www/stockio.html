@@ -2706,7 +2706,7 @@
                         align-items: center;
                         gap: 8px;
                       "
-                      @click="handleDispatch(detailRecord)"
+                      @click="handleDispatch(detailRecord, false)"
                       title="Dispatch Selected Items"
                     >
                       <i class="fas fa-truck-fast"></i>
@@ -3499,7 +3499,7 @@
                   <span v-else-if="col.type === 'button'" class="row-action">
                     <button
                       class="btn-create-inline"
-                      @click.stop="handleDispatch(row)"
+                      @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
                       [[ col.label ]]
@@ -3858,6 +3858,23 @@
               >
                 <tr>
                   <th
+                    v-if="dispatchForm.isFromList"
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: left;
+                      color: var(--text-muted);
+                      width: 40px;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="dispatchForm.items.length > 0 && dispatchForm.items.every(i => i.selected)"
+                      @change="(e) => dispatchForm.items.forEach(i => i.selected = e.target.checked)"
+                    />
+                  </th>
+                  <th
                     style="
                       font-size: 10px;
                       text-transform: uppercase;
@@ -3899,6 +3916,12 @@
                   :key="item.name"
                   style="border-bottom: 1px solid var(--border-color)"
                 >
+                  <td
+                    v-if="dispatchForm.isFromList"
+                    style="padding: 8px 12px; width: 40px"
+                  >
+                    <input type="checkbox" v-model="item.selected" />
+                  </td>
                   <td style="font-size: 12px; padding: 8px 12px">
                     <div style="font-weight: 600; color: var(--text-main)">
                       [[ item.item_code ]]
@@ -6302,6 +6325,7 @@
         stock_entry_type: "Material Issue",
         items: [],
         loading: false,
+        isFromList: false,
       },
 
       emrForm: {
@@ -7423,7 +7447,7 @@
           maximumFractionDigits: 0,
         }).format(amount);
       },
-      handleDispatch(row) {
+      handleDispatch(row, isFromList = false) {
         if (!row || !row.name) return;
         this.dispatchForm.name = row.name;
         this.dispatchForm.source_warehouse = row.source_warehouse;
@@ -7431,6 +7455,7 @@
         this.dispatchForm.stock_entry_type = "Material Transfer";
         this.dispatchForm.items = [];
         this.dispatchForm.loading = true;
+        this.dispatchForm.isFromList = isFromList;
         this.showDispatchModal = true;
 
         frappe.call({
@@ -7465,11 +7490,14 @@
                       selectedNames.includes(i.name)
                     );
                   }
-                  return i.item_category === "Stock Item" && i.status === "Approved";
+                  return (
+                    i.item_category === "Stock Item" && i.status === "Approved"
+                  );
                 })
                 .map((item) => ({
                   ...item,
                   dispatch_qty: item.approved_quantity || 0,
+                  selected: true,
                 }));
             }
             this.dispatchForm.loading = false;
@@ -7518,7 +7546,7 @@
           custom_material_request_doctype: "Employee Material Request",
           custom_material_request: this.dispatchForm.name,
           items: this.dispatchForm.items
-            .filter((item) => (item.dispatch_qty || 0) > 0)
+            .filter((item) => item.selected && (item.dispatch_qty || 0) > 0)
             .map((item) => ({
               item_code: item.item_code,
               qty: item.dispatch_qty,
@@ -7544,7 +7572,7 @@
 
             // Update item statuses to 'Dispatch' in EMR
             const itemMap = this.dispatchForm.items.reduce((acc, d) => {
-              if (d.dispatch_qty > 0) {
+              if (d.selected && d.dispatch_qty > 0) {
                 acc[d.name] = "Dispatch";
               }
               return acc;
