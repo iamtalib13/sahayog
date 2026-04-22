@@ -16,5 +16,5 @@ def execute():
         "label": "GL Code",
         "fieldname": "gl_code",
         "fieldtype": "Data",
-        "insert_after": "branch_opening_date"
+        "insert_after": "branch_code"
     }).insert(ignore_permissions=True)
