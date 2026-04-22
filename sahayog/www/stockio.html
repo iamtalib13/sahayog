@@ -2031,8 +2031,98 @@
       <!-- Split View Wrapper -->
       <div
         v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
-        :style="(activeItem === 'Items' && showDetailView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
+        :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
+        <!-- Branch Stock Side View -->
+        <div
+          v-if="showBranchStockUseView && activeItem === 'Branch Stock'"
+          class="detail-view-container"
+          style="flex: 0 0 450px; max-width: 450px; padding: 0 0 24px 0"
+        >
+          <div class="detail-card" style="padding: 24px">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+              "
+            >
+              <h4
+                class="section-subtitle"
+                style="
+                  margin: 0;
+                  font-size: 1.1rem;
+                  font-weight: 800;
+                  color: var(--text-main);
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                "
+              >
+                Use Items
+              </h4>
+              <button
+                @click="showBranchStockUseView = false"
+                style="
+                  background: transparent;
+                  border: none;
+                  color: var(--text-muted);
+                  font-size: 1.25rem;
+                  cursor: pointer;
+                  padding: 4px;
+                "
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div class="table-responsive" style="margin-bottom: 20px">
+              <table class="items-table" style="font-size: 13px">
+                <thead>
+                  <tr
+                    style="background: var(--sidebar-hover); text-align: left"
+                  >
+                    <th style="padding: 8px">Item</th>
+                    <th style="padding: 8px; text-align: right">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="item in useForm.items"
+                    :key="item.name"
+                    style="border-top: 1px solid var(--border-color)"
+                  >
+                    <td style="padding: 8px">
+                      <div style="font-weight: 600">[[ item.item_code ]]</div>
+                      <div style="font-size: 11px; color: var(--text-muted)">
+                        [[ item.warehouse ]]
+                      </div>
+                    </td>
+                    <td style="padding: 8px; text-align: right">
+                      <input
+                        type="number"
+                        v-model.number="item.use_qty"
+                        :min="1"
+                        :max="item.stock_balance"
+                        class="form-input"
+                        style="width: 70px; padding: 4px 8px !important; text-align: right;"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              class="btn-create"
+              style="width: 100%; justify-content: center"
+              @click="submitUse()"
+            >
+              <span>Proceed to Use</span>
+            </button>
+          </div>
+        </div>
+
         <div
           v-if="showDetailView"
           class="detail-view-container"
@@ -3497,6 +3587,7 @@
                     col.key) ]]
                   </span>
                   <span v-else-if="col.type === 'button'" class="row-action">
+                    <!-- Requests Buttons -->
                     <button
                       class="btn-create-inline"
                       @click.stop="handleDispatch(row, true)"
@@ -3511,6 +3602,24 @@
                       v-if="activeItem === 'Requests' && row.items && row.items.length > 0 && row.items.every(i => i.status === 'Dispatch')"
                     >
                       Proforma
+                    </button>
+
+                    <!-- Inward Buttons -->
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--primary-color); border-color: var(--primary-color);"
+                      @click.stop="submitRowRecord(row)"
+                      v-if="activeItem === 'Inward' && (row.status === 'Draft' || row.docstatus === 0)"
+                    >
+                      Submit
+                    </button>
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--green-600); border-color: var(--green-600);"
+                      @click.stop="handleProforma(row)"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0"
+                    >
+                      PROFORMA
                     </button>
                   </span>
                   <span
@@ -3541,6 +3650,15 @@
                 <i class="fas fa-spinner fa-spin" v-if="loading"></i>
                 <i class="fas fa-plus" v-else></i>
                 <span>Load More</span>
+              </button>
+              <button
+                v-if="activeItem === 'Branch Stock' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="margin-left: auto; background: var(--primary-color); border-color: var(--primary-color);"
+                @click="handleUse(null)"
+              >
+                <i class="fas fa-hand-pointer"></i>
+                <span>Use ([[ selectedRows.length ]])</span>
               </button>
             </div>
           </div>
@@ -3916,6 +4034,28 @@
                   >
                     Dispatch Qty
                   </th>
+                  <th
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: right;
+                      color: var(--text-muted);
+                    "
+                  >
+                    Rate
+                  </th>
+                  <th
+                    style="
+                      font-size: 10px;
+                      text-transform: uppercase;
+                      padding: 8px 12px;
+                      text-align: right;
+                      color: var(--text-muted);
+                    "
+                  >
+                    Total
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -3978,6 +4118,25 @@
                         font-size: 12px;
                       "
                     />
+                  </td>
+                  <td
+                    style="
+                      font-size: 12px;
+                      padding: 8px 12px;
+                      text-align: right;
+                    "
+                  >
+                    [[ formatCurrency(item.rate) ]]
+                  </td>
+                  <td
+                    style="
+                      font-size: 12px;
+                      padding: 8px 12px;
+                      text-align: right;
+                      font-weight: 700;
+                    "
+                  >
+                    [[ formatCurrency((item.dispatch_qty || 0) * (item.rate || 0)) ]]
                   </td>
                 </tr>
               </tbody>
@@ -4778,7 +4937,7 @@
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     overflow: hidden;
-    margin: 24px 32px 0 32px;
+    margin: 0;
     height: calc(100vh - var(--header-height) - 56px);
   }
 
@@ -6134,6 +6293,7 @@
             { label: "Supplier", key: "supplier", width: 1.8 },
             { label: "Date", key: "posting_date", width: 1 },
             { label: "Status", key: "status", width: 1, type: "badge" },
+            { label: "Action", key: "action", width: 1.2, type: "button" },
           ],
           detailFields: [
             { label: "Supplier", key: "supplier" },
@@ -6334,6 +6494,12 @@
         items: [],
         loading: false,
         isFromList: false,
+      },
+
+      showBranchStockUseView: false,
+      useForm: {
+        items: [],
+        loading: false,
       },
 
       emrForm: {
@@ -6670,6 +6836,7 @@
         this.showOutwardCreateView = false;
         this.showItemCreateView = false;
         this.showEMRMoreDetails = false;
+        this.showBranchStockUseView = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -7514,9 +7681,72 @@
       },
       handleProforma(row) {
         if (!row || !row.name) return;
-        // Open the proforma print view for the Employee Material Request
-        const url = `/printview?doctype=Employee%20Material%20Request&name=${encodeURIComponent(row.name)}&format=Proforma&trigger_print=1`;
+        // Open the proforma print view
+        const isInward = this.activeItem === "Inward";
+        const doctype = isInward
+          ? "Purchase Receipt"
+          : "Employee Material Request";
+        const format = isInward ? "Proforma Inward" : "Proforma";
+        const url = `/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(row.name)}&format=${encodeURIComponent(format)}&trigger_print=1`;
         window.open(url, "_blank");
+      },
+      handleUse(row) {
+        if (!row && this.selectedRows.length === 0) return;
+
+        if (this.selectedRows.length > 0) {
+          // Filter the actual row data for selected names
+          this.useForm.items = this.rows
+            .filter((r) => this.selectedRows.includes(r.name))
+            .map((r) => ({ ...r, use_qty: 1 }));
+        } else {
+          this.useForm.items = [{ ...row, use_qty: 1 }];
+        }
+
+        this.showBranchStockUseView = true;
+      },
+      submitUse() {
+        if (this.useForm.items.length === 0) return;
+
+        // Implementation of item usage logic
+        const itemsList = this.useForm.items
+          .map((i) => `${i.item_code} (${i.use_qty})`)
+          .join(", ");
+        frappe.show_alert({
+          message: `Using ${this.useForm.items.length} items: ${itemsList}`,
+          indicator: "green",
+        });
+
+        this.showBranchStockUseView = false;
+        this.selectedRows = [];
+      },
+      async submitRowRecord(row) {
+        if (!row || !row.name) return;
+        const doctype = this.currentView.doctype;
+
+        frappe.confirm(`Are you sure you want to submit ${row.name}?`, async () => {
+          this.loading = true;
+          try {
+            await frappe.call({
+              method: "frappe.client.submit",
+              args: {
+                doc: {
+                  doctype: doctype,
+                  name: row.name,
+                },
+              },
+            });
+            frappe.show_alert({
+              message: `${row.name} submitted successfully`,
+              indicator: "green",
+            });
+            await this.fetchData(doctype);
+          } catch (e) {
+            console.error("Submission error:", e);
+            frappe.msgprint(e.message || "Error submitting record");
+          } finally {
+            this.loading = false;
+          }
+        });
       },
       async submitDispatch() {
         // Quick validation

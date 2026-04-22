@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @media print {
+            @page { 
+                margin: 0; 
+            }
+            body { 
+                margin: 1mm 7mm 1.5cm 7mm; 
+            }
+        }
+        .proforma-container {
+            padding: 10px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #006363;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #006363;
+            margin: 0;
+            font-size: 24px;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            width: 48%;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #555;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            color: #006363;
+        }
+        .items-table td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+        }
+        @media print {
+            .footer {
+                position: fixed;
+                bottom: 10px;
+                left: 0;
+                right: 0;
+                text-align: center;
+                margin-top: 0;
+            }
+        }
+        .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 200px;
+            border-top: 1px solid #333;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="proforma-container">
+        <div class="header" style="border-bottom: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <img src="/assets/sahayog/images/sahayog_logo_2025.png" alt="Sahayog Logo" style="height: 45px; width: auto;">
+                <div style="text-align: right;">
+                    <h1 style="margin: 0; color: #006363; font-size: 28px; letter-spacing: 2px;">PROFORMA</h1>
+                </div>
+            </div>
+        </div>
+        <hr style="border: none; border-top: 2px solid #006363; margin: 10px 0 20px 0;">
+
+        <div class="info-section">
+            <div class="info-box">
+                <p><strong>Receipt ID:</strong> {{ doc.name }}</p>
+                <p><strong>Supplier:</strong> {{ doc.supplier }}</p>
+                <p><strong>Warehouse:</strong> {{ doc.set_warehouse }}</p>
+                <p><strong>PO/WO Number:</strong> {{ doc.custom_po_wo_number or "" }}</p>
+            </div>
+            <div class="info-box" style="text-align: right;">
+                <p><strong>Status:</strong> {{ doc.status }}</p>
+                <p><strong>Date:</strong> {{ frappe.utils.format_date(doc.posting_date) }}</p>
+            </div>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th style="text-align: right;">Rate</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set grand_total = [0] %}
+                {% for item in doc.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.item_code }}</td>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.description or "" }}</td>
+                    <td style="text-align: right;">{{ item.qty or 0 }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format(item.rate, "Currency") if item.rate else 0 }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format((item.qty or 0) * (item.rate|float or 0), "Currency") }}</td>
+                </tr>
+                {% if grand_total.append(grand_total.pop() + ((item.qty or 0) * (item.rate|float or 0))) %}{% endif %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background-color: #f8f9fa;">
+                    <td colspan="6" style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">Grand Total</td>
+                    <td style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363; white-space: nowrap;">{{ frappe.format(grand_total[0], "Currency") }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if doc.remarks %}
+        <div style="margin-top: 30px;">
+            <p><strong>Remarks:</strong></p>
+            <p style="font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 3px solid #006363;">{{ doc.remarks }}</p>
+        </div>
+        {% endif %}
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {{ frappe.db.get_value("User", doc.owner, "full_name") or doc.owner or "" }}
+                </div>
+                <strong>Prepared By</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                </div>
+                <strong>Checked By</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                </div>
+                <strong>Authorized Signatory</strong>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated on {{ frappe.utils.format_datetime(frappe.utils.now_datetime()) }}</p>
+        </div>
+    </div>
+</body>
+</html>
