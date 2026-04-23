@@ -6,16 +6,37 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "selection_type",
   "approver",
+  "group_email",
   "approver_name"
  ],
  "fields": [
   {
+   "fieldname": "selection_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Selection Type",
+   "options": "\nUser\nGroup",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.selection_type == 'User'",
    "fieldname": "approver",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Approver",
+   "mandatory_depends_on": "eval:doc.selection_type == 'User'",
    "options": "User"
+  },
+  {
+   "depends_on": "eval:doc.selection_type == 'Group'",
+   "fieldname": "group_email",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Group Email",
+   "mandatory_depends_on": "eval:doc.selection_type == 'Group'",
+   "options": "Employee Group"
   },
   {
    "fieldname": "approver_name",
@@ -29,7 +50,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-17 13:41:49.337915",
+ "modified": "2026-04-23 16:20:00.000000",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Approver",
