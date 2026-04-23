@@ -15,15 +15,9 @@ def validate_report_access():
     if user == "Administrator":
         return True
 
-    exists = frappe.db.exists(
-        "Report Preference",
-        {"user": user}
-    )
+    exists = frappe.db.exists("Report Preference", {"user": user})
 
-    if not exists:
-        frappe.throw("You are not authorized to access CRM Leads Report.")
-
-    return True
+    return bool(exists)
     
 @frappe.whitelist()
 def get_all_system_regions():
@@ -33,7 +27,6 @@ def get_all_system_regions():
 
 @frappe.whitelist()
 def get_user_report_preference_record(user):
-    validate_report_access()
     frappe.log_error(f"CRM Preference Fetch", f"User: {user}")
     result = []
     if user == "Administrator":
@@ -86,7 +79,6 @@ def empty_stats():
 
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
-    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
     
@@ -103,24 +95,22 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         )
     
     # ---------- Preferences ----------
-    is_all_regions = False # Initialize is_all_regions
+    has_pref = False
+    is_all_regions = False 
     products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
+    
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         
-        # Enforce Report Preference record existence for non-Administrators
-        if not pref_res:
-            frappe.throw("You do not have a Report Preference record. Please contact your manager to set it up.")
-
-        p = pref_res[0]
-        is_all_regions = p.get("all_regions") # Assign is_all_regions from preferences
-        
-        # Extract values from preference objects (Product/SOL ID are now lists of dicts)
-        products_pref = set()
-        sources_pref = set()
-        zones_pref = {norm(x) for x in p.get("zone", [])}
-        regions_pref = {norm(x) for x in p.get("region", [])}
-        sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+        if pref_res:
+            has_pref = True
+            p = pref_res[0]
+            is_all_regions = p.get("all_regions") 
+            
+            # Extract values from preference objects
+            zones_pref = {norm(x) for x in p.get("zone", [])}
+            regions_pref = {norm(x) for x in p.get("region", [])}
+            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
     filters = frappe.parse_json(filters) if filters else {}
 
@@ -198,6 +188,11 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     final_leads = []
 
     for l in leads:
+        # 🔥 NEW LOGIC: If NO preference → only own leads
+        if user != "Administrator" and not has_pref:
+            if l.lead_owner != user:
+                continue
+
         curr_sol = str(l.sol_id) if l.sol_id else ""
         
         # 1. SOL Pref Filter Check
@@ -441,15 +436,16 @@ def notify_user(user, message):
     
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date):
-    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 
     # --- Step 1: User ki Report Preference fetch karein ---
+    has_pref = False
     zones_pref, regions_pref = set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         if pref_res:
+            has_pref = True
             p = pref_res[0]
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
@@ -482,6 +478,11 @@ def get_employee_performance_data(from_date, to_date):
     employee_stats = {}
 
     for l in leads:
+        # 🔥 fallback
+        if user != "Administrator" and not has_pref:
+            if l.lead_owner != user:
+                continue
+
         emp = employee_map.get(l.lead_owner)
         if not emp: continue
         
@@ -579,15 +580,16 @@ def get_all_products_sources():
 
 @frappe.whitelist()
 def get_crm_top_analytics(from_date, to_date):
-    validate_report_access()
     user = frappe.session.user
     from_date, to_date = validate_date_range(from_date, to_date)
 
     # ---------- Preferences ----------
+    has_pref = False
     zones_pref, regions_pref = set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         if pref_res:
+            has_pref = True
             p = pref_res[0]
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
@@ -617,6 +619,10 @@ def get_crm_top_analytics(from_date, to_date):
     employee_stats = {}
 
     for l in leads:
+        if user != "Administrator" and not has_pref:
+            if l.lead_owner != user:
+                continue
+
         curr_sol = str(l.sol_id) if l.sol_id else ""
         branch = branch_map.get(curr_sol)
 
