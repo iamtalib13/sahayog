@@ -975,6 +975,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_to_date: "", // Init mein set hoga
 
     employee_performance_data: [],
+    has_pref: true,
     employee_report_loading: false,
     employee_error_message: null,
     employee_search_term: "",
@@ -1375,14 +1376,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       const pref = (res.message || [])[0];
 
       if (!pref) {
-        frappe.msgprint({
-          title: "Access Denied",
-          message: "You are not authorized to access this report.",
-          indicator: "red",
-        });
-
-        frappe.set_route("app");
-        return;
+        // ❗ No block — fallback mode
+        this.has_pref = false;
+        console.log("No Report Preference → showing own leads only");
       }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
@@ -1497,7 +1493,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         if (this.employee_performance_data.length === 0) {
           this.showNoLeadsMessage();
         } else {
-          page.set_intro("");
+          if (!this.has_pref && frappe.session.user !== "Administrator") {
+            page.set_intro(`
+              <div style="background:#fef9c3; padding:6px; font-size:11px; border-left: 4px solid #facc15; border-radius: 4px; color: #854d0e;">
+                <i class="fa fa-info-circle mr-1"></i> Showing only your created leads (No Report Preference assigned)
+              </div>
+            `);
+          } else {
+            page.set_intro("");
+          }
         }
       } catch (error) {
         this.employee_error_message = error.message || "Error fetching data.";
