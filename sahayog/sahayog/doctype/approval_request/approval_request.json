@@ -78,6 +78,7 @@
    "reqd": 1
   },
   {
+   "description": "Important: If Selection Type is: 'User' then fill the 'Approver' field. and if Selection Type is: 'Group' then fill the 'Group Email' field.",
    "fieldname": "approvers_section",
    "fieldtype": "Section Break",
    "label": "Approvers"
@@ -133,7 +134,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-20 11:04:54.164971",
+ "modified": "2026-04-23 15:59:57.389744",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
