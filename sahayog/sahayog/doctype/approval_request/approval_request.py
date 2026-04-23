@@ -50,10 +50,10 @@ def ensure_docshare(doc, user):
 
 
 def get_all_valid_approvers(doc):
-    """Returns a list of user_ids for direct approvers AND their reporting managers"""
+    """Returns a list of user_ids for direct approvers, group members, AND their reporting managers"""
     users = []
     for d in doc.approvers:
-        if d.approver:
+        if d.selection_type == "User" and d.approver:
             users.append(d.approver)
             # Find the approver's Employee record and check reports_to
             emp = frappe.db.get_value(
@@ -62,6 +62,20 @@ def get_all_valid_approvers(doc):
                 manager_user = frappe.db.get_value("Employee", emp, "user_id")
                 if manager_user:
                     users.append(manager_user)
+        
+        elif d.selection_type == "Group" and d.group_email:
+            # Fetch all employees from the Employee Group
+            group_members = frappe.get_all("Employee Group Table", 
+                filters={"parent": d.group_email}, 
+                fields=["employee"])
+            
+            for member in group_members:
+                user_id = frappe.db.get_value("Employee", member.employee, "user_id")
+                if user_id:
+                    users.append(user_id)
+                    # Optionally add manager of each group member? 
+                    # Re-reading requirement: "group me mention members ko hi mail jaye"
+                    # So I will stick to just group members for now.
 
     return list(set(users))  # Remove duplicates
 
@@ -81,7 +95,17 @@ def submit_for_approval(docname):
     if doc.approval_status not in ["Draft", "Rejected"]:
         frappe.throw("Only Draft or Rejected requests can be submitted.")
     if not doc.approvers:
-        frappe.throw("Please add at least one approver.")
+        frappe.throw("Please add at least one approver or group.")
+    
+    # Check if at least one row has a selection
+    has_valid_selection = False
+    for d in doc.approvers:
+        if (d.selection_type == "User" and d.approver) or (d.selection_type == "Group" and d.group_email):
+            has_valid_selection = True
+            break
+    
+    if not has_valid_selection:
+        frappe.throw("Please select at least one Approver or Employee Group.")
 
     frappe.flags.in_approval_action = True
     try:
@@ -100,6 +124,42 @@ def submit_for_approval(docname):
                 "document_type": doc.doctype,
                 "document_name": doc.name
             }).insert(ignore_permissions=True)
+
+        # --- NEW: SEND EMAIL TO GROUP EMAIL ---
+        for d in doc.approvers:
+            if d.selection_type == "Group" and d.group_email:
+                group_email_addr = frappe.db.get_value("Employee Group", d.group_email, "group_email")
+                if group_email_addr:
+                    # Fetch template from database
+                    try:
+                        et = frappe.get_doc("Email Template", "new_group_approval_request")
+                        
+                        # Support both response and response_html fields
+                        content = et.response_html if (et.get("use_html") and et.get("response_html")) else et.response
+                        
+                        args = {
+                            "doc": doc,
+                            "requester": doc.employee_name or doc.owner,
+                            "url": frappe.utils.get_url_to_form(doc.doctype, doc.name)
+                        }
+                        
+                        message = frappe.render_template(content, args)
+                        subject = frappe.render_template(et.subject, args)
+
+                        frappe.sendmail(
+                            recipients=[group_email_addr],
+                            subject=subject or f"Approval Request: {doc.title}",
+                            message=message,
+                            delayed=False
+                        )
+                    except frappe.DoesNotExistError:
+                        # Fallback if template not found
+                        frappe.sendmail(
+                            recipients=[group_email_addr],
+                            subject=f"Approval Request: {doc.title}",
+                            message=f"A new approval request '{doc.title}' has been submitted by {doc.employee_name or doc.owner}. Please login to Sahayog Portal.",
+                            delayed=False
+                        )
 
         doc.add_comment(
             "Comment", f"Request submitted for approval by {frappe.session.user}")
