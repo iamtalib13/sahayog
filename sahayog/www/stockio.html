@@ -3572,6 +3572,7 @@
                   <input
                     type="checkbox"
                     :checked="selectedRows.includes(row.name)"
+                    @change="toggleRowSelection(row.name)"
                     @click.stop
                   />
                 </div>
@@ -7115,7 +7116,10 @@
             });
 
             if (res.message) {
-              const data = res.message.data || [];
+              const data = (res.message.data || []).map((row) => ({
+                ...row,
+                name: row.name || `${row.item_code}-${row.warehouse}`,
+              }));
               if (append) {
                 this.rows = this.rows.concat(data);
               } else {
