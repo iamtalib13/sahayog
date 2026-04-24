@@ -921,7 +921,7 @@
           class="page-title"
           v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView"
         >
-          [[ activeItem ]]
+          [[ activeItem ]] [[ activeItem === 'Branch Stock' && userWarehouse ? '(' + userWarehouse + ')' : '' ]]
         </h1>
         <h1
           class="page-title"
