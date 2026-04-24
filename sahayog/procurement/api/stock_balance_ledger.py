@@ -539,6 +539,46 @@ def get_item_quantities_for_warehouse(warehouse=None):
     return {bin.item_code: bin.qty for bin in bins}
 
 @frappe.whitelist()
+def create_material_issue(items, warehouse):
+    """
+    Create and submit a Stock Entry of type 'Material Issue'
+    """
+    if not items:
+        frappe.throw(_("No items provided for Material Issue"))
+    if not warehouse:
+        frappe.throw(_("No warehouse specified for Material Issue"))
+
+    items = frappe.parse_json(items)
+    
+    se = frappe.new_doc("Stock Entry")
+    se.stock_entry_type = "Material Issue"
+    
+    # Strictly get company from the specific Warehouse
+    company = frappe.db.get_value("Warehouse", warehouse, "company")
+    
+    if not company:
+        # Fallback to user default if warehouse record doesn't specify company
+        company = frappe.defaults.get_user_default("Company")
+        
+    if not company:
+        frappe.throw(_("Could not determine Company for Warehouse {0}. Please ensure the Warehouse has a Company assigned.").format(warehouse))
+    
+    se.company = company
+    se.from_warehouse = warehouse
+    
+    for item in items:
+        se.append("items", {
+            "item_code": item.get("item_code"),
+            "qty": item.get("use_qty"),
+            "s_warehouse": warehouse,
+            "uom": item.get("stock_uom") or item.get("uom") or frappe.db.get_value("Item", item.get("item_code"), "stock_uom")
+        })
+    
+    se.insert()
+    se.submit()
+    return se.name
+
+@frappe.whitelist()
 def get_user_inventory_type():
     """
     Fetch the inventory_type for the current user from Sahayog Settings (wh_dept_map table).
