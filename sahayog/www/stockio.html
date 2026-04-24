@@ -2577,7 +2577,7 @@
                             Status
                           </th>
                           <th
-                            v-if="detailRecord.status === 'Approved'"
+                            v-if="detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="
                               padding: 10px 12px !important;
                               font-size: 0.75rem !important;
@@ -2764,7 +2764,7 @@
                             </span>
                           </td>
                           <td
-                            v-if="detailRecord.status === 'Approved'"
+                            v-if="detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="padding: 10px 12px !important"
                           >
                             <div
