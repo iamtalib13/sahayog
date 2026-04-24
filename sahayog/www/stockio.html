@@ -811,6 +811,13 @@
             :class="{ rotated: showUserMenu }"
           ></i>
         </div>
+        <div
+          class="collapsed-nav-label"
+          v-if="sidebarCollapsed"
+          style="font-weight: 800; opacity: 1"
+        >
+          [[ sidebar.header.title ]]
+        </div>
       </div>
 
       <!-- User Dropdown -->
@@ -854,6 +861,9 @@
             <div class="label-area" v-if="!sidebarCollapsed">
               <span class="nav-label">[[ item.label ]]</span>
             </div>
+            <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+              [[ item.label ]]
+            </div>
           </div>
         </div>
       </div>
@@ -872,6 +882,9 @@
             >[[ currentTheme === 'light' ? 'Dark Mode' : 'Light Mode' ]]</span
           >
         </div>
+        <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+          [[ currentTheme === 'light' ? 'Dark' : 'Light' ]]
+        </div>
       </div>
       <div
         class="nav-item collapse-toggle"
@@ -882,6 +895,9 @@
         </div>
         <div class="label-area" v-if="!sidebarCollapsed">
           <span class="nav-label">Collapse</span>
+        </div>
+        <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+          Expand
         </div>
       </div>
     </div>
@@ -4435,7 +4451,7 @@
     --border-color: var(--gray-200);
 
     --sidebar-width: 240px;
-    --sidebar-collapsed-width: 68px;
+    --sidebar-collapsed-width: 80px;
     --header-height: 64px;
 
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -4675,9 +4691,29 @@
     color: var(--gray-600);
   }
 
+  .sidebar.collapsed .user-profile,
   .sidebar.collapsed .nav-item {
     justify-content: center;
-    padding: 8px 0;
+    align-items: center;
+    padding: 12px 4px;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 64px;
+    margin: 4px 8px;
+  }
+
+  .collapsed-nav-label {
+    font-size: 9px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    color: inherit;
+    font-weight: 500;
+    opacity: 0.85;
+    display: block;
+    line-height: 1;
   }
 
   [data-theme="dark"] .nav-item {
@@ -6564,6 +6600,7 @@
       itemView: "list",
       userWarehouse: null,
       userEmployeeId: null,
+      userInventoryType: null,
       itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
@@ -6646,17 +6683,83 @@
       get computedSidebarSections() {
         const allowedOutward =
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
-        return this.sidebar.sections.map((section) => {
-          if (section.label === "Inventory") {
-            return {
-              ...section,
-              items: section.items.filter(
+
+        const type = this.userInventoryType;
+
+        return this.sidebar.sections
+          .filter((section) => {
+            // Admin sees everything
+            if (this.isAdmin) return true;
+
+            // General Section is always shown
+            if (section.label === "General") return true;
+
+            // Assets Section logic
+            if (section.label === "Assets") {
+              return type === "Asset" || type === "Stationery & Asset";
+            }
+
+            // Reports Section logic
+            if (section.label === "Reports") {
+              return (
+                type === "Stationery" ||
+                type === "Asset" ||
+                type === "Stationery & Asset"
+              );
+            }
+
+            // Inventory Section logic
+            if (section.label === "Inventory") return true;
+
+            return true;
+          })
+          .map((section) => {
+            let newSection = { ...section };
+
+            if (section.label === "Inventory") {
+              // Relabel to Requests if type is Asset
+              if (!this.isAdmin && type === "Asset") {
+                newSection.label = "Requests";
+              }
+
+              let filteredItems = section.items;
+
+              // Filter based on inventory_type for non-admins
+              if (!this.isAdmin) {
+                if (type === "Asset") {
+                  // If Asset, only show Requests in this section (Items moved to Assets)
+                  filteredItems = filteredItems.filter(
+                    (item) => item.label === "Requests",
+                  );
+                } else if (!type) {
+                  // If No Match, only show Requests
+                  filteredItems = filteredItems.filter(
+                    (item) => item.label === "Requests",
+                  );
+                }
+              }
+
+              // Apply existing Outward permission logic
+              filteredItems = filteredItems.filter(
                 (item) => item.label !== "Outward" || allowedOutward,
-              ),
-            };
-          }
-          return section;
-        });
+              );
+
+              newSection.items = filteredItems;
+            }
+
+            if (section.label === "Assets" && !this.isAdmin && type === "Asset") {
+              // Move "Items" to Assets section below "Movements"
+              const itemsObj = this.sidebar.sections
+                .find((s) => s.label === "Inventory")
+                .items.find((i) => i.label === "Items");
+
+              if (itemsObj && !newSection.items.find((i) => i.label === "Items")) {
+                newSection.items = [...newSection.items, itemsObj];
+              }
+            }
+
+            return newSection;
+          });
       },
 
       // Searchable select filtered options
@@ -6779,6 +6882,13 @@
           console.warn("Warehouse fetch failed:", e);
         }
 
+        // Fetch user's Inventory Type
+        try {
+          await this.fetchUserInventoryType();
+        } catch (e) {
+          console.warn("Inventory type fetch failed:", e);
+        }
+
         // Fetch user's Employee ID
         try {
           const empRes = await frappe.call({
@@ -6860,6 +6970,20 @@
           }
         } catch (e) {
           console.error("Error fetching user warehouse:", e);
+        }
+      },
+
+      async fetchUserInventoryType() {
+        try {
+          const res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_user_inventory_type",
+          });
+          if (res.message) {
+            this.userInventoryType = res.message;
+          }
+        } catch (e) {
+          console.error("Error fetching user inventory type:", e);
         }
       },
 

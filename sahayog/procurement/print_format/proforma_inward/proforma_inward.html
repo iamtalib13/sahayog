@@ -160,25 +160,6 @@
         </div>
         {% endif %}
 
-        <div class="signature-section">
-            <div class="signature-box">
-                <div style="min-height: 20px;">
-                    {{ frappe.db.get_value("User", doc.owner, "full_name") or doc.owner or "" }}
-                </div>
-                <strong>Prepared By</strong>
-            </div>
-            <div class="signature-box">
-                <div style="min-height: 20px;">
-                </div>
-                <strong>Checked By</strong>
-            </div>
-            <div class="signature-box">
-                <div style="min-height: 20px;">
-                </div>
-                <strong>Authorized Signatory</strong>
-            </div>
-        </div>
-
         <div class="footer">
             <p>Generated on {{ frappe.utils.format_datetime(frappe.utils.now_datetime()) }}</p>
         </div>

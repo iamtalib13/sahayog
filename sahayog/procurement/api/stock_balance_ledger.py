@@ -539,6 +539,26 @@ def get_item_quantities_for_warehouse(warehouse=None):
     return {bin.item_code: bin.qty for bin in bins}
 
 @frappe.whitelist()
+def get_user_inventory_type():
+    """
+    Fetch the inventory_type for the current user from Sahayog Settings (wh_dept_map table).
+    This bypasses the need for full permission to the Sahayog Settings DocType.
+    """
+    user = frappe.session.user
+    
+    # Get the child table entries from Sahayog Settings
+    # Using frappe.get_doc("Sahayog Settings") directly as it's a Single DocType
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        for row in settings.wh_dept_map:
+            if row.user_id == user:
+                return row.inventory_type
+    except Exception as e:
+        frappe.log_error(f"Error in get_user_inventory_type: {str(e)}")
+    
+    return None
+
+@frappe.whitelist()
 def get_warehouse_company(warehouse):
     """
     Returns the company linked to a specific warehouse.
