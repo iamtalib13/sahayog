@@ -81,9 +81,34 @@ frappe.ui.form.on('Approval Approver', {
             frappe.model.set_value(cdt, cdn, 'approver_name', '');
             return;
         }
-        frappe.db.get_value('User', row.approver, 'full_name').then(r => {
-            frappe.model.set_value(cdt, cdn, 'approver_name', r.message?.full_name || '');
-        });
+
+        // Fetch Employee Company Email and Full Name
+        frappe.db.get_value('Employee', { 'user_id': row.approver }, ['employee_name', 'company_email'])
+            .then(r => {
+                if (r.message) {
+                    if (!r.message.company_email) {
+                        frappe.model.set_value(cdt, cdn, 'approver', '');
+                        frappe.model.set_value(cdt, cdn, 'approver_name', '');
+                        frappe.msgprint({
+                            title: __('Missing Email'),
+                            indicator: 'red',
+                            message: __('The selected approver (Employee: {0}) does not have a <b>Company Email</b>. Please update their Employee record before selecting them as an approver.', [r.message.employee_name])
+                        });
+                    } else {
+                        frappe.model.set_value(cdt, cdn, 'approver_name', r.message.employee_name || '');
+                    }
+                } else {
+                    // Fallback to User if no Employee record found, but still require an email
+                    frappe.db.get_value('User', row.approver, 'email').then(u => {
+                        if (u.message && !u.message.email) {
+                            frappe.model.set_value(cdt, cdn, 'approver', '');
+                            frappe.msgprint(__('Selected User does not have an Email Address.'));
+                        } else {
+                            frappe.model.set_value(cdt, cdn, 'approver_name', u.message?.full_name || row.approver);
+                        }
+                    });
+                }
+            });
     },
     group_email: function(frm, cdt, cdn) {
         let row = locals[cdt][cdn];
