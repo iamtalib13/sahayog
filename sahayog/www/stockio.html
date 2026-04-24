@@ -3279,7 +3279,7 @@
           v-show="!showDetailView || activeItem === 'Items'"
           v-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
           class="list-view-container"
-          :style="(activeItem === 'Items' && showDetailView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
+          :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
           <!-- Analytics Dashboard -->
           <div
