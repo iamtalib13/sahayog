@@ -6718,11 +6718,18 @@
               let filteredItems = section.items;
 
               // Filter based on inventory_type for non-admins
-              if (!this.isAdmin && (type === "Asset" || !type)) {
-                // If Asset or No Match, only show Requests
-                filteredItems = filteredItems.filter(
-                  (item) => item.label === "Requests",
-                );
+              if (!this.isAdmin) {
+                if (type === "Asset") {
+                  // If Asset, show Requests and Items
+                  filteredItems = filteredItems.filter((item) =>
+                    ["Requests", "Items"].includes(item.label),
+                  );
+                } else if (!type) {
+                  // If No Match, only show Requests
+                  filteredItems = filteredItems.filter(
+                    (item) => item.label === "Requests",
+                  );
+                }
               }
 
               // Apply existing Outward permission logic
