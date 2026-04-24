@@ -2133,8 +2133,10 @@
               class="btn-create"
               style="width: 100%; justify-content: center"
               @click="submitUse()"
+              :disabled="useForm.loading"
             >
-              <span>Proceed to Use</span>
+              <i class="fas fa-spinner fa-spin" v-if="useForm.loading"></i>
+              <span v-else>Proceed to Use</span>
             </button>
           </div>
         </div>
@@ -7832,20 +7834,38 @@
 
         this.showBranchStockUseView = true;
       },
-      submitUse() {
+      async submitUse() {
         if (this.useForm.items.length === 0) return;
+        this.useForm.loading = true;
 
-        // Implementation of item usage logic
-        const itemsList = this.useForm.items
-          .map((i) => `${i.item_code} (${i.use_qty})`)
-          .join(", ");
-        frappe.show_alert({
-          message: `Using ${this.useForm.items.length} items: ${itemsList}`,
-          indicator: "green",
-        });
+        try {
+          const res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.create_material_issue",
+            args: {
+              items: JSON.stringify(this.useForm.items),
+              warehouse:
+                this.userWarehouse ||
+                (this.useForm.items[0] && this.useForm.items[0].warehouse),
+            },
+          });
 
-        this.showBranchStockUseView = false;
-        this.selectedRows = [];
+          if (res.message) {
+            frappe.show_alert({
+              message: `Stock Entry ${res.message} created successfully`,
+              indicator: "green",
+            });
+            this.showBranchStockUseView = false;
+            this.selectedRows = [];
+            // Refresh data
+            await this.fetchData("Branch Stock");
+          }
+        } catch (e) {
+          console.error("Error creating stock entry:", e);
+          frappe.msgprint("Failed to create Stock Entry. Please check stock levels.");
+        } finally {
+          this.useForm.loading = false;
+        }
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
