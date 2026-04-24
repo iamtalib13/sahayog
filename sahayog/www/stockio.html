@@ -811,6 +811,13 @@
             :class="{ rotated: showUserMenu }"
           ></i>
         </div>
+        <div
+          class="collapsed-nav-label"
+          v-if="sidebarCollapsed"
+          style="font-weight: 800; opacity: 1"
+        >
+          [[ sidebar.header.title ]]
+        </div>
       </div>
 
       <!-- User Dropdown -->
@@ -854,6 +861,9 @@
             <div class="label-area" v-if="!sidebarCollapsed">
               <span class="nav-label">[[ item.label ]]</span>
             </div>
+            <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+              [[ item.label ]]
+            </div>
           </div>
         </div>
       </div>
@@ -872,6 +882,9 @@
             >[[ currentTheme === 'light' ? 'Dark Mode' : 'Light Mode' ]]</span
           >
         </div>
+        <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+          [[ currentTheme === 'light' ? 'Dark' : 'Light' ]]
+        </div>
       </div>
       <div
         class="nav-item collapse-toggle"
@@ -882,6 +895,9 @@
         </div>
         <div class="label-area" v-if="!sidebarCollapsed">
           <span class="nav-label">Collapse</span>
+        </div>
+        <div class="collapsed-nav-label" v-if="sidebarCollapsed">
+          Expand
         </div>
       </div>
     </div>
@@ -4435,7 +4451,7 @@
     --border-color: var(--gray-200);
 
     --sidebar-width: 240px;
-    --sidebar-collapsed-width: 68px;
+    --sidebar-collapsed-width: 80px;
     --header-height: 64px;
 
     --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -4675,9 +4691,29 @@
     color: var(--gray-600);
   }
 
+  .sidebar.collapsed .user-profile,
   .sidebar.collapsed .nav-item {
     justify-content: center;
-    padding: 8px 0;
+    align-items: center;
+    padding: 12px 4px;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 64px;
+    margin: 4px 8px;
+  }
+
+  .collapsed-nav-label {
+    font-size: 9px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    color: inherit;
+    font-weight: 500;
+    opacity: 0.85;
+    display: block;
+    line-height: 1;
   }
 
   [data-theme="dark"] .nav-item {
