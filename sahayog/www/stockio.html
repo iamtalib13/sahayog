@@ -6564,6 +6564,7 @@
       itemView: "list",
       userWarehouse: null,
       userEmployeeId: null,
+      userInventoryType: null,
       itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
@@ -6646,17 +6647,60 @@
       get computedSidebarSections() {
         const allowedOutward =
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
-        return this.sidebar.sections.map((section) => {
-          if (section.label === "Inventory") {
-            return {
-              ...section,
-              items: section.items.filter(
+
+        const type = this.userInventoryType;
+
+        return this.sidebar.sections
+          .filter((section) => {
+            // Admin sees everything
+            if (this.isAdmin) return true;
+
+            // General Section is always shown
+            if (section.label === "General") return true;
+
+            // Assets Section logic
+            if (section.label === "Assets") {
+              return type === "Asset" || type === "Stationery & Asset";
+            }
+
+            // Reports Section logic
+            if (section.label === "Reports") {
+              return (
+                type === "Stationery" ||
+                type === "Asset" ||
+                type === "Stationery & Asset"
+              );
+            }
+
+            // Inventory Section is always shown (but items are filtered below)
+            if (section.label === "Inventory") return true;
+
+            return true;
+          })
+          .map((section) => {
+            if (section.label === "Inventory") {
+              let filteredItems = section.items;
+
+              // Filter based on inventory_type for non-admins
+              if (!this.isAdmin && (type === "Asset" || !type)) {
+                // If Asset or No Match, only show Requests
+                filteredItems = filteredItems.filter(
+                  (item) => item.label === "Requests",
+                );
+              }
+
+              // Apply existing Outward permission logic
+              filteredItems = filteredItems.filter(
                 (item) => item.label !== "Outward" || allowedOutward,
-              ),
-            };
-          }
-          return section;
-        });
+              );
+
+              return {
+                ...section,
+                items: filteredItems,
+              };
+            }
+            return section;
+          });
       },
 
       // Searchable select filtered options
@@ -6779,6 +6823,13 @@
           console.warn("Warehouse fetch failed:", e);
         }
 
+        // Fetch user's Inventory Type
+        try {
+          await this.fetchUserInventoryType();
+        } catch (e) {
+          console.warn("Inventory type fetch failed:", e);
+        }
+
         // Fetch user's Employee ID
         try {
           const empRes = await frappe.call({
@@ -6860,6 +6911,20 @@
           }
         } catch (e) {
           console.error("Error fetching user warehouse:", e);
+        }
+      },
+
+      async fetchUserInventoryType() {
+        try {
+          const res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.get_user_inventory_type",
+          });
+          if (res.message) {
+            this.userInventoryType = res.message;
+          }
+        } catch (e) {
+          console.error("Error fetching user inventory type:", e);
         }
       },
 
