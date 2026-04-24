@@ -6708,21 +6708,28 @@
               );
             }
 
-            // Inventory Section is always shown (but items are filtered below)
+            // Inventory Section logic
             if (section.label === "Inventory") return true;
 
             return true;
           })
           .map((section) => {
+            let newSection = { ...section };
+
             if (section.label === "Inventory") {
+              // Relabel to Requests if type is Asset
+              if (!this.isAdmin && type === "Asset") {
+                newSection.label = "Requests";
+              }
+
               let filteredItems = section.items;
 
               // Filter based on inventory_type for non-admins
               if (!this.isAdmin) {
                 if (type === "Asset") {
-                  // If Asset, show Requests and Items
-                  filteredItems = filteredItems.filter((item) =>
-                    ["Requests", "Items"].includes(item.label),
+                  // If Asset, only show Requests in this section (Items moved to Assets)
+                  filteredItems = filteredItems.filter(
+                    (item) => item.label === "Requests",
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
@@ -6737,12 +6744,21 @@
                 (item) => item.label !== "Outward" || allowedOutward,
               );
 
-              return {
-                ...section,
-                items: filteredItems,
-              };
+              newSection.items = filteredItems;
             }
-            return section;
+
+            if (section.label === "Assets" && !this.isAdmin && type === "Asset") {
+              // Move "Items" to Assets section below "Movements"
+              const itemsObj = this.sidebar.sections
+                .find((s) => s.label === "Inventory")
+                .items.find((i) => i.label === "Items");
+
+              if (itemsObj && !newSection.items.find((i) => i.label === "Items")) {
+                newSection.items = [...newSection.items, itemsObj];
+              }
+            }
+
+            return newSection;
           });
       },
 
