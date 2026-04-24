@@ -3676,8 +3676,8 @@
                 style="margin-left: auto; background: var(--primary-color); border-color: var(--primary-color);"
                 @click="handleUse(null)"
               >
-                <i class="fas fa-hand-pointer"></i>
-                <span>Use ([[ selectedRows.length ]])</span>
+                <i class="fas" :class="showBranchStockUseView ? 'fa-plus' : 'fa-hand-pointer'"></i>
+                <span>[[ showBranchStockUseView ? 'Add to List' : 'Use' ]] ([[ selectedRows.length ]])</span>
               </button>
             </div>
           </div>
@@ -7823,16 +7823,30 @@
       handleUse(row) {
         if (!row && this.selectedRows.length === 0) return;
 
+        let newItems = [];
         if (this.selectedRows.length > 0) {
           // Filter the actual row data for selected names
-          this.useForm.items = this.rows
+          newItems = this.rows
             .filter((r) => this.selectedRows.includes(r.name))
             .map((r) => ({ ...r, use_qty: 1 }));
         } else {
-          this.useForm.items = [{ ...row, use_qty: 1 }];
+          newItems = [{ ...row, use_qty: 1 }];
+        }
+
+        if (this.showBranchStockUseView) {
+          // Append only items that are not already in the list
+          const existingNames = this.useForm.items.map((i) => i.name);
+          const uniqueNewItems = newItems.filter(
+            (ni) => !existingNames.includes(ni.name),
+          );
+          this.useForm.items = [...this.useForm.items, ...uniqueNewItems];
+        } else {
+          this.useForm.items = newItems;
         }
 
         this.showBranchStockUseView = true;
+        // Clear selection and uncheck checkboxes
+        this.selectedRows = [];
       },
       async submitUse() {
         if (this.useForm.items.length === 0) return;
