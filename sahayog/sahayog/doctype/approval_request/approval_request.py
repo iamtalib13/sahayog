@@ -246,7 +246,18 @@ def get_permission_query_conditions(user):
     escaped_users = ", ".join([frappe.db.escape(u) for u in allowed_users])
     escaped_user = frappe.db.escape(user)
 
-    # Creator sees their own docs. Approvers/Managers see docs ONLY if not Draft.
+    # Creator sees their own docs. Approvers/Managers/Group Members see docs ONLY if not Draft.
+    
+    # Get Employee Groups this user belongs to
+    user_employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    group_filters = ["''"] # Start with empty to avoid SQL error
+    if user_employee:
+        groups = frappe.get_all("Employee Group Table", filters={"employee": user_employee}, fields=["parent"])
+        for g in groups:
+            group_filters.append(frappe.db.escape(g.parent))
+    
+    group_condition = ", ".join(group_filters)
+
     return f"""(
         `tabApproval Request`.owner = {escaped_user}
         OR (
@@ -254,7 +265,7 @@ def get_permission_query_conditions(user):
             AND `tabApproval Request`.name IN (
                 SELECT parent FROM `tabApproval Approver` 
                 WHERE parenttype='Approval Request' 
-                AND approver IN ({escaped_users})
+                AND (approver IN ({escaped_users}) OR group_email IN ({group_condition}))
             )
         )
     )"""
