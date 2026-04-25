@@ -388,12 +388,14 @@ frappe.ui.form.on('Approval Request', {
                         let reject_btn = frm.page.add_inner_button(__('Reject'), () => prompt_remark(frm, 'Rejected'));
                         reject_btn.removeClass('btn-default').addClass('btn-danger').css({'color': 'white', 'font-weight': 'bold'});
 
-                        let delegate_btn = frm.page.add_inner_button(__('Delegate'), () => prompt_delegate(frm));
-                        delegate_btn.removeClass('btn-default').addClass('btn-info').css({'color': 'white', 'font-weight': 'bold'});
+                        if (r.message.can_delegate) {
+                            let delegate_btn = frm.page.add_inner_button(__('Delegate'), () => prompt_delegate(frm));
+                            delegate_btn.removeClass('btn-default').addClass('btn-info').css({'color': 'white', 'font-weight': 'bold'});
 
-                        if (!r.message.is_last) {
-                            let bypass_btn = frm.page.add_inner_button(__('Bypass'), () => prompt_bypass(frm));
-                            bypass_btn.removeClass('btn-default').addClass('btn-warning').css({'color': 'white', 'font-weight': 'bold'});
+                            if (!r.message.is_last) {
+                                let bypass_btn = frm.page.add_inner_button(__('Bypass'), () => prompt_bypass(frm));
+                                bypass_btn.removeClass('btn-default').addClass('btn-warning').css({'color': 'white', 'font-weight': 'bold'});
+                            }
                         }
                     }
                 }
@@ -452,7 +454,8 @@ frappe.ui.form.on('Approval Request', {
                 label: label,
                 sublabel: sublabel,
                 user: row.selection_type === 'User' ? row.approver : row.group_email,
-                is_bypassed: row.is_bypassed
+                is_bypassed: row.is_bypassed,
+                is_delegated: !!row.delegated_to
             });
 
             if (row.is_bypassed) continue;
@@ -525,7 +528,9 @@ frappe.ui.form.on('Approval Request', {
         }
 
         if (frm.doc.approval_status === 'Pending Approval') {
-            active_index = 1;
+            // Find the first approver (index > 0) who is NOT bypassed AND NOT delegated away
+            const first_pending = checkpoints.findIndex((c, i) => i > 0 && !c.is_bypassed && !c.is_delegated);
+            active_index = first_pending >= 0 ? first_pending : 1;
             status_label = 'Pending Approval';
             status_class = 'status-pending';
         } else if (frm.doc.approval_status === 'Approved') {

@@ -93,7 +93,7 @@ def get_all_valid_approvers(doc):
 @frappe.whitelist()
 def is_valid_approver(docname):
     """Called by JS to see if current user is an approver or manager.
-    Returns: { "is_valid": True/False, "is_last": True/False }
+    Returns: { "is_valid": True/False, "is_last": True/False, "can_delegate": True/False }
     """
     doc = frappe.get_doc("Approval Request", docname)
     valid_approvers = get_all_valid_approvers(doc)
@@ -101,16 +101,33 @@ def is_valid_approver(docname):
     is_valid = current_user in valid_approvers
     
     is_last = False
+    can_delegate = False
+    
     if is_valid:
         active_rows = [d for d in doc.approvers if not d.is_bypassed]
         
         if not active_rows:
             is_last = True
+            can_delegate = (current_user == "Administrator")
         else:
-            # Bypass logic: Only allowed if there is at least one row AFTER the user's row.
-            # So if you are in the last active row, you are 'is_last' for bypass purposes.
+            # Check if user is a direct participant in ANY active row to allow delegation/bypass
+            for row in active_rows:
+                is_direct = (row.selection_type == "User" and (row.approver == current_user or row.delegated_to == current_user))
+                is_group_member = False
+                if row.selection_type == "Group":
+                    if row.delegated_to == current_user:
+                        is_group_member = True
+                    else:
+                        user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
+                        if user_emp and frappe.db.exists("Employee Group Table", {"parent": row.group_email, "employee": user_emp}):
+                            is_group_member = True
+                
+                if is_direct or is_group_member or current_user == "Administrator":
+                    can_delegate = True
+                    break
+
+            # Bypass logic: Check if current user is in the LAST active row
             last_row = active_rows[-1]
-            
             user_in_last_row = False
             if last_row.selection_type == "User" and (last_row.approver == current_user or last_row.delegated_to == current_user):
                 user_in_last_row = True
@@ -122,15 +139,12 @@ def is_valid_approver(docname):
                     if user_emp and frappe.db.exists("Employee Group Table", {"parent": last_row.group_email, "employee": user_emp}):
                         user_in_last_row = True
             
-            # Also check if user is the manager of the last row's approver
+            # Also check if user is the manager of the last row's approver (Managers are considered "in the last row" for bypass restriction)
             if not user_in_last_row and last_row.selection_type == "User":
-                # Check original manager
                 emp = frappe.db.get_value("Employee", {"user_id": last_row.approver}, "reports_to")
                 if emp:
                     mgr = frappe.db.get_value("Employee", emp, "user_id")
                     if mgr == current_user: user_in_last_row = True
-                
-                # Check delegate's manager
                 if not user_in_last_row and last_row.delegated_to:
                     d_emp = frappe.db.get_value("Employee", {"user_id": last_row.delegated_to}, "reports_to")
                     if d_emp:
@@ -140,7 +154,7 @@ def is_valid_approver(docname):
             if user_in_last_row:
                 is_last = True
 
-    return {"is_valid": is_valid, "is_last": is_last}
+    return {"is_valid": is_valid, "is_last": is_last, "can_delegate": can_delegate}
 
 
 @frappe.whitelist()
