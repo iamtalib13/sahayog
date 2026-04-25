@@ -97,38 +97,48 @@ def is_valid_approver(docname):
     """
     doc = frappe.get_doc("Approval Request", docname)
     valid_approvers = get_all_valid_approvers(doc)
-    is_valid = frappe.session.user in valid_approvers
+    current_user = frappe.session.user
+    is_valid = current_user in valid_approvers
     
-    # Check if this user is ONLY in the last active (non-bypassed) row
     is_last = False
     if is_valid:
         active_rows = [d for d in doc.approvers if not d.is_bypassed]
-        if active_rows:
+        
+        if not active_rows:
+            is_last = True
+        else:
+            # Bypass logic: Only allowed if there is at least one row AFTER the user's row.
+            # So if you are in the last active row, you are 'is_last' for bypass purposes.
             last_row = active_rows[-1]
-            # If current user is in last_row but NOT in any previous active rows
-            user_in_last = False
-            if last_row.selection_type == "User" and (last_row.approver == frappe.session.user or last_row.delegated_to == frappe.session.user):
-                user_in_last = True
-            elif last_row.selection_type == "Group":
-                user_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-                if user_emp and frappe.db.exists("Employee Group Table", {"parent": last_row.group_email, "employee": user_emp}):
-                    user_in_last = True
-                if last_row.delegated_to == frappe.session.user:
-                    user_in_last = True
             
-            if user_in_last:
-                # Check previous rows
-                user_in_previous = False
-                for prev_row in active_rows[:-1]:
-                    if prev_row.selection_type == "User" and (prev_row.approver == frappe.session.user or prev_row.delegated_to == frappe.session.user):
-                        user_in_previous = True; break
-                    elif prev_row.selection_type == "Group":
-                        user_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-                        if (user_emp and frappe.db.exists("Employee Group Table", {"parent": prev_row.group_email, "employee": user_emp})) or prev_row.delegated_to == frappe.session.user:
-                            user_in_previous = True; break
+            user_in_last_row = False
+            if last_row.selection_type == "User" and (last_row.approver == current_user or last_row.delegated_to == current_user):
+                user_in_last_row = True
+            elif last_row.selection_type == "Group":
+                if last_row.delegated_to == current_user:
+                    user_in_last_row = True
+                else:
+                    user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
+                    if user_emp and frappe.db.exists("Employee Group Table", {"parent": last_row.group_email, "employee": user_emp}):
+                        user_in_last_row = True
+            
+            # Also check if user is the manager of the last row's approver
+            if not user_in_last_row and last_row.selection_type == "User":
+                # Check original manager
+                emp = frappe.db.get_value("Employee", {"user_id": last_row.approver}, "reports_to")
+                if emp:
+                    mgr = frappe.db.get_value("Employee", emp, "user_id")
+                    if mgr == current_user: user_in_last_row = True
                 
-                if not user_in_previous:
-                    is_last = True
+                # Check delegate's manager
+                if not user_in_last_row and last_row.delegated_to:
+                    d_emp = frappe.db.get_value("Employee", {"user_id": last_row.delegated_to}, "reports_to")
+                    if d_emp:
+                        d_mgr = frappe.db.get_value("Employee", d_emp, "user_id")
+                        if d_mgr == current_user: user_in_last_row = True
+
+            if user_in_last_row:
+                is_last = True
 
     return {"is_valid": is_valid, "is_last": is_last}
 
