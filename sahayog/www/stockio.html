@@ -921,7 +921,7 @@
           class="page-title"
           v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView"
         >
-          [[ activeItem ]]
+          [[ activeItem ]] [[ activeItem === 'Branch Stock' && userWarehouse ? '(' + userWarehouse + ')' : '' ]]
         </h1>
         <h1
           class="page-title"
@@ -937,12 +937,12 @@
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null)"
+            :class="detailRecord ? getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null) : ''"
           >
-            [[ activeItem === 'Requests' ? (currentView.columns.find(c => c.key
+            [[ detailRecord ? (activeItem === 'Requests' ? (currentView.columns.find(c => c.key
             === 'status')?.getValue?.(detailRecord) ||
             getBadgeText(detailRecord, 'status')) : getBadgeText(detailRecord,
-            detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')
+            detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status')) : ''
             ]]
           </span>
         </h1>
@@ -2133,8 +2133,10 @@
               class="btn-create"
               style="width: 100%; justify-content: center"
               @click="submitUse()"
+              :disabled="useForm.loading"
             >
-              <span>Proceed to Use</span>
+              <i class="fas fa-spinner fa-spin" v-if="useForm.loading"></i>
+              <span v-else>Proceed to Use</span>
             </button>
           </div>
         </div>
@@ -2575,7 +2577,7 @@
                             Status
                           </th>
                           <th
-                            v-if="detailRecord.status === 'Approved'"
+                            v-if="detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="
                               padding: 10px 12px !important;
                               font-size: 0.75rem !important;
@@ -2762,7 +2764,7 @@
                             </span>
                           </td>
                           <td
-                            v-if="detailRecord.status === 'Approved'"
+                            v-if="detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="padding: 10px 12px !important"
                           >
                             <div
@@ -3279,7 +3281,7 @@
           v-show="!showDetailView || activeItem === 'Items'"
           v-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
           class="list-view-container"
-          :style="(activeItem === 'Items' && showDetailView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
+          :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
           <!-- Analytics Dashboard -->
           <div
@@ -3572,6 +3574,7 @@
                   <input
                     type="checkbox"
                     :checked="selectedRows.includes(row.name)"
+                    @change="toggleRowSelection(row.name)"
                     @click.stop
                   />
                 </div>
@@ -3673,8 +3676,8 @@
                 style="margin-left: auto; background: var(--primary-color); border-color: var(--primary-color);"
                 @click="handleUse(null)"
               >
-                <i class="fas fa-hand-pointer"></i>
-                <span>Use ([[ selectedRows.length ]])</span>
+                <i class="fas" :class="showBranchStockUseView ? 'fa-plus' : 'fa-hand-pointer'"></i>
+                <span>[[ showBranchStockUseView ? 'Add to List' : 'Use' ]] ([[ selectedRows.length ]])</span>
               </button>
             </div>
           </div>
@@ -7115,7 +7118,10 @@
             });
 
             if (res.message) {
-              const data = res.message.data || [];
+              const data = (res.message.data || []).map((row) => ({
+                ...row,
+                name: row.name || `${row.item_code}-${row.warehouse}`,
+              }));
               if (append) {
                 this.rows = this.rows.concat(data);
               } else {
@@ -7817,31 +7823,63 @@
       handleUse(row) {
         if (!row && this.selectedRows.length === 0) return;
 
+        let newItems = [];
         if (this.selectedRows.length > 0) {
           // Filter the actual row data for selected names
-          this.useForm.items = this.rows
+          newItems = this.rows
             .filter((r) => this.selectedRows.includes(r.name))
             .map((r) => ({ ...r, use_qty: 1 }));
         } else {
-          this.useForm.items = [{ ...row, use_qty: 1 }];
+          newItems = [{ ...row, use_qty: 1 }];
+        }
+
+        if (this.showBranchStockUseView) {
+          // Append only items that are not already in the list
+          const existingNames = this.useForm.items.map((i) => i.name);
+          const uniqueNewItems = newItems.filter(
+            (ni) => !existingNames.includes(ni.name),
+          );
+          this.useForm.items = [...this.useForm.items, ...uniqueNewItems];
+        } else {
+          this.useForm.items = newItems;
         }
 
         this.showBranchStockUseView = true;
-      },
-      submitUse() {
-        if (this.useForm.items.length === 0) return;
-
-        // Implementation of item usage logic
-        const itemsList = this.useForm.items
-          .map((i) => `${i.item_code} (${i.use_qty})`)
-          .join(", ");
-        frappe.show_alert({
-          message: `Using ${this.useForm.items.length} items: ${itemsList}`,
-          indicator: "green",
-        });
-
-        this.showBranchStockUseView = false;
+        // Clear selection and uncheck checkboxes
         this.selectedRows = [];
+      },
+      async submitUse() {
+        if (this.useForm.items.length === 0) return;
+        this.useForm.loading = true;
+
+        try {
+          const res = await frappe.call({
+            method:
+              "sahayog.procurement.api.stock_balance_ledger.create_material_issue",
+            args: {
+              items: JSON.stringify(this.useForm.items),
+              warehouse:
+                this.userWarehouse ||
+                (this.useForm.items[0] && this.useForm.items[0].warehouse),
+            },
+          });
+
+          if (res.message) {
+            frappe.show_alert({
+              message: `Stock Entry ${res.message} created successfully`,
+              indicator: "green",
+            });
+            this.showBranchStockUseView = false;
+            this.selectedRows = [];
+            // Refresh data
+            await this.fetchData("Branch Stock");
+          }
+        } catch (e) {
+          console.error("Error creating stock entry:", e);
+          frappe.msgprint("Failed to create Stock Entry. Please check stock levels.");
+        } finally {
+          this.useForm.loading = false;
+        }
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
@@ -8387,9 +8425,14 @@
 
       closeDetailView() {
         this.showDetailView = false;
-        this.detailRecord = null;
-        this.detailFields = [];
-        this.comments = [];
+        // Delay nullifying to prevent UI errors during transition
+        setTimeout(() => {
+          if (!this.showDetailView) {
+            this.detailRecord = null;
+            this.detailFields = [];
+            this.comments = [];
+          }
+        }, 200);
       },
 
       async fetchComments(name) {
