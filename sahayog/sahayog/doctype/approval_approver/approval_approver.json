@@ -9,7 +9,9 @@
   "selection_type",
   "approver",
   "group_email",
-  "approver_name"
+  "approver_name",
+  "delegated_to",
+  "is_bypassed"
  ],
  "fields": [
   {
@@ -43,6 +45,20 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Approver Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delegated_to",
+   "fieldtype": "Link",
+   "label": "Delegated To",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_bypassed",
+   "fieldtype": "Check",
+   "label": "Is Bypassed",
    "read_only": 1
   }
  ],
