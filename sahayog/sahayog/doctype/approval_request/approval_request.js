@@ -178,6 +178,68 @@ function prompt_remark(frm, action) {
     }, `Confirm ${action}`, 'Submit');
 }
 
+function prompt_delegate(frm) {
+    frappe.prompt([
+        {
+            label: 'Delegate To',
+            fieldname: 'delegate_user',
+            fieldtype: 'Link',
+            options: 'User',
+            reqd: 1
+        },
+        {
+            label: 'Remark',
+            fieldname: 'remark',
+            fieldtype: 'Small Text',
+            reqd: 1
+        }
+    ], function(values) {
+        frappe.call({
+            method: 'sahayog.sahayog.doctype.approval_request.approval_request.delegate_approval',
+            args: {
+                docname: frm.doc.name,
+                delegate_user: values.delegate_user,
+                remark: values.remark
+            },
+            freeze: true,
+            freeze_message: 'Delegating...',
+            callback: function(r) {
+                if (!r.exc) {
+                    frappe.show_alert({message: 'Approval Delegated Successfully', indicator: 'green'});
+                    frm.reload_doc();
+                }
+            }
+        });
+    }, 'Delegate Approval', 'Submit');
+}
+
+function prompt_bypass(frm) {
+    frappe.prompt([
+        {
+            label: 'Remark',
+            fieldname: 'remark',
+            fieldtype: 'Small Text',
+            reqd: 1
+        }
+    ], function(values) {
+        frappe.call({
+            method: 'sahayog.sahayog.doctype.approval_request.approval_request.bypass_approval',
+            args: {
+                docname: frm.doc.name,
+                remark: values.remark
+            },
+            freeze: true,
+            freeze_message: 'Bypassing...',
+            callback: function(r) {
+                if (!r.exc) {
+                    frappe.show_alert({message: 'Approval Level Bypassed', indicator: 'green'});
+                    frm.reload_doc();
+                }
+            }
+        });
+    }, 'Bypass Approval Level', 'Submit');
+}
+
 // --- Main Document Events ---
 frappe.ui.form.on('Approval Request', {
     setup: function(frm) {
@@ -319,12 +381,20 @@ frappe.ui.form.on('Approval Request', {
                 method: 'sahayog.sahayog.doctype.approval_request.approval_request.is_valid_approver',
                 args: { docname: frm.doc.name },
                 callback: function(r) {
-                    if (r.message) {
+                    if (r.message && r.message.is_valid) {
                         let approve_btn = frm.page.add_inner_button(__('Approve'), () => prompt_remark(frm, 'Approved'));
                         approve_btn.removeClass('btn-default').addClass('btn-success').css({'color': 'white', 'font-weight': 'bold'});
                            
                         let reject_btn = frm.page.add_inner_button(__('Reject'), () => prompt_remark(frm, 'Rejected'));
                         reject_btn.removeClass('btn-default').addClass('btn-danger').css({'color': 'white', 'font-weight': 'bold'});
+
+                        let delegate_btn = frm.page.add_inner_button(__('Delegate'), () => prompt_delegate(frm));
+                        delegate_btn.removeClass('btn-default').addClass('btn-info').css({'color': 'white', 'font-weight': 'bold'});
+
+                        if (!r.message.is_last) {
+                            let bypass_btn = frm.page.add_inner_button(__('Bypass'), () => prompt_bypass(frm));
+                            bypass_btn.removeClass('btn-default').addClass('btn-warning').css({'color': 'white', 'font-weight': 'bold'});
+                        }
                     }
                 }
             });
@@ -368,13 +438,54 @@ frappe.ui.form.on('Approval Request', {
         let level_counter = 2;
 
         for (const row of approvers) {
-            checkpoints.push({
-                label: row.approver_name || (row.selection_type === 'User' ? row.approver : row.group_email),
-                user: row.selection_type === 'User' ? row.approver : row.group_email
-            });
-            level_counter++;
+            let label = frappe.utils.escape_html(row.approver_name || (row.selection_type === 'User' ? row.approver : row.group_email));
+            let sublabel = frappe.utils.escape_html(row.selection_type);
+            
+            if (row.is_bypassed) {
+                label = `<s>${label}</s>`;
+                sublabel = '<span style="color: #f59e0b; font-weight: bold;">Bypassed</span>';
+            } else if (row.delegated_to) {
+                sublabel = '<span style="color: #64748b; font-style: italic;">Delegated Task</span>';
+            }
 
-            if (row.selection_type === 'User') {
+            checkpoints.push({
+                label: label,
+                sublabel: sublabel,
+                user: row.selection_type === 'User' ? row.approver : row.group_email,
+                is_bypassed: row.is_bypassed
+            });
+
+            if (row.is_bypassed) continue;
+
+            // If Delegated, show Delegate and their Manager
+            if (row.delegated_to) {
+                let d_info = frappe.user_info(row.delegated_to);
+                let d_name = d_info.fullname || row.delegated_to;
+                if (!d_info.fullname) {
+                    let res = await frappe.db.get_value('User', row.delegated_to, 'full_name');
+                    if (res && res.message) d_name = res.message.full_name;
+                }
+
+                checkpoints.push({
+                    label: frappe.utils.escape_html(d_name),
+                    sublabel: '<span style="color: #3b82f6; font-weight: 600;">Delegate</span>',
+                    user: row.delegated_to
+                });
+
+                // Delegate's Manager
+                let d_emp = await frappe.db.get_value('Employee', { user_id: row.delegated_to }, ['reports_to']);
+                if (d_emp && d_emp.message && d_emp.message.reports_to) {
+                    let d_mgr = await frappe.db.get_value('Employee', d_emp.message.reports_to, ['employee_name', 'user_id']);
+                    if (d_mgr && d_mgr.message) {
+                        checkpoints.push({
+                            label: frappe.utils.escape_html(d_mgr.message.employee_name || d_mgr.message.name),
+                            sublabel: 'Delegate Manager',
+                            user: d_mgr.message.user_id || d_mgr.message.name
+                        });
+                    }
+                }
+            } else if (row.selection_type === 'User') {
+                // Original Manager
                 let approver_emp = await frappe.db.get_value(
                     'Employee',
                     { user_id: row.approver },
@@ -390,10 +501,10 @@ frappe.ui.form.on('Approval Request', {
 
                     if (manager_emp && manager_emp.message) {
                         checkpoints.push({
-                            label: manager_emp.message.employee_name || manager_emp.message.name,
+                            label: frappe.utils.escape_html(manager_emp.message.employee_name || manager_emp.message.name),
+                            sublabel: 'Manager',
                             user: manager_emp.message.user_id || manager_emp.message.name
                         });
-                        level_counter++;
                     }
                 }
             }
@@ -418,12 +529,12 @@ frappe.ui.form.on('Approval Request', {
             status_label = 'Pending Approval';
             status_class = 'status-pending';
         } else if (frm.doc.approval_status === 'Approved') {
-            const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
+            const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by || c.delegated_to === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : checkpoints.length - 1;
             status_label = `Approved by ${acted_by_name}`;
             status_class = 'status-approved';
         } else if (frm.doc.approval_status === 'Rejected') {
-            const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by);
+            const acted_index = checkpoints.findIndex(c => c.user === frm.doc.acted_by || c.delegated_to === frm.doc.acted_by);
             active_index = acted_index >= 0 ? acted_index : 1;
             status_label = `Rejected by ${acted_by_name}`;
             status_class = 'status-rejected';
@@ -458,8 +569,8 @@ frappe.ui.form.on('Approval Request', {
                 <div class="checkpoint-wrapper">
                     <div class="checkpoint-inner">
                         <div class="checkpoint-dot ${node_class}">${dot_content}</div>
-                        <div class="checkpoint-label">${frappe.utils.escape_html(item.label || '')}</div>
-                        <div class="checkpoint-sublabel">${frappe.utils.escape_html(item.sublabel || '')}</div>
+                        <div class="checkpoint-label">${item.label || ''}</div>
+                        <div class="checkpoint-sublabel">${item.sublabel || ''}</div>
                     </div>
                     ${!is_last ? `<div class="connector ${connector_class}"></div>` : ''}
                 </div>
