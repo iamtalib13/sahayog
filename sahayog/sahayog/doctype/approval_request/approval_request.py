@@ -42,7 +42,7 @@ def ensure_docshare(doc, user):
             "share_name": doc.name,
             "user": user,
             "read": 1,
-            "write": 0,
+            "write": 1,
             "submit": 0,
             "share": 0
         })
@@ -428,11 +428,11 @@ def has_permission(doc, ptype="read", user=None):
     if doc.approval_status != "Draft" and doc.get("approvers"):
         valid_approvers = get_all_valid_approvers(doc)
         if user in valid_approvers:
-            # Approvers can read, but they should not be able to 'write' (save) the core document
-            if ptype == "read":
+            # Approvers can read and share (for delegation), but only write when Pending Approval
+            if ptype in ["read", "share"]:
                 return True
             if ptype == "write":
-                # Only let them write if it is Pending Approval (so they can approve/reject)
+                # Only let them write if it is Pending Approval (so they can approve/reject/delegate)
                 return doc.approval_status == "Pending Approval"
 
     return False
