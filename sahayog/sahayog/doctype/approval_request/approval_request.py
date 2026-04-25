@@ -53,15 +53,25 @@ def get_all_valid_approvers(doc):
     """Returns a list of user_ids for direct approvers, group members, AND their reporting managers"""
     users = []
     for d in doc.approvers:
+        if d.is_bypassed:
+            continue
+
         if d.selection_type == "User" and d.approver:
             users.append(d.approver)
-            # Find the approver's Employee record and check reports_to
-            emp = frappe.db.get_value(
-                "Employee", {"user_id": d.approver}, "reports_to")
+            
+            # Add original manager
+            emp = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
             if emp:
                 manager_user = frappe.db.get_value("Employee", emp, "user_id")
-                if manager_user:
-                    users.append(manager_user)
+                if manager_user: users.append(manager_user)
+
+            if d.delegated_to:
+                users.append(d.delegated_to)
+                # Add delegate's manager
+                d_emp = frappe.db.get_value("Employee", {"user_id": d.delegated_to}, "reports_to")
+                if d_emp:
+                    d_manager_user = frappe.db.get_value("Employee", d_emp, "user_id")
+                    if d_manager_user: users.append(d_manager_user)
         
         elif d.selection_type == "Group" and d.group_email:
             # Fetch all employees from the Employee Group
@@ -73,19 +83,149 @@ def get_all_valid_approvers(doc):
                 user_id = frappe.db.get_value("Employee", member.employee, "user_id")
                 if user_id:
                     users.append(user_id)
-                    # Optionally add manager of each group member? 
-                    # Re-reading requirement: "group me mention members ko hi mail jaye"
-                    # So I will stick to just group members for now.
+            
+            if d.delegated_to:
+                users.append(d.delegated_to)
 
     return list(set(users))  # Remove duplicates
 
 
 @frappe.whitelist()
 def is_valid_approver(docname):
-    """Called by JS to see if current user is an approver or manager"""
+    """Called by JS to see if current user is an approver or manager.
+    Returns: { "is_valid": True/False, "is_last": True/False }
+    """
     doc = frappe.get_doc("Approval Request", docname)
     valid_approvers = get_all_valid_approvers(doc)
-    return frappe.session.user in valid_approvers
+    is_valid = frappe.session.user in valid_approvers
+    
+    # Check if this user is ONLY in the last active (non-bypassed) row
+    is_last = False
+    if is_valid:
+        active_rows = [d for d in doc.approvers if not d.is_bypassed]
+        if active_rows:
+            last_row = active_rows[-1]
+            # If current user is in last_row but NOT in any previous active rows
+            user_in_last = False
+            if last_row.selection_type == "User" and (last_row.approver == frappe.session.user or last_row.delegated_to == frappe.session.user):
+                user_in_last = True
+            elif last_row.selection_type == "Group":
+                user_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+                if user_emp and frappe.db.exists("Employee Group Table", {"parent": last_row.group_email, "employee": user_emp}):
+                    user_in_last = True
+                if last_row.delegated_to == frappe.session.user:
+                    user_in_last = True
+            
+            if user_in_last:
+                # Check previous rows
+                user_in_previous = False
+                for prev_row in active_rows[:-1]:
+                    if prev_row.selection_type == "User" and (prev_row.approver == frappe.session.user or prev_row.delegated_to == frappe.session.user):
+                        user_in_previous = True; break
+                    elif prev_row.selection_type == "Group":
+                        user_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+                        if (user_emp and frappe.db.exists("Employee Group Table", {"parent": prev_row.group_email, "employee": user_emp})) or prev_row.delegated_to == frappe.session.user:
+                            user_in_previous = True; break
+                
+                if not user_in_previous:
+                    is_last = True
+
+    return {"is_valid": is_valid, "is_last": is_last}
+
+
+@frappe.whitelist()
+def delegate_approval(docname, delegate_user, remark):
+    doc = frappe.get_doc("Approval Request", docname)
+    current_user = frappe.session.user
+
+    if doc.approval_status != "Pending Approval":
+        frappe.throw(f"Request must be in 'Pending Approval' status to delegate.")
+
+    # Find which row the current user is associated with
+    target_row = None
+    for d in doc.approvers:
+        if d.is_bypassed: continue
+        
+        is_direct = (d.selection_type == "User" and d.approver == current_user)
+        is_group_member = False
+        if d.selection_type == "Group" and d.group_email:
+            user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
+            if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
+                is_group_member = True
+        
+        if is_direct or is_group_member:
+            target_row = d
+            break
+    
+    if not target_row and current_user != "Administrator":
+        frappe.throw("You are not authorized to delegate this request.")
+    
+    if current_user == "Administrator" and not target_row:
+        # Admin can delegate any active row
+        for d in doc.approvers:
+            if not d.is_bypassed:
+                target_row = d
+                break
+
+    if not target_row:
+        frappe.throw("No active approver row found to delegate.")
+
+    frappe.flags.in_approval_action = True
+    try:
+        target_row.delegated_to = delegate_user
+        doc.add_comment("Comment", f"Approval delegated to {delegate_user} by {current_user}. Remark: {remark}")
+        doc.save(ignore_permissions=True)
+    finally:
+        frappe.flags.in_approval_action = False
+    
+    # Notify delegate
+    ensure_docshare(doc, delegate_user)
+    frappe.new_doc("Notification Log").update({
+        "subject": f"Approval Delegated to you: {doc.title}",
+        "for_user": delegate_user,
+        "document_type": doc.doctype,
+        "document_name": doc.name
+    }).insert(ignore_permissions=True)
+
+    return "Success"
+
+
+@frappe.whitelist()
+def bypass_approval(docname, remark):
+    doc = frappe.get_doc("Approval Request", docname)
+    current_user = frappe.session.user
+
+    if doc.approval_status != "Pending Approval":
+        frappe.throw(f"Request must be in 'Pending Approval' status to bypass.")
+
+    # Find active rows to bypass
+    bypassed_any = False
+    for d in doc.approvers:
+        if d.is_bypassed: continue
+        
+        is_direct = (d.selection_type == "User" and d.approver == current_user)
+        is_group_member = False
+        if d.selection_type == "Group" and d.group_email:
+            user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
+            if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
+                is_group_member = True
+        
+        if is_direct or is_group_member or current_user == "Administrator":
+            d.is_bypassed = 1
+            bypassed_any = True
+            # In bypass, we don't break because one user might bypass their multiple roles/groups
+    
+    if not bypassed_any:
+        frappe.throw("You are not authorized to bypass this request.")
+
+    frappe.flags.in_approval_action = True
+    try:
+        doc.add_comment("Comment", f"Approval level bypassed by {current_user}. Remark: {remark}")
+        doc.save(ignore_permissions=True)
+    finally:
+        frappe.flags.in_approval_action = False
+
+    return "Success"
 
 
 @frappe.whitelist()
@@ -245,8 +385,6 @@ def get_permission_query_conditions(user):
     allowed_users = [user] + subordinates
     escaped_users = ", ".join([frappe.db.escape(u) for u in allowed_users])
     escaped_user = frappe.db.escape(user)
-
-    # Creator sees their own docs. Approvers/Managers/Group Members see docs ONLY if not Draft.
     
     # Get Employee Groups this user belongs to
     user_employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
@@ -258,6 +396,7 @@ def get_permission_query_conditions(user):
     
     group_condition = ", ".join(group_filters)
 
+    # Creator sees their own docs. Approvers/Managers/Group Members see docs ONLY if not Draft.
     return f"""(
         `tabApproval Request`.owner = {escaped_user}
         OR (
