@@ -5,6 +5,10 @@ LOCKED_STATUSES = ("Pending Approval", "Approved")
 
 
 class ApprovalRequest(Document):
+    def autoname(self):
+        from frappe.model.naming import make_autoname        
+        self.name = make_autoname(f"APP-REQ.-.YYYY.-.#####")
+
     def before_validate(self):
         if not (self.employee and self.employee_name and self.designation):
             emp = frappe.db.get_value(

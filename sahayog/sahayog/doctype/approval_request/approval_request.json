@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "APP-REQ.-.YYYY.-.#####",
  "creation": "2026-04-18 10:01:45.207681",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -134,10 +135,11 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-23 15:59:57.389744",
+ "modified": "2026-04-25 15:14:17.792410",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
