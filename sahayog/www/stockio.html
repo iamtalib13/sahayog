@@ -948,6 +948,20 @@
         </h1>
       </div>
       <div class="header-right">
+        <button
+          class="btn-view-toggle"
+          onclick="window.location.href='/app/sahayog-home'"
+          title="Home"
+        >
+          <i class="fas fa-home"></i>
+        </button>
+        <button
+          class="btn-view-toggle"
+          @click="toggleFullScreen()"
+          :title="isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'"
+        >
+          <i class="fas" :class="isFullscreen ? 'fa-compress' : 'fa-expand'"></i>
+        </button>
         <div
           class="search-container"
           v-if="!showDetailView && !showEMRCreateView"
@@ -6594,6 +6608,21 @@
       searchText: "",
       searchTimeout: null,
       loading: false,
+      isFullscreen: false,
+
+      toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch((err) => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+          });
+          this.isFullscreen = true;
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+            this.isFullscreen = false;
+          }
+        }
+      },
 
       page: 1,
       pageSize: 20,
@@ -6856,6 +6885,10 @@
 
       async mounted() {
         this.applyTheme();
+        // Sync fullscreen state
+        document.addEventListener("fullscreenchange", () => {
+          this.isFullscreen = !!document.fullscreenElement;
+        });
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
         // Check if user is admin
         this.isAdmin =
