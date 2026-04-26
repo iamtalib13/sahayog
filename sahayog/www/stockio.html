@@ -778,7 +778,7 @@
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
   <div class="stockio-loading-shell" aria-label="Loading">
     <div class="stockio-loading-favicon">
-      <img src="/assets/sahayog/images/favicon-sahayog.png" alt="Loading" />
+      <img src="/assets/sahayog/images/favicon-sahayog.png" alt="" />
     </div>
     <div class="stockio-loading-text">Loading</div>
   </div>
@@ -2058,6 +2058,416 @@
           </div>
         </div>
       </div>
+
+      <!-- Asset Inline Creation View -->
+      <div v-if="showAssetCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 24px">
+            <h3
+              class="section-subtitle"
+              style="
+                margin-top: 0;
+                margin-bottom: 24px;
+                font-weight: 800;
+                color: var(--text-main);
+                text-transform: uppercase;
+              "
+            >
+              Create New Asset
+            </h3>
+
+            <div
+              class="form-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+            >
+              <!-- Asset Name -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Asset Name <span class="form-required">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="createAssetForm.asset_name"
+                  placeholder="Enter asset name"
+                />
+              </div>
+
+              <!-- Asset Category -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Asset Category <span class="form-required">*</span></label
+                >
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_category_new' }"
+                    v-model="createAssetForm.asset_category_display"
+                    @focus="onFocusSearchable('asset_category_new')"
+                    @blur="onBlurSearchable('asset_category_new')"
+                    placeholder="Search Category"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_category_new'"
+                  >
+                    <div
+                      v-for="cat in filteredAssetCategories"
+                      :key="cat"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.asset_category = cat; createAssetForm.asset_category_display = cat; focusedField = null;"
+                    >
+                      [[ cat ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Item Code -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Item Code <span class="form-required">*</span></label
+                >
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_item_code' }"
+                    v-model="createAssetForm.item_code_display"
+                    @focus="onFocusSearchable('asset_item_code')"
+                    @blur="onBlurSearchable('asset_item_code')"
+                    placeholder="Search Item"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_item_code'"
+                  >
+                    <div
+                      v-for="item in itemsList.filter(i => !createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase())))"
+                      :key="item.name"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; focusedField = null;"
+                    >
+                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name :
+                      '' ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Location <span class="form-required">*</span></label
+                >
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_location' }"
+                    v-model="createAssetForm.location_display"
+                    @focus="onFocusSearchable('asset_location')"
+                    @blur="onBlurSearchable('asset_location')"
+                    placeholder="Search Location"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_location'"
+                  >
+                    <div
+                      v-for="loc in filteredLocations"
+                      :key="loc"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
+                    >
+                      [[ loc ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custodian -->
+              <div class="form-group">
+                <label class="form-label">Custodian (Employee)</label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_custodian' }"
+                    v-model="createAssetForm.custodian_display"
+                    @focus="onFocusSearchable('asset_custodian')"
+                    @blur="onBlurSearchable('asset_custodian')"
+                    placeholder="Search Custodian"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_custodian'"
+                  >
+                    <div
+                      v-for="emp in employees.filter(e => !createAssetForm.custodian_display || e.employee_name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()) || e.name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()))"
+                      :key="emp.name"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.custodian = emp.name; createAssetForm.custodian_display = emp.employee_name; focusedField = null;"
+                    >
+                      [[ emp.name ]] - [[ emp.employee_name ]]
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Purchase Date -->
+              <div class="form-group">
+                <label class="form-label">Purchase Date</label>
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="createAssetForm.purchase_date"
+                />
+              </div>
+
+              <!-- Gross Purchase Amount -->
+              <div class="form-group">
+                <label class="form-label">Gross Purchase Amount</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  v-model.number="createAssetForm.gross_purchase_amount"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 32px">
+              <button
+                class="btn-create"
+                @click="submitAsset"
+                :disabled="creatingAsset"
+              >
+                <i
+                  class="fas"
+                  :class="creatingAsset ? 'fa-spinner fa-spin' : 'fa-plus'"
+                ></i>
+                <span>[[ creatingAsset ? 'Creating...' : 'Create Asset' ]]</span>
+              </button>
+              <button
+                class="btn-cancel"
+                @click="showAssetCreateView = false"
+                :disabled="creatingAsset"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asset Movement Inline Creation View -->
+      <div v-if="showMovementCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 24px">
+            <h3
+              class="section-subtitle"
+              style="
+                margin-top: 0;
+                margin-bottom: 24px;
+                font-weight: 800;
+                color: var(--text-main);
+                text-transform: uppercase;
+              "
+            >
+              Create Asset Movement
+            </h3>
+
+            <div
+              class="form-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+            >
+              <!-- Purpose -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Purpose <span class="form-required">*</span></label
+                >
+                <select class="form-input" v-model="movementForm.purpose">
+                  <option value="Transfer">Transfer</option>
+                  <option value="Issue">Issue</option>
+                  <option value="Receipt">Receipt</option>
+                </select>
+              </div>
+
+              <!-- Transaction Date -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Transaction Date <span class="form-required">*</span></label
+                >
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="movementForm.transaction_date"
+                />
+              </div>
+            </div>
+
+            <!-- Movement Items Table -->
+            <div style="margin-top: 24px">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 12px;
+                "
+              >
+                <label class="form-label" style="margin: 0">Assets <span class="form-required">*</span></label>
+                <button class="btn-create-inline" @click="addMovementItem">
+                  <i class="fas fa-plus"></i> Add Row
+                </button>
+              </div>
+
+              <div
+                class="items-table-wrapper table-responsive"
+                style="
+                  max-height: 350px;
+                  overflow-y: auto;
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                "
+              >
+                <table class="items-table" style="width: 100%; border-collapse: collapse; min-width: 800px;">
+                  <thead style="position: sticky; top: 0; background: var(--sidebar-hover); z-index: 1;">
+                    <tr>
+                      <th style="padding: 12px; width: 30%;">Asset <span class="form-required">*</span></th>
+                      <th style="padding: 12px; width: 30%;">Target Location</th>
+                      <th style="padding: 12px; width: 30%;">To Employee</th>
+                      <th style="padding: 12px; width: 60px; text-align: center;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in movementItems" :key="index">
+                      <!-- Asset Select -->
+                      <td style="padding: 12px;">
+                        <div class="searchable-select-wrapper">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            :class="{ focused: focusedField === 'mv_asset_' + index }"
+                            v-model="item.asset_display"
+                            @focus="onFocusSearchable('mv_asset_' + index)"
+                            @blur="onBlurSearchable('mv_asset_' + index)"
+                            placeholder="Search Asset"
+                          />
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'mv_asset_' + index"
+                            style="width: 100%; z-index: 50;"
+                          >
+                            <div
+                              v-for="opt in assetsList.filter(a => !item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase())))"
+                              :key="opt.name"
+                              class="searchable-select-option"
+                              @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name)"
+                            >
+                              <div style="font-weight: 500;">[[ opt.name ]]</div>
+                              <div style="font-size: 11px; opacity: 0.8;">[[ opt.asset_name ]]</div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Target Location -->
+                      <td style="padding: 12px;">
+                        <div class="searchable-select-wrapper">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            :class="{ focused: focusedField === 'mv_loc_' + index }"
+                            v-model="item.target_location_display"
+                            @focus="onFocusSearchable('mv_loc_' + index)"
+                            @blur="onBlurSearchable('mv_loc_' + index)"
+                            placeholder="Search Location"
+                          />
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'mv_loc_' + index"
+                            style="width: 100%; z-index: 50;"
+                          >
+                            <div
+                              v-for="loc in locations.filter(l => !item.target_location_display || l.toLowerCase().includes(item.target_location_display.toLowerCase()))"
+                              :key="loc"
+                              class="searchable-select-option"
+                              @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                            >
+                              [[ loc ]]
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- To Employee -->
+                      <td style="padding: 12px;">
+                        <div class="searchable-select-wrapper">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            :class="{ focused: focusedField === 'mv_emp_' + index }"
+                            v-model="item.to_employee_display"
+                            @focus="onFocusSearchable('mv_emp_' + index)"
+                            @blur="onBlurSearchable('mv_emp_' + index)"
+                            placeholder="Search Employee"
+                          />
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'mv_emp_' + index"
+                            style="width: 100%; z-index: 50;"
+                          >
+                            <div
+                              v-for="emp in employees.filter(e => !item.to_employee_display || e.employee_name.toLowerCase().includes(item.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(item.to_employee_display.toLowerCase()))"
+                              :key="emp.name"
+                              class="searchable-select-option"
+                              @mousedown="item.to_employee = emp.name; item.to_employee_display = emp.employee_name; focusedField = null;"
+                            >
+                              [[ emp.name ]] - [[ emp.employee_name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Action -->
+                      <td style="padding: 12px; text-align: center;">
+                        <button class="btn-action" @click="removeMovementItem(index)" title="Remove">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 32px">
+              <button
+                class="btn-create"
+                @click="submitMovement"
+                :disabled="creatingMovement"
+              >
+                <i
+                  class="fas"
+                  :class="creatingMovement ? 'fa-spinner fa-spin' : 'fa-check'"
+                ></i>
+                <span>[[ creatingMovement ? 'Submitting...' : 'Submit Movement' ]]</span>
+              </button>
+              <button
+                class="btn-cancel"
+                @click="showMovementCreateView = false"
+                :disabled="creatingMovement"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Split View Wrapper -->
       <div
         v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
@@ -6650,6 +7060,41 @@
       creatingEMR: false,
       creatingInward: false,
       creatingOutward: false,
+      creatingAsset: false,
+      creatingMovement: false,
+      showAssetCreateView: false,
+      showMovementCreateView: false,
+
+      createAssetForm: {
+        asset_name: "",
+        asset_category: "",
+        asset_category_display: "",
+        item_code: "",
+        item_code_display: "",
+        location: "",
+        location_display: "",
+        custodian: "",
+        custodian_display: "",
+        purchase_date: "",
+        gross_purchase_amount: 0,
+      },
+      movementForm: {
+        transaction_date: "",
+        purpose: "Transfer",
+        company: "",
+      },
+      movementItems: [
+        {
+          asset: "",
+          asset_display: "",
+          target_location: "",
+          target_location_display: "",
+          to_employee: "",
+          to_employee_display: "",
+        },
+      ],
+      assetsList: [],
+      locations: [],
 
       inwardForm: {
         supplier: "",
@@ -6845,8 +7290,15 @@
         return this.stockUOMs.filter((u) => u.toLowerCase().includes(search));
       },
       get filteredAssetCategories() {
+        let display = "";
+        if (this.showItemCreateView && this.createItemForm) {
+          display = this.createItemForm.asset_category_display;
+        } else if (this.showAssetCreateView && this.createAssetForm) {
+          display = this.createAssetForm.asset_category_display;
+        }
+
         const search = (
-          this.createItemForm.asset_category_display || ""
+          typeof display === "string" ? display : ""
         ).toLowerCase();
         if (!search) return this.assetCategories;
         return this.assetCategories.filter((c) =>
@@ -6865,6 +7317,14 @@
             h.name.toLowerCase().includes(search) ||
             (h.description && h.description.toLowerCase().includes(search)),
         );
+      },
+
+      get filteredLocations() {
+        const search = (
+          this.createAssetForm.location_display || ""
+        ).toLowerCase();
+        if (!search) return this.locations;
+        return this.locations.filter((l) => l.toLowerCase().includes(search));
       },
 
       $watch: {
@@ -6949,6 +7409,8 @@
         this.showInwardCreateView = false;
         this.showOutwardCreateView = false;
         this.showItemCreateView = false;
+        this.showAssetCreateView = false;
+        this.showMovementCreateView = false;
         this.showCreateItemModal = false;
         this.showDispatchModal = false;
         this.showWorkflowModal = false;
@@ -6984,6 +7446,8 @@
         this.showInwardCreateView = false;
         this.showOutwardCreateView = false;
         this.showItemCreateView = false;
+        this.showAssetCreateView = false;
+        this.showMovementCreateView = false;
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
 
@@ -7405,6 +7869,45 @@
           return;
         }
 
+        if (doctype === "Asset") {
+          this.showAssetCreateView = true;
+          this.showDetailView = false;
+          this.createAssetForm = {
+            asset_name: "",
+            asset_category: "",
+            asset_category_display: "",
+            item_code: "",
+            item_code_display: "",
+            location: "",
+            location_display: "",
+            custodian: "",
+            custodian_display: "",
+            purchase_date: frappe.datetime.now_date(),
+            gross_purchase_amount: 0,
+          };
+          return;
+        }
+
+        if (doctype === "Asset Movement") {
+          this.showMovementCreateView = true;
+          this.showDetailView = false;
+          this.movementForm = {
+            transaction_date: frappe.datetime.now_date(),
+            purpose: "Transfer",
+          };
+          this.movementItems = [
+            {
+              asset: "",
+              asset_display: "",
+              target_location: "",
+              target_location_display: "",
+              to_employee: "",
+              to_employee_display: "",
+            },
+          ];
+          return;
+        }
+
         const slug = doctype.toLowerCase().replace(/\s+/g, "-");
         window.location.href = `/app/${slug}/new`;
       },
@@ -7421,6 +7924,7 @@
             this.warehouses = data.warehouses || [];
             this.suppliers = data.suppliers || [];
             this.itemsList = data.items || [];
+            this.assetsList = data.assets_list || [];
             this.itemGroups = data.item_groups || [];
             this.itemDepartments = data.item_departments || [];
             this.stockUOMs =
@@ -7428,6 +7932,7 @@
                 ? data.uoms
                 : ["Nos", "Box", "Piece", "Kg", "Liter", "Meter"];
             this.assetCategories = data.asset_categories || [];
+            this.locations = data.locations || [];
             this.hsnCodes = data.hsn_codes || [];
           }
         } catch (e) {
@@ -7507,6 +8012,138 @@
           frappe.msgprint(errorMsg);
         } finally {
           this.creatingItem = false;
+        }
+      },
+
+      async submitAsset() {
+        if (
+          !this.createAssetForm.asset_name.trim() ||
+          !this.createAssetForm.asset_category ||
+          !this.createAssetForm.location ||
+          !this.createAssetForm.item_code
+        ) {
+          frappe.msgprint(
+            "Please fill all mandatory fields: Asset Name, Category, Item Code, and Location",
+          );
+          return;
+        }
+
+        this.creatingAsset = true;
+        try {
+          const doc = {
+            doctype: "Asset",
+            asset_name: this.createAssetForm.asset_name,
+            asset_category: this.createAssetForm.asset_category,
+            item_code: this.createAssetForm.item_code,
+            location: this.createAssetForm.location,
+            custodian: this.createAssetForm.custodian,
+            purchase_date:
+              this.createAssetForm.purchase_date || frappe.datetime.now_date(),
+            gross_purchase_amount:
+              this.createAssetForm.gross_purchase_amount || 0,
+            is_existing_asset: 1,
+            booked_fixed_asset: 1,
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.show_alert({
+              message: `Asset "${res.message.name}" created successfully`,
+              indicator: "green",
+            });
+            this.showAssetCreateView = false;
+            await this.fetchData("Asset");
+          }
+        } catch (e) {
+          console.error("Error creating asset:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create asset. Please try again.";
+          frappe.msgprint(errorMsg);
+        } finally {
+          this.creatingAsset = false;
+        }
+      },
+
+      addMovementItem() {
+        this.movementItems.push({
+          asset: "",
+          asset_display: "",
+          target_location: "",
+          target_location_display: "",
+          to_employee: "",
+          to_employee_display: "",
+        });
+      },
+
+      removeMovementItem(index) {
+        if (this.movementItems.length > 1) {
+          this.movementItems.splice(index, 1);
+        } else {
+          frappe.msgprint("At least one item is required");
+        }
+      },
+
+      selectMovementAssetOption(index, assetName, assetLabel) {
+        this.movementItems[index].asset = assetName;
+        this.movementItems[index].asset_display = assetLabel;
+        this.focusedField = null;
+      },
+
+      async submitMovement() {
+        if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
+          frappe.msgprint("Purpose and Transaction Date are required");
+          return;
+        }
+
+        const validItems = this.movementItems.filter((i) => i.asset);
+        if (validItems.length === 0) {
+          frappe.msgprint("At least one asset must be selected");
+          return;
+        }
+
+        this.creatingMovement = true;
+        try {
+          const doc = {
+            doctype: "Asset Movement",
+            transaction_date: this.movementForm.transaction_date,
+            purpose: this.movementForm.purpose,
+            assets: validItems.map((i) => ({
+              asset: i.asset,
+              target_location: i.target_location,
+              to_employee: i.to_employee,
+            })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            // Standard insert doesn't submit. Most Asset Movements need submission.
+            await frappe.call({
+              method: "frappe.client.submit",
+              args: { doc: res.message },
+            });
+
+            frappe.show_alert({
+              message: `Asset Movement "${res.message.name}" created and submitted`,
+              indicator: "green",
+            });
+            this.showMovementCreateView = false;
+            await this.fetchData("Asset Movement");
+          }
+        } catch (e) {
+          console.error("Error creating movement:", e);
+          const errorMsg =
+            e.message || e.exc || "Failed to create movement. Please try again.";
+          frappe.msgprint(errorMsg);
+        } finally {
+          this.creatingMovement = false;
         }
       },
 
