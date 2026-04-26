@@ -6965,6 +6965,9 @@
           await this.fetchRequestStats();
         }
         markStockioAppReady();
+        
+        // Attempt to enter fullscreen directly on load
+        this.toggleFullScreen();
       },
 
       async setPage(item) {
