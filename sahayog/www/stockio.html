@@ -6908,6 +6908,18 @@
             { label: "Status", key: "status", width: 1, type: "badge" },
             { label: "Action", key: "action", width: 1, type: "button" },
           ],
+          detailFields: [
+            { label: "Asset Name", key: "asset_name" },
+            { label: "Asset Code", key: "name" },
+            { label: "Item Code", key: "item_code" },
+            { label: "Category", key: "asset_category" },
+            { label: "Status", key: "status" },
+            { label: "Custodian", key: "custodian_name" },
+            { label: "Department", key: "department" },
+            { label: "Location", key: "location" },
+            { label: "Purchase Date", key: "purchase_date" },
+            { label: "Gross Purchase Amount", key: "gross_purchase_amount" },
+          ],
         },
         Movements: {
           doctype: "Asset Movement",
@@ -6933,6 +6945,14 @@
             { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Date", key: "transaction_date", width: 1 },
             { label: "Status", key: "docstatus", width: 1, type: "badge" },
+          ],
+          detailFields: [
+            { label: "Movement ID", key: "name" },
+            { label: "Transaction Date", key: "transaction_date" },
+            { label: "Purpose", key: "purpose" },
+            { label: "Source Location", key: "source_location" },
+            { label: "Company", key: "company" },
+            { label: "Assets", key: "assets", type: "table" },
           ],
         },
         Reports: {
