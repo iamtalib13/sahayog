@@ -995,7 +995,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
           style="background: var(--primary-color)"
           @click="submitDetailRecord()"
         >
@@ -8352,6 +8352,18 @@
         frappe.confirm(confirmMsg, async () => {
           this.loading = true;
           try {
+            // Fetch latest document to avoid TimestampMismatchError
+            const getRes = await frappe.call({
+              method: "frappe.client.get",
+              args: {
+                doctype: this.currentView.doctype,
+                name: this.detailRecord.name,
+              },
+            });
+            if (getRes.message) {
+              this.detailRecord = getRes.message;
+            }
+
             let res;
             if (isDraft) {
               // For EMR Drafts, we just update the status to start the workflow
