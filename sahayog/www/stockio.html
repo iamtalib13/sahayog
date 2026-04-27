@@ -6570,18 +6570,11 @@
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
 <script>
-  // Patch for highlight.js deprecation in Frappe framework
-  window.initHighlighting =
-    window.initHighlighting ||
-    function () {
-      if (
-        typeof hljs !== "undefined" &&
-        typeof hljs.highlightAll === "function"
-      ) {
-        hljs.highlightAll();
-      }
-    };
-  function StockIO() {
+  // Patch for highlight.js deprecation
+  if (typeof hljs !== "undefined" && typeof hljs.highlightAll === "function") {
+    window.initHighlighting = hljs.highlightAll;
+    window.initHighlightingOnLoad = hljs.highlightAll;
+  }  function StockIO() {
     return {
       $delimiters: ["[[", "]]"],
       dashboardDisplayMode: "cards",
@@ -7427,9 +7420,6 @@
           await this.fetchRequestStats();
         }
         markStockioAppReady();
-        
-        // Attempt to enter fullscreen directly on load
-        this.toggleFullScreen();
       },
 
       async setPage(item) {
