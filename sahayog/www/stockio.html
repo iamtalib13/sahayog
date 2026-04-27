@@ -2144,10 +2144,10 @@
                     v-if="focusedField === 'asset_item_code'"
                   >
                     <div
-                      v-for="item in itemsList.filter(i => !createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase())))"
+                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
                       :key="item.name"
                       class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; focusedField = null;"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
                       [[ item.name ]] [[ item.item_name ? '- ' + item.item_name :
                       '' ]]
@@ -8033,6 +8033,10 @@
               this.createAssetForm.gross_purchase_amount || 0,
             is_existing_asset: 1,
             booked_fixed_asset: 1,
+            naming_series: "AST-",
+            company: "Sahayog",
+            asset_owner: "Company",
+            asset_owner_company: "Sahayog",
           };
 
           const res = await frappe.call({
