@@ -391,11 +391,11 @@ frappe.ui.form.on('Approval Request', {
                         if (r.message.can_delegate) {
                             let delegate_btn = frm.page.add_inner_button(__('Delegate'), () => prompt_delegate(frm));
                             delegate_btn.removeClass('btn-default').addClass('btn-info').css({'color': 'white', 'font-weight': 'bold'});
+                        }
 
-                            if (!r.message.is_last) {
-                                let bypass_btn = frm.page.add_inner_button(__('Bypass'), () => prompt_bypass(frm));
-                                bypass_btn.removeClass('btn-default').addClass('btn-warning').css({'color': 'white', 'font-weight': 'bold'});
-                            }
+                        if (r.message.can_bypass && !r.message.is_last) {
+                            let bypass_btn = frm.page.add_inner_button(__('Bypass'), () => prompt_bypass(frm));
+                            bypass_btn.removeClass('btn-default').addClass('btn-warning').css({'color': 'white', 'font-weight': 'bold'});
                         }
                     }
                 }
