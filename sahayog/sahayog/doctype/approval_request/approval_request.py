@@ -321,7 +321,9 @@ def submit_for_approval(docname):
                     args = {
                         "doc": doc,
                         "requester": doc.employee_name or doc.owner,
-                        "url": frappe.utils.get_url_to_form(doc.doctype, doc.name)
+                        "recipient_name": d.approver_name if d.selection_type == "User" else "Team",
+                        "is_group": d.selection_type == "Group",
+                        "url": f"http://mysahayog.com/app/approval-request/{doc.name}"
                     }
                     
                     message = frappe.render_template(content, args)
