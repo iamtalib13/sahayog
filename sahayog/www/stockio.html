@@ -4342,7 +4342,7 @@
         >
           <button
             class="btn-create"
-            :style="workflowActionData.action === 'Approve' ? 'background: #10b981' : 'background: #dc2626'"
+            :style="workflowActionData.action === 'Approve' ? 'background: #10b981' : 'background: #dc2626; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);'"
             @click="submitWorkflowAction"
           >
             <i
@@ -5508,11 +5508,13 @@
   .btn-reject:hover {
     background: #b91c1c !important;
     border-color: #b91c1c !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
   }
 
   .btn-reject {
     background: #dc2626 !important;
     border-color: #dc2626 !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important;
   }
 
   .btn-view-toggle {
