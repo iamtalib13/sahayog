@@ -98,5 +98,15 @@
   "response_html": "<p>Dear {{ employee_name }},</p>\n\n<p>\nThis is to inform you that the disciplinary case initiated against you has been\nreviewed by the concerned authority. Based on the closure remarks and the final\nreview, the case has been closed with the appropriate action \n<strong> {{ remarks }} </strong>.\n</p>\n\n<p><strong>Closure Details:</strong></p>\n\n<ul>\n    <li><strong>Case ID:</strong> {{ case_id }}</li>\n    <li><strong>Case Type:</strong> {{ case_type }}</li>\n    <li><strong>Employee Name:</strong> {{ employee_name }}</li>\n    <li><strong>Employee ID:</strong> {{ employee_id }}</li>\n    \n</ul>\n\n<p>\nYou may contact the HR Department for further clarification if required.\n</p>\n\n<p>\nRegards,<br>\nHR Department\n</p>\n",
   "subject": "Case Closure Update for {{ employee_name }} Case Type: ({{ case_type }})",
   "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-04-25 15:30:00.000000",
+  "name": "new_group_approval_request",
+  "response": null,
+  "response_html": "<h3>New Approval Request</h3>\n\n<p>\n    {% if is_group %}\n        Hello Team,\n    {% else %}\n        Hello {{ recipient_name }},\n    {% endif %}\n</p>\n\n<p>A new approval request has been submitted on the My Sahayog Portal.</p>\n\n<p>\n    <strong>Request:</strong> {{ doc.name }}<br>\n    <strong>Title:</strong> {{ doc.title }}<br>\n    <strong>Requester:</strong> {{ doc.employee_name }} ({{ doc.employee }})\n</p>\n\n<p>Please click below link to review: <br>\n<a href=\"{{ url }}\">{{ url }}</a></p>\n\n<p>Thanks,</p>",
+  "subject": "New Approval Request: {{ doc.title }}",
+  "use_html": 1
  }
 ]
