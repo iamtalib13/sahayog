@@ -2147,7 +2147,7 @@
                       v-for="item in itemsList.filter(i => !createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase())))"
                       :key="item.name"
                       class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; focusedField = null;"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
                       [[ item.name ]] [[ item.item_name ? '- ' + item.item_name :
                       '' ]]
