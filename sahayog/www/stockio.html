@@ -2624,7 +2624,7 @@
             <!-- Standard Multi-Column Layout -->
             <div
               v-if="detailFields && detailFields.length"
-              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 360px; gap: 24px; overflow-x: auto; height: 663px;'"
+              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : (activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: 350px 1fr; gap: 24px; overflow-x: auto; height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 360px; gap: 24px; overflow-x: auto; height: 663px;')"
             >
               <!-- Column 1: Request Detail -->
               <div class="detail-col-1">
@@ -2960,7 +2960,7 @@
 
               <!-- Column 2: Requested Items -->
               <div
-                v-show="activeItem !== 'Items'"
+                v-show="activeItem !== 'Items' && activeItem !== 'Asset Master'"
                 class="detail-col-2"
                 style="
                   border-left: 1px solid var(--border-color);
