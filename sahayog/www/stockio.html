@@ -8033,7 +8033,10 @@
               this.createAssetForm.gross_purchase_amount || 0,
             is_existing_asset: 1,
             booked_fixed_asset: 1,
-            company: frappe.defaults.get_user_default("Company"),
+            naming_series: "AST-",
+            company: "Sahayog",
+            asset_owner: "Company",
+            asset_owner_company: "Sahayog",
           };
 
           const res = await frappe.call({
