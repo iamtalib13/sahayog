@@ -2226,6 +2226,16 @@
                 />
               </div>
 
+              <!-- Available-for-use Date (Conditional) -->
+              <div class="form-group" v-if="createAssetForm.is_existing_asset">
+                <label class="form-label">Available-for-use Date</label>
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="createAssetForm.available_for_use_date"
+                />
+              </div>
+
               <!-- Gross Purchase Amount -->
               <div class="form-group">
                 <label class="form-label">Gross Purchase Amount</label>
@@ -2236,6 +2246,33 @@
                   placeholder="0.00"
                 />
               </div>
+            </div>
+
+            <div
+              class="form-row"
+              style="
+                display: flex;
+                gap: 40px;
+                margin-top: 10px;
+                margin-bottom: 20px;
+              "
+            >
+              <label class="form-checkbox-label">
+                <input
+                  type="checkbox"
+                  class="form-checkbox"
+                  v-model="createAssetForm.is_existing_asset"
+                />
+                <span class="checkbox-text">Is Existing Asset</span>
+              </label>
+              <label class="form-checkbox-label">
+                <input
+                  type="checkbox"
+                  class="form-checkbox"
+                  v-model="createAssetForm.is_composite_asset"
+                />
+                <span class="checkbox-text">Is Composite Asset</span>
+              </label>
             </div>
 
             <div class="form-actions" style="margin-top: 32px">
@@ -7069,7 +7106,10 @@
         custodian: "",
         custodian_display: "",
         purchase_date: "",
+        available_for_use_date: "",
         gross_purchase_amount: 0,
+        is_existing_asset: true,
+        is_composite_asset: false,
       },
       movementForm: {
         transaction_date: "",
@@ -7873,7 +7913,10 @@
             custodian: "",
             custodian_display: "",
             purchase_date: frappe.datetime.now_date(),
+            available_for_use_date: frappe.datetime.now_date(),
             gross_purchase_amount: 0,
+            is_existing_asset: true,
+            is_composite_asset: false,
           };
           return;
         }
@@ -8029,9 +8072,13 @@
             custodian: this.createAssetForm.custodian,
             purchase_date:
               this.createAssetForm.purchase_date || frappe.datetime.now_date(),
+            available_for_use_date:
+              this.createAssetForm.available_for_use_date ||
+              frappe.datetime.now_date(),
             gross_purchase_amount:
               this.createAssetForm.gross_purchase_amount || 0,
-            is_existing_asset: 1,
+            is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,
+            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
             booked_fixed_asset: 1,
             naming_series: "AST-",
             company: "Sahayog",
