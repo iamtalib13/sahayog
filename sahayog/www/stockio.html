@@ -2252,50 +2252,57 @@
               class="form-row"
               style="
                 display: flex;
-                gap: 40px;
-                margin-top: 10px;
-                margin-bottom: 20px;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 20px;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
+                gap: 20px;
               "
             >
-              <label class="form-checkbox-label">
-                <input
-                  type="checkbox"
-                  class="form-checkbox"
-                  v-model="createAssetForm.is_existing_asset"
-                  @change="if(createAssetForm.is_existing_asset) createAssetForm.is_composite_asset = false"
-                />
-                <span class="checkbox-text">Is Existing Asset</span>
-              </label>
-              <label class="form-checkbox-label">
-                <input
-                  type="checkbox"
-                  class="form-checkbox"
-                  v-model="createAssetForm.is_composite_asset"
-                  @change="if(createAssetForm.is_composite_asset) createAssetForm.is_existing_asset = false"
-                />
-                <span class="checkbox-text">Is Composite Asset</span>
-              </label>
-            </div>
+              <div style="display: flex; gap: 40px">
+                <label class="form-checkbox-label">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox"
+                    v-model="createAssetForm.is_existing_asset"
+                    @change="if(createAssetForm.is_existing_asset) createAssetForm.is_composite_asset = false"
+                  />
+                  <span class="checkbox-text">Is Existing Asset</span>
+                </label>
+                <label class="form-checkbox-label">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox"
+                    v-model="createAssetForm.is_composite_asset"
+                    @change="if(createAssetForm.is_composite_asset) createAssetForm.is_existing_asset = false"
+                  />
+                  <span class="checkbox-text">Is Composite Asset</span>
+                </label>
+              </div>
 
-            <div class="form-actions" style="margin-top: 32px">
-              <button
-                class="btn-create"
-                @click="submitAsset"
-                :disabled="creatingAsset"
-              >
-                <i
-                  class="fas"
-                  :class="creatingAsset ? 'fa-spinner fa-spin' : 'fa-plus'"
-                ></i>
-                <span>[[ creatingAsset ? 'Creating...' : 'Create Asset' ]]</span>
-              </button>
-              <button
-                class="btn-cancel"
-                @click="showAssetCreateView = false"
-                :disabled="creatingAsset"
-              >
-                Cancel
-              </button>
+              <div style="display: flex; gap: 12px">
+                <button
+                  class="btn-cancel"
+                  @click="showAssetCreateView = false"
+                  :disabled="creatingAsset"
+                  style="margin: 0"
+                >
+                  Cancel
+                </button>
+                <button
+                  class="btn-create"
+                  @click="submitAsset"
+                  :disabled="creatingAsset"
+                  style="margin: 0"
+                >
+                  <i
+                    class="fas"
+                    :class="creatingAsset ? 'fa-spinner fa-spin' : 'fa-plus'"
+                  ></i>
+                  <span>[[ creatingAsset ? 'Creating...' : 'Create Asset' ]]</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
