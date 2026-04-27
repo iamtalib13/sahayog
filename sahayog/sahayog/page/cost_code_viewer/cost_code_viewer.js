@@ -7,6 +7,26 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 		single_column: true
 	});
 
+// Create employee info area BELOW header (not inside flex row)
+// 1. Title area ke flex-wrap ko enable karna taaki next line possible ho
+  page.$title_area.css({
+    "flex-wrap": "wrap",
+    "display": "flex",
+    "align-items": "baseline"
+  });
+
+  // 2. Employee Info Area ko width 100% dena taaki wo Title ke niche aa jaye
+  page.employee_info_area = $(`
+    <div class="employee-info-area"
+        style="width: 100%; 
+               margin-top: 8px; 
+               font-size: 14px; 
+               color: #333; 
+               display: flex; 
+               gap: 15px;">
+    </div>
+  `).appendTo(page.$title_area);
+
 	let search_field = page.add_field({
 		label: 'Search',
 		fieldtype: 'Data',
@@ -37,7 +57,16 @@ function render_table(page, search_term = "") {
 		method: "sahayog.sahayog.page.cost_code_viewer.cost_code_viewer.get_cost_code_details",
 		args: { search_term: search_term },
 		callback: function(r) {
-			let data = r.message || [];
+			let { data, employee_name, employee_id } = r.message || { data: [], employee_name: "", employee_id: "" };
+			
+			// Set Employee Info horizontally in the new line area
+			if (employee_id) {
+				page.employee_info_area.html(`
+					<span style="margin-right: 20px;"><b>Employee:</b> ${employee_name}</span>
+					<span><b>ID:</b> ${employee_id}</span>
+				`);
+			}
+
 			if (data.length > 0) {
 				let table_html = `
 					<table class="table table-bordered table-hover" style="background: #fff; font-size: 13px; min-width: 1100px;">
