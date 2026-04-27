@@ -7099,7 +7099,7 @@
 
       rows: [],
       selectedRows: [],
-      activeItem: "Items",
+      activeItem: "",
       sidebarCollapsed:
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
@@ -7580,9 +7580,17 @@
         this.showProfileModal = false;
         this.showUserMenu = false;
 
+        // Determine default item based on inventory type and sidebar visibility
+        let defaultItemLabel = "Items";
+        if (!this.isAdmin && (!this.userInventoryType || (this.userInventoryType !== "Stationery" && this.userInventoryType !== "Stationery & Asset"))) {
+          defaultItemLabel = "Requests";
+        }
+
         const defaultItem =
-          this.findSidebarItem(this.activeItem) ||
-          this.findSidebarItem("Items");
+          this.findSidebarItem(this.activeItem || defaultItemLabel) ||
+          this.findSidebarItem("Requests") ||
+          this.findSidebarItem("Dashboard");
+
         if (defaultItem) {
           await this.setPage(defaultItem);
         }
@@ -9389,7 +9397,7 @@
       },
 
       findSidebarItem(label) {
-        for (const section of this.sidebar.sections) {
+        for (const section of this.computedSidebarSections) {
           const item = section.items.find((entry) => entry.label === label);
           if (item) return item;
         }
