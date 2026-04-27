@@ -1014,9 +1014,8 @@
           <span>Approve</span>
         </button>
         <button
-          class="btn-create"
+          class="btn-create btn-reject"
           v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)"
-          style="background: #ef4444"
           @click="handleWorkflowAction('Reject')"
         >
           <i class="fas fa-times"></i>
@@ -1034,9 +1033,8 @@
           <span>Approve</span>
         </button>
         <button
-          class="btn-create"
+          class="btn-create btn-reject"
           v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)"
-          style="background: #ef4444"
           @click="handleWorkflowAction('Reject')"
         >
           <i class="fas fa-times"></i>
@@ -4344,7 +4342,7 @@
         >
           <button
             class="btn-create"
-            :style="workflowActionData.action === 'Approve' ? 'background: #10b981' : 'background: #ef4444'"
+            :style="workflowActionData.action === 'Approve' ? 'background: #10b981' : 'background: #dc2626'"
             @click="submitWorkflowAction"
           >
             <i
@@ -5505,6 +5503,16 @@
   .btn-create:hover {
     background: var(--blue-700);
     transform: translateY(-1px);
+  }
+
+  .btn-reject:hover {
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
+  }
+
+  .btn-reject {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
   }
 
   .btn-view-toggle {
