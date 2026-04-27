@@ -987,7 +987,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
@@ -995,7 +995,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
           style="background: var(--primary-color)"
           @click="submitDetailRecord()"
         >
@@ -2498,9 +2498,9 @@
               >
                 <i
                   class="fas"
-                  :class="creatingMovement ? 'fa-spinner fa-spin' : 'fa-check'"
+                  :class="creatingMovement ? 'fa-spinner fa-spin' : 'fa-save'"
                 ></i>
-                <span>[[ creatingMovement ? 'Submitting...' : 'Submit Movement' ]]</span>
+                <span>[[ creatingMovement ? 'Saving...' : 'Save Draft' ]]</span>
               </button>
               <button
                 class="btn-cancel"
@@ -2762,6 +2762,39 @@
                               [[ wh ]]
                             </div>
                           </div>
+                        </div>
+                        <!-- Transaction Date -->
+                        <div
+                          v-else-if="field.key === 'transaction_date'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            border: 2px solid var(--border-color);
+                            border-radius: var(--border-radius-md);
+                            background: var(--bg-surface);
+                            padding: 0 12px;
+                            height: 40px;
+                            width: 100%;
+                          "
+                        >
+                          <i
+                            class="fas fa-calendar-alt"
+                            style="color: var(--text-muted); margin-right: 10px"
+                          ></i>
+                          <input
+                            type="date"
+                            class="form-input"
+                            style="
+                              padding: 0 !important;
+                              height: 100%;
+                              border: none !important;
+                              background: transparent !important;
+                              box-shadow: none !important;
+                              outline: none !important;
+                              flex: 1;
+                            "
+                            v-model="detailRecord.transaction_date"
+                          />
                         </div>
                         <!-- Required By Date -->
                         <div
@@ -8235,14 +8268,8 @@
           });
 
           if (res.message) {
-            // Standard insert doesn't submit. Most Asset Movements need submission.
-            await frappe.call({
-              method: "frappe.client.submit",
-              args: { doc: res.message },
-            });
-
             frappe.show_alert({
-              message: `Asset Movement "${res.message.name}" created and submitted`,
+              message: `Asset Movement "${res.message.name}" saved as draft`,
               indicator: "green",
             });
             this.showMovementCreateView = false;
