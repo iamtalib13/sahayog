@@ -4318,6 +4318,14 @@
                     <!-- Requests Buttons -->
                     <button
                       class="btn-create-inline"
+                      style="background: var(--primary-color); border-color: var(--primary-color); margin-right: 4px;"
+                      @click.stop="submitRowRecord(row)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0)"
+                    >
+                      Submit
+                    </button>
+                    <button
+                      class="btn-create-inline"
                       @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
@@ -9061,8 +9069,14 @@
       async submitRowRecord(row) {
         if (!row || !row.name) return;
         const doctype = this.currentView.doctype;
+        const isEMR = doctype === "Employee Material Request";
 
-        frappe.confirm(`Are you sure you want to submit ${row.name}?`, async () => {
+        const confirmMsg =
+          isEMR && (row.status === "Draft" || row.docstatus === 0)
+            ? `Are you sure you want to send request ${row.name} for approval?`
+            : `Are you sure you want to submit ${row.name}?`;
+
+        frappe.confirm(confirmMsg, async () => {
           this.loading = true;
           try {
             // Fetch the latest document to avoid TimestampMismatchError
@@ -9071,19 +9085,39 @@
               args: { doctype, name: row.name },
             });
 
-            if (!getRes.message) throw new Error("Could not fetch latest document");
+            if (!getRes.message)
+              throw new Error("Could not fetch latest document");
 
-            await frappe.call({
-              method: "frappe.client.submit",
-              args: {
-                doc: getRes.message,
-              },
-            });
-            frappe.show_alert({
-              message: `${row.name} submitted successfully`,
-              indicator: "green",
-            });
-            await this.fetchData(doctype);
+            const doc = getRes.message;
+            let res;
+
+            if (isEMR && (doc.status === "Draft" || doc.docstatus === 0)) {
+              // For EMR Drafts, we update the status to start the workflow
+              doc.status = "Pending Reporting Person";
+              res = await frappe.call({
+                method: "frappe.client.save",
+                args: { doc },
+              });
+            } else {
+              // Perform formal submission
+              res = await frappe.call({
+                method: "frappe.client.submit",
+                args: { doc },
+              });
+            }
+
+            if (res.message) {
+              const successMsg =
+                isEMR && (row.status === "Draft" || row.docstatus === 0)
+                  ? `${row.name} sent for approval successfully`
+                  : `${row.name} submitted successfully`;
+
+              frappe.show_alert({
+                message: successMsg,
+                indicator: "green",
+              });
+              await this.fetchData(doctype);
+            }
           } catch (e) {
             console.error("Submission error:", e);
             frappe.msgprint(e.message || "Error submitting record");
