@@ -4184,6 +4184,22 @@
                     >
                       View
                     </button>
+
+                    <!-- Movements Buttons -->
+                    <button
+                      class="btn-create-inline"
+                      style="background: var(--primary-color); border-color: var(--primary-color);"
+                      @click.stop="submitRowRecord(row)"
+                      v-if="activeItem === 'Movements' && row.docstatus === 0"
+                    >
+                      Submit
+                    </button>
+                    <div
+                      v-if="activeItem === 'Movements' && row.docstatus === 1"
+                      style="display: flex; justify-content: center; width: 100%; color: var(--green-600); font-size: 1.2rem;"
+                    >
+                      <i class="fas fa-check-circle"></i>
+                    </div>
                   </span>
                   <span
                     v-else
@@ -7001,6 +7017,7 @@
             { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Date", key: "transaction_date", width: 1 },
             { label: "Status", key: "docstatus", width: 1, type: "badge" },
+            { label: "Action", key: "action", width: 1, type: "button" },
           ],
           detailFields: [
             { label: "Movement ID", key: "name" },
