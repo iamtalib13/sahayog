@@ -1,5 +1,7 @@
 frappe.provide('frappe.pages');
 
+frappe.pages['cost-code-viewer'] = frappe.pages['cost-code-viewer'] || {};
+
 frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 	let page = frappe.ui.make_app_page({
 		parent: wrapper,
@@ -7,25 +9,16 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 		single_column: true
 	});
 
-// Create employee info area BELOW header (not inside flex row)
-// 1. Title area ke flex-wrap ko enable karna taaki next line possible ho
-  page.$title_area.css({
-    "flex-wrap": "wrap",
-    "display": "flex",
-    "align-items": "baseline"
-  });
+	// Header alignment
+	page.$title_area.css({
+		"flex-wrap": "wrap",
+		"display": "flex",
+		"align-items": "baseline"
+	});
 
-  // 2. Employee Info Area ko width 100% dena taaki wo Title ke niche aa jaye
-  page.employee_info_area = $(`
-    <div class="employee-info-area"
-        style="width: 100%; 
-               margin-top: 8px; 
-               font-size: 14px; 
-               color: #333; 
-               display: flex; 
-               gap: 15px;">
-    </div>
-  `).appendTo(page.$title_area);
+	page.employee_info_area = $(`
+		<div class="employee-info-area" style="width: 100%; margin-top: 8px; font-size: 14px; color: #333; display: flex; gap: 15px;"></div>
+	`).appendTo(page.$title_area);
 
 	let search_field = page.add_field({
 		label: 'Search',
@@ -59,7 +52,6 @@ function render_table(page, search_term = "") {
 		callback: function(r) {
 			let { data, employee_name, employee_id } = r.message || { data: [], employee_name: "", employee_id: "" };
 			
-			// Set Employee Info horizontally in the new line area
 			if (employee_id) {
 				page.employee_info_area.html(`
 					<span style="margin-right: 20px;"><b>Employee:</b> ${employee_name}</span>
@@ -67,7 +59,7 @@ function render_table(page, search_term = "") {
 				`);
 			}
 
-			if (data.length > 0) {
+			if (data && data.length > 0) {
 				let table_html = `
 					<table class="table table-bordered table-hover" style="background: #fff; font-size: 13px; min-width: 1100px;">
 						<thead style="background: #f9f9f9; font-weight: bold;">
@@ -102,7 +94,7 @@ function render_table(page, search_term = "") {
 				`;
 				$container.html(table_html);
 			} else {
-				$container.html(`<div class="text-muted text-center" style="padding: 40px;">No results found for "${search_term}"</div>`);
+				$container.html(`<div class="text-muted text-center" style="padding: 40px;">No results found.</div>`);
 			}
 		}
 	});
