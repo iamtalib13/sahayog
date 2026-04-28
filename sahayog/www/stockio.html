@@ -2742,12 +2742,11 @@
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
                 <div
-                  class="detail-col-3"
+                  class="flow-card detail-col-3"
                   style="
                     height: 100%;
                     display: flex;
                     flex-direction: column;
-                    padding: 0;
                   "
                 >
                   <h4 class="section-subtitle" style="margin-bottom: 16px">
@@ -2760,7 +2759,6 @@
                       overflow-y: auto;
                       margin-bottom: 16px;
                       padding-right: 8px;
-                      max-height: 480px;
                     "
                   >
                     <div
@@ -3230,7 +3228,7 @@
             <!-- Standard Multi-Column Layout -->
             <div
               v-else-if="detailFields && detailFields.length"
-              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : (activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: 1fr 360px; gap: 24px; overflow-x: auto; height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 360px; gap: 24px; overflow-x: auto; height: 663px;')"
+              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : (activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: 1fr 400px; gap: 24px; overflow-x: auto; height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 400px; gap: 24px; overflow-x: auto; height: 663px;')"
             >
               <!-- Column 1: Request Detail -->
               <div class="detail-col-1">
@@ -4022,8 +4020,8 @@
               <!-- Column 3: Comments Section -->
               <div
                 v-show="activeItem !== 'Items'"
-                class="detail-col-3"
-                style="display: flex; flex-direction: column; height: 100%"
+                class="flow-card detail-col-3"
+                style="display: flex; flex-direction: column; height: 100%; flex: 0 0 400px;"
               >
                 <h4
                   class="section-subtitle"
@@ -4048,7 +4046,6 @@
                     overflow-y: auto;
                     margin-bottom: 20px;
                     padding-right: 8px;
-                    max-height: 400px;
                   "
                 >
                   <div v-if="comments && comments.length">
