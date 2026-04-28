@@ -12,6 +12,7 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 	page.start = 0;
 	page.page_length = 20;
 
+	// Header alignment
 	page.$title_area.css({ "flex-wrap": "wrap", "display": "flex", "align-items": "baseline" });
 	page.employee_info_area = $('<div class="employee-info-area" style="width: 100%; margin-top: 8px; font-size: 14px; color: #333; display: flex; gap: 15px;"></div>')
 		.appendTo(page.$title_area);
@@ -101,12 +102,20 @@ function render_table(page, search_term = "", reset = false) {
 
 				page.start += data.length;
 				if (page.start < total_count) {
-					$load_more_btn_container.html(`<button class="btn btn-default btn-sm btn-load-more">Load More (${total_count - page.start} remaining)</button>`);
-					$load_more_btn_container.find('.btn-load-more').on('click', function() {
+					$load_more_btn_container.html(`
+						<button class="btn btn-sm btn-load-more" 
+							style="background: #343a40; border: none; color: #fff; font-weight: 500; padding: 8px 24px; border-radius: 4px; transition: all 0.3s ease;">
+							Load More (${total_count - page.start} remaining)
+						</button>
+					`);
+					$load_more_btn_container.find('.btn-load-more').hover(
+						function() { $(this).css('background-color', '#23272b'); },
+						function() { $(this).css('background-color', '#343a40'); }
+					).on('click', function() {
 						render_table(page, search_term, false);
 					});
 				} else {
-					$load_more_btn_container.empty();
+					$load_more_btn_container.html('<div style="color: #aaa; font-size: 12px; margin-top: 15px;">End of results</div>');
 				}
 			} else if (reset) {
 				$container.html('<div class="text-muted text-center" style="padding: 40px;">No results found.</div>');
