@@ -12,11 +12,12 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 	page.start = 0;
 	page.page_length = 20;
 
-	// Header alignment
+	// Header alignment (Original Working)
 	page.$title_area.css({ "flex-wrap": "wrap", "display": "flex", "align-items": "baseline" });
 	page.employee_info_area = $('<div class="employee-info-area" style="width: 100%; margin-top: 8px; font-size: 14px; color: #333; display: flex; gap: 15px;"></div>')
 		.appendTo(page.$title_area);
 
+	// Search Field (Original Working)
 	let search_field = page.add_field({
 		label: 'Search',
 		fieldtype: 'Data',
@@ -25,7 +26,7 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 	});
 
 	// Surgical addition of Clear button beside search field
-	let $clear_btn = $('<button class="btn btn-default btn-xs" style="margin-left: 5px; margin-top: 6px; height: 28px; display: none;">Clear</button>')
+	let $clear_btn = $('<button class="btn btn-default btn-xs" style="margin-left: 5px; margin-top: 5px; display: none;">Clear</button>')
 		.insertAfter($(search_field.$wrapper));
 	
 	let $input = $(search_field.$wrapper).find('input');
@@ -36,13 +37,12 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 
 	let timeout = null;
 	$input.on('input', function() {
-		let val = $(this).val();
-		if (val) { $clear_btn.show(); } else { $clear_btn.hide(); }
-
+		if ($(this).val()) { $clear_btn.show(); } else { $clear_btn.hide(); }
+		
 		clearTimeout(timeout);
 		timeout = setTimeout(() => {
 			page.start = 0;
-			render_table(page, val, true);
+			render_table(page, $(this).val(), true);
 		}, 300);
 	});
 
@@ -52,17 +52,14 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 function render_table(page, search_term = "", reset = false) {
 	let $body = $(page.body);
 	if (!$body.find(".cost-code-wrapper").length) {
-		$body.append('<div class="cost-code-wrapper" style="padding: 15px; overflow-x: auto;"></div>');
+		$body.append('<div class="cost-code-wrapper" style="margin-top: 25px; padding: 5px; overflow-x: auto; max-height: 500px; overflow-y: auto; -webkit-overflow-scrolling: touch;"></div>');
 		$body.append('<div class="load-more-container" style="padding: 20px; text-align: center;"></div>');
 	}
 	
 	let $container = $body.find(".cost-code-wrapper");
 	let $load_more_btn_container = $body.find(".load-more-container");
 
-	if (reset) {
-		$container.empty();
-		page.start = 0;
-	}
+	if (reset) { $container.empty(); page.start = 0; }
 
 	frappe.call({
 		method: "sahayog.sahayog.page.cost_code_viewer.cost_code_viewer.get_cost_code_details",
@@ -95,17 +92,16 @@ function render_table(page, search_term = "", reset = false) {
 
 				if (reset || !$container.find('table').length) {
 					let table_html = `
-						<table class="table" style="background: #fff; font-size: 13px; min-width: 1100px; border-collapse: separate; border-spacing: 0; border: 1px solid #d1d8dd; border-radius: 8px; overflow: hidden;">
-							<thead style="background: linear-gradient(180deg, #343a40 0%, #23272b 100%);">
+						<table class="table" style="background: #fff; font-size: 13px; min-width: 1100px; border-collapse: separate; border-spacing: 0; border: 1px solid #d1d8dd;">
+							<thead style="position: sticky; top: 0; z-index: 10; background: linear-gradient(180deg, #343a40 0%, #23272b 100%); color: #ffffff; will-change: transform;">
 								<tr>
 									${['Employee Code', 'Role', 'Department', 'Sub-Dept', 'Branch', 'District', 'Region', 'Zone', 'Cost Code'].map(h => `
-										<th style="color: #ffffff; padding: 16px 15px; font-size: 11px; text-transform: uppercase; font-weight: 700; border: none; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${h}</th>
+										<th style="padding: 16px 15px; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">${h}</th>
 									`).join('')}
 								</tr>
 							</thead>
 							<tbody>${rows_html}</tbody>
 						</table>
-						<style>.table tbody tr:hover { background-color: #f8fbff !important; }</style>
 					`;
 					$container.html(table_html);
 				} else {
