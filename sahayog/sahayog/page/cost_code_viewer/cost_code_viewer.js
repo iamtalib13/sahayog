@@ -24,9 +24,21 @@ frappe.pages['cost-code-viewer'].on_page_load = function(wrapper) {
 		placeholder: 'Search by any field...'
 	});
 
+	// Surgical addition of Clear button beside search field
+	let $clear_btn = $('<button class="btn btn-default btn-xs" style="margin-left: 5px; margin-top: 6px; height: 28px; display: none;">Clear</button>')
+		.insertAfter($(search_field.$wrapper));
+	
+	let $input = $(search_field.$wrapper).find('input');
+
+	$clear_btn.on('click', function() {
+		$input.val('').trigger('input');
+	});
+
 	let timeout = null;
-	$(search_field.$wrapper).find('input').on('input', function() {
+	$input.on('input', function() {
 		let val = $(this).val();
+		if (val) { $clear_btn.show(); } else { $clear_btn.hide(); }
+
 		clearTimeout(timeout);
 		timeout = setTimeout(() => {
 			page.start = 0;
