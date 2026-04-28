@@ -3228,7 +3228,7 @@
             <!-- Standard Multi-Column Layout -->
             <div
               v-else-if="detailFields && detailFields.length"
-              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 663px;' : (activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: 1fr 400px; gap: 24px; overflow-x: auto; height: 663px;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 400px; gap: 24px; overflow-x: auto; height: 663px;')"
+              :style="activeItem === 'Items' ? 'display: block; overflow-x: hidden; min-height: 500px;' : (activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: 1fr 400px; gap: 24px; overflow-x: auto; min-height: 100%;' : 'display: grid; grid-template-columns: 280px minmax(300px, 1fr) 400px; gap: 24px; overflow-x: auto; min-height: 100%;')"
             >
               <!-- Column 1: Request Detail -->
               <div class="detail-col-1">
