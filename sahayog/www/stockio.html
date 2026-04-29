@@ -2653,9 +2653,9 @@
             v-if="detailRecord"
             :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
           >
-            <div v-if="activeItem === 'Movements'" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-              <!-- Movements Detail -->
-              <div class="flow-card" style="grid-column: span 2">
+            <div v-if="activeItem === 'Movements'" class="movement-detail-parent" style="display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 24px; height: 100%;">
+              <!-- Movements Detail (Div 1: 1/1 to 3/4) -->
+              <div style="grid-area: 1 / 1 / 3 / 4;" class="flow-card">
                 <h4 class="section-subtitle" style="margin-bottom: 24px">
                   Movements Detail
                 </h4>
@@ -2667,8 +2667,8 @@
                 </div>
               </div>
 
-              <!-- Movements Items -->
-              <div class="flow-card" style="grid-column: span 2">
+              <!-- Movements Items (Div 2: 3/1 to 5/4) -->
+              <div style="grid-area: 3 / 1 / 5 / 4;" class="flow-card">
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Movements Items
                 </h4>
@@ -2694,8 +2694,8 @@
                 </div>
               </div>
 
-              <!-- Comments -->
-              <div class="flow-card" style="grid-column: span 2; display: flex; flex-direction: column">
+              <!-- Comments (Div 3: 1/4 to 5/6) -->
+              <div style="grid-area: 1 / 4 / 5 / 6; display: flex; flex-direction: column;" class="flow-card">
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Comments
                 </h4>
