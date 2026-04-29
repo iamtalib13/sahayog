@@ -3712,6 +3712,147 @@
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
+                        <!-- Asset Master Location Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'location'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_location' }"
+                              v-model="detailRecord.location"
+                              @focus="onFocusSearchable('edit_asset_location')"
+                              @blur="onBlurSearchable('edit_asset_location')"
+                              placeholder="Search Location"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_location'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="loc in locations.filter(l => !detailRecord.location || l.toLowerCase().includes(detailRecord.location.toLowerCase()))"
+                                :key="loc"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.location = loc; focusedField = null;"
+                              >
+                                [[ loc ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.location"
+                            @click="detailRecord.location = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Location"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Custodian Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && (field.key === 'custodian' || field.key === 'custodian_name')" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_custodian' }"
+                              v-model="detailRecord.custodian_name"
+                              @focus="onFocusSearchable('edit_asset_custodian')"
+                              @blur="onBlurSearchable('edit_asset_custodian')"
+                              placeholder="Search Custodian"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_custodian'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="emp in employees.filter(e => !detailRecord.custodian_name || e.employee_name.toLowerCase().includes(detailRecord.custodian_name.toLowerCase()) || e.name.toLowerCase().includes(detailRecord.custodian_name.toLowerCase()))"
+                                :key="emp.name"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.custodian = emp.name; detailRecord.custodian_name = emp.employee_name; focusedField = null;"
+                              >
+                                [[ emp.name ]] - [[ emp.employee_name ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.custodian_name"
+                            @click="detailRecord.custodian = ''; detailRecord.custodian_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Custodian"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Department Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'department'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_dept' }"
+                              v-model="detailRecord.department"
+                              @focus="onFocusSearchable('edit_asset_dept')"
+                              @blur="onBlurSearchable('edit_asset_dept')"
+                              placeholder="Search Department"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_dept'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="dept in itemDepartments.filter(d => !detailRecord.department || d.toLowerCase().includes(detailRecord.department.toLowerCase()))"
+                                :key="dept"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.department = dept; focusedField = null;"
+                              >
+                                [[ dept ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.department"
+                            @click="detailRecord.department = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Department"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Purchase Date -->
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'purchase_date'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            border: 2px solid var(--border-color);
+                            border-radius: var(--border-radius-md);
+                            background: var(--bg-surface);
+                            padding: 0 12px;
+                            height: 40px;
+                            width: 100%;
+                          "
+                        >
+                          <i
+                            class="fas fa-calendar-alt"
+                            style="color: var(--text-muted); margin-right: 10px"
+                          ></i>
+                          <input
+                            type="date"
+                            class="form-input"
+                            style="
+                              padding: 0 !important;
+                              height: 100%;
+                              border: none !important;
+                              background: transparent !important;
+                              box-shadow: none !important;
+                              outline: none !important;
+                              flex: 1;
+                            "
+                            v-model="detailRecord.purchase_date"
+                          />
+                        </div>
                         <!-- Default -->
                         <div v-else style="display: flex; align-items: center; gap: 8px; width: 100%;">
                           <input
