@@ -2653,8 +2653,122 @@
             v-if="detailRecord"
             :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
           >
-            <!-- REDESIGNED REQUEST LAYOUT (5x5 Grid Style) -->
-            <div v-if="activeItem === 'Requests'" class="request-detail-parent">
+            <div v-if="activeItem === 'Movements'" class="movement-detail-parent" style="display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: auto 1fr; gap: 24px; height: 100%; overflow: hidden;">
+              <!-- Movements Detail (Div 1: spans column 1 to 4) -->
+              <div style="grid-area: 1 / 1 / 2 / 4;" class="flow-card">
+                <h4 class="section-subtitle" style="margin-bottom: 24px">
+                  Movements Detail
+                </h4>
+                <div class="detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
+                  <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
+                    <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">[[ field.label ]]</span>
+                    <span v-if="isEditing && field.key === 'purpose'">
+                      <select class="form-input" v-model="detailRecord.purpose" style="width: 100%; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="Transfer">Transfer</option>
+                        <option value="Issue">Issue</option>
+                        <option value="Receipt">Receipt</option>
+                      </select>
+                    </span>
+                    <span v-else class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">[[ detailRecord[field.key] ]]</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Movements Items (Div 2) -->
+              <div style="grid-area: 2 / 1 / 3 / 4; display: flex; flex-direction: column;" class="flow-card">
+                <h4 class="section-subtitle" style="margin-bottom: 16px">
+                  Movements Items
+                </h4>
+                <div class="table-responsive">
+                  <table class="items-table" style="width: 100%">
+                    <thead>
+                      <tr>
+                        <th>Asset</th>
+                        <th>Source Location</th>
+                        <th>Target Location</th>
+                        <th>To Employee</th>
+                        <th v-if="isEditing"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.asset" style="width: 100%; padding: 4px;" placeholder="Asset ID" />
+                          <span v-else>[[ asset.asset ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.source_location" style="width: 100%; padding: 4px;" placeholder="Source" />
+                          <span v-else>[[ asset.source_location ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.target_location" style="width: 100%; padding: 4px;" placeholder="Target" />
+                          <span v-else>[[ asset.target_location ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.to_employee" style="width: 100%; padding: 4px;" placeholder="Employee" />
+                          <span v-else>[[ asset.to_employee ]]</span>
+                        </td>
+                        <td v-if="isEditing">
+                          <button class="btn-action" @click="detailRecord.assets.splice(index, 1)" title="Remove">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  v-if="isEditing"
+                  class="btn-create-inline"
+                  style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; align-self: flex-start;"
+                  @click="detailRecord.assets.push({})"
+                >
+                  <i class="fas fa-plus"></i> Add Row
+                </button>
+              </div>
+
+              <!-- Comments (Div 3: spans column 4 to 6, rows 1-3) -->
+              <div style="grid-area: 1 / 4 / 3 / 6; display: flex; flex-direction: column; overflow: hidden;" class="flow-card">
+                <h4 class="section-subtitle" style="margin-bottom: 16px">
+                  Comments
+                </h4>
+                <div class="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 16px; padding-right: 8px;">
+                  <div v-if="comments.length === 0" class="text-muted" style="text-align: center; padding: 40px 0">
+                    No comments yet.
+                  </div>
+                  <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                      <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #369696; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
+                        [[ (comment.comment_by || comment.owner || "A").charAt(0).toUpperCase() ]]
+                      </div>
+                      <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ comment.comment_by || comment.owner ]]</span>
+                      <span class="comment-time" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">[[ comment.creation.split(' ')[0] ]]</span>
+                    </div>
+                    <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
+                  </div>
+                </div>
+
+                <!-- Comment Input with Toolbar -->
+                <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                  <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
+                    <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
+                    <input type="file" id="comment-image-upload-movement" style="display: none" accept="image/*" @change="handleImageUpload" />
+                  </div>
+                  <div id="comment-editor" contenteditable="true" class="form-input" style="min-height: 80px; padding: 12px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
+                  <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                    <button class="btn-create-inline" style="background: #369696; border-color: #369696" @click="addComment()">
+                      <i class="fas fa-paper-plane"></i><span style="margin-left: 6px">Post Comment</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard Request Layout (Kept for 'Requests' items) -->
+            <div v-else-if="activeItem === 'Requests'" class="request-detail-parent">
               <!-- DIV 1: Approval Flow (2 Levels) -->
               <div class="request-div1">
                 <div class="flow-card">
@@ -3658,6 +3772,14 @@
                               font-size: 0.75rem !important;
                             "
                           >
+                            Source Location
+                          </th>
+                          <th
+                            style="
+                              padding: 10px 12px !important;
+                              font-size: 0.75rem !important;
+                            "
+                          >
                             Target Location
                           </th>
                           <th
@@ -3745,6 +3867,15 @@
                             >
                               [[ asset.asset_name ]]
                             </div>
+                          </td>
+                          <td
+                            style="
+                              font-size: 0.85rem;
+                              font-weight: 600;
+                              padding: 10px 12px !important;
+                            "
+                          >
+                            [[ asset.source_location ]]
                           </td>
                           <td
                             style="
@@ -4941,8 +5072,7 @@
           </div>
           <h3>[[ activeItem ]] section</h3>
           <p>
-            [[ currentView.emptyMessage || 'This section is managed inside
-            StockIO.' ]]
+            [[ currentView.emptyMessage || 'This section is managed inside StockIO.' ]]
           </p>
         </div>
       </div>
@@ -7861,7 +7991,6 @@
             { label: "Movement ID", key: "name" },
             { label: "Transaction Date", key: "transaction_date" },
             { label: "Purpose", key: "purpose" },
-            { label: "Source Location", key: "source_location" },
             { label: "Company", key: "company" },
           ],
         },
