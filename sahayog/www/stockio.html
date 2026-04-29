@@ -2693,7 +2693,31 @@
                     <tbody>
                       <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.asset" style="width: 100%; padding: 4px;" placeholder="Asset ID" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_' + index }"
+                              v-model="asset.asset_display"
+                              @focus="onFocusSearchable('edit_asset_' + index)"
+                              @blur="onBlurSearchable('edit_asset_' + index)"
+                              placeholder="Search Asset"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="a in assetsList.filter(al => !asset.asset_display || al.name.toLowerCase().includes(asset.asset_display.toLowerCase()) || (al.asset_name && al.asset_name.toLowerCase().includes(asset.asset_display.toLowerCase())))"
+                                :key="a.name"
+                                class="searchable-select-option"
+                                @mousedown="asset.asset = a.name; asset.asset_display = a.name; focusedField = null;"
+                              >
+                                [[ a.name ]] - [[ a.asset_name ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.asset ]]</span>
                         </td>
                         <td>
@@ -2721,7 +2745,7 @@
                   v-if="isEditing"
                   class="btn-create-inline"
                   style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; align-self: flex-start;"
-                  @click="detailRecord.assets.push({})"
+                  @click="detailRecord.assets.push({ asset: '', asset_display: '' })"
                 >
                   <i class="fas fa-plus"></i> Add Row
                 </button>
@@ -10258,6 +10282,17 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+
+              // Initialize asset_display for movements
+              if (
+                this.activeItem === "Movements" &&
+                this.detailRecord.assets
+              ) {
+                this.detailRecord.assets.forEach((a) => {
+                  a.asset_display = a.asset;
+                });
+              }
+
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
