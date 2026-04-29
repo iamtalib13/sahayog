@@ -2662,9 +2662,15 @@
                 <div class="detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
                   <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
                     <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">[[ field.label ]]</span>
-                    <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">[[ detailRecord[field.key] ]]</span>
-                  </div>
-                </div>
+                    <span v-if="isEditing && field.key === 'purpose'">
+                      <select class="form-input" v-model="detailRecord.purpose" style="width: 100%; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="Transfer">Transfer</option>
+                        <option value="Issue">Issue</option>
+                        <option value="Receipt">Receipt</option>
+                      </select>
+                    </span>
+                    <span v-else class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">[[ detailRecord[field.key] ]]</span>
+                  </div>                </div>
               </div>
 
               <!-- Movements Items (Div 2: 3/1 to 5/4) -->
@@ -2680,19 +2686,32 @@
                         <th>Source Location</th>
                         <th>Target Location</th>
                         <th>To Employee</th>
+                        <th v-if="isEditing"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="asset in detailRecord.assets" :key="asset.name">
+                      <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
                         <td>[[ asset.asset ]]</td>
                         <td>[[ asset.source_location ]]</td>
                         <td>[[ asset.target_location ]]</td>
                         <td>[[ asset.to_employee ]]</td>
+                        <td v-if="isEditing">
+                          <button class="btn-action" @click="detailRecord.assets.splice(index, 1)" title="Remove">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
-                </div>
-              </div>
+                  <button
+                    v-if="isEditing"
+                    class="btn-create-inline"
+                    style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px;"
+                    @click="detailRecord.assets.push({})"
+                  >
+                    <i class="fas fa-plus"></i> Add Row
+                  </button>
+                </div>              </div>
 
               <!-- Comments -->
               <div style="grid-area: 1 / 4 / 5 / 6; display: flex; flex-direction: column;" class="flow-card">
