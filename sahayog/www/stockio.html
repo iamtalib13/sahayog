@@ -2692,10 +2692,22 @@
                     </thead>
                     <tbody>
                       <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
-                        <td>[[ asset.asset ]]</td>
-                        <td>[[ asset.source_location ]]</td>
-                        <td>[[ asset.target_location ]]</td>
-                        <td>[[ asset.to_employee ]]</td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.asset" style="width: 100%; padding: 4px;" placeholder="Asset ID" />
+                          <span v-else>[[ asset.asset ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.source_location" style="width: 100%; padding: 4px;" placeholder="Source" />
+                          <span v-else>[[ asset.source_location ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.target_location" style="width: 100%; padding: 4px;" placeholder="Target" />
+                          <span v-else>[[ asset.target_location ]]</span>
+                        </td>
+                        <td>
+                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.to_employee" style="width: 100%; padding: 4px;" placeholder="Employee" />
+                          <span v-else>[[ asset.to_employee ]]</span>
+                        </td>
                         <td v-if="isEditing">
                           <button class="btn-action" @click="detailRecord.assets.splice(index, 1)" title="Remove">
                             <i class="fas fa-trash"></i>
