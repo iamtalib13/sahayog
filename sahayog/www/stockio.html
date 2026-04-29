@@ -2712,7 +2712,7 @@
                                 v-for="a in assetsList.filter(al => !asset.asset_display || al.name.toLowerCase().includes(asset.asset_display.toLowerCase()) || (al.asset_name && al.asset_name.toLowerCase().includes(asset.asset_display.toLowerCase())))"
                                 :key="a.name"
                                 class="searchable-select-option"
-                                @mousedown="asset.asset = a.name; asset.asset_display = a.name; focusedField = null;"
+                                @mousedown="asset.asset = a.name; asset.asset_display = a.name; asset.source_location = a.location; focusedField = null;"
                               >
                                 [[ a.name ]] - [[ a.asset_name ]]
                               </div>
@@ -2725,11 +2725,59 @@
                           <span v-else>[[ asset.source_location ]]</span>
                         </td>
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.target_location" style="width: 100%; padding: 4px;" placeholder="Target" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_mv_loc_' + index }"
+                              v-model="asset.target_location_display"
+                              @focus="onFocusSearchable('edit_mv_loc_' + index)"
+                              @blur="onBlurSearchable('edit_mv_loc_' + index)"
+                              placeholder="Search Location"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_mv_loc_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="loc in locations.filter(l => !asset.target_location_display || l.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
+                                :key="loc"
+                                class="searchable-select-option"
+                                @mousedown="asset.target_location = loc; asset.target_location_display = loc; focusedField = null;"
+                              >
+                                [[ loc ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.target_location ]]</span>
                         </td>
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.to_employee" style="width: 100%; padding: 4px;" placeholder="Employee" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_mv_emp_' + index }"
+                              v-model="asset.to_employee_display"
+                              @focus="onFocusSearchable('edit_mv_emp_' + index)"
+                              @blur="onBlurSearchable('edit_mv_emp_' + index)"
+                              placeholder="Search Employee"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_mv_emp_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="emp in employees.filter(e => !asset.to_employee_display || e.employee_name.toLowerCase().includes(asset.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(asset.to_employee_display.toLowerCase()))"
+                                :key="emp.name"
+                                class="searchable-select-option"
+                                @mousedown="asset.to_employee = emp.name; asset.to_employee_display = emp.employee_name; focusedField = null;"
+                              >
+                                [[ emp.name ]] - [[ emp.employee_name ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.to_employee ]]</span>
                         </td>
                         <td v-if="isEditing">
@@ -2745,7 +2793,7 @@
                   v-if="isEditing"
                   class="btn-create-inline"
                   style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; align-self: flex-start;"
-                  @click="detailRecord.assets.push({ asset: '', asset_display: '' })"
+                  @click="detailRecord.assets.push({ asset: '', asset_display: '', target_location: '', target_location_display: '', to_employee: '', to_employee_display: '' })"
                 >
                   <i class="fas fa-plus"></i> Add Row
                 </button>
@@ -10283,13 +10331,15 @@
             if (res.message) {
               this.detailRecord = res.message;
 
-              // Initialize asset_display for movements
+              // Initialize display fields for movements
               if (
                 this.activeItem === "Movements" &&
                 this.detailRecord.assets
               ) {
                 this.detailRecord.assets.forEach((a) => {
                   a.asset_display = a.asset;
+                  a.target_location_display = a.target_location;
+                  a.to_employee_display = this.getEmployeeName(a.to_employee);
                 });
               }
 
