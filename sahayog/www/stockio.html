@@ -930,12 +930,12 @@
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
-          <span class="detail-id-badge"
+          <span class="detail-id-badge" v-if="activeItem !== 'Asset Master'"
             >[[ detailRecord ? detailRecord.name : '' ]]</span
           >
           <span
             class="detail-status-badge"
-            v-if="detailRecord"
+            v-if="detailRecord && activeItem !== 'Asset Master'"
             :class="detailRecord ? getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null) : ''"
           >
             [[ detailRecord ? (activeItem === 'Requests' ?
@@ -8079,10 +8079,8 @@
           ],
           detailFields: [
             { label: "Asset Name", key: "asset_name" },
-            { label: "Asset Code", key: "name" },
             { label: "Item Code", key: "item_code" },
             { label: "Category", key: "asset_category" },
-            { label: "Status", key: "status" },
             { label: "Custodian", key: "custodian_name" },
             { label: "Department", key: "department" },
             { label: "Location", key: "location" },
