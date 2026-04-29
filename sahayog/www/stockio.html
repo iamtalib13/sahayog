@@ -2694,7 +2694,7 @@
                 </div>
               </div>
 
-              <!-- Comments (Div 3: 1/4 to 5/6) -->
+              <!-- Comments -->
               <div style="grid-area: 1 / 4 / 5 / 6; display: flex; flex-direction: column;" class="flow-card">
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Comments
@@ -2714,7 +2714,16 @@
                     <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
                   </div>
                 </div>
+
+                <!-- Comment Input with Toolbar -->
                 <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                  <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
+                    <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
+                    <input type="file" id="comment-image-upload-movement" style="display: none" accept="image/*" @change="handleImageUpload" />
+                  </div>
                   <div id="comment-editor" contenteditable="true" class="form-input" style="min-height: 80px; padding: 12px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
                   <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
                     <button class="btn-create-inline" style="background: #369696; border-color: #369696" @click="addComment()">
