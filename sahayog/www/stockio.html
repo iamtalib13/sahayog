@@ -3676,6 +3676,42 @@
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
+                        <!-- Asset Master Asset Category Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'asset_category'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_category' }"
+                              v-model="detailRecord.asset_category"
+                              @focus="onFocusSearchable('edit_asset_category')"
+                              @blur="onBlurSearchable('edit_asset_category')"
+                              placeholder="Search Category"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_category'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="cat in assetCategories.filter(c => !detailRecord.asset_category || c.toLowerCase().includes(detailRecord.asset_category.toLowerCase()))"
+                                :key="cat"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.asset_category = cat; focusedField = null;"
+                              >
+                                [[ cat ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.asset_category"
+                            @click="detailRecord.asset_category = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Category"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
                         <!-- Default -->
                         <div v-else style="display: flex; align-items: center; gap: 8px; width: 100%;">
                           <input
