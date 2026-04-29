@@ -3640,13 +3640,59 @@
                           style="padding: 4px 8px !important; height: 60px"
                           v-model="detailRecord.remark"
                         ></textarea>
+                        <!-- Asset Master Item Code Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'item_code'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_item' }"
+                              v-model="detailRecord.item_code"
+                              @focus="onFocusSearchable('edit_asset_item')"
+                              @blur="onBlurSearchable('edit_asset_item')"
+                              placeholder="Search Item"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_item'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="item in itemsList.filter(i => i.is_fixed_asset && (!detailRecord.item_code || i.name.toLowerCase().includes(detailRecord.item_code.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(detailRecord.item_code.toLowerCase()))))"
+                                :key="item.name"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.item_code = item.name; detailRecord.asset_name = item.item_name; focusedField = null;"
+                              >
+                                [[ item.name ]] [[ item.item_name ? '- ' + item.item_name : '' ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.item_code"
+                            @click="detailRecord.item_code = ''; detailRecord.asset_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Item"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
                         <!-- Default -->
-                        <input
-                          v-else
-                          type="text"
-                          class="form-input"
-                          v-model="detailRecord[field.key]"
-                        />
+                        <div v-else style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <input
+                            type="text"
+                            class="form-input"
+                            v-model="detailRecord[field.key]"
+                            style="flex: 1;"
+                          />
+                          <button
+                            v-if="activeItem === 'Asset Master' && detailRecord[field.key]"
+                            @click="detailRecord[field.key] = ''; if(field.key === 'item_code') detailRecord.asset_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear field"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
                       </div>
                       <div
                         v-else-if="field.type === 'table'"
