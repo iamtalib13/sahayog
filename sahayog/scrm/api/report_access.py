@@ -754,9 +754,9 @@ def transfer_employee_leads(target_employee, source_employee):
 
         frappe.db.sql("""
             UPDATE `tabLead`
-            SET lead_owner = %s
+            SET lead_owner = %s, owner = %s
             WHERE lead_owner = %s
-        """, (source_user, target_user))
+        """, (source_user, source_user, target_user))
 
         frappe.db.commit()
 
