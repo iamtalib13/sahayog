@@ -2653,8 +2653,62 @@
             v-if="detailRecord"
             :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
           >
-            <!-- REDESIGNED REQUEST LAYOUT (5x5 Grid Style) -->
-            <div v-if="activeItem === 'Requests'" class="request-detail-parent">
+            <div v-if="activeItem === 'Movements'" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <!-- Movements Detail -->
+              <div class="flow-card" style="grid-column: span 2">
+                <h4 class="section-subtitle" style="margin-bottom: 24px">
+                  Movements Detail
+                </h4>
+                <div class="detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
+                  <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
+                    <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">[[ field.label ]]</span>
+                    <span class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">[[ detailRecord[field.key] ]]</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Movements Items -->
+              <div class="flow-card" style="grid-column: span 2">
+                <h4 class="section-subtitle" style="margin-bottom: 16px">
+                  Movements Items
+                </h4>
+                <div class="table-responsive">
+                  <table class="items-table" style="width: 100%">
+                    <thead>
+                      <tr>
+                        <th>Asset</th>
+                        <th>Source Location</th>
+                        <th>Target Location</th>
+                        <th>To Employee</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="asset in detailRecord.assets" :key="asset.name">
+                        <td>[[ asset.asset ]]</td>
+                        <td>[[ asset.source_location ]]</td>
+                        <td>[[ asset.target_location ]]</td>
+                        <td>[[ asset.to_employee ]]</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Comments -->
+              <div class="flow-card" style="grid-column: span 2; display: flex; flex-direction: column">
+                <h4 class="section-subtitle" style="margin-bottom: 16px">
+                  Comments
+                </h4>
+                <div class="comments-list" style="max-height: 200px; overflow-y: auto">
+                  <div v-for="comment in comments" :key="comment.name" class="comment-item">
+                    [[ comment.content ]]
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard Request Layout (Kept for 'Requests' items) -->
+            <div v-else-if="activeItem === 'Requests'" class="request-detail-parent">
               <!-- DIV 1: Approval Flow (2 Levels) -->
               <div class="request-div1">
                 <div class="flow-card">
