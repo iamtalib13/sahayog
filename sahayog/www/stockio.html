@@ -990,15 +990,24 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements' || activeItem === 'Asset Master') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
           <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
         </button>
         <button
+          class="btn-cancel"
+          v-if="isEditing"
+          @click="toggleEditMode()"
+          style="margin-left: 8px;"
+        >
+          <i class="fas fa-times"></i>
+          <span>Cancel</span>
+        </button>
+        <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           style="background: #369696; border-color: #369696"
           @click="submitDetailRecord()"
         >
@@ -7536,13 +7545,15 @@
     background: var(--gray-100);
     color: var(--gray-700);
     border: 1px solid var(--border-color);
-    padding: 10px 20px;
+    padding: 10px 18px;
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
     transition: var(--transition);
-    width: 99px;
   }
 
   .btn-cancel:hover {
