@@ -930,12 +930,12 @@
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
-          <span class="detail-id-badge" v-if="activeItem !== 'Asset Master'"
-            >[[ detailRecord ? detailRecord.name : '' ]]</span
+          <span class="detail-id-badge" v-if="detailRecord"
+            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name : detailRecord.name ]]</span
           >
           <span
             class="detail-status-badge"
-            v-if="detailRecord && activeItem !== 'Asset Master'"
+            v-if="detailRecord"
             :class="detailRecord ? getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null) : ''"
           >
             [[ detailRecord ? (activeItem === 'Requests' ?
