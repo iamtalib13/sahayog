@@ -2078,17 +2078,36 @@
               class="form-row"
               style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
             >
-              <!-- Asset Name -->
+              <!-- Item Code -->
               <div class="form-group">
                 <label class="form-label"
-                  >Asset Name <span class="form-required">*</span></label
+                  >[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]] <span class="form-required">*</span></label
                 >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="createAssetForm.asset_name"
-                  placeholder="Enter asset name"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_item_code' }"
+                    v-model="createAssetForm.item_code_display"
+                    @focus="onFocusSearchable('asset_item_code')"
+                    @blur="onBlurSearchable('asset_item_code')"
+                    placeholder="Search Item"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_item_code'"
+                  >
+                    <div
+                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
+                      :key="item.name"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
+                    >
+                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
+                      : '' ]]
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Asset Category -->
@@ -2122,36 +2141,17 @@
                 </div>
               </div>
 
-              <!-- Item Code -->
-              <div class="form-group">
+              <!-- Asset Name (Hidden until Item selected) -->
+              <div class="form-group" v-if="createAssetForm.item_code">
                 <label class="form-label"
-                  >Item Code <span class="form-required">*</span></label
+                  >Asset Name <span class="form-required">*</span></label
                 >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_item_code' }"
-                    v-model="createAssetForm.item_code_display"
-                    @focus="onFocusSearchable('asset_item_code')"
-                    @blur="onBlurSearchable('asset_item_code')"
-                    placeholder="Search Item"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_item_code'"
-                  >
-                    <div
-                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
-                      :key="item.name"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
-                    >
-                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
-                      : '' ]]
-                    </div>
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="createAssetForm.asset_name"
+                  placeholder="Enter asset name"
+                />
               </div>
 
               <!-- Location -->
