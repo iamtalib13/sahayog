@@ -2699,9 +2699,27 @@
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Comments
                 </h4>
-                <div class="comments-list" style="max-height: 200px; overflow-y: auto">
-                  <div v-for="comment in comments" :key="comment.name" class="comment-item">
-                    [[ comment.content ]]
+                <div class="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 16px; padding-right: 8px;">
+                  <div v-if="comments.length === 0" class="text-muted" style="text-align: center; padding: 40px 0">
+                    No comments yet.
+                  </div>
+                  <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                      <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #369696; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
+                        [[ (comment.comment_by || comment.owner || "A").charAt(0).toUpperCase() ]]
+                      </div>
+                      <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ comment.comment_by || comment.owner ]]</span>
+                      <span class="comment-time" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">[[ comment.creation.split(' ')[0] ]]</span>
+                    </div>
+                    <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
+                  </div>
+                </div>
+                <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                  <div id="comment-editor" contenteditable="true" class="form-input" style="min-height: 80px; padding: 12px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
+                  <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                    <button class="btn-create-inline" style="background: #369696; border-color: #369696" @click="addComment()">
+                      <i class="fas fa-paper-plane"></i><span style="margin-left: 6px">Post Comment</span>
+                    </button>
                   </div>
                 </div>
               </div>
