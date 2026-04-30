@@ -399,53 +399,52 @@ def process_approval(docname, action, remark):
 
 def get_permission_query_conditions(user):
     """
-    Filters the List View so users only see allowed documents.
+    Hybrid Approach: Pre-calculate allowed document names to ensure List View 
+    matches complex Python permission logic (Managers/Delegates/Groups).
     """
     if not user:
         user = frappe.session.user
 
-    # System Managers see everything
     if "System Manager" in frappe.get_roles(user):
         return ""
 
-    emp_name = frappe.db.get_value("Employee", {"user_id": user}, "name")
-    subordinates = []
-    if emp_name:
-        subs = frappe.get_all("Employee", filters={
-                              "reports_to": emp_name}, fields=["user_id"])
-        subordinates = [s.user_id for s in subs if s.user_id]
+    # 1. Fetch all requests that are not Draft, or owned by the user
+    # We filter by 'Draft' and 'Owner' first to reduce the loop size
+    potential_docs = frappe.get_all("Approval Request", 
+        filters=[
+            ["docstatus", "<", 2], # Not cancelled
+        ],
+        fields=["name", "owner", "approval_status"]
+    )
 
-    allowed_users = [user] + subordinates
-    escaped_users = ", ".join([frappe.db.escape(u) for u in allowed_users])
-    escaped_user = frappe.db.escape(user)
-    
-    # Get Employee Groups this user belongs to
-    user_employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
-    group_filters = ["''"] # Start with empty to avoid SQL error
-    if user_employee:
-        groups = frappe.get_all("Employee Group Table", filters={"employee": user_employee}, fields=["parent"])
-        for g in groups:
-            group_filters.append(frappe.db.escape(g.parent))
-    
-    group_condition = ", ".join(group_filters)
+    allowed_names = []
 
-    # Creator sees their own docs. Approvers/Managers/Group Members see docs ONLY if not Draft.
-    return f"""(
-        `tabApproval Request`.owner = {escaped_user}
-        OR (
-            `tabApproval Request`.approval_status != 'Draft'
-            AND `tabApproval Request`.name IN (
-                SELECT parent FROM `tabApproval Approver` 
-                WHERE parenttype='Approval Request' 
-                AND (approver IN ({escaped_users}) OR group_email IN ({group_condition}))
-            )
-        )
-    )"""
+    for d in potential_docs:
+        # Owner always sees their own record
+        if d.owner == user:
+            allowed_names.append(d.name)
+            continue
+        
+        # Others only see if it's NOT a Draft
+        if d.approval_status != "Draft":
+            # Reuse the heavy logic from the controller
+            doc_obj = frappe.get_doc("Approval Request", d.name)
+            valid_approvers = get_all_valid_approvers(doc_obj)
+            
+            if user in valid_approvers:
+                allowed_names.append(d.name)
+
+    if not allowed_names:
+        return "1=0"
+
+    # Convert list to SQL safe string
+    names_sql = ", ".join([frappe.db.escape(name) for name in allowed_names])
+    return f"`tabApproval Request`.name IN ({names_sql})"
 
 
 def has_permission(doc, ptype="read", user=None):
     """
-    Runs when a user tries to open a specific document.
+    Form view permission sync with list view.
     """
     if not user:
         user = frappe.session.user
@@ -453,19 +452,17 @@ def has_permission(doc, ptype="read", user=None):
     if "System Manager" in frappe.get_roles(user):
         return True
 
-    # Creator can view/edit their own document
+    # Owner can always read
     if doc.owner == user:
         return True
 
-    # If it's a Draft, ONLY the creator can see it (enforced because it skips the next block)
-    if doc.approval_status != "Draft" and doc.get("approvers"):
+    # Approvers can read only if not Draft
+    if doc.approval_status != "Draft":
         valid_approvers = get_all_valid_approvers(doc)
         if user in valid_approvers:
-            # Approvers can read and share (for delegation), but only write when Pending Approval
             if ptype in ["read", "share"]:
                 return True
             if ptype == "write":
-                # Only let them write if it is Pending Approval (so they can approve/reject/delegate)
                 return doc.approval_status == "Pending Approval"
 
     return False
