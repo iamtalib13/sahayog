@@ -429,9 +429,9 @@ def get_permission_query_conditions(user):
     
     group_condition = ", ".join(group_filters)
 
-    # Creator sees their own docs. Approvers/Managers/Group Members see docs ONLY if not Draft.
+    # Creator sees their own docs or docs owned by subordinates. Approvers/Managers/Group Members see docs ONLY if not Draft.
     return f"""(
-        `tabApproval Request`.owner = {escaped_user}
+        `tabApproval Request`.owner IN ({escaped_users})
         OR (
             `tabApproval Request`.approval_status != 'Draft'
             AND `tabApproval Request`.name IN (
