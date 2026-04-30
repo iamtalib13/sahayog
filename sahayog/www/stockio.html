@@ -8893,6 +8893,7 @@
         this.showMovementCreateView = false;
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
+        this.isEditing = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -10606,6 +10607,7 @@
 
       closeDetailView() {
         this.showDetailView = false;
+        this.isEditing = false;
         // Delay nullifying to prevent UI errors during transition
         setTimeout(() => {
           if (!this.showDetailView) {
