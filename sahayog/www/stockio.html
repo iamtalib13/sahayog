@@ -1157,6 +1157,18 @@
                   placeholder="Target Warehouse"
                 />
               </div>
+
+              <!-- Request Type Field -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Request Type <span class="form-required">*</span></label
+                >
+                <select class="form-input" v-model="emrForm.request_type">
+                  <option value="New">New</option>
+                  <option value="Return">Return</option>
+                  <option value="Issue">Issue</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label class="form-label"
                   >Reporting Person <span class="form-required">*</span></label
@@ -8393,6 +8405,7 @@
         source_warehouse_display: "",
         target_warehouse: "",
         target_location: "",
+        request_type: "New",
         reporting_person: "",
         reporting_person_display: "",
         remark: "",
@@ -10290,6 +10303,7 @@
           source_warehouse: "Source Warehouse",
           target_warehouse: "Target Warehouse",
           target_location: "Target Location",
+          request_type: "Request Type",
           remark: "Remark",
           reporting_person: "Reporting Person",
         };
@@ -10343,6 +10357,9 @@
             source_warehouse: this.emrForm.source_warehouse,
             target_warehouse: this.emrForm.target_warehouse,
             target_location: this.emrForm.target_location,
+            request_type: this.emrForm.request_type,
+            request_date: frappe.datetime.get_today(),
+            required_by_date: frappe.datetime.get_today(),
             remark: this.emrForm.remark,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
@@ -10351,6 +10368,8 @@
               uom: item.uom,
               quantity: item.quantity,
               item_category: item.item_category,
+              assigned_to_employee: this.emrForm.employee,
+              is_consumable: (this.emrForm.request_type === 'Issue' && item.item_category === 'Stock Item') ? 1 : 0
             })),
           };
 
