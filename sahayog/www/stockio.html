@@ -5566,6 +5566,99 @@
   <!-- Dispatch Modal -->
   <div
     class="profile-modal-overlay"
+    v-if="showMovementModal"
+    @click.self="showMovementModal = false"
+  >
+    <div class="profile-modal modal-large" style="max-width: 900px;">
+      <div class="profile-modal-header">
+        <h3>Asset Movement</h3>
+        <div class="profile-modal-header-right">
+          <button class="btn-create-inline" @click="submitMovementFromModal()" :disabled="creatingMovement">
+            <i class="fas fa-spinner fa-spin" v-if="creatingMovement"></i>
+            <span v-else>Create Movement</span>
+          </button>
+          <button class="profile-close" @click="showMovementModal = false">
+            &times;
+          </button>
+        </div>
+      </div>
+      <div class="profile-modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+          <div class="form-group">
+            <label class="form-label">Purpose <span class="form-required">*</span></label>
+            <select class="form-input" v-model="movementForm.purpose">
+              <option value="Transfer">Transfer</option>
+              <option value="Issue">Issue</option>
+              <option value="Receipt">Receipt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Transaction Date <span class="form-required">*</span></label>
+            <input type="date" class="form-input" v-model="movementForm.transaction_date" />
+          </div>
+        </div>
+        <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Items to Move</div>
+          <button class="btn-create-inline" @click="movementItems.push({asset:'', asset_display:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})" style="font-size: 10px; padding: 4px 10px;">
+            <i class="fas fa-plus"></i> Add Asset
+          </button>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: white;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
+              <tr>
+                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Asset <span class="form-required">*</span></th>
+                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Target Location <span class="form-required">*</span></th>
+                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">To Employee</th>
+                <th style="font-size: 10px; padding: 10px; text-align: center; font-weight: 700; width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in movementItems" :key="index" style="border-bottom: 1px solid var(--border-color)">
+                <td style="padding: 10px;">
+                  <div class="searchable-select-wrapper" style="width: 100%;">
+                    <input type="text" class="form-input" v-model="item.asset_display" @focus="focusedField = 'mv_asset_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Search Asset" />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_asset_' + index">
+                      <div v-for="opt in assetsList.filter(a => !item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase())))" :key="opt.name" class="searchable-select-option" @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; focusedField = null;">
+                        <div style="font-weight: 500">[[ opt.name ]]</div>
+                        <div style="font-size: 11px; opacity: 0.8">[[ opt.asset_name ]]</div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 10px;">
+                  <div class="searchable-select-wrapper" style="width: 100%;">
+                    <input type="text" class="form-input" v-model="item.target_location_display" @focus="focusedField = 'mv_loc_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Target Location" />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_loc_' + index">
+                      <div v-for="loc in filteredLocations" :key="loc" class="searchable-select-option" @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;">[[ loc ]]</div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 10px;">
+                  <div class="searchable-select-wrapper" style="width: 100%;">
+                    <input type="text" class="form-input" v-model="item.to_employee_display" @focus="focusedField = 'mv_emp_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="To Employee" />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_emp_' + index">
+                      <div v-for="emp in employees.filter(e => !item.to_employee_display || e.employee_name.toLowerCase().includes(item.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(item.to_employee_display.toLowerCase()))" :key="emp.name" class="searchable-select-option" @mousedown="item.to_employee = emp.name; item.to_employee_display = emp.employee_name; focusedField = null;">
+                        <div style="font-weight: 500">[[ emp.employee_name ]]</div>
+                        <div style="font-size: 11px; opacity: 0.8">[[ emp.name ]]</div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 10px; text-align: center;">
+                  <button class="btn-action" @click="movementItems.splice(index, 1)" title="Remove"><i class="fas fa-trash"></i></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispatch Modal -->
+  <div
+    class="profile-modal-overlay"
     v-if="showDispatchModal"
     @click.self="showDispatchModal = false"
   >
@@ -8381,6 +8474,7 @@
       showCreateItemModal: false,
       showItemCreateView: false,
       showDispatchModal: false,
+      showMovementModal: false,
       showWorkflowModal: false,
       dispatchForm: {
         name: "",
@@ -9611,6 +9705,56 @@
         }
       },
 
+      async submitMovementFromModal() {
+        if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
+          frappe.msgprint("Purpose and Transaction Date are required");
+          return;
+        }
+
+        const validItems = this.movementItems.filter((i) => i.asset);
+        if (validItems.length === 0) {
+          frappe.msgprint("At least one asset must be selected");
+          return;
+        }
+
+        this.creatingMovement = true;
+        try {
+          const doc = {
+            doctype: "Asset Movement",
+            transaction_date: this.movementForm.transaction_date,
+            purpose: this.movementForm.purpose,
+            assets: validItems.map((i) => ({
+              asset: i.asset,
+              target_location: i.target_location,
+              to_employee: i.to_employee,
+            })),
+          };
+
+          const res = await frappe.call({
+            method: "frappe.client.insert",
+            args: { doc },
+          });
+
+          if (res.message) {
+            frappe.show_alert({
+              message: `Asset Movement "${res.message.name}" saved as draft`,
+              indicator: "green",
+            });
+            this.showMovementModal = false;
+            // If we are on the Movements page, refresh data
+            if (this.activeItem === "Movements") {
+              await this.fetchData("Asset Movement");
+            }
+          }
+        } catch (e) {
+          console.error("Error creating movement:", e);
+          const errorMsg = e.message || e.exc || "Failed to create movement.";
+          frappe.msgprint(errorMsg);
+        } finally {
+          this.creatingMovement = false;
+        }
+      },
+
       // Searchable select methods
       onFocusSearchable(field) {
         this.focusedField = field;
@@ -9904,32 +10048,43 @@
       handleDispatch(row, isFromList = false) {
         if (!row || !row.name) return;
 
-        // Check if all items in the row are Assets
-        const isAssetOnly = row.items && row.items.length > 0 && row.items.every(i => i.item_category === 'Asset');
+        // Check if there are any Asset items in the selection or in the whole row if no selection
+        let itemsToProcess = [];
+        if (!isFromList && this.detailRecord && this.detailRecord.name === row.name && this.detailRecord.items) {
+           // Detail view: check selected items
+           itemsToProcess = this.detailRecord.items.filter(i => i.selected);
+        }
+        
+        // If no selected items (or from list), use all items that are Assets or Stock
+        if (itemsToProcess.length === 0) {
+            itemsToProcess = row.items || [];
+        }
 
-        if (isAssetOnly) {
-          // If only assets, directly go to Movement Create View
-          this.showMovementCreateView = true;
-          this.showDetailView = false;
+        const hasAssets = itemsToProcess.some(i => i.item_category === 'Asset');
+        const hasStock = itemsToProcess.some(i => i.item_category === 'Stock Item');
+
+        if (hasAssets && !hasStock) {
+          // If ONLY assets are involved, show the Asset Movement MODAL
+          this.showMovementModal = true;
+          this.showDetailView = isFromList ? false : true; // Keep detail view if we were there
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
           };
           
-          // Pre-populate movement items from the request
-          // Note: In EMR we have items (Item Code), but Asset Movement needs actual Asset records.
-          // For now we map them, user will have to select the specific Asset in the form.
-          this.movementItems = row.items.map(item => ({
-            asset: "", // User must select
-            asset_display: "",
-            item_code: item.item_code, // Helpful context
-            target_location: row.target_location || "",
-            target_location_display: row.target_location || "",
-            to_employee: row.employee || "",
-            to_employee_display: row.employee_name || row.employee || "",
-          }));
+          // Pre-populate movement items from the filtered items
+          this.movementItems = itemsToProcess
+            .filter(i => i.item_category === 'Asset')
+            .map(item => ({
+              asset: "", 
+              asset_display: "",
+              item_code: item.item_code,
+              target_location: row.target_location || "",
+              target_location_display: row.target_location || "",
+              to_employee: row.employee || "",
+              to_employee_display: row.employee_name || row.employee || "",
+            }));
 
-          // If no items (unlikely but safe), add one empty row
           if (this.movementItems.length === 0) {
             this.movementItems = [{
               asset: "",
