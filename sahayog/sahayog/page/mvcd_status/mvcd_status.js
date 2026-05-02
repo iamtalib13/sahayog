@@ -149,7 +149,7 @@ h4 {
 <!-- Batch Status Indicators -->
 <div style="text-align:center; margin-top: 15px;">
     <span style="font-size: 0.75rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Batch Wise Progress</span>
-    <div id="batch-buttons-container" style="display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; max-width: 100%; margin: 0 auto;"></div>
+    <div id="batch-buttons-container" style="display: flex; flex-wrap: nowrap; justify-content: center; gap: 4px; max-width: 100%; margin: 0 auto;"></div>
 </div>
 
 <!-- SOL ID Filter -->
@@ -393,30 +393,30 @@ h4 {
 
       const $badge = $(`
         <div class="status-badge-liquid" style="
-            padding: 8px 24px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 800;
-            letter-spacing: 1.2px;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
             background: ${glassBg};
             color: ${accentColor};
-            border: 1.5px solid ${accentColor};
+            border: 1px solid ${accentColor};
             cursor: pointer;
-            min-width: 100px;
+            min-width: 70px;
             flex-shrink: 1;
             justify-content: center;
             --glow-color: ${glowColor};
             animation: liquid-pulse 3s infinite;
         ">
             <div style="
-                width: 10px; 
-                height: 10px; 
+                width: 6px; 
+                height: 6px; 
                 border-radius: 50%; 
                 background: ${accentColor};
-                box-shadow: 0 0 10px ${accentColor};
+                box-shadow: 0 0 5px ${accentColor};
                 flex-shrink: 0;
             "></div>
             <span style="white-space: nowrap; font-family: 'Inter', sans-serif;">${buttonText}</span>
