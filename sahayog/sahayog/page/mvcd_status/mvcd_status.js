@@ -162,6 +162,10 @@ h4 {
           style="margin-left:6px;padding:6px 10px;background:#eee;color:#333;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
     Clear
   </button>
+  <button id="manual-refresh"
+          style="margin-left:6px;padding:6px 10px;background:#256a69;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+    Refresh
+  </button>
 </div>
 
 <!-- Filter applied message -->
@@ -405,6 +409,12 @@ h4 {
     localStorage.removeItem("mvcd_sol_filter");
     renderBatchButtons();
     applyFilter();
+  });
+
+  $("#manual-refresh").on("click", function () {
+    fetchRenderMVCD();
+    fetchRenderTransaction();
+    fetchBatches();
   });
 
   function onMVCDDataLoaded(data) {
