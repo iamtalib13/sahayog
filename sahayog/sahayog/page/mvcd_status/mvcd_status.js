@@ -142,6 +142,10 @@ h4 {
   color: #256a69;
   animation: count-to 1s ease-in-out forwards;
 }
+
+.page-head.flex {
+  display: none !important;
+}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
