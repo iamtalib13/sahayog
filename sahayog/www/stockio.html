@@ -953,7 +953,7 @@
               <div class="inline-step-num">1</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">Reporting</span>
-                <span class="inline-step-name">[[ detailRecord.reporting_person_display || 'Not Assigned' ]]</span>
+                <span class="inline-step-name">[[ detailRecord.reporting_person_display || detailRecord.reporting_person || 'Not Assigned' ]]</span>
               </div>
               <span class="inline-step-status" :class="detailRecord.status === 'Draft' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : 'status-active')">
                 [[ detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.status === 'Draft' ? 'Draft' : 'Approved') ]]
