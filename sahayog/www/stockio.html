@@ -2911,26 +2911,11 @@
             <div v-else-if="activeItem === 'Requests'" class="request-detail-parent">
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
-                <div
-                  class="flow-card detail-col-3"
-                  style="
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                  "
-                >
+                <div class="flow-card detail-col-3">
                   <h4 class="section-subtitle" style="margin-bottom: 16px">
                     Comments
                   </h4>
-                  <div
-                    class="comments-list"
-                    style="
-                      flex: 1;
-                      overflow-y: auto;
-                      margin-bottom: 16px;
-                      padding-right: 8px;
-                    "
-                  >
+                  <div class="comments-list">
                     <div
                       v-if="comments.length === 0"
                       class="text-muted"
@@ -7991,12 +7976,20 @@
     grid-template-rows: auto 1fr;
     gap: 20px;
     padding: 4px;
-    min-height: 600px;
+    height: 100%;
+    overflow: hidden;
   }
   .request-div2 {
     grid-column: 2;
     grid-row: 1 / 3;
     width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .request-div2 > .flow-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
   .request-div3 {
     grid-column: 1;
@@ -8007,14 +8000,24 @@
     grid-row: 2;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
   .request-div4 > .flow-card {
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
   .request-div4 .table-responsive {
     flex: 1;
+    overflow-y: auto;
+  }
+
+  .comments-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    padding-right: 8px;
   }
 
   /* Approval Flow Components */
