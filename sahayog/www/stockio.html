@@ -930,8 +930,8 @@
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
-          <span class="detail-id-badge"
-            >[[ detailRecord ? detailRecord.name : '' ]]</span
+          <span class="detail-id-badge" v-if="detailRecord"
+            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name : detailRecord.name ]]</span
           >
           <span
             class="detail-status-badge"
@@ -990,15 +990,24 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements' || activeItem === 'Asset Master') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
           <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
         </button>
         <button
+          class="btn-cancel"
+          v-if="isEditing"
+          @click="toggleEditMode()"
+          style="margin-left: 8px;"
+        >
+          <i class="fas fa-times"></i>
+          <span>Cancel</span>
+        </button>
+        <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && (activeItem !== 'Requests' || detailRecord.status === 'Draft' || isAdmin)"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           style="background: #369696; border-color: #369696"
           @click="submitDetailRecord()"
         >
@@ -1147,6 +1156,18 @@
                   v-model="emrForm.target_warehouse"
                   placeholder="Target Warehouse"
                 />
+              </div>
+
+              <!-- Request Type Field -->
+              <div class="form-group">
+                <label class="form-label"
+                  >Request Type <span class="form-required">*</span></label
+                >
+                <select class="form-input" v-model="emrForm.request_type">
+                  <option value="New">New</option>
+                  <option value="Return">Return</option>
+                  <option value="Issue">Issue</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label"
@@ -2078,17 +2099,36 @@
               class="form-row"
               style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
             >
-              <!-- Asset Name -->
+              <!-- Item Code -->
               <div class="form-group">
                 <label class="form-label"
-                  >Asset Name <span class="form-required">*</span></label
+                  >[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]] <span class="form-required">*</span></label
                 >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="createAssetForm.asset_name"
-                  placeholder="Enter asset name"
-                />
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'asset_item_code' }"
+                    v-model="createAssetForm.item_code_display"
+                    @focus="onFocusSearchable('asset_item_code')"
+                    @blur="onBlurSearchable('asset_item_code')"
+                    placeholder="Search Item"
+                  />
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'asset_item_code'"
+                  >
+                    <div
+                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
+                      :key="item.name"
+                      class="searchable-select-option"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
+                    >
+                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
+                      : '' ]]
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Asset Category -->
@@ -2122,36 +2162,17 @@
                 </div>
               </div>
 
-              <!-- Item Code -->
-              <div class="form-group">
+              <!-- Asset Name (Hidden until Item selected) -->
+              <div class="form-group" v-if="createAssetForm.item_code">
                 <label class="form-label"
-                  >Item Code <span class="form-required">*</span></label
+                  >Asset Name <span class="form-required">*</span></label
                 >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_item_code' }"
-                    v-model="createAssetForm.item_code_display"
-                    @focus="onFocusSearchable('asset_item_code')"
-                    @blur="onBlurSearchable('asset_item_code')"
-                    placeholder="Search Item"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_item_code'"
-                  >
-                    <div
-                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
-                      :key="item.name"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
-                    >
-                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
-                      : '' ]]
-                    </div>
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="createAssetForm.asset_name"
+                  placeholder="Enter asset name"
+                />
               </div>
 
               <!-- Location -->
@@ -2693,7 +2714,31 @@
                     <tbody>
                       <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.asset" style="width: 100%; padding: 4px;" placeholder="Asset ID" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_' + index }"
+                              v-model="asset.asset_display"
+                              @focus="onFocusSearchable('edit_asset_' + index)"
+                              @blur="onBlurSearchable('edit_asset_' + index)"
+                              placeholder="Search Asset"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="a in assetsList.filter(al => !asset.asset_display || al.name.toLowerCase().includes(asset.asset_display.toLowerCase()) || (al.asset_name && al.asset_name.toLowerCase().includes(asset.asset_display.toLowerCase())))"
+                                :key="a.name"
+                                class="searchable-select-option"
+                                @mousedown="asset.asset = a.name; asset.asset_display = a.name; asset.source_location = a.location; focusedField = null;"
+                              >
+                                [[ a.name ]] - [[ a.asset_name ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.asset ]]</span>
                         </td>
                         <td>
@@ -2701,11 +2746,59 @@
                           <span v-else>[[ asset.source_location ]]</span>
                         </td>
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.target_location" style="width: 100%; padding: 4px;" placeholder="Target" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_mv_loc_' + index }"
+                              v-model="asset.target_location_display"
+                              @focus="onFocusSearchable('edit_mv_loc_' + index)"
+                              @blur="onBlurSearchable('edit_mv_loc_' + index)"
+                              placeholder="Search Location"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_mv_loc_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="loc in locations.filter(l => !asset.target_location_display || l.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
+                                :key="loc"
+                                class="searchable-select-option"
+                                @mousedown="asset.target_location = loc; asset.target_location_display = loc; focusedField = null;"
+                              >
+                                [[ loc ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.target_location ]]</span>
                         </td>
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.to_employee" style="width: 100%; padding: 4px;" placeholder="Employee" />
+                          <div v-if="isEditing" class="searchable-select-wrapper">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_mv_emp_' + index }"
+                              v-model="asset.to_employee_display"
+                              @focus="onFocusSearchable('edit_mv_emp_' + index)"
+                              @blur="onBlurSearchable('edit_mv_emp_' + index)"
+                              placeholder="Search Employee"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_mv_emp_' + index"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="emp in employees.filter(e => !asset.to_employee_display || e.employee_name.toLowerCase().includes(asset.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(asset.to_employee_display.toLowerCase()))"
+                                :key="emp.name"
+                                class="searchable-select-option"
+                                @mousedown="asset.to_employee = emp.name; asset.to_employee_display = emp.employee_name; focusedField = null;"
+                              >
+                                [[ emp.name ]] - [[ emp.employee_name ]]
+                              </div>
+                            </div>
+                          </div>
                           <span v-else>[[ asset.to_employee ]]</span>
                         </td>
                         <td v-if="isEditing">
@@ -2721,7 +2814,7 @@
                   v-if="isEditing"
                   class="btn-create-inline"
                   style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; align-self: flex-start;"
-                  @click="detailRecord.assets.push({})"
+                  @click="detailRecord.assets.push({ asset: '', asset_display: '', target_location: '', target_location_display: '', to_employee: '', to_employee_display: '' })"
                 >
                   <i class="fas fa-plus"></i> Add Row
                 </button>
@@ -3559,13 +3652,236 @@
                           style="padding: 4px 8px !important; height: 60px"
                           v-model="detailRecord.remark"
                         ></textarea>
+                        <!-- Asset Master Item Code Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'item_code'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_item' }"
+                              v-model="detailRecord.item_code"
+                              @focus="onFocusSearchable('edit_asset_item')"
+                              @blur="onBlurSearchable('edit_asset_item')"
+                              placeholder="Search Item"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_item'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="item in itemsList.filter(i => i.is_fixed_asset && (!detailRecord.item_code || i.name.toLowerCase().includes(detailRecord.item_code.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(detailRecord.item_code.toLowerCase()))))"
+                                :key="item.name"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.item_code = item.name; detailRecord.asset_name = item.item_name; focusedField = null;"
+                              >
+                                [[ item.name ]] [[ item.item_name ? '- ' + item.item_name : '' ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.item_code"
+                            @click="detailRecord.item_code = ''; detailRecord.asset_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Item"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Asset Category Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'asset_category'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_category' }"
+                              v-model="detailRecord.asset_category"
+                              @focus="onFocusSearchable('edit_asset_category')"
+                              @blur="onBlurSearchable('edit_asset_category')"
+                              placeholder="Search Category"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_category'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="cat in assetCategories.filter(c => !detailRecord.asset_category || c.toLowerCase().includes(detailRecord.asset_category.toLowerCase()))"
+                                :key="cat"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.asset_category = cat; focusedField = null;"
+                              >
+                                [[ cat ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.asset_category"
+                            @click="detailRecord.asset_category = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Category"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Location Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'location'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_location' }"
+                              v-model="detailRecord.location"
+                              @focus="onFocusSearchable('edit_asset_location')"
+                              @blur="onBlurSearchable('edit_asset_location')"
+                              placeholder="Search Location"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_location'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="loc in locations.filter(l => !detailRecord.location || l.toLowerCase().includes(detailRecord.location.toLowerCase()))"
+                                :key="loc"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.location = loc; focusedField = null;"
+                              >
+                                [[ loc ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.location"
+                            @click="detailRecord.location = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Location"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Custodian Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && (field.key === 'custodian' || field.key === 'custodian_name')" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_custodian' }"
+                              v-model="detailRecord.custodian_name"
+                              @focus="onFocusSearchable('edit_asset_custodian')"
+                              @blur="onBlurSearchable('edit_asset_custodian')"
+                              placeholder="Search Custodian"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_custodian'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="emp in employees.filter(e => !detailRecord.custodian_name || e.employee_name.toLowerCase().includes(detailRecord.custodian_name.toLowerCase()) || e.name.toLowerCase().includes(detailRecord.custodian_name.toLowerCase()))"
+                                :key="emp.name"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.custodian = emp.name; detailRecord.custodian_name = emp.employee_name; focusedField = null;"
+                              >
+                                [[ emp.name ]] - [[ emp.employee_name ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.custodian_name"
+                            @click="detailRecord.custodian = ''; detailRecord.custodian_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Custodian"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Department Searchable Select -->
+                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'department'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <div class="searchable-select-wrapper" style="flex: 1;">
+                            <input
+                              type="text"
+                              class="form-input searchable-select-input"
+                              :class="{ focused: focusedField === 'edit_asset_dept' }"
+                              v-model="detailRecord.department"
+                              @focus="onFocusSearchable('edit_asset_dept')"
+                              @blur="onBlurSearchable('edit_asset_dept')"
+                              placeholder="Search Department"
+                            />
+                            <div
+                              class="searchable-select-dropdown"
+                              v-if="focusedField === 'edit_asset_dept'"
+                              style="width: 100%; z-index: 50"
+                            >
+                              <div
+                                v-for="dept in itemDepartments.filter(d => !detailRecord.department || d.toLowerCase().includes(detailRecord.department.toLowerCase()))"
+                                :key="dept"
+                                class="searchable-select-option"
+                                @mousedown="detailRecord.department = dept; focusedField = null;"
+                              >
+                                [[ dept ]]
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            v-if="detailRecord.department"
+                            @click="detailRecord.department = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear Department"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
+                        <!-- Asset Master Purchase Date -->
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'purchase_date'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            border: 2px solid var(--border-color);
+                            border-radius: var(--border-radius-md);
+                            background: var(--bg-surface);
+                            padding: 0 12px;
+                            height: 40px;
+                            width: 100%;
+                          "
+                        >
+                          <i
+                            class="fas fa-calendar-alt"
+                            style="color: var(--text-muted); margin-right: 10px"
+                          ></i>
+                          <input
+                            type="date"
+                            class="form-input"
+                            style="
+                              padding: 0 !important;
+                              height: 100%;
+                              border: none !important;
+                              background: transparent !important;
+                              box-shadow: none !important;
+                              outline: none !important;
+                              flex: 1;
+                            "
+                            v-model="detailRecord.purchase_date"
+                          />
+                        </div>
                         <!-- Default -->
-                        <input
-                          v-else
-                          type="text"
-                          class="form-input"
-                          v-model="detailRecord[field.key]"
-                        />
+                        <div v-else style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                          <input
+                            type="text"
+                            class="form-input"
+                            v-model="detailRecord[field.key]"
+                            style="flex: 1;"
+                          />
+                          <button
+                            v-if="activeItem === 'Asset Master' && detailRecord[field.key]"
+                            @click="detailRecord[field.key] = ''; if(field.key === 'item_code') detailRecord.asset_name = '';"
+                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            title="Clear field"
+                          >
+                            <i class="fas fa-times"></i>
+                          </button>
+                        </div>
                       </div>
                       <div
                         v-else-if="field.type === 'table'"
@@ -7464,13 +7780,15 @@
     background: var(--gray-100);
     color: var(--gray-700);
     border: 1px solid var(--border-color);
-    padding: 10px 20px;
+    padding: 10px 18px;
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     cursor: pointer;
     transition: var(--transition);
-    width: 99px;
   }
 
   .btn-cancel:hover {
@@ -7950,10 +8268,8 @@
           ],
           detailFields: [
             { label: "Asset Name", key: "asset_name" },
-            { label: "Asset Code", key: "name" },
             { label: "Item Code", key: "item_code" },
             { label: "Category", key: "asset_category" },
-            { label: "Status", key: "status" },
             { label: "Custodian", key: "custodian_name" },
             { label: "Department", key: "department" },
             { label: "Location", key: "location" },
@@ -8089,6 +8405,7 @@
         source_warehouse_display: "",
         target_warehouse: "",
         target_location: "",
+        request_type: "New",
         reporting_person: "",
         reporting_person_display: "",
         remark: "",
@@ -8589,6 +8906,7 @@
         this.showMovementCreateView = false;
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
+        this.isEditing = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -9985,6 +10303,7 @@
           source_warehouse: "Source Warehouse",
           target_warehouse: "Target Warehouse",
           target_location: "Target Location",
+          request_type: "Request Type",
           remark: "Remark",
           reporting_person: "Reporting Person",
         };
@@ -10038,6 +10357,9 @@
             source_warehouse: this.emrForm.source_warehouse,
             target_warehouse: this.emrForm.target_warehouse,
             target_location: this.emrForm.target_location,
+            request_type: this.emrForm.request_type,
+            request_date: frappe.datetime.get_today(),
+            required_by_date: frappe.datetime.get_today(),
             remark: this.emrForm.remark,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
@@ -10046,6 +10368,8 @@
               uom: item.uom,
               quantity: item.quantity,
               item_category: item.item_category,
+              assigned_to_employee: this.emrForm.employee,
+              is_consumable: (this.emrForm.request_type === 'Issue' && item.item_category === 'Stock Item') ? 1 : 0
             })),
           };
 
@@ -10258,6 +10582,19 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+
+              // Initialize display fields for movements
+              if (
+                this.activeItem === "Movements" &&
+                this.detailRecord.assets
+              ) {
+                this.detailRecord.assets.forEach((a) => {
+                  a.asset_display = a.asset;
+                  a.target_location_display = a.target_location;
+                  a.to_employee_display = this.getEmployeeName(a.to_employee);
+                });
+              }
+
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
@@ -10289,6 +10626,7 @@
 
       closeDetailView() {
         this.showDetailView = false;
+        this.isEditing = false;
         // Delay nullifying to prevent UI errors during transition
         setTimeout(() => {
           if (!this.showDetailView) {
