@@ -365,11 +365,10 @@ h4 {
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
       
-      // Calculate if batch has pending records
+      // Calculate if batch has pending records (Checking MVCD table only)
       const allowedSols = batchData[batch] || [];
       const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
-      const transCount = currentTransData.filter(row => allowedSols.includes(String(row.dth_init_sol_id))).length;
-      const isClear = (mvcdCount + transCount) === 0;
+      const isClear = mvcdCount === 0;
 
       const $btn = $(
         `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
