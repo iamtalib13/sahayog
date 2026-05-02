@@ -4440,10 +4440,10 @@
                         gap: 8px;
                       "
                       @click="handleDispatch(detailRecord, false)"
-                      title="Dispatch Selected Items"
+                      :title="(detailRecord.items && detailRecord.items.some(i => i.selected && i.item_category === 'Asset')) ? 'Movement Selected Items' : 'Dispatch Selected Items'"
                     >
                       <i class="fas fa-truck-fast"></i>
-                      <span>Dispatch Selected Items</span>
+                      <span>[[ (detailRecord.items && detailRecord.items.some(i => i.selected && i.item_category === 'Asset')) ? 'Movement Selected Items' : 'Dispatch Selected Items' ]]</span>
                     </button>
                   </div>
                 </div>
@@ -5248,7 +5248,7 @@
                       @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
-                      [[ col.key === 'dispatch' ? 'Dispatch' : col.label ]]
+                      [[ col.key === 'dispatch' ? (row.items && row.items.some(i => i.item_category === 'Asset') ? 'Movement' : 'Dispatch') : col.label ]]
                     </button>
                     <button
                       class="btn-create-inline"
@@ -5571,10 +5571,10 @@
   >
     <div class="profile-modal">
       <div class="profile-modal-header">
-        <h3>Dispatch Request</h3>
+        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]]</h3>
         <div class="profile-modal-header-right">
           <button class="btn-create-inline" @click="submitDispatch()">
-            <span>Proceed</span>
+            <span>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Proceed Movement' : 'Proceed Dispatch' ]]</span>
           </button>
           <button class="profile-close" @click="showDispatchModal = false">
             &times;
@@ -5743,7 +5743,7 @@
                       color: var(--text-muted);
                     "
                   >
-                    Dispatch Qty
+                    [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Movement Qty' : 'Dispatch Qty' ]]
                   </th>
                   <th
                     style="
@@ -9940,12 +9940,12 @@
                 .filter((i) => {
                   if (selectedNames.length > 0) {
                     return (
-                      i.item_category === "Stock Item" &&
+                      (i.item_category === "Stock Item" || i.item_category === "Asset") &&
                       selectedNames.includes(i.name)
                     );
                   }
                   return (
-                    i.item_category === "Stock Item" && i.status === "Approved"
+                    (i.item_category === "Stock Item" || i.item_category === "Asset") && i.status === "Approved"
                   );
                 })
                 .map((item) => ({
