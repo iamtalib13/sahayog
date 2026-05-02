@@ -3395,22 +3395,14 @@
                         >Total Approved: [[ detailRecord.items ?
                         detailRecord.items.reduce((acc, i) => acc + (i.approved_quantity || 0), 0) : 0 ]]</span
                       >
-                      <div class="btn-group" style="display: flex; background: var(--gray-200); padding: 2px; border-radius: 6px; margin-left: 8px;">
-                        <button 
-                          @click="requestItemView = 'list'"
-                          style="border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s;"
-                          :style="requestItemView === 'list' ? 'background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: #369696; font-weight: 700;' : 'background: transparent; color: var(--text-muted);'"
-                        >
-                          <i class="fas fa-list"></i>
-                        </button>
-                        <button 
-                          @click="requestItemView = 'cards'"
-                          style="border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s;"
-                          :style="requestItemView === 'cards' ? 'background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: #369696; font-weight: 700;' : 'background: transparent; color: var(--text-muted);'"
-                        >
-                          <i class="fas fa-th-large"></i>
-                        </button>
-                      </div>
+                      <button 
+                        @click="requestItemView = (requestItemView === 'list' ? 'cards' : 'list')"
+                        style="border: 1px solid var(--border-color); background: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 16px; color: #369696; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                        :title="requestItemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
+                      >
+                        <i :class="requestItemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"></i>
+                        <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">[[ requestItemView === 'list' ? 'Cards' : 'List' ]]</span>
+                      </button>
                     </div>
                     <button
                       v-if="detailRecord.items && detailRecord.items.some(i => i.selected)"
