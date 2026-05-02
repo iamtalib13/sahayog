@@ -948,7 +948,23 @@
 
           <!-- Inline Approval Flow -->
           <div class="inline-flow-stepper" v-if="activeItem === 'Requests' && detailRecord && detailRecord.name">
-            <!-- Step 1 -->
+            <!-- Step 1: Submitted -->
+            <div class="inline-flow-step">
+              <div class="inline-step-num"><i class="fas fa-paper-plane" style="font-size: 10px;"></i></div>
+              <div class="inline-step-info">
+                <span class="inline-step-role">Action</span>
+                <span class="inline-step-name">Submitted</span>
+              </div>
+              <span class="inline-step-status status-active">
+                Done
+              </span>
+            </div>
+
+            <div class="inline-flow-connector">
+              <i class="fas fa-chevron-right"></i>
+            </div>
+
+            <!-- Step 2: Reporting -->
             <div class="inline-flow-step">
               <div class="inline-step-num">1</div>
               <div class="inline-step-info">
@@ -964,7 +980,7 @@
               <i class="fas fa-chevron-right"></i>
             </div>
 
-            <!-- Step 2 -->
+            <!-- Step 3: HO Approval -->
             <div class="inline-flow-step">
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
