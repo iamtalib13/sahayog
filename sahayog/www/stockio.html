@@ -3180,16 +3180,19 @@
                       background: var(--gray-50);
                     "
                   >
-                    <h4 class="section-subtitle" style="margin: 0">
-                      Requested Items
-                    </h4>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <h4 class="section-subtitle" style="margin: 0">
+                        Requested Items
+                      </h4>
+                    </div>
                     <span class="badge active" style="border-radius: 20px"
                       >[[ detailRecord.items ? detailRecord.items.length : 0 ]]
                       Items</span
                     >
                   </div>
-                  <div class="table-responsive">
-                    <table class="items-table" style="width: 100%">
+                  <div class="table-responsive" :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--gray-50);' : ''">
+                    <!-- List View (Table) -->
+                    <table class="items-table" style="width: 100%" v-if="requestItemView === 'list'">
                       <thead>
                         <tr>
                           <th style="width: 50px; text-align: center">#</th>
@@ -3321,6 +3324,45 @@
                         </tr>
                       </tbody>
                     </table>
+
+                    <!-- Card View -->
+                    <div v-else class="items-card-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                      <div v-for="(item, idx) in detailRecord.items" :key="item.name || idx" class="item-card" 
+                           style="background: white; border-radius: 12px; border: 1px solid var(--border-color); padding: 16px; display: flex; flex-direction: column; gap: 12px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                          <div style="display: flex; gap: 12px; align-items: center;">
+                            <div style="width: 40px; height: 40px; border-radius: 8px; background: var(--gray-50); display: flex; align-items: center; justify-content: center; color: #369696;">
+                              <i class="fas fa-box"></i>
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                              <span style="font-weight: 700; color: var(--text-main); font-size: 14px;">[[ item.item_code ]]</span>
+                              <span style="font-size: 11px; color: var(--text-muted);">[[ item.item_name || 'Stock Item' ]]</span>
+                            </div>
+                          </div>
+                          <input type="checkbox" v-model="item.selected" v-if="item.status === 'Approved'" style="width: 18px; height: 18px; accent-color: #369696; cursor: pointer;" />
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; background: var(--gray-50); border-radius: 8px;">
+                          <div>
+                            <div style="font-size: 9px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 2px;">Requested</div>
+                            <div style="font-weight: 700; font-size: 13px;">[[ item.quantity ]] [[ item.uom ]]</div>
+                          </div>
+                          <div>
+                            <div style="font-size: 9px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 2px;">Approved</div>
+                            <div v-if="isEditing">
+                              <input type="number" class="form-input" style="width: 100%; height: 24px; padding: 2px 6px !important; font-size: 12px;" v-model.number="item.approved_quantity" />
+                            </div>
+                            <div v-else style="font-weight: 700; font-size: 13px; color: #369696;">[[ item.approved_quantity || 0 ]] [[ item.uom ]]</div>
+                          </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                          <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">[[ item.item_category ]]</span>
+                          <span class="badge" :class="getBadgeClass(item, 'status')" style="font-size: 10px; padding: 2px 8px;">[[ item.status ]]</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div
                     style="
@@ -3347,14 +3389,28 @@
                       >
                       <span
                         >Total Requested: [[ detailRecord.items ?
-                        detailRecord.items.reduce((acc, i) => acc + (i.quantity
-                        || 0), 0) : 0 ]]</span
+                        detailRecord.items.reduce((acc, i) => acc + (i.quantity || 0), 0) : 0 ]]</span
                       >
                       <span
                         >Total Approved: [[ detailRecord.items ?
-                        detailRecord.items.reduce((acc, i) => acc +
-                        (i.approved_quantity || 0), 0) : 0 ]]</span
+                        detailRecord.items.reduce((acc, i) => acc + (i.approved_quantity || 0), 0) : 0 ]]</span
                       >
+                      <div class="btn-group" style="display: flex; background: var(--gray-200); padding: 2px; border-radius: 6px; margin-left: 8px;">
+                        <button 
+                          @click="requestItemView = 'list'"
+                          style="border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s;"
+                          :style="requestItemView === 'list' ? 'background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: #369696; font-weight: 700;' : 'background: transparent; color: var(--text-muted);'"
+                        >
+                          <i class="fas fa-list"></i>
+                        </button>
+                        <button 
+                          @click="requestItemView = 'cards'"
+                          style="border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; transition: all 0.2s;"
+                          :style="requestItemView === 'cards' ? 'background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); color: #369696; font-weight: 700;' : 'background: transparent; color: var(--text-muted);'"
+                        >
+                          <i class="fas fa-th-large"></i>
+                        </button>
+                      </div>
                     </div>
                     <button
                       v-if="detailRecord.items && detailRecord.items.some(i => i.selected)"
@@ -8615,6 +8671,7 @@
       loadedRows: 0,
       hasMore: false,
       itemView: "list",
+      requestItemView: "list",
       userWarehouse: null,
       userEmployeeId: null,
       userInventoryType: null,
