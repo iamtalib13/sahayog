@@ -145,6 +145,11 @@ h4 {
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
+
+<!-- Batch Buttons -->
+<div id="batch-buttons-container" style="text-align:center; margin: 10px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+</div>
+
 <!-- SOL ID Filter -->
 <div style="text-align:center;margin:10px 0;">
   <input type="text" id="sol-filter" placeholder="Enter SOL ID to filter"
@@ -247,19 +252,26 @@ h4 {
 
   let currentMVCDData = [];
   let currentTransData = [];
+  let batchData = {};
+  let activeBatch = null;
+  let mvcdFirstLoad = true;
+  let transFirstLoad = true;
 
   // Load filter from storage
   let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
   $("#sol-filter").val(cachedFilter);
 
-  function updateFilterMessage(sol) {
-    if (sol && sol.trim() !== "") {
-      $("#filter-message").html(
-        `<span style="color: grey;">FILTER APPLIED FOR SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`
-      );
-    } else {
-      $("#filter-message").text("");
+  function updateFilterMessage(sol, batch) {
+    let msg = "";
+    if (batch) {
+      const batchLabel = batch.replace(/EOD/i, "batch-");
+      msg += `<span style="color: grey;">BATCH :</span> <span style="font-weight:bold; color: #256a69;">${batchLabel.toUpperCase()}</span>`;
     }
+    if (sol && sol.trim() !== "") {
+      if (msg) msg += " | ";
+      msg += `<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`;
+    }
+    $("#filter-message").html(msg);
   }
 
   function renderMVCD(data) {
@@ -308,28 +320,112 @@ h4 {
     }
   }
 
-  function renderMVCDFiltered(filter) {
-    const filtered = currentMVCDData.filter((row) =>
-      (row.sol_id || "").toLowerCase().includes(filter)
-    );
-    renderMVCD(filtered);
-    $("#mvcd-count").text(filtered.length);
-  }
-
-  function renderTransactionFiltered(filter) {
-    const filtered = currentTransData.filter((row) =>
-      (row.dth_init_sol_id || "").toLowerCase().includes(filter)
-    );
-    renderTransaction(filtered);
-    $("#transaction-count").text(filtered.length);
-  }
-
   function applyFilter() {
     const sol = $("#sol-filter").val().trim().toLowerCase();
     localStorage.setItem("mvcd_sol_filter", sol);
-    renderMVCDFiltered(sol);
-    renderTransactionFiltered(sol);
-    updateFilterMessage(sol);
+
+    let mvcdFiltered = currentMVCDData;
+    let transFiltered = currentTransData;
+
+    // Filter by Batch
+    if (activeBatch && batchData[activeBatch]) {
+      const allowedSols = batchData[activeBatch];
+      mvcdFiltered = mvcdFiltered.filter((row) =>
+        allowedSols.includes(String(row.sol_id))
+      );
+      transFiltered = transFiltered.filter((row) =>
+        allowedSols.includes(String(row.dth_init_sol_id))
+      );
+    }
+
+    // Filter by SOL ID input
+    if (sol) {
+      mvcdFiltered = mvcdFiltered.filter((row) =>
+        (row.sol_id || "").toLowerCase().includes(sol)
+      );
+      transFiltered = transFiltered.filter((row) =>
+        (row.dth_init_sol_id || "").toLowerCase().includes(sol)
+      );
+    }
+
+    renderMVCD(mvcdFiltered);
+    updateMVCDCount(mvcdFiltered.length);
+
+    renderTransaction(transFiltered);
+    updateTransactionCount(transFiltered.length);
+
+    updateFilterMessage(sol, activeBatch);
+  }
+
+  function fetchBatches() {
+    frappe.call({
+      method: "sahayog.sahayog.page.mvcd_status.mvcd.get_batch_data",
+      callback: (r) => {
+        batchData = r.message || {};
+        renderBatchButtons();
+        applyFilter();
+      },
+    });
+  }
+
+  function renderBatchButtons() {
+    const $container = $("#batch-buttons-container");
+    $container.empty();
+
+    const batches = Object.keys(batchData).sort((a, b) => {
+      return a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+
+    batches.forEach((batch) => {
+      const label = batch.replace(/EOD/i, "batch-");
+      const isActive = activeBatch === batch;
+      
+      // Calculate if batch has pending records
+      const allowedSols = batchData[batch] || [];
+      const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
+      const transCount = currentTransData.filter(row => allowedSols.includes(String(row.dth_init_sol_id))).length;
+      const isClear = (mvcdCount + transCount) === 0;
+
+      const $btn = $(
+        `<button style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-weight: 600;"></button>`
+      );
+
+      // Styling Logic
+      if (isClear) {
+        // Success Green for All Clear
+        $btn.css({ 
+          background: "#28a745", 
+          color: "#fff", 
+          border: isActive ? "2px solid #000" : "1px solid #28a745",
+          boxShadow: isActive ? "0 0 5px rgba(0,0,0,0.3)" : "none"
+        });
+      } else {
+        // Danger Red for Pending
+        $btn.css({ 
+          background: "#dc3545", 
+          color: "#fff", 
+          border: isActive ? "2px solid #000" : "1px solid #dc3545",
+          boxShadow: isActive ? "0 0 5px rgba(0,0,0,0.3)" : "none"
+        });
+      }
+
+      $btn.text(label);
+
+      $btn.on("click", () => {
+        if (activeBatch === batch) {
+          activeBatch = null;
+        } else {
+          activeBatch = batch;
+        }
+        renderBatchButtons();
+        applyFilter();
+      });
+
+      $container.append($btn);
+    });
   }
 
   $("#apply-filter").on("click", applyFilter);
@@ -338,17 +434,21 @@ h4 {
   });
   $("#clear-filter").on("click", function () {
     $("#sol-filter").val("");
+    activeBatch = null;
     localStorage.removeItem("mvcd_sol_filter");
+    renderBatchButtons();
     applyFilter();
   });
 
   function onMVCDDataLoaded(data) {
     currentMVCDData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
     updateMVCDCount(currentMVCDData.length);
   }
   function onTransactionDataLoaded(data) {
     currentTransData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
     updateTransactionCount(currentTransData.length);
   }
@@ -380,6 +480,7 @@ h4 {
 
   fetchRenderMVCD();
   fetchRenderTransaction();
+  fetchBatches();
   setInterval(fetchRenderMVCD, 10000);
   setInterval(fetchRenderTransaction, 10000);
 
@@ -420,9 +521,6 @@ h4 {
 
     element._counterAnimationFrame = requestAnimationFrame(update);
   }
-
-  let mvcdFirstLoad = true;
-  let transFirstLoad = true;
 
   // Update MVCD count
   function updateMVCDCount(count) {
