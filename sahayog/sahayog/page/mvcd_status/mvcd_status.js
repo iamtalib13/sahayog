@@ -231,7 +231,7 @@ h4 {
   const transHeaderRow = $("<tr>");
   transHeaderRow.append($("<th>").text("S. No."));
   columnsTrans.forEach((col) =>
-    transHeaderRow.append($("<th>").text(col.label))
+    transHeaderRow.append($("<th>").text(col.label)),
   );
   $transThead.append(transHeaderRow);
 
@@ -266,7 +266,9 @@ h4 {
 
   function updateFilterMessage(sol) {
     if (sol && sol.trim() !== "") {
-      $("#filter-message").html(`<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`);
+      $("#filter-message").html(
+        `<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`,
+      );
     } else {
       $("#filter-message").html("");
     }
@@ -289,8 +291,8 @@ h4 {
           $("<td>")
             .attr("colspan", columnsMVCD.length + 1)
             .addClass("no-data")
-            .text("No MVCD data available.")
-        )
+            .text("No MVCD data available."),
+        ),
       );
     }
   }
@@ -312,8 +314,8 @@ h4 {
           $("<td>")
             .attr("colspan", columnsTrans.length + 1)
             .addClass("no-data")
-            .text("No transaction data available.")
-        )
+            .text("No transaction data available."),
+        ),
       );
     }
   }
@@ -328,10 +330,10 @@ h4 {
     // Filter by SOL ID input
     if (sol) {
       mvcdFiltered = mvcdFiltered.filter((row) =>
-        (row.sol_id || "").toLowerCase().includes(sol)
+        (row.sol_id || "").toLowerCase().includes(sol),
       );
       transFiltered = transFiltered.filter((row) =>
-        (row.dth_init_sol_id || "").toLowerCase().includes(sol)
+        (row.dth_init_sol_id || "").toLowerCase().includes(sol),
       );
     }
 
@@ -368,34 +370,40 @@ h4 {
 
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
-      
+
       // Calculate if batch has pending records (Checking MVCD table only)
       const allowedSols = batchData[batch] || [];
-      const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
+      const mvcdCount = currentMVCDData.filter((row) =>
+        allowedSols.includes(String(row.sol_id)),
+      ).length;
       const isClear = mvcdCount === 0;
 
       const $btn = $(
-        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
+        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`,
       );
 
       // Styling Logic (Status Only)
       if (isClear) {
         // Success Green for All Clear
-        $btn.css({ 
-          background: "#28a745", 
-          color: "#fff", 
-          borderColor: "#28a745"
+        $btn.css({
+          background: "#28a745",
+          color: "#fff",
+          borderColor: "#28a745",
         });
       } else {
         // Danger Red for Pending
-        $btn.css({ 
-          background: "#dc3545", 
-          color: "#fff", 
-          borderColor: "#dc3545"
+        $btn.css({
+          background: "#dc3545",
+          color: "#fff",
+          borderColor: "#dc3545",
         });
       }
 
-      $btn.text(label.toUpperCase());
+      const buttonText =
+        mvcdCount > 0
+          ? `${label.toUpperCase()} (${mvcdCount})`
+          : label.toUpperCase();
+      $btn.text(buttonText);
       $container.append($btn);
     });
   }
@@ -481,11 +489,11 @@ h4 {
     function update(currentTime) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Ease out quad function
       const ease = progress * (2 - progress);
       const nextValue = Math.floor(start + (target - start) * ease);
-      
+
       element.textContent = nextValue;
 
       if (progress < 1) {
