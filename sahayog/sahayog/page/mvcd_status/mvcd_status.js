@@ -345,10 +345,12 @@ h4 {
   function onMVCDDataLoaded(data) {
     currentMVCDData = data || [];
     applyFilter();
+    updateMVCDCount(currentMVCDData.length);
   }
   function onTransactionDataLoaded(data) {
     currentTransData = data || [];
     applyFilter();
+    updateTransactionCount(currentTransData.length);
   }
 
   function fetchRenderMVCD() {
@@ -383,61 +385,74 @@ h4 {
 
   applyFilter();
 
-  // Function to animate the count from 0 to target number
-  // Animate number smoothly
-function animateNumber(element, target) {
-  let current = 0;
-  const increment = target / 100;
-  const duration = 1500; // ms
-  const stepTime = Math.max(10, Math.floor(duration / 100)); // avoid 0
+  // Animate number smoothly from current value to target
+  function animateNumber(element, target) {
+    // Get current value from element, default to 0 if not a number
+    let current = parseInt(element.textContent) || 0;
+    if (current === target) return;
 
-  // Stop previous animation if still running
-  clearInterval(element._counterInterval);
+    const start = current;
+    const duration = 1500; // ms
+    const startTime = performance.now();
 
-  element._counterInterval = setInterval(() => {
-    current += increment;
-    if (current >= target) {
-      current = target;
-      clearInterval(element._counterInterval);
+    // Stop previous animation if still running
+    if (element._counterAnimationFrame) {
+      cancelAnimationFrame(element._counterAnimationFrame);
     }
-    element.textContent = Math.floor(current);
-  }, stepTime);
-}
 
-// Update MVCD count
-function updateMVCDCount(count) {
-  const el = document.getElementById('mvcd-count');
-  el.classList.remove('counter'); // reset animation
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out quad function
+      const ease = progress * (2 - progress);
+      const nextValue = Math.floor(start + (target - start) * ease);
+      
+      element.textContent = nextValue;
 
-// Update Transaction count
-function updateTransactionCount(count) {
-  const el = document.getElementById('transaction-count');
-  el.classList.remove('counter');
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+      if (progress < 1) {
+        element._counterAnimationFrame = requestAnimationFrame(update);
+      } else {
+        element.textContent = target;
+        element._counterAnimationFrame = null;
+      }
+    }
 
-// Call after data is loaded
-function onMVCDDataLoaded(data) {
-  currentMVCDData = data || [];
-  applyFilter(); // your existing filter logic
-  updateMVCDCount(currentMVCDData.length);
-}
+    element._counterAnimationFrame = requestAnimationFrame(update);
+  }
 
-function onTransactionDataLoaded(data) {
-  currentTransData = data || [];
-  applyFilter(); // your existing filter logic
-  updateTransactionCount(currentTransData.length);
-}
+  let mvcdFirstLoad = true;
+  let transFirstLoad = true;
 
-// Example initial calls
-updateMVCDCount(currentMVCDData.length);
-updateTransactionCount(currentTransData.length);
+  // Update MVCD count
+  function updateMVCDCount(count) {
+    const el = document.getElementById("mvcd-count");
+    if (!el) return;
 
+    if (mvcdFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      mvcdFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
 
+  // Update Transaction count
+  function updateTransactionCount(count) {
+    const el = document.getElementById("transaction-count");
+    if (!el) return;
+
+    if (transFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      transFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
 };
