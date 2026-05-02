@@ -182,3 +182,13 @@ def get_mvcd_status():
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), "Pending Transactions Query Error")
         return {"status": "error", "message": str(e)}
+
+@frappe.whitelist()
+def get_batch_data():
+    branches = frappe.get_all("Sahayog Branch", fields=["sol_id", "batch"], filters={"batch": ["is", "set"]})
+    batches = {}
+    for b in branches:
+        if b.batch not in batches:
+            batches[b.batch] = []
+        batches[b.batch].append(str(b.sol_id))
+    return batches

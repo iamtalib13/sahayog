@@ -145,6 +145,11 @@ h4 {
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
+
+<!-- Batch Status Indicators -->
+<div id="batch-buttons-container" style="text-align:center; margin: 10px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+</div>
+
 <!-- SOL ID Filter -->
 <div style="text-align:center;margin:10px 0;">
   <input type="text" id="sol-filter" placeholder="Enter SOL ID to filter"
@@ -247,6 +252,9 @@ h4 {
 
   let currentMVCDData = [];
   let currentTransData = [];
+  let batchData = {};
+  let mvcdFirstLoad = true;
+  let transFirstLoad = true;
 
   // Load filter from storage
   let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
@@ -254,11 +262,9 @@ h4 {
 
   function updateFilterMessage(sol) {
     if (sol && sol.trim() !== "") {
-      $("#filter-message").html(
-        `<span style="color: grey;">FILTER APPLIED FOR SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`
-      );
+      $("#filter-message").html(`<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`);
     } else {
-      $("#filter-message").text("");
+      $("#filter-message").html("");
     }
   }
 
@@ -308,28 +314,87 @@ h4 {
     }
   }
 
-  function renderMVCDFiltered(filter) {
-    const filtered = currentMVCDData.filter((row) =>
-      (row.sol_id || "").toLowerCase().includes(filter)
-    );
-    renderMVCD(filtered);
-    $("#mvcd-count").text(filtered.length);
-  }
-
-  function renderTransactionFiltered(filter) {
-    const filtered = currentTransData.filter((row) =>
-      (row.dth_init_sol_id || "").toLowerCase().includes(filter)
-    );
-    renderTransaction(filtered);
-    $("#transaction-count").text(filtered.length);
-  }
-
   function applyFilter() {
     const sol = $("#sol-filter").val().trim().toLowerCase();
     localStorage.setItem("mvcd_sol_filter", sol);
-    renderMVCDFiltered(sol);
-    renderTransactionFiltered(sol);
+
+    let mvcdFiltered = currentMVCDData;
+    let transFiltered = currentTransData;
+
+    // Filter by SOL ID input
+    if (sol) {
+      mvcdFiltered = mvcdFiltered.filter((row) =>
+        (row.sol_id || "").toLowerCase().includes(sol)
+      );
+      transFiltered = transFiltered.filter((row) =>
+        (row.dth_init_sol_id || "").toLowerCase().includes(sol)
+      );
+    }
+
+    renderMVCD(mvcdFiltered);
+    updateMVCDCount(mvcdFiltered.length);
+
+    renderTransaction(transFiltered);
+    updateTransactionCount(transFiltered.length);
+
     updateFilterMessage(sol);
+  }
+
+  function fetchBatches() {
+    frappe.call({
+      method: "sahayog.sahayog.page.mvcd_status.mvcd.get_batch_data",
+      callback: (r) => {
+        batchData = r.message || {};
+        renderBatchButtons();
+        applyFilter();
+      },
+    });
+  }
+
+  function renderBatchButtons() {
+    const $container = $("#batch-buttons-container");
+    $container.empty();
+
+    const batches = Object.keys(batchData).sort((a, b) => {
+      return a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+
+    batches.forEach((batch) => {
+      const label = batch.replace(/EOD/i, "batch-");
+      
+      // Calculate if batch has pending records
+      const allowedSols = batchData[batch] || [];
+      const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
+      const transCount = currentTransData.filter(row => allowedSols.includes(String(row.dth_init_sol_id))).length;
+      const isClear = (mvcdCount + transCount) === 0;
+
+      const $btn = $(
+        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
+      );
+
+      // Styling Logic (Status Only)
+      if (isClear) {
+        // Success Green for All Clear
+        $btn.css({ 
+          background: "#28a745", 
+          color: "#fff", 
+          borderColor: "#28a745"
+        });
+      } else {
+        // Danger Red for Pending
+        $btn.css({ 
+          background: "#dc3545", 
+          color: "#fff", 
+          borderColor: "#dc3545"
+        });
+      }
+
+      $btn.text(label.toUpperCase());
+      $container.append($btn);
+    });
   }
 
   $("#apply-filter").on("click", applyFilter);
@@ -339,16 +404,21 @@ h4 {
   $("#clear-filter").on("click", function () {
     $("#sol-filter").val("");
     localStorage.removeItem("mvcd_sol_filter");
+    renderBatchButtons();
     applyFilter();
   });
 
   function onMVCDDataLoaded(data) {
     currentMVCDData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
+    updateMVCDCount(currentMVCDData.length);
   }
   function onTransactionDataLoaded(data) {
     currentTransData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
+    updateTransactionCount(currentTransData.length);
   }
 
   function fetchRenderMVCD() {
@@ -378,66 +448,77 @@ h4 {
 
   fetchRenderMVCD();
   fetchRenderTransaction();
+  fetchBatches();
   setInterval(fetchRenderMVCD, 10000);
   setInterval(fetchRenderTransaction, 10000);
 
   applyFilter();
 
-  // Function to animate the count from 0 to target number
-  // Animate number smoothly
-function animateNumber(element, target) {
-  let current = 0;
-  const increment = target / 100;
-  const duration = 1500; // ms
-  const stepTime = Math.max(10, Math.floor(duration / 100)); // avoid 0
+  // Animate number smoothly from current value to target
+  function animateNumber(element, target) {
+    // Get current value from element, default to 0 if not a number
+    let current = parseInt(element.textContent) || 0;
+    if (current === target) return;
 
-  // Stop previous animation if still running
-  clearInterval(element._counterInterval);
+    const start = current;
+    const duration = 1500; // ms
+    const startTime = performance.now();
 
-  element._counterInterval = setInterval(() => {
-    current += increment;
-    if (current >= target) {
-      current = target;
-      clearInterval(element._counterInterval);
+    // Stop previous animation if still running
+    if (element._counterAnimationFrame) {
+      cancelAnimationFrame(element._counterAnimationFrame);
     }
-    element.textContent = Math.floor(current);
-  }, stepTime);
-}
 
-// Update MVCD count
-function updateMVCDCount(count) {
-  const el = document.getElementById('mvcd-count');
-  el.classList.remove('counter'); // reset animation
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out quad function
+      const ease = progress * (2 - progress);
+      const nextValue = Math.floor(start + (target - start) * ease);
+      
+      element.textContent = nextValue;
 
-// Update Transaction count
-function updateTransactionCount(count) {
-  const el = document.getElementById('transaction-count');
-  el.classList.remove('counter');
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+      if (progress < 1) {
+        element._counterAnimationFrame = requestAnimationFrame(update);
+      } else {
+        element.textContent = target;
+        element._counterAnimationFrame = null;
+      }
+    }
 
-// Call after data is loaded
-function onMVCDDataLoaded(data) {
-  currentMVCDData = data || [];
-  applyFilter(); // your existing filter logic
-  updateMVCDCount(currentMVCDData.length);
-}
+    element._counterAnimationFrame = requestAnimationFrame(update);
+  }
 
-function onTransactionDataLoaded(data) {
-  currentTransData = data || [];
-  applyFilter(); // your existing filter logic
-  updateTransactionCount(currentTransData.length);
-}
+  // Update MVCD count
+  function updateMVCDCount(count) {
+    const el = document.getElementById("mvcd-count");
+    if (!el) return;
 
-// Example initial calls
-updateMVCDCount(currentMVCDData.length);
-updateTransactionCount(currentTransData.length);
+    if (mvcdFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      mvcdFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
 
+  // Update Transaction count
+  function updateTransactionCount(count) {
+    const el = document.getElementById("transaction-count");
+    if (!el) return;
 
+    if (transFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      transFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
 };
