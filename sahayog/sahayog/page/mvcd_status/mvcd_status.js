@@ -147,7 +147,9 @@ h4 {
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
 
 <!-- Batch Status Indicators -->
-<div id="batch-buttons-container" style="text-align:center; margin: 10px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+<div style="text-align:center; margin-top: 15px;">
+    <span style="font-size: 0.75rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Batch Wise Progress</span>
+    <div id="batch-buttons-container" style="display: flex; flex-wrap: nowrap; justify-content: center; gap: 8px; max-width: 100%; margin: 0 auto;"></div>
 </div>
 
 <!-- SOL ID Filter -->
@@ -403,7 +405,8 @@ h4 {
             color: ${accentColor};
             border: 1.5px solid ${accentColor};
             cursor: pointer;
-            min-width: 130px;
+            min-width: 100px;
+            flex-shrink: 1;
             justify-content: center;
             --glow-color: ${glowColor};
             animation: liquid-pulse 3s infinite;
