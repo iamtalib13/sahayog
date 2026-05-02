@@ -370,44 +370,96 @@ h4 {
 
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
-
-      // Calculate if batch has pending records (Checking MVCD table only)
       const allowedSols = batchData[batch] || [];
       const mvcdCount = currentMVCDData.filter((row) =>
         allowedSols.includes(String(row.sol_id)),
       ).length;
       const isClear = mvcdCount === 0;
 
-      const $btn = $(
-        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`,
-      );
-
-      // Styling Logic (Status Only)
-      if (isClear) {
-        // Success Green for All Clear
-        $btn.css({
-          background: "#28a745",
-          color: "#fff",
-          borderColor: "#28a745",
-        });
-      } else {
-        // Danger Red for Pending
-        $btn.css({
-          background: "#dc3545",
-          color: "#fff",
-          borderColor: "#dc3545",
-        });
-      }
-
+      // "Liquid Glass" Theme Colors
+      const glassBg = isClear
+        ? "rgba(16, 185, 129, 0.15)"
+        : "rgba(239, 68, 68, 0.15)";
+      const accentColor = isClear ? "#10b981" : "#ef4444";
+      const glowColor = isClear
+        ? "rgba(16, 185, 129, 0.3)"
+        : "rgba(239, 68, 68, 0.3)";
       const buttonText =
         mvcdCount > 0
           ? `${label.toUpperCase()} (${mvcdCount})`
           : label.toUpperCase();
-      $btn.text(buttonText);
-      $container.append($btn);
+
+      const $badge = $(`
+        <div class="status-badge-liquid" style="
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: ${glassBg};
+            color: ${accentColor};
+            border: 1.5px solid ${accentColor};
+            cursor: pointer;
+            min-width: 130px;
+            justify-content: center;
+            --glow-color: ${glowColor};
+            animation: liquid-pulse 3s infinite;
+        ">
+            <div style="
+                width: 10px; 
+                height: 10px; 
+                border-radius: 50%; 
+                background: ${accentColor};
+                box-shadow: 0 0 10px ${accentColor};
+                flex-shrink: 0;
+            "></div>
+            <span style="white-space: nowrap; font-family: 'Inter', sans-serif;">${buttonText}</span>
+        </div>
+      `);
+
+      // Hover effect for the badge
+      $badge.hover(
+        function () {
+          $(this).css("transform", "scale(1.05)");
+        },
+        function () {
+          $(this).css("transform", "scale(1)");
+        },
+      );
+
+      $badge.on("click", () => {
+        const pendingSols = currentMVCDData.map((row) => String(row.sol_id));
+        showClearedSolsModal(label.toUpperCase(), allowedSols, pendingSols);
+      });
+
+      $container.append($badge);
     });
   }
 
+  function showClearedSolsModal(batchName, allSols, pendingSols) {
+    const html = allSols
+      .map((sol) => {
+        const isPending = pendingSols.includes(sol);
+        const color = isPending ? "#fecaca" : "#bbf7d0"; // Light red / Light green
+        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600;">${sol}</li>`;
+      })
+      .join("");
+
+    const dialog = new frappe.ui.Dialog({
+      title: `Batch Audit: ${batchName}`,
+      fields: [
+        {
+          fieldname: "sol_list",
+          fieldtype: "HTML",
+          options: `<ul style="list-style: none; padding: 0;">${html}</ul>`,
+        },
+      ],
+    });
+    dialog.show();
+  }
   $("#apply-filter").on("click", applyFilter);
   $("#sol-filter").on("keyup", function (e) {
     if (e.key === "Enter") applyFilter();
