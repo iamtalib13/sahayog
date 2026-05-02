@@ -146,7 +146,7 @@ h4 {
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
 
-<!-- Batch Buttons -->
+<!-- Batch Status Indicators -->
 <div id="batch-buttons-container" style="text-align:center; margin: 10px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
 </div>
 
@@ -253,7 +253,6 @@ h4 {
   let currentMVCDData = [];
   let currentTransData = [];
   let batchData = {};
-  let activeBatch = null;
   let mvcdFirstLoad = true;
   let transFirstLoad = true;
 
@@ -261,17 +260,12 @@ h4 {
   let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
   $("#sol-filter").val(cachedFilter);
 
-  function updateFilterMessage(sol, batch) {
-    let msg = "";
-    if (batch) {
-      const batchLabel = batch.replace(/EOD/i, "batch-");
-      msg += `<span style="color: grey;">BATCH :</span> <span style="font-weight:bold; color: #256a69;">${batchLabel.toUpperCase()}</span>`;
-    }
+  function updateFilterMessage(sol) {
     if (sol && sol.trim() !== "") {
-      if (msg) msg += " | ";
-      msg += `<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`;
+      $("#filter-message").html(`<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`);
+    } else {
+      $("#filter-message").html("");
     }
-    $("#filter-message").html(msg);
   }
 
   function renderMVCD(data) {
@@ -327,17 +321,6 @@ h4 {
     let mvcdFiltered = currentMVCDData;
     let transFiltered = currentTransData;
 
-    // Filter by Batch
-    if (activeBatch && batchData[activeBatch]) {
-      const allowedSols = batchData[activeBatch];
-      mvcdFiltered = mvcdFiltered.filter((row) =>
-        allowedSols.includes(String(row.sol_id))
-      );
-      transFiltered = transFiltered.filter((row) =>
-        allowedSols.includes(String(row.dth_init_sol_id))
-      );
-    }
-
     // Filter by SOL ID input
     if (sol) {
       mvcdFiltered = mvcdFiltered.filter((row) =>
@@ -354,7 +337,7 @@ h4 {
     renderTransaction(transFiltered);
     updateTransactionCount(transFiltered.length);
 
-    updateFilterMessage(sol, activeBatch);
+    updateFilterMessage(sol);
   }
 
   function fetchBatches() {
@@ -381,7 +364,6 @@ h4 {
 
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
-      const isActive = activeBatch === batch;
       
       // Calculate if batch has pending records
       const allowedSols = batchData[batch] || [];
@@ -390,40 +372,27 @@ h4 {
       const isClear = (mvcdCount + transCount) === 0;
 
       const $btn = $(
-        `<button style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-weight: 600;"></button>`
+        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
       );
 
-      // Styling Logic
+      // Styling Logic (Status Only)
       if (isClear) {
         // Success Green for All Clear
         $btn.css({ 
           background: "#28a745", 
           color: "#fff", 
-          border: isActive ? "2px solid #000" : "1px solid #28a745",
-          boxShadow: isActive ? "0 0 5px rgba(0,0,0,0.3)" : "none"
+          borderColor: "#28a745"
         });
       } else {
         // Danger Red for Pending
         $btn.css({ 
           background: "#dc3545", 
           color: "#fff", 
-          border: isActive ? "2px solid #000" : "1px solid #dc3545",
-          boxShadow: isActive ? "0 0 5px rgba(0,0,0,0.3)" : "none"
+          borderColor: "#dc3545"
         });
       }
 
-      $btn.text(label);
-
-      $btn.on("click", () => {
-        if (activeBatch === batch) {
-          activeBatch = null;
-        } else {
-          activeBatch = batch;
-        }
-        renderBatchButtons();
-        applyFilter();
-      });
-
+      $btn.text(label.toUpperCase());
       $container.append($btn);
     });
   }
@@ -434,7 +403,6 @@ h4 {
   });
   $("#clear-filter").on("click", function () {
     $("#sol-filter").val("");
-    activeBatch = null;
     localStorage.removeItem("mvcd_sol_filter");
     renderBatchButtons();
     applyFilter();
