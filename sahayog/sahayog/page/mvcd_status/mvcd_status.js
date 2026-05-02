@@ -162,6 +162,10 @@ h4 {
           style="margin-left:6px;padding:6px 10px;background:#eee;color:#333;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
     Clear
   </button>
+  <button id="manual-refresh"
+          style="margin-left:6px;padding:6px 10px;background:#256a69;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+    Refresh
+  </button>
 </div>
 
 <!-- Filter applied message -->
@@ -365,11 +369,10 @@ h4 {
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
       
-      // Calculate if batch has pending records
+      // Calculate if batch has pending records (Checking MVCD table only)
       const allowedSols = batchData[batch] || [];
       const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
-      const transCount = currentTransData.filter(row => allowedSols.includes(String(row.dth_init_sol_id))).length;
-      const isClear = (mvcdCount + transCount) === 0;
+      const isClear = mvcdCount === 0;
 
       const $btn = $(
         `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
@@ -406,6 +409,12 @@ h4 {
     localStorage.removeItem("mvcd_sol_filter");
     renderBatchButtons();
     applyFilter();
+  });
+
+  $("#manual-refresh").on("click", function () {
+    fetchRenderMVCD();
+    fetchRenderTransaction();
+    fetchBatches();
   });
 
   function onMVCDDataLoaded(data) {
