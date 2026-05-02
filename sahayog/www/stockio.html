@@ -945,6 +945,37 @@
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
             : '' ]]
           </span>
+
+          <!-- Inline Approval Flow -->
+          <div class="inline-flow-stepper" v-if="activeItem === 'Requests' && detailRecord && detailRecord.name">
+            <!-- Step 1 -->
+            <div class="inline-flow-step">
+              <div class="inline-step-num">1</div>
+              <div class="inline-step-info">
+                <span class="inline-step-role">Reporting</span>
+                <span class="inline-step-name">[[ detailRecord.reporting_person_display || 'Not Assigned' ]]</span>
+              </div>
+              <span class="inline-step-status" :class="detailRecord.status === 'Draft' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : 'status-active')">
+                [[ detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.status === 'Draft' ? 'Draft' : 'Approved') ]]
+              </span>
+            </div>
+
+            <div class="inline-flow-connector">
+              <i class="fas fa-chevron-right"></i>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="inline-flow-step">
+              <div class="inline-step-num">2</div>
+              <div class="inline-step-info">
+                <span class="inline-step-role">HO Officer</span>
+                <span class="inline-step-name">Anita Sharma</span>
+              </div>
+              <span class="inline-step-status" :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')">
+                 [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved') ]]
+              </span>
+            </div>
+          </div>
         </h1>
       </div>
       <div class="header-right">
@@ -2862,90 +2893,6 @@
 
             <!-- Standard Request Layout (Kept for 'Requests' items) -->
             <div v-else-if="activeItem === 'Requests'" class="request-detail-parent">
-              <!-- DIV 1: Approval Flow (2 Levels) -->
-              <div class="request-div1">
-                <div class="flow-card">
-                  <h4
-                    class="info-label"
-                    style="
-                      margin-bottom: 12px;
-                      font-size: 11px;
-                      margin-top: 0px;
-                    "
-                  >
-                    Approval Flow (2 Levels)
-                  </h4>
-                  <div class="flow-stepper">
-                    <!-- Level 1 -->
-                    <div class="flow-step">
-                      <div class="step-number" style="background: #369696">
-                        1
-                      </div>
-                      <div class="step-info">
-                        <span class="step-role">Reporting Person</span>
-                        <span class="step-name"
-                          >[[ detailRecord.reporting_person_display ||
-                          detailRecord.reporting_person || 'Not Assigned'
-                          ]]</span
-                        >
-                      </div>
-                      <span
-                        class="badge"
-                        style="
-                          background: rgba(54, 150, 150, 0.1);
-                          color: #369696;
-                          border: 1px solid rgba(54, 150, 150, 0.2);
-                        "
-                        :class="detailRecord.status === 'Draft' ? 'disabled' : (['Pending Reporting Person'].includes(detailRecord.status) ? 'pending' : 'active')"
-                      >
-                        [[ detailRecord.status === 'Pending Reporting Person' ?
-                        'Pending' : (detailRecord.status === 'Draft' ? 'Draft' :
-                        'Approved') ]]
-                      </span>
-                    </div>
-
-                    <div class="flow-connector">
-                      <i class="fas fa-long-arrow-alt-right"></i>
-                    </div>
-
-                    <!-- Level 2 -->
-                    <div class="flow-step">
-                      <div class="step-number" style="background: #369696">
-                        2
-                      </div>
-                      <div class="step-info">
-                        <span class="step-role">Head Officer</span>
-                        <span class="step-name">Anita Sharma</span>
-                      </div>
-                      <span
-                        class="badge"
-                        style="
-                          background: rgba(54, 150, 150, 0.1);
-                          color: #369696;
-                          border: 1px solid rgba(54, 150, 150, 0.2);
-                        "
-                        :class="['Pending HO Approval'].includes(detailRecord.status) ? 'pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'disabled' : 'active')"
-                      >
-                        [[ detailRecord.status === 'Pending HO Approval' ?
-                        'Pending' : (['Pending Reporting Person',
-                        'Draft'].includes(detailRecord.status) ? 'Waiting' :
-                        'Approved') ]]
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    style="
-                      margin-top: 12px;
-                      font-size: 11px;
-                      color: var(--text-muted);
-                      font-style: italic;
-                    "
-                  >
-                    "Request will be approved after both levels."
-                  </div>
-                </div>
-              </div>
-
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
                 <div
@@ -6601,7 +6548,76 @@
     align-items: center;
     gap: 12px;
     min-width: 0;
+    flex: 1;
   }
+
+  .inline-flow-stepper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 24px;
+    padding-left: 24px;
+    border-left: 1px solid var(--border-color);
+  }
+
+  .inline-flow-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+  }
+
+  .inline-step-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #369696;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .inline-step-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .inline-step-role {
+    font-size: 9px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .inline-step-name {
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+  }
+
+  .inline-flow-connector {
+    color: var(--gray-400);
+    font-size: 14px;
+  }
+
+  .inline-step-status {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .status-active { background: #d1fae5; color: #065f46; }
+  .status-pending { background: #fef3c7; color: #92400e; }
+  .status-waiting { background: #f3f4f6; color: #6b7280; }
 
   .page-title {
     margin: 0;
