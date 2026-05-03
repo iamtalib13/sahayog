@@ -9774,6 +9774,8 @@
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,
             purpose: this.movementForm.purpose,
+            custom_reference_doctype: this.movementForm.custom_reference_doctype,
+            custom_reference_name: this.movementForm.custom_reference_name,
             assets: validItems.map((i) => ({
               asset: i.asset,
               target_location: i.target_location,
@@ -9824,6 +9826,8 @@
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,
             purpose: this.movementForm.purpose,
+            custom_reference_doctype: this.movementForm.custom_reference_doctype,
+            custom_reference_name: this.movementForm.custom_reference_name,
             assets: validItems.map((i) => ({
               asset: i.asset,
               target_location: i.target_location,
@@ -10171,6 +10175,8 @@
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
+            custom_reference_doctype: "Employee Material Request",
+            custom_reference_name: row.name,
           };
           
           // Pre-populate movement items from the filtered items
