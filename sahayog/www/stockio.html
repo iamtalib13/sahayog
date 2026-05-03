@@ -5595,7 +5595,7 @@
         </div>
         <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Items to Move</div>
-          <button class="btn-create-inline" @click="movementItems.push({asset:'', asset_display:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})" style="font-size: 10px; padding: 4px 10px;">
+          <button class="btn-create-inline" @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})" style="font-size: 10px; padding: 4px 10px;">
             <i class="fas fa-plus"></i> Add Asset
           </button>
         </div>
@@ -5603,6 +5603,7 @@
           <table style="width: 100%; border-collapse: collapse;">
             <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
               <tr>
+                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Requested</th>
                 <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Asset <span class="form-required">*</span></th>
                 <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Target Location <span class="form-required">*</span></th>
                 <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">To Employee</th>
@@ -5611,6 +5612,10 @@
             </thead>
             <tbody>
               <tr v-for="(item, index) in movementItems" :key="index" style="border-bottom: 1px solid var(--border-color)">
+                <td style="padding: 10px;">
+                  <div style="font-weight: 500; font-size: 11px; color: var(--text-main);">[[ item.item_code ]]</div>
+                  <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" :title="item.item_name">[[ item.item_name ]]</div>
+                </td>
                 <td style="padding: 10px;">
                   <div class="searchable-select-wrapper" style="width: 100%;">
                     <input type="text" class="form-input" v-model="item.asset_display" @focus="focusedField = 'mv_asset_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Search Asset" />
@@ -9547,6 +9552,8 @@
             {
               asset: "",
               asset_display: "",
+              item_code: "",
+              item_name: "",
               target_location: "",
               target_location_display: "",
               to_employee: "",
@@ -10173,6 +10180,7 @@
               asset: "", 
               asset_display: "",
               item_code: item.item_code,
+              item_name: item.item_name,
               target_location: row.target_location || "",
               target_location_display: row.target_location || "",
               to_employee: row.employee || "",
@@ -10183,6 +10191,8 @@
             this.movementItems = [{
               asset: "",
               asset_display: "",
+              item_code: "",
+              item_name: "",
               target_location: "",
               target_location_display: "",
               to_employee: "",
