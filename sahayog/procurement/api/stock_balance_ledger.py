@@ -599,6 +599,90 @@ def get_user_inventory_type():
     return None
 
 @frappe.whitelist()
+def get_wh_dept_map():
+    """
+    Fetch the wh_dept_map child table from Sahayog Settings.
+    """
+    try:
+        # Fetching directly from the child table doctype bypassing Sahayog Settings permissions
+        return frappe.get_all(
+            "Default Warehouse",
+            filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
+            fields=["user_id", "warehouse", "inventory_type", "name"]
+        )
+    except Exception as e:
+        frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
+        return []
+
+@frappe.whitelist()
+def add_wh_dept_entry(user_id, warehouse, inventory_type):
+    """
+    Add a new entry to the wh_dept_map child table in Sahayog Settings.
+    """
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        settings.append("wh_dept_map", {
+            "user_id": user_id,
+            "warehouse": warehouse,
+            "inventory_type": inventory_type
+        })
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry added successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in add_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
+    """
+    Update an existing entry in the wh_dept_map child table.
+    """
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        found = False
+        for row in settings.wh_dept_map:
+            if row.name == name:
+                row.user_id = user_id
+                row.warehouse = warehouse
+                row.inventory_type = inventory_type
+                found = True
+                break
+        
+        if not found:
+            frappe.throw(f"Entry {name} not found")
+            
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry updated successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in update_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def delete_wh_dept_entry(name):
+    """
+    Delete an entry from the wh_dept_map child table.
+    """
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        new_map = []
+        found = False
+        for row in settings.wh_dept_map:
+            if row.name == name:
+                found = True
+                continue
+            new_map.append(row)
+        
+        if not found:
+            frappe.throw(f"Entry {name} not found")
+            
+        settings.wh_dept_map = new_map
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry deleted successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in delete_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
 def get_warehouse_company(warehouse):
     """
     Returns the company linked to a specific warehouse.

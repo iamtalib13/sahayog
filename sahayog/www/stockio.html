@@ -2610,6 +2610,115 @@
         </div>
       </div>
 
+      <!-- Access Create/Edit View -->
+      <div v-if="showAccessCreateView" class="detail-view-container">
+        <div class="detail-card">
+          <div class="profile-modal-body" style="padding: 24px">
+            <h3
+              class="section-subtitle"
+              style="
+                margin-top: 0;
+                margin-bottom: 24px;
+                font-weight: 800;
+                color: var(--text-main);
+                text-transform: uppercase;
+              "
+            >
+              [[ isEditingAccess ? 'Edit Access' : 'Add Access' ]]
+            </h3>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+              <!-- User ID -->
+              <div class="form-group">
+                <label class="form-label">User ID <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'access_user' }"
+                    v-model="accessForm.user_id"
+                    @focus="onFocusSearchable('access_user')"
+                    @blur="onBlurSearchable('access_user')"
+                    placeholder="Search User ID"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'access_user'">
+                    <div
+                      v-for="emp in filteredEmployees"
+                      :key="emp.user_id"
+                      class="searchable-option"
+                      @mousedown="accessForm.user_id = emp.user_id; focusedField = null"
+                    >
+                      <div class="option-main">[[ emp.user_id ]]</div>
+                      <div class="option-sub">[[ emp.employee_name ]]</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Warehouse -->
+              <div class="form-group">
+                <label class="form-label">Warehouse <span class="form-required">*</span></label>
+                <div class="searchable-select-wrapper">
+                  <input
+                    type="text"
+                    class="form-input searchable-select-input"
+                    :class="{ focused: focusedField === 'access_warehouse' }"
+                    v-model="accessForm.warehouse"
+                    @focus="onFocusSearchable('access_warehouse')"
+                    @blur="onBlurSearchable('access_warehouse')"
+                    placeholder="Search Warehouse"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'access_warehouse'">
+                    <div
+                      v-for="wh in filteredWarehouses"
+                      :key="wh"
+                      class="searchable-option"
+                      @mousedown="accessForm.warehouse = wh; focusedField = null"
+                    >
+                      <div class="option-main">[[ wh ]]</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-top: 20px">
+              <!-- Inventory Type -->
+              <div class="form-group" style="width: 50%">
+                <label class="form-label">Inventory Type <span class="form-required">*</span></label>
+                <select class="form-input" v-model="accessForm.inventory_type">
+                  <option value="">Select Type</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Asset">Asset</option>
+                  <option value="Stationery & Asset">Stationery & Asset</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 32px">
+              <button
+                class="btn-create"
+                @click="submitAccess"
+                :disabled="creatingAccess"
+              >
+                <i
+                  class="fas"
+                  :class="creatingAccess ? 'fa-spinner fa-spin' : 'fa-save'"
+                ></i>
+                <span>[[ creatingAccess ? 'Saving...' : (isEditingAccess ? 'Update Access' : 'Save Access') ]]</span>
+              </button>
+              <button
+                class="btn-cancel"
+                @click="showAccessCreateView = false"
+                :disabled="creatingAccess"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Split View Wrapper -->
       <div
         v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
@@ -5319,6 +5428,20 @@
                     >
                       <i class="fas fa-check-circle"></i>
                     </div>
+
+                    <!-- Access Buttons -->
+                    <div
+                      v-if="activeItem === 'Access'"
+                      style="display: flex; gap: 8px"
+                    >
+                      <button
+                        class="btn-create-inline"
+                        style="background: #3b82f6; border-color: #3b82f6"
+                        @click.stop="editAccess(row)"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </div>
                   </span>
                   <span
                     v-else
@@ -5335,6 +5458,15 @@
           <!-- List Footer / Pagination -->
           <div class="list-view-footer" v-if="!loading && rows.length > 0">
             <div class="footer-content">
+              <button
+                v-if="activeItem === 'Access' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="background: rgba(239, 68, 68, 0.1); border-color: transparent; color: #ef4444; margin-right: 15px; font-weight: 700;"
+                @click="bulkDeleteAccess()"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Delete ([[ selectedRows.length ]])</span>
+              </button>
               <span class="text-muted"
                 >Showing [[ loadedRows ]] of [[ totalRows ]] [[
                 currentView.labelPlural || activeItem.toLowerCase() ]]</span
@@ -6214,6 +6346,75 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="confirmModal.show"
+    @click.self="confirmModal.show = false"
+  >
+    <div class="profile-modal" style="max-width: 400px">
+      <div class="profile-modal-header">
+        <h3 style="margin: 0">[[ confirmModal.title ]]</h3>
+        <button class="profile-close" @click="confirmModal.show = false">
+          &times;
+        </button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px; text-align: center">
+        <div
+          style="
+            width: 64px;
+            height: 64px;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 16px;
+          "
+        >
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <p
+          style="
+            color: var(--text-main);
+            font-size: 15px;
+            line-height: 1.5;
+            margin: 0;
+          "
+        >
+          [[ confirmModal.message ]]
+        </p>
+      </div>
+      <div
+        class="profile-modal-footer"
+        style="
+          padding: 16px 24px;
+          border-top: 1px solid var(--border-color);
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+        "
+      >
+        <button
+          class="btn-cancel"
+          @click="confirmModal.show = false"
+          style="margin: 0"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn-create"
+          @click="executeConfirm()"
+          style="background: #ef4444; border-color: #ef4444; margin: 0"
+        >
+          Confirm Delete
+        </button>
       </div>
     </div>
   </div>
@@ -8254,6 +8455,12 @@
               { label: "Reports", color: "#ec4899", isReportSection: true },
             ],
           },
+          {
+            label: "Permission",
+            items: [
+              { label: "Access", color: "#f59e0b", doctype: "Access" },
+            ],
+          },
         ],
       },
 
@@ -8265,6 +8472,19 @@
           emptyTitle: "Dashboard",
           emptyMessage:
             "This panel is reserved for charts and summary widgets.",
+        },
+        Access: {
+          doctype: "Access",
+          createDoctype: "Access",
+          createLabel: "Access",
+          emptyIcon: "fa-lock",
+          emptyTitle: "Permission",
+          columns: [
+            { label: "User ID", key: "user_id", width: 2 },
+            { label: "Warehouse", key: "warehouse", width: 2 },
+            { label: "Inventory Type", key: "inventory_type", width: 2 },
+            { label: "Action", key: "delete_access", width: 0.5, type: "button" },
+          ],
         },
         "Branch Stock": {
           doctype: "Branch Stock",
@@ -8697,6 +8917,21 @@
       creatingOutward: false,
       creatingAsset: false,
       creatingMovement: false,
+      showAccessCreateView: false,
+      creatingAccess: false,
+      isEditingAccess: false,
+      accessForm: {
+        name: "",
+        user_id: "",
+        warehouse: "",
+        inventory_type: "",
+      },
+      confirmModal: {
+        show: false,
+        title: "",
+        message: "",
+        onConfirm: null,
+      },
       showAssetCreateView: false,
       showMovementCreateView: false,
 
@@ -9056,6 +9291,7 @@
         this.showItemCreateView = false;
         this.showAssetCreateView = false;
         this.showMovementCreateView = false;
+        this.showAccessCreateView = false;
         this.showCreateItemModal = false;
         this.showDispatchModal = false;
         this.showWorkflowModal = false;
@@ -9103,6 +9339,7 @@
         this.showItemCreateView = false;
         this.showAssetCreateView = false;
         this.showMovementCreateView = false;
+        this.showAccessCreateView = false;
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
         this.isEditing = false;
@@ -9286,6 +9523,29 @@
               this.loadedRows = this.rows.length;
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Access") {
+            console.log("Fetching Access data...");
+            res = await frappe.call({
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_wh_dept_map",
+            });
+            console.log("Access data response:", res);
+            if (res.message) {
+              let data = res.message;
+              if (this.searchText) {
+                const search = this.searchText.toLowerCase();
+                data = data.filter(
+                  (row) =>
+                    (row.user_id || "").toLowerCase().includes(search) ||
+                    (row.warehouse || "").toLowerCase().includes(search) ||
+                    (row.inventory_type || "").toLowerCase().includes(search),
+                );
+              }
+              this.rows = data;
+              this.loadedRows = data.length;
+              this.totalRows = data.length;
+              this.hasMore = false;
             }
           } else {
             let filters = [];
@@ -9569,8 +9829,152 @@
           return;
         }
 
+        if (doctype === "Access") {
+          this.showAccessCreateView = true;
+          this.showDetailView = false;
+          this.isEditingAccess = false;
+          this.accessForm = {
+            name: "",
+            user_id: "",
+            warehouse: "",
+            inventory_type: "",
+          };
+          return;
+        }
+
         const slug = doctype.toLowerCase().replace(/\s+/g, "-");
         window.location.href = `/app/${slug}/new`;
+      },
+
+      async submitAccess() {
+        if (
+          !this.accessForm.user_id ||
+          !this.accessForm.warehouse ||
+          !this.accessForm.inventory_type
+        ) {
+          frappe.msgprint("All fields are required");
+          return;
+        }
+
+        this.creatingAccess = true;
+        try {
+          const method = this.isEditingAccess
+            ? "sahayog.procurement.api.stock_balance_ledger.update_wh_dept_entry"
+            : "sahayog.procurement.api.stock_balance_ledger.add_wh_dept_entry";
+
+          const args = this.isEditingAccess
+            ? {
+                name: this.accessForm.name,
+                user_id: this.accessForm.user_id,
+                warehouse: this.accessForm.warehouse,
+                inventory_type: this.accessForm.inventory_type,
+              }
+            : {
+                user_id: this.accessForm.user_id,
+                warehouse: this.accessForm.warehouse,
+                inventory_type: this.accessForm.inventory_type,
+              };
+
+          const res = await frappe.call({
+            method: method,
+            args: args,
+          });
+
+          if (res.message && res.message.status === "success") {
+            frappe.show_alert(res.message.message, 5);
+            this.showAccessCreateView = false;
+            await this.fetchData("Access");
+          }
+        } catch (e) {
+          console.error("Access operation error:", e);
+          frappe.msgprint(e.message || "Operation failed");
+        } finally {
+          this.creatingAccess = false;
+        }
+      },
+
+      editAccess(row) {
+        this.isEditingAccess = true;
+        this.accessForm = {
+          name: row.name,
+          user_id: row.user_id,
+          warehouse: row.warehouse,
+          inventory_type: row.inventory_type,
+        };
+        this.showAccessCreateView = true;
+        this.showDetailView = false;
+      },
+
+      async deleteAccess(name) {
+        this.showConfirm(
+          "Delete Access",
+          "Are you sure you want to delete this access entry?",
+          async () => {
+            try {
+              const res = await frappe.call({
+                method:
+                  "sahayog.procurement.api.stock_balance_ledger.delete_wh_dept_entry",
+                args: { name: name },
+              });
+
+              if (res.message && res.message.status === "success") {
+                frappe.show_alert(res.message.message, 5);
+                await this.fetchData("Access");
+              }
+            } catch (e) {
+              console.error("Delete access error:", e);
+              frappe.msgprint(e.message || "Delete failed");
+            }
+          },
+        );
+      },
+      async bulkDeleteAccess() {
+        this.showConfirm(
+          "Bulk Delete Access",
+          `Are you sure you want to delete ${this.selectedRows.length} access entries?`,
+          async () => {
+            this.loading = true;
+            try {
+              const deletePromises = this.selectedRows.map((name) =>
+                frappe.call({
+                  method:
+                    "sahayog.procurement.api.stock_balance_ledger.delete_wh_dept_entry",
+                  args: { name: name },
+                }),
+              );
+
+              await Promise.all(deletePromises);
+              frappe.show_alert(
+                `${this.selectedRows.length} entries deleted successfully`,
+                5,
+              );
+              this.selectedRows = [];
+              await this.fetchData("Access");
+            } catch (e) {
+              console.error("Bulk delete error:", e);
+              frappe.msgprint("Bulk delete failed");
+            } finally {
+              this.loading = false;
+            }
+          },
+        );
+      },
+
+      showConfirm(title, message, onConfirm) {
+        this.confirmModal = {
+          show: true,
+          title: title,
+          message: message,
+          onConfirm: onConfirm,
+        };
+      },
+
+      async executeConfirm() {
+        const onConfirm = this.confirmModal.onConfirm;
+        this.confirmModal.show = false;
+        if (onConfirm) {
+          await onConfirm();
+        }
       },
 
       async fetchItemGroupsAndDepartments() {
