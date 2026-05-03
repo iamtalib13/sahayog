@@ -5569,7 +5569,7 @@
       <div class="profile-modal-header">
         <h3>Asset Movement</h3>
         <div class="profile-modal-header-right">
-          <button class="btn-create-inline" @click="submitMovementFromModal()" :disabled="creatingMovement">
+          <button class="btn-create-inline" @click="submitMovementFromModal(true)" :disabled="creatingMovement">
             <i class="fas fa-spinner fa-spin" v-if="creatingMovement"></i>
             <span v-else>Create Movement</span>
           </button>
@@ -5652,6 +5652,12 @@
               </tr>
             </tbody>
           </table>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+          <button class="btn-create-inline" @click="submitMovementFromModal(false)" :disabled="creatingMovement" style="background: var(--gray-200); color: var(--text-main); border-color: var(--border-color); font-weight: 700;">
+            <i class="fas fa-spinner fa-spin" v-if="creatingMovement"></i>
+            <span v-else>Draft</span>
+          </button>
         </div>
       </div>
     </div>
@@ -9808,7 +9814,7 @@
         }
       },
 
-      async submitMovementFromModal() {
+      async submitMovementFromModal(shouldSubmit = false) {
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
           frappe.msgprint("Purpose and Transaction Date are required");
           return;
@@ -9835,14 +9841,25 @@
             })),
           };
 
-          const res = await frappe.call({
+          let res = await frappe.call({
             method: "frappe.client.insert",
             args: { doc },
           });
 
           if (res.message) {
+            let finalDoc = res.message;
+            if (shouldSubmit) {
+              const submitRes = await frappe.call({
+                method: "frappe.client.submit",
+                args: { doc: finalDoc },
+              });
+              if (submitRes.message) {
+                finalDoc = submitRes.message;
+              }
+            }
+
             frappe.show_alert({
-              message: `Asset Movement "${res.message.name}" saved as draft`,
+              message: `Asset Movement "${finalDoc.name}" ${shouldSubmit ? 'submitted' : 'saved as draft'}`,
               indicator: "green",
             });
             this.showMovementModal = false;
