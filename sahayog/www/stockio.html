@@ -2498,7 +2498,7 @@
                             style="width: 100%; z-index: 50"
                           >
                             <div
-                              v-for="opt in assetsList.filter(a => !item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase())))"
+                              v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                               :key="opt.name"
                               class="searchable-select-option"
                               @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name)"
@@ -5620,7 +5620,7 @@
                   <div class="searchable-select-wrapper" style="width: 100%;">
                     <input type="text" class="form-input" v-model="item.asset_display" @focus="focusedField = 'mv_asset_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Search Asset" />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'mv_asset_' + index">
-                      <div v-for="opt in assetsList.filter(a => !item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase())))" :key="opt.name" class="searchable-select-option" @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; focusedField = null;">
+                      <div v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))" :key="opt.name" class="searchable-select-option" @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;">
                         <div style="font-weight: 500">[[ opt.name ]]</div>
                         <div style="font-size: 11px; opacity: 0.8">[[ opt.asset_name ]]</div>
                       </div>
