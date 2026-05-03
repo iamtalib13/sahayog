@@ -9855,6 +9855,26 @@
               });
               if (submitRes.message) {
                 finalDoc = submitRes.message;
+
+                // Update item statuses to 'Dispatch' in EMR if applicable
+                if (this.movementForm.custom_reference_doctype === "Employee Material Request" && this.movementForm.custom_reference_name) {
+                  const itemStatusMap = this.movementItems.reduce((acc, i) => {
+                    if (i.emr_item_name && i.asset) {
+                      acc[i.emr_item_name] = "Dispatch";
+                    }
+                    return acc;
+                  }, {});
+
+                  if (Object.keys(itemStatusMap).length > 0) {
+                    await frappe.call({
+                      method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                      args: {
+                        docname: this.movementForm.custom_reference_name,
+                        item_status_map: itemStatusMap,
+                      },
+                    });
+                  }
+                }
               }
             }
 
@@ -10200,6 +10220,7 @@
           this.movementItems = itemsToProcess
             .filter(i => i.item_category === 'Asset')
             .map(item => ({
+              emr_item_name: item.name, // Store child row name for status update
               asset: "", 
               asset_display: "",
               item_code: item.item_code,
