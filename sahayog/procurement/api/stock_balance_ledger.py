@@ -230,7 +230,8 @@ def create_asset_movement_from_emmr(emmr, assets):
     # Create Asset Movement
     # -------------------------------------------------
     am = frappe.new_doc("Asset Movement")
-    # am.company = emmr_doc.company
+    am.company = emmr_doc.company
+    am.transaction_date = date.today().strftime("%Y-%m-%d")
     am.purpose = "Issue"
     am.custom_reference_doctype = "Employee Material Request"
     am.custom_reference_name = emmr_doc.name

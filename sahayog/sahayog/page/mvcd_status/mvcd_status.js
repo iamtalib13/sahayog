@@ -142,12 +142,18 @@ h4 {
   color: #256a69;
   animation: count-to 1s ease-in-out forwards;
 }
+
+.page-head.flex {
+  display: none !important;
+}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
 
 <!-- Batch Status Indicators -->
-<div id="batch-buttons-container" style="text-align:center; margin: 10px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;">
+<div style="text-align:center; margin-top: 15px;">
+    <span style="font-size: 0.75rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Batch Wise Progress</span>
+    <div id="batch-buttons-container" style="display: flex; flex-wrap: nowrap; justify-content: center; gap: 4px; max-width: 100%; margin: 0 auto;"></div>
 </div>
 
 <!-- SOL ID Filter -->
@@ -231,7 +237,7 @@ h4 {
   const transHeaderRow = $("<tr>");
   transHeaderRow.append($("<th>").text("S. No."));
   columnsTrans.forEach((col) =>
-    transHeaderRow.append($("<th>").text(col.label))
+    transHeaderRow.append($("<th>").text(col.label)),
   );
   $transThead.append(transHeaderRow);
 
@@ -266,7 +272,9 @@ h4 {
 
   function updateFilterMessage(sol) {
     if (sol && sol.trim() !== "") {
-      $("#filter-message").html(`<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`);
+      $("#filter-message").html(
+        `<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`,
+      );
     } else {
       $("#filter-message").html("");
     }
@@ -289,8 +297,8 @@ h4 {
           $("<td>")
             .attr("colspan", columnsMVCD.length + 1)
             .addClass("no-data")
-            .text("No MVCD data available.")
-        )
+            .text("No MVCD data available."),
+        ),
       );
     }
   }
@@ -312,8 +320,8 @@ h4 {
           $("<td>")
             .attr("colspan", columnsTrans.length + 1)
             .addClass("no-data")
-            .text("No transaction data available.")
-        )
+            .text("No transaction data available."),
+        ),
       );
     }
   }
@@ -328,10 +336,10 @@ h4 {
     // Filter by SOL ID input
     if (sol) {
       mvcdFiltered = mvcdFiltered.filter((row) =>
-        (row.sol_id || "").toLowerCase().includes(sol)
+        (row.sol_id || "").toLowerCase().includes(sol),
       );
       transFiltered = transFiltered.filter((row) =>
-        (row.dth_init_sol_id || "").toLowerCase().includes(sol)
+        (row.dth_init_sol_id || "").toLowerCase().includes(sol),
       );
     }
 
@@ -368,38 +376,97 @@ h4 {
 
     batches.forEach((batch) => {
       const label = batch.replace(/EOD/i, "batch-");
-      
-      // Calculate if batch has pending records (Checking MVCD table only)
       const allowedSols = batchData[batch] || [];
-      const mvcdCount = currentMVCDData.filter(row => allowedSols.includes(String(row.sol_id))).length;
+      const mvcdCount = currentMVCDData.filter((row) =>
+        allowedSols.includes(String(row.sol_id)),
+      ).length;
       const isClear = mvcdCount === 0;
 
-      const $btn = $(
-        `<div style="padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; cursor: default; transition: all 0.2s; font-weight: 600; border: 1px solid transparent;"></div>`
+      // "Liquid Glass" Theme Colors
+      const glassBg = isClear
+        ? "rgba(16, 185, 129, 0.15)"
+        : "rgba(239, 68, 68, 0.15)";
+      const accentColor = isClear ? "#10b981" : "#ef4444";
+      const glowColor = isClear
+        ? "rgba(16, 185, 129, 0.3)"
+        : "rgba(239, 68, 68, 0.3)";
+      const buttonText =
+        mvcdCount > 0
+          ? `${label.toUpperCase()} (${mvcdCount})`
+          : label.toUpperCase();
+
+      const $badge = $(`
+        <div class="status-badge-liquid" style="
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: ${glassBg};
+            color: ${accentColor};
+            border: 1px solid ${accentColor};
+            cursor: pointer;
+            min-width: 70px;
+            flex-shrink: 1;
+            justify-content: center;
+            --glow-color: ${glowColor};
+            animation: liquid-pulse 3s infinite;
+        ">
+            <div style="
+                width: 6px; 
+                height: 6px; 
+                border-radius: 50%; 
+                background: ${accentColor};
+                box-shadow: 0 0 5px ${accentColor};
+                flex-shrink: 0;
+            "></div>
+            <span style="white-space: nowrap; font-family: 'Inter', sans-serif;">${buttonText}</span>
+        </div>
+      `);
+
+      // Hover effect for the badge
+      $badge.hover(
+        function () {
+          $(this).css("transform", "scale(1.05)");
+        },
+        function () {
+          $(this).css("transform", "scale(1)");
+        },
       );
 
-      // Styling Logic (Status Only)
-      if (isClear) {
-        // Success Green for All Clear
-        $btn.css({ 
-          background: "#28a745", 
-          color: "#fff", 
-          borderColor: "#28a745"
-        });
-      } else {
-        // Danger Red for Pending
-        $btn.css({ 
-          background: "#dc3545", 
-          color: "#fff", 
-          borderColor: "#dc3545"
-        });
-      }
+      $badge.on("click", () => {
+        const pendingSols = currentMVCDData.map((row) => String(row.sol_id));
+        showClearedSolsModal(label.toUpperCase(), allowedSols, pendingSols);
+      });
 
-      $btn.text(label.toUpperCase());
-      $container.append($btn);
+      $container.append($badge);
     });
   }
 
+  function showClearedSolsModal(batchName, allSols, pendingSols) {
+    const html = allSols
+      .map((sol) => {
+        const isPending = pendingSols.includes(sol);
+        const color = isPending ? "#fecaca" : "#bbf7d0"; // Light red / Light green
+        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600;">${sol}</li>`;
+      })
+      .join("");
+
+    const dialog = new frappe.ui.Dialog({
+      title: `Batch Audit: ${batchName}`,
+      fields: [
+        {
+          fieldname: "sol_list",
+          fieldtype: "HTML",
+          options: `<ul style="list-style: none; padding: 0;">${html}</ul>`,
+        },
+      ],
+    });
+    dialog.show();
+  }
   $("#apply-filter").on("click", applyFilter);
   $("#sol-filter").on("keyup", function (e) {
     if (e.key === "Enter") applyFilter();
@@ -481,11 +548,11 @@ h4 {
     function update(currentTime) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      
+
       // Ease out quad function
       const ease = progress * (2 - progress);
       const nextValue = Math.floor(start + (target - start) * ease);
-      
+
       element.textContent = nextValue;
 
       if (progress < 1) {
