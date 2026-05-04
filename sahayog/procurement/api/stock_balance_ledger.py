@@ -230,7 +230,8 @@ def create_asset_movement_from_emmr(emmr, assets):
     # Create Asset Movement
     # -------------------------------------------------
     am = frappe.new_doc("Asset Movement")
-    # am.company = emmr_doc.company
+    am.company = emmr_doc.company
+    am.transaction_date = date.today().strftime("%Y-%m-%d")
     am.purpose = "Issue"
     am.custom_reference_doctype = "Employee Material Request"
     am.custom_reference_name = emmr_doc.name
@@ -630,7 +631,7 @@ def get_portal_master_data():
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
         "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset"], filters={"disabled": 0}),
-        "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "location", "custodian"], filters={"docstatus": 1}),
+        "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "location", "custodian"], filters={"docstatus": 1}),
         "item_groups": [g.name for g in frappe.get_all("Item Group")],
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
         "uoms": [u.name for u in frappe.get_all("UOM")],
