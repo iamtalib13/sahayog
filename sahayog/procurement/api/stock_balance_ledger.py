@@ -604,6 +604,9 @@ def get_wh_dept_map():
     """
     Fetch the wh_dept_map child table from Sahayog Settings.
     """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
     try:
         # Fetching directly from the child table doctype bypassing Sahayog Settings permissions
         return frappe.get_all(
@@ -620,6 +623,9 @@ def add_wh_dept_entry(user_id, warehouse, inventory_type):
     """
     Add a new entry to the wh_dept_map child table in Sahayog Settings.
     """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
     try:
         settings = frappe.get_doc("Sahayog Settings")
         settings.append("wh_dept_map", {
@@ -638,6 +644,9 @@ def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
     """
     Update an existing entry in the wh_dept_map child table.
     """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
     try:
         settings = frappe.get_doc("Sahayog Settings")
         found = False
@@ -663,6 +672,9 @@ def delete_wh_dept_entry(name):
     """
     Delete an entry from the wh_dept_map child table.
     """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
     try:
         settings = frappe.get_doc("Sahayog Settings")
         new_map = []

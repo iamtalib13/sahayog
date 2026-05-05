@@ -9061,7 +9061,12 @@
             // Inventory Section logic
             if (section.label === "Inventory") return true;
 
-            return true;
+            // Permission Section logic - Admin only
+            if (section.label === "Permission") {
+              return this.isAdmin;
+            }
+
+            return false;
           })
           .map((section) => {
             let newSection = { ...section };
