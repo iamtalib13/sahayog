@@ -5461,7 +5461,7 @@
               <button
                 v-if="activeItem === 'Access' && selectedRows.length > 0"
                 class="btn-create-inline"
-                style="background: rgba(239, 68, 68, 0.1); border-color: transparent; color: #ef4444; margin-right: 15px; font-weight: 700;"
+                style="background: linear-gradient(135deg, #f87171, #dc2626) !important; border: none !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important; margin-right: 15px; font-weight: 700;"
                 @click="bulkDeleteAccess()"
               >
                 <i class="fas fa-trash"></i>
@@ -6692,25 +6692,26 @@
   .sidebar.collapsed .nav-item {
     justify-content: center;
     align-items: center;
-    padding: 12px 4px;
+    padding: 12px 2px;
     flex-direction: column;
     gap: 6px;
     min-height: 64px;
-    margin: 4px 8px;
+    margin: 4px 2px;
   }
 
   .collapsed-nav-label {
-    font-size: 9px;
+    font-size: 8.5px;
     text-align: center;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
     width: 100%;
     color: inherit;
-    font-weight: 500;
-    opacity: 0.85;
+    font-weight: 600;
+    opacity: 0.9;
     display: block;
     line-height: 1;
+    margin-top: 4px;
+    letter-spacing: -0.01em;
   }
 
   [data-theme="dark"] .nav-item {
@@ -7156,6 +7157,14 @@
 
   .record-link.is-clickable:hover {
     text-decoration: underline;
+  }
+
+  .row-action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
   }
 
   .status-badge {
