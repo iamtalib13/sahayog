@@ -47,5 +47,12 @@ frappe.query_reports["Approval Request Report"] = {
 		// Strictly clear filters on load
 		report.set_filter_value('from_date', "");
 		report.set_filter_value('to_date', "");
+
+		report.page.add_inner_button(__('Clear Filters'), function () {
+            // Clear all filter values
+            report.filters.forEach(f => f.set_value(''));
+            report.refresh();
+        }).addClass('btn-secondary'); // Grey style button
+
 	}
 };
