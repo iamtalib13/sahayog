@@ -46,7 +46,7 @@ frappe.query_reports["Approval Request Report"] = {
 		return value;
 	},
 
-// Onload function to clear filters and add buttons for Clear Filters and Export in the Approval Request Report
+// add buttons for Clear Filters and Role based Export in the Approval Request Report
 	"onload": function(report) {
 		// Strictly clear filters on load
 		report.set_filter_value('from_date', "");
