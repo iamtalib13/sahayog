@@ -59,8 +59,10 @@ frappe.query_reports["Approval Request Report"] = {
 		}).addClass('btn-secondary');
 
 		// Export Button - Beside Clear Filters
+		if (frappe.user.has_role("System Manager") || frappe.user.has_role("Administrator")) {
 		report.page.add_inner_button(__('Export'), function () {
 			frappe.query_report.export_report();
 		}).addClass('btn-primary');
+	 }
 	}
 };
