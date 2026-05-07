@@ -9147,8 +9147,13 @@
         );
       },
       get filteredWarehouses() {
-        if (!this.emrForm.source_warehouse_display) return this.warehouses;
-        const q = this.emrForm.source_warehouse_display.toLowerCase();
+        let q = "";
+        if (this.showAccessCreateView) {
+          q = (this.accessForm.warehouse || "").toLowerCase();
+        } else {
+          q = (this.emrForm.source_warehouse_display || "").toLowerCase();
+        }
+        if (!q) return this.warehouses;
         return this.warehouses.filter((w) => w.toLowerCase().includes(q));
       },
       get filteredSuppliers() {
@@ -9163,12 +9168,18 @@
       },
 
       get filteredEmployees() {
-        if (!this.emrForm.employee_display) return this.employees;
-        const q = this.emrForm.employee_display.toLowerCase();
+        let q = "";
+        if (this.showAccessCreateView) {
+          q = (this.accessForm.user_id || "").toLowerCase();
+        } else {
+          q = (this.emrForm.employee_display || "").toLowerCase();
+        }
+        if (!q) return this.employees;
         return this.employees.filter(
           (e) =>
-            e.name.toLowerCase().includes(q) ||
-            e.employee_name.toLowerCase().includes(q),
+            (e.name && e.name.toLowerCase().includes(q)) ||
+            (e.employee_name && e.employee_name.toLowerCase().includes(q)) ||
+            (e.user_id && e.user_id.toLowerCase().includes(q)),
         );
       },
 
