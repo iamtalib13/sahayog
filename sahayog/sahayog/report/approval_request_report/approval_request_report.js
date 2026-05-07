@@ -1,4 +1,6 @@
 frappe.query_reports["Approval Request Report"] = {
+	
+// Filters for the Approval Request Report to filter by date range, employee, and approval status
 	"filters": [
 		{
 			"fieldname": "from_date",
@@ -26,6 +28,7 @@ frappe.query_reports["Approval Request Report"] = {
 		}
 	],
 
+// Formatter to display approval status with colored indicators in the Approval Request Report
 	"formatter": function(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
 
@@ -43,6 +46,7 @@ frappe.query_reports["Approval Request Report"] = {
 		return value;
 	},
 
+// Onload function to clear filters and add buttons for Clear Filters and Export in the Approval Request Report
 	"onload": function(report) {
 		// Strictly clear filters on load
 		report.set_filter_value('from_date', "");

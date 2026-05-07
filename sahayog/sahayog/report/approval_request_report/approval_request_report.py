@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 from sahayog.sahayog.doctype.approval_request.approval_request import get_permission_query_conditions
 
+# Approval Request Report showing list of approval requests with filters and summary for dashboard
 def execute(filters=None):
     if not filters:
         filters = frappe._dict({})
@@ -14,6 +15,7 @@ def execute(filters=None):
     
     return columns, data, None, None, report_summary
 
+# Approval Request Dashboard report showing approval request summary and filtered request list by date, employee, status, etc.
 def get_report_summary(data):
     if not data:
         return []
@@ -32,6 +34,7 @@ def get_report_summary(data):
         {"label": _("Rejected"), "value": rejected, "indicator": "Red"},
     ]
 
+# Columns definition for the Approval Request Report
 def get_columns():
     return [
         {"label": _("Request ID"), "fieldname": "name", "fieldtype": "Link", "options": "Approval Request", "width": 200},
@@ -44,6 +47,7 @@ def get_columns():
         {"label": _("Approver Remark"), "fieldname": "approver_remark", "fieldtype": "Small Text", "width": 400}
     ]
 
+# Data fetching logic for the Approval Request Report with permission checks and filters
 def get_data(filters):
     conditions = get_conditions(filters)
     current_user = frappe.session.user
@@ -98,6 +102,7 @@ def get_data(filters):
 
     return frappe.db.sql(query, filters, as_dict=True)
 
+# Helper function to build conditions based on filters for the Approval Request Report
 def get_conditions(filters):
     conditions = []
     if filters.get("from_date"):
