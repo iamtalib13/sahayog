@@ -142,7 +142,12 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         ui_sols = {str(x) for x in filters.get("sol_id", [])}
         if not ui_sols: sol_ids_pref = set()
         else: sol_ids_pref = sol_ids_pref.intersection(ui_sols)
-
+    frappe.log_error("FINAL CHECK", f"""
+        Lead: {l.name}
+        SOL(DB): '{l.sol_id}'
+        SOL(Clean): '{curr_sol}'
+        Pref SOL: {sol_ids_pref}
+        """)
     frappe.log_error(
         "CRM FINAL FILTER STATE",
         f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
@@ -441,7 +446,7 @@ def get_employee_performance_data(from_date, to_date):
 
     # --- Step 1: User ki Report Preference fetch karein ---
     has_pref = False
-    zones_pref, regions_pref = set(), set()
+    zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         if pref_res:
@@ -449,6 +454,7 @@ def get_employee_performance_data(from_date, to_date):
             p = pref_res[0]
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
+            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
     # Leads fetch karein
     leads = frappe.get_all(
@@ -488,6 +494,8 @@ def get_employee_performance_data(from_date, to_date):
         
         # Branch/Zone check karein pehle
         curr_sol = str(l.sol_id) if l.sol_id else ""
+        if sol_ids_pref and curr_sol not in sol_ids_pref:
+            continue
         branch = branch_map.get(curr_sol)
         
         # PREFERENCE FILTERING: Sirf wahi employees dikhao jo allowed zone/region mein hain
@@ -585,7 +593,7 @@ def get_crm_top_analytics(from_date, to_date):
 
     # ---------- Preferences ----------
     has_pref = False
-    zones_pref, regions_pref = set(), set()
+    zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
         if pref_res:
@@ -593,7 +601,8 @@ def get_crm_top_analytics(from_date, to_date):
             p = pref_res[0]
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
-
+            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+            
     # ---------- Fetch Leads ----------
     leads = frappe.get_all(
         "Lead",
@@ -624,6 +633,8 @@ def get_crm_top_analytics(from_date, to_date):
                 continue
 
         curr_sol = str(l.sol_id) if l.sol_id else ""
+        if sol_ids_pref and curr_sol not in sol_ids_pref:
+            continue   
         branch = branch_map.get(curr_sol)
 
         # ----- Preference Filtering -----
