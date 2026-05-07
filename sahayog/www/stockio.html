@@ -985,7 +985,7 @@
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">HO Officer</span>
-                <span class="inline-step-name">Anita Sharma</span>
+                <span class="inline-step-name">[[ detailRecord.head_office_officer_display || detailRecord.head_office_officer || 'Not Assigned' ]]</span>
               </div>
               <span class="inline-step-status" :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')">
                  [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved') ]]
@@ -9147,8 +9147,13 @@
         );
       },
       get filteredWarehouses() {
-        if (!this.emrForm.source_warehouse_display) return this.warehouses;
-        const q = this.emrForm.source_warehouse_display.toLowerCase();
+        let q = "";
+        if (this.showAccessCreateView) {
+          q = (this.accessForm.warehouse || "").toLowerCase();
+        } else {
+          q = (this.emrForm.source_warehouse_display || "").toLowerCase();
+        }
+        if (!q) return this.warehouses;
         return this.warehouses.filter((w) => w.toLowerCase().includes(q));
       },
       get filteredSuppliers() {
@@ -9163,12 +9168,18 @@
       },
 
       get filteredEmployees() {
-        if (!this.emrForm.employee_display) return this.employees;
-        const q = this.emrForm.employee_display.toLowerCase();
+        let q = "";
+        if (this.showAccessCreateView) {
+          q = (this.accessForm.user_id || "").toLowerCase();
+        } else {
+          q = (this.emrForm.employee_display || "").toLowerCase();
+        }
+        if (!q) return this.employees;
         return this.employees.filter(
           (e) =>
-            e.name.toLowerCase().includes(q) ||
-            e.employee_name.toLowerCase().includes(q),
+            (e.name && e.name.toLowerCase().includes(q)) ||
+            (e.employee_name && e.employee_name.toLowerCase().includes(q)) ||
+            (e.user_id && e.user_id.toLowerCase().includes(q)),
         );
       },
 
