@@ -985,7 +985,7 @@
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">HO Officer</span>
-                <span class="inline-step-name">Anita Sharma</span>
+                <span class="inline-step-name">[[ detailRecord.head_office_officer_display || detailRecord.head_office_officer || 'Not Assigned' ]]</span>
               </div>
               <span class="inline-step-status" :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')">
                  [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved') ]]
