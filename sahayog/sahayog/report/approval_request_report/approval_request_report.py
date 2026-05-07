@@ -8,8 +8,29 @@ def execute(filters=None):
 
     columns = get_columns()
     data = get_data(filters)
-    return columns, data
+    
+    # Summary Logic inside execute
+    report_summary = get_report_summary(data)
+    
+    return columns, data, None, None, report_summary
 
+def get_report_summary(data):
+    if not data:
+        return []
+
+    total_requests = len(data)
+    draft = sum(1 for d in data if d.get("approval_status") == "Draft")
+    pending = sum(1 for d in data if d.get("approval_status") == "Pending Approval")
+    approved = sum(1 for d in data if d.get("approval_status") == "Approved")
+    rejected = sum(1 for d in data if d.get("approval_status") == "Rejected")
+
+    return [
+        {"label": _("Total Requests"), "value": total_requests, "indicator": "Blue"},
+        {"label": _("Draft"), "value": draft, "indicator": "Gray"},
+        {"label": _("Pending Approval"), "value": pending, "indicator": "Orange"},
+        {"label": _("Approved"), "value": approved, "indicator": "Green"},
+        {"label": _("Rejected"), "value": rejected, "indicator": "Red"},
+    ]
 
 def get_columns():
     return [
@@ -23,20 +44,16 @@ def get_columns():
         {"label": _("Approver Remark"), "fieldname": "approver_remark", "fieldtype": "Small Text", "width": 400}
     ]
 
-
 def get_data(filters):
     conditions = get_conditions(filters)
     current_user = frappe.session.user
 
-    # 🔥 RESTORED ORIGINAL FUNCTIONALITY
     if current_user != "Administrator":
         user_email = frappe.db.get_value("User", current_user, "email")
         conditions.append(f"""
         (
-            -- requester
             ar.owner = %(current_user)s
             OR
-            -- direct approver
             EXISTS (
                 SELECT 1 FROM `tabApproval Approver` aa
                 WHERE aa.parent = ar.name
@@ -44,7 +61,6 @@ def get_data(filters):
                 AND aa.approver = %(current_user)s
             )
             OR
-            -- group approver
             EXISTS (
                 SELECT 1 FROM `tabApproval Approver` aa
                 WHERE aa.parent = ar.name
@@ -81,7 +97,6 @@ def get_data(filters):
     """
 
     return frappe.db.sql(query, filters, as_dict=True)
-
 
 def get_conditions(filters):
     conditions = []
