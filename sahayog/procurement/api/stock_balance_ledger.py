@@ -339,6 +339,12 @@ def get_emr_list(limit=20, start=0, search_text=None):
         conditions.append("(emr.name LIKE %(search)s OR emr.owner LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
         values["search"] = f"%{search_text}%"
 
+    # Add permission query conditions
+    from sahayog.permissions import get_employee_material_request_permission
+    perm_cond = get_employee_material_request_permission(frappe.session.user)
+    if perm_cond:
+        conditions.append(perm_cond.replace("`tabEmployee Material Request`", "emr"))
+
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
     
     # Get total count
