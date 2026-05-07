@@ -48,11 +48,15 @@ frappe.query_reports["Approval Request Report"] = {
 		report.set_filter_value('from_date', "");
 		report.set_filter_value('to_date', "");
 
+		// Clear Filters Button
 		report.page.add_inner_button(__('Clear Filters'), function () {
-            // Clear all filter values
-            report.filters.forEach(f => f.set_value(''));
-            report.refresh();
-        }).addClass('btn-secondary'); // Grey style button
+			report.filters.forEach(f => f.set_value(''));
+			report.refresh();
+		}).addClass('btn-secondary');
 
+		// Export Button - Beside Clear Filters
+		report.page.add_inner_button(__('Export'), function () {
+			frappe.query_report.export_report();
+		}).addClass('btn-primary');
 	}
 };
