@@ -1574,7 +1574,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     checkStatus() {
       let progress = 10;
+      let attempts = 0;
+      const maxAttempts = 60; // 5 minutes max (60 * 5s)
+
       let timer = setInterval(async () => {
+        attempts++;
+        
+        if (attempts > maxAttempts) {
+          clearInterval(timer);
+          this.loading = false;
+          page.set_intro(`
+            <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
+              <i class="fa fa-clock-o mr-2"></i> <b>Timeout:</b> Export is taking too long. Please check back later.
+            </div>
+          `);
+          return;
+        }
+
         let res = await frappe.call(
           "sahayog.scrm.api.report_access.check_export_status",
         );
@@ -1617,53 +1633,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         } else if (res.message?.status === "failed") {
           clearInterval(timer);
           this.loading = false;
+          const errMsg = res.message.error || "Export failed.";
           page.set_intro(
-            `<div class="p-2" style="color:#b91c1c;"><b>Error:</b> Export failed.</div>`,
+            `<div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
+              <i class="fa fa-exclamation-triangle mr-2"></i> <b>Error:</b> ${errMsg}
+            </div>`,
           );
         }
       }, 5000);
     },
   }).mount("#crm-app");
-
-  // Global Export Logic (Using Set Intro for Status)
-  window.trigger_export = async () => {
-    const app = document.querySelector("#crm-app").__vue_app; // Petite vue instance link
-    page.set_intro(
-      '<div class="py-1 text-primary"><i class="fa fa-cog fa-spin mr-2"></i> Exporting records... Status: 10%</div>',
-    );
-
-    let res = await frappe.call({
-      method: "sahayog.scrm.api.report_access.queue_leads_export",
-      args: {
-        from_date: $('input[v-model="from_date"]').val(),
-        to_date: $('input[v-model="to_date"]').val(),
-        filters: {}, // Yahan Vue selected state pass karni hogi
-      },
-    });
-
-    if (res.message?.status === "queued") {
-      let check = setInterval(async () => {
-        let statusRes = await frappe.call(
-          "sahayog.scrm.api.report_access.check_export_status",
-        );
-        if (statusRes.message?.status === "completed") {
-          clearInterval(check);
-          page.set_intro(`
-                        <div class="d-flex align-items-center justify-content-between py-1">
-                            <div class="text-success"><i class="fa fa-check-circle mr-2"></i> Export Ready (${statusRes.message.row_count} rows)</div>
-                            <a href="${statusRes.message.file_url}" target="_blank" class="btn btn-xs btn-primary">Download File</a>
-                        </div>
-                    `);
-          frappe.show_alert({
-            message: "Report generated successfully!",
-            indicator: "green",
-          });
-        } else {
-          page.set_intro(
-            '<div class="py-1 text-primary"><i class="fa fa-cog fa-spin mr-2"></i> Processing... Please do not close the page.</div>',
-          );
-        }
-      }, 3000);
-    }
-  };
 };
