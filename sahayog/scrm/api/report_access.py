@@ -142,12 +142,7 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         ui_sols = {str(x) for x in filters.get("sol_id", [])}
         if not ui_sols: sol_ids_pref = set()
         else: sol_ids_pref = sol_ids_pref.intersection(ui_sols)
-    frappe.log_error("FINAL CHECK", f"""
-        Lead: {l.name}
-        SOL(DB): '{l.sol_id}'
-        SOL(Clean): '{curr_sol}'
-        Pref SOL: {sol_ids_pref}
-        """)
+
     frappe.log_error(
         "CRM FINAL FILTER STATE",
         f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
@@ -335,99 +330,111 @@ import zipfile
 def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
     frappe.set_user(user)
 
-    data = get_leads(from_date, to_date, filters=filters)
-    leads = data.get("leads", [])
+    try:
+        data = get_leads(from_date, to_date, filters=filters)
+        leads = data.get("leads", [])
 
-    headers = [
-        "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
-        "Source", "Product Code", "Product Name", "Amount",
-        "Employee Name", "Employee ID", "Designation",
-        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
-    ]
+        headers = [
+            "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
+            "Source", "Product Code", "Product Name", "Amount",
+            "Employee Name", "Employee ID", "Designation",
+            "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+        ]
 
-    # ---------- CREATE CSV IN MEMORY (FAST) ----------
-    output = io.StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+        # ---------- CREATE CSV IN MEMORY (FAST) ----------
+        output = io.StringIO()
+        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
 
-    writer.writerow(headers)
+        writer.writerow(headers)
 
-    for i, l in enumerate(leads):
-        b = l.get("branch_info", {})
-        writer.writerow([
-            i + 1,
-            l.status,
-            l.name,
-            l.lead_name or "",
-            l.contact,
-            l.source or "",
-            l.product_code,
-            l.product_name,
-            l.amount,
-            l.employee_name,
-            l.employee_id,
-            l.designation,
-            l.sol_id or "-",
-            b.get("branch", "-"),
-            b.get("district", "-"),
-            b.get("region", "-"),
-            b.get("zone", "-"),
-            format_date(l.creation, "dd-mm-yyyy")
-        ])
+        for i, l in enumerate(leads):
+            b = l.get("branch_info", {})
+            writer.writerow([
+                i + 1,
+                l.status,
+                l.name,
+                l.lead_name or "",
+                l.contact,
+                l.source or "",
+                l.product_code,
+                l.product_name,
+                l.amount,
+                l.employee_name,
+                l.employee_id,
+                l.designation,
+                l.sol_id or "-",
+                b.get("branch", "-"),
+                b.get("district", "-"),
+                b.get("region", "-"),
+                b.get("zone", "-"),
+                format_date(l.creation, "dd-mm-yyyy")
+            ])
 
-    csv_content = output.getvalue()
-    output.close()
+        csv_content = output.getvalue()
+        output.close()
 
-    # ---------- HANDLE FORMAT ----------
-    if format == "zip":
-        zip_buffer = io.BytesIO()
+        # ---------- HANDLE FORMAT ----------
+        if format == "zip":
+            zip_buffer = io.BytesIO()
 
-        with zipfile.ZipFile(
-            zip_buffer,
-            "w",
-            compression=zipfile.ZIP_DEFLATED,
-            compresslevel=6  # balanced speed + compression
-        ) as zip_file:
-            zip_file.writestr(
-                f"crm_leads_{from_date}_to_{to_date}.csv",
-                csv_content
-            )
+            with zipfile.ZipFile(
+                zip_buffer,
+                "w",
+                compression=zipfile.ZIP_DEFLATED,
+                compresslevel=6  # balanced speed + compression
+            ) as zip_file:
+                zip_file.writestr(
+                    f"crm_leads_{from_date}_to_{to_date}.csv",
+                    csv_content
+                )
 
-        file_content = zip_buffer.getvalue()
-        filename = f"crm_leads_{from_date}_to_{to_date}.zip"
+            file_content = zip_buffer.getvalue()
+            filename = f"crm_leads_{from_date}_to_{to_date}.zip"
 
-    else:
-        file_content = csv_content
-        filename = f"crm_leads_{from_date}_to_{to_date}.csv"
-    frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
-    # ---------- SAVE FILE ----------
-    file_doc = frappe.get_doc({
-        "doctype": "File",
-        "file_name": filename,
-        "content": file_content,
-        "is_private": 1
-    }).insert(ignore_permissions=True)
+        else:
+            file_content = csv_content
+            filename = f"crm_leads_{from_date}_to_{to_date}.csv"
+        
+        frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
+        
+        # ---------- SAVE FILE ----------
+        file_doc = frappe.get_doc({
+            "doctype": "File",
+            "file_name": filename,
+            "content": file_content,
+            "is_private": 1
+        }).insert(ignore_permissions=True)
 
-    status_data = {
-        "status": "completed",
-        "file_url": file_doc.file_url,
-        "row_count": len(leads),
-        "from_date": from_date,
-        "to_date": to_date
-    }
+        status_data = {
+            "status": "completed",
+            "file_url": file_doc.file_url,
+            "row_count": len(leads),
+            "from_date": from_date,
+            "to_date": to_date
+        }
 
-    frappe.cache().set_value(
-        f"export_status_{user}",
-        status_data,
-        expires_in_sec=600
-    )
+        frappe.cache().set_value(
+            f"export_status_{user}",
+            status_data,
+            expires_in_sec=600
+        )
 
-    notify_user(
-        user,
-        f"Export Ready: {filename}. "
-        f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
-    )
+        notify_user(
+            user,
+            f"Export Ready: {filename}. "
+            f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
+        )
 
-    frappe.db.commit()
+        frappe.db.commit()
+
+    except Exception as e:
+        frappe.db.rollback()
+        frappe.log_error(f"CRM Export Job Failed: {str(e)}", frappe.get_traceback())
+        frappe.cache().set_value(
+            f"export_status_{user}",
+            {"status": "failed", "error": str(e)},
+            expires_in_sec=600
+        )
     
 @frappe.whitelist()
 def check_export_status():
