@@ -8909,6 +8909,7 @@
       requestItemView: "list",
       userWarehouse: null,
       userEmployeeId: null,
+      userDesignation: null,
       userInventoryType: null,
       itemQuantities: {},
       isAdmin: false,
@@ -9100,8 +9101,12 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
+                  // EXCEPT: Branch Manager can see Branch Stock
                   filteredItems = filteredItems.filter(
-                    (item) => item.label === "Requests",
+                    (item) =>
+                      item.label === "Requests" ||
+                      (item.label === "Branch Stock" &&
+                        this.userDesignation === "BRANCH MANAGER"),
                   );
                 }
               }
@@ -9308,6 +9313,23 @@
           }
         } catch (e) {
           console.warn("Employee ID fetch failed:", e);
+        }
+
+        // Fetch user's Designation
+        try {
+          const desigRes = await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+              doctype: "Employee",
+              filters: { user_id: frappe.session.user },
+              fieldname: "designation",
+            },
+          });
+          if (desigRes.message) {
+            this.userDesignation = desigRes.message.designation;
+          }
+        } catch (e) {
+          console.warn("Designation fetch failed:", e);
         }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
