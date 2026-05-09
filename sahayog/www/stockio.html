@@ -11039,15 +11039,7 @@
               args: { doc: res.message },
             });
 
-            // Update item statuses to 'Dispatch' in EMR
-            const itemMap = this.dispatchForm.items.reduce((acc, d) => {
-              if (d.selected && d.dispatch_qty > 0) {
-                acc[d.name] = "Dispatch";
-              }
-              return acc;
-            }, {});
-
-            await frappe.call({
+            const ddRes = await frappe.call({
               method: "frappe.client.insert",
               args: {
                 doc: {
@@ -11066,12 +11058,25 @@
               },
             });
 
+            const ddName = ddRes.message.name;
+
+            // Update item statuses and dispatch_detail link in EMR
+            const itemUpdateMap = this.dispatchForm.items.reduce((acc, d) => {
+              if (d.selected && d.dispatch_qty > 0) {
+                acc[d.name] = {
+                  status: "Dispatch",
+                  dispatch_detail: ddName
+                };
+              }
+              return acc;
+            }, {});
+
             await frappe.call({
               method:
                 "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
               args: {
                 docname: this.dispatchForm.name,
-                item_status_map: itemMap,
+                item_status_map: itemUpdateMap,
               },
             });
 

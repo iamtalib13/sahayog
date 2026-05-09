@@ -184,14 +184,23 @@ class EmployeeMaterialRequest(Document):
 @frappe.whitelist()
 def update_emr_item_status(docname, item_status_map):
     """
-    Updates status for specific items in the EMR without saving the submitted parent.
-    item_status_map format: '{"item_child_row_name": "Dispatch"}' (passed as JSON string)
+    Updates status and dispatch_detail for specific items in the EMR.
+    item_status_map format: '{"item_child_row_name": {"status": "Dispatch", "dispatch_detail": "DD-001"}}'
     """
     if isinstance(item_status_map, str):
         item_status_map = frappe.parse_json(item_status_map)
         
-    for row_name, status in item_status_map.items():
-        frappe.db.set_value("Material Request Items", row_name, "status", status)
+    for row_name, data in item_status_map.items():
+        if isinstance(data, dict):
+            status = data.get("status")
+            dispatch_detail = data.get("dispatch_detail")
+            if status:
+                frappe.db.set_value("Material Request Items", row_name, "status", status)
+            if dispatch_detail:
+                frappe.db.set_value("Material Request Items", row_name, "dispatch_detail", dispatch_detail)
+        else:
+            # Fallback for simple status string update
+            frappe.db.set_value("Material Request Items", row_name, "status", data)
             
     frappe.db.commit()
     return {"success": True}
