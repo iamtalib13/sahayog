@@ -1400,9 +1400,8 @@
                               :class="{ selected: item.item_code === opt.name }"
                               @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
-                              <div style="font-weight: 500">[[ opt.name ]]</div>
-                              <div style="font-size: 11px; opacity: 0.8">
-                                [[ opt.item_name ]]
+                              <div style="font-weight: 500">
+                                [[ opt.item_name ]] ([[ opt.name ]])
                               </div>
                             </div>
                             <div
@@ -1603,13 +1602,11 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">[[ opt.name ]]</div>
-                            <div style="font-size: 11px; opacity: 0.8">
-                              [[ opt.item_name ]]
+                            >
+                            <div style="font-weight: 500">
+                              [[ opt.item_name ]] ([[ opt.name ]])
                             </div>
-                          </div>
-                        </div>
+                            </div>                        </div>
                       </div>
                     </td>
                     <td>
@@ -1790,13 +1787,11 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">[[ opt.name ]]</div>
-                            <div style="font-size: 11px; opacity: 0.8">
-                              [[ opt.item_name ]]
+                            >
+                            <div style="font-weight: 500">
+                              [[ opt.item_name ]] ([[ opt.name ]])
                             </div>
-                          </div>
-                        </div>
+                            </div>                        </div>
                       </div>
                     </td>
                     <td>
@@ -2169,10 +2164,9 @@
                       v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
                       :key="item.name"
                       class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
-                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
-                      : '' ]]
+                      [[ item.item_name ]] ([[ item.name ]])
                     </div>
                   </div>
                 </div>
@@ -2501,14 +2495,12 @@
                               v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                               :key="opt.name"
                               class="searchable-select-option"
-                              @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name)"
+                              @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.asset_name + ' (' + opt.name + ')' : opt.name)"
                             >
-                              <div style="font-weight: 500">[[ opt.name ]]</div>
-                              <div style="font-size: 11px; opacity: 0.8">
-                                [[ opt.asset_name ]]
+                              <div style="font-weight: 500">
+                                [[ opt.asset_name ]] ([[ opt.name ]])
                               </div>
-                            </div>
-                          </div>
+                            </div>                          </div>
                         </div>
                       </td>
 
@@ -11045,7 +11037,7 @@
       selectEMRItemOption(index, itemCode, itemName, uom) {
         const item = this.emrItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         item.uom = uom;
         this.focusedField = null;
       },
@@ -11072,7 +11064,7 @@
       selectInwardItemOption(index, itemCode, itemName, uom) {
         const item = this.inwardItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
       addOutwardItem() {
@@ -11090,7 +11082,7 @@
       selectOutwardItemOption(index, itemCode, itemName, uom) {
         const item = this.outwardItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
       async submitEMR() {
