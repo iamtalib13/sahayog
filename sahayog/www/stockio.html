@@ -3370,7 +3370,10 @@
                           <th>Item</th>
                           <th>Category</th>
                           <th style="text-align: right">Requested Qty</th>
-                          <th style="text-align: right; width: 120px">
+                          <th
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
+                            style="text-align: right; width: 120px"
+                          >
                             Approved Qty
                           </th>
                           <th>Status</th>
@@ -3448,7 +3451,10 @@
                           <td style="text-align: right; font-weight: 700">
                             [[ item.quantity ]] [[ item.uom ]]
                           </td>
-                          <td style="text-align: right">
+                          <td
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
+                            style="text-align: right"
+                          >
                             <input
                               type="number"
                               class="form-input"
@@ -4305,7 +4311,7 @@
                             Qty
                           </th>
                           <th
-                            v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
                             class="text-right"
                             style="
                               text-align: right;
@@ -4432,7 +4438,7 @@
                             />
                           </td>
                           <td
-                            v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
                             style="padding: 10px 12px !important"
                           >
                             <input
