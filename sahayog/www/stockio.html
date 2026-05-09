@@ -704,6 +704,29 @@
     pointer-events: none;
   }
 
+  .searchable-select-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 16px 20px;
+    border-radius: var(--border-radius-md);
+    border: 2px solid var(--border-color);
+    background: var(--sidebar-hover);
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
+  }
+
   .form-checkbox-group {
     display: flex;
     gap: 24px;
@@ -1389,6 +1412,16 @@
                             placeholder="Item Code"
                           />
                           <div
+                            v-if="item.item_code && focusedField !== 'item_code_' + index"
+                            class="searchable-select-display"
+                          >
+                            [[ item.item_name ]]
+                            <span
+                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              >([[ item.item_code ]])</span
+                            >
+                          </div>
+                          <div
                             class="searchable-select-dropdown"
                             v-if="focusedField === 'item_code_' + index"
                             style="width: 100%; max-width: 300px; z-index: 50"
@@ -1400,9 +1433,8 @@
                               :class="{ selected: item.item_code === opt.name }"
                               @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
-                              <div style="font-weight: 500">[[ opt.name ]]</div>
-                              <div style="font-size: 11px; opacity: 0.8">
-                                [[ opt.item_name ]]
+                              <div style="font-weight: 500">
+                                [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                               </div>
                             </div>
                             <div
@@ -1594,8 +1626,17 @@
                           placeholder="Item Code"
                         />
                         <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'inward_item_' + index"
+                          v-if="item.item_code && focusedField !== 'inward_item_' + index"
+                          class="searchable-select-display"
+                        >
+                          [[ item.item_name ]]
+                          <span
+                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            >([[ item.item_code ]])</span
+                          >
+                        </div>
+                        <div
+                          class="searchable-select-dropdown"                          v-if="focusedField === 'inward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1603,13 +1644,11 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">[[ opt.name ]]</div>
-                            <div style="font-size: 11px; opacity: 0.8">
-                              [[ opt.item_name ]]
+                            >
+                            <div style="font-weight: 500">
+                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                             </div>
-                          </div>
-                        </div>
+                            </div>                        </div>
                       </div>
                     </td>
                     <td>
@@ -1781,8 +1820,17 @@
                           placeholder="Item Code"
                         />
                         <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'outward_item_' + index"
+                          v-if="item.item_code && focusedField !== 'outward_item_' + index"
+                          class="searchable-select-display"
+                        >
+                          [[ item.item_name ]]
+                          <span
+                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            >([[ item.item_code ]])</span
+                          >
+                        </div>
+                        <div
+                          class="searchable-select-dropdown"                          v-if="focusedField === 'outward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1790,13 +1838,11 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">[[ opt.name ]]</div>
-                            <div style="font-size: 11px; opacity: 0.8">
-                              [[ opt.item_name ]]
+                            >
+                            <div style="font-weight: 500">
+                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                             </div>
-                          </div>
-                        </div>
+                            </div>                        </div>
                       </div>
                     </td>
                     <td>
@@ -2169,11 +2215,20 @@
                       v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
                       :key="item.name"
                       class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.name + ' - ' + item.item_name : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_name = item.item_name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
-                      [[ item.name ]] [[ item.item_name ? '- ' + item.item_name
-                      : '' ]]
+                      [[ item.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ item.name ]])</span>
                     </div>
+                  </div>
+                  <div
+                    v-if="createAssetForm.item_code && focusedField !== 'asset_item_code'"
+                    class="searchable-select-display"
+                  >
+                    [[ createAssetForm.item_name ]]
+                    <span
+                      style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                      >([[ createAssetForm.item_code ]])</span
+                    >
                   </div>
                 </div>
               </div>
@@ -2491,24 +2546,31 @@
                             @focus="onFocusSearchable('mv_asset_' + index)"
                             @blur="onBlurSearchable('mv_asset_' + index)"
                             placeholder="Search Asset"
-                          />
-                          <div
-                            class="searchable-select-dropdown"
-                            v-if="focusedField === 'mv_asset_' + index"
+                            />
+                            <div
+                            v-if="item.asset && focusedField !== 'mv_asset_' + index"
+                            class="searchable-select-display"
+                            >
+                            [[ item.asset_name ]]
+                            <span
+                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              >([[ item.asset ]])</span
+                            >
+                            </div>
+                            <div
+                            class="searchable-select-dropdown"                            v-if="focusedField === 'mv_asset_' + index"
                             style="width: 100%; z-index: 50"
                           >
                             <div
                               v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                               :key="opt.name"
                               class="searchable-select-option"
-                              @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name)"
+                              @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.asset_name + ' (' + opt.name + ')' : opt.name)"
                             >
-                              <div style="font-weight: 500">[[ opt.name ]]</div>
-                              <div style="font-size: 11px; opacity: 0.8">
-                                [[ opt.asset_name ]]
+                              <div style="font-weight: 500">
+                                [[ opt.asset_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                               </div>
-                            </div>
-                          </div>
+                            </div>                          </div>
                         </div>
                       </td>
 
@@ -3308,7 +3370,10 @@
                           <th>Item</th>
                           <th>Category</th>
                           <th style="text-align: right">Requested Qty</th>
-                          <th style="text-align: right; width: 120px">
+                          <th
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
+                            style="text-align: right; width: 120px"
+                          >
                             Approved Qty
                           </th>
                           <th>Status</th>
@@ -3386,7 +3451,10 @@
                           <td style="text-align: right; font-weight: 700">
                             [[ item.quantity ]] [[ item.uom ]]
                           </td>
-                          <td style="text-align: right">
+                          <td
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
+                            style="text-align: right"
+                          >
                             <input
                               type="number"
                               class="form-input"
@@ -4243,7 +4311,7 @@
                             Qty
                           </th>
                           <th
-                            v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
                             class="text-right"
                             style="
                               text-align: right;
@@ -4370,7 +4438,7 @@
                             />
                           </td>
                           <td
-                            v-if="detailRecord.status === 'Pending HO Approval' || detailRecord.status === 'Approved'"
+                            v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
                             style="padding: 10px 12px !important"
                           >
                             <input
@@ -5803,9 +5871,12 @@
   >
     <div class="profile-modal">
       <div class="profile-modal-header">
-        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]]</h3>
+        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</h3>
         <div class="profile-modal-header-right">
-          <button class="btn-create-inline" @click="submitDispatch()">
+          <button v-if="dispatchForm.dispatchStep === 1" class="btn-create-inline" @click="dispatchForm.dispatchStep = 2">
+            <span>Next</span>
+          </button>
+          <button v-if="dispatchForm.dispatchStep === 2" class="btn-create-inline" @click="submitDispatch()">
             <span>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Proceed Movement' : 'Proceed Dispatch' ]]</span>
           </button>
           <button class="profile-close" @click="showDispatchModal = false">
@@ -5815,7 +5886,18 @@
       </div>
 
       <div class="profile-modal-body">
-        <div
+        <div v-if="dispatchForm.dispatchStep === 2" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <h4>Dispatch Details</h4>
+            <div class="form-group"><label>Dispatch Date</label><input type="date" class="form-input" v-model="dispatchForm.dispatch_date" /></div>
+            <div class="form-group"><label>Delivery Date</label><input type="date" class="form-input" v-model="dispatchForm.delivery_date" /></div>
+            <div class="form-group"><label>Courier Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_name" /></div>
+            <div class="form-group"><label>Courier Company Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_company_name" /></div>
+            <div class="form-group"><label>POD No</label><input type="text" class="form-input" v-model="dispatchForm.pod_no" /></div>
+            <div class="form-group"><label>Dispatch Location</label><input type="text" class="form-input" v-model="dispatchForm.dispatch_location" /></div>
+            <div class="form-group"><label>Address</label><textarea class="form-input" v-model="dispatchForm.address"></textarea></div>
+            <div class="form-group"><label>Mobile Number</label><input type="text" class="form-input" v-model="dispatchForm.mobile_number" /></div>
+        </div>
+        <div v-if="dispatchForm.dispatchStep === 1"
           style="
             padding: 12px;
             background: var(--gray-50);
@@ -8820,6 +8902,7 @@
         items: [],
         loading: false,
         isFromList: false,
+        dispatchStep: 1,
       },
 
       showBranchStockUseView: false,
@@ -8909,6 +8992,7 @@
       requestItemView: "list",
       userWarehouse: null,
       userEmployeeId: null,
+      userDesignation: null,
       userInventoryType: null,
       itemQuantities: {},
       isAdmin: false,
@@ -9100,8 +9184,12 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
+                  // EXCEPT: Branch Manager can see Branch Stock
                   filteredItems = filteredItems.filter(
-                    (item) => item.label === "Requests",
+                    (item) =>
+                      item.label === "Requests" ||
+                      (item.label === "Branch Stock" &&
+                        this.userDesignation === "BRANCH MANAGER"),
                   );
                 }
               }
@@ -9308,6 +9396,23 @@
           }
         } catch (e) {
           console.warn("Employee ID fetch failed:", e);
+        }
+
+        // Fetch user's Designation
+        try {
+          const desigRes = await frappe.call({
+            method: "frappe.client.get_value",
+            args: {
+              doctype: "Employee",
+              filters: { user_id: frappe.session.user },
+              fieldname: "designation",
+            },
+          });
+          if (desigRes.message) {
+            this.userDesignation = desigRes.message.designation;
+          }
+        } catch (e) {
+          console.warn("Designation fetch failed:", e);
         }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
@@ -9531,7 +9636,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
               args: {
-                warehouse: this.userWarehouse,
+                warehouse: this.userInventoryType ? null : this.userWarehouse,
                 limit: limit,
                 start: start,
                 search_text: this.searchText,
@@ -10190,6 +10295,7 @@
 
       selectMovementAssetOption(index, assetName, assetLabel) {
         this.movementItems[index].asset = assetName;
+        this.movementItems[index].asset_name = assetLabel.split(" (")[0];
         this.movementItems[index].asset_display = assetLabel;
         this.focusedField = null;
       },
@@ -10933,10 +11039,34 @@
               args: { doc: res.message },
             });
 
-            // Update item statuses to 'Dispatch' in EMR
-            const itemMap = this.dispatchForm.items.reduce((acc, d) => {
+            const ddRes = await frappe.call({
+              method: "frappe.client.insert",
+              args: {
+                doc: {
+                  doctype: "Dispatch Detail",
+                  employee_material_request: this.dispatchForm.name,
+                  stock_entry: res.message.name,
+                  dispatch_date: this.dispatchForm.dispatch_date,
+                  delivery_date: this.dispatchForm.delivery_date,
+                  courier_name: this.dispatchForm.courier_name,
+                  courier_company_name: this.dispatchForm.courier_company_name,
+                  pod_no: this.dispatchForm.pod_no,
+                  dispatch_location: this.dispatchForm.dispatch_location,
+                  address: this.dispatchForm.address,
+                  mobile_number: this.dispatchForm.mobile_number,
+                },
+              },
+            });
+
+            const ddName = ddRes.message.name;
+
+            // Update item statuses and dispatch_detail link in EMR
+            const itemUpdateMap = this.dispatchForm.items.reduce((acc, d) => {
               if (d.selected && d.dispatch_qty > 0) {
-                acc[d.name] = "Dispatch";
+                acc[d.name] = {
+                  status: "Dispatch",
+                  dispatch_detail: ddName
+                };
               }
               return acc;
             }, {});
@@ -10946,7 +11076,7 @@
                 "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
               args: {
                 docname: this.dispatchForm.name,
-                item_status_map: itemMap,
+                item_status_map: itemUpdateMap,
               },
             });
 
@@ -11023,7 +11153,8 @@
       selectEMRItemOption(index, itemCode, itemName, uom) {
         const item = this.emrItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_name = itemName;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         item.uom = uom;
         this.focusedField = null;
       },
@@ -11050,7 +11181,8 @@
       selectInwardItemOption(index, itemCode, itemName, uom) {
         const item = this.inwardItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_name = itemName;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
       addOutwardItem() {
@@ -11068,7 +11200,8 @@
       selectOutwardItemOption(index, itemCode, itemName, uom) {
         const item = this.outwardItems[index];
         item.item_code = itemCode;
-        item.item_code_display = itemCode;
+        item.item_name = itemName;
+        item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
       async submitEMR() {

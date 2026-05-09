@@ -37,7 +37,9 @@
   "tracking_section",
   "stock_entry",
   "column_break_tracking",
-  "status"
+  "status",
+  "section_break_ulkz",
+  "dispatch_detail"
  ],
  "fields": [
   {
@@ -270,12 +272,22 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Rate"
+  },
+  {
+   "fieldname": "section_break_ulkz",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "dispatch_detail",
+   "fieldtype": "Link",
+   "label": "Dispatch Detail",
+   "options": "Dispatch Detail"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-21 23:51:39.845682",
+ "modified": "2026-05-09 15:45:37.920194",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Material Request Items",

@@ -510,16 +510,32 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
 def get_user_branch_warehouse():
     """
     Get the warehouse linked to the current user's branch
-    Uses sol_id from Employee (same as Branch Stock report)
+    Checks Sahayog Settings first, then falls back to sol_id from Employee
     """
     user = frappe.session.user
-    
-    # Get user's sol_id from Employee (matches Branch Stock report logic)
+
+    # 1. Check Sahayog Settings (Default Warehouse table)
+    try:
+        # Fetching directly from the child table for better performance
+        assigned_warehouse = frappe.db.get_value(
+            "Default Warehouse",
+            {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
+            "warehouse"
+        )
+        if assigned_warehouse:
+            return {
+                "warehouse": assigned_warehouse,
+                "branch": assigned_warehouse
+            }
+    except Exception as e:
+        frappe.log_error(f"Error in get_user_branch_warehouse (Sahayog Settings): {str(e)}")
+
+    # 2. Fallback to sol_id from Employee (matches Branch Stock report logic)
     sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
-    
+
     if not sol_id:
         return {"warehouse": None, "branch": None}
-    
+
     return {
         "warehouse": sol_id,
         "branch": sol_id
