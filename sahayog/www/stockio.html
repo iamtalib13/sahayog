@@ -5871,9 +5871,12 @@
   >
     <div class="profile-modal">
       <div class="profile-modal-header">
-        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]]</h3>
+        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</h3>
         <div class="profile-modal-header-right">
-          <button class="btn-create-inline" @click="submitDispatch()">
+          <button v-if="dispatchForm.dispatchStep === 1" class="btn-create-inline" @click="dispatchForm.dispatchStep = 2">
+            <span>Next</span>
+          </button>
+          <button v-if="dispatchForm.dispatchStep === 2" class="btn-create-inline" @click="submitDispatch()">
             <span>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Proceed Movement' : 'Proceed Dispatch' ]]</span>
           </button>
           <button class="profile-close" @click="showDispatchModal = false">
@@ -5883,7 +5886,18 @@
       </div>
 
       <div class="profile-modal-body">
-        <div
+        <div v-if="dispatchForm.dispatchStep === 2" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <h4>Dispatch Details</h4>
+            <div class="form-group"><label>Dispatch Date</label><input type="date" class="form-input" v-model="dispatchForm.dispatch_date" /></div>
+            <div class="form-group"><label>Delivery Date</label><input type="date" class="form-input" v-model="dispatchForm.delivery_date" /></div>
+            <div class="form-group"><label>Courier Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_name" /></div>
+            <div class="form-group"><label>Courier Company Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_company_name" /></div>
+            <div class="form-group"><label>POD No</label><input type="text" class="form-input" v-model="dispatchForm.pod_no" /></div>
+            <div class="form-group"><label>Dispatch Location</label><input type="text" class="form-input" v-model="dispatchForm.dispatch_location" /></div>
+            <div class="form-group"><label>Address</label><textarea class="form-input" v-model="dispatchForm.address"></textarea></div>
+            <div class="form-group"><label>Mobile Number</label><input type="text" class="form-input" v-model="dispatchForm.mobile_number" /></div>
+        </div>
+        <div v-if="dispatchForm.dispatchStep === 1"
           style="
             padding: 12px;
             background: var(--gray-50);
@@ -8888,6 +8902,7 @@
         items: [],
         loading: false,
         isFromList: false,
+        dispatchStep: 1,
       },
 
       showBranchStockUseView: false,
