@@ -23,17 +23,16 @@ def execute(filters=None):
         conditions += " AND bin.warehouse = %(warehouse)s"
         values["warehouse"] = warehouse
     else:
-        # Check Sahayog Settings for assigned warehouses
+        # Check if user exists in Sahayog Settings
         user = frappe.session.user
-        assigned_warehouses = frappe.get_all(
+        exists_in_settings = frappe.db.exists(
             "Default Warehouse",
-            filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
-            pluck="warehouse"
+            {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user}
         )
 
-        if assigned_warehouses:
-            conditions += " AND bin.warehouse IN %(warehouses)s"
-            values["warehouses"] = assigned_warehouses
+        if exists_in_settings:
+            # User in Sahayog Settings sees ALL warehouses (no additional filter)
+            pass
         else:
             # Fallback to sol_id or Admin check
             user_roles = frappe.get_roles(user)

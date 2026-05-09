@@ -9553,7 +9553,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
               args: {
-                warehouse: this.userWarehouse,
+                warehouse: this.userInventoryType ? null : this.userWarehouse,
                 limit: limit,
                 start: start,
                 search_text: this.searchText,
