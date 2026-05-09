@@ -11048,6 +11048,25 @@
             }, {});
 
             await frappe.call({
+              method: "frappe.client.insert",
+              args: {
+                doc: {
+                  doctype: "Dispatch Detail",
+                  employee_material_request: this.dispatchForm.name,
+                  stock_entry: res.message.name,
+                  dispatch_date: this.dispatchForm.dispatch_date,
+                  delivery_date: this.dispatchForm.delivery_date,
+                  courier_name: this.dispatchForm.courier_name,
+                  courier_company_name: this.dispatchForm.courier_company_name,
+                  pod_no: this.dispatchForm.pod_no,
+                  dispatch_location: this.dispatchForm.dispatch_location,
+                  address: this.dispatchForm.address,
+                  mobile_number: this.dispatchForm.mobile_number,
+                },
+              },
+            });
+
+            await frappe.call({
               method:
                 "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
               args: {
