@@ -23,10 +23,27 @@ def execute(filters=None):
         conditions += " AND bin.warehouse = %(warehouse)s"
         values["warehouse"] = warehouse
     else:
-        # If no warehouse is selected, only allow Admin or System Manager to see all stock
-        user_roles = frappe.get_roles(frappe.session.user)
-        if frappe.session.user != "Administrator" and "System Manager" not in user_roles:
-            return columns, []
+        # Check Sahayog Settings for assigned warehouses
+        user = frappe.session.user
+        assigned_warehouses = frappe.get_all(
+            "Default Warehouse",
+            filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
+            pluck="warehouse"
+        )
+
+        if assigned_warehouses:
+            conditions += " AND bin.warehouse IN %(warehouses)s"
+            values["warehouses"] = assigned_warehouses
+        else:
+            # Fallback to sol_id or Admin check
+            user_roles = frappe.get_roles(user)
+            if user != "Administrator" and "System Manager" not in user_roles:
+                sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+                if sol_id:
+                    conditions += " AND bin.warehouse = %(sol_id)s"
+                    values["sol_id"] = sol_id
+                else:
+                    return columns, []
 
     query = f"""
         SELECT
