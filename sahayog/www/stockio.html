@@ -704,6 +704,29 @@
     pointer-events: none;
   }
 
+  .searchable-select-display {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 16px 20px;
+    border-radius: var(--border-radius-md);
+    border: 2px solid var(--border-color);
+    background: var(--sidebar-hover);
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 1;
+  }
+
   .form-checkbox-group {
     display: flex;
     gap: 24px;
@@ -1389,6 +1412,16 @@
                             placeholder="Item Code"
                           />
                           <div
+                            v-if="item.item_code && focusedField !== 'item_code_' + index"
+                            class="searchable-select-display"
+                          >
+                            [[ item.item_name ]]
+                            <span
+                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              >([[ item.item_code ]])</span
+                            >
+                          </div>
+                          <div
                             class="searchable-select-dropdown"
                             v-if="focusedField === 'item_code_' + index"
                             style="width: 100%; max-width: 300px; z-index: 50"
@@ -1401,7 +1434,7 @@
                               @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
                               <div style="font-weight: 500">
-                                [[ opt.item_name ]] ([[ opt.name ]])
+                                [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                               </div>
                             </div>
                             <div
@@ -1593,8 +1626,17 @@
                           placeholder="Item Code"
                         />
                         <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'inward_item_' + index"
+                          v-if="item.item_code && focusedField !== 'inward_item_' + index"
+                          class="searchable-select-display"
+                        >
+                          [[ item.item_name ]]
+                          <span
+                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            >([[ item.item_code ]])</span
+                          >
+                        </div>
+                        <div
+                          class="searchable-select-dropdown"                          v-if="focusedField === 'inward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1604,7 +1646,7 @@
                             @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
                             <div style="font-weight: 500">
-                              [[ opt.item_name ]] ([[ opt.name ]])
+                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                             </div>
                             </div>                        </div>
                       </div>
@@ -1778,8 +1820,17 @@
                           placeholder="Item Code"
                         />
                         <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'outward_item_' + index"
+                          v-if="item.item_code && focusedField !== 'outward_item_' + index"
+                          class="searchable-select-display"
+                        >
+                          [[ item.item_name ]]
+                          <span
+                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            >([[ item.item_code ]])</span
+                          >
+                        </div>
+                        <div
+                          class="searchable-select-dropdown"                          v-if="focusedField === 'outward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1789,7 +1840,7 @@
                             @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
                             <div style="font-weight: 500">
-                              [[ opt.item_name ]] ([[ opt.name ]])
+                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                             </div>
                             </div>                        </div>
                       </div>
@@ -2164,10 +2215,20 @@
                       v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
                       :key="item.name"
                       class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
+                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_name = item.item_name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
-                      [[ item.item_name ]] ([[ item.name ]])
+                      [[ item.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ item.name ]])</span>
                     </div>
+                  </div>
+                  <div
+                    v-if="createAssetForm.item_code && focusedField !== 'asset_item_code'"
+                    class="searchable-select-display"
+                  >
+                    [[ createAssetForm.item_name ]]
+                    <span
+                      style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                      >([[ createAssetForm.item_code ]])</span
+                    >
                   </div>
                 </div>
               </div>
@@ -2485,10 +2546,19 @@
                             @focus="onFocusSearchable('mv_asset_' + index)"
                             @blur="onBlurSearchable('mv_asset_' + index)"
                             placeholder="Search Asset"
-                          />
-                          <div
-                            class="searchable-select-dropdown"
-                            v-if="focusedField === 'mv_asset_' + index"
+                            />
+                            <div
+                            v-if="item.asset && focusedField !== 'mv_asset_' + index"
+                            class="searchable-select-display"
+                            >
+                            [[ item.asset_name ]]
+                            <span
+                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              >([[ item.asset ]])</span
+                            >
+                            </div>
+                            <div
+                            class="searchable-select-dropdown"                            v-if="focusedField === 'mv_asset_' + index"
                             style="width: 100%; z-index: 50"
                           >
                             <div
@@ -2498,7 +2568,7 @@
                               @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.asset_name + ' (' + opt.name + ')' : opt.name)"
                             >
                               <div style="font-weight: 500">
-                                [[ opt.asset_name ]] ([[ opt.name ]])
+                                [[ opt.asset_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
                               </div>
                             </div>                          </div>
                         </div>
@@ -10204,6 +10274,7 @@
 
       selectMovementAssetOption(index, assetName, assetLabel) {
         this.movementItems[index].asset = assetName;
+        this.movementItems[index].asset_name = assetLabel.split(" (")[0];
         this.movementItems[index].asset_display = assetLabel;
         this.focusedField = null;
       },
@@ -11037,6 +11108,7 @@
       selectEMRItemOption(index, itemCode, itemName, uom) {
         const item = this.emrItems[index];
         item.item_code = itemCode;
+        item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
         item.uom = uom;
         this.focusedField = null;
@@ -11064,6 +11136,7 @@
       selectInwardItemOption(index, itemCode, itemName, uom) {
         const item = this.inwardItems[index];
         item.item_code = itemCode;
+        item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
@@ -11082,6 +11155,7 @@
       selectOutwardItemOption(index, itemCode, itemName, uom) {
         const item = this.outwardItems[index];
         item.item_code = itemCode;
+        item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
         this.focusedField = null;
       },
