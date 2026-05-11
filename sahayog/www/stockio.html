@@ -954,7 +954,8 @@
         <h1 class="page-title" v-else>
           [[ activeItem ]]
           <span class="detail-id-badge" v-if="detailRecord"
-            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name : detailRecord.name ]]</span
+            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name :
+            detailRecord.name ]]</span
           >
           <span
             class="detail-status-badge"
@@ -970,17 +971,20 @@
           </span>
 
           <!-- Inline Approval Flow -->
-          <div class="inline-flow-stepper" v-if="activeItem === 'Requests' && detailRecord && detailRecord.name">
+          <div
+            class="inline-flow-stepper"
+            v-if="activeItem === 'Requests' && detailRecord && detailRecord.name"
+          >
             <!-- Step 1: Submitted -->
             <div class="inline-flow-step">
-              <div class="inline-step-num"><i class="fas fa-paper-plane" style="font-size: 10px;"></i></div>
+              <div class="inline-step-num">
+                <i class="fas fa-paper-plane" style="font-size: 10px"></i>
+              </div>
               <div class="inline-step-info">
                 <span class="inline-step-role">Action</span>
                 <span class="inline-step-name">Submitted</span>
               </div>
-              <span class="inline-step-status status-active">
-                Done
-              </span>
+              <span class="inline-step-status status-active"> Done </span>
             </div>
 
             <div class="inline-flow-connector">
@@ -992,10 +996,18 @@
               <div class="inline-step-num">1</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">Reporting</span>
-                <span class="inline-step-name">[[ detailRecord.reporting_person_display || detailRecord.reporting_person || 'Not Assigned' ]]</span>
+                <span class="inline-step-name"
+                  >[[ detailRecord.reporting_person_display ||
+                  detailRecord.reporting_person || 'Not Assigned' ]]</span
+                >
               </div>
-              <span class="inline-step-status" :class="detailRecord.status === 'Draft' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : 'status-active')">
-                [[ detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.status === 'Draft' ? 'Draft' : 'Approved') ]]
+              <span
+                class="inline-step-status"
+                :class="detailRecord.status === 'Draft' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : 'status-active')"
+              >
+                [[ detailRecord.status === 'Pending Reporting Person' ?
+                'Pending' : (detailRecord.status === 'Draft' ? 'Draft' :
+                'Approved') ]]
               </span>
             </div>
 
@@ -1008,10 +1020,19 @@
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">HO Officer</span>
-                <span class="inline-step-name">[[ detailRecord.head_office_officer_display || detailRecord.head_office_officer || 'Not Assigned' ]]</span>
+                <span class="inline-step-name"
+                  >[[ detailRecord.head_office_officer_display ||
+                  detailRecord.head_office_officer || 'Not Assigned' ]]</span
+                >
               </div>
-              <span class="inline-step-status" :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')">
-                 [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved') ]]
+              <span
+                class="inline-step-status"
+                :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')"
+              >
+                [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' :
+                (['Pending Reporting Person',
+                'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved')
+                ]]
               </span>
             </div>
           </div>
@@ -1070,7 +1091,7 @@
           class="btn-cancel"
           v-if="isEditing"
           @click="toggleEditMode()"
-          style="margin-left: 8px;"
+          style="margin-left: 8px"
         >
           <i class="fas fa-times"></i>
           <span>Cancel</span>
@@ -1417,7 +1438,11 @@
                           >
                             [[ item.item_name ]]
                             <span
-                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              style="
+                                color: var(--primary-color);
+                                font-weight: 800;
+                                margin-left: 5px;
+                              "
                               >([[ item.item_code ]])</span
                             >
                           </div>
@@ -1434,7 +1459,14 @@
                               @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
                             >
                               <div style="font-weight: 500">
-                                [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
+                                [[ opt.item_name ]]
+                                <span
+                                  style="
+                                    color: var(--primary-color);
+                                    font-weight: 800;
+                                  "
+                                  >([[ opt.name ]])</span
+                                >
                               </div>
                             </div>
                             <div
@@ -1631,12 +1663,17 @@
                         >
                           [[ item.item_name ]]
                           <span
-                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            style="
+                              color: var(--primary-color);
+                              font-weight: 800;
+                              margin-left: 5px;
+                            "
                             >([[ item.item_code ]])</span
                           >
                         </div>
                         <div
-                          class="searchable-select-dropdown"                          v-if="focusedField === 'inward_item_' + index"
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'inward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1644,11 +1681,19 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                            >
+                          >
                             <div style="font-weight: 500">
-                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
+                              [[ opt.item_name ]]
+                              <span
+                                style="
+                                  color: var(--primary-color);
+                                  font-weight: 800;
+                                "
+                                >([[ opt.name ]])</span
+                              >
                             </div>
-                            </div>                        </div>
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -1825,12 +1870,17 @@
                         >
                           [[ item.item_name ]]
                           <span
-                            style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                            style="
+                              color: var(--primary-color);
+                              font-weight: 800;
+                              margin-left: 5px;
+                            "
                             >([[ item.item_code ]])</span
                           >
                         </div>
                         <div
-                          class="searchable-select-dropdown"                          v-if="focusedField === 'outward_item_' + index"
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'outward_item_' + index"
                           style="width: 250px"
                         >
                           <div
@@ -1838,11 +1888,19 @@
                             :key="opt.name"
                             class="searchable-select-option"
                             @mousedown="selectOutwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                            >
+                          >
                             <div style="font-weight: 500">
-                              [[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
+                              [[ opt.item_name ]]
+                              <span
+                                style="
+                                  color: var(--primary-color);
+                                  font-weight: 800;
+                                "
+                                >([[ opt.name ]])</span
+                              >
                             </div>
-                            </div>                        </div>
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -2195,7 +2253,8 @@
               <!-- Item Code -->
               <div class="form-group">
                 <label class="form-label"
-                  >[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]] <span class="form-required">*</span></label
+                  >[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]]
+                  <span class="form-required">*</span></label
                 >
                 <div class="searchable-select-wrapper">
                   <input
@@ -2217,7 +2276,11 @@
                       class="searchable-select-option"
                       @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_name = item.item_name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                     >
-                      [[ item.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ item.name ]])</span>
+                      [[ item.item_name ]]
+                      <span
+                        style="color: var(--primary-color); font-weight: 800"
+                        >([[ item.name ]])</span
+                      >
                     </div>
                   </div>
                   <div
@@ -2226,7 +2289,11 @@
                   >
                     [[ createAssetForm.item_name ]]
                     <span
-                      style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                      style="
+                        color: var(--primary-color);
+                        font-weight: 800;
+                        margin-left: 5px;
+                      "
                       >([[ createAssetForm.item_code ]])</span
                     >
                   </div>
@@ -2546,19 +2613,24 @@
                             @focus="onFocusSearchable('mv_asset_' + index)"
                             @blur="onBlurSearchable('mv_asset_' + index)"
                             placeholder="Search Asset"
-                            />
-                            <div
+                          />
+                          <div
                             v-if="item.asset && focusedField !== 'mv_asset_' + index"
                             class="searchable-select-display"
-                            >
+                          >
                             [[ item.asset_name ]]
                             <span
-                              style="color: var(--primary-color); font-weight: 800; margin-left: 5px;"
+                              style="
+                                color: var(--primary-color);
+                                font-weight: 800;
+                                margin-left: 5px;
+                              "
                               >([[ item.asset ]])</span
                             >
-                            </div>
-                            <div
-                            class="searchable-select-dropdown"                            v-if="focusedField === 'mv_asset_' + index"
+                          </div>
+                          <div
+                            class="searchable-select-dropdown"
+                            v-if="focusedField === 'mv_asset_' + index"
                             style="width: 100%; z-index: 50"
                           >
                             <div
@@ -2568,9 +2640,17 @@
                               @mousedown="selectMovementAssetOption(index, opt.name, opt.asset_name ? opt.asset_name + ' (' + opt.name + ')' : opt.name)"
                             >
                               <div style="font-weight: 500">
-                                [[ opt.asset_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span>
+                                [[ opt.asset_name ]]
+                                <span
+                                  style="
+                                    color: var(--primary-color);
+                                    font-weight: 800;
+                                  "
+                                  >([[ opt.name ]])</span
+                                >
                               </div>
-                            </div>                          </div>
+                            </div>
+                          </div>
                         </div>
                       </td>
 
@@ -2689,10 +2769,15 @@
               [[ isEditingAccess ? 'Edit Access' : 'Add Access' ]]
             </h3>
 
-            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+            <div
+              class="form-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
+            >
               <!-- User ID -->
               <div class="form-group">
-                <label class="form-label">User ID <span class="form-required">*</span></label>
+                <label class="form-label"
+                  >User ID <span class="form-required">*</span></label
+                >
                 <div class="searchable-select-wrapper">
                   <input
                     type="text"
@@ -2703,7 +2788,10 @@
                     @blur="onBlurSearchable('access_user')"
                     placeholder="Search User ID"
                   />
-                  <div class="searchable-select-dropdown" v-if="focusedField === 'access_user'">
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'access_user'"
+                  >
                     <div
                       v-for="emp in filteredEmployees"
                       :key="emp.user_id"
@@ -2719,7 +2807,9 @@
 
               <!-- Warehouse -->
               <div class="form-group">
-                <label class="form-label">Warehouse <span class="form-required">*</span></label>
+                <label class="form-label"
+                  >Warehouse <span class="form-required">*</span></label
+                >
                 <div class="searchable-select-wrapper">
                   <input
                     type="text"
@@ -2730,7 +2820,10 @@
                     @blur="onBlurSearchable('access_warehouse')"
                     placeholder="Search Warehouse"
                   />
-                  <div class="searchable-select-dropdown" v-if="focusedField === 'access_warehouse'">
+                  <div
+                    class="searchable-select-dropdown"
+                    v-if="focusedField === 'access_warehouse'"
+                  >
                     <div
                       v-for="wh in filteredWarehouses"
                       :key="wh"
@@ -2747,7 +2840,9 @@
             <div class="form-row" style="margin-top: 20px">
               <!-- Inventory Type -->
               <div class="form-group" style="width: 50%">
-                <label class="form-label">Inventory Type <span class="form-required">*</span></label>
+                <label class="form-label"
+                  >Inventory Type <span class="form-required">*</span></label
+                >
                 <select class="form-input" v-model="accessForm.inventory_type">
                   <option value="">Select Type</option>
                   <option value="Stationery">Stationery</option>
@@ -2767,7 +2862,10 @@
                   class="fas"
                   :class="creatingAccess ? 'fa-spinner fa-spin' : 'fa-save'"
                 ></i>
-                <span>[[ creatingAccess ? 'Saving...' : (isEditingAccess ? 'Update Access' : 'Save Access') ]]</span>
+                <span
+                  >[[ creatingAccess ? 'Saving...' : (isEditingAccess ? 'Update
+                  Access' : 'Save Access') ]]</span
+                >
               </button>
               <button
                 class="btn-cancel"
@@ -2892,29 +2990,85 @@
             v-if="detailRecord"
             :style="activeItem === 'Requests' ? 'padding: 24px;' : ''"
           >
-            <div v-if="activeItem === 'Movements'" class="movement-detail-parent" style="display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: auto 1fr; gap: 24px; height: 100%; overflow: hidden;">
+            <div
+              v-if="activeItem === 'Movements'"
+              class="movement-detail-parent"
+              style="
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                grid-template-rows: auto 1fr;
+                gap: 24px;
+                height: 100%;
+                overflow: hidden;
+              "
+            >
               <!-- Movements Detail (Div 1: spans column 1 to 4) -->
-              <div style="grid-area: 1 / 1 / 2 / 4;" class="flow-card">
+              <div style="grid-area: 1 / 1 / 2 / 4" class="flow-card">
                 <h4 class="section-subtitle" style="margin-bottom: 24px">
                   Movements Detail
                 </h4>
-                <div class="detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px">
-                  <div v-for="field in detailFields" :key="field.key" class="detail-grid-item">
-                    <span class="detail-grid-label" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">[[ field.label ]]</span>
+                <div
+                  class="detail-grid"
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 20px;
+                  "
+                >
+                  <div
+                    v-for="field in detailFields"
+                    :key="field.key"
+                    class="detail-grid-item"
+                  >
+                    <span
+                      class="detail-grid-label"
+                      style="
+                        font-size: 0.75rem;
+                        text-transform: uppercase;
+                        font-weight: 700;
+                        color: var(--text-muted);
+                      "
+                      >[[ field.label ]]</span
+                    >
                     <span v-if="isEditing && field.key === 'purpose'">
-                      <select class="form-input" v-model="detailRecord.purpose" style="width: 100%; padding: 4px; border: 1px solid var(--border-color); border-radius: 4px;">
+                      <select
+                        class="form-input"
+                        v-model="detailRecord.purpose"
+                        style="
+                          width: 100%;
+                          padding: 4px;
+                          border: 1px solid var(--border-color);
+                          border-radius: 4px;
+                        "
+                      >
                         <option value="Transfer">Transfer</option>
                         <option value="Issue">Issue</option>
                         <option value="Receipt">Receipt</option>
                       </select>
                     </span>
-                    <span v-else class="detail-grid-value" style="font-weight: 600; font-size: 0.95rem; color: var(--text-main);">[[ detailRecord[field.key] ]]</span>
+                    <span
+                      v-else
+                      class="detail-grid-value"
+                      style="
+                        font-weight: 600;
+                        font-size: 0.95rem;
+                        color: var(--text-main);
+                      "
+                      >[[ detailRecord[field.key] ]]</span
+                    >
                   </div>
                 </div>
               </div>
 
               <!-- Movements Items (Div 2) -->
-              <div style="grid-area: 2 / 1 / 3 / 4; display: flex; flex-direction: column;" class="flow-card">
+              <div
+                style="
+                  grid-area: 2 / 1 / 3 / 4;
+                  display: flex;
+                  flex-direction: column;
+                "
+                class="flow-card"
+              >
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Movements Items
                 </h4>
@@ -2930,9 +3084,15 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="(asset, index) in detailRecord.assets" :key="asset.name || index">
+                      <tr
+                        v-for="(asset, index) in detailRecord.assets"
+                        :key="asset.name || index"
+                      >
                         <td>
-                          <div v-if="isEditing" class="searchable-select-wrapper">
+                          <div
+                            v-if="isEditing"
+                            class="searchable-select-wrapper"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -2960,11 +3120,21 @@
                           <span v-else>[[ asset.asset ]]</span>
                         </td>
                         <td>
-                          <input v-if="isEditing" type="text" class="form-input" v-model="asset.source_location" style="width: 100%; padding: 4px;" placeholder="Source" />
+                          <input
+                            v-if="isEditing"
+                            type="text"
+                            class="form-input"
+                            v-model="asset.source_location"
+                            style="width: 100%; padding: 4px"
+                            placeholder="Source"
+                          />
                           <span v-else>[[ asset.source_location ]]</span>
                         </td>
                         <td>
-                          <div v-if="isEditing" class="searchable-select-wrapper">
+                          <div
+                            v-if="isEditing"
+                            class="searchable-select-wrapper"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -2992,7 +3162,10 @@
                           <span v-else>[[ asset.target_location ]]</span>
                         </td>
                         <td>
-                          <div v-if="isEditing" class="searchable-select-wrapper">
+                          <div
+                            v-if="isEditing"
+                            class="searchable-select-wrapper"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -3020,7 +3193,11 @@
                           <span v-else>[[ asset.to_employee ]]</span>
                         </td>
                         <td v-if="isEditing">
-                          <button class="btn-action" @click="detailRecord.assets.splice(index, 1)" title="Remove">
+                          <button
+                            class="btn-action"
+                            @click="detailRecord.assets.splice(index, 1)"
+                            title="Remove"
+                          >
                             <i class="fas fa-times"></i>
                           </button>
                         </td>
@@ -3031,7 +3208,13 @@
                 <button
                   v-if="isEditing"
                   class="btn-create-inline"
-                  style="margin-top: 12px; font-size: 0.85rem; padding: 8px 16px; border-radius: 20px; align-self: flex-start;"
+                  style="
+                    margin-top: 12px;
+                    font-size: 0.85rem;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    align-self: flex-start;
+                  "
                   @click="detailRecord.assets.push({ asset: '', asset_display: '', target_location: '', target_location_display: '', to_employee: '', to_employee_display: '' })"
                 >
                   <i class="fas fa-plus"></i> Add Row
@@ -3039,39 +3222,193 @@
               </div>
 
               <!-- Comments (Div 3: spans column 4 to 6, rows 1-3) -->
-              <div style="grid-area: 1 / 4 / 3 / 6; display: flex; flex-direction: column; overflow: hidden;" class="flow-card">
+              <div
+                style="
+                  grid-area: 1 / 4 / 3 / 6;
+                  display: flex;
+                  flex-direction: column;
+                  overflow: hidden;
+                "
+                class="flow-card"
+              >
                 <h4 class="section-subtitle" style="margin-bottom: 16px">
                   Comments
                 </h4>
-                <div class="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 16px; padding-right: 8px;">
-                  <div v-if="comments.length === 0" class="text-muted" style="text-align: center; padding: 40px 0">
+                <div
+                  class="comments-list"
+                  style="
+                    flex: 1;
+                    overflow-y: auto;
+                    margin-bottom: 16px;
+                    padding-right: 8px;
+                  "
+                >
+                  <div
+                    v-if="comments.length === 0"
+                    class="text-muted"
+                    style="text-align: center; padding: 40px 0"
+                  >
                     No comments yet.
                   </div>
-                  <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
-                    <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                      <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #369696; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
-                        [[ (comment.comment_by || comment.owner || "A").charAt(0).toUpperCase() ]]
+                  <div
+                    v-for="comment in comments"
+                    :key="comment.name"
+                    class="comment-item"
+                    style="
+                      margin-bottom: 16px;
+                      padding: 12px;
+                      background: var(--gray-50);
+                      border-radius: 12px;
+                      border: 1px solid var(--border-color);
+                    "
+                  >
+                    <div
+                      class="comment-header"
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        margin-bottom: 8px;
+                      "
+                    >
+                      <div
+                        class="comment-user-avatar"
+                        style="
+                          width: 28px;
+                          height: 28px;
+                          border-radius: 50%;
+                          background: #369696;
+                          color: white;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          font-size: 11px;
+                          font-weight: 800;
+                        "
+                      >
+                        [[ (comment.comment_by || comment.owner ||
+                        "A").charAt(0).toUpperCase() ]]
                       </div>
-                      <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ comment.comment_by || comment.owner ]]</span>
-                      <span class="comment-time" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">[[ comment.creation.split(' ')[0] ]]</span>
+                      <span
+                        class="comment-author"
+                        style="
+                          font-weight: 700;
+                          font-size: 0.85rem;
+                          color: var(--text-main);
+                        "
+                        >[[ comment.comment_by || comment.owner ]]</span
+                      >
+                      <span
+                        class="comment-time"
+                        style="
+                          font-size: 0.75rem;
+                          color: var(--text-muted);
+                          margin-left: auto;
+                        "
+                        >[[ comment.creation.split(' ')[0] ]]</span
+                      >
                     </div>
-                    <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
+                    <div
+                      class="comment-content"
+                      style="
+                        font-size: 0.9rem;
+                        color: var(--text-main);
+                        line-height: 1.5;
+                      "
+                      v-html="comment.content"
+                    ></div>
                   </div>
                 </div>
 
                 <!-- Comment Input with Toolbar -->
-                <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-                  <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
-                    <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
-                    <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
-                    <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
-                    <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
-                    <input type="file" id="comment-image-upload-movement" style="display: none" accept="image/*" @change="handleImageUpload" />
+                <div
+                  class="comment-input-area"
+                  style="
+                    background: var(--bg-surface);
+                    border-radius: 12px;
+                    border: 1px solid var(--border-color);
+                    overflow: hidden;
+                  "
+                >
+                  <div
+                    class="comment-toolbar"
+                    style="
+                      padding: 8px;
+                      border-bottom: 1px solid var(--border-color);
+                      display: flex;
+                      gap: 4px;
+                      background: var(--gray-50);
+                    "
+                  >
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      @click="execCommand('bold')"
+                      title="Bold"
+                    >
+                      <i class="fas fa-bold"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      @click="execCommand('italic')"
+                      title="Italic"
+                    >
+                      <i class="fas fa-italic"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      @click="insertTable"
+                      title="Insert Table"
+                    >
+                      <i class="fas fa-table"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      @click="triggerImageUpload"
+                      title="Insert Image"
+                    >
+                      <i class="fas fa-image"></i>
+                    </button>
+                    <input
+                      type="file"
+                      id="comment-image-upload-movement"
+                      style="display: none"
+                      accept="image/*"
+                      @change="handleImageUpload"
+                    />
                   </div>
-                  <div id="comment-editor" contenteditable="true" class="form-input" style="min-height: 80px; padding: 12px; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
-                  <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
-                    <button class="btn-create-inline" style="background: #369696; border-color: #369696" @click="addComment()">
-                      <i class="fas fa-paper-plane"></i><span style="margin-left: 6px">Post Comment</span>
+                  <div
+                    id="comment-editor"
+                    contenteditable="true"
+                    class="form-input"
+                    style="
+                      min-height: 80px;
+                      padding: 12px;
+                      font-size: 0.95rem;
+                      background: var(--bg-card);
+                      color: var(--text-main);
+                    "
+                    placeholder="Write a comment..."
+                  ></div>
+                  <div
+                    style="
+                      padding: 8px 12px;
+                      display: flex;
+                      justify-content: flex-end;
+                      border-top: 1px solid var(--border-color);
+                      background: var(--gray-50);
+                    "
+                  >
+                    <button
+                      class="btn-create-inline"
+                      style="background: #369696; border-color: #369696"
+                      @click="addComment()"
+                    >
+                      <i class="fas fa-paper-plane"></i
+                      ><span style="margin-left: 6px">Post Comment</span>
                     </button>
                   </div>
                 </div>
@@ -3079,7 +3416,10 @@
             </div>
 
             <!-- Standard Request Layout (Kept for 'Requests' items) -->
-            <div v-else-if="activeItem === 'Requests'" class="request-detail-parent">
+            <div
+              v-else-if="activeItem === 'Requests'"
+              class="request-detail-parent"
+            >
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
                 <div class="flow-card detail-col-3">
@@ -3351,24 +3691,35 @@
                       background: var(--gray-50);
                     "
                   >
-                    <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px">
                       <h4 class="section-subtitle" style="margin: 0">
                         Requested Items
                       </h4>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                      <button v-if="isEditing" class="btn-create-inline" @click="addRequestItemRow">
+                    <div style="display: flex; align-items: center; gap: 16px">
+                      <button
+                        v-if="isEditing"
+                        class="btn-create-inline"
+                        @click="addRequestItemRow"
+                      >
                         <i class="fas fa-plus"></i> Add Item
                       </button>
                       <span class="badge active" style="border-radius: 20px"
-                        >[[ detailRecord.items ? detailRecord.items.length : 0 ]]
-                        Items</span
+                        >[[ detailRecord.items ? detailRecord.items.length : 0
+                        ]] Items</span
                       >
                     </div>
                   </div>
-                  <div class="table-responsive" :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--gray-50);' : ''">
+                  <div
+                    class="table-responsive"
+                    :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--gray-50);' : ''"
+                  >
                     <!-- List View (Table) -->
-                    <table class="items-table" style="width: 100%" v-if="requestItemView === 'list'">
+                    <table
+                      class="items-table"
+                      style="width: 100%"
+                      v-if="requestItemView === 'list'"
+                    >
                       <thead>
                         <tr>
                           <th style="width: 50px; text-align: center">#</th>
@@ -3388,7 +3739,12 @@
                           >
                             Action
                           </th>
-                          <th v-if="isEditing" style="width: 80px; text-align: center">Action</th>
+                          <th
+                            v-if="isEditing"
+                            style="width: 80px; text-align: center"
+                          >
+                            Action
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3406,7 +3762,11 @@
                             [[ idx + 1 ]]
                           </td>
                           <td>
-                            <div v-if="isEditing" class="searchable-select-wrapper" style="width: 200px;">
+                            <div
+                              v-if="isEditing"
+                              class="searchable-select-wrapper"
+                              style="width: 200px"
+                            >
                               <input
                                 type="text"
                                 class="form-input searchable-select-input"
@@ -3416,7 +3776,10 @@
                                 @blur="onBlurSearchable('item_code_' + idx)"
                                 placeholder="Search Item"
                               />
-                              <div class="searchable-select-dropdown" v-if="focusedField === 'item_code_' + idx">
+                              <div
+                                class="searchable-select-dropdown"
+                                v-if="focusedField === 'item_code_' + idx"
+                              >
                                 <div
                                   v-for="opt in itemsList"
                                   :key="opt.name"
@@ -3427,7 +3790,14 @@
                                 </div>
                               </div>
                             </div>
-                            <div v-else style="display: flex; align-items: center; gap: 12px;">
+                            <div
+                              v-else
+                              style="
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                              "
+                            >
                               <div
                                 style="
                                   width: 36px;
@@ -3467,7 +3837,9 @@
                             </div>
                           </td>
                           <td style="font-size: 12px; font-weight: 600">
-                            <span>[[ item.item_category || 'Stock Item' ]]</span>
+                            <span
+                              >[[ item.item_category || 'Stock Item' ]]</span
+                            >
                           </td>
                           <td style="text-align: right; font-weight: 700">
                             <input
@@ -3483,7 +3855,9 @@
                               v-model.number="item.quantity"
                               v-if="isEditing"
                             />
-                            <span v-else>[[ item.quantity ]] [[ item.uom ]]</span>
+                            <span v-else
+                              >[[ item.quantity ]] [[ item.uom ]]</span
+                            >
                           </td>
                           <td
                             v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
@@ -3546,40 +3920,178 @@
                     </table>
 
                     <!-- Card View -->
-                    <div v-else class="items-card-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
-                      <div v-for="(item, idx) in detailRecord.items" :key="item.name || idx" class="item-card" 
-                           style="background: white; border-radius: 12px; border: 1px solid var(--border-color); padding: 16px; display: flex; flex-direction: column; gap: 12px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                          <div style="display: flex; gap: 12px; align-items: center;">
-                            <div style="width: 40px; height: 40px; border-radius: 8px; background: var(--gray-50); display: flex; align-items: center; justify-content: center; color: #369696;">
+                    <div
+                      v-else
+                      class="items-card-grid"
+                      style="
+                        display: grid;
+                        grid-template-columns: repeat(
+                          auto-fill,
+                          minmax(280px, 1fr)
+                        );
+                        gap: 16px;
+                      "
+                    >
+                      <div
+                        v-for="(item, idx) in detailRecord.items"
+                        :key="item.name || idx"
+                        class="item-card"
+                        style="
+                          background: white;
+                          border-radius: 12px;
+                          border: 1px solid var(--border-color);
+                          padding: 16px;
+                          display: flex;
+                          flex-direction: column;
+                          gap: 12px;
+                          position: relative;
+                          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+                        "
+                      >
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: flex-start;
+                          "
+                        >
+                          <div
+                            style="
+                              display: flex;
+                              gap: 12px;
+                              align-items: center;
+                            "
+                          >
+                            <div
+                              style="
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 8px;
+                                background: var(--gray-50);
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: #369696;
+                              "
+                            >
                               <i class="fas fa-box"></i>
                             </div>
-                            <div style="display: flex; flex-direction: column;">
-                              <span style="font-weight: 700; color: var(--text-main); font-size: 14px;">[[ item.item_code ]]</span>
-                              <span style="font-size: 11px; color: var(--text-muted);">[[ item.item_name || 'Stock Item' ]]</span>
+                            <div style="display: flex; flex-direction: column">
+                              <span
+                                style="
+                                  font-weight: 700;
+                                  color: var(--text-main);
+                                  font-size: 14px;
+                                "
+                                >[[ item.item_code ]]</span
+                              >
+                              <span
+                                style="
+                                  font-size: 11px;
+                                  color: var(--text-muted);
+                                "
+                                >[[ item.item_name || 'Stock Item' ]]</span
+                              >
                             </div>
                           </div>
-                          <input type="checkbox" v-model="item.selected" v-if="item.status === 'Approved'" style="width: 18px; height: 18px; accent-color: #369696; cursor: pointer;" />
+                          <input
+                            type="checkbox"
+                            v-model="item.selected"
+                            v-if="item.status === 'Approved'"
+                            style="
+                              width: 18px;
+                              height: 18px;
+                              accent-color: #369696;
+                              cursor: pointer;
+                            "
+                          />
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 10px; background: var(--gray-50); border-radius: 8px;">
+                        <div
+                          style="
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 12px;
+                            padding: 10px;
+                            background: var(--gray-50);
+                            border-radius: 8px;
+                          "
+                        >
                           <div>
-                            <div style="font-size: 9px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 2px;">Requested</div>
-                            <div style="font-weight: 700; font-size: 13px;">[[ item.quantity ]] [[ item.uom ]]</div>
+                            <div
+                              style="
+                                font-size: 9px;
+                                text-transform: uppercase;
+                                font-weight: 700;
+                                color: var(--text-muted);
+                                margin-bottom: 2px;
+                              "
+                            >
+                              Requested
+                            </div>
+                            <div style="font-weight: 700; font-size: 13px">
+                              [[ item.quantity ]] [[ item.uom ]]
+                            </div>
                           </div>
                           <div>
-                            <div style="font-size: 9px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 2px;">Approved</div>
+                            <div
+                              style="
+                                font-size: 9px;
+                                text-transform: uppercase;
+                                font-weight: 700;
+                                color: var(--text-muted);
+                                margin-bottom: 2px;
+                              "
+                            >
+                              Approved
+                            </div>
                             <div v-if="isEditing">
-                              <input type="number" class="form-input" style="width: 100%; height: 24px; padding: 2px 6px !important; font-size: 12px;" v-model.number="item.approved_quantity" />
+                              <input
+                                type="number"
+                                class="form-input"
+                                style="
+                                  width: 100%;
+                                  height: 24px;
+                                  padding: 2px 6px !important;
+                                  font-size: 12px;
+                                "
+                                v-model.number="item.approved_quantity"
+                              />
                             </div>
-                            <div v-else style="font-weight: 700; font-size: 13px; color: #369696;">[[ item.approved_quantity || 0 ]] [[ item.uom ]]</div>
+                            <div
+                              v-else
+                              style="
+                                font-weight: 700;
+                                font-size: 13px;
+                                color: #369696;
+                              "
+                            >
+                              [[ item.approved_quantity || 0 ]] [[ item.uom ]]
+                            </div>
                           </div>
                         </div>
 
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                          <span style="font-size: 11px; font-weight: 600; color: var(--text-muted);">[[ item.item_category ]]</span>
-                          <span class="badge" :class="getBadgeClass(item, 'status')" style="font-size: 10px; padding: 2px 8px;">[[ item.status ]]</span>
+                        <div
+                          style="
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                          "
+                        >
+                          <span
+                            style="
+                              font-size: 11px;
+                              font-weight: 600;
+                              color: var(--text-muted);
+                            "
+                            >[[ item.item_category ]]</span
+                          >
+                          <span
+                            class="badge"
+                            :class="getBadgeClass(item, 'status')"
+                            style="font-size: 10px; padding: 2px 8px"
+                            >[[ item.status ]]</span
+                          >
                         </div>
                       </div>
                     </div>
@@ -3609,19 +4121,46 @@
                       >
                       <span
                         >Total Requested: [[ detailRecord.items ?
-                        detailRecord.items.reduce((acc, i) => acc + (i.quantity || 0), 0) : 0 ]]</span
+                        detailRecord.items.reduce((acc, i) => acc + (i.quantity
+                        || 0), 0) : 0 ]]</span
                       >
                       <span
                         >Total Approved: [[ detailRecord.items ?
-                        detailRecord.items.reduce((acc, i) => acc + (i.approved_quantity || 0), 0) : 0 ]]</span
+                        detailRecord.items.reduce((acc, i) => acc +
+                        (i.approved_quantity || 0), 0) : 0 ]]</span
                       >
-                      <button 
+                      <button
                         @click="requestItemView = (requestItemView === 'list' ? 'cards' : 'list')"
-                        style="border: 1px solid var(--border-color); background: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 16px; color: #369696; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+                        style="
+                          border: 1px solid var(--border-color);
+                          background: white;
+                          padding: 4px 10px;
+                          border-radius: 6px;
+                          cursor: pointer;
+                          font-size: 11px;
+                          margin-left: 16px;
+                          color: #369696;
+                          display: flex;
+                          align-items: center;
+                          gap: 6px;
+                          transition: all 0.2s;
+                          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                        "
                         :title="requestItemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
                       >
-                        <i :class="requestItemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"></i>
-                        <span style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">[[ requestItemView === 'list' ? 'Cards' : 'List' ]]</span>
+                        <i
+                          :class="requestItemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"
+                        ></i>
+                        <span
+                          style="
+                            font-size: 9px;
+                            font-weight: 800;
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
+                          "
+                          >[[ requestItemView === 'list' ? 'Cards' : 'List'
+                          ]]</span
+                        >
                       </button>
                     </div>
                     <button
@@ -3869,8 +4408,19 @@
                           v-model="detailRecord.remark"
                         ></textarea>
                         <!-- Asset Master Item Code Searchable Select -->
-                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'item_code'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                          <div class="searchable-select-wrapper" style="flex: 1;">
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'item_code'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
+                          <div
+                            class="searchable-select-wrapper"
+                            style="flex: 1"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -3891,22 +4441,40 @@
                                 class="searchable-select-option"
                                 @mousedown="detailRecord.item_code = item.name; detailRecord.asset_name = item.item_name; focusedField = null;"
                               >
-                                [[ item.name ]] [[ item.item_name ? '- ' + item.item_name : '' ]]
+                                [[ item.name ]] [[ item.item_name ? '- ' +
+                                item.item_name : '' ]]
                               </div>
                             </div>
                           </div>
                           <button
                             v-if="detailRecord.item_code"
                             @click="detailRecord.item_code = ''; detailRecord.asset_name = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear Item"
                           >
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
                         <!-- Asset Master Asset Category Searchable Select -->
-                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'asset_category'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                          <div class="searchable-select-wrapper" style="flex: 1;">
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'asset_category'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
+                          <div
+                            class="searchable-select-wrapper"
+                            style="flex: 1"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -3934,15 +4502,32 @@
                           <button
                             v-if="detailRecord.asset_category"
                             @click="detailRecord.asset_category = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear Category"
                           >
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
                         <!-- Asset Master Location Searchable Select -->
-                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'location'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                          <div class="searchable-select-wrapper" style="flex: 1;">
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'location'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
+                          <div
+                            class="searchable-select-wrapper"
+                            style="flex: 1"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -3970,15 +4555,32 @@
                           <button
                             v-if="detailRecord.location"
                             @click="detailRecord.location = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear Location"
                           >
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
                         <!-- Asset Master Custodian Searchable Select -->
-                        <div v-else-if="activeItem === 'Asset Master' && (field.key === 'custodian' || field.key === 'custodian_name')" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                          <div class="searchable-select-wrapper" style="flex: 1;">
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && (field.key === 'custodian' || field.key === 'custodian_name')"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
+                          <div
+                            class="searchable-select-wrapper"
+                            style="flex: 1"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -4006,15 +4608,32 @@
                           <button
                             v-if="detailRecord.custodian_name"
                             @click="detailRecord.custodian = ''; detailRecord.custodian_name = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear Custodian"
                           >
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
                         <!-- Asset Master Department Searchable Select -->
-                        <div v-else-if="activeItem === 'Asset Master' && field.key === 'department'" style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                          <div class="searchable-select-wrapper" style="flex: 1;">
+                        <div
+                          v-else-if="activeItem === 'Asset Master' && field.key === 'department'"
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
+                          <div
+                            class="searchable-select-wrapper"
+                            style="flex: 1"
+                          >
                             <input
                               type="text"
                               class="form-input searchable-select-input"
@@ -4042,7 +4661,13 @@
                           <button
                             v-if="detailRecord.department"
                             @click="detailRecord.department = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear Department"
                           >
                             <i class="fas fa-times"></i>
@@ -4082,17 +4707,31 @@
                           />
                         </div>
                         <!-- Default -->
-                        <div v-else style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                        <div
+                          v-else
+                          style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            width: 100%;
+                          "
+                        >
                           <input
                             type="text"
                             class="form-input"
                             v-model="detailRecord[field.key]"
-                            style="flex: 1;"
+                            style="flex: 1"
                           />
                           <button
                             v-if="activeItem === 'Asset Master' && detailRecord[field.key]"
                             @click="detailRecord[field.key] = ''; if(field.key === 'item_code') detailRecord.asset_name = '';"
-                            style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px;"
+                            style="
+                              background: none;
+                              border: none;
+                              color: #ef4444;
+                              cursor: pointer;
+                              padding: 4px;
+                            "
                             title="Clear field"
                           >
                             <i class="fas fa-times"></i>
@@ -4659,7 +5298,11 @@
                       :title="(detailRecord.items && detailRecord.items.some(i => i.selected && i.item_category === 'Asset')) ? 'Movement Selected Items' : 'Dispatch Selected Items'"
                     >
                       <i class="fas fa-truck-fast"></i>
-                      <span>[[ (detailRecord.items && detailRecord.items.some(i => i.selected && i.item_category === 'Asset')) ? 'Movement Selected Items' : 'Dispatch Selected Items' ]]</span>
+                      <span
+                        >[[ (detailRecord.items && detailRecord.items.some(i =>
+                        i.selected && i.item_category === 'Asset')) ? 'Movement
+                        Selected Items' : 'Dispatch Selected Items' ]]</span
+                      >
                     </button>
                   </div>
                 </div>
@@ -4684,7 +5327,12 @@
               <div
                 v-show="activeItem !== 'Items'"
                 class="flow-card detail-col-3"
-                style="display: flex; flex-direction: column; height: 100%; flex: 0 0 400px;"
+                style="
+                  display: flex;
+                  flex-direction: column;
+                  height: 100%;
+                  flex: 0 0 400px;
+                "
               >
                 <h4
                   class="section-subtitle"
@@ -5465,7 +6113,9 @@
                       @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
-                      [[ col.key === 'dispatch' ? (row.items && row.items.some(i => i.item_category === 'Asset') ? 'Movement' : 'Dispatch') : col.label ]]
+                      [[ col.key === 'dispatch' ? (row.items && row.items.some(i
+                      => i.item_category === 'Asset') ? 'Movement' : 'Dispatch')
+                      : col.label ]]
                     </button>
                     <button
                       class="btn-create-inline"
@@ -5573,7 +6223,18 @@
               <button
                 v-if="activeItem === 'Access' && selectedRows.length > 0"
                 class="btn-create-inline"
-                style="background: linear-gradient(135deg, #f87171, #dc2626) !important; border: none !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important; margin-right: 15px; font-weight: 700;"
+                style="
+                  background: linear-gradient(
+                    135deg,
+                    #f87171,
+                    #dc2626
+                  ) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+                  margin-right: 15px;
+                  font-weight: 700;
+                "
                 @click="bulkDeleteAccess()"
               >
                 <i class="fas fa-trash"></i>
@@ -5628,7 +6289,8 @@
           </div>
           <h3>[[ activeItem ]] section</h3>
           <p>
-            [[ currentView.emptyMessage || 'This section is managed inside StockIO.' ]]
+            [[ currentView.emptyMessage || 'This section is managed inside
+            StockIO.' ]]
           </p>
         </div>
       </div>
@@ -5809,11 +6471,15 @@
     v-if="showMovementModal"
     @click.self="showMovementModal = false"
   >
-    <div class="profile-modal modal-large" style="max-width: 900px;">
+    <div class="profile-modal modal-large" style="max-width: 900px">
       <div class="profile-modal-header">
         <h3>Asset Movement</h3>
         <div class="profile-modal-header-right">
-          <button class="btn-create-inline" @click="submitMovementFromModal(true)" :disabled="creatingMovement">
+          <button
+            class="btn-create-inline"
+            @click="submitMovementFromModal(true)"
+            :disabled="creatingMovement"
+          >
             <i class="fas fa-spinner fa-spin" v-if="creatingMovement"></i>
             <span v-else>Create Movement</span>
           </button>
@@ -5823,9 +6489,18 @@
         </div>
       </div>
       <div class="profile-modal-body">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+          "
+        >
           <div class="form-group">
-            <label class="form-label">Purpose <span class="form-required">*</span></label>
+            <label class="form-label"
+              >Purpose <span class="form-required">*</span></label
+            >
             <select class="form-input" v-model="movementForm.purpose">
               <option value="Transfer">Transfer</option>
               <option value="Issue">Issue</option>
@@ -5833,72 +6508,251 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Transaction Date <span class="form-required">*</span></label>
-            <input type="date" class="form-input" v-model="movementForm.transaction_date" />
+            <label class="form-label"
+              >Transaction Date <span class="form-required">*</span></label
+            >
+            <input
+              type="date"
+              class="form-input"
+              v-model="movementForm.transaction_date"
+            />
           </div>
         </div>
-        <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-          <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">Items to Move</div>
-          <button class="btn-create-inline" @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})" style="font-size: 10px; padding: 4px 10px;">
+        <div
+          style="
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <div
+            style="
+              font-size: 11px;
+              font-weight: 700;
+              text-transform: uppercase;
+              color: var(--text-muted);
+            "
+          >
+            Items to Move
+          </div>
+          <button
+            class="btn-create-inline"
+            @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})"
+            style="font-size: 10px; padding: 4px 10px"
+          >
             <i class="fas fa-plus"></i> Add Asset
           </button>
         </div>
-        <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: white;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead style="position: sticky; top: 0; background: var(--gray-50); z-index: 1; border-bottom: 1px solid var(--border-color);">
+        <div
+          style="
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: white;
+          "
+        >
+          <table style="width: 100%; border-collapse: collapse">
+            <thead
+              style="
+                position: sticky;
+                top: 0;
+                background: var(--gray-50);
+                z-index: 1;
+                border-bottom: 1px solid var(--border-color);
+              "
+            >
               <tr>
-                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Requested</th>
-                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Asset <span class="form-required">*</span></th>
-                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">Target Location <span class="form-required">*</span></th>
-                <th style="font-size: 10px; padding: 10px; text-align: left; font-weight: 700;">To Employee</th>
-                <th style="font-size: 10px; padding: 10px; text-align: center; font-weight: 700; width: 40px;"></th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Requested
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Asset <span class="form-required">*</span>
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Target Location <span class="form-required">*</span>
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  To Employee
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: center;
+                    font-weight: 700;
+                    width: 40px;
+                  "
+                ></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in movementItems" :key="index" style="border-bottom: 1px solid var(--border-color)">
-                <td style="padding: 10px;">
-                  <div style="font-weight: 500; font-size: 11px; color: var(--text-main);">[[ item.item_code ]]</div>
-                  <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" :title="item.item_name">[[ item.item_name ]]</div>
+              <tr
+                v-for="(item, index) in movementItems"
+                :key="index"
+                style="border-bottom: 1px solid var(--border-color)"
+              >
+                <td style="padding: 10px">
+                  <div
+                    style="
+                      font-weight: 500;
+                      font-size: 11px;
+                      color: var(--text-main);
+                    "
+                  >
+                    [[ item.item_code ]]
+                  </div>
+                  <div
+                    style="
+                      font-size: 10px;
+                      color: var(--text-muted);
+                      white-space: nowrap;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      max-width: 150px;
+                    "
+                    :title="item.item_name"
+                  >
+                    [[ item.item_name ]]
+                  </div>
                 </td>
-                <td style="padding: 10px;">
-                  <div class="searchable-select-wrapper" style="width: 100%;">
-                    <input type="text" class="form-input" v-model="item.asset_display" @focus="focusedField = 'mv_asset_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Search Asset" />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_asset_' + index">
-                      <div v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))" :key="opt.name" class="searchable-select-option" @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;">
+                <td style="padding: 10px">
+                  <div class="searchable-select-wrapper" style="width: 100%">
+                    <input
+                      type="text"
+                      class="form-input"
+                      v-model="item.asset_display"
+                      @focus="focusedField = 'mv_asset_' + index"
+                      @blur="setTimeout(() => focusedField = null, 200)"
+                      placeholder="Search Asset"
+                    />
+                    <div
+                      class="searchable-select-dropdown"
+                      v-if="focusedField === 'mv_asset_' + index"
+                    >
+                      <div
+                        v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
+                        :key="opt.name"
+                        class="searchable-select-option"
+                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
+                      >
                         <div style="font-weight: 500">[[ opt.name ]]</div>
-                        <div style="font-size: 11px; opacity: 0.8">[[ opt.asset_name ]]</div>
+                        <div style="font-size: 11px; opacity: 0.8">
+                          [[ opt.asset_name ]]
+                        </div>
                       </div>
                     </div>
                   </div>
                 </td>
-                <td style="padding: 10px;">
-                  <div class="searchable-select-wrapper" style="width: 100%;">
-                    <input type="text" class="form-input" v-model="item.target_location_display" @focus="focusedField = 'mv_loc_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="Target Location" />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_loc_' + index">
-                      <div v-for="loc in filteredLocations" :key="loc" class="searchable-select-option" @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;">[[ loc ]]</div>
-                    </div>
-                  </div>
-                </td>
-                <td style="padding: 10px;">
-                  <div class="searchable-select-wrapper" style="width: 100%;">
-                    <input type="text" class="form-input" v-model="item.to_employee_display" @focus="focusedField = 'mv_emp_' + index" @blur="setTimeout(() => focusedField = null, 200)" placeholder="To Employee" />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'mv_emp_' + index">
-                      <div v-for="emp in employees.filter(e => !item.to_employee_display || e.employee_name.toLowerCase().includes(item.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(item.to_employee_display.toLowerCase()))" :key="emp.name" class="searchable-select-option" @mousedown="item.to_employee = emp.name; item.to_employee_display = emp.employee_name; focusedField = null;">
-                        <div style="font-weight: 500">[[ emp.employee_name ]]</div>
-                        <div style="font-size: 11px; opacity: 0.8">[[ emp.name ]]</div>
+                <td style="padding: 10px">
+                  <div class="searchable-select-wrapper" style="width: 100%">
+                    <input
+                      type="text"
+                      class="form-input"
+                      v-model="item.target_location_display"
+                      @focus="focusedField = 'mv_loc_' + index"
+                      @blur="setTimeout(() => focusedField = null, 200)"
+                      placeholder="Target Location"
+                    />
+                    <div
+                      class="searchable-select-dropdown"
+                      v-if="focusedField === 'mv_loc_' + index"
+                    >
+                      <div
+                        v-for="loc in filteredLocations"
+                        :key="loc"
+                        class="searchable-select-option"
+                        @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                      >
+                        [[ loc ]]
                       </div>
                     </div>
                   </div>
                 </td>
-                <td style="padding: 10px; text-align: center;">
-                  <button class="btn-action" @click="movementItems.splice(index, 1)" title="Remove"><i class="fas fa-trash"></i></button>
+                <td style="padding: 10px">
+                  <div class="searchable-select-wrapper" style="width: 100%">
+                    <input
+                      type="text"
+                      class="form-input"
+                      v-model="item.to_employee_display"
+                      @focus="focusedField = 'mv_emp_' + index"
+                      @blur="setTimeout(() => focusedField = null, 200)"
+                      placeholder="To Employee"
+                    />
+                    <div
+                      class="searchable-select-dropdown"
+                      v-if="focusedField === 'mv_emp_' + index"
+                    >
+                      <div
+                        v-for="emp in employees.filter(e => !item.to_employee_display || e.employee_name.toLowerCase().includes(item.to_employee_display.toLowerCase()) || e.name.toLowerCase().includes(item.to_employee_display.toLowerCase()))"
+                        :key="emp.name"
+                        class="searchable-select-option"
+                        @mousedown="item.to_employee = emp.name; item.to_employee_display = emp.employee_name; focusedField = null;"
+                      >
+                        <div style="font-weight: 500">
+                          [[ emp.employee_name ]]
+                        </div>
+                        <div style="font-size: 11px; opacity: 0.8">
+                          [[ emp.name ]]
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td style="padding: 10px; text-align: center">
+                  <button
+                    class="btn-action"
+                    @click="movementItems.splice(index, 1)"
+                    title="Remove"
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-          <button class="btn-create-inline" @click="submitMovementFromModal(false)" :disabled="creatingMovement" style="background: var(--gray-200); color: var(--text-main); border-color: var(--border-color); font-weight: 700;">
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+          <button
+            class="btn-create-inline"
+            @click="submitMovementFromModal(false)"
+            :disabled="creatingMovement"
+            style="
+              background: var(--gray-200);
+              color: var(--text-main);
+              border-color: var(--border-color);
+              font-weight: 700;
+            "
+          >
             <i class="fas fa-spinner fa-spin" v-if="creatingMovement"></i>
             <span v-else>Draft</span>
           </button>
@@ -5915,13 +6769,28 @@
   >
     <div class="profile-modal">
       <div class="profile-modal-header">
-        <h3>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</h3>
+        <h3>
+          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset
+          Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep
+          ]]
+        </h3>
         <div class="profile-modal-header-right">
-          <button v-if="dispatchForm.dispatchStep === 1" class="btn-create-inline" @click="dispatchForm.dispatchStep = 2">
+          <button
+            v-if="dispatchForm.dispatchStep === 1"
+            class="btn-create-inline"
+            @click="dispatchForm.dispatchStep = 2"
+          >
             <span>Next</span>
           </button>
-          <button v-if="dispatchForm.dispatchStep === 2" class="btn-create-inline" @click="submitDispatch()">
-            <span>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Proceed Movement' : 'Proceed Dispatch' ]]</span>
+          <button
+            v-if="dispatchForm.dispatchStep === 2"
+            class="btn-create-inline"
+            @click="submitDispatch()"
+          >
+            <span
+              >[[ dispatchForm.items.some(i => i.item_category === 'Asset') ?
+              'Proceed Movement' : 'Proceed Dispatch' ]]</span
+            >
           </button>
           <button class="profile-close" @click="showDispatchModal = false">
             &times;
@@ -5930,18 +6799,82 @@
       </div>
 
       <div class="profile-modal-body">
-        <div v-if="dispatchForm.dispatchStep === 2" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
-            <h4>Dispatch Details</h4>
-            <div class="form-group"><label>Dispatch Date</label><input type="date" class="form-input" v-model="dispatchForm.dispatch_date" /></div>
-            <div class="form-group"><label>Delivery Date</label><input type="date" class="form-input" v-model="dispatchForm.delivery_date" /></div>
-            <div class="form-group"><label>Courier Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_name" /></div>
-            <div class="form-group"><label>Courier Company Name</label><input type="text" class="form-input" v-model="dispatchForm.courier_company_name" /></div>
-            <div class="form-group"><label>POD No</label><input type="text" class="form-input" v-model="dispatchForm.pod_no" /></div>
-            <div class="form-group"><label>Dispatch Location</label><input type="text" class="form-input" v-model="dispatchForm.dispatch_location" /></div>
-            <div class="form-group"><label>Address</label><textarea class="form-input" v-model="dispatchForm.address"></textarea></div>
-            <div class="form-group"><label>Mobile Number</label><input type="text" class="form-input" v-model="dispatchForm.mobile_number" /></div>
+        <div
+          v-if="dispatchForm.dispatchStep === 2"
+          style="
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+          "
+        >
+          <h4>Dispatch Details</h4>
+          <div class="form-group">
+            <label>Dispatch Date</label
+            ><input
+              type="date"
+              class="form-input"
+              v-model="dispatchForm.dispatch_date"
+            />
+          </div>
+          <div class="form-group">
+            <label>Delivery Date</label
+            ><input
+              type="date"
+              class="form-input"
+              v-model="dispatchForm.delivery_date"
+            />
+          </div>
+          <div class="form-group">
+            <label>Courier Name</label
+            ><input
+              type="text"
+              class="form-input"
+              v-model="dispatchForm.courier_name"
+            />
+          </div>
+          <div class="form-group">
+            <label>Courier Company Name</label
+            ><input
+              type="text"
+              class="form-input"
+              v-model="dispatchForm.courier_company_name"
+            />
+          </div>
+          <div class="form-group">
+            <label>POD No</label
+            ><input
+              type="text"
+              class="form-input"
+              v-model="dispatchForm.pod_no"
+            />
+          </div>
+          <div class="form-group">
+            <label>Dispatch Location</label
+            ><input
+              type="text"
+              class="form-input"
+              v-model="dispatchForm.dispatch_location"
+            />
+          </div>
+          <div class="form-group">
+            <label>Address</label
+            ><textarea
+              class="form-input"
+              v-model="dispatchForm.address"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label
+            ><input
+              type="text"
+              class="form-input"
+              v-model="dispatchForm.mobile_number"
+            />
+          </div>
         </div>
-        <div v-if="dispatchForm.dispatchStep === 1"
+        <div
+          v-if="dispatchForm.dispatchStep === 1"
           style="
             padding: 12px;
             background: var(--gray-50);
@@ -6101,7 +7034,8 @@
                       color: var(--text-muted);
                     "
                   >
-                    [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Movement Qty' : 'Dispatch Qty' ]]
+                    [[ dispatchForm.items.some(i => i.item_category === 'Asset')
+                    ? 'Movement Qty' : 'Dispatch Qty' ]]
                   </th>
                   <th
                     style="
@@ -6943,8 +7877,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-left: 24px;
-    padding-left: 24px;
+    margin-left: 0px;
+    padding-left: 4px;
     border-left: 1px solid var(--border-color);
   }
 
@@ -7003,9 +7937,18 @@
     font-weight: 600;
   }
 
-  .status-active { background: #d1fae5; color: #065f46; }
-  .status-pending { background: #fef3c7; color: #92400e; }
-  .status-waiting { background: #f3f4f6; color: #6b7280; }
+  .status-active {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  .status-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .status-waiting {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
 
   .page-title {
     margin: 0;
@@ -7071,6 +8014,7 @@
   .detail-status-badge.pending {
     background: #fef3c7;
     color: #92400e;
+    margin-left: 0px;
   }
 
   [data-theme="dark"] .detail-status-badge.pending {
@@ -8592,9 +9536,7 @@
           },
           {
             label: "Permission",
-            items: [
-              { label: "Access", color: "#f59e0b", doctype: "Access" },
-            ],
+            items: [{ label: "Access", color: "#f59e0b", doctype: "Access" }],
           },
         ],
       },
@@ -8618,7 +9560,12 @@
             { label: "User ID", key: "user_id", width: 2 },
             { label: "Warehouse", key: "warehouse", width: 2 },
             { label: "Inventory Type", key: "inventory_type", width: 2 },
-            { label: "Action", key: "delete_access", width: 0.5, type: "button" },
+            {
+              label: "Action",
+              key: "delete_access",
+              width: 0.5,
+              type: "button",
+            },
           ],
         },
         "Branch Stock": {
@@ -10363,7 +11310,8 @@
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,
             purpose: this.movementForm.purpose,
-            custom_reference_doctype: this.movementForm.custom_reference_doctype,
+            custom_reference_doctype:
+              this.movementForm.custom_reference_doctype,
             custom_reference_name: this.movementForm.custom_reference_name,
             assets: validItems.map((i) => ({
               asset: i.asset,
@@ -10415,7 +11363,8 @@
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,
             purpose: this.movementForm.purpose,
-            custom_reference_doctype: this.movementForm.custom_reference_doctype,
+            custom_reference_doctype:
+              this.movementForm.custom_reference_doctype,
             custom_reference_name: this.movementForm.custom_reference_name,
             assets: validItems.map((i) => ({
               asset: i.asset,
@@ -10440,7 +11389,11 @@
                 finalDoc = submitRes.message;
 
                 // Update item statuses to 'Dispatch' in EMR if applicable
-                if (this.movementForm.custom_reference_doctype === "Employee Material Request" && this.movementForm.custom_reference_name) {
+                if (
+                  this.movementForm.custom_reference_doctype ===
+                    "Employee Material Request" &&
+                  this.movementForm.custom_reference_name
+                ) {
                   const itemStatusMap = this.movementItems.reduce((acc, i) => {
                     if (i.emr_item_name && i.asset) {
                       acc[i.emr_item_name] = "Dispatch";
@@ -10450,7 +11403,8 @@
 
                   if (Object.keys(itemStatusMap).length > 0) {
                     await frappe.call({
-                      method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                      method:
+                        "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
                       args: {
                         docname: this.movementForm.custom_reference_name,
                         item_status_map: itemStatusMap,
@@ -10462,7 +11416,7 @@
             }
 
             frappe.show_alert({
-              message: `Asset Movement "${finalDoc.name}" ${shouldSubmit ? 'submitted' : 'saved as draft'}`,
+              message: `Asset Movement "${finalDoc.name}" ${shouldSubmit ? "submitted" : "saved as draft"}`,
               indicator: "green",
             });
             this.showMovementModal = false;
@@ -10775,18 +11729,27 @@
 
         // Check if there are any Asset items in the selection or in the whole row if no selection
         let itemsToProcess = [];
-        if (!isFromList && this.detailRecord && this.detailRecord.name === row.name && this.detailRecord.items) {
-           // Detail view: check selected items
-           itemsToProcess = this.detailRecord.items.filter(i => i.selected);
-        }
-        
-        // If no selected items (or from list), use all items that are Assets or Stock
-        if (itemsToProcess.length === 0) {
-            itemsToProcess = row.items || [];
+        if (
+          !isFromList &&
+          this.detailRecord &&
+          this.detailRecord.name === row.name &&
+          this.detailRecord.items
+        ) {
+          // Detail view: check selected items
+          itemsToProcess = this.detailRecord.items.filter((i) => i.selected);
         }
 
-        const hasAssets = itemsToProcess.some(i => i.item_category === 'Asset');
-        const hasStock = itemsToProcess.some(i => i.item_category === 'Stock Item');
+        // If no selected items (or from list), use all items that are Assets or Stock
+        if (itemsToProcess.length === 0) {
+          itemsToProcess = row.items || [];
+        }
+
+        const hasAssets = itemsToProcess.some(
+          (i) => i.item_category === "Asset",
+        );
+        const hasStock = itemsToProcess.some(
+          (i) => i.item_category === "Stock Item",
+        );
 
         if (hasAssets && !hasStock) {
           // If ONLY assets are involved, show the Asset Movement MODAL
@@ -10798,13 +11761,13 @@
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
-          
+
           // Pre-populate movement items from the filtered items
           this.movementItems = itemsToProcess
-            .filter(i => i.item_category === 'Asset')
-            .map(item => ({
+            .filter((i) => i.item_category === "Asset")
+            .map((item) => ({
               emr_item_name: item.name, // Store child row name for status update
-              asset: "", 
+              asset: "",
               asset_display: "",
               item_code: item.item_code,
               item_name: item.item_name,
@@ -10815,16 +11778,18 @@
             }));
 
           if (this.movementItems.length === 0) {
-            this.movementItems = [{
-              asset: "",
-              asset_display: "",
-              item_code: "",
-              item_name: "",
-              target_location: "",
-              target_location_display: "",
-              to_employee: "",
-              to_employee_display: "",
-            }];
+            this.movementItems = [
+              {
+                asset: "",
+                asset_display: "",
+                item_code: "",
+                item_name: "",
+                target_location: "",
+                target_location_display: "",
+                to_employee: "",
+                to_employee_display: "",
+              },
+            ];
           }
           return;
         }
@@ -10866,12 +11831,15 @@
                 .filter((i) => {
                   if (selectedNames.length > 0) {
                     return (
-                      (i.item_category === "Stock Item" || i.item_category === "Asset") &&
+                      (i.item_category === "Stock Item" ||
+                        i.item_category === "Asset") &&
                       selectedNames.includes(i.name)
                     );
                   }
                   return (
-                    (i.item_category === "Stock Item" || i.item_category === "Asset") && i.status === "Approved"
+                    (i.item_category === "Stock Item" ||
+                      i.item_category === "Asset") &&
+                    i.status === "Approved"
                   );
                 })
                 .map((item) => ({
@@ -11110,7 +12078,7 @@
               if (d.selected && d.dispatch_qty > 0) {
                 acc[d.name] = {
                   status: "Dispatch",
-                  dispatch_detail: ddName
+                  dispatch_detail: ddName,
                 };
               }
               return acc;
@@ -11197,7 +12165,7 @@
           quantity: 1,
           uom: "",
           status: "Pending",
-          item_category: "Stock Item"
+          item_category: "Stock Item",
         });
       },
       addEMRItem() {
@@ -11335,7 +12303,11 @@
               quantity: item.quantity,
               item_category: item.item_category,
               assigned_to_employee: this.emrForm.employee,
-              is_consumable: (this.emrForm.request_type === 'Issue' && item.item_category === 'Stock Item') ? 1 : 0
+              is_consumable:
+                this.emrForm.request_type === "Issue" &&
+                item.item_category === "Stock Item"
+                  ? 1
+                  : 0,
             })),
           };
 
@@ -11550,10 +12522,7 @@
               this.detailRecord = res.message;
 
               // Initialize display fields for movements
-              if (
-                this.activeItem === "Movements" &&
-                this.detailRecord.assets
-              ) {
+              if (this.activeItem === "Movements" && this.detailRecord.assets) {
                 this.detailRecord.assets.forEach((a) => {
                   a.asset_display = a.asset;
                   a.target_location_display = a.target_location;
