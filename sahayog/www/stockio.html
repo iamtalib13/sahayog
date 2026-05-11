@@ -3450,7 +3450,20 @@
                             [[ item.item_category || 'Stationery' ]]
                           </td>
                           <td style="text-align: right; font-weight: 700">
-                            [[ item.quantity ]] [[ item.uom ]]
+                            <input
+                              type="number"
+                              class="form-input"
+                              style="
+                                width: 80px;
+                                text-align: right;
+                                height: 32px;
+                                padding: 4px 8px !important;
+                                margin-left: auto;
+                              "
+                              v-model.number="item.quantity"
+                              v-if="isEditing"
+                            />
+                            <span v-else>[[ item.quantity ]] [[ item.uom ]]</span>
                           </td>
                           <td
                             v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
