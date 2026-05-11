@@ -1060,7 +1060,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements' || activeItem === 'Asset Master') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
+          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements' || activeItem === 'Asset Master') && ( (activeItem === 'Requests' && ((detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           @click="isEditing ? saveRequest() : toggleEditMode()"
         >
           <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
@@ -1077,7 +1077,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' || isAdmin)) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && ((detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           style="background: #369696; border-color: #369696"
           @click="submitDetailRecord()"
         >
@@ -5404,6 +5404,18 @@
                   </span>
                   <span v-else-if="col.type === 'button'" class="row-action">
                     <!-- Requests Buttons -->
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: var(--blue-600);
+                        border-color: var(--blue-600);
+                        margin-right: 4px;
+                      "
+                      @click.stop="openRecord(row)"
+                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && (row.reporting_person === frappe.session.user || isAdmin)"
+                    >
+                      Edit
+                    </button>
                     <button
                       class="btn-create-inline"
                       style="
