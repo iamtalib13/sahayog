@@ -3356,10 +3356,15 @@
                         Requested Items
                       </h4>
                     </div>
-                    <span class="badge active" style="border-radius: 20px"
-                      >[[ detailRecord.items ? detailRecord.items.length : 0 ]]
-                      Items</span
-                    >
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                      <button v-if="isEditing" class="btn-create-inline" @click="addRequestItemRow">
+                        <i class="fas fa-plus"></i> Add Item
+                      </button>
+                      <span class="badge active" style="border-radius: 20px"
+                        >[[ detailRecord.items ? detailRecord.items.length : 0 ]]
+                        Items</span
+                      >
+                    </div>
                   </div>
                   <div class="table-responsive" :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--gray-50);' : ''">
                     <!-- List View (Table) -->
@@ -3416,7 +3421,7 @@
                                   v-for="opt in itemsList"
                                   :key="opt.name"
                                   class="searchable-select-option"
-                                  @mousedown="item.item_code = opt.name; item.item_name = opt.item_name; item.uom = opt.stock_uom; focusedField = null;"
+                                  @mousedown="item.item_code = opt.name; item.item_name = opt.item_name; item.uom = opt.stock_uom; item.item_category = opt.is_stock_item ? 'Stock Item' : (opt.is_fixed_asset ? 'Asset' : 'Stock Item'); focusedField = null;"
                                 >
                                   [[ opt.item_name ]] ([[ opt.name ]])
                                 </div>
@@ -3462,7 +3467,7 @@
                             </div>
                           </td>
                           <td style="font-size: 12px; font-weight: 600">
-                            [[ item.item_category || 'Stationery' ]]
+                            <span>[[ item.item_category || 'Stock Item' ]]</span>
                           </td>
                           <td style="text-align: right; font-weight: 700">
                             <input
@@ -4626,11 +4631,6 @@
                         </tr>
                       </tbody>
                     </table>
-                    <div v-if="isEditing" style="padding: 16px; border-top: 1px solid var(--border-color);">
-                      <button class="btn-create-inline" @click="addRequestItemRow">
-                        <i class="fas fa-plus"></i> Add Item
-                      </button>
-                    </div>
                   </div>
                   <!-- Bulk Dispatch Button (Moved outside table) -->
                   <div
@@ -11207,8 +11207,8 @@
           item_name: "",
           quantity: 1,
           uom: "",
-          status: "Draft",
-          item_category: "Stationery"
+          status: "Pending",
+          item_category: "Stock Item"
         });
       },
       addEMRItem() {
