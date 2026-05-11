@@ -1324,10 +1324,34 @@
                   </div>
                 </div>
               </div>
-            </div>
+              <div class="form-row" v-if="showEMRMoreDetails">
+                <div class="form-group">
+                  <label class="form-label"
+                    >Target Location <span class="form-required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="emrForm.target_location"
+                    placeholder="Target Location"
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    >Reporting Person
+                    <span class="form-required">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="emrForm.reporting_person"
+                    placeholder="Reporting Person"
+                  />
+                </div>
+              </div>
 
-            <!-- More Details Toggle -->
-            <div style="margin-bottom: 16px">
+              <!-- More Details Toggle -->
+
               <button
                 type="button"
                 class="btn-view-toggle"
@@ -1353,30 +1377,6 @@
               </button>
             </div>
 
-            <div class="form-row" v-if="showEMRMoreDetails">
-              <div class="form-group">
-                <label class="form-label"
-                  >Target Location <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.target_location"
-                  placeholder="Target Location"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label"
-                  >Reporting Person <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.reporting_person"
-                  placeholder="Reporting Person"
-                />
-              </div>
-            </div>
             <div class="form-group">
               <label class="form-label"
                 >Remark <span class="form-required">*</span></label
