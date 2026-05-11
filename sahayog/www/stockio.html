@@ -1098,7 +1098,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && ((detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
           style="background: #369696; border-color: #369696"
           @click="submitDetailRecord()"
         >
