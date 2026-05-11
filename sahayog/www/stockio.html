@@ -3401,13 +3401,28 @@
                             [[ idx + 1 ]]
                           </td>
                           <td>
-                            <div
-                              style="
-                                display: flex;
-                                align-items: center;
-                                gap: 12px;
-                              "
-                            >
+                            <div v-if="isEditing" class="searchable-select-wrapper" style="width: 200px;">
+                              <input
+                                type="text"
+                                class="form-input searchable-select-input"
+                                :class="{ focused: focusedField === 'item_code_' + idx }"
+                                v-model="item.item_code"
+                                @focus="onFocusSearchable('item_code_' + idx)"
+                                @blur="onBlurSearchable('item_code_' + idx)"
+                                placeholder="Search Item"
+                              />
+                              <div class="searchable-select-dropdown" v-if="focusedField === 'item_code_' + idx">
+                                <div
+                                  v-for="opt in itemsList"
+                                  :key="opt.name"
+                                  class="searchable-select-option"
+                                  @mousedown="item.item_code = opt.name; item.item_name = opt.item_name; item.uom = opt.stock_uom; focusedField = null;"
+                                >
+                                  [[ opt.item_name ]] ([[ opt.name ]])
+                                </div>
+                              </div>
+                            </div>
+                            <div v-else style="display: flex; align-items: center; gap: 12px;">
                               <div
                                 style="
                                   width: 36px;
@@ -4611,6 +4626,11 @@
                         </tr>
                       </tbody>
                     </table>
+                    <div v-if="isEditing" style="padding: 16px; border-top: 1px solid var(--border-color);">
+                      <button class="btn-create-inline" @click="addRequestItemRow">
+                        <i class="fas fa-plus"></i> Add Item
+                      </button>
+                    </div>
                   </div>
                   <!-- Bulk Dispatch Button (Moved outside table) -->
                   <div
@@ -11177,6 +11197,19 @@
         } catch (e) {
           console.error("Error fetching employee details:", e);
         }
+      },
+      addRequestItemRow() {
+        if (!this.detailRecord.items) {
+          this.detailRecord.items = [];
+        }
+        this.detailRecord.items.push({
+          item_code: "",
+          item_name: "",
+          quantity: 1,
+          uom: "",
+          status: "Draft",
+          item_category: "Stationery"
+        });
       },
       addEMRItem() {
         this.emrItems.push({
