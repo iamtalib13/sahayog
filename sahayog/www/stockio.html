@@ -3459,7 +3459,11 @@
                   <h4 class="section-subtitle" style="margin-bottom: 16px">
                     Dispatch History
                   </h4>
-                  <div v-if="dispatchHistory.length === 0" class="text-muted" style="text-align: center; padding: 20px">
+                  <div
+                    v-if="dispatchHistory.length === 0"
+                    class="text-muted"
+                    style="text-align: center; padding: 20px"
+                  >
                     No history
                   </div>
                   <div v-else class="comments-list">
@@ -3467,10 +3471,18 @@
                       v-for="entry in dispatchHistory"
                       :key="entry.name"
                       class="comment-item"
-                      style="margin-bottom: 12px; padding: 10px; border-bottom: 1px solid var(--border-color)"
+                      style="
+                        margin-bottom: 12px;
+                        padding: 10px;
+                        border-bottom: 1px solid var(--border-color);
+                      "
                     >
-                      <div style="font-weight: 700; color: var(--text-main)">[[ entry.name ]]</div>
-                      <div style="font-size: 0.85rem; color: var(--text-muted)">Date: [[ entry.posting_date ]]</div>
+                      <div style="font-weight: 700; color: var(--text-main)">
+                        [[ entry.name ]]
+                      </div>
+                      <div style="font-size: 0.85rem; color: var(--text-muted)">
+                        Date: [[ entry.posting_date ]]
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -9085,6 +9097,7 @@
     font-weight: 600;
     color: var(--text-main);
     margin-bottom: 8px;
+    margin-left: 8px;
   }
 
   .form-required {
@@ -12870,7 +12883,11 @@
         this.showUserMenu = !this.showUserMenu;
       },
       async fetchDispatchHistory() {
-        if (this.showDispatchHistory && this.detailRecord && this.detailRecord.name) {
+        if (
+          this.showDispatchHistory &&
+          this.detailRecord &&
+          this.detailRecord.name
+        ) {
           try {
             const res = await frappe.call({
               method: "frappe.client.get_list",
