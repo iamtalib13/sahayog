@@ -1059,7 +1059,7 @@
         <button
           class="btn-create-inline"
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
-          onclick="window.location.href = '/app/report/Stock Entry'"
+          @click="showDispatchHistory = !showDispatchHistory"
           title="Dispatch History"
           style="margin-left: 12px; height: 44px; border-radius: 40px; padding: 0 20px;"
         >
@@ -3439,7 +3439,11 @@
             >
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
-                <div class="flow-card detail-col-3">
+                <div v-if="showDispatchHistory" class="flow-card detail-col-3" style="text-align: center; padding: 40px;">
+                   <h4 class="section-subtitle">Dispatch History</h4>
+                   <p class="text-muted">No history</p>
+                </div>
+                <div v-else class="flow-card detail-col-3">
                   <h4 class="section-subtitle" style="margin-bottom: 16px">
                     Comments
                   </h4>
@@ -9494,6 +9498,7 @@
       $delimiters: ["[[", "]]"],
       dashboardDisplayMode: "cards",
       isEditing: false,
+      showDispatchHistory: false,
       showInwardCreateView: false,
       showOutwardCreateView: false,
       sidebar: {
