@@ -5447,18 +5447,7 @@
                   </span>
                   <span v-else-if="col.type === 'button'" class="row-action">
                     <!-- Requests Buttons -->
-                    <button
-                      class="btn-create-inline"
-                      style="
-                        background: var(--blue-600);
-                        border-color: var(--blue-600);
-                        margin-right: 4px;
-                      "
-                      @click.stop="openRecord(row)"
-                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && (row.reporting_person === frappe.session.user || isAdmin)"
-                    >
-                      Edit
-                    </button>
+                    <!-- Edit button removed -->
                     <button
                       class="btn-create-inline"
                       style="
