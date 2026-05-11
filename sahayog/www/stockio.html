@@ -1061,14 +1061,26 @@
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
           @click="showDispatchHistory = !showDispatchHistory"
           title="Dispatch History"
-          style="margin-left: 12px; height: 44px; border-radius: 40px; padding: 0 20px;"
+          style="
+            margin-left: 12px;
+            height: 44px;
+            border-radius: 40px;
+            padding: 0 20px;
+          "
         >
-          Dispatch History
+          [[ showDispatchHistory ? 'Comments Box' : 'Dispatch History' ]]
         </button>
         <button
           class="btn-create-inline"
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
-          style="background: var(--green-600); border-color: var(--green-600); margin-left: 0; height: 44px; border-radius: 40px; padding: 0 20px;"
+          style="
+            background: var(--green-600);
+            border-color: var(--green-600);
+            margin-left: 0;
+            height: 44px;
+            border-radius: 40px;
+            padding: 0 20px;
+          "
           @click="handleProforma(detailRecord)"
         >
           Proforma
@@ -3439,9 +3451,13 @@
             >
               <!-- DIV 2: Comments (Right Panel) -->
               <div class="request-div2">
-                <div v-if="showDispatchHistory" class="flow-card detail-col-3" style="text-align: center; padding: 40px;">
-                   <h4 class="section-subtitle">Dispatch History</h4>
-                   <p class="text-muted">No history</p>
+                <div
+                  v-if="showDispatchHistory"
+                  class="flow-card detail-col-3"
+                  style="text-align: center; padding: 40px"
+                >
+                  <h4 class="section-subtitle">Dispatch History</h4>
+                  <p class="text-muted">No history</p>
                 </div>
                 <div v-else class="flow-card detail-col-3">
                   <h4 class="section-subtitle" style="margin-bottom: 16px">
@@ -12816,7 +12832,13 @@
         return "active";
       },
       getRequestStatus(row) {
-        const postApprovalStates = ["Approved", "Partially Dispatched", "Dispatch", "Received", "Partially Received"];
+        const postApprovalStates = [
+          "Approved",
+          "Partially Dispatched",
+          "Dispatch",
+          "Received",
+          "Partially Received",
+        ];
         if (!postApprovalStates.includes(row.status)) return row.status;
         if (!row.items || row.items.length === 0) return row.status;
         const itemStatuses = row.items.map((i) => i.status);
