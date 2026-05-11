@@ -1056,6 +1056,15 @@
             :class="isFullscreen ? 'fa-compress' : 'fa-expand'"
           ></i>
         </button>
+        <button
+          class="btn-create-inline"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
+          onclick="window.location.href = '/app/report/Stock Entry'"
+          title="Dispatch History"
+          style="margin-left: 12px; height: 44px; border-radius: 40px; padding: 0 20px;"
+        >
+          Dispatch History
+        </button>
         <div
           class="search-container"
           v-if="!showDetailView && !showEMRCreateView"
@@ -12792,6 +12801,19 @@
         if (["cancelled", "rejected", "disabled", "draft"].includes(normalized))
           return "disabled";
         return "active";
+      },
+      getRequestStatus(row) {
+        const postApprovalStates = ["Approved", "Partially Dispatched", "Dispatch", "Received", "Partially Received"];
+        if (!postApprovalStates.includes(row.status)) return row.status;
+        if (!row.items || row.items.length === 0) return row.status;
+        const itemStatuses = row.items.map((i) => i.status);
+        if (itemStatuses.every((s) => s === "Received")) return "Received";
+        if (itemStatuses.every((s) => s === "Dispatch")) return "Dispatch";
+        const hasReceived = itemStatuses.some((s) => s === "Received");
+        if (hasReceived) return "Partially Received";
+        const hasDispatched = itemStatuses.some((s) => s === "Dispatch");
+        if (hasDispatched) return "Partially Dispatched";
+        return row.status;
       },
       toggleUserMenu() {
         this.showUserMenu = !this.showUserMenu;
