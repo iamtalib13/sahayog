@@ -1473,7 +1473,7 @@
                           @click="removeEMRItem(index)"
                           title="Remove"
                         >
-                          <i class="fas fa-trash"></i>
+                          <i class="fas fa-times"></i>
                         </button>
                       </td>
                     </tr>
@@ -2639,7 +2639,7 @@
                           @click="removeMovementItem(index)"
                           title="Remove"
                         >
-                          <i class="fas fa-trash"></i>
+                          <i class="fas fa-times"></i>
                         </button>
                       </td>
                     </tr>
@@ -3021,7 +3021,7 @@
                         </td>
                         <td v-if="isEditing">
                           <button class="btn-action" @click="detailRecord.assets.splice(index, 1)" title="Remove">
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-times"></i>
                           </button>
                         </td>
                       </tr>
@@ -3383,6 +3383,7 @@
                           >
                             Action
                           </th>
+                          <th v-if="isEditing" style="width: 80px; text-align: center">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3497,6 +3498,15 @@
                                 accent-color: #369696;
                               "
                             />
+                          </td>
+                          <td v-if="isEditing" style="text-align: center">
+                            <button
+                              class="btn-action"
+                              @click="detailRecord.items.splice(idx, 1)"
+                              title="Remove"
+                            >
+                              <i class="fas fa-times"></i>
+                            </button>
                           </td>
                         </tr>
                       </tbody>
@@ -4464,7 +4474,7 @@
                               "
                               @click="detailRecord.items.splice(index, 1)"
                             >
-                              <i class="fas fa-trash"></i>
+                              <i class="fas fa-times"></i>
                             </button>
                           </td>
                         </tr>
@@ -5047,7 +5057,7 @@
                             @click="detailRecord.items.splice(index, 1)"
                             title="Remove"
                           >
-                            <i class="fas fa-trash"></i>
+                            <i class="fas fa-times"></i>
                           </button>
                         </td>
                       </tr>
