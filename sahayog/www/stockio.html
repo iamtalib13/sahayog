@@ -6113,9 +6113,8 @@
                       @click.stop="handleDispatch(row, true)"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
                     >
-                      [[ col.key === 'dispatch' ? (row.items && row.items.some(i
-                      => i.item_category === 'Asset') ? 'Movement' : 'Dispatch')
-                      : col.label ]]
+                      [[ (row.items && row.items.some(i => i.item_category ===
+                      'Asset')) ? 'Movement' : 'Dispatch' ]]
                     </button>
                     <button
                       class="btn-create-inline"
@@ -7876,7 +7875,7 @@
   .inline-flow-stepper {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     margin-left: 0px;
     padding-left: 4px;
     border-left: 1px solid var(--border-color);
