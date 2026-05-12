@@ -17,6 +17,7 @@
   "required_by_date",
   "request_type",
   "status",
+  "department",
   "section_break_items",
   "items",
   "remark",
@@ -241,12 +242,18 @@
    "fieldtype": "Long Text",
    "label": "Remark",
    "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Select",
+   "label": "Department",
+   "options": "\nPurchase\nStationery\nAsset"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-12-09 11:24:16.322010",
+ "modified": "2026-05-12 11:45:10.707927",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
