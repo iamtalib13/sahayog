@@ -116,7 +116,7 @@ def _get_appointment_data(limit, offset, search_term):
     if len(appointments) > limit:
         appointments.pop()
         
-        return appointments, next_cursor, total_count
+    return appointments, next_cursor, total_count
 
 
 @frappe.whitelist()
