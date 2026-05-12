@@ -329,45 +329,37 @@ def create_asset_movement_from_emmr(emmr, assets):
 
 @frappe.whitelist()
 def get_emr_list(limit=20, start=0, search_text=None):
-    """
-    Fetch Employee Material Requests joined with Employee Name
-    """
-    conditions = []
-    values = {}
-
-    if search_text:
-        conditions.append("(emr.name LIKE %(search)s OR emr.owner LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
-        values["search"] = f"%{search_text}%"
-
-    # Add permission query conditions
     from sahayog.permissions import get_employee_material_request_permission
     perm_cond = get_employee_material_request_permission(frappe.session.user)
-    if perm_cond:
-        conditions.append(perm_cond.replace("`tabEmployee Material Request`", "emr"))
-
-    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
     
-    # Get total count
-    total_count = frappe.db.sql(f"""
-        SELECT COUNT(*) 
-        FROM `tabEmployee Material Request` emr
-        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
-        {where_clause}
-    """, values)[0][0]
+    filters = {}
+    if search_text:
+        filters["name"] = ["like", f"%{search_text}%"]
 
-    # Get data
-    data = frappe.db.sql(f"""
-        SELECT 
-            emr.*, 
-            emp.employee_name
+    # Use frappe.db.get_list which supports 'or_filters' and complex conditions
+    # or apply the permission query manually via SQL if necessary for performance/complexity
+    # Since the permission logic is complex SQL, I will use a hybrid approach
+    
+    query = f"""
+        SELECT emr.*, emp.employee_name
         FROM `tabEmployee Material Request` emr
         LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
-        {where_clause}
+        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
+        {"AND " if perm_cond and search_text else ""}
+        {("emr.name LIKE '" + f"%{search_text}%" + "'") if search_text else ""}
         ORDER BY emr.creation DESC
-        LIMIT %(limit)s OFFSET %(offset)s
-    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+        LIMIT {int(limit)} OFFSET {int(start)}
+    """
+    data = frappe.db.sql(query, as_dict=True)
+    
+    # Get total count with the same logic
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM `tabEmployee Material Request` emr
+        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
+    """
+    total_count = frappe.db.sql(count_query)[0][0]
 
-    # Fetch child items for status calculation
     for row in data:
         row["items"] = frappe.get_all(
             "Material Request Items",
@@ -375,10 +367,7 @@ def get_emr_list(limit=20, start=0, search_text=None):
             fields=["name", "status", "item_code", "quantity", "item_category"]
         )
 
-    return {
-        "data": data,
-        "total": total_count
-    }
+    return {"data": data, "total": total_count}
 
 @frappe.whitelist()
 def get_asset_list(limit=20, start=0, search_text=None):
