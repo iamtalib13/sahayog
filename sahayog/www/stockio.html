@@ -6168,7 +6168,7 @@
                         margin-right: 4px;
                       "
                       @click.stop="submitRowRecord(row)"
-                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status))"
                     >
                       Submit
                     </button>
