@@ -6178,10 +6178,25 @@
                         margin-right: 4px;
                       "
                       @click.stop="submitRowRecord(row)"
-                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status)) && !(row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status)) && !(row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.reporting_person === frappe.session.user)"
                     >
                       Submit
                     </button>
+                    <!-- Completed Button for Reporting Person (HO Approval phase) -->
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: #94a3b8;
+                        border-color: #94a3b8;
+                        margin-right: 4px;
+                        cursor: default;
+                      "
+                      v-if="activeItem === 'Requests' && row.status === 'Pending HO Approval' && row.reporting_person === frappe.session.user"
+                      disabled
+                    >
+                      Completed
+                    </button>
+                    <!-- Completed Button for Owner (Pending Reporting Person) -->
                     <button
                       class="btn-create-inline"
                       style="
