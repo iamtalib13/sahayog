@@ -6178,7 +6178,7 @@
                         margin-right: 4px;
                       "
                       @click.stop="submitRowRecord(row)"
-                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status)) && !(row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.reporting_person === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.head_office_officer === frappe.session.user)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status)) && !(row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.reporting_person === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.head_office_officer === frappe.session.user) && !(row.status === 'Pending Reporting Person' && row.head_office_officer === frappe.session.user) && !(row.status === 'Pending HO Approval' && row.owner === frappe.session.user)"
                     >
                       Submit
                     </button>
@@ -6205,7 +6205,7 @@
                     >
                       Completed
                     </button>
-                    <!-- Completed Button for Owner (Pending Reporting Person) -->
+                    <!-- Wait Button for HO Officer (Pending Reporting Person phase) -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -6214,7 +6214,21 @@
                         margin-right: 4px;
                         cursor: default;
                       "
-                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && row.owner === frappe.session.user"
+                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && row.head_office_officer === frappe.session.user"
+                      disabled
+                    >
+                      Wait
+                    </button>
+                    <!-- Completed Button for Owner (Pending HO Approval) -->
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: #94a3b8;
+                        border-color: #94a3b8;
+                        margin-right: 4px;
+                        cursor: default;
+                      "
+                      v-if="activeItem === 'Requests' && row.status === 'Pending HO Approval' && row.owner === frappe.session.user"
                       disabled
                     >
                       Completed
