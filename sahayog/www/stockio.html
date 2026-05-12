@@ -574,7 +574,7 @@
     background: var(--bg-surface);
     position: absolute;
     width: 100%;
-    z-index: 50;
+    z-index: 1000 !important;
     max-height: 250px;
     overflow-y: auto;
     margin-top: 8px;
@@ -1369,13 +1369,12 @@
               <div
                 class="items-table-wrapper table-responsive"
                 style="
-                  max-height: 250px;
-                  overflow-y: auto;
-                  overflow-x: hidden;
                   border: 1px solid var(--border-color);
                   border-radius: 8px;
-                  margin-bottom: 16px;
+                  margin-bottom: 24px;
                   width: 100%;
+                  position: relative;
+                  overflow: visible !important;
                 "
               >
                 <table
@@ -1494,7 +1493,7 @@
 
             <div
               class="form-actions"
-              style="margin-top: 24px; display: flex; gap: 12px"
+              style="margin-top: 32px; display: flex; gap: 12px; padding-bottom: 24px;"
             >
               <button
                 class="btn-create"
