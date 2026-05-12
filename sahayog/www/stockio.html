@@ -230,6 +230,14 @@
     border-radius: 0 4px 4px 0;
   }
 
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .blinking-arrow {
+    animation: blink 1.5s infinite;
+  }
+
   /* Main Area Headers */
   .main-area {
     flex: 1;
@@ -948,8 +956,46 @@
         <h1
           class="page-title"
           v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+          style="display: flex; align-items: center; flex: 1;"
         >
-          Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]
+          <span style="white-space: nowrap;">Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]</span>
+          
+          <!-- Inventory Flow Display (Centered) -->
+          <div v-if="showEMRCreateView && (emrForm.target_warehouse || emrForm.source_warehouse)" 
+               style="display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; margin: 0 20px;">
+            
+            <!-- Receiver Card -->
+            <div v-if="emrForm.target_warehouse" 
+                 style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(100, 116, 139, 0.05); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+               <i class="fas fa-map-pin" style="color: var(--primary-color); font-size: 12px;"></i>
+               <div style="display: flex; flex-direction: column; line-height: 1.2;">
+                 <span style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Receiver</span>
+                 <span style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">
+                   [[ emrForm.target_warehouse ]]
+                 </span>
+               </div>
+            </div>
+            <!-- Blinking Arrow (Pointing Right: Provider -> Receiver) -->
+            <div v-if="emrForm.target_warehouse && emrForm.source_warehouse" class="blinking-arrow" style="display: flex; align-items: center; margin: 0 4px;">
+              <i class="fas fa-long-arrow-alt-right" style="color: var(--primary-color); font-size: 1.2rem;"></i>
+            </div>            
+
+            <!-- Provider Card -->
+            <div v-if="emrForm.source_warehouse" 
+                 style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(100, 116, 139, 0.05); border-radius: 8px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+               <i class="fas fa-warehouse" style="color: var(--primary-color); font-size: 12px;"></i>
+               <div style="display: flex; flex-direction: column; line-height: 1.2;">
+                 <span style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Provider</span>
+                 <span style="font-weight: 700; color: var(--text-main); font-size: 0.85rem; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">
+                   [[ emrForm.source_warehouse ]]
+                 </span>
+               </div>
+            </div>
+
+
+
+
+          </div>
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
