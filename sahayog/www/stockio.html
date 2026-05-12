@@ -1002,12 +1002,10 @@
                 >
               </div>
               <span
-                class="inline-step-status"
-                :class="detailRecord.status === 'Draft' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : 'status-active')"
+                class="inline-step-status badge"
+                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-active' : 'status-waiting'))"
               >
-                [[ detailRecord.status === 'Pending Reporting Person' ?
-                'Pending' : (detailRecord.status === 'Draft' ? 'Draft' :
-                'Approved') ]]
+                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : 'Draft')) ]]
               </span>
             </div>
 
@@ -1016,7 +1014,7 @@
             </div>
 
             <!-- Step 3: HO Approval -->
-            <div class="inline-flow-step">
+            <div class="inline-flow-step" v-if="detailRecord.reporting_person_status !== 'Rejected'">
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">HO Officer</span>
@@ -1026,15 +1024,11 @@
                 >
               </div>
               <span
-                class="inline-step-status"
-                :class="detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (['Pending Reporting Person', 'Draft'].includes(detailRecord.status) ? 'status-waiting' : 'status-active')"
+                class="inline-step-status badge"
+                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-active' : 'status-waiting'))"
               >
-                [[ detailRecord.status === 'Pending HO Approval' ? 'Pending' :
-                (['Pending Reporting Person',
-                'Draft'].includes(detailRecord.status) ? 'Waiting' : 'Approved')
-                ]]
+                [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting')) ]]
               </span>
-            </div>
           </div>
         </h1>
       </div>
