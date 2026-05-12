@@ -6160,6 +6160,16 @@
                   <span v-else-if="col.type === 'button'" class="row-action">
                     <!-- Requests Buttons -->
                     <!-- Edit button removed -->
+                    <!-- Approve Button for Reporting Person -->
+                    <button
+                      class="btn-create-inline"
+                      style="background: #10b981; border-color: #10b981; margin-right: 4px;"
+                      @click.stop="handleWorkflowAction('Approve', row)"
+                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user"
+                    >
+                      Approve
+                    </button>
+                    <!-- Submit Button -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -6168,7 +6178,7 @@
                         margin-right: 4px;
                       "
                       @click.stop="submitRowRecord(row)"
-                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status))"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user) && !(['Approved', 'Partially Dispatched'].includes(row.status)) && !(row.status === 'Pending Reporting Person' && row.reporting_person === frappe.session.user)"
                     >
                       Submit
                     </button>
