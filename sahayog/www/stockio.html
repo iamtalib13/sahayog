@@ -12207,8 +12207,28 @@
           });
           if (res.message) {
             const emp = res.message;
-            this.emrForm.target_location = emp.sol_id || "";
-            this.emrForm.target_warehouse = emp.sol_id || "";
+            if (emp.sol_id) {
+              const branchRes = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Sahayog Branch",
+                  filters: { name: emp.sol_id },
+                  fieldname: "branch",
+                },
+              });
+              const branchName =
+                branchRes.message && branchRes.message.branch
+                  ? branchRes.message.branch
+                  : "";
+              const displayValue = branchName
+                ? `${branchName} (${emp.sol_id})`
+                : emp.sol_id;
+              this.emrForm.target_location = displayValue;
+              this.emrForm.target_warehouse = displayValue;
+            } else {
+              this.emrForm.target_location = "";
+              this.emrForm.target_warehouse = "";
+            }
 
             if (emp.reports_to) {
               const resp = await frappe.call({
@@ -12377,7 +12397,11 @@
             requested_by: frappe.session.user,
             employee: this.emrForm.employee,
             source_warehouse: this.emrForm.source_warehouse,
-            target_warehouse: this.emrForm.target_warehouse,
+            target_warehouse:
+              this.emrForm.target_warehouse &&
+              this.emrForm.target_warehouse.includes("(")
+                ? this.emrForm.target_warehouse.split("(").pop().split(")")[0]
+                : this.emrForm.target_warehouse,
             target_location: this.emrForm.target_location,
             request_type: this.emrForm.request_type,
             request_date: frappe.datetime.get_today(),
