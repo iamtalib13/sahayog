@@ -575,7 +575,7 @@
     position: absolute;
     width: 100%;
     z-index: 1000 !important;
-    max-height: 250px;
+    max-height: 450px;
     overflow-y: auto;
     margin-top: 8px;
   }
@@ -1435,7 +1435,7 @@
                           <div
                             class="searchable-select-dropdown"
                             v-if="focusedField === 'item_code_' + index"
-                            style="width: 100%; max-width: 300px; z-index: 50"
+                            style="width: 100%; max-width: 300px; z-index: 1000"
                           >
                             <div
                               v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
