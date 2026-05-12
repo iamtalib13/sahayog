@@ -1283,6 +1283,16 @@
                   <option value="Issue">Issue</option>
                 </select>
               </div>
+
+              <!-- Department Field -->
+              <div class="form-group">
+                <label class="form-label">Department</label>
+                <select class="form-input" v-model="emrForm.department">
+                  <option value="Purchase">Purchase</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Asset">Asset</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label class="form-label"
                   >Reporting Person <span class="form-required">*</span></label
@@ -3681,6 +3691,17 @@
                       <span class="info-label">Source</span>
                       <span class="info-value"
                         >[[ detailRecord.source_warehouse || '-' ]]</span
+                      >
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #369696">
+                      <i class="fas fa-building"></i>
+                    </div>
+                    <div class="info-content">
+                      <span class="info-label">Department</span>
+                      <span class="info-value"
+                        >[[ detailRecord.department || '-' ]]</span
                       >
                     </div>
                   </div>
@@ -9724,6 +9745,7 @@
           ],
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
+            { label: "Department", key: "department", width: 1.2 },
             { label: "Owner", key: "employee", width: 1.5 },
             { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
             { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
@@ -10032,11 +10054,13 @@
         target_warehouse: "",
         target_location: "",
         request_type: "New",
+        department: "Stationery",
         reporting_person: "",
         reporting_person_display: "",
         remark: "",
       },
       employees: [],
+      departments: [],
       warehouses: [],
       suppliers: [],
       itemsList: [],
@@ -10948,6 +10972,7 @@
             target_warehouse: "",
             target_location: "",
             request_type: "New",
+            department: "Stationery",
             remark: "",
             reporting_person: "",
             reporting_person_display: "",
@@ -11239,6 +11264,7 @@
             this.assetsList = data.assets_list || [];
             this.itemGroups = data.item_groups || [];
             this.itemDepartments = data.item_departments || [];
+            this.departments = this.itemDepartments;
             this.stockUOMs =
               data.uoms && data.uoms.length
                 ? data.uoms
@@ -12360,6 +12386,7 @@
           target_warehouse: "Target Warehouse",
           target_location: "Target Location",
           request_type: "Request Type",
+          department: "Department",
           remark: "Remark",
           reporting_person: "Reporting Person",
         };
@@ -12417,6 +12444,7 @@
             request_date: frappe.datetime.get_today(),
             required_by_date: frappe.datetime.get_today(),
             remark: this.emrForm.remark,
+            department: this.emrForm.department,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
             items: this.emrItems.map((item) => ({
