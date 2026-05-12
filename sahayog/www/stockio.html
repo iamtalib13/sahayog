@@ -6168,9 +6168,22 @@
                         margin-right: 4px;
                       "
                       @click.stop="submitRowRecord(row)"
-                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0)"
+                      v-if="activeItem === 'Requests' && (row.status === 'Draft' || row.docstatus === 0) && !(row.status === 'Pending Reporting Person' && row.owner === frappe.session.user)"
                     >
                       Submit
+                    </button>
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: #94a3b8;
+                        border-color: #94a3b8;
+                        margin-right: 4px;
+                        cursor: default;
+                      "
+                      v-if="activeItem === 'Requests' && row.status === 'Pending Reporting Person' && row.owner === frappe.session.user"
+                      disabled
+                    >
+                      Completed
                     </button>
                     <button
                       class="btn-create-inline"
