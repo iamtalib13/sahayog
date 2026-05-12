@@ -1942,106 +1942,98 @@ def download_txt_api(name):     # <--- Renamed
 # [NEW] CONSOLIDATED DOWNLOAD APIs (LIST VIEW)
 # ==============================================================================
 
-# @frappe.whitelist()
-# def download_consolidated_txt_api():
-#     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
-#     from frappe.utils import nowdate, getdate
-#     import base64
+@frappe.whitelist()
+def download_consolidated_txt_api():
+    """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
+    from frappe.utils import nowdate, getdate
+    import base64
 
-#     # 1. Permission Check
-#     # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-#     #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+    # 1. Permission Check
+    # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+    #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
 
-#     # 1. Permission Check
-#     user_roles = frappe.get_roles()
-#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-#         frappe.throw(
-#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+    # 1. Permission Check
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+        frappe.throw(
+            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
 
-#     # today = nowdate()
-#     # print("date is:", today)
-#     # frappe.logger().info(f"date is: {today}")
-#     from frappe.utils import nowdate
-#     frappe.throw("method called")
-#     today = nowdate()
-#     frappe.throw(f"method called, date is: {today}")
-#     frappe.log_error(
-#         f"download_consolidated_txt_api called for date: {today}", "Petty Cash Debug")
+    today = nowdate()
 
-#     # 2. Fetch all matching transactions (Today + Verified)
-#     transactions = frappe.get_all(
-#         "Petty Cash Transaction",
-#         filters={"transaction_date": today, "approval_status": "Verified"},
-#         pluck="name",
-#         order_by="creation ASC"
-#     )
+    # 2. Fetch all matching transactions (Today + Verified)
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters={"finacle_tran_date": today, "approval_status": "Verified"},
+        pluck="name",
+        order_by="creation ASC"
+    )
 
-#     # [FIX] Return JSON response instead of msgprint for no data
-#     if not transactions:
-#         return {
-#             "status": "no_data",
-#             "message": f"No verified transactions found for today ({today})."
-#         }
+    # [FIX] Return JSON response instead of msgprint for no data
+    if not transactions:
+        return {
+            "status": "no_data",
+            "message": f"No verified transactions found for today ({today})."
+        }
 
-#     content = []
+    content = []
 
-#     # 3. Loop through each document and aggregate TTUM lines
-#     for txn_name in transactions:
-#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+    # 3. Loop through each document and aggregate TTUM lines
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
-#         date_obj = getdate(doc.transaction_date)
-#         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-#         currency_str = f"INR{doc.branch}"
+        date_obj = getdate(doc.finacle_tran_date)
+        ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
+        currency_str = f"INR{doc.branch}"
 
-#         narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
-#         total_debit = 0.0
+        narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
+        total_debit = 0.0
 
-#         # --- DEBIT ROWS (Expenses) ---
-#         for row in doc.items:
-#             if not row.finacle_gl_code:
-#                 frappe.throw(
-#                     f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+        # --- DEBIT ROWS (Expenses) ---
+        for row in doc.items:
+            if not row.finacle_gl_code:
+                frappe.throw(
+                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
 
-#             amount_str = "{:.2f}".format(row.amount)
-#             total_debit += row.amount
+            amount_str = "{:.2f}".format(row.amount)
+            total_debit += row.amount
 
-#             raw_desc = f"{row.description}" if row.description else narrative_suffix
-#             # 30 char limit exactly like single view
-#             debitDescription = raw_desc[:30]
+            raw_desc = f"{row.description}" if row.description else narrative_suffix
+            # 30 char limit exactly like single view
+            debitDescription = raw_desc[:30]
 
-#             # Formatting/Spacing matching single doc view
-#             padding_count = 17 - len(amount_str)
-#             if padding_count < 10:
-#                 padding_count = 10
-#             space_str = " " * padding_count
+            # Formatting/Spacing matching single doc view
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            space_str = " " * padding_count
 
-#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
-#             content.append(line)
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+            content.append(line)
 
-#         # --- CREDIT ROW (Branch Wallet) ---
-#         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-#                                         "branch": doc.branch}, "gl_sub_code")
-#         if not wallet_gl:
-#             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+        # --- CREDIT ROW (Branch Wallet) ---
+        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
+                                        "branch": doc.branch}, "gl_sub_code")
+        if not wallet_gl:
+            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
 
-#         total_amount_str = "{:.2f}".format(total_debit)
-#         padding_count = 17 - len(total_amount_str)
-#         if padding_count < 10:
-#             padding_count = 10
-#         space_str = " " * padding_count
-#         creditDescription = narrative_suffix[:30]
+        total_amount_str = "{:.2f}".format(total_debit)
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+        space_str = " " * padding_count
+        creditDescription = narrative_suffix[:30]
 
-#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
-#         content.append(credit_line)
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+        content.append(credit_line)
 
-#     final_txt = "\n".join(content)
+    final_txt = "\n".join(content)
 
-#     # 4. Return JSON response with file data
-#     return {
-#         "status": "success",
-#         "filename": f"Consolidated_TTUM_{today}.txt",
-#         "filecontent": final_txt
-#     }
+    # 4. Return JSON response with file data
+    return {
+        "status": "success",
+        "filename": f"Consolidated_TTUM_{today}.txt",
+        "filecontent": final_txt
+    }
 
 
 @frappe.whitelist()
@@ -2071,7 +2063,7 @@ def download_consolidated_excel_api():
     # 2. Fetch all matching transactions (Today + Verified)
     transactions = frappe.get_all(
         "Petty Cash Transaction",
-        filters={"transaction_date": today, "approval_status": "Verified"},
+        filters={"finacle_tran_date": today, "approval_status": "Verified"},
         pluck="name",
         order_by="creation ASC"
     )
@@ -2170,89 +2162,89 @@ def download_consolidated_excel_api():
     }
 
 
-@frappe.whitelist()
-def download_consolidated_txt_api(transaction_date="2026-05-11"):
-    """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
-    from frappe.utils import nowdate, getdate
-    import base64
+# @frappe.whitelist()
+# def download_consolidated_txt_api(transaction_date=None):
+#     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
+#     from frappe.utils import nowdate, getdate
+#     import base64
 
-    # 1. Permission Check
-    user_roles = frappe.get_roles()
-    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-        frappe.throw(
-            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+#     # 1. Permission Check
+#     user_roles = frappe.get_roles()
+#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+#         frappe.throw(
+#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
 
-    today = transaction_date or nowdate()
+#     today = transaction_date or nowdate()
 
-    # 2. Fetch all matching transactions (Today + Verified)
-    transactions = frappe.get_all(
-        "Petty Cash Transaction",
-        filters={"finacle_tran_date": today, "approval_status": "Verified"},
-        pluck="name",
-        order_by="creation ASC"
-    )
+#     # 2. Fetch all matching transactions (Today + Verified)
+#     transactions = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
+#         pluck="name",
+#         order_by="creation ASC"
+#     )
 
-    # [FIX] Return JSON response instead of msgprint for no data
-    if not transactions:
-        return {
-            "status": "no_data",
-            "message": f"No verified transactions found for today ({today})."
-        }
+#     # [FIX] Return JSON response instead of msgprint for no data
+#     if not transactions:
+#         return {
+#             "status": "no_data",
+#             "message": f"No verified transactions found for today ({today})."
+#         }
 
-    content = []
+#     content = []
 
-    # 3. Loop through each document and aggregate TTUM lines
-    for txn_name in transactions:
-        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+#     # 3. Loop through each document and aggregate TTUM lines
+#     for txn_name in transactions:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
-        date_obj = getdate(doc.finacle_tran_date)
-        ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-        currency_str = f"INR{doc.branch}"
+#         date_obj = getdate(doc.finacle_tran_date)
+#         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
+#         currency_str = f"INR{doc.branch}"
 
-        narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
-        total_debit = 0.0
+#         narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
+#         total_debit = 0.0
 
-        # --- DEBIT ROWS (Expenses) ---
-        for row in doc.items:
-            if not row.finacle_gl_code:
-                frappe.throw(
-                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+#         # --- DEBIT ROWS (Expenses) ---
+#         for row in doc.items:
+#             if not row.finacle_gl_code:
+#                 frappe.throw(
+#                     f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
 
-            amount_str = "{:.2f}".format(row.amount)
-            total_debit += row.amount
+#             amount_str = "{:.2f}".format(row.amount)
+#             total_debit += row.amount
 
-            raw_desc = f"{row.description}" if row.description else narrative_suffix
-            debitDescription = raw_desc[:30]
+#             raw_desc = f"{row.description}" if row.description else narrative_suffix
+#             debitDescription = raw_desc[:30]
 
-            padding_count = 17 - len(amount_str)
-            if padding_count < 10:
-                padding_count = 10
-            space_str = " " * padding_count
+#             padding_count = 17 - len(amount_str)
+#             if padding_count < 10:
+#                 padding_count = 10
+#             space_str = " " * padding_count
 
-            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
-            content.append(line)
+#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+#             content.append(line)
 
-        # --- CREDIT ROW (Branch Wallet) ---
-        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-                                        "branch": doc.branch}, "gl_sub_code")
-        if not wallet_gl:
-            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+#         # --- CREDIT ROW (Branch Wallet) ---
+#         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
+#                                         "branch": doc.branch}, "gl_sub_code")
+#         if not wallet_gl:
+#             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
 
-        total_amount_str = "{:.2f}".format(total_debit)
-        padding_count = 17 - len(total_amount_str)
-        if padding_count < 10:
-            padding_count = 10
-        space_str = " " * padding_count
-        creditDescription = narrative_suffix[:30]
+#         total_amount_str = "{:.2f}".format(total_debit)
+#         padding_count = 17 - len(total_amount_str)
+#         if padding_count < 10:
+#             padding_count = 10
+#         space_str = " " * padding_count
+#         creditDescription = narrative_suffix[:30]
 
-        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
-        content.append(credit_line)
+#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+#         content.append(credit_line)
 
-    final_txt = "\n".join(content)
+#     final_txt = "\n".join(content)
 
-    # 4. Return JSON response with file data
-    return {
-        "status": "success",
-        "filename": f"Consolidated_TTUM_{today}.txt",
-        "filecontent": final_txt
-    }
+#     # 4. Return JSON response with file data
+#     return {
+#         "status": "success",
+#         "filename": f"Consolidated_TTUM_{today}.txt",
+#         "filecontent": final_txt
+#     }
