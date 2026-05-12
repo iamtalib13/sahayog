@@ -2187,7 +2187,7 @@ def download_consolidated_txt_api(transaction_date="2026-05-11"):
     # 2. Fetch all matching transactions (Today + Verified)
     transactions = frappe.get_all(
         "Petty Cash Transaction",
-        filters={"transaction_date": today, "approval_status": "Verified"},
+        filters={"finacle_tran_date": today, "approval_status": "Verified"},
         pluck="name",
         order_by="creation ASC"
     )
@@ -2205,7 +2205,7 @@ def download_consolidated_txt_api(transaction_date="2026-05-11"):
     for txn_name in transactions:
         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
-        date_obj = getdate(doc.transaction_date)
+        date_obj = getdate(doc.finacle_tran_date)
         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
         currency_str = f"INR{doc.branch}"
 
