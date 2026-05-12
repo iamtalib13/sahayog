@@ -1670,7 +1670,7 @@
                   <tr>
                     <th>Item Code</th>
                     <th>Qty</th>
-                    <th>Warehouse</th>
+                    <th>Rate</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -1738,9 +1738,9 @@
                     </td>
                     <td>
                       <input
-                        type="text"
+                        type="number"
                         class="form-input"
-                        v-model="item.warehouse"
+                        v-model.number="item.rate"
                       />
                     </td>
                     <td style="padding: 12px; width: 60px; text-align: center">
@@ -12512,9 +12512,14 @@
             company = compRes.message;
           }
 
-          // Ensure all items have necessary details (UOM, category)
+          // Ensure all items have necessary details (UOM, category, warehouse)
           for (let item of this.inwardItems) {
             if (!item.item_code) continue;
+            if (!item.warehouse && !this.inwardForm.set_warehouse) {
+                frappe.msgprint(`Warehouse is required for item ${item.item_code}`);
+                this.creatingInward = false;
+                return;
+            }
             if (!item.uom) {
               const res = await frappe.call({
                 method: "frappe.client.get_value",
