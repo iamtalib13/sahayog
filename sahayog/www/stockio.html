@@ -975,7 +975,7 @@
             class="inline-flow-stepper"
             v-if="activeItem === 'Requests' && detailRecord && detailRecord.name"
           >
-            <!-- Step 1: Submitted -->
+            <!-- Step 1: Action/Submitted -->
             <div class="inline-flow-step">
               <div class="inline-step-num">
                 <i class="fas fa-paper-plane" style="font-size: 10px"></i>
@@ -984,7 +984,12 @@
                 <span class="inline-step-role">Action</span>
                 <span class="inline-step-name">Submitted</span>
               </div>
-              <span class="inline-step-status status-active"> Done </span>
+              <span
+                class="inline-step-status badge"
+                :class="detailRecord.status === 'Draft' ? 'status-waiting' : 'status-done'"
+              >
+                [[ detailRecord.status === 'Draft' ? 'Draft' : 'Done' ]]
+              </span>
             </div>
 
             <div class="inline-flow-connector">
@@ -1003,9 +1008,9 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-active' : 'status-waiting'))"
+                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting'))"
               >
-                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : 'Draft')) ]]
+                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : (detailRecord.status === 'Draft' ? 'Waiting' : 'Draft'))) ]]
               </span>
             </div>
 
@@ -1025,12 +1030,11 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-active' : 'status-waiting'))"
+                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting'))"
               >
                 [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting')) ]]
               </span>
-          </div>
-        </h1>
+            </div>        </h1>
       </div>
       <div class="header-right">
         <button
@@ -8024,6 +8028,15 @@
   .status-active {
     background: #d1fae5;
     color: #065f46;
+  }
+  .status-done {
+    background: #f0fdf4;
+    color: #166534;
+    opacity: 0.9;
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+    border: 1px solid #dcfce7;
   }
   .status-pending {
     background: #fef3c7;
