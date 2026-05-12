@@ -287,67 +287,61 @@ def submit_for_approval(docname):
 
         approvers_to_notify = get_all_valid_approvers(doc)
 
-        for user in approvers_to_notify:
-            ensure_docshare(doc, user)
+        # --- SEND NOTIFICATION AND EMAIL TO ALL VALID APPROVERS ---
+        notified_emails = [] # To avoid duplicate emails
+
+        for user_id in approvers_to_notify:
+            ensure_docshare(doc, user_id)
+            
+            # 1. Standard Notification Log
             frappe.new_doc("Notification Log").update({
                 "subject": f"Pending Approval: {doc.title}",
-                "for_user": user,
+                "for_user": user_id,
                 "document_type": doc.doctype,
                 "document_name": doc.name
             }).insert(ignore_permissions=True)
 
-        # --- NEW: SEND EMAIL TO APPROVERS (GROUPS AND INDIVIDUAL USERS) ---
-        notified_emails = [] # To avoid duplicate emails if someone is both in group and direct
-
-        for d in doc.approvers:
-            recipient_email = None
-            if d.selection_type == "Group" and d.group_email:
-                recipient_email = frappe.db.get_value("Employee Group", d.group_email, "group_email")
+            # 2. Fetch Employee company_email
+            emp = frappe.db.get_value("Employee", {"user_id": user_id}, ["employee_name", "company_email"], as_dict=True)
             
-            elif d.selection_type == "User" and d.approver:
-                # Fetch email from Employee's company_email field strictly
-                emp_details = frappe.db.get_value("Employee", {"user_id": d.approver}, ["employee_name", "company_email"], as_dict=True)
-                
-                if not emp_details or not emp_details.company_email:
-                    frappe.throw(f"Approver {d.approver} ({emp_details.employee_name if emp_details else 'Unknown'}) does not have a Company Email. Please update their Employee record.")
-                
-                recipient_email = emp_details.company_email
+            recipient_email = emp.company_email if emp else None
+            
+            # If no company_email found, we can't send a manual mail
+            if not recipient_email or recipient_email in notified_emails:
+                continue
 
-            if recipient_email and recipient_email not in notified_emails:
-                # Fetch template from database
-                try:
-                    et = frappe.get_doc("Email Template", "new_group_approval_request")
-                    
-                    # Support both response and response_html fields
-                    content = et.response_html if (et.get("use_html") and et.get("response_html")) else et.response
-                    
-                    args = {
-                        "doc": doc,
-                        "requester": doc.employee_name or doc.owner,
-                        "recipient_name": d.approver_name if d.selection_type == "User" else "Team",
-                        "is_group": d.selection_type == "Group",
-                        "url": f"http://mysahayog.com/app/approval-request/{doc.name}"
-                    }
-                    
-                    message = frappe.render_template(content, args)
-                    subject = frappe.render_template(et.subject, args)
+            # 3. Send Email using Template
+            try:
+                et = frappe.get_doc("Email Template", "new_group_approval_request")
+                content = et.response_html if (et.get("use_html") and et.get("response_html")) else et.response
+                
+                args = {
+                    "doc": doc,
+                    "requester": doc.employee_name or doc.owner,
+                    "recipient_name": emp.employee_name or user_id,
+                    "url": f"http://mysahayog.com/app/approval-request/{doc.name}"
+                }
+                
+                message = frappe.render_template(content, args)
+                subject = frappe.render_template(et.subject, args)
 
-                    frappe.sendmail(
-                        recipients=[recipient_email],
-                        subject=subject or f"Approval Request: {doc.title}",
-                        message=message,
-                        delayed=False
-                    )
-                    notified_emails.append(recipient_email)
-                except frappe.DoesNotExistError:
-                    # Fallback if template not found
-                    frappe.sendmail(
-                        recipients=[recipient_email],
-                        subject=f"Approval Request: {doc.title}",
-                        message=f"A new approval request '{doc.title}' has been submitted by {doc.employee_name or doc.owner}. Please login to Sahayog Portal.",
-                        delayed=False
-                    )
-                    notified_emails.append(recipient_email)
+                frappe.sendmail(
+                    recipients=[recipient_email],
+                    subject=subject or f"Approval Request: {doc.title}",
+                    message=message,
+                    delayed=False
+                )
+                notified_emails.append(recipient_email)
+
+            except frappe.DoesNotExistError:
+                # Fallback if template is missing
+                frappe.sendmail(
+                    recipients=[recipient_email],
+                    subject=f"Approval Request: {doc.title}",
+                    message=f"A new approval request '{doc.title}' has been submitted by {doc.employee_name or doc.owner}. Please login to Sahayog Portal.",
+                    delayed=False
+                )
+                notified_emails.append(recipient_email)
 
         doc.add_comment(
             "Comment", f"Request submitted for approval by {frappe.session.user}")
