@@ -3674,23 +3674,6 @@
                       >
                     </div>
                   </div>
-                  <div class="info-item" style="flex: 1; min-width: 0">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-sticky-note"></i>
-                    </div>
-                    <div class="info-content" style="min-width: 0">
-                      <span class="info-label">Remarks</span>
-                      <span
-                        class="info-value"
-                        style="
-                          white-space: nowrap;
-                          overflow: hidden;
-                          text-overflow: ellipsis;
-                        "
-                        >[[ detailRecord.remark || '-' ]]</span
-                      >
-                    </div>
-                  </div>
                   <button
                     class="toolbar-btn"
                     @click="showEMRMoreDetails = !showEMRMoreDetails"
@@ -12399,7 +12382,6 @@
             request_type: this.emrForm.request_type,
             request_date: frappe.datetime.get_today(),
             required_by_date: frappe.datetime.get_today(),
-            remark: this.emrForm.remark,
             department: this.emrForm.department,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
@@ -12423,7 +12405,21 @@
           });
 
           if (res.message && res.message.name) {
-            frappe.msgprint(`EMR ${res.message.name} created!`);
+            const docName = res.message.name;
+            // Post remark as comment
+            if (this.emrForm.remark && this.emrForm.remark.trim()) {
+              await frappe.call({
+                method: "frappe.desk.form.utils.add_comment",
+                args: {
+                  reference_doctype: "Employee Material Request",
+                  reference_name: docName,
+                  content: "Remark: " + this.emrForm.remark,
+                  comment_email: frappe.session.user,
+                  comment_by: this.sidebar.header.subtitle,
+                },
+              });
+            }
+            frappe.msgprint(`EMR ${docName} created!`);
             this.showEMRCreateView = false;
             await this.fetchData("Employee Material Request"); // Refresh list
           }

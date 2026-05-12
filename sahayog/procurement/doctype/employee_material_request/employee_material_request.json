@@ -20,7 +20,6 @@
   "department",
   "section_break_items",
   "items",
-  "remark",
   "approval_section",
   "requested_by",
   "request_datetime",
@@ -238,12 +237,6 @@
    "reqd": 1
   },
   {
-   "fieldname": "remark",
-   "fieldtype": "Long Text",
-   "label": "Remark",
-   "reqd": 1
-  },
-  {
    "fieldname": "department",
    "fieldtype": "Select",
    "label": "Department",
@@ -254,7 +247,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-12 11:53:40.949430",
+ "modified": "2026-05-12 23:30:48.783227",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
