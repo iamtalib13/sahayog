@@ -1283,6 +1283,15 @@
                   <option value="Issue">Issue</option>
                 </select>
               </div>
+
+              <!-- Department Field -->
+              <div class="form-group">
+                <label class="form-label">Department</label>
+                <select class="form-input" v-model="emrForm.department">
+                  <option value="">Select Department</option>
+                  <option v-for="dept in departments" :key="dept" :value="dept">[[ dept ]]</option>
+                </select>
+              </div>
               <div class="form-group">
                 <label class="form-label"
                   >Reporting Person <span class="form-required">*</span></label
@@ -10032,11 +10041,13 @@
         target_warehouse: "",
         target_location: "",
         request_type: "New",
+        department: "",
         reporting_person: "",
         reporting_person_display: "",
         remark: "",
       },
       employees: [],
+      departments: [],
       warehouses: [],
       suppliers: [],
       itemsList: [],
@@ -11239,6 +11250,7 @@
             this.assetsList = data.assets_list || [];
             this.itemGroups = data.item_groups || [];
             this.itemDepartments = data.item_departments || [];
+            this.departments = this.itemDepartments;
             this.stockUOMs =
               data.uoms && data.uoms.length
                 ? data.uoms
@@ -12360,6 +12372,7 @@
           target_warehouse: "Target Warehouse",
           target_location: "Target Location",
           request_type: "Request Type",
+          department: "Department",
           remark: "Remark",
           reporting_person: "Reporting Person",
         };
@@ -12417,6 +12430,7 @@
             request_date: frappe.datetime.get_today(),
             required_by_date: frappe.datetime.get_today(),
             remark: this.emrForm.remark,
+            department: this.emrForm.department,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
             items: this.emrItems.map((item) => ({

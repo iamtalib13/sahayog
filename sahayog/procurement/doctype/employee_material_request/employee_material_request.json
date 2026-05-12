@@ -247,13 +247,14 @@
    "fieldname": "department",
    "fieldtype": "Select",
    "label": "Department",
-   "options": "\nPurchase\nStationery\nAsset"
+   "options": "\nPurchase\nStationery\nAsset",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-12 11:45:10.707927",
+ "modified": "2026-05-12 11:53:40.949430",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
