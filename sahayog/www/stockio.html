@@ -1003,7 +1003,7 @@
                 <span class="inline-step-role">Reporting</span>
                 <span class="inline-step-name"
                   >[[ detailRecord.reporting_person_display ||
-                  detailRecord.reporting_person || 'Not Assigned' ]]</span
+                  getEmployeeName(detailRecord.reporting_person) || 'Not Assigned' ]]</span
                 >
               </div>
               <span
@@ -1025,7 +1025,7 @@
                 <span class="inline-step-role">HO Officer</span>
                 <span class="inline-step-name"
                   >[[ detailRecord.head_office_officer_display ||
-                  detailRecord.head_office_officer || 'Not Assigned' ]]</span
+                  getEmployeeName(detailRecord.head_office_officer) || 'Not Assigned' ]]</span
                 >
               </div>
               <span
