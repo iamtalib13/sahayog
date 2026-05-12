@@ -1289,7 +1289,9 @@
                 <label class="form-label">Department</label>
                 <select class="form-input" v-model="emrForm.department">
                   <option value="">Select Department</option>
-                  <option v-for="dept in departments" :key="dept" :value="dept">[[ dept ]]</option>
+                  <option value="Purchase">Purchase</option>
+                  <option value="Stationery">Stationery</option>
+                  <option value="Asset">Asset</option>
                 </select>
               </div>
               <div class="form-group">
