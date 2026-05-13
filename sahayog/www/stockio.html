@@ -20,8 +20,8 @@
   }
 
   :root {
-    --primary-color: #45e7e7;
-    --primary-hover: #008080;
+    --primary-color: #0dcece;
+    --primary-hover: #0bb5b5;
     --accent-color: #ec4899;
     --bg-main: #f1f5f9;
     --bg-surface: #ffffff;
@@ -228,6 +228,14 @@
     height: 24px;
     background: #ffffff;
     border-radius: 0 4px 4px 0;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .blinking-arrow {
+    animation: blink 1.5s infinite;
   }
 
   /* Main Area Headers */
@@ -574,8 +582,8 @@
     background: var(--bg-surface);
     position: absolute;
     width: 100%;
-    z-index: 50;
-    max-height: 250px;
+    z-index: 1000 !important;
+    max-height: 450px;
     overflow-y: auto;
     margin-top: 8px;
   }
@@ -796,6 +804,13 @@
     color: #f87171;
     border-color: rgba(248, 113, 113, 0.2);
   }
+
+  .inventory-flow-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -948,8 +963,250 @@
         <h1
           class="page-title"
           v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+          style="display: flex; align-items: center; flex: 1;"
         >
-          Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]
+          <span style="white-space: nowrap;">Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]</span>
+          
+<!-- Inventory Flow Display -->
+<div
+  v-if="showEMRCreateView && (emrForm.target_warehouse || emrForm.source_warehouse)"
+  class="inventory-flow-container"
+>
+
+  <!-- Receiver -->
+  <div
+    v-if="emrForm.target_warehouse"
+    class="inventory-node receiver-node"
+  >
+    <i class="fas fa-map-marker-alt"></i>
+
+    <span class="inventory-label">Receiver</span>
+
+    <span class="inventory-name">
+      [[ emrForm.target_warehouse ]]
+    </span>
+  </div>
+
+  <!-- Animated Flow Arrow -->
+  <div
+    v-if="emrForm.target_warehouse && emrForm.source_warehouse"
+    class="flow-wrapper"
+  >
+    <div class="flow-line"></div>
+
+    <div class="flow-dot"></div>
+
+    <i class="fas fa-arrow-right flow-arrow-icon"></i>
+  </div>
+
+  <!-- Provider -->
+  <div
+    v-if="emrForm.source_warehouse"
+    class="inventory-node provider-node"
+  >
+    <i class="fas fa-warehouse"></i>
+
+    <span class="inventory-label">Provider</span>
+
+    <span class="inventory-name">
+      [[ emrForm.source_warehouse ]]
+    </span>
+  </div>
+
+</div>
+
+<style>
+/* =========================
+   CONTAINER
+========================= */
+.inventory-flow-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  border-radius: 14px;
+
+  background: transparent !important;
+  border: none !important;
+}
+
+/* =========================
+   NODE CARD
+========================= */
+.inventory-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  height: 42px;
+  padding: 0 14px;
+
+  border-radius: 12px;
+
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, rgba(148,163,184,0.15));
+
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+
+  white-space: nowrap;
+
+  transition: all 0.2s ease;
+}
+
+.inventory-node:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.10);
+}
+
+/* =========================
+   ICON COLORS
+========================= */
+.provider-node i {
+  color: #3b82f6;
+  font-size: 13px;
+}
+
+.receiver-node i {
+  color: #10b981;
+  font-size: 13px;
+}
+
+/* =========================
+   TEXT
+========================= */
+.inventory-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted, #64748b);
+  letter-spacing: 0.04em;
+}
+
+.inventory-name {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  font-size: 0.88rem;
+  font-weight: 600;
+
+  color: var(--text-main, #0f172a);
+}
+
+/* =========================
+   FLOW ANIMATION
+========================= */
+.flow-wrapper {
+  position: relative;
+  width: 90px;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flow-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+
+  background: linear-gradient(
+    to right,
+    rgba(16, 185, 129, 0.2),
+    rgba(59, 130, 246, 0.7)
+  );
+
+  border-radius: 999px;
+}
+
+.flow-arrow-icon {
+  position: absolute;
+  right: -2px;
+
+  color: #3b82f6;
+  font-size: 14px;
+}
+
+.flow-dot {
+  position: absolute;
+  left: 0;
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(135deg, #10b981, #3b82f6);
+
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
+
+  animation: moveFlow 1.8s linear infinite;
+}
+
+@keyframes moveFlow {
+  0% {
+    left: 0;
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1);
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    left: calc(100% - 8px);
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+/* =========================
+   DARK MODE SUPPORT
+========================= */
+.dark .inventory-flow-container,
+[data-theme="dark"] .inventory-flow-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.dark .inventory-node,
+[data-theme="dark"] .inventory-node {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(148, 163, 184, 0.12);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.dark .inventory-name,
+[data-theme="dark"] .inventory-name {
+  color: #f1f5f9;
+}
+
+.dark .inventory-label,
+[data-theme="dark"] .inventory-label {
+  color: #94a3b8;
+}
+
+.dark .flow-line,
+[data-theme="dark"] .flow-line {
+  background: linear-gradient(
+    to right,
+    rgba(16, 185, 129, 0.25),
+    rgba(59, 130, 246, 0.9)
+  );
+}
+</style>
         </h1>
         <h1 class="page-title" v-else>
           [[ activeItem ]]
@@ -975,7 +1232,7 @@
             class="inline-flow-stepper"
             v-if="activeItem === 'Requests' && detailRecord && detailRecord.name"
           >
-            <!-- Step 1: Submitted -->
+            <!-- Step 1: Action/Submitted -->
             <div class="inline-flow-step">
               <div class="inline-step-num">
                 <i class="fas fa-paper-plane" style="font-size: 10px"></i>
@@ -984,7 +1241,12 @@
                 <span class="inline-step-role">Action</span>
                 <span class="inline-step-name">Submitted</span>
               </div>
-              <span class="inline-step-status status-active"> Done </span>
+              <span
+                class="inline-step-status badge"
+                :class="detailRecord.status === 'Draft' ? 'status-waiting' : 'status-done'"
+              >
+                [[ detailRecord.status === 'Draft' ? 'Draft' : 'Done' ]]
+              </span>
             </div>
 
             <div class="inline-flow-connector">
@@ -998,14 +1260,14 @@
                 <span class="inline-step-role">Reporting</span>
                 <span class="inline-step-name"
                   >[[ detailRecord.reporting_person_display ||
-                  detailRecord.reporting_person || 'Not Assigned' ]]</span
+                  getEmployeeName(detailRecord.reporting_person) || 'Not Assigned' ]]</span
                 >
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-active' : 'status-waiting'))"
+                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting'))"
               >
-                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : 'Draft')) ]]
+                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : (detailRecord.status === 'Draft' ? 'Waiting' : 'Draft'))) ]]
               </span>
             </div>
 
@@ -1020,17 +1282,16 @@
                 <span class="inline-step-role">HO Officer</span>
                 <span class="inline-step-name"
                   >[[ detailRecord.head_office_officer_display ||
-                  detailRecord.head_office_officer || 'Not Assigned' ]]</span
+                  getEmployeeName(detailRecord.head_office_officer) || 'Not Assigned' ]]</span
                 >
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-active' : 'status-waiting'))"
+                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting'))"
               >
                 [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting')) ]]
               </span>
-          </div>
-        </h1>
+            </div>        </h1>
       </div>
       <div class="header-right">
         <button
@@ -1179,217 +1440,175 @@
 
     <section class="page-content">
       <!-- EMR Inline Creation View -->
-      <div v-if="showEMRCreateView" class="detail-view-container">
-        <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 0">
-            <div class="form-row">
-              <!-- Employee Field -->
-              <div class="form-group" style="margin-left: 5px">
-                <label class="form-label"
-                  >Employee <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'employee' }"
-                    v-model="emrForm.employee_display"
-                    @focus="onFocusSearchable('employee')"
-                    @blur="onBlurSearchable('employee')"
-                    placeholder="Search Employee"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'employee'"
-                  >
-                    <div
-                      v-for="emp in filteredEmployees"
-                      :key="emp.name"
-                      class="searchable-select-option"
-                      :class="{ selected: emrForm.employee === emp.name }"
-                      @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
-                    >
-                      [[ emp.name ]] - [[ emp.employee_name ]]
+      <div v-if="showEMRCreateView" class="detail-view-container" style="overflow-x: hidden;">
+        <div class="detail-card" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div class="profile-modal-body" style="padding: 16px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+            <!-- Main Form Layout: Compact Columns -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 16px; margin-top: 0 !important; width: 100%;">
+              
+              <!-- Section: Requestor Info (Column 1) -->
+              <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <h4 style="margin-bottom: 12px;    margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                  <i class="fas fa-user-circle"></i> Requestor Information
+                </h4>
+                
+                <!-- Employee Field -->
+                <div class="form-group" style="margin-bottom: 12px !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Employee <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'employee' }"
+                      v-model="emrForm.employee_display"
+                      @focus="onFocusSearchable('employee')"
+                      @blur="onBlurSearchable('employee')"
+                      placeholder="Search Employee"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
+                      <div
+                        v-for="emp in filteredEmployees"
+                        :key="emp.name"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
+                      >
+                        [[ emp.name ]] - [[ emp.employee_name ]]
+                      </div>
                     </div>
-                    <div
-                      v-if="filteredEmployees.length === 0"
-                      class="searchable-select-no-results"
-                    >
-                      No employees found
+                  </div>
+                </div>
+
+                <!-- Row for Warehouse and Location -->
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Requestor Warehouse <span class="form-required">*</span></label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="emrForm.target_warehouse"
+                      placeholder="Auto-filled"
+                    />
+                  </div>
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Requestor Location <span class="form-required">*</span></label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="emrForm.target_location"
+                      placeholder="Auto-filled"
+                    />
+                  </div>
+                </div>
+
+                <!-- Reporting Person Field -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Reporting Person <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'emr_reporting_person' }"
+                      v-model="emrForm.reporting_person_display"
+                      @focus="onFocusSearchable('emr_reporting_person')"
+                      @blur="onBlurSearchable('emr_reporting_person')"
+                      placeholder="Search Manager"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'emr_reporting_person'">
+                      <div
+                        v-for="emp in employees.filter(e => !emrForm.reporting_person_display || e.employee_name.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()) || e.user_id.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()))"
+                        :key="emp.user_id"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;"
+                      >
+                        [[ emp.employee_name ]]
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Source Warehouse Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Source Warehouse <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'source_warehouse' }"
-                    v-model="emrForm.source_warehouse_display"
-                    @focus="onFocusSearchable('source_warehouse')"
-                    @blur="onBlurSearchable('source_warehouse')"
-                    placeholder="Source Warehouse"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'source_warehouse'"
-                  >
-                    <div
-                      v-for="wh in filteredWarehouses"
-                      :key="wh"
-                      class="searchable-select-option"
-                      :class="{ selected: emrForm.source_warehouse === wh }"
-                      @mousedown="selectEMROption('source_warehouse', wh)"
-                    >
-                      [[ wh ]]
-                    </div>
-                    <div
-                      v-if="filteredWarehouses.length === 0"
-                      class="searchable-select-no-results"
-                    >
-                      No warehouses found
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Target Warehouse Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Target Warehouse <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="emrForm.target_warehouse"
-                  placeholder="Target Warehouse"
-                />
-              </div>
-
-              <!-- Request Type Field -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Request Type <span class="form-required">*</span></label
-                >
-                <select class="form-input" v-model="emrForm.request_type">
-                  <option value="New">New</option>
-                  <option value="Return">Return</option>
-                  <option value="Issue">Issue</option>
-                </select>
-              </div>
-
-              <!-- Department Field -->
-              <div class="form-group">
-                <label class="form-label">Department</label>
-                <select class="form-input" v-model="emrForm.department">
-                  <option value="Purchase">Purchase</option>
-                  <option value="Stationery">Stationery</option>
-                  <option value="Asset">Asset</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label"
-                  >Reporting Person <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'emr_reporting_person' }"
-                    v-model="emrForm.reporting_person_display"
-                    @focus="onFocusSearchable('emr_reporting_person')"
-                    @blur="onBlurSearchable('emr_reporting_person')"
-                    placeholder="Search Reporting Person"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'emr_reporting_person'"
-                  >
-                    <div
-                      v-for="emp in employees.filter(e => !emrForm.reporting_person_display || e.employee_name.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()) || e.user_id.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()))"
-                      :key="emp.user_id"
-                      class="searchable-select-option"
-                      @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;"
-                    >
-                      [[ emp.employee_name ]] ([[ emp.user_id ]])
-                    </div>
-                    <div
-                      v-if="employees.length === 0"
-                      class="searchable-select-no-results"
-                    >
-                      No employees found
+              <!-- Column 2: Fulfillment & Request Details -->
+              <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 0 !important;">
+                
+                <!-- Card 1: Fulfillment Details -->
+                <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                  <h4 style="margin-bottom: 12px;    margin-top: 0px;
+ color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <i class="fas fa-truck-loading"></i> Fulfillment Details
+                  </h4>
+                  
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Provider Warehouse <span class="form-required">*</span></label>
+                    <div class="searchable-select-wrapper">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                        :class="{ focused: focusedField === 'source_warehouse' }"
+                        v-model="emrForm.source_warehouse_display"
+                        @focus="onFocusSearchable('source_warehouse')"
+                        @blur="onBlurSearchable('source_warehouse')"
+                        placeholder="Select Warehouse"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'source_warehouse'">
+                        <div
+                          v-for="wh in filteredWarehouses"
+                          :key="wh"
+                          class="searchable-select-option"
+                          style="padding: 8px 12px; font-size: 0.9rem;"
+                          @mousedown="selectEMROption('source_warehouse', wh)"
+                        >
+                          [[ wh ]]
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="form-row" v-if="showEMRMoreDetails" style="display: flex; gap: 24px;">
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label"
-                    >Target Location <span class="form-required">*</span></label
-                  >
-                  <input
-                    type="text"
-                    class="form-input"
-                    v-model="emrForm.target_location"
-                    placeholder="Target Location"
-                  />
+
+                <!-- Card 2: Request Details -->
+                <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color);">
+                  <h4 style="margin-bottom: 12px;    margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <i class="fas fa-list-alt"></i> Request Details
+                  </h4>
+
+                  <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request Type <span class="form-required">*</span></label>
+                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_type">
+                        <option value="New">New</option>
+                        <option value="Return">Return</option>
+                        <option value="Issue">Issue</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Department</label>
+                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department">
+                        <option value="Purchase">Purchase</option>
+                        <option value="Stationery">Stationery</option>
+                        <option value="Asset">Asset</option>
+                        <option value="it">IT</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Remark <span class="form-required">*</span></label>
+                    <textarea
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="emrForm.remark"
+                      placeholder="Enter reason"
+                      rows="1"
+                    ></textarea>
+                  </div>
                 </div>
-                <div class="form-group" style="flex: 1;">
-                  <label class="form-label"
-                    >Reporting Person
-                    <span class="form-required">*</span></label
-                  >
-                  <input
-                    type="text"
-                    class="form-input"
-                    v-model="emrForm.reporting_person"
-                    placeholder="Reporting Person"
-                  />
-                </div>
               </div>
-
-              <!-- More Details Toggle -->
-
-              <button
-                type="button"
-                class="btn-view-toggle"
-                style="
-                  background: transparent;
-                  padding: 0;
-                  color: var(--primary);
-                  font-size: 13px;
-                  height: auto;
-                  border: none;
-                  box-shadow: none;
-                "
-                @click="showEMRMoreDetails = !showEMRMoreDetails"
-              >
-                <i
-                  class="fas"
-                  :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"
-                ></i>
-                <span style="margin-left: 4px"
-                  >[[ showEMRMoreDetails ? 'Hide details' : 'Show more details'
-                  ]]</span
-                >
-              </button>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label"
-                >Remark <span class="form-required">*</span></label
-              >
-              <textarea
-                class="form-input"
-                v-model="emrForm.remark"
-                placeholder="Enter remark"
-              ></textarea>
             </div>
 
             <!-- Items Table (Min 1 Row) -->
@@ -1412,12 +1631,12 @@
               <div
                 class="items-table-wrapper table-responsive"
                 style="
-                  max-height: 250px;
-                  overflow-y: auto;
-                  overflow-x: visible;
                   border: 1px solid var(--border-color);
                   border-radius: 8px;
-                  margin-bottom: 16px;
+                  margin-bottom: 24px;
+                  width: 100%;
+                  position: relative;
+                  overflow: visible !important;
                 "
               >
                 <table
@@ -1425,7 +1644,6 @@
                   style="
                     width: 100%;
                     border-collapse: collapse;
-                    min-width: 500px;
                   "
                 >
                   <thead
@@ -1439,9 +1657,6 @@
                     <tr>
                       <th style="padding: 12px 16px">
                         Item Code <span class="form-required">*</span>
-                      </th>
-                      <th style="padding: 12px 16px">
-                        UOM <span class="form-required">*</span>
                       </th>
                       <th style="padding: 12px 16px">
                         Qty <span class="form-required">*</span>
@@ -1482,7 +1697,7 @@
                           <div
                             class="searchable-select-dropdown"
                             v-if="focusedField === 'item_code_' + index"
-                            style="width: 100%; max-width: 300px; z-index: 50"
+                            style="width: 100%; max-width: 300px; z-index: 1000"
                           >
                             <div
                               v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
@@ -1514,15 +1729,6 @@
 
                       <td style="padding: 12px; width: 120px">
                         <input
-                          type="text"
-                          class="form-input"
-                          style="width: 100%"
-                          v-model="item.uom"
-                          placeholder="UOM"
-                        />
-                      </td>
-                      <td style="padding: 12px; width: 120px">
-                        <input
                           type="number"
                           class="form-input"
                           style="width: 100%"
@@ -1549,7 +1755,7 @@
 
             <div
               class="form-actions"
-              style="margin-top: 24px; display: flex; gap: 12px"
+              style="margin-top: 32px; display: flex; gap: 12px; padding-bottom: 24px;"
             >
               <button
                 class="btn-create"
@@ -3677,20 +3883,19 @@
                       <i class="fas fa-id-badge"></i>
                     </div>
                     <div class="info-content">
-                      <span class="info-label">Emp. ID</span>
-                      <span class="info-value"
-                        >[[ detailRecord.employee || '-' ]]</span
-                      >
-                    </div>
-                  </div>
+                      <span class="info-label">Employee</span>
+                      <span class="info-value">
+                        [[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]
+                      </span>
+                    </div>                  </div>
                   <div class="info-item">
                     <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-map-marker-alt"></i>
+                      <i class="fas fa-map-pin"></i>
                     </div>
                     <div class="info-content">
-                      <span class="info-label">Source</span>
+                      <span class="info-label">Receiver</span>
                       <span class="info-value"
-                        >[[ detailRecord.source_warehouse || '-' ]]</span
+                        >[[ detailRecord.target_warehouse || '-' ]]</span
                       >
                     </div>
                   </div>
@@ -3707,12 +3912,12 @@
                   </div>
                   <div class="info-item">
                     <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-bullseye"></i>
+                      <i class="fas fa-warehouse"></i>
                     </div>
                     <div class="info-content">
-                      <span class="info-label">Target</span>
+                      <span class="info-label">Provider</span>
                       <span class="info-value"
-                        >[[ detailRecord.target_warehouse || '-' ]]</span
+                        >[[ detailRecord.source_warehouse || '-' ]]</span
                       >
                     </div>
                   </div>
@@ -3724,23 +3929,6 @@
                       <span class="info-label">Required By</span>
                       <span class="info-value"
                         >[[ detailRecord.required_by_date || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item" style="flex: 1; min-width: 0">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-sticky-note"></i>
-                    </div>
-                    <div class="info-content" style="min-width: 0">
-                      <span class="info-label">Remarks</span>
-                      <span
-                        class="info-value"
-                        style="
-                          white-space: nowrap;
-                          overflow: hidden;
-                          text-overflow: ellipsis;
-                        "
-                        >[[ detailRecord.remark || '-' ]]</span
                       >
                     </div>
                   </div>
@@ -8081,6 +8269,15 @@
     background: #d1fae5;
     color: #065f46;
   }
+  .status-done {
+    background: #f0fdf4;
+    color: #166534;
+    opacity: 0.9;
+    font-size: 9px !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+    border: 1px solid #dcfce7;
+  }
   .status-pending {
     background: #fef3c7;
     color: #92400e;
@@ -9362,8 +9559,8 @@
     gap: 12px;
     justify-content: flex-end;
     margin-top: 24px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
+    /* padding-top: 20px;
+    border-top: 1px solid var(--border-color); */
   }
 
   .btn-cancel {
@@ -12268,8 +12465,28 @@
           });
           if (res.message) {
             const emp = res.message;
-            this.emrForm.target_location = emp.sol_id || "";
-            this.emrForm.target_warehouse = emp.sol_id || "";
+            if (emp.sol_id) {
+              const branchRes = await frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                  doctype: "Sahayog Branch",
+                  filters: { name: emp.sol_id },
+                  fieldname: "branch",
+                },
+              });
+              const branchName =
+                branchRes.message && branchRes.message.branch
+                  ? branchRes.message.branch
+                  : "";
+              const displayValue = branchName
+                ? `${branchName} (${emp.sol_id})`
+                : emp.sol_id;
+              this.emrForm.target_location = displayValue;
+              this.emrForm.target_warehouse = displayValue;
+            } else {
+              this.emrForm.target_location = "";
+              this.emrForm.target_warehouse = "";
+            }
 
             if (emp.reports_to) {
               const resp = await frappe.call({
@@ -12438,12 +12655,15 @@
             requested_by: frappe.session.user,
             employee: this.emrForm.employee,
             source_warehouse: this.emrForm.source_warehouse,
-            target_warehouse: this.emrForm.target_warehouse,
+            target_warehouse:
+              this.emrForm.target_warehouse &&
+              this.emrForm.target_warehouse.includes("(")
+                ? this.emrForm.target_warehouse.split("(").pop().split(")")[0]
+                : this.emrForm.target_warehouse,
             target_location: this.emrForm.target_location,
             request_type: this.emrForm.request_type,
             request_date: frappe.datetime.get_today(),
             required_by_date: frappe.datetime.get_today(),
-            remark: this.emrForm.remark,
             department: this.emrForm.department,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
@@ -12467,7 +12687,21 @@
           });
 
           if (res.message && res.message.name) {
-            frappe.msgprint(`EMR ${res.message.name} created!`);
+            const docName = res.message.name;
+            // Post remark as comment
+            if (this.emrForm.remark && this.emrForm.remark.trim()) {
+              await frappe.call({
+                method: "frappe.desk.form.utils.add_comment",
+                args: {
+                  reference_doctype: "Employee Material Request",
+                  reference_name: docName,
+                  content: "Remark: " + this.emrForm.remark,
+                  comment_email: frappe.session.user,
+                  comment_by: this.sidebar.header.subtitle,
+                },
+              });
+            }
+            frappe.msgprint(`EMR ${docName} created!`);
             this.showEMRCreateView = false;
             await this.fetchData("Employee Material Request"); // Refresh list
           }
