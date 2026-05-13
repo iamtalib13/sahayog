@@ -57,7 +57,7 @@
   {
    "description": "Upload a clear image or PDF of the bill.",
    "fieldname": "bill_attachment",
-   "fieldtype": "Attach Image",
+   "fieldtype": "Attach",
    "label": "Bill Attachment",
    "reqd": 1
   },
@@ -92,7 +92,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-02-11 11:33:22.491352",
+ "modified": "2026-05-13 11:32:11.692665",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction Item",
