@@ -287,13 +287,9 @@ def submit_for_approval(docname):
 
         approvers_to_notify = get_all_valid_approvers(doc)
 
-        # --- SEND NOTIFICATION AND EMAIL TO ALL VALID APPROVERS ---
-        notified_emails = [] # To avoid duplicate emails
-
+        # 1. Send Notification Log to EVERYONE (Approvers, Managers, Group Members)
         for user_id in approvers_to_notify:
             ensure_docshare(doc, user_id)
-            
-            # 1. Standard Notification Log
             frappe.new_doc("Notification Log").update({
                 "subject": f"Pending Approval: {doc.title}",
                 "for_user": user_id,
@@ -301,40 +297,26 @@ def submit_for_approval(docname):
                 "document_name": doc.name
             }).insert(ignore_permissions=True)
 
-            # 2. Fetch Employee company_email
-            emp = frappe.db.get_value("Employee", {"user_id": user_id}, ["employee_name", "company_email"], as_dict=True)
-            
-            recipient_email = emp.company_email if emp else None
-            
-            # If no company_email found, we can't send a manual mail
-            if not recipient_email or recipient_email in notified_emails:
-                continue
+        # 2. Send Emails (Strictly company_email for Users, Group Email for Groups)
+        notified_emails = []
 
-            # 3. Send Email using Template
+        def send_approval_mail(recipient_email, recipient_name):
+            if not recipient_email or recipient_email in notified_emails:
+                return
             try:
                 et = frappe.get_doc("Email Template", "new_group_approval_request")
                 content = et.response_html if (et.get("use_html") and et.get("response_html")) else et.response
-                
                 args = {
                     "doc": doc,
                     "requester": doc.employee_name or doc.owner,
-                    "recipient_name": emp.employee_name or user_id,
+                    "recipient_name": recipient_name,
                     "url": f"http://mysahayog.com/app/approval-request/{doc.name}"
                 }
-                
                 message = frappe.render_template(content, args)
                 subject = frappe.render_template(et.subject, args)
-
-                frappe.sendmail(
-                    recipients=[recipient_email],
-                    subject=subject or f"Approval Request: {doc.title}",
-                    message=message,
-                    delayed=False
-                )
+                frappe.sendmail(recipients=[recipient_email], subject=subject or f"Approval Request: {doc.title}", message=message, delayed=False)
                 notified_emails.append(recipient_email)
-
-            except frappe.DoesNotExistError:
-                # Fallback if template is missing
+            except Exception:
                 frappe.sendmail(
                     recipients=[recipient_email],
                     subject=f"Approval Request: {doc.title}",
@@ -342,6 +324,39 @@ def submit_for_approval(docname):
                     delayed=False
                 )
                 notified_emails.append(recipient_email)
+
+        for d in doc.approvers:
+            if d.is_bypassed: continue
+
+            # --- Row Recipient ---
+            if d.selection_type == "Group" and d.group_email:
+                # Group Email functionality (Old Flow)
+                g_email = frappe.db.get_value("Employee Group", d.group_email, "group_email")
+                if g_email:
+                    send_approval_mail(g_email, d.approver_name or "Team")
+            
+            elif d.selection_type == "User" and d.approver:
+                # User's company_email
+                emp = frappe.db.get_value("Employee", {"user_id": d.approver}, ["employee_name", "company_email", "reports_to"], as_dict=True)
+                if emp and emp.company_email:
+                    send_approval_mail(emp.company_email, emp.employee_name)
+                
+                # Approver's Manager
+                if emp and emp.reports_to:
+                    mgr = frappe.db.get_value("Employee", emp.reports_to, ["employee_name", "company_email"], as_dict=True)
+                    if mgr and mgr.company_email:
+                        send_approval_mail(mgr.company_email, mgr.employee_name)
+
+            # --- Delegate and Delegate's Manager ---
+            if d.delegated_to:
+                del_emp = frappe.db.get_value("Employee", {"user_id": d.delegated_to}, ["employee_name", "company_email", "reports_to"], as_dict=True)
+                if del_emp and del_emp.company_email:
+                    send_approval_mail(del_emp.company_email, del_emp.employee_name)
+                    
+                    if del_emp.reports_to:
+                        dmgr = frappe.db.get_value("Employee", del_emp.reports_to, ["employee_name", "company_email"], as_dict=True)
+                        if dmgr and dmgr.company_email:
+                            send_approval_mail(dmgr.company_email, dmgr.employee_name)
 
         doc.add_comment(
             "Comment", f"Request submitted for approval by {frappe.session.user}")
