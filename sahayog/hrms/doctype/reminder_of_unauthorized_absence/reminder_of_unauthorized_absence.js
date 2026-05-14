@@ -153,6 +153,67 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
         },
       });
     }
+
+    // -------------------------------------------------------------------------
+    // DASHBOARD LINK RESTRICTIONS
+    // -------------------------------------------------------------------------
+    setTimeout(() => {
+      const $expBtn = $('button[data-doctype="Ex Parte Enquiry"]');
+      const $ccBtn = $('button[data-doctype="Case Closure"]');
+
+      // Remove previous handlers (avoid duplicates)
+      $expBtn.off("mousedown.exp_check");
+      $ccBtn.off("mousedown.cc_check");
+
+      // 🧩 Common Save Check
+      const ensureSaved = (e) => {
+        if (frm.is_dirty()) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Please Save First"),
+            message: __("Save the form before creating a linked record."),
+            indicator: "orange",
+          });
+          return false;
+        }
+        return true;
+      };
+
+      // Restriction for Ex Parte Enquiry
+      $expBtn.on("mousedown.exp_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_reminder !== "No") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Ex Parte Enquiry can only be created if 'Response of Reminder' is <b>No</b>.",
+            ),
+            indicator: "red",
+          });
+        }
+      });
+
+      // Restriction for Case Closure
+      $ccBtn.on("mousedown.cc_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_reminder !== "Yes") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Case Closure can only be created if 'Response of Reminder' is <b>Yes</b>.",
+            ),
+            indicator: "red",
+          });
+        }
+      });
+    }, 1000);
   },
 
   show_print_button: function (frm) {
@@ -286,7 +347,7 @@ function render_timeline(frm, data) {
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
-  const insertion_point = $(".form-dashboard");
+  const insertion_point = $(frm.wrapper).find(".form-dashboard");
 
   let html = `
     <div class="case-timeline-box" style="
