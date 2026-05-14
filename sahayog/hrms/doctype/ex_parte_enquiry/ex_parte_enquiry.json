@@ -1,0 +1,238 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-16 11:32:09.574639",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_k30w",
+  "ex_parte_enquiry",
+  "date_of_enquiry",
+  "date_of_1st_letter",
+  "column_break_enai",
+  "enquiry_officer_name",
+  "amount_of_fraud",
+  "date_of_reminder_letter",
+  "section_break_wjsw",
+  "remarks",
+  "document_upload",
+  "previous_record",
+  "case_details_section",
+  "case_id",
+  "employee_id",
+  "employee_name",
+  "designation",
+  "branch_id",
+  "branch_name",
+  "zone_name",
+  "column_break_avgk",
+  "issue_occurrence_date",
+  "issue_reported_to_hr",
+  "issue_in_details",
+  "status",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_k30w",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Ex Parte Enquiry",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "ex_parte_enquiry",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Ex Parte Enquiry",
+   "options": "\nYes\nNo",
+   "reqd": 1
+  },
+  {
+   "fieldname": "enquiry_officer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Enquiry Officer Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_enai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "case_details_section",
+   "fieldtype": "Section Break",
+   "label": "Case Details"
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Link",
+   "label": "Case ID",
+   "options": "Unauthorized Absence"
+  },
+  {
+   "fetch_from": "case_id.employee_id",
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_id",
+   "fieldname": "branch_id",
+   "fieldtype": "Data",
+   "label": "Branch ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.branch_name",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.zone_name",
+   "fieldname": "zone_name",
+   "fieldtype": "Data",
+   "label": "Zone Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_occurrence_date",
+   "fieldname": "issue_occurrence_date",
+   "fieldtype": "Date",
+   "label": "Issue Occurrence Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_avgk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "case_id.issue_reported_to_hr",
+   "fieldname": "issue_reported_to_hr",
+   "fieldtype": "Date",
+   "label": "Date of issue Reported to hr",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.issue_in_details",
+   "fieldname": "issue_in_details",
+   "fieldtype": "Small Text",
+   "label": "Issue in Details",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.status",
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Case Status",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.date_of_1st_letter",
+   "fieldname": "date_of_1st_letter",
+   "fieldtype": "Date",
+   "label": "Date of Unauthorized Absence letter",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date_of_reminder_letter",
+   "fieldtype": "Date",
+   "label": "Date of Reminder Unauthorized Absence letter",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "case_id.amount_of_fraud",
+   "fieldname": "amount_of_fraud",
+   "fieldtype": "Data",
+   "label": "Fraud amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_wjsw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "document_upload",
+   "fieldtype": "Attach",
+   "label": "Document Upload"
+  },
+  {
+   "fieldname": "date_of_enquiry",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Ex Parte Enquiry",
+   "reqd": 1
+  },
+  {
+   "fieldname": "previous_record",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Previous Record",
+   "options": "Reminder Of Unauthorized Absence"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Case Closed",
+   "link_doctype": "Case Closure",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2026-05-14 10:49:44.281102",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Ex Parte Enquiry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
