@@ -7088,9 +7088,7 @@
     <div class="profile-modal">
       <div class="profile-modal-header">
         <h3>
-          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset
-          Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep
-          ]]
+          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]
         </h3>
         <div class="profile-modal-header-right">
           <button
@@ -7447,7 +7445,16 @@
                       text-align: right;
                     "
                   >
-                    [[ formatCurrency(item.rate) ]]
+                    <div v-if="item.available_rates && item.available_rates.length > 1">
+                        <select v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
+                            <option value="">Select</option>
+                            <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
+                        </select>
+                    </div>
+                    <div v-else>
+                        [[ formatCurrency(item.rate) ]]
+                    </div>
+                    <div v-if="!item.available_rates" style="font-size: 10px; color: red;">(No rates fetched)</div>
                   </td>
                   <td
                     style="
@@ -12146,13 +12153,9 @@
             doctype: "Employee Material Request",
             name: row.name,
           },
-          callback: (res) => {
+          callback: async (res) => {
             if (res.message) {
-              // Override target warehouse from the full document
-              this.dispatchForm.target_warehouse =
-                res.message.target_warehouse || row.target_warehouse;
-
-              // Pre-fill with selected items only
+              // Pre-calculate selectedNames here so it is available in the callback
               let selectedNames = [];
               if (
                 this.detailRecord &&
@@ -12164,26 +12167,37 @@
                   .map((item) => item.name);
               }
 
-              this.dispatchForm.items = res.message.items
-                .filter((i) => {
-                  if (selectedNames.length > 0) {
-                    return (
-                      (i.item_category === "Stock Item" ||
-                        i.item_category === "Asset") &&
-                      selectedNames.includes(i.name)
-                    );
-                  }
-                  return (
-                    (i.item_category === "Stock Item" ||
-                      i.item_category === "Asset") &&
-                    i.status === "Approved"
-                  );
-                })
-                .map((item) => ({
-                  ...item,
-                  dispatch_qty: item.approved_quantity || 0,
-                  selected: true,
-                }));
+              // Override target warehouse from the full document
+              this.dispatchForm.target_warehouse =
+                res.message.target_warehouse || row.target_warehouse;
+
+              // Pre-fill with selected items only
+              let selectedItems = res.message.items.filter((i) =>
+                selectedNames.includes(i.name)
+              );
+              if (selectedNames.length === 0) {
+                selectedItems = res.message.items.filter(
+                  (i) => i.status === "Approved"
+                );
+              }
+
+              // Fetch rates/batches for these items
+              for (let item of selectedItems) {
+                  const stockRes = await frappe.call({
+                      method: "sahayog.procurement.api.stock_balance_ledger.get_available_stock_batches",
+                      args: { item_code: item.item_code, warehouse: res.message.source_warehouse }
+                  });
+                  item.available_batches = stockRes.message || [];
+              }
+
+              this.dispatchForm.items = selectedItems.map((item) => ({
+                ...item,
+                dispatch_qty: item.approved_quantity || 0,
+                // If multiple batches, default to first one or force user to select
+                rate: item.available_batches.length === 1 ? item.available_batches[0].rate : (item.available_batches.length > 0 ? "" : 0),
+                available_rates: item.available_batches.map(b => b.rate),
+                selected: true,
+              }));
             }
             this.dispatchForm.loading = false;
           },

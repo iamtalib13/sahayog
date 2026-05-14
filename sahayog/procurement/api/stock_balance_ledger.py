@@ -707,6 +707,25 @@ def delete_wh_dept_entry(name):
         frappe.throw(str(e))
 
 @frappe.whitelist()
+def get_available_stock_batches(item_code, warehouse):
+    """
+    Returns available stock entries for an item in a warehouse, grouped by valuation rate.
+    """
+    # Query the Stock Ledger Entry to find the valuation rate for current stock
+    stock_entries = frappe.db.sql(f"""
+        SELECT 
+            valuation_rate as rate, 
+            SUM(actual_qty) as qty
+        FROM `tabStock Ledger Entry`
+        WHERE item_code = %(item_code)s 
+          AND warehouse = %(warehouse)s
+        GROUP BY valuation_rate
+        HAVING SUM(actual_qty) > 0
+    """, {"item_code": item_code, "warehouse": warehouse}, as_dict=True)
+    
+    return stock_entries
+
+@frappe.whitelist()
 def get_warehouse_company(warehouse):
     """
     Returns the company linked to a specific warehouse.
