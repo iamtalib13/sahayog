@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"fdNlMpiw0a\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM-RM</span>\",\"col\":12}},{\"id\":\"OERKDXIrdS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Report\",\"col\":3}},{\"id\":\"TtUJC1F00N\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Region Lead Report\",\"col\":3}},{\"id\":\"5V01vmSuBY\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"DSR Master Report\",\"col\":3}},{\"id\":\"03V9f5rVWo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}}]",
+ "content": "[{\"id\": \"fdNlMpiw0a\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">CRM-RM</span>\", \"col\": 12}}, {\"id\": \"OERKDXIrdS\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"CRM Report\", \"col\": 3}}, {\"id\": \"5V01vmSuBY\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"DSR Master Report\", \"col\": 3}}, {\"id\": \"03V9f5rVWo\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"CRM Lead Conversion Report\", \"col\": 3}}]",
  "creation": "2025-06-25 13:19:36.504633",
  "custom_blocks": [],
  "docstatus": 0,
@@ -33,13 +33,6 @@
    "doc_view": "List",
    "label": "CRM Report",
    "link_to": "crm-lead-report",
-   "type": "Page"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Region Lead Report",
-   "link_to": "crm-lead-management",
    "type": "Page"
   },
   {
