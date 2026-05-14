@@ -71,6 +71,7 @@ def get_case_stages(case_id):
         all_stages = [
             "Unauthorized Absence",
             "Reminder Of Unauthorized Absence",
+            "Ex Parte Enquiry",
             "Case Closure",
         ]
     else:
@@ -152,6 +153,7 @@ def get_case_stage_counts(case_id):
         dams_doctypes = [
             "Unauthorized Absence",
             "Reminder Of Unauthorized Absence",
+            "Ex Parte Enquiry",
             "Case Closure",
         ]
     else:
