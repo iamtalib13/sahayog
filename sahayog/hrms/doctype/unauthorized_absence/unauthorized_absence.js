@@ -151,6 +151,69 @@ frappe.ui.form.on("Unauthorized Absence", {
         },
       );
     }
+
+    // -------------------------------------------------------------------------
+    // DASHBOARD LINK RESTRICTIONS
+    // -------------------------------------------------------------------------
+    setTimeout(() => {
+      const $ruaBtn = $(
+        'button[data-doctype="Reminder Of Unauthorized Absence"]',
+      );
+      const $ccBtn = $('button[data-doctype="Case Closure"]');
+
+      // Remove previous handlers (avoid duplicates)
+      $ruaBtn.off("mousedown.rua_check");
+      $ccBtn.off("mousedown.cc_check");
+
+      // 🧩 Common Save Check
+      const ensureSaved = (e) => {
+        if (frm.is_dirty()) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Please Save First"),
+            message: __("Save the form before creating a linked record."),
+            indicator: "orange",
+          });
+          return false;
+        }
+        return true;
+      };
+
+      // Restriction for Reminder Of Unauthorized Absence
+      $ruaBtn.on("mousedown.rua_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_ua !== "No") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Reminder of Unauthorized Absence can only be created if the response to Unauthorized Absence is <b>No</b>.",
+            ),
+            indicator: "red",
+          });
+        }
+      });
+
+      // Restriction for Case Closure
+      $ccBtn.on("mousedown.cc_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_ua !== "Yes") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Case Closure can only be created if the response to Unauthorized Absence is <b>Yes</b>.",
+            ),
+            indicator: "red",
+          });
+        }
+      });
+    }, 1000);
   },
   // Trigger when the field is changed
   date_of_1st_letter(frm) {
@@ -370,7 +433,7 @@ function render_timeline(frm, data) {
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
-  const insertion_point = $(".form-dashboard");
+  const insertion_point = $(frm.wrapper).find(".form-dashboard");
 
   let html = `
     <div class="case-timeline-box" style="
