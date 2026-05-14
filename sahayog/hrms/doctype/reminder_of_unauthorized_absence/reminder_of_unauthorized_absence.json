@@ -12,7 +12,6 @@
   "column_break_yufo",
   "date_of_reminder_letter",
   "amount_of_fraud",
-  "hr_employee_id",
   "case_details_section",
   "case_id",
   "employee_id",
@@ -25,6 +24,7 @@
   "issue_occurrence_date",
   "issue_reported_to_hr",
   "issue_in_details",
+  "hr_employee_id",
   "status",
   "amended_from",
   "response_tab",
@@ -157,6 +157,7 @@
    "read_only": 1
   },
   {
+   "fetch_from": "case_id.amount_of_fraud",
    "fieldname": "amount_of_fraud",
    "fieldtype": "Data",
    "label": "Fraud amount",
@@ -201,6 +202,7 @@
    "options": "\nYes\nNo"
   },
   {
+   "depends_on": "eval:doc.response_of_reminder == 'Yes'",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
    "label": "Status of Response",
@@ -212,12 +214,17 @@
  "is_submittable": 1,
  "links": [
   {
+   "group": "Ex Parte",
+   "link_doctype": "Ex Parte Enquiry",
+   "link_fieldname": "previous_record"
+  },
+  {
    "group": "Case Closed",
    "link_doctype": "Case Closure",
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-04-09 12:45:00.000000",
+ "modified": "2026-05-14 10:35:08.870698",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Reminder Of Unauthorized Absence",
