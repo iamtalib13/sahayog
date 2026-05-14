@@ -380,8 +380,7 @@
               <span class="icon-label">Tickets</span>
             </a>
             <!-- StockIO -->
-
-            <a class="icon-item" href="/stockio" role="link" tabindex="0">
+            <a class="icon-item stockio-icon" href="/stockio" role="link" tabindex="0">
               <div class="icon-circle bg-amber-100 text-amber-700">
                 <span class="fas fa-cubes"></span>
               </div>
@@ -814,8 +813,46 @@
         }
       }
 
+      // Function to fetch and display pending request count
+      async function fetchPendingRequestsCount() {
+        const stockIcon = document.querySelector(".stockio-icon");
+        if (!stockIcon) return;
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Use Frappe REST API to count filtered records
+        const filters = JSON.stringify([
+          ["docstatus", "=", 0],
+          ["status", "in", ["Pending Reporting Person", "Pending HO Approval"]]
+        ]);
+        
+        // Note: For 'or_filters', it's safer to use a custom API. 
+        // If the custom API is failing, try a simple fetch to a known working endpoint.
+        try {
+          const res = await fetch(`/api/resource/Employee Material Request?filters=${encodeURIComponent(filters)}&fields=["name"]`, {
+            method: "GET",
+            headers: {
+              "X-Frappe-CSRF-Token": csrfToken,
+              "Content-Type": "application/json"
+            }
+          });
+          const data = await res.json();
+          const count = data.data ? data.data.length : 0;
+
+          if (count > 0) {
+            const countBadge = document.createElement("div");
+            countBadge.className = "count-badge";
+            countBadge.textContent = count;
+            stockIcon.appendChild(countBadge);
+          }
+        } catch (error) {
+          console.error("Failed to fetch pending requests count:", error);
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", function () {
         fetchAssignedTaskCount();
+        fetchPendingRequestsCount();
       });
 
       async function fetchEmployeeDetails() {

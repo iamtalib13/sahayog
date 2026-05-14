@@ -20,8 +20,8 @@
   }
 
   :root {
-    --primary-color: #0dcece;
-    --primary-hover: #0bb5b5;
+    --primary-color: #45e7e7;
+    --primary-hover: #008080;
     --accent-color: #ec4899;
     --bg-main: #f1f5f9;
     --bg-surface: #ffffff;
@@ -228,14 +228,6 @@
     height: 24px;
     background: #ffffff;
     border-radius: 0 4px 4px 0;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .blinking-arrow {
-    animation: blink 1.5s infinite;
   }
 
   /* Main Area Headers */
@@ -582,8 +574,8 @@
     background: var(--bg-surface);
     position: absolute;
     width: 100%;
-    z-index: 1000 !important;
-    max-height: 450px;
+    z-index: 50;
+    max-height: 250px;
     overflow-y: auto;
     margin-top: 8px;
   }
@@ -804,13 +796,6 @@
     color: #f87171;
     border-color: rgba(248, 113, 113, 0.2);
   }
-
-  .inventory-flow-container {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -1584,6 +1569,8 @@
                         <option value="New">New</option>
                         <option value="Return">Return</option>
                         <option value="Issue">Issue</option>
+                        <option value="Replace">Replace</option>
+                        
                       </select>
                     </div>
                     <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
@@ -1601,11 +1588,16 @@
                     <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Remark <span class="form-required">*</span></label>
                     <textarea
                       class="form-input"
-                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important; overflow: hidden; resize: vertical;"
                       v-model="emrForm.remark"
-                      placeholder="Enter reason"
-                      rows="1"
+                      :placeholder="emrForm.department === 'Asset' ? 'Please describe the asset need, e.g., Reason for request, usage frequency, and specific requirements...' : 'Enter reason (minimum 5 words).'"
                     ></textarea>
+                    <span 
+                        v-if="emrForm.department === 'Asset' && emrForm.remark.trim().split(/\s+/).length < 5"
+                        style="color: #dc2626; font-size: 11px; margin-top: 4px; display: block;"
+                    >
+                        Please provide a detailed remark (minimum 5 words) for Asset requests.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1857,17 +1849,33 @@
                 </select>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Request For</label>
-              <select
-                class="form-input"
-                v-model="inwardForm.custom_request_for"
-              >
-                <option value="" disabled>Select Request For</option>
-                <option value="Branch">Branch</option>
-                <option value="Project">Project</option>
-                <option value="Store">Store</option>
-              </select>
+            <div class="form-row">
+              <div class="form-group" style="flex: 1">
+                <label class="form-label">Request For</label>
+                <select
+                  class="form-input"
+                  v-model="inwardForm.custom_request_for"
+                >
+                  <option value="" disabled>Select Request For</option>
+                  <option value="Branch">Branch</option>
+                  <option value="Project">Project</option>
+                  <option value="Store">Store</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1; align-self: flex-end; padding-bottom: 8px;">
+                <label class="form-checkbox-label">
+                  <input type="checkbox" class="form-checkbox" v-model="inwardForm.is_past_stock_date" />
+                  Past Stock Date
+                </label>
+              </div>
+              <div class="form-group" v-if="inwardForm.is_past_stock_date" style="flex: 1">
+                <label class="form-label">Existing Stock Date</label>
+                <input
+                  type="date"
+                  class="form-input"
+                  v-model="inwardForm.existing_stock_date"
+                />
+              </div>
             </div>
             <div style="margin-top: 20px">
               <label class="form-label">Items</label>
@@ -7096,9 +7104,7 @@
     <div class="profile-modal">
       <div class="profile-modal-header">
         <h3>
-          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset
-          Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep
-          ]]
+          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]
         </h3>
         <div class="profile-modal-header-right">
           <button
@@ -7455,7 +7461,16 @@
                       text-align: right;
                     "
                   >
-                    [[ formatCurrency(item.rate) ]]
+                    <div v-if="item.available_rates && item.available_rates.length > 1">
+                        <select v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
+                            <option value="">Select</option>
+                            <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
+                        </select>
+                    </div>
+                    <div v-else>
+                        [[ formatCurrency(item.rate) ]]
+                    </div>
+                    <div v-if="!item.available_rates" style="font-size: 10px; color: red;">(No rates fetched)</div>
                   </td>
                   <td
                     style="
@@ -9944,8 +9959,8 @@
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Department", key: "department", width: 1.2 },
             { label: "Owner", key: "employee", width: 1.5 },
-            { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
-            { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
+            { label: "Requestor Warehouse", key: "target_warehouse", width: 1.5 },
+            { label: "Provider Warehouse", key: "source_warehouse", width: 1.5 },
             {
               label: "Status",
               key: "status",
@@ -11187,8 +11202,9 @@
             supplier: "",
             supplier_display: "",
             posting_date: frappe.datetime.now_date(),
-            set_warehouse: "",
-            set_warehouse_display: "",
+            is_past_stock_date: false,
+            existing_stock_date: "",
+            set_warehouse: "",            set_warehouse_display: "",
             custom_po_wo: "",
             custom_request_for: "",
             remarks: "",
@@ -12154,13 +12170,9 @@
             doctype: "Employee Material Request",
             name: row.name,
           },
-          callback: (res) => {
+          callback: async (res) => {
             if (res.message) {
-              // Override target warehouse from the full document
-              this.dispatchForm.target_warehouse =
-                res.message.target_warehouse || row.target_warehouse;
-
-              // Pre-fill with selected items only
+              // Pre-calculate selectedNames here so it is available in the callback
               let selectedNames = [];
               if (
                 this.detailRecord &&
@@ -12172,26 +12184,37 @@
                   .map((item) => item.name);
               }
 
-              this.dispatchForm.items = res.message.items
-                .filter((i) => {
-                  if (selectedNames.length > 0) {
-                    return (
-                      (i.item_category === "Stock Item" ||
-                        i.item_category === "Asset") &&
-                      selectedNames.includes(i.name)
-                    );
-                  }
-                  return (
-                    (i.item_category === "Stock Item" ||
-                      i.item_category === "Asset") &&
-                    i.status === "Approved"
-                  );
-                })
-                .map((item) => ({
-                  ...item,
-                  dispatch_qty: item.approved_quantity || 0,
-                  selected: true,
-                }));
+              // Override target warehouse from the full document
+              this.dispatchForm.target_warehouse =
+                res.message.target_warehouse || row.target_warehouse;
+
+              // Pre-fill with selected items only
+              let selectedItems = res.message.items.filter((i) =>
+                selectedNames.includes(i.name)
+              );
+              if (selectedNames.length === 0) {
+                selectedItems = res.message.items.filter(
+                  (i) => i.status === "Approved"
+                );
+              }
+
+              // Fetch rates/batches for these items
+              for (let item of selectedItems) {
+                  const stockRes = await frappe.call({
+                      method: "sahayog.procurement.api.stock_balance_ledger.get_available_stock_batches",
+                      args: { item_code: item.item_code, warehouse: res.message.source_warehouse }
+                  });
+                  item.available_batches = stockRes.message || [];
+              }
+
+              this.dispatchForm.items = selectedItems.map((item) => ({
+                ...item,
+                dispatch_qty: item.approved_quantity || 0,
+                // If multiple batches, default to first one or force user to select
+                rate: item.available_batches.length === 1 ? item.available_batches[0].rate : (item.available_batches.length > 0 ? "" : 0),
+                available_rates: item.available_batches.map(b => b.rate),
+                selected: true,
+              }));
             }
             this.dispatchForm.loading = false;
           },
@@ -12609,6 +12632,7 @@
         };
         const required = Object.keys(labels);
         for (let field of required) {
+          if (field === "source_warehouse" && this.emrForm.department === "Asset") continue;
           if (!this.emrForm[field]) {
             frappe.msgprint(`${labels[field]} is required`);
             return;
@@ -12777,6 +12801,7 @@
             set_warehouse: this.inwardForm.set_warehouse,
             custom_po_wo: this.inwardForm.custom_po_wo,
             custom_request_for: this.inwardForm.custom_request_for,
+            existing_stock_date: this.inwardForm.is_past_stock_date ? this.inwardForm.existing_stock_date : null,
             remarks: this.inwardForm.remarks,
             items: this.inwardItems
               .filter((i) => i.item_code)
