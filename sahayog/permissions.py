@@ -211,6 +211,25 @@ def get_employee_material_request_permission(user=None, doctype=None):
         f"`tabEmployee Material Request`.head_office_officer = '{user}'"
     ]
 
+    # Sahayog Settings (Default Warehouse) access
+    conditions.append(f"""
+        exists(
+            select 1
+            from `tabDefault Warehouse` dw
+            where dw.parent = 'Sahayog Settings'
+            and dw.user_id = '{user}'
+            and (
+                dw.warehouse = `tabEmployee Material Request`.source_warehouse
+                or dw.warehouse = `tabEmployee Material Request`.target_warehouse
+            )
+        )
+    """)
+
+    # Purchase Department access
+    user_dept = frappe.db.get_value("Employee", {"user_id": user}, "department")
+    if user_dept == "Purchase":
+        conditions.append("`tabEmployee Material Request`.department = 'Purchase'")
+
     # Store Manager → also see records from their branch/sol_id warehouse
     if any("Store Manager" in role for role in user_roles):
         emp = frappe.db.get_value("Employee", {"user_id": user}, ["branch", "sol_id"], as_dict=True)

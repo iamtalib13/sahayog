@@ -1,0 +1,89 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "section_break_ezom",
+    "courier_name",
+    "courier_company_name",
+    "pod_no",
+    "dispatch_date",
+    "delivery_date",
+    "dispatch_location",
+    "address",
+    "mobile_number"
+  ],
+  "fields": [
+    {
+      "fieldname": "section_break_ezom",
+      "fieldtype": "Section Break",
+      "label": "Dispatch Details"
+    },
+    {
+      "fieldname": "courier_name",
+      "fieldtype": "Data",
+      "label": "Courier Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "courier_company_name",
+      "fieldtype": "Data",
+      "label": "Courier Company Name"
+    },
+    {
+      "fieldname": "pod_no",
+      "fieldtype": "Data",
+      "label": "POD Number"
+    },
+    {
+      "fieldname": "dispatch_date",
+      "fieldtype": "Date",
+      "label": "Dispatch Date"
+    },
+    {
+      "fieldname": "delivery_date",
+      "fieldtype": "Date",
+      "label": "Delivery Date"
+    },
+    {
+      "fieldname": "dispatch_location",
+      "fieldtype": "Data",
+      "label": "Dispatch Location"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "mobile_number",
+      "fieldtype": "Data",
+      "label": "Mobile Number"
+    }
+  ],
+  "grid_page_length": 50,
+  "index_web_pages_for_search": 1,
+  "links": [],
+  "module": "Procurement",
+  "name": "Dispatch Detail",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "System Manager",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "rows_threshold_for_grid_search": 20,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

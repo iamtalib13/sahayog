@@ -42,6 +42,41 @@ class BankEOD(Document):
                 self.status = "Pending"
                 frappe.msgprint(_("Some tasks are still pending. Bank EOD status set to Pending."))
 
+    # def load_tasks(self):
+    #     """
+    #     Fetch all active EOD Checklists and populate EOD Tasks child table,
+    #     ordered by Team sequence.
+    #     """
+    #     if self.eod_tasks:
+    #         return
+
+    #     # Fetch active checklists with team sequence
+    #     active_checklists = frappe.db.sql("""
+    #         SELECT 
+    #             ec.name, ec.team, et.sequence
+    #         FROM 
+    #             `tabEOD Checklist` ec
+    #         JOIN 
+    #             `tabEOD Team` et ON ec.team = et.name
+    #         WHERE 
+    #             ec.is_active = 1
+    #         ORDER BY 
+    #             et.sequence ASC, et.name ASC
+    #     """, as_dict=True)
+
+    #     for checklist in active_checklists:
+    #         doc = frappe.get_doc("EOD Checklist", checklist.name)
+    #         # Sort checklist items by sequence and idx
+    #         sorted_items = sorted(doc.checklist_items, key=lambda x: (x.sequence or 0, x.idx))
+    #         for item in sorted_items:
+    #             self.append("eod_tasks", {
+    #                 "team": checklist.team,
+    #                 "sequence": checklist.sequence,
+    #                 "task": item.task,
+    #                 "status": "Pending"
+    #             })
+
+
     def load_tasks(self):
         """
         Fetch all active EOD Checklists and populate EOD Tasks child table,
@@ -50,7 +85,8 @@ class BankEOD(Document):
         if self.eod_tasks:
             return
 
-        # Fetch active checklists with team sequence
+        # NEW FIX: Checking if the TEAM itself is active (et.is_active = 1)
+        # instead of just the checklist item!
         active_checklists = frappe.db.sql("""
             SELECT 
                 ec.name, ec.team, et.sequence
@@ -59,7 +95,7 @@ class BankEOD(Document):
             JOIN 
                 `tabEOD Team` et ON ec.team = et.name
             WHERE 
-                ec.is_active = 1
+                et.is_active = 1   -- <--- THIS IS THE FIX (et instead of ec)
             ORDER BY 
                 et.sequence ASC, et.name ASC
         """, as_dict=True)
@@ -75,6 +111,7 @@ class BankEOD(Document):
                     "task": item.task,
                     "status": "Pending"
                 })
+
 
 @frappe.whitelist()
 def get_checklist_tasks():

@@ -1,0 +1,13 @@
+{
+ "doc_type": "Employee Material Request",
+ "docstatus": 0,
+ "doctype": "Print Format",
+ "format_data": null,
+ "html": null,
+ "line_breaks": 0,
+ "module": "Procurement",
+ "name": "Proforma",
+ "print_format_for": "DocType",
+ "print_format_type": "Jinja",
+ "standard": "Yes"
+}

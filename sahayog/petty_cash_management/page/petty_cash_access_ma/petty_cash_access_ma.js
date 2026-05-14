@@ -342,12 +342,37 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                         user_id: this.selectedEmp.user_id,
                         enable: this.hasBranchUserRole
                     },
+                    // callback: (r) => {
+                    //     this.isUpdating = false;
+                    //     if(r.message) {
+                    //         frappe.show_alert({ 
+                    //             message: `Branch User role ${r.message.status} successfully`, 
+                    //             indicator: r.message.status === 'added' ? 'green' : 'orange' 
+                    //         }, 3);
+                    //     }
+                    // },
                     callback: (r) => {
                         this.isUpdating = false;
-                        if(r.message) {
-                            frappe.show_alert({ 
-                                message: `Branch User role ${r.message.status} successfully`, 
-                                indicator: r.message.status === 'added' ? 'green' : 'orange' 
+                        if (r.message) {
+                            const status = r.message.status;
+
+                            const messageMap = {
+                                added: "Branch User role added successfully",
+                                removed: "Branch User role removed successfully",
+                                already_present: "Branch User role is already assigned",
+                                already_absent: "Branch User role is already removed"
+                            };
+
+                            const indicatorMap = {
+                                added: "green",
+                                removed: "orange",
+                                already_present: "blue",
+                                already_absent: "blue"
+                            };
+
+                            frappe.show_alert({
+                                message: messageMap[status] || "Role updated successfully",
+                                indicator: indicatorMap[status] || "green"
                             }, 3);
                         }
                     },

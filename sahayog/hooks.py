@@ -74,7 +74,8 @@ doctype_list_js = {
     "Share Transfer": "public/js/share_transfer_list.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
-app_include_js = ["/assets/sahayog/js/assignmate.js", "/assets/sahayog/js/petite-vue.iife.js",]
+app_include_js = ["/assets/sahayog/js/assignmate.js",
+                  "/assets/sahayog/js/petite-vue.iife.js",]
 
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
@@ -132,6 +133,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_fields_for_request_for_quotation.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_supplier_quotation_item.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_branch.execute",
+    "sahayog.patches.custom_fields.add_batch_field_to_sahayog_branch.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_stock_entry.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_warehouse.execute",
@@ -139,6 +141,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_for_purchase_order.execute",
     # "sahayog.patches.custom_fields.add_custom_field_for_purchase_receipt.execute",
     "sahayog.patches.custom_fields.add_custom_fields_for_lead.execute",
+    "sahayog.patches.custom_fields.add_custom_field_for_employee_group.execute",
     "sahayog.patches.custom_fields.add_custom_field_for_project_template_task.execute",
     # "sahayog.patches.fixtures.add_region.execute",
     # "sahayog.patches.fixtures.add_division.execute",
@@ -213,6 +216,7 @@ permission_query_conditions = {
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.get_transaction_query_conditions",
     "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.get_permission_query_conditions",
+    "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -222,6 +226,7 @@ permission_query_conditions = {
 has_permission = {
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.has_transaction_permission",
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
+    "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
 }
 
 # DocType Class
@@ -357,7 +362,7 @@ scheduler_events = {
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
         # "*/5 * * * *": [
-        #     "sahayog.tasks.reset_auto_prepared_reports"  
+        #     "sahayog.tasks.reset_auto_prepared_reports"
         # ],
 
         # Run daily at midnight — Sync District and State from Sahayog Branch
@@ -365,6 +370,11 @@ scheduler_events = {
             "sahayog.tasks.sync_district_state"
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
+
+        # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
+        "0 23 * * *": [
+            "sahayog.sahayog.api.eod.check_and_notify_inactive_teams"
+        ]
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -490,7 +500,8 @@ exempt_from_csrf = [
 
 fixtures = [
     # Workflow Fixtures - Employee Material Request
-    {"dt": "Workflow", "filters": [["name", "=", "Employee Material Request"]]},
+    {"dt": "Workflow", "filters": [
+        ["name", "=", "Employee Material Request"]]},
     # Disciplinary case Workflow
     {
         "dt": "Workflow",
@@ -502,25 +513,25 @@ fixtures = [
         "filters": [["name", "=", "Unauthorized Absence"]],
     },
     # Workflow State for Disciplinary Case
-        {
-            "dt": "Workflow State",
-            "filters": [
+    {
+        "dt": "Workflow State",
+        "filters": [
+            [
+                "workflow_state_name",
+                "in",
                 [
-                    "workflow_state_name",
-                    "in",
-                    [
-                        "Draft",
-                        "Under Process",
-                        "Under Review",
-                        "Verified",
-                        "Closed",
-                        "Assign",
-                        "Self Approve",
-                        "Self Approved"
-                    ]
+                    "Draft",
+                    "Under Process",
+                    "Under Review",
+                    "Verified",
+                    "Closed",
+                    "Assign",
+                    "Self Approve",
+                    "Self Approved"
                 ]
             ]
-        },
+        ]
+    },
     # Case Closure Workflow
     {"dt": "Workflow", "filters": [["name", "=", "Case Closure"]]},
     # Workflow States for Case Closure
@@ -556,7 +567,8 @@ fixtures = [
     # Task Templates
     {"dt": "Task", "filters": [["is_template", "=", "1"]]},
     # Workspaces
-    {"doctype": "Workspace", "filters": [["name", "in", ["Inventory Management"]]]},
+    {"doctype": "Workspace", "filters": [
+        ["name", "in", ["Inventory Management"]]]},
     # Custom HTML Blocks
     {
         "dt": "Custom HTML Block",
@@ -597,29 +609,30 @@ fixtures = [
             ]
         ],
     },
-# email templates fixtures
-{
-    "dt": "Email Template",
-    "filters": [
-        ["name", "in", [
-            "Disciplinary Case Update",
-            "Disciplinary - SCN",
-            "Response to SCN",
-            "Suspension Process",
-            "Domestic Enquiry Notice",
-            "Reminder Notice of Enquiry",
-            "Unauthorized Absence",
-            "Reminder Of Unauthorized Absence",
-            "Case Closure Update"
-        ]]
-    ],
-},
+    # email templates fixtures
+    {
+        "dt": "Email Template",
+        "filters": [
+            ["name", "in", [
+                "Disciplinary Case Update",
+                "Disciplinary - SCN",
+                "Response to SCN",
+                "Suspension Process",
+                "Domestic Enquiry Notice",
+                "Reminder Notice of Enquiry",
+                "Unauthorized Absence",
+                "Reminder Of Unauthorized Absence",
+                "Case Closure Update",
+                "new_group_approval_request"
+            ]]
+        ],
+    },
 
-  
+
     # Print Format fixture
-{
-    "dt": "Print Format",
-    "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
-},
+    {
+        "dt": "Print Format",
+        "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
+    },
 
 ]

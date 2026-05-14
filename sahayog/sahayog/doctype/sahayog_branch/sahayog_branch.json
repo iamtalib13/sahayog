@@ -14,6 +14,7 @@
   "state_code",
   "state",
   "district",
+  "branch_code",
   "column_break_iujn",
   "zone",
   "region",
@@ -135,12 +136,17 @@
    "fieldname": "branch_type",
    "fieldtype": "Data",
    "label": "Branch Type"
+  },
+  {
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-24 15:36:43.133512",
+ "modified": "2026-04-21 13:22:34.003213",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",

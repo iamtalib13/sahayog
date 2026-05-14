@@ -115,5 +115,32 @@ def _get_appointment_data(limit, offset, search_term):
     next_cursor = str(offset + limit) if len(appointments) > limit else None
     if len(appointments) > limit:
         appointments.pop()
-
+        
     return appointments, next_cursor, total_count
+
+
+@frappe.whitelist()
+def check_duplicate(mobile_no, products):
+    from frappe.utils import add_days, nowdate
+    import json
+    
+    p_list = json.loads(products) if isinstance(products, str) else products
+    # 7 din purani limit
+    seven_days_ago = add_days(nowdate(), -7)
+    
+    for p in p_list:
+        # Check sirf tabhi kare jab creation date 7 din ke andar ho (using DATE for comparison)
+        exists = frappe.db.sql("""
+            SELECT l.name FROM `tabLead` l 
+            JOIN `tabLead Product` lp ON lp.parent = l.name
+            WHERE l.mobile_no = %s 
+            AND lp.product = %s 
+            AND lp.product_amount = %s 
+            AND DATE(l.creation) >= %s 
+            LIMIT 1
+        """, (mobile_no, p['product'], p['product_amount'], seven_days_ago))
+        
+        if exists:
+            return {"duplicate": True, "product": p['product']}
+            
+    return {"duplicate": False}

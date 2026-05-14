@@ -38,7 +38,7 @@
       html,
       body {
         height: 100%;
-        overflow: auto;
+        overflow: hidden;
         scrollbar-width: none;
         /* Firefox */
       }
@@ -55,7 +55,7 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         line-height: 1.5;
-        min-height: 100vh;
+        height: 100vh;
         margin: 0;
         display: flex;
         justify-content: center;
@@ -68,33 +68,32 @@
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
+        height: 100vh;
         position: relative;
       }
 
       @media (max-width: 480px) {
         .app-container {
           max-width: 480px;
-          padding-left: 1rem;
-          padding-right: 1rem;
+          padding-left: 0;
+          padding-right: 0;
         }
       }
 
       .app-header {
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        flex-shrink: 0;
         background-color: white;
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 1.25rem 2rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       }
 
       @media (max-width: 480px) {
         .app-header {
-          padding-left: 1rem !important;
-          padding-right: 1rem !important;
+          padding-left: 1.5rem !important;
+          padding-right: 1.5rem !important;
         }
       }
 
@@ -185,15 +184,22 @@
 
       main.app-main {
         flex: 1;
-        padding: 2rem 2rem 6rem;
+        padding: 2rem 2rem 15rem;
         max-width: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+
+      main.app-main::-webkit-scrollbar {
+        display: none;
       }
 
       @media (max-width: 480px) {
         main.app-main {
-          padding-left: 1rem !important;
-          padding-right: 1rem !important;
-          padding-bottom: 5rem !important;
+          padding-left: 1.5rem !important;
+          padding-right: 1.5rem !important;
+          padding-bottom: 12rem !important;
         }
       }
 
@@ -373,6 +379,14 @@
               </div>
               <span class="icon-label">Tickets</span>
             </a>
+            <!-- StockIO -->
+
+            <a class="icon-item" href="/stockio" role="link" tabindex="0">
+              <div class="icon-circle bg-amber-100 text-amber-700">
+                <span class="fas fa-cubes"></span>
+              </div>
+              <span class="icon-label">StockIO</span>
+            </a>
 
             <!-- Assets -->
             <a
@@ -388,7 +402,13 @@
             </a>
 
             <!-- CRM -->
-            <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
+            <a
+              class="icon-item"
+              id="crm-link"
+              href="#"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
                 <i class="fas fa-users"></i>
               </div>
@@ -396,16 +416,27 @@
             </a>
 
             <!-- PMS -->
+            <!-- <a class="icon-item" href="http://182.19.71.132:81/pms-login" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <span class="icon-label">PMS</span>
+          </a> -->
+
+            <!-- My Approvals -->
             <a
               class="icon-item"
-              href="http://182.19.71.132:81/pms-login"
+              href="/app/approval-request"
               role="link"
               tabindex="0"
             >
-              <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
-                <i class="fas fa-chart-line"></i>
+              <div
+                class="icon-circle"
+                style="background-color: #e6f9f0; color: #28a745"
+              >
+                <i class="fas fa-check-circle"></i>
               </div>
-              <span class="icon-label">PMS</span>
+              <span class="icon-label">My Approvals</span>
             </a>
 
             <!-- Operations -->
@@ -430,12 +461,12 @@
             </a>
 
             <!-- Praman -->
-            <a class="icon-item" href="/app/praman" role="link" tabindex="0">
+            <!-- <a class="icon-item" href="/app/praman" role="link" tabindex="0">
               <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
                 <i class="fas fa-chart-pie"></i>
               </div>
               <span class="icon-label">Praman</span>
-            </a>
+            </a> -->
 
             <!-- My Agents -->
             <a
@@ -601,7 +632,7 @@
               <div class="icon-circle bg-yellow-200 text-yellow-800">
                 <span class="rupee-icon">₹</span>
               </div>
-              <span class="icon-label">Interest Calculator</span>
+              <span class="icon-label">SMBG/RD Interest Calculator</span>
             </a>
 
             <!-- Permission Manager -->
@@ -628,6 +659,82 @@
                 <i class="fas fa-hand-holding-usd"></i>
               </div>
               <span class="icon-label">Loan Management</span>
+            </a>
+            <!-- EOD Checklist -->
+            <a class="icon-item" href="/eod-checklist" role="link" tabindex="0">
+              <div
+                class="icon-circle"
+                style="background-color: #ccf2ee; color: #00b09b"
+              >
+                <i class="fas fa-clipboard-check"></i>
+              </div>
+              <span class="icon-label">EOD Checklist</span>
+            </a>
+
+            <!-- Netwin Photo & Sign -->
+            <!-- <a class="icon-item" href="/photo_signature_utility" role="link" tabindex="0">
+            <div class="icon-circle" style="background-color: #ccf2ee; color: #00b09b;">
+              <i class="fas fa-id-card"></i>
+            </div>
+            <span class="icon-label">Netwin Photo & Sign</span>
+          </a> -->
+
+            <!-- Netwin Photo & Sign -->
+            <a
+              class="icon-item"
+              href="/photo_signature_utility"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="icon-circle"
+                style="background-color: #e0f0ff; color: #007bff"
+              >
+                <i class="fas fa-id-card"></i>
+              </div>
+              <span class="icon-label"> Netwin Photo & Sign </span>
+            </a>
+
+            <!-- Netwin Statement -->
+            <a
+              class="icon-item"
+              href="/netwin_statement"
+              role="link"
+              tabindex="0"
+            >
+              <div
+                class="icon-circle"
+                style="background-color: #e6f7ec; color: #28a745"
+              >
+                <i class="fas fa-file-download"></i>
+              </div>
+              <span class="icon-label"> Netwin Statement </span>
+            </a>
+
+            <!-- Employee Cost Code -->
+            <a
+              class="icon-item"
+              href="/app/cost-code-viewer"
+              role="link"
+              tabindex="0"
+            >
+              <div class="icon-circle bg-yellow-200 text-yellow-800">
+                <span class="fa fa-money-bag">💰</span>
+              </div>
+              <span class="icon-label">Employee Cost Code</span>
+            </a>
+
+            <!-- Petty Cash Management -->
+            <a
+              class="icon-item"
+              href="/app/petty-cash-management"
+              role="link"
+              tabindex="0"
+            >
+              <div class="icon-circle bg-emerald-100 text-emerald-700">
+                <span class="fa fa-wallet"></span>
+              </div>
+              <span class="icon-label">Petty Cash Management</span>
             </a>
           </div>
         </section>

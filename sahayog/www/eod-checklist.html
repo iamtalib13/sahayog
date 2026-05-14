@@ -81,16 +81,40 @@
             border-right: 1px solid var(--card-border);
             display: flex;
             flex-direction: column;
-            padding: 32px;
+            padding: 0px 32px 32px 32px;
             overflow-y: auto;
         }
 
         /* Sidebar Header */
-        .header {
+        /* .header {
             margin-bottom: 32px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+        } */
+        /* Sidebar Header */
+        .header {
+            /* Makes it stick to the top */
+            position: sticky;
+            top: 0;
+            z-index: 10;
+
+            /* Give it a solid background so scrolling text hides behind it */
+            background-color: var(--sidebar-bg);
+
+            /* Pull the header out to the edges to ignore the sidebar's padding */
+            margin: -32px -32px 60px -32px;
+
+            /* Put the padding back INSIDE the header so everything aligns perfectly */
+            padding: 32px 32px 20px 32px;
+
+            /* Optional: Adds a very subtle line under the header to separate it from scrolling content */
+            border-bottom: 1px solid var(--card-border);
+
+            /* Changed to column to support progress bar below title */
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
         }
 
         .capsule-btn {
@@ -195,6 +219,13 @@
             font-size: 16px;
         }
 
+        .title {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .title h1 {
             font-size: 22px;
             margin: 0;
@@ -206,10 +237,10 @@
             font-size: 13px;
             color: var(--accent-green);
             font-weight: 600;
-            margin: 4px 0;
         }
 
         .title p {
+            width: 100%;
             font-size: 14px;
             color: var(--text-secondary);
             margin: 0;
@@ -249,7 +280,7 @@
         }
 
         .section-header {
-            margin-bottom: 14px;
+            margin-bottom: 0px;
         }
 
         .section-title {
@@ -260,10 +291,16 @@
             color: var(--text-secondary);
         }
 
-        .task-list {
+        /* .task-list {
             display: flex;
             flex-direction: column;
             gap: 12px;
+        } */
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .task-item {
@@ -310,6 +347,14 @@
         .checkbox.checked {
             background-color: var(--accent-green);
             border-color: var(--accent-green);
+        }
+
+        /* NEW: Disabled state for Viewer Role */
+        .checkbox.viewer-disabled {
+            background-color: #f1f5f9;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.7;
         }
 
         .checkbox.checked::after {
@@ -1252,12 +1297,11 @@
             color: var(--text-secondary);
         }
 
-        .task-item {
+        /* .task-item {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            /* Reduced the right padding from 16px to 12px to push it more to the corner */
             padding: 16px 12px 16px 16px;
             font-size: 14px;
             background-color: var(--card-bg);
@@ -1267,6 +1311,27 @@
             transition: all 0.2s;
             gap: 12px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        } */
+
+        .task-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            /* Reduced from 16px to shrink height */
+            font-size: 13px;
+            /* Slightly smaller text */
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            /* Reduced border radius to match smaller height */
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            min-height: 44px;
+            /* Sets a strict small height */
         }
 
         .task-meta {
@@ -1299,6 +1364,335 @@
             width: 15px;
             height: 15px;
         }
+
+        /* Collapsible Section Colors & Styling */
+        .section-item {
+            margin-bottom: 12px;
+            border-radius: 12px;
+            padding: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--card-border);
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+
+        .section-item.expanded {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-item.section-completed {
+            border-left-color: #10b981 !important;
+            background-color: #f0fdf4;
+        }
+
+        .section-item.section-completed .section-title {
+            color: #047857;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 14px 16px;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background-color: #fcfcfc;
+        }
+
+        .section-item.expanded .section-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-primary);
+        }
+
+        /* The sliding container */
+        .task-list-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+            opacity: 0;
+            overflow: hidden;
+            /* CRITICAL: Prevents the tree line from showing when collapsed */
+        }
+
+        .task-list-wrapper.expanded {
+            grid-template-rows: 1fr;
+            opacity: 1;
+        }
+
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+            padding: 16px 16px 16px 44px;
+            /* Children start at 44px */
+            background-color: #fafafa;
+            position: relative;
+        }
+
+        /* Continuous Vertical Tree Line */
+        .task-list::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            /* Fixed at 24px from the left edge */
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--team-color, var(--card-border));
+            opacity: 0.35;
+            z-index: 1;
+        }
+
+        .task-item {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            font-size: 13px;
+            background-color: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            gap: 12px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            z-index: 2;
+        }
+
+        /* Horizontal Connector - Precisely Aligned */
+        .task-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            /* 44px (item start) - 20px = 24px (vertical line position) */
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background-color: var(--team-color, var(--card-border));
+            opacity: 0.35;
+            z-index: 1;
+            transition: all 0.2s ease;
+        }
+
+        /* Adjust connector when task item moves on hover */
+        .task-item:hover::before {
+            left: -24px;
+            /* 48px (item hovered) - 24px = 24px (vertical line position) */
+            width: 24px;
+        }
+
+        /* Masking: Hides vertical line below the last task item */
+        .task-item:last-child::after {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            width: 4px;
+            height: 1000px;
+            background-color: #fafafa;
+            z-index: -1;
+            margin-left: -1px;
+            /* Center over the 2px line */
+            transition: all 0.2s ease;
+        }
+
+        /* Adjust mask when last task item moves */
+        .task-item:last-child:hover::after {
+            left: -24px;
+        }
+
+        .task-item:hover {
+            border-color: var(--team-color, var(--accent-green));
+            background-color: #fff;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .task-item.done-item {
+            background-color: rgba(255, 255, 255, 0.8);
+            opacity: 0.9;
+        }
+
+        .collapse-icon {
+            color: var(--text-secondary);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-icon.rotated {
+            transform: rotate(-180deg);
+        }
+
+        /* Settings Dropdown Styles */
+        .settings-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .settings-btn {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .settings-btn:hover {
+            background: #f8f9fb;
+            color: var(--text-primary);
+            border-color: #d1d5db;
+        }
+
+        /* Invisible overlay to close dropdown when clicking anywhere else */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            /* <-- CHANGED FROM left: 0 */
+            margin-top: 8px;
+            background: white;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 200px;
+            z-index: 100;
+            overflow: hidden;
+            animation: fadeIn 0.2s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .settings-dropdown button {
+            background: transparent;
+            border: none;
+            padding: 14px 16px;
+            text-align: left;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background 0.2s;
+        }
+
+        .settings-dropdown button:hover {
+            background: #f8f9fb;
+            color: var(--accent-green);
+        }
+
+        .settings-dropdown button:last-child {
+            border-bottom: none;
+        }
+
+        /* Modern Toggle Switch */
+        .toggle-switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .toggle-label.active-text {
+            color: var(--accent-green);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+            position: absolute;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            /* Subtle gray when off */
+            transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 24px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-input:checked+.toggle-slider {
+            background-color: var(--accent-green);
+            box-shadow: inset 0 2px 4px rgba(0, 176, 155, 0.2);
+        }
+
+        .toggle-input:focus+.toggle-slider {
+            box-shadow: 0 0 1px var(--accent-green);
+        }
+
+        .toggle-input:checked+.toggle-slider:before {
+            transform: translateX(20px);
+        }
     </style>
 </head>
 
@@ -1328,59 +1722,112 @@
             <!-- Sidebar: Checklist -->
             <!-- <aside class="sidebar"> -->
             <!-- Sidebar: Checklist (Expands for Managers when EOD is closed) -->
-            <aside class="sidebar" :style="{ flex: (eodStatus === 'closed_today' && isManager) ? 1.5 : 1 }">
+            <!-- <aside class="sidebar" :style="{ flex: (eodStatus === 'closed_today' && isManager) ? 1.5 : 1 }"> -->
+            <aside class="sidebar" :style="">
                 <div class="header">
-                    <div class="title-group">
-                        <div class="app-icon">S</div>
-                        <div class="title">
-                            <h1>EOD Checklist</h1>
-                            <div class="current-timestamp" v-text="currentDateTime"></div>
-                            <p v-text="project.subtitle"></p>
+                    <div class="header-top"
+                        style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <!-- <div class="title-group">
+                            <div class="app-icon">S</div>
+                            <div class="title">
+                                <h1>EOD Checklist</h1>
+                                <div class="current-timestamp" v-text="currentDateTime"></div>
+                                Dynamic Subtitle! Shows closed time if completed, otherwise standard text 
+                                <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
+                                    EOD Closed Time: <span v-text="eodClosedTime"></span>
+                                </p>
+                            </div>
+                        </div> -->
+                        <div class="title-group">
+                            <div class="app-icon">S</div>
+                            <div class="title">
+                                <h1>EOD Checklist</h1>
+                                <div class="current-timestamp" v-text="currentDateTime"></div>
+
+                                <!-- NEW: Dynamic Total Duration Display -->
+                                <p v-if="eodStatus !== 'idle' && getEodDuration()"
+                                    style="color: var(--accent-green); font-weight: 700; margin-top: 4px;">
+                                    Total EOD Time: <span v-text="getEodDuration()"></span>
+                                </p>
+
+                                <!-- Dynamic Subtitle! Shows closed time if completed, otherwise standard text -->
+                                <p v-if="eodStatus === 'closed_today'" style="color: #ea580c; font-weight: 700;">
+                                    EOD Closed Time: <span v-text="eodClosedTime"></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="header-actions">
+                            <!-- Status Capsule -->
+                            <div v-if="eodStatus !== 'idle'" class="status-capsule"
+                                :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
+                                <div class="status-dot"></div>
+                                <span v-if="eodStatus === 'closed_today'">Closed</span>
+                                <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
+                                <span v-else>Pending</span>
+                            </div>
+
+                            <!-- Start Button -->
+                            <!-- <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction"> -->
+                            <button v-if="eodStatus === 'idle' && !isViewer" class="capsule-btn btn-start"
+                                @click="handleEodAction">
+                                Start
+                            </button>
+
+                            <!-- End Button -->
+                            <button
+                                v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone() && !isViewer"
+                                class="capsule-btn btn-end" @click="handleEodAction">
+                                End
+                            </button>
+
+                            <!-- THE SETTINGS DROPDOWN ON THE FAR RIGHT -->
+                            <!-- <div class="settings-wrapper" v-if="isManager || eodStatus === 'closed_today'"> -->
+                            <div class="settings-wrapper"
+                                v-if="(isManager || eodStatus === 'closed_today') && !isViewer">
+                                <!-- Invisible overlay to close menu -->
+                                <div v-if="showSettingsDropdown" class="settings-overlay"
+                                    @click="showSettingsDropdown = false"></div>
+
+                                <!-- Gear Icon Button -->
+                                <button class="settings-btn" @click="showSettingsDropdown = !showSettingsDropdown">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                        <path
+                                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                                        </path>
+                                    </svg>
+                                </button>
+
+                                <!-- Dropdown Menu Items -->
+                                <div v-if="showSettingsDropdown" class="settings-dropdown">
+                                    <button v-if="isManager" @click="openManageModal(); showSettingsDropdown = false;">
+                                        👥 Manage Team
+                                    </button>
+                                    <button v-if="eodStatus === 'closed_today'"
+                                        @click="openDownloadPrompt(); showSettingsDropdown = false;">
+                                        📥 Download Report
+                                    </button>
+                                    <button v-if="eodStatus === 'closed_today'"
+                                        @click="resetForNextDay(); showSettingsDropdown = false;">
+                                        🔄 Next Day EOD
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="header-actions">
-                        <!-- Status Capsule -->
-                        <div v-if="eodStatus !== 'idle'" class="status-capsule"
-                            :class="(isAllTasksDone() || eodStatus === 'completed' || eodStatus === 'closed_today') ? 'status-completed' : 'status-pending'">
-                            <div class="status-dot"></div>
-                            <span v-if="eodStatus === 'closed_today'">Closed</span>
-                            <span v-else-if="isAllTasksDone() || eodStatus === 'completed'">Completed</span>
-                            <span v-else>Pending</span>
+                    <!-- Overall Progress Section -->
+                    <div v-if="eodStatus !== 'idle'" class="progress-section"
+                        style="margin-top: 16px; margin-bottom: 0;">
+                        <div class="progress-labels">
+                            <span>Overall Progress</span>
+                            <span><span v-text="calculateProgress()"></span>%</span>
                         </div>
-
-                        <!-- Action Buttons -->
-                        <button v-if="eodStatus === 'idle'" class="capsule-btn btn-start" @click="handleEodAction">
-                            Start
-                        </button>
-                        <!-- Action Buttons -->
-                        <button v-if="isManager" class="capsule-btn" style="background: #eef2ff; color: #3b82f6;"
-                            @click="openManageModal">
-                            ⚙️ Manage Team
-                        </button>
-
-                        <button v-if="(eodStatus === 'started' || eodStatus === 'completed') && isAllTasksDone()"
-                            class="capsule-btn btn-end" @click="handleEodAction">
-                            End
-                        </button>
-
-                        <!-- Sleek Outline Download Report Button -->
-                        <!-- NEW FIX: Only shows when eodStatus is 'closed_today' (after clicking Confirm on End modal) -->
-                        <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-download"
-                            @click="downloadAuditReport">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Download Report
-                        </button>
-
-                        <button v-if="eodStatus === 'closed_today'" class="capsule-btn btn-start"
-                            @click="resetForNextDay">
-                            Next Day EOD
-                        </button>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -1389,44 +1836,78 @@
                     <div class="empty-state-text">EOD still not started</div>
                 </div>
 
-                <div v-if="eodStatus !== 'idle'" class="progress-section">
-                    <div class="progress-labels">
-                        <span>Task Progress</span>
-                        <span><span v-text="calculateProgress()"></span>%</span>
-                    </div>
-                    <div class="progress-labels" style="margin-top: -8px; margin-bottom: 12px;">
-                        <span style="font-weight: 500; color: var(--text-secondary);">Daily Operations Routine</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" :style="{ width: calculateProgress() + '%' }"></div>
-                    </div>
-                </div>
-
                 <div v-if="eodStatus !== 'idle'" class="checklist">
-                    <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item">
-                        <div class="section-header">
-                            <span class="section-title" v-text="section.title"></span>
+                    <div v-for="(section, sIndex) in project.sections" :key="sIndex" class="section-item"
+                        :class="{ expanded: section.isExpanded, 'section-completed': isSectionDone(section) }">
+
+                        <!-- Clickable Header to Collapse -->
+                        <div class="section-header" @click="section.isExpanded = !section.isExpanded"
+                            :style="!isSectionDone(section) ? { borderLeft: '4px solid ' + getTeamColor(sIndex).text } : { borderLeft: '4px solid #10b981' }">
+
+                            <!-- 1. Team Name + Completed Checkmark -->
+                            <div style="display: flex; align-items: center; gap: 8px; min-width: 120px;">
+                                <span class="section-title" v-text="section.title"></span>
+                                <svg v-if="isSectionDone(section)" viewBox="0 0 24 24" width="16" height="16"
+                                    fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+
+                            <!-- 2. Dynamic Team Progress Bar (Inline) -->
+                            <div style="flex: 1; display: flex; align-items: center; gap: 12px; margin: 0 20px;">
+                                <!-- The Background Track -->
+                                <div class="progress-bar-bg"
+                                    style="flex: 1; height: 4px; background-color: #f1f1f1; margin: 0; border-radius: 2px;">
+                                    <!-- The Colored Fill -->
+                                    <div class="progress-bar-fill" :style="{ 
+                                            width: getSectionProgress(section) + '%', 
+                                            backgroundColor: getTeamColor(sIndex).text,
+                                            borderRadius: '2px'
+                                         }">
+                                    </div>
+                                </div>
+                                <!-- The Text (e.g. "2 / 5") -->
+                                <span
+                                    style="font-size: 11px; font-weight: 700; white-space: nowrap; color: var(--text-secondary);"
+                                    v-text="getCompletedTasksCount(section) + ' / ' + (section.tasks ? section.tasks.length : 0)">
+                                </span>
+                            </div>
+
+                            <!-- 3. Modern SVG Chevron Icon -->
+                            <span class="collapse-icon" :class="{ rotated: section.isExpanded }"
+                                style="flex-shrink: 0;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </span>
                         </div>
 
-                        <div class="task-list">
-                            <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
-                                @click="toggleTask(task)">
-                                <div class="task-left">
-                                    <div class="checkbox" :class="{ checked: task.done }"></div>
-                                    <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
-                                </div>
-                                <!-- <div v-if="task.done" class="task-meta">
-                                    <div class="task-completed-avatar" :title="task.completedBy">
-                                        <img :src="'https://i.pravatar.cc/100?u=' + task.completedBy" alt="User">
+                        <!-- Collapsible Task List -->
+                        <div class="task-list-wrapper" :class="{ expanded: section.isExpanded }">
+                            <div class="task-list" v-if="section.isExpanded"
+                                :style="{ '--team-color': getTeamColor(sIndex).text }">
+                                <div v-for="(task, tIndex) in section.tasks" :key="tIndex" class="task-item"
+                                    :class="{ 'done-item': task.done }" @click="toggleTask(task)">
+                                    <div class="task-left">
+                                        <!-- Use dynamic team color for checkboxes! -->
+                                        <div class="checkbox" :class="{ checked: task.done }" <div class="checkbox"
+                                            :class="{ checked: task.done, 'viewer-disabled': isViewer }"
+                                            @click="!isViewer && toggleTask(task)"
+                                            :style="task.done ? { backgroundColor: getTeamColor(sIndex).text, borderColor: getTeamColor(sIndex).text } : {}">
+                                        </div>
+                                        <span class="task-text" :class="{ done: task.done }" v-text="task.task"></span>
                                     </div>
-                                    <span class="task-completed-time" v-text="task.completedAt"></span>
-                                </div> -->
-                                <div v-if="task.done" class="task-meta">
-                                    <div class="task-completed-avatar" :title="task.completed_by">
-                                        <img :src="getInitialsAvatar(task.completed_by)" alt="User">
+                                    <div v-if="task.done" class="task-meta">
+                                        <div class="task-completed-avatar" :title="task.completed_by">
+                                            <!-- Uses task.completed_by_image if available, else generates SVG using task.completed_by name -->
+                                            <img class="avatar"
+                                                :src="task.completed_by_image ? task.completed_by_image : getInitialsAvatar(task.completed_by)"
+                                                alt="Avatar">
+                                        </div>
+                                        <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                     </div>
-                                    <!-- Calls the new formatter -->
-                                    <span class="task-completed-time" v-text="formatTime(task.completed_on)"></span>
                                 </div>
                             </div>
                         </div>
@@ -1478,12 +1959,16 @@
                             :key="msg.id">
 
                             <!-- Show Initials Avatar (or 'ES' for System) -->
-                            <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar">
+                            <!-- <img v-if="!msg.isMe" :src="msg.avatar || getInitialsAvatar(msg.sender)" class="avatar"> -->
+                            <!-- Renders the actual uploaded Profile Picture if available, otherwise your SVG generator takes over! -->
+                            <img class="avatar" :src="msg.user_image || getInitialsAvatar(msg.sender_name)"
+                                alt="Avatar">
 
+                            <!-- <span class="sender-name" v-text="msg.sender_name"></span> -->
                             <div class="message-content">
                                 <!-- Display Name and Time (System displays as 'EOD System') -->
                                 <div class="message-info">
-                                    <span v-text="msg.sender === 'System' ? 'EOD System' : msg.sender"
+                                    <span v-text="msg.sender === 'System' ? 'EOD Admin' : msg.sender"
                                         style="font-weight: 600;"></span>
                                     <span v-text="msg.time"></span>
                                 </div>
@@ -1540,8 +2025,12 @@
                             </button>
                         </div>
                     </div>
-                    <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
+                    <!-- <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
                         Chat is closed as EOD for <span v-text="currentDateFormatted"></span> has been completed.
+                    </div> -->
+                    <div v-else-if="eodStatus === 'closed_today'" class="chat-closed-notice">
+                        Chat is closed as EOD for <span v-text="lockedClosedEodDate || currentDateFormatted"></span> has
+                        been completed.
                     </div>
                 </div>
                 <div v-else class="chat-not-started">
@@ -1557,23 +2046,23 @@
         <div class="modal-content">
             <div class="success-icon">✓</div>
             <div class="modal-title">EOD Complete!</div>
-            <div class="modal-body">
+            <!-- <div class="modal-body">
                 Great job! End of Day process for <br>
                 <strong v-text="currentDateFormatted"></strong> has been successfully completed and logged.
-            </div>
-            <!-- <div class="modal-footer">
-                <button class="modal-close-btn" @click="showModal = false">View EOD</button>
-                <button class="modal-next-btn" @click="resetForNextDay">Next Day EOD</button>
             </div> -->
+            <div class="modal-body">
+                Great job! End of Day process for <br>
+                <strong v-text="lockedClosedEodDate || currentDateFormatted"></strong> has been successfully completed
+                and logged.
+            </div>
 
             <div class="modal-footer">
                 <!-- Closes the modal to let them view the closed workspace -->
                 <button class="modal-close-btn" @click="showModal = false">View Workspace</button>
 
-                <!-- The new sleek Download Report button inside the Success Modal -->
                 <button class="modal-next-btn"
-                    style="display: flex; align-items: center; justify-content: center; gap: 8px;"
-                    @click="downloadAuditReport(); showModal = false;">
+                    style="background-color: #1a1d21; display: flex; align-items: center; justify-content: center; gap: 8px;"
+                    @click="openDownloadPrompt()">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -1581,6 +2070,37 @@
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                     Download Report
+                </button>
+            </div>
+        </div>
+    </div> <!-- ✅ CRITICAL: This closing div must be here to properly close the showModal! -->
+
+
+    <!-- PDF Chat Inclusion Modal (NOW SAFELY OUTSIDE) -->
+    <div v-if="showPdfModal" class="modal-overlay" @click.self="showPdfModal = false">
+        <div class="modal-content">
+            <div class="success-icon" style="background: var(--text-primary); font-size: 30px;">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
+            <div class="modal-title">Download Report</div>
+            <div class="modal-body" style="margin-bottom: 24px;">
+                Would you like to include the team group chat transcript in your final EOD audit report?
+            </div>
+            <div class="modal-footer" style="flex-direction: column; gap: 10px;">
+                <button class="btn-modal-confirm start" style="width: 100%;" @click="executeDownload(true)">
+                    Yes, Include Chat (Full Report)
+                </button>
+                <button class="btn-modal-cancel"
+                    style="width: 100%; border-color: var(--text-primary); color: var(--text-primary);"
+                    @click="executeDownload(false)">
+                    No, Checklist Only
                 </button>
             </div>
         </div>
@@ -1652,7 +2172,22 @@
     <!-- Manage Team & Tasks Modal -->
     <div v-if="manageModal.show" class="modal-overlay" @click.self="manageModal.show = false">
         <div class="modal-content modal-large">
-            <div class="modal-title" style="margin-bottom: 24px;">Manage: <span v-text="manageModal.teamName"></span>
+            <div class="modal-title"
+                style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                <div>Manage: <span v-text="manageModal.teamName"></span></div>
+
+                <!-- Modern iOS-style Toggle Switch for Team Active -->
+                <label class="toggle-switch-wrapper">
+                    <!-- SAFE VUE TEXT RENDERING -->
+                    <span class="toggle-label" :class="{ 'active-text': manageModal.isActive }"
+                        v-text="manageModal.isActive ? 'Team Active' : 'Team Inactive'">
+                    </span>
+
+                    <div class="toggle-switch">
+                        <input type="checkbox" v-model="manageModal.isActive" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
             </div>
 
             <!-- Team Members Section -->
@@ -1779,12 +2314,25 @@
                 }
 
                 const app = PetiteVue.createApp({
+                    lockClosedWorkspace: false,
+                    lockedClosedEodName: '',
+                    lockedClosedEodDate: '',
+                    showSettingsDropdown: false,
+                    showModal: false,
+                    showPdfModal: false,
+                    pdfModal: {
+                        show: false
+                    },
+
                     hasAccess: null,
-                    isManager: false,  // <-- ADD THIS
-                    manageModal: {     // <-- ADD THIS BLOCK
+                    isManager: false,
+                    isViewer: false,
+                    eodClosedTime: '',
+                    manageModal: {
                         show: false,
                         teamName: '',
                         checklistName: '',
+                        isActive: true,
                         members: [],
                         tasks: [],
                         systemUsers: [],
@@ -1809,6 +2357,7 @@
                     },
                     currentDateTime: '',
                     eodStatus: 'idle', // idle, started (Pending in DB), completed (Completed in DB), closed
+                    eodClosedTime: '',
                     eodName: '',
                     // 8 professional colors for the avatar backgrounds
                     avatarColors: [
@@ -1816,83 +2365,7 @@
                         '#9f1239', '#0f766e', '#5b21b6', '#3f6212'
                     ],
 
-                    // Generates an instant Initials Avatar (First Name + Last Name)
-                    // getInitialsAvatar(name) {
-                    //     if (!name) return '';
-                    //     if (name === 'System') name = 'EOD System';
 
-                    //     // Clean the name (remove emails like @bank.com)
-                    //     let cleanName = name.split('@')[0].replace(/[._-]/g, ' ');
-                    //     let parts = cleanName.trim().split(' ').filter(p => p.length > 0);
-
-                    //     // Extract first letter of First and Last name
-                    //     let initials = parts[0].charAt(0).toUpperCase();
-                    //     if (parts.length > 1) {
-                    //         initials += parts[parts.length - 1].charAt(0).toUpperCase();
-                    //     } else if (cleanName.length > 1) {
-                    //         initials += cleanName.charAt(1).toUpperCase();
-                    //     }
-
-                    //     // Assign a consistent color based on the name
-                    //     let sum = 0;
-                    //     for (let i = 0; i < name.length; i++) {
-                    //         sum += name.charCodeAt(i);
-                    //     }
-                    //     let bgColor = this.avatarColors[sum % 8];
-
-                    //     // Create the SVG graphic
-                    //     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                    //         <rect width="100" height="100" fill="${bgColor}"/>
-                    //         <text x="50" y="67" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle">${initials}</text>
-                    //     </svg>`;
-
-                    //     return `data:image/svg+xml;base64,${btoa(svg)}`;
-                    // },
-                    // Generates an instant, unbreakable Initials Avatar
-                    // Generates an instant, indestructible Initials Avatar
-                    // getInitialsAvatar(name) {
-                    //     // Safe fallback for null/undefined (during 5-second refreshes)
-                    //     if (!name || name === 'null' || name === 'undefined') {
-                    //         const placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e2e8f0"/></svg>`;
-                    //         // Unescape encodeURIComponent safely converts strings to Base64 without crashing on special characters
-                    //         return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(placeholder)))}`;
-                    //     }
-
-                    //     if (name === 'System') name = 'EOD System';
-
-                    //     // Clean the name and get initials safely
-                    //     let cleanName = String(name).split('@')[0].replace(/[._-]/g, ' ');
-                    //     let parts = cleanName.trim().split(' ').filter(p => p.length > 0);
-
-                    //     let initials = '?';
-                    //     if (parts.length > 0) {
-                    //         initials = parts[0].charAt(0).toUpperCase();
-                    //         if (parts.length > 1) {
-                    //             initials += parts[parts.length - 1].charAt(0).toUpperCase();
-                    //         } else if (cleanName.length > 1) {
-                    //             initials += cleanName.charAt(1).toUpperCase();
-                    //         }
-                    //     }
-
-                    //     // HARDCODED array so Vue background refreshes never lose context!
-                    //     const colors = ['#1e40af', '#166534', '#b45309', '#6b21a8', '#9f1239', '#0f766e', '#5b21b6', '#3f6212'];
-
-                    //     // Assign consistent color
-                    //     let sum = 0;
-                    //     for (let i = 0; i < cleanName.length; i++) {
-                    //         sum += cleanName.charCodeAt(i);
-                    //     }
-                    //     let bgColor = colors[sum % 8];
-
-                    //     // Create the SVG graphic
-                    //     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                    //         <rect width="100" height="100" fill="${bgColor}"/>
-                    //         <text x="50" y="67" font-family="Arial, sans-serif" font-size="46" font-weight="bold" fill="#ffffff" text-anchor="middle">${initials}</text>
-                    //     </svg>`;
-
-                    //     // Safely return Base64 image
-                    //     return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-                    // },
                     getInitialsAvatar(name) {
                         if (!name || name === 'null' || name === 'undefined') {
                             const placeholder = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e2e8f0"/></svg>`;
@@ -1928,6 +2401,23 @@
 
                         return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
                     },
+
+                    // Returns beautiful soft pastel palettes for different teams
+                    getTeamColor(index) {
+                        const palettes = [
+                            { bg: '#eff6ff', border: '#dbeafe', text: '#2563eb' }, // Blue
+                            { bg: '#f0fdf4', border: '#dcfce7', text: '#16a34a' }, // Green
+                            { bg: '#fff7ed', border: '#ffedd5', text: '#ea580c' }, // Orange
+                            { bg: '#fdf4ff', border: '#fae8ff', text: '#c026d3' }, // Fuchsia
+                            { bg: '#fef2f2', border: '#fee2e2', text: '#dc2626' }, // Red
+                            { bg: '#f5f3ff', border: '#f3e8ff', text: '#9333ea' }, // Purple
+                            { bg: '#f0fdfa', border: '#ccfbf1', text: '#0d9488' }, // Teal
+                            { bg: '#fffbeb', border: '#fef3c7', text: '#d97706' }  // Amber
+                        ];
+                        return palettes[index % palettes.length];
+                    },
+
+
                     // Formats full dates from backend into clean hh:mm:ss
                     formatTime(timeStr) {
                         if (!timeStr) return '';
@@ -1938,16 +2428,45 @@
                         }
                         return timeStr; // Returns as-is if already formatted
                     },
-                    // Triggers the backend PDF generator and downloads it instantly
-                    downloadAuditReport() {
-                        if (!this.eodName) return;
 
-                        // Using window.open on a Frappe API endpoint returning a PDF triggers a seamless file download
-                        const pdfUrl = `/api/method/sahayog.sahayog.api.eod.download_eod_report?eod_name=${encodeURIComponent(this.eodName)}`;
+                    // 1. Safely opens the prompt and closes the success modal
+                    openDownloadPrompt() {
+                        this.showModal = false;
+                        this.showPdfModal = true;
+                    },
+
+                    // 2. Handles the user's choice from the modal
+                    executeDownload(includeChat) {
+                        this.showPdfModal = false; // Close the prompt immediately
+
+                        if (!this.eodName) {
+                            alert("EOD process not found. Cannot download report.");
+                            return;
+                        }
+
+                        // Converts the boolean to 1 or 0 for the backend
+                        const includeParam = includeChat ? 1 : 0;
+                        const pdfUrl = `/api/method/sahayog.sahayog.api.eod.download_eod_report?eod_name=${encodeURIComponent(this.eodName)}&include_chat=${includeParam}`;
+
                         window.open(pdfUrl, '_blank');
                     },
+
+                    // 3. Triggers the backend PDF generator
+                    downloadAuditReport(includeChat = true) {
+                        if (!this.eodName) {
+                            alert("EOD process not found. Cannot download report.");
+                            return;
+                        }
+
+                        // Converts the boolean to 1 or 0 for the backend
+                        const includeParam = includeChat ? 1 : 0;
+                        const pdfUrl = `/api/method/sahayog.sahayog.api.eod.download_eod_report?eod_name=${encodeURIComponent(this.eodName)}&include_chat=${includeParam}`;
+
+                        window.open(pdfUrl, '_blank');
+                    },
+
                     csrfToken: '',
-                    showModal: false,
+
                     confirmModal: {
                         show: false,
                         title: '',
@@ -1956,10 +2475,9 @@
                     },
                     currentDateFormatted: '',
                     project: {
-                        subtitle: 'Branch Operations - Daily Routine',
+                        subtitle: '',
                         sections: [] // Will be populated from API
-                    },
-                    // --- NEW STATE FOR ADMIN SELECT ---
+                    },                    // --- NEW STATE FOR ADMIN SELECT ---
                     adminSelectModal: {
                         show: false,
                         teams: [],
@@ -2011,6 +2529,7 @@
                             // Update this to use the new object structure from backend
                             this.hasAccess = accessData.message.has_access === true;
                             this.isManager = accessData.message.is_manager === true;
+                            this.isViewer = accessData.message.is_viewer === true;
                         } catch (e) {
                             this.hasAccess = false;
                         }
@@ -2052,16 +2571,35 @@
                             const data = await response.json();
                             if (data.message) {
                                 const status = data.message.status;
+                                // if user has just closed a previous-day EOD, don't replace the closed screen with idle yet
+                                if (this.lockClosedWorkspace && status === 'idle') {
+                                    return;
+                                }
                                 if (status === 'Pending') {
                                     this.eodStatus = 'started';
                                     this.eodName = data.message.name;
                                 } else if (status === 'Completed') {
                                     this.eodStatus = 'completed';
                                     this.eodName = data.message.name;
-                                } else if (status === 'Closed') {
+                                    // } else if (status === 'Closed') {
+                                    //     this.eodStatus = 'closed_today';
+                                    //     this.eodName = data.message.name;
+                                }
+                                else if (status === 'Closed') {
                                     this.eodStatus = 'closed_today';
                                     this.eodName = data.message.name;
-                                } else {
+                                    if (data.message.closed_on) {
+                                        this.eodClosedTime = this.formatTime(data.message.closed_on);
+                                    }
+                                    // this.eodClosedTime = data.message.closed_on ? this.formatTime(data.message.closed_on) : '';
+                                }
+                                // else {
+                                //     this.eodStatus = 'idle';
+                                //     this.eodName = '';
+                                // }
+                                else {
+                                    if (this.lockClosedWorkspace) return;
+
                                     this.eodStatus = 'idle';
                                     this.eodName = '';
                                 }
@@ -2076,6 +2614,37 @@
                         }
                     },
 
+                    // async fetchChatMessages() {
+                    //     if (!this.eodName) return;
+                    //     try {
+                    //         const response = await fetch(`/api/method/sahayog.sahayog.api.eod.get_chat_messages?eod_name=${this.eodName}`);
+                    //         const data = await response.json();
+                    //         if (data.message) {
+                    //             const oldLen = this.chat.messages.length;
+                    //             this.chat.messages = data.message.map(m => ({
+                    //                 id: m.name,
+                    //                 sender: m.sender_name,
+                    //                 text: m.text,
+                    //                 attachment: m.attachment,
+                    //                 is_image: m.is_image,
+                    //                 file_name: m.file_name,
+                    //                 time: m.time_display,
+                    //                 isMe: m.is_me,
+                    //                 isSystem: m.is_system
+                    //             }));
+
+                    //             if (this.chat.messages.length > oldLen) {
+                    //                 setTimeout(() => {
+                    //                     const el = document.getElementById('messages');
+                    //                     if (el) el.scrollTop = el.scrollHeight;
+                    //                 }, 100);
+                    //             }
+                    //         }
+                    //     } catch (err) {
+                    //         console.error("Error fetching messages", err);
+                    //     }
+                    // },
+
                     async fetchChatMessages() {
                         if (!this.eodName) return;
                         try {
@@ -2086,13 +2655,15 @@
                                 this.chat.messages = data.message.map(m => ({
                                     id: m.name,
                                     sender: m.sender_name,
+                                    sender_name: m.sender_name,
                                     text: m.text,
                                     attachment: m.attachment,
                                     is_image: m.is_image,
                                     file_name: m.file_name,
                                     time: m.time_display,
                                     isMe: m.is_me,
-                                    isSystem: m.is_system
+                                    isSystem: m.is_system,
+                                    user_image: m.user_image // <--- ADD THIS LINE
                                 }));
 
                                 if (this.chat.messages.length > oldLen) {
@@ -2114,6 +2685,27 @@
                             const data = await response.json();
                             if (data.message) {
                                 // Group tasks by team while maintaining order
+                                // const sections = [];
+                                // const teamsMap = {};
+
+                                // data.message.forEach(t => {
+                                //     if (!teamsMap[t.team]) {
+                                //         teamsMap[t.team] = {
+                                //             title: t.team,
+                                //             tasks: []
+                                //         };
+                                //         sections.push(teamsMap[t.team]);
+                                //     }
+                                //     teamsMap[t.team].tasks.push(t);
+                                // });
+
+                                // this.project.sections = sections;
+                                // Keep track of which teams are currently collapsed by the user
+                                const oldState = {};
+                                this.project.sections.forEach(s => {
+                                    oldState[s.title] = s.isExpanded;
+                                });
+
                                 const sections = [];
                                 const teamsMap = {};
 
@@ -2121,6 +2713,8 @@
                                     if (!teamsMap[t.team]) {
                                         teamsMap[t.team] = {
                                             title: t.team,
+                                            // Maintain previous collapse state, or default to collapsed!
+                                            isExpanded: oldState[t.team] !== undefined ? oldState[t.team] : false,
                                             tasks: []
                                         };
                                         sections.push(teamsMap[t.team]);
@@ -2140,6 +2734,11 @@
                         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
                         this.currentDateTime = now.toLocaleDateString('en-US', options);
                         this.currentDateFormatted = now.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                    },
+
+                    isSectionDone(section) {
+                        if (!section || !section.tasks || section.tasks.length === 0) return false;
+                        return section.tasks.every(t => t.done);
                     },
 
                     isAllTasksDone() {
@@ -2175,75 +2774,7 @@
                         return null;
                     },
 
-                    // async executeConfirm() {
-                    //     const type = this.confirmModal.type;
-                    //     this.confirmModal.show = false;
 
-                    //     try {
-                    //         if (type === 'start') {
-                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
-                    //             const data = await res.json();
-                    //             if (data.message) {
-                    //                 this.eodName = data.message.name;
-                    //                 const status = data.message.status;
-                    //                 if (status === 'Pending') this.eodStatus = 'started';
-                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
-                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
-
-                    //                 await this.fetchTasks();
-                    //                 await this.fetchChatMessages();
-                    //             }
-                    //         } else if (type === 'end') {
-                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
-                    //             const data = await res.json();
-                    //             if (data.message && data.message.status === 'success') {
-                    //                 this.eodStatus = 'closed_today';
-                    //                 this.showModal = true;
-                    //                 await this.fetchChatMessages();
-                    //             }
-                    //         }
-                    //     } catch (err) {
-                    //         console.error("Action error", err);
-                    //     }
-                    // },
-
-                    // async executeConfirm() {
-                    //     const type = this.confirmModal.type;
-                    //     this.confirmModal.show = false;
-
-                    //     // NEW: Do nothing else if this was just an informational message
-                    //     if (type === 'info') {
-                    //         return;
-                    //     }
-
-                    //     try {
-                    //         if (type === 'start') {
-                    //             // ... existing start logic ...
-                    //             const res = await fetch('/api/method/sahayog.sahayog.api.eod.start_eod');
-                    //             const data = await res.json();
-                    //             if (data.message) {
-                    //                 this.eodName = data.message.name;
-                    //                 const status = data.message.status;
-                    //                 if (status === 'Pending') this.eodStatus = 'started';
-                    //                 else if (status === 'Completed') this.eodStatus = 'completed';
-                    //                 else if (status === 'Closed') this.eodStatus = 'closed_today';
-
-                    //                 await this.fetchTasks();
-                    //                 await this.fetchChatMessages();
-                    //             }
-                    //         } else if (type === 'end') {
-                    //             const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
-                    //             const data = await res.json();
-                    //             if (data.message && data.message.status === 'success') {
-                    //                 this.eodStatus = 'closed_today';
-                    //                 this.showModal = true;
-                    //                 await this.fetchChatMessages();
-                    //             }
-                    //         }
-                    //     } catch (err) {
-                    //         console.error("Action error", err);
-                    //     }
-                    // },
                     async executeConfirm() {
                         const type = this.confirmModal.type;
                         this.confirmModal.show = false;
@@ -2269,15 +2800,49 @@
                                     await this.fetchTasks();
                                     await this.fetchChatMessages();
                                 }
-                            } else if (type === 'end') {
+                            }
+                            // else if (type === 'end') {
+                            //     const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
+                            //     const data = await res.json();
+                            //     if (data.message && data.message.status === 'success') {
+                            //         this.eodStatus = 'closed_today';
+                            //         //  else if (status === 'Closed') { the current time instantly
+                            //         const now = new Date();
+                            //         this.eodClosedTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            //         this.showModal = true;
+                            //         await this.fetchChatMessages();
+                            //     }
+                            // }
+                            else if (type === 'end') {
                                 const res = await fetch(`/api/method/sahayog.sahayog.api.eod.close_eod?eod_name=${this.eodName}`);
                                 const data = await res.json();
+
                                 if (data.message && data.message.status === 'success') {
                                     this.eodStatus = 'closed_today';
+
+                                    // lock the just-closed workspace so fetchStatus does not replace it with idle
+                                    this.lockClosedWorkspace = true;
+                                    this.lockedClosedEodName = this.eodName;
+                                    this.lockedClosedEodDate = data.message.eod_date || this.lockedClosedEodDate || this.currentDateFormatted;
+
+                                    // keep the correct closed time
+                                    if (data.message.closed_on) {
+                                        this.eodClosedTime = this.formatTime(data.message.closed_on);
+                                    } else {
+                                        const now = new Date();
+                                        this.eodClosedTime = now.toLocaleTimeString('en-US', {
+                                            hour12: false,
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit'
+                                        });
+                                    }
+
                                     this.showModal = true;
                                     await this.fetchChatMessages();
                                 }
                             }
+
                         } catch (err) {
                             console.error("Action error", err);
                         }
@@ -2295,78 +2860,66 @@
                         return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
                     },
 
-                    // async toggleTask(task) {
-                    //     if (this.eodStatus === 'closed_today') return;
-                    //     if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
+                    // Calculate precise duration from the first checked task to the last checked task
+                    // Calculate precise duration from the first checked task to the last checked task
+                    getEodDuration() {
+                        if (!this.project || !this.project.sections) return '';
 
-                    //     const newValue = !task.done;
-                    //     try {
-                    //         const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
-                    //         const data = await res.json();
-                    //         if (data.message && data.message.status === 'success') {
-                    //             task.done = newValue;
-                    //             if (newValue) {
-                    //                 const now = new Date();
-                    //                 task.completedBy = 'Me'; 
-                    //                 task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    //             } else {
-                    //                 task.completedBy = null;
-                    //                 task.completedAt = null;
-                    //             }
+                        let earliest = null;
+                        let latest = null;
 
-                    //             if (data.message.eod_status === 'Completed') {
-                    //                 this.eodStatus = 'completed';
-                    //             } else {
-                    //                 this.eodStatus = 'started';
-                    //             }
+                        this.project.sections.forEach(section => {
+                            if (section.tasks) {
+                                section.tasks.forEach(task => {
+                                    if (task.done && task.completed_on) {
+                                        const taskTime = new Date(task.completed_on.replace(' ', 'T'));
 
-                    //             await this.fetchChatMessages();
-                    //         }
-                    //     } catch (err) {
-                    //         console.error("Toggle error", err);
-                    //     }
-                    // },
-                    // async toggleTask(task) {
-                    //     if (this.eodStatus === 'closed_today') return;
-                    //     if (this.eodStatus !== 'started' && this.eodStatus !== 'completed') return;
+                                        if (!earliest || taskTime < earliest) earliest = taskTime;
+                                        if (!latest || taskTime > latest) latest = taskTime;
+                                    }
+                                });
+                            }
+                        });
 
-                    //     const newValue = !task.done;
-                    //     try {
-                    //         const res = await fetch(`/api/method/sahayog.sahayog.api.eod.update_task_status?eod_name=${this.eodName}&task_row_name=${task.name}&done=${newValue}`);
-                    //         const data = await res.json();
+                        if (!earliest || !latest) return '';
+                        if (earliest.getTime() === latest.getTime()) return 'Started...';
 
-                    //         if (data.message && data.message.status === 'success') {
-                    //             task.done = newValue;
-                    //             if (newValue) {
-                    //                 const now = new Date();
-                    //                 task.completedBy = 'Me';
-                    //                 task.completedAt = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    //             } else {
-                    //                 task.completedBy = null;
-                    //                 task.completedAt = null;
-                    //             }
+                        const diffMs = latest - earliest;
 
-                    //             if (data.message.eod_status === 'Completed') {
-                    //                 this.eodStatus = 'completed';
-                    //             } else {
-                    //                 this.eodStatus = 'started';
-                    //             }
+                        // NEW FIX: Calculate exact Hours, Minutes, AND Seconds
+                        const diffHrs = Math.floor(diffMs / 3600000);
+                        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                        const diffSecs = Math.floor((diffMs % 60000) / 1000);
 
-                    //             await this.fetchChatMessages();
-                    //         }
-                    //         // --- NEW PERMISSION ERROR MODAL LOGIC ---
-                    //         else if (data.message && data.message.status === 'error') {
-                    //             this.confirmModal.title = 'Access Denied';
-                    //             this.confirmModal.message = data.message.message; // e.g., 'Permission denied. You are not a member of the L1 team.'
-                    //             this.confirmModal.type = 'info'; // Shows the "!" icon and hides the Cancel button
-                    //             this.confirmModal.show = true;
-                    //         }
-                    //         // --- END NEW LOGIC ---
+                        // Format the output dynamically based on how much time has passed
+                        if (diffHrs > 0) {
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}s`;
+                        } else if (diffMins > 0) {
+                            return `${diffMins}m ${diffSecs}s`;
+                        } else {
+                            // If it took less than 1 minute total
+                            // return `${diffSecs}s`;
+                            // Always output exactly "Xh Ym Zsec"
+                            return `${diffHrs}h ${diffMins}m ${diffSecs}sec`;
+                        }
+                    },
 
-                    //     } catch (err) {
-                    //         console.error("Toggle error", err);
-                    //     }
-                    // },
+                    getCompletedTasksCount(section) {
+                        if (!section || !section.tasks) return 0;
+                        let count = 0;
+                        section.tasks.forEach(t => {
+                            if (t.done) count++;
+                        });
+                        return count;
+                    },
+
+                    getSectionProgress(section) {
+                        if (!section || !section.tasks || section.tasks.length === 0) return 0;
+                        const count = this.getCompletedTasksCount(section);
+                        return (count / section.tasks.length) * 100;
+                    },
+
+
 
                     async toggleTask(task) {
                         if (this.eodStatus === 'closed_today') return;
@@ -2420,13 +2973,36 @@
                     //     location.reload();
                     // },
 
-                    resetForNextDay() {
-                        this.showModal = false; // Hide the success modal if it was open
+                    // resetForNextDay() {
+                    //     this.showModal = false; // Hide the success modal if it was open
 
-                        this.confirmModal.title = 'EOD Completed';
-                        this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
-                        this.confirmModal.type = 'info';
-                        this.confirmModal.show = true;
+                    //     this.confirmModal.title = 'EOD Completed';
+                    //     this.confirmModal.message = 'Current day EOD is complete. Please come back tomorrow to start a new checklist!';
+                    //     this.confirmModal.type = 'info';
+                    //     this.confirmModal.show = true;
+                    // },
+
+                    // resetForNextDay() {
+                    //     this.lockClosedWorkspace = false;
+                    //     this.lockedClosedEodName = '';
+                    //     this.lockedClosedEodDate = '';
+                    //     location.reload();
+                    // },
+
+                    resetForNextDay() {
+                        // 1. Hide any open modals
+                        this.showModal = false;
+                        this.showSettingsDropdown = false;
+
+                        // 2. Clear the locks keeping us on yesterday's EOD
+                        this.lockClosedWorkspace = false;
+                        this.lockedClosedEodName = '';
+                        this.lockedClosedEodDate = '';
+
+                        // 3. Instantly refresh the screen
+                        // Because yesterday's EOD is closed, the backend will now safely give us 
+                        // the clean 'Start' screen for today!
+                        location.reload();
                     },
 
                     async handleFileUpload(e) {
@@ -2504,73 +3080,7 @@
                             this.chat.newMessage = msgText;
                         }
                     },
-                    // async openManageModal() {
-                    //     try {
-                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.get_manager_data');
-                    //         const data = await res.json();
-                    //         if (data.message.status === 'success') {
-                    //             this.manageModal.teamName = data.message.team_name;
-                    //             this.manageModal.checklistName = data.message.checklist_name;
-                    //             this.manageModal.members = data.message.members;
-                    //             this.manageModal.tasks = data.message.tasks;
-                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
-                    //             this.manageModal.show = true;
-                    //         } else {
-                    //             alert(data.message.message);
-                    //         }
-                    //     } catch (e) { console.error(e); }
-                    // },
 
-                    // async openManageModal(teamName = null) {
-                    //     try {
-                    //         // Strictly force invalid variables to null so the API handles it cleanly
-                    //         if (typeof teamName !== 'string') {
-                    //             teamName = null;
-                    //         }
-
-                    //         const url = teamName
-                    //             ? `/api/method/sahayog.sahayog.api.eod.get_manager_data?team_name=${encodeURIComponent(teamName)}`
-                    //             : '/api/method/sahayog.sahayog.api.eod.get_manager_data';
-
-                    //         const res = await fetch(url);
-                    //         const data = await res.json();
-
-                    //         if (data.message.status === 'success') {
-                    //             this.manageModal.teamName = data.message.team_name;
-                    //             this.manageModal.checklistName = data.message.checklist_name || '';
-                    //             this.manageModal.members = data.message.members || [];
-                    //             this.manageModal.tasks = data.message.tasks || [];
-                    //             this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
-                    //             this.manageModal.show = true;
-
-                    //         } else if (data.message.status === 'admin_select') {
-                    //             const teams = data.message.teams;
-                    //             if (!teams || teams.length === 0) {
-                    //                 alert("No EOD Teams exist in the database yet.");
-                    //                 return;
-                    //             }
-
-                    //             let promptText = "Admin Access: Enter the number of the team to manage:\n\n";
-                    //             teams.forEach((t, i) => {
-                    //                 promptText += `${i + 1}. ${t.name}\n`;
-                    //             });
-
-                    //             const choice = prompt(promptText);
-                    //             if (!choice) return;
-
-                    //             const index = parseInt(choice) - 1;
-                    //             if (!isNaN(index) && index >= 0 && index < teams.length) {
-                    //                 this.openManageModal(teams[index].name);
-                    //             } else {
-                    //                 alert("Invalid selection.");
-                    //             }
-                    //         } else {
-                    //             alert(data.message.message || "Error accessing team data.");
-                    //         }
-                    //     } catch (e) {
-                    //         console.error("Manage Modal Error:", e);
-                    //     }
-                    // },
 
                     async openManageModal(teamName = null) {
                         try {
@@ -2588,6 +3098,7 @@
                             if (data.message.status === 'success') {
                                 this.manageModal.teamName = data.message.team_name;
                                 this.manageModal.checklistName = data.message.checklist_name || '';
+                                this.manageModal.isActive = data.message.is_active !== undefined ? (data.message.is_active === 1 || data.message.is_active === true) : true;
                                 this.manageModal.members = data.message.members || [];
                                 this.manageModal.systemUsers = data.message.system_users || [];
                                 this.manageModal.tasks = data.message.tasks || [];
@@ -2614,33 +3125,7 @@
                         }
                     },
 
-                    // async searchUsers() {
-                    //     if (!this.manageModal.searchQuery || this.manageModal.searchQuery.length < 2) {
-                    //         this.manageModal.searchResults = [];
-                    //         return;
-                    //     }
 
-                    //     try {
-                    //         // Call Frappe's native search API directly
-                    //         const res = await fetch(`/api/method/frappe.desk.search.search_link?txt=${encodeURIComponent(this.manageModal.searchQuery)}&doctype=User&ignore_user_permissions=0&reference_doctype=EOD Team`);
-                    //         const data = await res.json();
-
-                    //         if (data.results && data.results.length > 0) {
-                    //             // Filter out users who are already in the team
-                    //             const currentMembers = this.manageModal.members.map(m => m.user);
-                    //             this.manageModal.searchResults = data.results
-                    //                 .filter(u => !currentMembers.includes(u.value))
-                    //                 .map(u => ({
-                    //                     name: u.value,
-                    //                     full_name: u.description || u.value
-                    //                 }));
-                    //         } else {
-                    //             this.manageModal.searchResults = [];
-                    //         }
-                    //     } catch (e) {
-                    //         console.error("User search failed", e);
-                    //     }
-                    // },
 
                     async searchUsers() {
                         const query = this.manageModal.searchQuery;
@@ -2720,11 +3205,7 @@
                     },
 
 
-                    // addMember() {
-                    //     if (!this.manageModal.newUser) return;
-                    //     this.manageModal.members.push({ user: this.manageModal.newUser });
-                    //     this.manageModal.newUser = '';
-                    // },
+
 
                     addMember() {
                         if (!this.manageModal.newUser) return;
@@ -2764,36 +3245,14 @@
                         this.manageModal.newTaskText = '';
                         this.manageModal.newTaskSeq = this.manageModal.tasks.length + 1;
                     },
-                    // async saveManageData() {
-                    //     await this.refreshToken();
-                    //     const formData = new FormData();
-                    //     formData.append('team_name', this.manageModal.teamName);
-                    //     formData.append('checklist_name', this.manageModal.checklistName || '');
-                    //     formData.append('members', JSON.stringify(this.manageModal.members));
-                    //     formData.append('tasks', JSON.stringify(this.manageModal.tasks));
 
-                    //     try {
-                    //         const res = await fetch('/api/method/sahayog.sahayog.api.eod.save_manager_data', {
-                    //             method: 'POST',
-                    //             body: formData,
-                    //             headers: { 'X-Frappe-CSRF-Token': this.getCsrfToken() }
-                    //         });
-                    //         const data = await res.json();
-                    //         if (data.message && data.message.status === 'success') {
-                    //             this.manageModal.show = false;
-                    //             // Reset fields
-                    //             this.manageModal.newUser = '';
-                    //             this.manageModal.newTaskText = '';
-                    //             alert('Settings saved successfully. Task changes will apply to tomorrow\'s EOD.');
-                    //         }
-                    //     } catch (e) { console.error(e); }
-                    // },
 
                     async saveManageData() {
                         await this.refreshToken();
                         const formData = new FormData();
                         formData.append('team_name', this.manageModal.teamName);
                         formData.append('checklist_name', this.manageModal.checklistName || '');
+                        formData.append('is_active', this.manageModal.isActive ? 1 : 0,);
                         formData.append('members', JSON.stringify(this.manageModal.members));
                         formData.append('tasks', JSON.stringify(this.manageModal.tasks));
 

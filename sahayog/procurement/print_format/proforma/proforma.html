@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @media print {
+            @page { 
+                margin: 0; 
+            }
+            body { 
+                margin: 1mm 7mm 1.5cm 7mm; 
+            }
+        }
+        .proforma-container {
+            padding: 10px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #006363;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #006363;
+            margin: 0;
+            font-size: 24px;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            width: 48%;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .info-box strong {
+            color: #555;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            color: #006363;
+        }
+        .items-table td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+        }
+        @media print {
+            .footer {
+                position: fixed;
+                bottom: 10px;
+                left: 0;
+                right: 0;
+                text-align: center;
+                margin-top: 0;
+            }
+        }
+        .signature-section {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 200px;
+            border-top: 1px solid #333;
+            text-align: center;
+            padding-top: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="proforma-container">
+        <div class="header" style="border-bottom: none; margin-bottom: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <img src="/assets/sahayog/images/sahayog_logo_2025.png" alt="Sahayog Logo" style="height: 45px; width: auto;">
+                <div style="text-align: right;">
+                    <h1 style="margin: 0; color: #006363; font-size: 28px; letter-spacing: 2px;">PROFORMA</h1>
+                </div>
+            </div>
+        </div>
+        <hr style="border: none; border-top: 2px solid #006363; margin: 10px 0 20px 0;">
+
+        <div class="info-section">
+            <div class="info-box">
+                <p><strong>Request ID:</strong> {{ doc.name }}</p>
+                {% set employee = frappe.get_doc("Employee", doc.employee) %}
+                <p><strong>Employee:</strong> {{ employee.employee_name }} ({{ employee.employee_number }})</p>
+                <p><strong>Request Type:</strong> {{ doc.request_type }}</p>
+                <p><strong>Target Warehouse:</strong> {{ doc.target_warehouse }}</p>
+            </div>
+            <div class="info-box" style="text-align: right;">
+                <p><strong>Status:</strong> {{ doc.status }}</p>
+                <p><strong>Required By:</strong> {{ frappe.utils.format_date(doc.required_by_date) }}</p>
+            </div>
+        </div>
+
+        {% set dispatch_details = [] %}
+        {% for item in doc.items %}
+            {% if item.dispatch_detail and item.dispatch_detail not in dispatch_details %}
+                {% if dispatch_details.append(item.dispatch_detail) %}{% endif %}
+            {% endif %}
+        {% endfor %}
+
+        {% if dispatch_details %}
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+            <p><strong>Dispatch Details:</strong></p>
+            {% for dd_name in dispatch_details %}
+                {% set dd = frappe.get_doc("Dispatch Detail", dd_name) %}
+                <div style="font-size: 13px; background: #f9f9f9; padding: 15px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; border-left: 3px solid #006363;">
+                    <div style="width: 48%;">
+                        <p style="margin: 3px 0;"><strong>Courier:</strong> {{ dd.courier_name }} {{ "(" + dd.courier_company_name + ")" if dd.courier_company_name else "" }}</p>
+                        <p style="margin: 3px 0;"><strong>POD Number:</strong> {{ dd.pod_no or "-" }}</p>
+                        <p style="margin: 3px 0;"><strong>Mobile:</strong> {{ dd.mobile_number or "-" }}</p>
+                    </div>
+                    <div style="width: 48%; text-align: right;">
+                        <p style="margin: 3px 0;"><strong>Dispatch Date:</strong> {{ frappe.utils.format_date(dd.dispatch_date) if dd.dispatch_date else "-" }}</p>
+                        <p style="margin: 3px 0;"><strong>Expected Delivery:</strong> {{ frappe.utils.format_date(dd.delivery_date) if dd.delivery_date else "-" }}</p>
+                        <p style="margin: 3px 0;"><strong>Location:</strong> {{ dd.dispatch_location or "-" }}</p>
+                    </div>
+                    {% if dd.address %}
+                    <div style="width: 100%; margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 8px;">
+                        <p style="margin: 0;"><strong>Address:</strong> {{ dd.address }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <table class="items-table" style="margin-top: 10px;">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Qty</th>
+                    <th style="text-align: right;">Rate</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set grand_total = [0] %}
+                {% for item in doc.items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.item_code }}</td>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.description or "" }}</td>
+                    <td style="text-align: right;">{{ item.approved_quantity or 0 }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format(item.rate, "Currency") if item.rate else 0 }}</td>
+                    <td style="text-align: right; white-space: nowrap;">{{ frappe.format((item.approved_quantity or 0) * (item.rate|float or 0), "Currency") }}</td>
+                </tr>
+                {% if grand_total.append(grand_total.pop() + ((item.approved_quantity or 0) * (item.rate|float or 0))) %}{% endif %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background-color: #f8f9fa;">
+                    <td colspan="6" style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363;">Grand Total</td>
+                    <td style="text-align: right; border: 1px solid #dee2e6; padding: 10px; color: #006363; white-space: nowrap;">{{ frappe.format(grand_total[0], "Currency") }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if doc.remark %}
+        <div style="margin-top: 30px;">
+            <p><strong>Remarks:</strong></p>
+            <p style="font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 3px solid #006363;">{{ doc.remark }}</p>
+        </div>
+        {% endif %}
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {{ frappe.db.get_value("User", doc.requested_by, "full_name") or doc.requested_by or "" }}
+                </div>
+                <strong>Requested By</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {% if doc.reporting_person_status == "Approved" or doc.reporting_person_status == "Skip" %}
+                        {{ frappe.db.get_value("User", doc.reporting_person, "full_name") or doc.reporting_person }}<br>
+                        <small style="color: green;">{{ doc.reporting_person_status }} on {{ frappe.utils.format_date(doc.reporting_person_approval_date) if doc.reporting_person_approval_date else "" }}</small>
+                    {% else %}
+                        <span style="color: #999;">{{ doc.reporting_person_status or "Pending" }}</span>
+                    {% endif %}
+                </div>
+                <strong>Reporting Person</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {% if doc.ho_officer_status == "Approved" or doc.ho_officer_status == "Skip" %}
+                        {{ frappe.db.get_value("User", doc.head_office_officer, "full_name") or doc.head_office_officer }}<br>
+                        <small style="color: green;">{{ doc.ho_officer_status }} on {{ frappe.utils.format_date(doc.ho_officer_approval_date) if doc.ho_officer_approval_date else "" }}</small>
+                    {% else %}
+                        <span style="color: #999;">{{ doc.ho_officer_status or "Pending" }}</span>
+                    {% endif %}
+                </div>
+                <strong>HO Approval</strong>
+            </div>
+            <div class="signature-box">
+                <div style="min-height: 20px;">
+                    {% set se_list = frappe.get_all("Stock Entry", filters={"custom_material_request": doc.name, "docstatus": 1}, fields=["owner"], order_by="creation desc", limit=1) %}
+                    {% set se_owner = se_list[0].owner if se_list else None %}
+                    
+                    {% if se_owner %}
+                        {% set dispatcher_name = frappe.db.get_value("Employee", {"user_id": se_owner}, "employee_name") %}
+                        {{ dispatcher_name or frappe.db.get_value("User", se_owner, "full_name") or se_owner }}
+                    {% else %}
+                        <span style="color: #999;">Pending</span>
+                    {% endif %}
+                </div>
+                <strong>Dispatched By</strong>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Generated on {{ frappe.utils.format_datetime(frappe.utils.now_datetime()) }}</p>
+        </div>
+    </div>
+</body>
+</html>

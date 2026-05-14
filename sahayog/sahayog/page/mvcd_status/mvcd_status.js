@@ -142,9 +142,20 @@ h4 {
   color: #256a69;
   animation: count-to 1s ease-in-out forwards;
 }
+
+.page-head.flex {
+  display: none !important;
+}
 </style>
 
 <div style="text-align:center;margin-bottom:6px;font-size:1rem;font-weight:700;color:#256a69;">Sahayog Finacle Branches Status</div>
+
+<!-- Batch Status Indicators -->
+<div style="text-align:center; margin-top: 15px;">
+    <span style="font-size: 0.75rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Batch Wise Progress</span>
+    <div id="batch-buttons-container" style="display: flex; flex-wrap: nowrap; justify-content: center; gap: 4px; max-width: 100%; margin: 0 auto;"></div>
+</div>
+
 <!-- SOL ID Filter -->
 <div style="text-align:center;margin:10px 0;">
   <input type="text" id="sol-filter" placeholder="Enter SOL ID to filter"
@@ -156,6 +167,10 @@ h4 {
   <button id="clear-filter"
           style="margin-left:6px;padding:6px 10px;background:#eee;color:#333;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
     Clear
+  </button>
+  <button id="manual-refresh"
+          style="margin-left:6px;padding:6px 10px;background:#256a69;color:#fff;border:none;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+    Refresh
   </button>
 </div>
 
@@ -222,7 +237,7 @@ h4 {
   const transHeaderRow = $("<tr>");
   transHeaderRow.append($("<th>").text("S. No."));
   columnsTrans.forEach((col) =>
-    transHeaderRow.append($("<th>").text(col.label))
+    transHeaderRow.append($("<th>").text(col.label)),
   );
   $transThead.append(transHeaderRow);
 
@@ -247,6 +262,9 @@ h4 {
 
   let currentMVCDData = [];
   let currentTransData = [];
+  let batchData = {};
+  let mvcdFirstLoad = true;
+  let transFirstLoad = true;
 
   // Load filter from storage
   let cachedFilter = localStorage.getItem("mvcd_sol_filter") || "";
@@ -255,10 +273,10 @@ h4 {
   function updateFilterMessage(sol) {
     if (sol && sol.trim() !== "") {
       $("#filter-message").html(
-        `<span style="color: grey;">FILTER APPLIED FOR SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`
+        `<span style="color: grey;">SOL ID :</span> <span style="font-weight:bold; color: #256a69;">${sol.toUpperCase()}</span>`,
       );
     } else {
-      $("#filter-message").text("");
+      $("#filter-message").html("");
     }
   }
 
@@ -279,8 +297,8 @@ h4 {
           $("<td>")
             .attr("colspan", columnsMVCD.length + 1)
             .addClass("no-data")
-            .text("No MVCD data available.")
-        )
+            .text("No MVCD data available."),
+        ),
       );
     }
   }
@@ -302,36 +320,153 @@ h4 {
           $("<td>")
             .attr("colspan", columnsTrans.length + 1)
             .addClass("no-data")
-            .text("No transaction data available.")
-        )
+            .text("No transaction data available."),
+        ),
       );
     }
-  }
-
-  function renderMVCDFiltered(filter) {
-    const filtered = currentMVCDData.filter((row) =>
-      (row.sol_id || "").toLowerCase().includes(filter)
-    );
-    renderMVCD(filtered);
-    $("#mvcd-count").text(filtered.length);
-  }
-
-  function renderTransactionFiltered(filter) {
-    const filtered = currentTransData.filter((row) =>
-      (row.dth_init_sol_id || "").toLowerCase().includes(filter)
-    );
-    renderTransaction(filtered);
-    $("#transaction-count").text(filtered.length);
   }
 
   function applyFilter() {
     const sol = $("#sol-filter").val().trim().toLowerCase();
     localStorage.setItem("mvcd_sol_filter", sol);
-    renderMVCDFiltered(sol);
-    renderTransactionFiltered(sol);
+
+    let mvcdFiltered = currentMVCDData;
+    let transFiltered = currentTransData;
+
+    // Filter by SOL ID input
+    if (sol) {
+      mvcdFiltered = mvcdFiltered.filter((row) =>
+        (row.sol_id || "").toLowerCase().includes(sol),
+      );
+      transFiltered = transFiltered.filter((row) =>
+        (row.dth_init_sol_id || "").toLowerCase().includes(sol),
+      );
+    }
+
+    renderMVCD(mvcdFiltered);
+    updateMVCDCount(mvcdFiltered.length);
+
+    renderTransaction(transFiltered);
+    updateTransactionCount(transFiltered.length);
+
     updateFilterMessage(sol);
   }
 
+  function fetchBatches() {
+    frappe.call({
+      method: "sahayog.sahayog.page.mvcd_status.mvcd.get_batch_data",
+      callback: (r) => {
+        batchData = r.message || {};
+        renderBatchButtons();
+        applyFilter();
+      },
+    });
+  }
+
+  function renderBatchButtons() {
+    const $container = $("#batch-buttons-container");
+    $container.empty();
+
+    const batches = Object.keys(batchData).sort((a, b) => {
+      return a.localeCompare(b, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    });
+
+    batches.forEach((batch) => {
+      const label = batch.replace(/EOD/i, "batch-");
+      const allowedSols = batchData[batch] || [];
+      const mvcdCount = currentMVCDData.filter((row) =>
+        allowedSols.includes(String(row.sol_id)),
+      ).length;
+      const isClear = mvcdCount === 0;
+
+      // "Liquid Glass" Theme Colors
+      const glassBg = isClear
+        ? "rgba(16, 185, 129, 0.15)"
+        : "rgba(239, 68, 68, 0.15)";
+      const accentColor = isClear ? "#10b981" : "#ef4444";
+      const glowColor = isClear
+        ? "rgba(16, 185, 129, 0.3)"
+        : "rgba(239, 68, 68, 0.3)";
+      const buttonText =
+        mvcdCount > 0
+          ? `${label.toUpperCase()} (${mvcdCount})`
+          : label.toUpperCase();
+
+      const $badge = $(`
+        <div class="status-badge-liquid" style="
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: ${glassBg};
+            color: ${accentColor};
+            border: 1px solid ${accentColor};
+            cursor: pointer;
+            min-width: 70px;
+            flex-shrink: 1;
+            justify-content: center;
+            --glow-color: ${glowColor};
+            animation: liquid-pulse 3s infinite;
+        ">
+            <div style="
+                width: 6px; 
+                height: 6px; 
+                border-radius: 50%; 
+                background: ${accentColor};
+                box-shadow: 0 0 5px ${accentColor};
+                flex-shrink: 0;
+            "></div>
+            <span style="white-space: nowrap; font-family: 'Inter', sans-serif;">${buttonText}</span>
+        </div>
+      `);
+
+      // Hover effect for the badge
+      $badge.hover(
+        function () {
+          $(this).css("transform", "scale(1.05)");
+        },
+        function () {
+          $(this).css("transform", "scale(1)");
+        },
+      );
+
+      $badge.on("click", () => {
+        const pendingSols = currentMVCDData.map((row) => String(row.sol_id));
+        showClearedSolsModal(label.toUpperCase(), allowedSols, pendingSols);
+      });
+
+      $container.append($badge);
+    });
+  }
+
+  function showClearedSolsModal(batchName, allSols, pendingSols) {
+    const html = allSols
+      .map((sol) => {
+        const isPending = pendingSols.includes(sol);
+        const color = isPending ? "#fecaca" : "#bbf7d0"; // Light red / Light green
+        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600;">${sol}</li>`;
+      })
+      .join("");
+
+    const dialog = new frappe.ui.Dialog({
+      title: `Batch Audit: ${batchName}`,
+      fields: [
+        {
+          fieldname: "sol_list",
+          fieldtype: "HTML",
+          options: `<ul style="list-style: none; padding: 0;">${html}</ul>`,
+        },
+      ],
+    });
+    dialog.show();
+  }
   $("#apply-filter").on("click", applyFilter);
   $("#sol-filter").on("keyup", function (e) {
     if (e.key === "Enter") applyFilter();
@@ -339,16 +474,27 @@ h4 {
   $("#clear-filter").on("click", function () {
     $("#sol-filter").val("");
     localStorage.removeItem("mvcd_sol_filter");
+    renderBatchButtons();
     applyFilter();
+  });
+
+  $("#manual-refresh").on("click", function () {
+    fetchRenderMVCD();
+    fetchRenderTransaction();
+    fetchBatches();
   });
 
   function onMVCDDataLoaded(data) {
     currentMVCDData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
+    updateMVCDCount(currentMVCDData.length);
   }
   function onTransactionDataLoaded(data) {
     currentTransData = data || [];
+    renderBatchButtons(); // Refresh button colors
     applyFilter();
+    updateTransactionCount(currentTransData.length);
   }
 
   function fetchRenderMVCD() {
@@ -378,66 +524,77 @@ h4 {
 
   fetchRenderMVCD();
   fetchRenderTransaction();
+  fetchBatches();
   setInterval(fetchRenderMVCD, 10000);
   setInterval(fetchRenderTransaction, 10000);
 
   applyFilter();
 
-  // Function to animate the count from 0 to target number
-  // Animate number smoothly
-function animateNumber(element, target) {
-  let current = 0;
-  const increment = target / 100;
-  const duration = 1500; // ms
-  const stepTime = Math.max(10, Math.floor(duration / 100)); // avoid 0
+  // Animate number smoothly from current value to target
+  function animateNumber(element, target) {
+    // Get current value from element, default to 0 if not a number
+    let current = parseInt(element.textContent) || 0;
+    if (current === target) return;
 
-  // Stop previous animation if still running
-  clearInterval(element._counterInterval);
+    const start = current;
+    const duration = 1500; // ms
+    const startTime = performance.now();
 
-  element._counterInterval = setInterval(() => {
-    current += increment;
-    if (current >= target) {
-      current = target;
-      clearInterval(element._counterInterval);
+    // Stop previous animation if still running
+    if (element._counterAnimationFrame) {
+      cancelAnimationFrame(element._counterAnimationFrame);
     }
-    element.textContent = Math.floor(current);
-  }, stepTime);
-}
 
-// Update MVCD count
-function updateMVCDCount(count) {
-  const el = document.getElementById('mvcd-count');
-  el.classList.remove('counter'); // reset animation
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
 
-// Update Transaction count
-function updateTransactionCount(count) {
-  const el = document.getElementById('transaction-count');
-  el.classList.remove('counter');
-  void el.offsetWidth; // force reflow
-  el.classList.add('counter');
-  animateNumber(el, count);
-}
+      // Ease out quad function
+      const ease = progress * (2 - progress);
+      const nextValue = Math.floor(start + (target - start) * ease);
 
-// Call after data is loaded
-function onMVCDDataLoaded(data) {
-  currentMVCDData = data || [];
-  applyFilter(); // your existing filter logic
-  updateMVCDCount(currentMVCDData.length);
-}
+      element.textContent = nextValue;
 
-function onTransactionDataLoaded(data) {
-  currentTransData = data || [];
-  applyFilter(); // your existing filter logic
-  updateTransactionCount(currentTransData.length);
-}
+      if (progress < 1) {
+        element._counterAnimationFrame = requestAnimationFrame(update);
+      } else {
+        element.textContent = target;
+        element._counterAnimationFrame = null;
+      }
+    }
 
-// Example initial calls
-updateMVCDCount(currentMVCDData.length);
-updateTransactionCount(currentTransData.length);
+    element._counterAnimationFrame = requestAnimationFrame(update);
+  }
 
+  // Update MVCD count
+  function updateMVCDCount(count) {
+    const el = document.getElementById("mvcd-count");
+    if (!el) return;
 
+    if (mvcdFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      mvcdFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
+
+  // Update Transaction count
+  function updateTransactionCount(count) {
+    const el = document.getElementById("transaction-count");
+    if (!el) return;
+
+    if (transFirstLoad) {
+      // Set to 0 initially for the very first animation
+      el.textContent = "0";
+      animateNumber(el, count);
+      transFirstLoad = false;
+    } else {
+      // Direct update for subsequent refreshes
+      el.textContent = count;
+    }
+  }
 };

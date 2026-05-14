@@ -230,7 +230,8 @@ def create_asset_movement_from_emmr(emmr, assets):
     # Create Asset Movement
     # -------------------------------------------------
     am = frappe.new_doc("Asset Movement")
-    # am.company = emmr_doc.company
+    am.company = emmr_doc.company
+    am.transaction_date = date.today().strftime("%Y-%m-%d")
     am.purpose = "Issue"
     am.custom_reference_doctype = "Employee Material Request"
     am.custom_reference_name = emmr_doc.name
@@ -328,42 +329,45 @@ def create_asset_movement_from_emmr(emmr, assets):
 
 @frappe.whitelist()
 def get_emr_list(limit=20, start=0, search_text=None):
-    """
-    Fetch Employee Material Requests joined with Employee Name
-    """
-    conditions = []
-    values = {}
-
-    if search_text:
-        conditions.append("(emr.name LIKE %(search)s OR emr.owner LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
-        values["search"] = f"%{search_text}%"
-
-    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    from sahayog.permissions import get_employee_material_request_permission
+    perm_cond = get_employee_material_request_permission(frappe.session.user)
     
-    # Get total count
-    total_count = frappe.db.sql(f"""
-        SELECT COUNT(*) 
-        FROM `tabEmployee Material Request` emr
-        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
-        {where_clause}
-    """, values)[0][0]
+    filters = {}
+    if search_text:
+        filters["name"] = ["like", f"%{search_text}%"]
 
-    # Get data
-    data = frappe.db.sql(f"""
-        SELECT 
-            emr.*, 
-            emp.employee_name
+    # Use frappe.db.get_list which supports 'or_filters' and complex conditions
+    # or apply the permission query manually via SQL if necessary for performance/complexity
+    # Since the permission logic is complex SQL, I will use a hybrid approach
+    
+    query = f"""
+        SELECT emr.*, emp.employee_name
         FROM `tabEmployee Material Request` emr
         LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
-        {where_clause}
+        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
+        {"AND " if perm_cond and search_text else ""}
+        {("emr.name LIKE '" + f"%{search_text}%" + "'") if search_text else ""}
         ORDER BY emr.creation DESC
-        LIMIT %(limit)s OFFSET %(offset)s
-    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+        LIMIT {int(limit)} OFFSET {int(start)}
+    """
+    data = frappe.db.sql(query, as_dict=True)
+    
+    # Get total count with the same logic
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM `tabEmployee Material Request` emr
+        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
+    """
+    total_count = frappe.db.sql(count_query)[0][0]
 
-    return {
-        "data": data,
-        "total": total_count
-    }
+    for row in data:
+        row["items"] = frappe.get_all(
+            "Material Request Items",
+            filters={"parent": row.name},
+            fields=["name", "status", "item_code", "quantity", "item_category"]
+        )
+
+    return {"data": data, "total": total_count}
 
 @frappe.whitelist()
 def get_asset_list(limit=20, start=0, search_text=None):
@@ -453,4 +457,292 @@ def get_movement_list(limit=20, start=0, search_text=None):
     return {
         "data": data,
         "total": total_count
+    }
+
+
+@frappe.whitelist()
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
+    """
+    API to fetch Branch Stock data (reusing report logic)
+    """
+    from sahayog.procurement.report.branch_stock.branch_stock import execute
+    
+    filters = {}
+    if warehouse:
+        filters["warehouse"] = warehouse
+    
+    _, data = execute(filters)
+    
+    if search_text:
+        search_text = search_text.lower()
+        data = [
+            row for row in data 
+            if search_text in str(row.get("item_code", "")).lower() or 
+               search_text in str(row.get("item_name", "")).lower() or 
+               search_text in str(row.get("warehouse", "")).lower()
+        ]
+        
+    total_count = len(data)
+    
+    # Apply manual pagination since execute returns all
+    start = int(start)
+    limit = int(limit)
+    paginated_data = data[start:start+limit]
+    
+    return {
+        "data": paginated_data,
+        "total": total_count
+    }
+
+
+@frappe.whitelist()
+def get_user_branch_warehouse():
+    """
+    Get the warehouse linked to the current user's branch
+    Checks Sahayog Settings first, then falls back to sol_id from Employee
+    """
+    user = frappe.session.user
+
+    # 1. Check Sahayog Settings (Default Warehouse table)
+    try:
+        # Fetching directly from the child table for better performance
+        assigned_warehouse = frappe.db.get_value(
+            "Default Warehouse",
+            {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
+            "warehouse"
+        )
+        if assigned_warehouse:
+            return {
+                "warehouse": assigned_warehouse,
+                "branch": assigned_warehouse
+            }
+    except Exception as e:
+        frappe.log_error(f"Error in get_user_branch_warehouse (Sahayog Settings): {str(e)}")
+
+    # 2. Fallback to sol_id from Employee (matches Branch Stock report logic)
+    sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+
+    if not sol_id:
+        return {"warehouse": None, "branch": None}
+
+    return {
+        "warehouse": sol_id,
+        "branch": sol_id
+    }
+
+
+@frappe.whitelist()
+def get_item_quantities_for_warehouse(warehouse=None):
+    """
+    Get actual quantity for all items in a specific warehouse (like Branch Stock report)
+    Returns dict: {item_code: qty}
+    """
+    if not warehouse:
+        return {}
+    
+    # Get quantities from Bin - same logic as Branch Stock report
+    bins = frappe.db.sql("""
+        SELECT item_code, SUM(actual_qty) as qty
+        FROM `tabBin`
+        WHERE warehouse = %s
+        GROUP BY item_code
+    """, (warehouse,), as_dict=True)
+    
+    return {bin.item_code: bin.qty for bin in bins}
+
+@frappe.whitelist()
+def create_material_issue(items, warehouse):
+    """
+    Create and submit a Stock Entry of type 'Material Issue'
+    """
+    if not items:
+        frappe.throw(_("No items provided for Material Issue"))
+    if not warehouse:
+        frappe.throw(_("No warehouse specified for Material Issue"))
+
+    items = frappe.parse_json(items)
+    
+    se = frappe.new_doc("Stock Entry")
+    se.stock_entry_type = "Material Issue"
+    
+    # Strictly get company from the specific Warehouse
+    company = frappe.db.get_value("Warehouse", warehouse, "company")
+    
+    if not company:
+        # Fallback to user default if warehouse record doesn't specify company
+        company = frappe.defaults.get_user_default("Company")
+        
+    if not company:
+        frappe.throw(_("Could not determine Company for Warehouse {0}. Please ensure the Warehouse has a Company assigned.").format(warehouse))
+    
+    se.company = company
+    se.from_warehouse = warehouse
+    
+    for item in items:
+        se.append("items", {
+            "item_code": item.get("item_code"),
+            "qty": item.get("use_qty"),
+            "s_warehouse": warehouse,
+            "uom": item.get("stock_uom") or item.get("uom") or frappe.db.get_value("Item", item.get("item_code"), "stock_uom")
+        })
+    
+    se.insert()
+    se.submit()
+    return se.name
+
+@frappe.whitelist()
+def get_user_inventory_type():
+    """
+    Fetch the inventory_type for the current user from Sahayog Settings (wh_dept_map table).
+    This bypasses the need for full permission to the Sahayog Settings DocType.
+    """
+    user = frappe.session.user
+    
+    # Get the child table entries from Sahayog Settings
+    # Using frappe.get_doc("Sahayog Settings") directly as it's a Single DocType
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        for row in settings.wh_dept_map:
+            if row.user_id == user:
+                return row.inventory_type
+    except Exception as e:
+        frappe.log_error(f"Error in get_user_inventory_type: {str(e)}")
+    
+    return None
+
+@frappe.whitelist()
+def get_wh_dept_map():
+    """
+    Fetch the wh_dept_map child table from Sahayog Settings.
+    """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
+    try:
+        # Fetching directly from the child table doctype bypassing Sahayog Settings permissions
+        return frappe.get_all(
+            "Default Warehouse",
+            filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
+            fields=["user_id", "warehouse", "inventory_type", "name"]
+        )
+    except Exception as e:
+        frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
+        return []
+
+@frappe.whitelist()
+def add_wh_dept_entry(user_id, warehouse, inventory_type):
+    """
+    Add a new entry to the wh_dept_map child table in Sahayog Settings.
+    """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        settings.append("wh_dept_map", {
+            "user_id": user_id,
+            "warehouse": warehouse,
+            "inventory_type": inventory_type
+        })
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry added successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in add_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
+    """
+    Update an existing entry in the wh_dept_map child table.
+    """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        found = False
+        for row in settings.wh_dept_map:
+            if row.name == name:
+                row.user_id = user_id
+                row.warehouse = warehouse
+                row.inventory_type = inventory_type
+                found = True
+                break
+        
+        if not found:
+            frappe.throw(f"Entry {name} not found")
+            
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry updated successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in update_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def delete_wh_dept_entry(name):
+    """
+    Delete an entry from the wh_dept_map child table.
+    """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw("Not permitted", frappe.PermissionError)
+        
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        new_map = []
+        found = False
+        for row in settings.wh_dept_map:
+            if row.name == name:
+                found = True
+                continue
+            new_map.append(row)
+        
+        if not found:
+            frappe.throw(f"Entry {name} not found")
+            
+        settings.wh_dept_map = new_map
+        settings.save(ignore_permissions=True)
+        return {"status": "success", "message": "Entry deleted successfully"}
+    except Exception as e:
+        frappe.log_error(f"Error in delete_wh_dept_entry: {str(e)}")
+        frappe.throw(str(e))
+
+@frappe.whitelist()
+def get_warehouse_company(warehouse):
+    """
+    Returns the company linked to a specific warehouse.
+    """
+    if not warehouse:
+        return None
+    return frappe.db.get_value("Warehouse", warehouse, "company")
+
+@frappe.whitelist()
+def get_portal_master_data():
+    """
+    Unified API to fetch all master data for the portal in one request.
+    This bypasses standard permissions for portal users while remaining secure.
+    """
+    # Handle potential missing DocType for HSN codes
+    hsn_codes = []
+    try:
+        hsn_codes = frappe.get_all("GST HSN Code", fields=["name", "description"])
+    except frappe.db.TableMissingError:
+        try:
+            hsn_codes = frappe.get_all("HSN Code", fields=["name", "description"])
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    return {
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
+        "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
+        "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset"], filters={"disabled": 0}),
+        "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian"], filters={"docstatus": 1}),
+        "item_groups": [g.name for g in frappe.get_all("Item Group")],
+        "item_departments": [d.name for d in frappe.get_all("Item Department")],
+        "uoms": [u.name for u in frappe.get_all("UOM")],
+        "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
+        "locations": [l.name for l in frappe.get_all("Location")],
+        "hsn_codes": hsn_codes,
     }
