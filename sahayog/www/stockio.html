@@ -1603,10 +1603,9 @@
                     <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Remark <span class="form-required">*</span></label>
                     <textarea
                       class="form-input"
-                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important; overflow: hidden; resize: vertical;"
                       v-model="emrForm.remark"
                       :placeholder="emrForm.department === 'Asset' ? 'Please describe the asset need, e.g., Reason for request, usage frequency, and specific requirements...' : 'Enter reason (minimum 5 words).'"
-                      rows="1"
                     ></textarea>
                     <span 
                         v-if="emrForm.department === 'Asset' && emrForm.remark.trim().split(/\s+/).length < 5"
