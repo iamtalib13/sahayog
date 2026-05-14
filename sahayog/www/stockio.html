@@ -1605,9 +1605,15 @@
                       class="form-input"
                       style="padding: 10px 14px !important; font-size: 0.9rem !important;"
                       v-model="emrForm.remark"
-                      placeholder="Enter reason (minimum 5 words)."
+                      :placeholder="emrForm.department === 'Asset' ? 'Please describe the asset need, e.g., Reason for request, usage frequency, and specific requirements...' : 'Enter reason (minimum 5 words).'"
                       rows="1"
                     ></textarea>
+                    <span 
+                        v-if="emrForm.department === 'Asset' && emrForm.remark.trim().split(/\s+/).length < 5"
+                        style="color: #dc2626; font-size: 11px; margin-top: 4px; display: block;"
+                    >
+                        Please provide a detailed remark (minimum 5 words) for Asset requests.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -12616,14 +12622,6 @@
             return;
           }
         }
-        if (
-          this.emrForm.department === 'Asset' && 
-          this.emrForm.remark.trim().split(/\s+/).length < 5
-        ) {
-          frappe.msgprint("Please provide a detailed remark (minimum 5 words) for Asset requests.");
-          return;
-        }
-
         if (
           this.emrItems.some(
             (item) => !item.item_code || !item.uom || !item.quantity,
