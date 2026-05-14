@@ -13,7 +13,7 @@
    "label": "Leads by Source"
   }
  ],
- "content": "[{\"id\":\"kEYUJYm7ZO\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">CRM Admin</span>\",\"col\":12}},{\"id\":\"2KMQRctUx7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Report\",\"col\":3}},{\"id\":\"BXTTY57uj6\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Lead Report\",\"col\":3}},{\"id\":\"BGM80R1a3n\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"DSR Master Report\",\"col\":3}},{\"id\":\"hJHUFnvhaR\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"CRM Lead Conversion Report\",\"col\":3}},{\"id\":\"Lrye003JDg\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Product Wise Business Summary\",\"col\":3}},{\"id\":\"UNmpSj2k06\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Activity Summary\",\"col\":3}},{\"id\":\"P11DZMoRxp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee DSR\",\"col\":3}},{\"id\":\"OeIz_ZN4i-\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Lead Trend\",\"col\":12}},{\"id\":\"3XkYymA14z\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Status Wise Leads\",\"col\":12}},{\"id\":\"TJNmMNevdA\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Leads by Source\",\"col\":12}},{\"id\":\"5QkZqhd81z\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"L-Zone and Region wise Data\",\"col\":12}},{\"id\":\"f9ttTG_0WF\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Product Type Chart\",\"col\":12}}]",
+ "content": "[{\"id\": \"kEYUJYm7ZO\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\">CRM Admin</span>\", \"col\": 12}}, {\"id\": \"2KMQRctUx7\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"CRM Report\", \"col\": 3}}, {\"id\": \"BGM80R1a3n\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"DSR Master Report\", \"col\": 3}}, {\"id\": \"hJHUFnvhaR\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"CRM Lead Conversion Report\", \"col\": 3}}, {\"id\": \"Lrye003JDg\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Product Wise Business Summary\", \"col\": 3}}, {\"id\": \"UNmpSj2k06\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee Activity Summary\", \"col\": 3}}, {\"id\": \"P11DZMoRxp\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employee DSR\", \"col\": 3}}, {\"id\": \"OeIz_ZN4i-\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Monthly Lead Trend\", \"col\": 12}}, {\"id\": \"3XkYymA14z\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Status Wise Leads\", \"col\": 12}}, {\"id\": \"TJNmMNevdA\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Leads by Source\", \"col\": 12}}, {\"id\": \"5QkZqhd81z\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"L-Zone and Region wise Data\", \"col\": 12}}, {\"id\": \"f9ttTG_0WF\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Product Type Chart\", \"col\": 12}}]",
  "creation": "2025-06-16 13:51:58.067333",
  "custom_blocks": [
   {
@@ -65,13 +65,6 @@
    "link_to": "Daily Sales Report",
    "report_ref_doctype": "Lead",
    "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Lead Report",
-   "link_to": "crm-lead-management",
-   "type": "Page"
   },
   {
    "color": "Grey",
