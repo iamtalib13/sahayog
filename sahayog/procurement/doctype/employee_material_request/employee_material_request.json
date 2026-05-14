@@ -85,7 +85,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Request Type",
-   "options": "New\nReturn\nIssue",
+   "options": "New\nReturn\nIssue\nReplace",
    "reqd": 1
   },
   {
@@ -217,8 +217,7 @@
    "fieldtype": "Link",
    "label": "Source Warehouse",
    "link_filters": "[[\"Warehouse\",\"custom_warehouse_category\",\"=\",\"Store\"]]",
-   "options": "Warehouse",
-   "reqd": 1
+   "options": "Warehouse"
   },
   {
    "fetch_from": "employee.sol_id",
@@ -247,7 +246,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-13 00:11:02.714518",
+ "modified": "2026-05-14 11:29:09.695481",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",

@@ -27,3 +27,4 @@ sahayog.patches.custom_fields.add_netwin_statement_field
 sahayog.patches.clear_role_profile_name_from_user
 sahayog.patches.fill_sahayog_branch_from_sol_id
 sahayog.patches.delete_crm_lead_management_page
+sahayog.patches.add_custom_field_existing_stock_date_purchrecept
