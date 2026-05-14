@@ -9951,8 +9951,8 @@
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Department", key: "department", width: 1.2 },
             { label: "Owner", key: "employee", width: 1.5 },
-            { label: "Source Warehouse", key: "source_warehouse", width: 1.5 },
-            { label: "Target Warehouse", key: "target_warehouse", width: 1.5 },
+            { label: "Requestor Warehouse", key: "target_warehouse", width: 1.5 },
+            { label: "Provider Warehouse", key: "source_warehouse", width: 1.5 },
             {
               label: "Status",
               key: "status",
@@ -12616,6 +12616,7 @@
         };
         const required = Object.keys(labels);
         for (let field of required) {
+          if (field === "source_warehouse" && this.emrForm.department === "Asset") continue;
           if (!this.emrForm[field]) {
             frappe.msgprint(`${labels[field]} is required`);
             return;
