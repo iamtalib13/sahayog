@@ -159,6 +159,7 @@
    "read_only": 1
   },
   {
+   "fetch_from": "previous_record.date_of_reminder_letter",
    "fieldname": "date_of_reminder_letter",
    "fieldtype": "Date",
    "label": "Date of Reminder Unauthorized Absence letter",
@@ -210,7 +211,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-05-14 10:49:44.281102",
+ "modified": "2026-05-14 12:09:21.348566",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",

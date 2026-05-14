@@ -192,6 +192,7 @@ def get_report_data(filters, case_doc, is_ua_case=False):
         related_doctypes = [
             "Unauthorized Absence",
             "Reminder Of Unauthorized Absence",
+            "Ex Parte Enquiry",
             "Case Closure",
         ]
     else:

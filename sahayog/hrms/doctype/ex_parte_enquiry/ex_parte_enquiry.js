@@ -2,6 +2,27 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Ex Parte Enquiry", {
+  // Validate Date of Enquiry
+  date_of_enquiry: function (frm) {
+    if (!frm.doc.date_of_enquiry || !frm.doc.date_of_reminder_letter) return;
+
+    // Convert strings to Date objects
+    const selectedDate = frappe.datetime.str_to_obj(frm.doc.date_of_enquiry);
+    const reminderDate = frappe.datetime.str_to_obj(frm.doc.date_of_reminder_letter);
+
+    // Compare Date objects
+    if (selectedDate < reminderDate) {
+      frappe.msgprint({
+        title: __("Invalid Date"),
+        message: __(
+          `Date of Ex Parte Enquiry cannot be before the Date of Reminder Unauthorized Absence letter (${frappe.datetime.str_to_user(frm.doc.date_of_reminder_letter)}).`
+        ),
+        indicator: "red",
+      });
+      frm.set_value("date_of_enquiry", null);
+    }
+  },
+
   refresh(frm) {
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
@@ -172,7 +193,7 @@ function render_timeline(frm, data) {
   const wrap = $(frm.wrapper).find(".case-timeline-box");
   if (wrap.length) wrap.remove();
 
-  const insertion_point = $(".form-dashboard");
+  const insertion_point = $(frm.wrapper).find(".form-dashboard");
 
   let html = `
     <div class="case-timeline-box" style="
