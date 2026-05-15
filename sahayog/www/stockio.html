@@ -1634,12 +1634,12 @@
                       />
                       <div v-if="activeFilterKey === 'request'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
                         <div 
-                          v-for="req in filteredFilterRequests" 
-                          :key="req.name"
+                          v-for="name in filteredFilterRequests" 
+                          :key="name"
                           class="filter-sub-option"
-                          @mousedown="filterForm.request = req.name; filterForm.request_display = req.name; activeFilterKey = null"
+                          @mousedown="filterForm.request = name; filterForm.request_display = name; activeFilterKey = null"
                         >
-                          [[ req.name ]]
+                          [[ name ]]
                         </div>
                       </div>
                     </div>
@@ -10911,6 +10911,7 @@
       departments: [],
       warehouses: [],
       sahayog_branches: [],
+      emr_names: [],
       suppliers: [],
       itemsList: [],
       emrItems: [
@@ -11261,23 +11262,22 @@
             (b.name || "").toLowerCase().includes(q),
             );
             },
-            get filteredFilterRequests() {
-            const q = (this.filterForm.request_display || "").toLowerCase();
-            if (!this.currentView || !this.currentView.data) return [];
-            if (!q) return this.currentView.data;
-            return this.currentView.data.filter((r) =>
-              (r.name || "").toLowerCase().includes(q),
-            );
-            },
-            get filteredFilterEmployees() {
-            const q = (this.filterForm.employee_display || "").toLowerCase();
-            if (!q) return this.employees;
-            return this.employees.filter(
-              (e) =>
-                (e.employee_name || "").toLowerCase().includes(q) ||
-                (e.name || "").toLowerCase().includes(q),
-            );
-            },      get filteredEmployees() {
+      get filteredFilterRequests() {
+        const q = (this.filterForm.request_display || "").toLowerCase();
+        if (!q) return this.emr_names;
+        return this.emr_names.filter((name) =>
+          (name || "").toLowerCase().includes(q),
+        );
+      },
+      get filteredFilterEmployees() {
+        const q = (this.filterForm.employee_display || "").toLowerCase();
+        if (!q) return this.employees;
+        return this.employees.filter(
+          (e) =>
+            (e.employee_name || "").toLowerCase().includes(q) ||
+            (e.name || "").toLowerCase().includes(q),
+        );
+      },      get filteredEmployees() {
         let q = "";
         if (this.showAccessCreateView) {
           q = (this.accessForm.user_id || "").toLowerCase();
@@ -12276,6 +12276,7 @@
             this.employees = data.employees || [];
             this.warehouses = data.warehouses || [];
             this.sahayog_branches = data.sahayog_branches || [];
+            this.emr_names = data.emr_names || [];
             this.suppliers = data.suppliers || [];
             this.itemsList = data.items || [];
             this.assetsList = data.assets_list || [];
