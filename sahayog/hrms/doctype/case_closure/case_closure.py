@@ -22,6 +22,49 @@ class CaseClosure(Document):
             self.name = f"{self.case_id}-CLS-{count:02d}"
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
+
+    def before_insert(self):
+        """
+        Populate info from source document.
+        Strictly relies on explicit reference_doctype and reference_name.
+        """
+        if self.reference_doctype and self.reference_name:
+
+            source_doc = frappe.get_doc(
+                self.reference_doctype,
+                self.reference_name
+            )
+
+            # ✅ FIXED: Fetch actual case_id from source document
+            self.case_id = source_doc.get("case_id") or source_doc.name
+
+            # Unified Field Mapping
+            self.employee_id = source_doc.get("employee_id")
+            self.employee_name = source_doc.get("employee_name")
+            self.designation = source_doc.get("designation")
+            self.branch_id = source_doc.get("branch_id")
+            self.branch_name = source_doc.get("branch_name")
+
+            self.zone_name = (
+                source_doc.get("zone_name")
+                or source_doc.get("zone")
+            )
+
+            self.issue_in_details = (
+                source_doc.get("issue_in_details")
+                or source_doc.get("description")
+            )
+
+            self.case_type = source_doc.get("case_type")
+            self.category = source_doc.get("category")
+
+            self.issue_reported_to_hr = (
+                source_doc.get("issue_reported_to_hr")
+                or source_doc.get("issue_report_to_hr")
+            )
+
+            self.issue_occurrence_date = source_doc.get("issue_occurrence_date")
+
 # ✅ ONLY ADDITION — existing logic untouched
     def on_submit(self):
         """
@@ -53,6 +96,36 @@ class CaseClosure(Document):
                 "Auto Case Closure Email Failed on Submit"
             )
             
+
+
+# ---------------------------------------------------------
+# FETCH CONSOLIDATED CASE AND EMPLOYEE INFORMATION
+# ---------------------------------------------------------
+@frappe.whitelist()
+def get_reference_details(reference_doctype, reference_name):
+    """
+    Returns consolidated details from the source document
+    for client-side population in Case Closure.
+    """
+    if not reference_doctype or not reference_name:
+        return {}
+
+    source_doc = frappe.get_doc(reference_doctype, reference_name)
+
+    return {
+        "case_id": source_doc.get("case_id") or source_doc.name,
+        "employee_id": source_doc.get("employee_id"),
+        "employee_name": source_doc.get("employee_name"),
+        "designation": source_doc.get("designation"),
+        "branch_id": source_doc.get("branch_id"),
+        "branch_name": source_doc.get("branch_name"),
+        "zone_name": source_doc.get("zone_name") or source_doc.get("zone"),
+        "issue_in_details": source_doc.get("issue_in_details") or source_doc.get("description"),
+        "case_type": source_doc.get("case_type"),
+        "category": source_doc.get("category"),
+        "issue_reported_to_hr": source_doc.get("issue_reported_to_hr") or source_doc.get("issue_report_to_hr"),
+        "issue_occurrence_date": source_doc.get("issue_occurrence_date"),
+    }
 
 
 # ============================================================================
@@ -93,6 +166,7 @@ def close_linked_case(case_id):
         "Response to SCN",
         "Unauthorized Absence",
         "Reminder Of Unauthorized Absence",
+        "Ex Parte Enquiry",
         "Domestic Enquiry",
         "Enquiry Reminder",
     ]
@@ -316,8 +390,14 @@ def send_email_for_review(case_id=None, approvers=None):
     # Load Case Closure
     closure_doc = frappe.get_doc("Case Closure", case_id)
 
-    # Load linked Disciplinary Case
-    disc_case = frappe.get_doc("Disciplinary Case", closure_doc.case_id)
+    # Load linked Case (Generic fallback to Disciplinary Case for old records)
+    ref_doctype = closure_doc.reference_doctype or "Disciplinary Case"
+    ref_name = closure_doc.reference_name or closure_doc.case_id
+
+    if not ref_name:
+         return {"message": {"status": "error", "msg": "Reference Case ID not found"}}
+
+    parent_case = frappe.get_doc(ref_doctype, ref_name)
 
     # -----------------------------
     # Parse Approvers
@@ -348,24 +428,25 @@ def send_email_for_review(case_id=None, approvers=None):
     # CONTEXT for template
     # -----------------------------
     context = {
-        # From Disciplinary Case
-        "case_id": disc_case.name,
-        "employee_name": disc_case.employee_name,
-        "employee_id": disc_case.employee_id,
-        "region": disc_case.region,
-        "zone": disc_case.zone,
-        "case_type": disc_case.case_type,
+        # From Parent Case (Disciplinary or Unauthorized)
+        "case_id": parent_case.name,
+        "employee_name": parent_case.employee_name,
+        "employee_id": parent_case.employee_id,
+        "region": parent_case.get("region"),
+        "zone": parent_case.get("zone") or parent_case.get("zone_name"),
+        "case_type": parent_case.get("case_type"),
+        
         # FIX: Agar workflow_state nahi hai, toh status use karein ya ise khali chodein
-        "stage": disc_case.get("workflow_state") or disc_case.get("status") or "N/A",
-        "hr_name": disc_case.hr_name,
-        "hr_employee_id": disc_case.hr_employee_id,
+        "stage": parent_case.get("workflow_state") or parent_case.get("status") or "N/A",
+        "hr_name": parent_case.get("hr_name") or parent_case.get("hr_employee_id"),
+        "hr_employee_id": parent_case.get("hr_employee_id"),
 
         # From Case Closure (REQUIRED AS PER YOUR REQUEST)
         "remarks": closure_doc.remarks,
         # "attachment": closure_doc.enquiry_report_upload or "No attachment found",
 
         # CASE HISTORY REPORT LINK (CORRECT)
-        "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={disc_case.name}"
+        "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={parent_case.name}"
     }
 
     # -----------------------------
@@ -520,7 +601,7 @@ def check_employee_email(employee):
 # Send Case Closure Email to Employee
 # ---------------------------------------------------------
 @frappe.whitelist()
-def send_case_closure_email(docname, print_format):
+def send_case_closure_email(docname, print_format=None):
 
     doc = frappe.get_doc("Case Closure", docname)
     emp = frappe.get_doc("Employee", doc.employee_id)
@@ -536,15 +617,17 @@ def send_case_closure_email(docname, print_format):
     message = frappe.render_template(template.response_html, doc_dict)
     subject = frappe.render_template(template.subject, doc_dict)
 
-    # Attach selected print format
-    attachments = [
-        frappe.attach_print(
-            doctype="Case Closure",
-            name=docname,
-            print_format=print_format,
-            file_name=f"{docname}.pdf"
+    # Attach selected print format if provided
+    attachments = []
+    if print_format:
+        attachments.append(
+            frappe.attach_print(
+                doctype="Case Closure",
+                name=docname,
+                print_format=print_format,
+                file_name=f"{docname}.pdf"
+            )
         )
-    ]
 
     frappe.sendmail(
         recipients=[emp.company_email],
