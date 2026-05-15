@@ -5,24 +5,27 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "employee",
   "user_id",
   "warehouse",
   "inventory_type"
  ],
  "fields": [
   {
+   "fetch_from": "employee.branch",
    "fieldname": "warehouse",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Warehouse",
    "options": "Warehouse"
   },
   {
+   "fetch_from": "employee.user_id",
    "fieldname": "user_id",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "User ID",
-   "options": "User"
+   "options": "Employee"
   },
   {
    "fieldname": "inventory_type",
@@ -30,13 +33,19 @@
    "in_list_view": 1,
    "label": "Inventory Type",
    "options": "\nStationery\nAsset\nStationery & Asset"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-24 21:36:48.353875",
+ "modified": "2026-05-15 12:49:45.825962",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Default Warehouse",

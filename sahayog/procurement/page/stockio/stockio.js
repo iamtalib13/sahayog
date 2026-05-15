@@ -907,6 +907,7 @@ class StockIOPage {
       itemsVisible: [],
       itemsOffset: 0,
       itemsPageSize: 10,
+      userInventoryType: null,
 
       // MODALS & FORM STATE
       showCreateItemModal: false,
@@ -1354,6 +1355,22 @@ class StockIOPage {
 
         if (this.pageMode === "item") {
           let list = this.itemsList;
+
+          // Apply Inventory Type Filter
+          if (this.userInventoryType) {
+            if (this.userInventoryType === "Asset") {
+              list = list.filter((d) => d.custom_item_department === "IT");
+            } else if (this.userInventoryType === "Stationery") {
+              list = list.filter(
+                (d) => d.custom_item_department === "Stationery",
+              );
+            } else if (this.userInventoryType === "Stationery & Asset") {
+              list = list.filter((d) =>
+                ["IT", "Stationery"].includes(d.custom_item_department),
+              );
+            }
+          }
+
           if (q) {
             list = list.filter(
               (d) =>
@@ -1739,6 +1756,7 @@ class StockIOPage {
               "item_name",
               "item_group",
               "stock_uom",
+              "custom_item_department"
             ],
             order_by: this.itemSort,
             limit_page_length: 1000,
@@ -3645,6 +3663,20 @@ class StockIOPage {
 
     window.cur_stockio_app = app;
     PetiteVue.createApp(app).mount(this.wrapper[0]);
+
+    // Fetch User Inventory Type
+    frappe.call({
+      method: "sahayog.procurement.page.stockio.stockio.get_user_inventory_type",
+      callback: (r) => {
+        if (r.message) {
+          app.userInventoryType = r.message;
+          if (app.pageMode === "item") {
+            app.performSearch();
+          }
+        }
+      },
+    });
+
     setTimeout(() => {
       app.setMode(app.pageMode, app.subMode);
     }, 100);

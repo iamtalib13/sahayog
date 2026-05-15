@@ -1578,7 +1578,6 @@
                       <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department">
                         <option value="Purchase">Purchase</option>
                         <option value="Stationery">Stationery</option>
-                        <option value="Asset">Asset</option>
                         <option value="it">IT</option>
                       </select>
                     </div>
@@ -11058,10 +11057,27 @@
               },
             });
             if (res.message) {
+              let data = res.message;
+
+              // Apply Inventory Type Filter for Items
+              if (doctype === "Item" && this.userInventoryType) {
+                if (this.userInventoryType === "Asset") {
+                  data = data.filter((d) => d.custom_item_department === "IT");
+                } else if (this.userInventoryType === "Stationery") {
+                  data = data.filter(
+                    (d) => d.custom_item_department === "Stationery",
+                  );
+                } else if (this.userInventoryType === "Stationery & Asset") {
+                  data = data.filter((d) =>
+                    ["IT", "Stationery"].includes(d.custom_item_department),
+                  );
+                }
+              }
+
               if (append) {
-                this.rows = this.rows.concat(res.message);
+                this.rows = this.rows.concat(data);
               } else {
-                this.rows = res.message;
+                this.rows = data;
               }
               this.loadedRows = this.rows.length;
               // Get total count
