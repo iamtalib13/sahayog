@@ -4035,6 +4035,7 @@
                           <th style="width: 50px; text-align: center">#</th>
                           <th>Item</th>
                           <th>Category</th>
+                          <th>Description</th>
                           <th style="text-align: right">Requested Qty</th>
                           <th
                             v-if="!['Draft', 'Pending Reporting Person'].includes(detailRecord.status)"
@@ -4150,6 +4151,11 @@
                             <span
                               >[[ item.item_category || 'Stock Item' ]]</span
                             >
+                          </td>
+                          <td style="font-size: 11px; color: var(--text-muted); max-width: 250px;">
+                            <div style="max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                              [[ (item.description || '-').replace(/<[^>]*>/g, '').trim() ]]
+                            </div>
                           </td>
                           <td style="text-align: right; font-weight: 700">
                             <input
