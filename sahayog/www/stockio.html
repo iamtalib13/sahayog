@@ -1522,7 +1522,10 @@
               <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 0 !important;">
                 
                 <!-- Card 1: Fulfillment Details -->
-                <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <div 
+                  v-if="emrForm.department !== 'it' && emrForm.department !== 'Purchase'"
+                  style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;"
+                >
                   <h4 style="margin-bottom: 12px;    margin-top: 0px;
  color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
                     <i class="fas fa-truck-loading"></i> Fulfillment Details
@@ -12698,7 +12701,7 @@
         };
         const required = Object.keys(labels);
         for (let field of required) {
-          if (field === "source_warehouse" && this.emrForm.department === "Asset") continue;
+          if (field === "source_warehouse" && (this.emrForm.department === "it" || this.emrForm.department === "Purchase")) continue;
           if (!this.emrForm[field]) {
             frappe.msgprint(`${labels[field]} is required`);
             return;
