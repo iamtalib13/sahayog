@@ -1746,10 +1746,69 @@
                 </template>
                 <template v-else-if="activeItem === 'Inward'">
                   <div class="filter-options-grid">
-                    <button class="filter-option-btn">Receipt</button>
-                    <button class="filter-option-btn">Supplier</button>
-                    <button class="filter-option-btn">Date</button>
-                    <button class="filter-option-btn">Status</button>
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">Receipt:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.receipt_display" 
+                        @focus="activeFilterKey = 'receipt'"
+                        placeholder="Search Receipt"
+                      />
+                      <div v-if="activeFilterKey === 'receipt'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="name in filteredFilterReceipts" 
+                          :key="name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.receipt = name; filterForm.receipt_display = name; activeFilterKey = null"
+                        >
+                          [[ name ]]
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">Supplier:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.supplier_display" 
+                        @focus="activeFilterKey = 'supplier'"
+                        placeholder="Search Supplier"
+                      />
+                      <div v-if="activeFilterKey === 'supplier'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="s in filteredFilterSuppliers" 
+                          :key="s.name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.supplier = s.name; filterForm.supplier_display = s.supplier_name; activeFilterKey = null"
+                        >
+                          [[ s.supplier_name ]] ([[ s.name ]])
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="filter-date-row">
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">Start Date</label>
+                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" />
+                      </div>
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">End Date</label>
+                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" />
+                      </div>
+                    </div>
+
+                    <div class="filter-dropdown-container">
+                      <button class="filter-option-btn" @click="toggleFilterDropdown('inward_status')">
+                        Status <i class="fas" :class="activeFilterKey === 'inward_status' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                      </button>
+                      <div v-if="activeFilterKey === 'inward_status'" class="filter-dropdown-content">
+                        <div class="filter-sub-option">Draft</div>
+                        <div class="filter-sub-option">Submitted</div>
+                        <div class="filter-sub-option">Cancelled</div>
+                      </div>
+                    </div>
                   </div>
                 </template>
                 <template v-else>
@@ -10461,7 +10520,12 @@
         owner: "",
         employee: "",
         employee_display: "",
-        request: "",        request_display: "",
+        request: "",
+        request_display: "",
+        receipt: "",
+        receipt_display: "",
+        supplier: "",
+        supplier_display: "",
         from_warehouse: "",        from_warehouse_display: "",
         to_warehouse: "",
         to_warehouse_display: ""
@@ -10912,6 +10976,7 @@
       warehouses: [],
       sahayog_branches: [],
       emr_names: [],
+      purchase_receipt_names: [],
       suppliers: [],
       itemsList: [],
       emrItems: [
@@ -11277,8 +11342,23 @@
             (e.employee_name || "").toLowerCase().includes(q) ||
             (e.name || "").toLowerCase().includes(q),
         );
-      },      get filteredEmployees() {
-        let q = "";
+        },
+        get filteredFilterReceipts() {
+        const q = (this.filterForm.receipt_display || "").toLowerCase();
+        if (!q) return this.purchase_receipt_names;
+        return this.purchase_receipt_names.filter((name) =>
+          (name || "").toLowerCase().includes(q),
+        );
+        },
+        get filteredFilterSuppliers() {
+        const q = (this.filterForm.supplier_display || "").toLowerCase();
+        if (!q) return this.suppliers;
+        return this.suppliers.filter(
+          (s) =>
+            (s.supplier_name || "").toLowerCase().includes(q) ||
+            (s.name || "").toLowerCase().includes(q),
+        );
+        },      get filteredEmployees() {        let q = "";
         if (this.showAccessCreateView) {
           q = (this.accessForm.user_id || "").toLowerCase();
         } else {
@@ -12277,6 +12357,7 @@
             this.warehouses = data.warehouses || [];
             this.sahayog_branches = data.sahayog_branches || [];
             this.emr_names = data.emr_names || [];
+            this.purchase_receipt_names = data.purchase_receipt_names || [];
             this.suppliers = data.suppliers || [];
             this.itemsList = data.items || [];
             this.assetsList = data.assets_list || [];
