@@ -4498,6 +4498,136 @@
               </div>
             </div>
 
+            <!-- Inward Detail Layout -->
+            <div v-else-if="activeItem === 'Inward'" class="request-detail-parent">
+              <!-- DIV 2: Comments (Right Panel) -->
+              <div class="request-div2">
+                <div class="flow-card detail-col-3">
+                  <h4 class="section-subtitle" style="margin-bottom: 16px">
+                    Comments
+                  </h4>
+                  <div class="comments-list">
+                    <div v-if="comments.length === 0" class="text-muted" style="text-align: center; padding: 40px 0">
+                      No comments yet.
+                    </div>
+                    <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
+                      <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
+                          [[ (comment.comment_by || comment.owner || "A").charAt(0).toUpperCase() ]]
+                        </div>
+                        <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ comment.comment_by || comment.owner ]]</span>
+                        <span class="comment-time" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">[[ comment.creation.split(' ')[0] ]]</span>
+                      </div>
+                      <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
+                    </div>
+                  </div>
+
+                  <!-- Comment Input -->
+                  <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
+                      <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
+                      <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
+                      <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
+                      <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
+                    </div>
+                    <div id="comment-editor-inward" contenteditable="true" style="min-height: 80px; max-height: 200px; padding: 12px; overflow-y: auto; outline: none; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
+                    <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                      <button class="btn-create-inline" style="background: #f59e0b; border-color: #f59e0b" @click="addComment()">
+                        <i class="fas fa-paper-plane"></i><span style="margin-left: 6px">Post Comment</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DIV 3: Info Strip -->
+              <div class="request-div3">
+                <div class="info-strip" style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid #f59e0b;">
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-truck"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Supplier</span>
+                      <span class="info-value">[[ detailRecord.supplier || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-warehouse"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Warehouse</span>
+                      <span class="info-value">[[ detailRecord.set_warehouse || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Posting Date</span>
+                      <span class="info-value">[[ detailRecord.posting_date || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-file-invoice"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">PO/WO</span>
+                      <span class="info-value">[[ detailRecord.custom_po_wo || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-tag"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Total Qty</span>
+                      <span class="info-value">[[ detailRecord.total_qty || '0' ]]</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DIV 4: Items Table -->
+              <div class="request-div4">
+                <div class="flow-card" style="padding: 0; overflow: hidden">
+                  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--gray-50);">
+                    <h4 class="section-subtitle" style="margin: 0">Receipt Items</h4>
+                    <span class="badge active" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); border-radius: 20px">[[ detailRecord.items ? detailRecord.items.length : 0 ]] Items</span>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="items-table" style="width: 100%">
+                      <thead>
+                        <tr>
+                          <th style="width: 50px; text-align: center">#</th>
+                          <th>Item</th>
+                          <th style="text-align: right">Qty</th>
+                          <th style="text-align: right">Rate</th>
+                          <th style="text-align: right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(item, idx) in detailRecord.items" :key="item.name || idx">
+                          <td style="text-align: center; color: var(--text-muted); font-weight: 700;">[[ idx + 1 ]]</td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                              <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--gray-100); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <i class="fas fa-box" style="color: var(--text-muted)"></i>
+                              </div>
+                              <div style="display: flex; flex-direction: column">
+                                <span style="font-weight: 700; font-size: 13px; color: #f59e0b;">[[ item.item_code ]]</span>
+                                <span style="font-size: 11px; color: var(--text-muted);">[[ item.item_name || 'Stock Item' ]]</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td style="text-align: right; font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</td>
+                          <td style="text-align: right;">[[ frappe.format(item.rate, {fieldtype: 'Currency'}) ]]</td>
+                          <td style="text-align: right; font-weight: 700; color: var(--text-main);">[[ frappe.format(item.amount, {fieldtype: 'Currency'}) ]]</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style="padding: 12px 20px; background: var(--gray-50); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
+                    <div style="color: var(--text-muted)">Total Amount:</div>
+                    <div style="font-size: 1.1rem; color: #f59e0b">[[ frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'}) ]]</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Standard Multi-Column Layout -->
             <div
               v-else-if="detailFields && detailFields.length"
