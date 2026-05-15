@@ -1730,9 +1730,7 @@
                             white-space: pre-wrap;
                             word-break: break-word;
                           "
-                        >
-                          [[ item.description || '-' ]]
-                        </div>
+                        >[[ (item.description || '-').trim() ]]</div>
                       </td>
 
                       <td style="padding: 12px; width: 120px">
@@ -12636,7 +12634,7 @@
         item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
         item.uom = uom;
-        item.description = description || "";
+        item.description = (description || "").trim();
         this.focusedField = null;
       },
 
