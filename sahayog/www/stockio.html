@@ -1418,10 +1418,10 @@
             <!-- Main Form Layout: Compact Columns -->
             <div class="form-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 16px; margin-top: 0 !important; width: 100%;">
               
-              <!-- Section: Requestor Info (Column 1) -->
+              <!-- Section: Request from Info (Column 1) -->
               <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
                 <h4 style="margin-bottom: 12px;    margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
-                  <i class="fas fa-user-circle"></i> Requestor Information
+                  <i class="fas fa-user-circle"></i> Request from
                 </h4>
                 
                 <!-- Employee Field -->
@@ -1455,7 +1455,7 @@
                 <!-- Row for Warehouse and Location -->
                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Requestor Warehouse <span class="form-required">*</span></label>
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from Warehouse <span class="form-required">*</span></label>
                     <input
                       type="text"
                       class="form-input"
@@ -1465,7 +1465,7 @@
                     />
                   </div>
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Requestor Location <span class="form-required">*</span></label>
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from Location <span class="form-required">*</span></label>
                     <input
                       type="text"
                       class="form-input"
@@ -1505,20 +1505,39 @@
                 </div>
               </div>
 
-              <!-- Column 2: Fulfillment & Request Details -->
+              <!-- Column 2: Request Information -->
               <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 0 !important;">
-                
-                <!-- Card 1: Fulfillment Details -->
-                <div 
-                  v-if="emrForm.department !== 'it' && emrForm.department !== 'Purchase'"
-                  style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;"
-                >
-                  <h4 style="margin-bottom: 12px;    margin-top: 0px;
- color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
-                    <i class="fas fa-truck-loading"></i> Fulfillment Details
+                <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                  <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <i class="fas fa-list-alt"></i> Request to
                   </h4>
-                  
-                  <div class="form-group" style="margin-bottom: 0 !important;">
+
+                  <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request Type <span class="form-required">*</span></label>
+                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_type">
+                        <option value="New">New</option>
+                        <option value="Return">Return</option>
+                        <option value="Issue">Issue</option>
+                        <option value="Replace">Replace</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Department</label>
+                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department">
+                        <option value="Purchase">Purchase</option>
+                        <option value="Stationery">Stationery</option>
+                        <option value="it">IT</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Provider Warehouse (Conditional) -->
+                  <div 
+                    class="form-group" 
+                    v-if="emrForm.department !== 'it' && emrForm.department !== 'Purchase'"
+                    style="margin-bottom: 12px !important;"
+                  >
                     <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Provider Warehouse <span class="form-required">*</span></label>
                     <div class="searchable-select-wrapper">
                       <input
@@ -1542,34 +1561,6 @@
                           [[ wh ]]
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Card 2: Request Details -->
-                <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color);">
-                  <h4 style="margin-bottom: 12px;    margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
-                    <i class="fas fa-list-alt"></i> Request Details
-                  </h4>
-
-                  <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request Type <span class="form-required">*</span></label>
-                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_type">
-                        <option value="New">New</option>
-                        <option value="Return">Return</option>
-                        <option value="Issue">Issue</option>
-                        <option value="Replace">Replace</option>
-                        
-                      </select>
-                    </div>
-                    <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                      <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Department</label>
-                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department">
-                        <option value="Purchase">Purchase</option>
-                        <option value="Stationery">Stationery</option>
-                        <option value="it">IT</option>
-                      </select>
                     </div>
                   </div>
 
@@ -10204,7 +10195,7 @@
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Department", key: "department", width: 1.2 },
             { label: "Owner", key: "employee", width: 1.5 },
-            { label: "Requestor Warehouse", key: "target_warehouse", width: 1.5 },
+            { label: "Request from Warehouse", key: "target_warehouse", width: 1.5 },
             { label: "Provider Warehouse", key: "source_warehouse", width: 1.5 },
             {
               label: "Status",

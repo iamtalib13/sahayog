@@ -819,8 +819,11 @@ def skip_approval_stage(docname, stage):
     # Use db.set_value to bypass workflow and validation rules
     frappe.db.set_value("Employee Material Request", docname, update_fields)
     
+    # Get the name of the person performing the action
+    user_name = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name") or frappe.session.user
+    
     # Record the action in comments
-    doc.add_comment("Comment", f"Approval process skipped at {stage} stage by Administrator.")
+    doc.add_comment("Comment", f"Approval process skipped at {stage} stage by {user_name}.")
     
     frappe.db.commit()
     
