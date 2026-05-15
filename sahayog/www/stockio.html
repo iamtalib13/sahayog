@@ -1376,6 +1376,13 @@
         </div>
         <button
           class="btn-view-toggle"
+          v-if="activeItem === 'Requests' && !showDetailView && !showEMRCreateView"
+          title="Filter Requests"
+        >
+          <i class="fas fa-filter"></i>
+        </button>
+        <button
+          class="btn-view-toggle"
           v-if="activeItem === 'Items' && !showDetailView && !showEMRCreateView"
           @click="toggleItemView()"
           :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
