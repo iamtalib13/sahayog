@@ -1691,7 +1691,7 @@
                             style="width: 100%; max-width: 300px; z-index: 1000"
                           >
                             <div
-                              v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                              v-for="opt in filteredEMRItems.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                               :key="opt.name"
                               class="searchable-select-option"
                               :class="{ selected: item.item_code === opt.name }"
@@ -1709,7 +1709,7 @@
                               </div>
                             </div>
                             <div
-                              v-if="!itemsList.some(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                              v-if="!filteredEMRItems.some(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
                               class="searchable-select-no-results"
                             >
                               No items found
@@ -11167,6 +11167,37 @@
           });
         }
         return rows;
+      },
+
+      get filteredEMRItems() {
+        let list = this.itemsList || [];
+        
+        const selectedDept = this.emrForm && this.emrForm.department;
+        
+        // 1. If 'Purchase' is selected, show all items
+        if (selectedDept === "Purchase") {
+          return list;
+        }
+
+        // 2. If a specific department is selected in the form, filter by it strictly
+        if (selectedDept) {
+          if (selectedDept === "Stationery") {
+            list = list.filter((d) => d.custom_item_department === "Stationery");
+          } else if (selectedDept === "it" || selectedDept === "IT") {
+            list = list.filter((d) => d.custom_item_department === "IT");
+          }
+        } else if (this.userInventoryType && !this.isAdmin) {
+          // 3. If no department is selected in the form, use the user's Inventory Type as the base filter
+          if (this.userInventoryType === "Asset") {
+            list = list.filter((d) => d.custom_item_department === "IT");
+          } else if (this.userInventoryType === "Stationery") {
+            list = list.filter((d) => d.custom_item_department === "Stationery");
+          } else if (this.userInventoryType === "Stationery & Asset") {
+            list = list.filter((d) => ["IT", "Stationery"].includes(d.custom_item_department));
+          }
+        }
+        
+        return list;
       },
 
       get isAllSelected() {
