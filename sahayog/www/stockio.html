@@ -351,7 +351,8 @@
     top: calc(100% + 15px);
     right: 0;
     width: 280px;
-    height: 280px;
+    min-height: 160px;
+    max-height: 450px;
     background: var(--bg-surface);
     border-radius: 12px;
     z-index: 1000;
@@ -428,6 +429,71 @@
     background: var(--bg-surface);
     display: flex;
     align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .filter-dropdown-content {
+    margin-left: 12px;
+    border-left: 2px solid var(--primary-color);
+    padding-left: 8px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .filter-sub-option {
+    font-size: 10px;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border-color);
+  }
+
+  .filter-sub-option:hover {
+    background: var(--primary-color);
+    color: white;
+  }
+
+  .filter-date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .filter-date-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .filter-date-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding-left: 2px;
+  }
+
+  .filter-date-input {
+    width: 100%;
+    padding: 6px 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 11px;
+    font-family: inherit;
+    outline: none;
+  }
+
+  .filter-date-input:focus {
+    border-color: var(--primary-color);
   }
 
   .whatsapp-message {
@@ -1558,12 +1624,86 @@
                 <template v-if="activeItem === 'Requests'">
                   <div class="filter-options-grid">
                     <button class="filter-option-btn">Request</button>
-                    <button class="filter-option-btn">Department</button>
+                    
+                    <div class="filter-dropdown-container">
+                      <button class="filter-option-btn" @click="toggleFilterDropdown('department')">
+                        Department <i class="fas" :class="activeFilterKey === 'department' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                      </button>
+                      <div v-if="activeFilterKey === 'department'" class="filter-dropdown-content">
+                        <div class="filter-sub-option">Stationery</div>
+                        <div class="filter-sub-option">Purchase</div>
+                        <div class="filter-sub-option">it</div>
+                      </div>
+                    </div>
+
                     <button class="filter-option-btn">Owner</button>
-                    <button class="filter-option-btn">Request from Warehouse</button>
-                    <button class="filter-option-btn">Provider Warehouse</button>
-                    <button class="filter-option-btn">Status</button>
-                    <button class="filter-option-btn">Created</button>
+                    
+                    <div class="filter-date-row">
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">Request from</label>
+                        <input 
+                          type="text" 
+                          class="filter-date-input" 
+                          v-model="filterForm.to_warehouse_display" 
+                          @focus="activeFilterKey = 'to_warehouse'"
+                          placeholder="Search Branch"
+                        />
+                        <div v-if="activeFilterKey === 'to_warehouse'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                          <div 
+                            v-for="b in filteredFilterBranches" 
+                            :key="b.name"
+                            class="filter-sub-option"
+                            @mousedown="filterForm.to_warehouse = b.name; filterForm.to_warehouse_display = b.branch; activeFilterKey = null"
+                          >
+                            [[ b.branch ]] ([[ b.sol_id ]])
+                          </div>
+                        </div>
+                      </div>
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">Provider</label>
+                        <input 
+                          type="text" 
+                          class="filter-date-input" 
+                          v-model="filterForm.from_warehouse_display" 
+                          @focus="activeFilterKey = 'from_warehouse'"
+                          placeholder="Search Branch"
+                        />
+                        <div v-if="activeFilterKey === 'from_warehouse'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                          <div 
+                            v-for="b in filteredFilterBranches" 
+                            :key="b.name"
+                            class="filter-sub-option"
+                            @mousedown="filterForm.from_warehouse = b.name; filterForm.from_warehouse_display = b.branch; activeFilterKey = null"
+                          >
+                            [[ b.branch ]] ([[ b.sol_id ]])
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="filter-dropdown-container">
+                      <button class="filter-option-btn" @click="toggleFilterDropdown('status')">
+                        Status <i class="fas" :class="activeFilterKey === 'status' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                      </button>
+                      <div v-if="activeFilterKey === 'status'" class="filter-dropdown-content">
+                        <div class="filter-sub-option">Draft</div>
+                        <div class="filter-sub-option">Pending Reporting Person</div>
+                        <div class="filter-sub-option">Pending HO Approval</div>
+                        <div class="filter-sub-option">Approved</div>
+                        <div class="filter-sub-option">Dispatch</div>
+                      </div>
+                    </div>
+
+                    <div class="filter-date-row">
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">Start Date</label>
+                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" />
+                      </div>
+                      <div class="filter-date-group">
+                        <label class="filter-date-label">End Date</label>
+                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" />
+                      </div>
+                    </div>
                   </div>
                 </template>
                 <template v-else-if="activeItem === 'Inward'">
@@ -10274,6 +10414,19 @@
       dashboardDisplayMode: "cards",
       isEditing: false,
       showFilterPopup: false,
+      activeFilterKey: null,
+      filterForm: {
+        start_date: "",
+        end_date: "",
+        status: "",
+        department: "",
+        owner: "",
+        request: "",
+        from_warehouse: "",
+        from_warehouse_display: "",
+        to_warehouse: "",
+        to_warehouse_display: ""
+      },
       showDispatchHistory: false,      dispatchHistory: [],
       showInwardCreateView: false,
       showOutwardCreateView: false,
@@ -10718,6 +10871,7 @@
       employees: [],
       departments: [],
       warehouses: [],
+      sahayog_branches: [],
       suppliers: [],
       itemsList: [],
       emrItems: [
@@ -11051,6 +11205,21 @@
           (s) =>
             s.name.toLowerCase().includes(q) ||
             (s.supplier_name && s.supplier_name.toLowerCase().includes(q)),
+        );
+      },
+      get filteredFilterBranches() {
+        let q = "";
+        if (this.activeFilterKey === "from_warehouse") {
+          q = (this.filterForm.from_warehouse_display || "").toLowerCase();
+        } else if (this.activeFilterKey === "to_warehouse") {
+          q = (this.filterForm.to_warehouse_display || "").toLowerCase();
+        }
+        if (!q) return this.sahayog_branches;
+        return this.sahayog_branches.filter(
+          (b) =>
+            (b.branch || "").toLowerCase().includes(q) ||
+            (b.sol_id || "").toString().includes(q) ||
+            (b.name || "").toLowerCase().includes(q),
         );
       },
 
@@ -12052,6 +12221,7 @@
             const data = res.message;
             this.employees = data.employees || [];
             this.warehouses = data.warehouses || [];
+            this.sahayog_branches = data.sahayog_branches || [];
             this.suppliers = data.suppliers || [];
             this.itemsList = data.items || [];
             this.assetsList = data.assets_list || [];
@@ -12408,6 +12578,10 @@
       },
       toggleFilter() {
         this.showFilterPopup = !this.showFilterPopup;
+        if (!this.showFilterPopup) this.activeFilterKey = null;
+      },
+      toggleFilterDropdown(key) {
+        this.activeFilterKey = this.activeFilterKey === key ? null : key;
       },      async saveRequest() {
         if (!this.detailRecord) return;
 

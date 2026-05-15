@@ -787,6 +787,7 @@ def get_portal_master_data():
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
+        "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
         "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "custom_item_department", "description"], filters={"disabled": 0}),
         "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian"], filters={"docstatus": 1}),
