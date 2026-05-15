@@ -226,7 +226,7 @@
     transform: translateY(-50%);
     width: 4px;
     height: 24px;
-    background: #ffffff;
+    background: var(--text-main);
     border-radius: 0 4px 4px 0;
   }
 
@@ -592,7 +592,7 @@
   }
 
   .searchable-select-option:hover {
-    background: var(--sidebar-hover);
+    background: var(--bg-card);
     color: var(--primary-color);
     padding-left: 20px;
     transition: all var(--transition-fast);
@@ -613,7 +613,7 @@
   }
 
   .btn-back-inline {
-    background: var(--sidebar-hover);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     width: 48px;
     height: 48px;
@@ -635,7 +635,7 @@
   }
 
   .btn-view-toggle {
-    background: var(--sidebar-hover);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     width: 44px;
     height: 44px;
@@ -713,7 +713,7 @@
     padding: 16px 20px;
     border-radius: var(--border-radius-md);
     border: 2px solid var(--border-color);
-    background: var(--sidebar-hover);
+    background: var(--bg-card);
     font-weight: 500;
     color: var(--text-main);
     font-size: 1rem;
@@ -1622,7 +1622,7 @@
                     style="
                       position: sticky;
                       top: 0;
-                      background: var(--sidebar-hover);
+                      background: var(--bg-card);
                       z-index: 1;
                     "
                   >
@@ -2825,7 +2825,7 @@
                     style="
                       position: sticky;
                       top: 0;
-                      background: var(--sidebar-hover);
+                      background: var(--bg-card);
                       z-index: 1;
                     "
                   >
@@ -3173,7 +3173,7 @@
               <table class="items-table" style="font-size: 13px">
                 <thead>
                   <tr
-                    style="background: var(--sidebar-hover); text-align: left"
+                    style="background: var(--bg-card); text-align: left"
                   >
                     <th style="padding: 8px">Item</th>
                     <th style="padding: 8px; text-align: right">Qty</th>
@@ -3499,7 +3499,7 @@
                     style="
                       margin-bottom: 16px;
                       padding: 12px;
-                      background: var(--gray-50);
+                      background: var(--bg-card);
                       border-radius: 12px;
                       border: 1px solid var(--border-color);
                     "
@@ -3577,7 +3577,7 @@
                       border-bottom: 1px solid var(--border-color);
                       display: flex;
                       gap: 4px;
-                      background: var(--gray-50);
+                      background: var(--bg-card);
                     "
                   >
                     <button
@@ -3639,7 +3639,7 @@
                       display: flex;
                       justify-content: flex-end;
                       border-top: 1px solid var(--border-color);
-                      background: var(--gray-50);
+                      background: var(--bg-card);
                     "
                   >
                     <button
@@ -3716,7 +3716,7 @@
                       style="
                         margin-bottom: 16px;
                         padding: 12px;
-                        background: var(--gray-50);
+                        background: var(--bg-card);
                         border-radius: 12px;
                         border: 1px solid var(--border-color);
                       "
@@ -3795,7 +3795,7 @@
                         border-bottom: 1px solid var(--border-color);
                         display: flex;
                         gap: 4px;
-                        background: var(--gray-50);
+                        background: var(--bg-card);
                       "
                     >
                       <button
@@ -3859,7 +3859,7 @@
                         display: flex;
                         justify-content: flex-end;
                         border-top: 1px solid var(--border-color);
-                        background: var(--gray-50);
+                        background: var(--bg-card);
                       "
                     >
                       <button
@@ -3955,9 +3955,8 @@
                       display: flex;
                       justify-content: space-between;
                       align-items: center;
-                      background: var(--gray-50);
-                    "
-                  >
+                      background: var(--bg-surface);
+                    "                  >
                     <div style="display: flex; align-items: center; gap: 12px">
                       <h4 class="section-subtitle" style="margin: 0">
                         Requested Items
@@ -4019,7 +4018,7 @@
                   </div>
                   <div
                     class="table-responsive"
-                    :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--gray-50);' : ''"
+                    :style="requestItemView === 'cards' ? 'padding: 16px; background: var(--bg-surface);' : ''"
                   >
                     <!-- List View (Table) -->
                     <table
@@ -4256,7 +4255,7 @@
                         :key="item.name || idx"
                         class="item-card"
                         style="
-                          background: white;
+                          background: var(--bg-card);
                           border-radius: 12px;
                           border: 1px solid var(--border-color);
                           padding: 16px;
@@ -4286,7 +4285,7 @@
                                 width: 40px;
                                 height: 40px;
                                 border-radius: 8px;
-                                background: var(--gray-50);
+                                background: var(--bg-card);
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
@@ -4332,7 +4331,7 @@
                             grid-template-columns: 1fr 1fr;
                             gap: 12px;
                             padding: 10px;
-                            background: var(--gray-50);
+                            background: var(--bg-card);
                             border-radius: 8px;
                           "
                         >
@@ -4418,7 +4417,7 @@
                   <div
                     style="
                       padding: 12px 20px;
-                      background: var(--gray-50);
+                      background: var(--bg-surface);
                       border-top: 1px solid var(--border-color);
                       display: flex;
                       justify-content: space-between;
@@ -4452,7 +4451,7 @@
                         @click="requestItemView = (requestItemView === 'list' ? 'cards' : 'list')"
                         style="
                           border: 1px solid var(--border-color);
-                          background: white;
+                          background: var(--bg-card);
                           padding: 4px 10px;
                           border-radius: 6px;
                           cursor: pointer;
@@ -4518,7 +4517,7 @@
                     <div v-if="comments.length === 0" class="text-muted" style="text-align: center; padding: 40px 0">
                       No comments yet.
                     </div>
-                    <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
                       <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
                           [[ (getEmployeeName(comment.comment_by || comment.owner) || "A").charAt(0).toUpperCase() ]]
@@ -4532,14 +4531,14 @@
 
                   <!-- Comment Input -->
                   <div class="comment-input-area" style="background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-                    <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--gray-50);">
+                    <div class="comment-toolbar" style="padding: 8px; border-bottom: 1px solid var(--border-color); display: flex; gap: 4px; background: var(--bg-card);">
                       <button type="button" class="toolbar-btn" @click="execCommand('bold')" title="Bold"><i class="fas fa-bold"></i></button>
                       <button type="button" class="toolbar-btn" @click="execCommand('italic')" title="Italic"><i class="fas fa-italic"></i></button>
                       <button type="button" class="toolbar-btn" @click="insertTable" title="Insert Table"><i class="fas fa-table"></i></button>
                       <button type="button" class="toolbar-btn" @click="triggerImageUpload" title="Insert Image"><i class="fas fa-image"></i></button>
                     </div>
                     <div id="comment-editor-inward" contenteditable="true" style="min-height: 80px; max-height: 200px; padding: 12px; overflow-y: auto; outline: none; font-size: 0.95rem; background: var(--bg-card); color: var(--text-main);" placeholder="Write a comment..."></div>
-                    <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--gray-50);">
+                    <div style="padding: 8px 12px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); background: var(--bg-card);">
                       <button class="btn-create-inline" style="background: #f59e0b; border-color: #f59e0b" @click="addComment()">
                         <i class="fas fa-paper-plane"></i><span style="margin-left: 6px">Post Comment</span>
                       </button>
@@ -4592,7 +4591,7 @@
               <!-- DIV 4: Items Table -->
               <div class="request-div4">
                 <div class="flow-card" style="padding: 0; overflow: hidden">
-                  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--gray-50);">
+                  <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
                     <h4 class="section-subtitle" style="margin: 0">Receipt Items</h4>
                     <span class="badge active" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); border-radius: 20px">[[ detailRecord.items ? detailRecord.items.length : 0 ]] Items</span>
                   </div>
@@ -4628,7 +4627,7 @@
                       </tbody>
                     </table>
                   </div>
-                  <div style="padding: 12px 20px; background: var(--gray-50); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
+                  <div style="padding: 12px 20px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
                     <div style="color: var(--text-muted)">Total Amount:</div>
                     <div style="font-size: 1.1rem; color: #f59e0b" v-html="frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'})"></div>
                   </div>
@@ -5202,7 +5201,7 @@
                           <thead>
                             <tr
                               style="
-                                background: var(--sidebar-hover);
+                                background: var(--bg-card);
                                 text-align: left;
                               "
                             >
@@ -5244,7 +5243,7 @@
                     <button
                       @click="showEMRMoreDetails = !showEMRMoreDetails"
                       style="
-                        background: var(--sidebar-hover);
+                        background: var(--bg-card);
                         border: 1px solid var(--border-color);
                         color: #369696;
                         font-size: 0.75rem;
@@ -5758,7 +5757,7 @@
                 <div
                   v-else
                   style="
-                    background: var(--sidebar-hover);
+                    background: var(--bg-card);
                     border-radius: var(--border-radius-md);
                     border: 2px dashed var(--border-color);
                     text-align: center;
@@ -5816,7 +5815,7 @@
                       style="
                         margin-bottom: 16px;
                         padding: 12px;
-                        background: var(--sidebar-hover);
+                        background: var(--bg-card);
                         border-radius: 8px;
                         border: 1px solid var(--border-color);
                       "
@@ -5856,7 +5855,7 @@
                   <div
                     v-else
                     style="
-                      background: var(--sidebar-hover);
+                      background: var(--bg-card);
                       border: 2px dashed var(--border-color);
                       border-radius: var(--border-radius-md);
                       padding: 40px 20px;
@@ -5898,7 +5897,7 @@
                       border-bottom: 1px solid var(--border-color);
                       display: flex;
                       gap: 4px;
-                      background: var(--gray-50);
+                      background: var(--bg-card);
                     "
                   >
                     <button
@@ -5962,7 +5961,7 @@
                       display: flex;
                       justify-content: flex-end;
                       border-top: 1px solid var(--border-color);
-                      background: var(--gray-50);
+                      background: var(--bg-card);
                     "
                   >
                     <button class="btn-create-inline" @click="addComment()">
@@ -6120,7 +6119,7 @@
                     <thead>
                       <tr
                         style="
-                          background: var(--sidebar-hover);
+                          background: var(--bg-card);
                           text-align: left;
                         "
                       >
@@ -7119,7 +7118,7 @@
             overflow-y: auto;
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            background: white;
+            background: var(--bg-card);
           "
         >
           <table style="width: 100%; border-collapse: collapse">
@@ -7127,7 +7126,7 @@
               style="
                 position: sticky;
                 top: 0;
-                background: var(--gray-50);
+                background: var(--bg-card);
                 z-index: 1;
                 border-bottom: 1px solid var(--border-color);
               "
@@ -7444,7 +7443,7 @@
           v-if="dispatchForm.dispatchStep === 1"
           style="
             padding: 12px;
-            background: var(--gray-50);
+            background: var(--bg-card);
             border-radius: 8px;
             margin-bottom: 20px;
             border-left: 4px solid var(--blue-600);
@@ -7460,7 +7459,7 @@
               justify-content: space-between;
               gap: 12px;
               padding: 10px;
-              background: white;
+              background: var(--bg-card);
               border-radius: 6px;
               border: 1px solid var(--border-color);
             "
@@ -7537,7 +7536,7 @@
               overflow-y: auto;
               border: 1px solid var(--border-color);
               border-radius: 8px;
-              background: white;
+              background: var(--bg-card);
             "
           >
             <table style="width: 100%; border-collapse: collapse">
@@ -7546,7 +7545,7 @@
                 style="
                   position: sticky;
                   top: 0;
-                  background: var(--gray-50);
+                  background: var(--bg-card);
                   z-index: 1;
                   border-bottom: 1px solid var(--border-color);
                 "
@@ -8717,7 +8716,7 @@
     display: flex;
     align-items: center;
     padding: 12px 16px;
-    background: var(--gray-50);
+    background: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
   }
@@ -8766,7 +8765,7 @@
   }
 
   .list-row:hover {
-    background: var(--gray-50);
+    background: var(--bg-card);
   }
 
   [data-theme="dark"] .list-row:hover {
@@ -9280,7 +9279,7 @@
   }
 
   .detail-grid-item {
-    background: var(--gray-50);
+    background: var(--bg-card);
     border-radius: 10px;
     padding: 14px 18px;
     display: flex;
@@ -9332,7 +9331,7 @@
   }
 
   .items-table-wrapper {
-    background: var(--gray-50);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     overflow: hidden;
@@ -9634,7 +9633,7 @@
     padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: var(--gray-50);
+    background: var(--bg-card);
     color: var(--text-main);
     font-size: 14px;
     font-family: inherit;
@@ -9753,7 +9752,7 @@
     gap: 24px;
     margin-bottom: 20px;
     padding: 16px;
-    background: var(--gray-50);
+    background: var(--bg-card);
     border-radius: 8px;
     border: 1px solid var(--border-color);
   }
@@ -9966,7 +9965,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: var(--gray-50);
+    background: var(--bg-card);
     border-radius: 12px;
     border: 1px solid var(--border-color);
     flex: 1;
@@ -10028,7 +10027,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: var(--gray-50);
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
