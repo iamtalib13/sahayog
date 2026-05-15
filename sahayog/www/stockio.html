@@ -4153,7 +4153,13 @@
                             >
                           </td>
                           <td style="font-size: 11px; color: var(--text-muted); max-width: 250px;">
-                            <div style="max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                            <textarea
+                              v-if="isEditing"
+                              class="form-input"
+                              style="width: 100%; font-size: 11px; padding: 4px 8px !important; min-height: 40px; resize: vertical;"
+                              v-model="item.description"
+                            ></textarea>
+                            <div v-else style="max-height: 40px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                               [[ (item.description || '-').replace(/<[^>]*>/g, '').trim() ]]
                             </div>
                           </td>
@@ -10259,6 +10265,7 @@
             { label: "Name", key: "item_name", width: 2 },
             { label: "Code", key: "item_code", width: 1.5 },
             { label: "Group", key: "item_group", width: 1 },
+            { label: "Description", key: "description", width: 2 },
             { label: "UOM", key: "stock_uom", width: 0.8 },
             { label: "Status", key: "disabled", width: 0.8, type: "badge" },
           ],
