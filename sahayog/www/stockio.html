@@ -1308,7 +1308,7 @@
           </button>
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6 !important; border-color: #ef4444 !important; color: white !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
+            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
             @click="setBranchStockFilter('Other Stock')"
           >
             Other Stock
@@ -10510,7 +10510,7 @@
       userEmployeeId: null,
       userDesignation: null,
       userInventoryType: null,
-      branchStockFilter: "Other Stock",      itemQuantities: {},
+      branchStockFilter: "My Stock",      itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
       showEMRCreateView: false,
@@ -10998,7 +10998,7 @@
         }
 
         if (item.label === "Branch Stock") {
-          this.branchStockFilter = "Other Stock";
+          this.branchStockFilter = "My Stock";
         }
 
         if (item.doctype) {
