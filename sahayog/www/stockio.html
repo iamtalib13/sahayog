@@ -291,7 +291,7 @@
   }
 
   .search-input {
-    width: 320px;
+    width: 450px;
     padding: 14px 20px 14px 52px;
     border-radius: 40px;
     border: 1px solid var(--border-color) !important;
@@ -1301,14 +1301,14 @@
         <div v-if="activeItem === 'Branch Stock'" style="display: flex; gap: 8px; margin-right: 8px;">
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); opacity: 1;' : 'background: #64748b; border-color: #64748b; opacity: 0.7;'"
+            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6; border-color: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);' : 'background: white; color: #ef4444; border-color: #ef4444;'"
             @click="setBranchStockFilter('My Stock')"
           >
             My Stock
           </button>
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); opacity: 1;' : 'background: #64748b; border-color: #64748b; opacity: 0.7;'"
+            :style="branchStockFilter === 'Other Stock' ? 'background: #f59e0b; border-color: #f59e0b; color: white; box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);' : 'background: white; color: #ef4444; border-color: #ef4444;'"
             @click="setBranchStockFilter('Other Stock')"
           >
             Other Stock
@@ -1354,7 +1354,7 @@
             class="search-input"
             v-model="searchText"
             @input="handleSearch"
-            placeholder="Search records..."
+            :placeholder="currentView.searchPlaceholder || 'Search records...'"
           />
         </div>
         <button
@@ -9966,6 +9966,7 @@
 
           emptyMessage: "Your branch has no items in stock.",
           searchableFields: ["item_code", "item_name", "warehouse"],
+          searchPlaceholder: "Search item code, name or warehouse...",
           columns: [
             { label: "Item", key: "item_code", width: 2, type: "avatar" },
             { label: "Item Name", key: "item_name", width: 2.5 },
@@ -11074,6 +11075,11 @@
             }
           } else {
             let filters = [];
+            let fields = ["*"];
+            if (doctype === "Item") {
+              fields = ["name", "item_code", "item_name", "item_group", "stock_uom", "custom_item_department", "description", "image", "disabled"];
+            }
+
             if (this.searchText) {
               const searchFields = this.currentView.searchableFields || [
                 "name",
@@ -11093,7 +11099,7 @@
               method: "frappe.client.get_list",
               args: {
                 doctype: doctype,
-                fields: ["*"],
+                fields: fields,
                 filters: filters,
                 order_by: "creation desc",
                 limit: limit,
@@ -11105,17 +11111,23 @@
 
               // Apply Inventory Type Filter for Items
               if (doctype === "Item" && this.userInventoryType) {
-                if (this.userInventoryType === "Asset") {
-                  data = data.filter((d) => d.custom_item_department === "IT");
-                } else if (this.userInventoryType === "Stationery") {
-                  data = data.filter(
-                    (d) => d.custom_item_department === "Stationery",
-                  );
-                } else if (this.userInventoryType === "Stationery & Asset") {
-                  data = data.filter((d) =>
-                    ["IT", "Stationery"].includes(d.custom_item_department),
-                  );
-                }
+                const invType = String(this.userInventoryType).toLowerCase();
+                console.log("Filtering items for inventory type:", invType);
+                data = data.filter((d) => {
+                  // Fallback: If item has NO department set, show it to everyone
+                  if (!d.custom_item_department) return true;
+
+                  const itemDept = String(d.custom_item_department).toLowerCase();
+                  
+                  if (invType.includes("asset") && !invType.includes("stationery")) {
+                    return itemDept === "it";
+                  } else if (invType.includes("stationery") && !invType.includes("asset")) {
+                    return itemDept.includes("stationer");
+                  } else if (invType.includes("stationery") && invType.includes("asset")) {
+                    return itemDept === "it" || itemDept.includes("stationer");
+                  }
+                  return true;
+                });
               }
 
               if (append) {
@@ -11216,29 +11228,36 @@
       get filteredEMRItems() {
         let list = this.itemsList || [];
         
-        const selectedDept = this.emrForm && this.emrForm.department;
+        const selectedDept = String(this.emrForm && this.emrForm.department || "").toLowerCase();
         
         // 1. If 'Purchase' is selected, show all items
-        if (selectedDept === "Purchase") {
+        if (selectedDept === "purchase") {
           return list;
         }
 
         // 2. If a specific department is selected in the form, filter by it strictly
         if (selectedDept) {
-          if (selectedDept === "Stationery") {
-            list = list.filter((d) => d.custom_item_department === "Stationery");
-          } else if (selectedDept === "it" || selectedDept === "IT") {
-            list = list.filter((d) => d.custom_item_department === "IT");
+          if (selectedDept.includes("stationer")) {
+            list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toLowerCase().includes("stationer"));
+          } else if (selectedDept === "it") {
+            list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toUpperCase() === "IT");
           }
         } else if (this.userInventoryType && !this.isAdmin) {
           // 3. If no department is selected in the form, use the user's Inventory Type as the base filter
-          if (this.userInventoryType === "Asset") {
-            list = list.filter((d) => d.custom_item_department === "IT");
-          } else if (this.userInventoryType === "Stationery") {
-            list = list.filter((d) => d.custom_item_department === "Stationery");
-          } else if (this.userInventoryType === "Stationery & Asset") {
-            list = list.filter((d) => ["IT", "Stationery"].includes(d.custom_item_department));
-          }
+          const invType = String(this.userInventoryType).toLowerCase();
+          list = list.filter((d) => {
+            if (!d.custom_item_department) return true;
+            const itemDept = String(d.custom_item_department).toLowerCase();
+            
+            if (invType.includes("asset") && !invType.includes("stationery")) {
+              return itemDept === "it";
+            } else if (invType.includes("stationery") && !invType.includes("asset")) {
+              return itemDept.includes("stationer");
+            } else if (invType.includes("stationery") && invType.includes("asset")) {
+              return itemDept === "it" || itemDept.includes("stationer");
+            }
+            return true;
+          });
         }
         
         return list;

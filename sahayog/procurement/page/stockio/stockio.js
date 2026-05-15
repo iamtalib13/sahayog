@@ -1358,17 +1358,22 @@ class StockIOPage {
 
           // Apply Inventory Type Filter
           if (this.userInventoryType) {
-            if (this.userInventoryType === "Asset") {
-              list = list.filter((d) => d.custom_item_department === "IT");
-            } else if (this.userInventoryType === "Stationery") {
-              list = list.filter(
-                (d) => d.custom_item_department === "Stationery",
-              );
-            } else if (this.userInventoryType === "Stationery & Asset") {
-              list = list.filter((d) =>
-                ["IT", "Stationery"].includes(d.custom_item_department),
-              );
-            }
+            const invType = String(this.userInventoryType).toLowerCase();
+            list = list.filter((d) => {
+              // Fallback: If item has NO department set, show it to everyone
+              if (!d.custom_item_department) return true;
+
+              const itemDept = String(d.custom_item_department).toLowerCase();
+
+              if (invType.includes("asset") && !invType.includes("stationery")) {
+                return itemDept === "it";
+              } else if (invType.includes("stationery") && !invType.includes("asset")) {
+                return itemDept.includes("stationer");
+              } else if (invType.includes("stationery") && invType.includes("asset")) {
+                return itemDept === "it" || itemDept.includes("stationer");
+              }
+              return true;
+            });
           }
 
           if (q) {
