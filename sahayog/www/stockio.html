@@ -1376,8 +1376,9 @@
         </div>
         <button
           class="btn-view-toggle"
-          v-if="activeItem === 'Requests' && !showDetailView && !showEMRCreateView"
-          title="Filter Requests"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="toggleFilter && toggleFilter()"
+          title="Filter"
         >
           <i class="fas fa-filter"></i>
         </button>
