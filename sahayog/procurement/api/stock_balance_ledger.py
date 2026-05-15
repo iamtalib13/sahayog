@@ -364,7 +364,7 @@ def get_emr_list(limit=20, start=0, search_text=None):
         row["items"] = frappe.get_all(
             "Material Request Items",
             filters={"parent": row.name},
-            fields=["name", "status", "item_code", "quantity", "item_category"]
+            fields=["name", "status", "item_code", "quantity", "item_category", "description"]
         )
 
     return {"data": data, "total": total_count}

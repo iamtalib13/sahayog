@@ -67,7 +67,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "item_code.description",
    "fieldname": "description",
    "fieldtype": "Text Editor",
    "label": "Description"
@@ -287,7 +286,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-09 15:45:37.920194",
+ "modified": "2026-05-15 17:05:30.091424",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Material Request Items",
