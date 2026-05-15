@@ -4614,15 +4614,15 @@
                             </div>
                           </td>
                           <td style="text-align: right; font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</td>
-                          <td style="text-align: right;">[[ frappe.format(item.rate, {fieldtype: 'Currency'}) ]]</td>
-                          <td style="text-align: right; font-weight: 700; color: var(--text-main);">[[ frappe.format(item.amount, {fieldtype: 'Currency'}) ]]</td>
+                          <td style="text-align: right;" v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></td>
+                          <td style="text-align: right; font-weight: 700; color: var(--text-main);" v-html="frappe.format(item.amount, {fieldtype: 'Currency'})"></td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                   <div style="padding: 12px 20px; background: var(--gray-50); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
                     <div style="color: var(--text-muted)">Total Amount:</div>
-                    <div style="font-size: 1.1rem; color: #f59e0b">[[ frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'}) ]]</div>
+                    <div style="font-size: 1.1rem; color: #f59e0b" v-html="frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'})"></div>
                   </div>
                 </div>
               </div>
