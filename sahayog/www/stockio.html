@@ -1649,6 +1649,7 @@
                       <th style="padding: 12px 16px">
                         Item Code <span class="form-required">*</span>
                       </th>
+                      <th style="padding: 12px 16px">Description</th>
                       <th style="padding: 12px 16px">
                         Qty <span class="form-required">*</span>
                       </th>
@@ -1695,7 +1696,7 @@
                               :key="opt.name"
                               class="searchable-select-option"
                               :class="{ selected: item.item_code === opt.name }"
-                              @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
+                              @mousedown="selectEMRItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description)"
                             >
                               <div style="font-weight: 500">
                                 [[ opt.item_name ]]
@@ -1715,6 +1716,22 @@
                               No items found
                             </div>
                           </div>
+                        </div>
+                      </td>
+
+                      <td style="padding: 12px">
+                        <div
+                          style="
+                            width: 100%;
+                            min-height: 40px;
+                            font-size: 0.85rem;
+                            color: var(--text-muted);
+                            line-height: 1.4;
+                            white-space: pre-wrap;
+                            word-break: break-word;
+                          "
+                        >
+                          [[ item.description || '-' ]]
                         </div>
                       </td>
 
@@ -11237,8 +11254,9 @@
             reporting_person_display: "",
           };
           this.emrItems = [
-            { item_code: "", item_code_display: "", uom: "", quantity: 1 },
+            { item_code: "", item_code_display: "", description: "", uom: "", quantity: 1 },
           ];
+
           return;
         }
 
@@ -12607,18 +12625,21 @@
         this.emrItems.push({
           item_code: "",
           item_code_display: "",
+          description: "",
           uom: "",
           quantity: 1,
         });
       },
-      selectEMRItemOption(index, itemCode, itemName, uom) {
+      selectEMRItemOption(index, itemCode, itemName, uom, description) {
         const item = this.emrItems[index];
         item.item_code = itemCode;
         item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
         item.uom = uom;
+        item.description = description || "";
         this.focusedField = null;
       },
+
       removeEMRItem(index) {
         if (this.emrItems.length > 1) {
           this.emrItems.splice(index, 1);
@@ -12742,6 +12763,7 @@
               item_code: item.item_code,
               uom: item.uom,
               quantity: item.quantity,
+              description: item.description,
               item_category: item.item_category,
               assigned_to_employee: this.emrForm.employee,
               is_consumable:
