@@ -1,5 +1,48 @@
 frappe.ui.form.on("Case Closure", {
   onload(frm) {
+    // --------------------------------------------------------------------------
+    // AUTO-DETECTION VIA ROUTE (For Connection Tab Support)
+    // --------------------------------------------------------------------------
+    if (frm.is_new() && !frm.doc.reference_name) {
+      const prev = frappe.get_prev_route();
+      if (prev && prev[0] === "Form") {
+        const src_dt = prev[1];
+        const src_nm = prev[2];
+
+        const ua_workflow = [
+          "Unauthorized Absence",
+          "Reminder Of Unauthorized Absence",
+          "Ex Parte Enquiry",
+        ];
+        const dc_workflow = [
+          "Disciplinary Case",
+          "Response to SCN",
+          "Domestic Enquiry",
+          "Enquiry Reminder",
+        ];
+
+        if (ua_workflow.includes(src_dt)) {
+          frm.set_value("reference_doctype", "Unauthorized Absence");
+          if (src_dt === "Unauthorized Absence") {
+            frm.set_value("reference_name", src_nm);
+          } else {
+            frappe.db.get_value(src_dt, src_nm, "case_id", (r) => {
+              if (r && r.case_id) frm.set_value("reference_name", r.case_id);
+            });
+          }
+        } else if (dc_workflow.includes(src_dt)) {
+          frm.set_value("reference_doctype", "Disciplinary Case");
+          if (src_dt === "Disciplinary Case") {
+            frm.set_value("reference_name", src_nm);
+          } else {
+            frappe.db.get_value(src_dt, src_nm, "case_id", (r) => {
+              if (r && r.case_id) frm.set_value("reference_name", r.case_id);
+            });
+          }
+        }
+      }
+    }
+
     // If case_id is not present, nothing to process
     if (!frm.doc.case_id) return;
 
@@ -102,6 +145,23 @@ frappe.ui.form.on("Case Closure", {
   // --------------------------------------------------------------------------
   // ON SUBMIT: Close linked case stages
   // --------------------------------------------------------------------------
+  reference_name(frm) {
+    if (frm.doc.reference_doctype && frm.doc.reference_name) {
+      frappe.call({
+        method: "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
+        args: {
+          reference_doctype: frm.doc.reference_doctype,
+          reference_name: frm.doc.reference_name,
+        },
+        callback: function (r) {
+          if (r.message) {
+            frm.set_value(r.message);
+          }
+        },
+      });
+    }
+  },
+
   on_submit(frm) {
     if (!frm.doc.case_id) return;
     // Fetch latest linked enquiry
