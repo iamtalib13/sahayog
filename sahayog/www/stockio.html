@@ -1258,7 +1258,7 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.reporting_person_status === 'Skip' ? 'status-done' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting')))"
+                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.reporting_person_status === 'Skip' ? 'status-waiting' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting')))"
               >
                 [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.reporting_person_status === 'Skip' ? 'Skipped' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : (detailRecord.status === 'Draft' ? 'Waiting' : 'Draft')))) ]]
               </span>
@@ -1289,7 +1289,7 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.ho_officer_status === 'Skip' ? 'status-done' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting')))"
+                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.ho_officer_status === 'Skip' ? 'status-waiting' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting')))"
               >
                 [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.ho_officer_status === 'Skip' ? 'Skipped' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting'))) ]]
               </span>
