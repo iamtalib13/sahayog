@@ -1301,14 +1301,14 @@
         <div v-if="activeItem === 'Branch Stock'" style="display: flex; gap: 8px; margin-right: 8px;">
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6; border-color: #3b82f6; color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);' : 'background: white; color: #ef4444; border-color: #ef4444;'"
+            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
             @click="setBranchStockFilter('My Stock')"
           >
             My Stock
           </button>
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'Other Stock' ? 'background: #f59e0b; border-color: #f59e0b; color: white; box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);' : 'background: white; color: #ef4444; border-color: #ef4444;'"
+            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6 !important; border-color: #ef4444 !important; color: white !important; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
             @click="setBranchStockFilter('Other Stock')"
           >
             Other Stock
@@ -10510,8 +10510,7 @@
       userEmployeeId: null,
       userDesignation: null,
       userInventoryType: null,
-      branchStockFilter: "My Stock",
-      itemQuantities: {},
+      branchStockFilter: "Other Stock",      itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
       showEMRCreateView: false,
@@ -10996,6 +10995,10 @@
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
+        }
+
+        if (item.label === "Branch Stock") {
+          this.branchStockFilter = "Other Stock";
         }
 
         if (item.doctype) {
