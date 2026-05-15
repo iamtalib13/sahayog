@@ -351,7 +351,7 @@
     top: calc(100% + 15px);
     right: 0;
     width: 280px;
-    height: 160px;
+    height: 280px;
     background: var(--bg-surface);
     border-radius: 12px;
     z-index: 1000;
@@ -372,7 +372,7 @@
     right: 8px;
     width: 24px;
     height: 20px;
-    background: var(--primary-color);
+    background: #12a7a7;
     clip-path: polygon(100% 0, 0% 100%, 60% 100%);
     z-index: 1001;
   }
@@ -466,6 +466,33 @@
     color: var(--text-muted);
     text-align: right;
     margin-top: 4px;
+  }
+
+  .filter-options-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .filter-option-btn {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-option-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
   }
 
   [data-theme="dark"] .whatsapp-message::before {
@@ -1527,8 +1554,29 @@
               <i class="fas fa-times" @click.stop="showFilterPopup = false" style="font-size: 12px; cursor: pointer; opacity: 0.8;"></i>
             </div>
             <div class="whatsapp-body">
-              <div class="whatsapp-message">
-                <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
+              <div class="whatsapp-message" style="width: 100%; max-width: 100%;">
+                <template v-if="activeItem === 'Requests'">
+                  <div class="filter-options-grid">
+                    <button class="filter-option-btn">Request</button>
+                    <button class="filter-option-btn">Department</button>
+                    <button class="filter-option-btn">Owner</button>
+                    <button class="filter-option-btn">Request from Warehouse</button>
+                    <button class="filter-option-btn">Provider Warehouse</button>
+                    <button class="filter-option-btn">Status</button>
+                    <button class="filter-option-btn">Created</button>
+                  </div>
+                </template>
+                <template v-else-if="activeItem === 'Inward'">
+                  <div class="filter-options-grid">
+                    <button class="filter-option-btn">Receipt</button>
+                    <button class="filter-option-btn">Supplier</button>
+                    <button class="filter-option-btn">Date</button>
+                    <button class="filter-option-btn">Status</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
+                </template>
                 <div class="message-time">[[ new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) ]]</div>
               </div>
             </div>
