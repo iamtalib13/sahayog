@@ -22,6 +22,8 @@
   "section_break_wfuu",
   "review_details",
   "section_break_ulcv",
+  "reference_doctype",
+  "reference_name",
   "case_id",
   "employee_id",
   "employee_name",
@@ -40,17 +42,29 @@
  ],
  "fields": [
   {
-   "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Data",
    "label": "Employee ID",
    "read_only": 1
   },
   {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Reference DocType",
+   "options": "\nDisciplinary Case\nUnauthorized Absence"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "hidden": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  },
+  {
    "fieldname": "case_id",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Case ID",
-   "options": "Disciplinary Case",
    "set_only_once": 1
   },
   {
@@ -58,70 +72,60 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "case_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.branch_id",
    "fieldname": "branch_id",
    "fieldtype": "Data",
    "label": "Branch ID",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.branch_name",
    "fieldname": "branch_name",
    "fieldtype": "Data",
    "label": "Branch Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.zone",
    "fieldname": "zone_name",
    "fieldtype": "Data",
    "label": "Zone Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.case_type",
    "fieldname": "case_type",
    "fieldtype": "Data",
    "label": "Case Type",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.description",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
    "label": "Issue In Details",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.category",
    "fieldname": "category",
    "fieldtype": "Data",
    "label": "Category",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_report_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Date",
    "label": "Date of issue Reported to hr",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date",
@@ -248,7 +252,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-01-30 11:59:49.311526",
+ "modified": "2026-05-15 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
