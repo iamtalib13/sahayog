@@ -345,6 +345,146 @@
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45) !important;
   }
 
+  /* WhatsApp Style Popup */
+  .whatsapp-popup {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    width: 280px;
+    height: 160px;
+    background: #e5ddd5;
+    border-radius: 12px;
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    animation: whatsappPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: default;
+    overflow: visible;
+  }
+
+  .whatsapp-popup::before {
+    content: "";
+    position: absolute;
+    top: -18px;
+    right: 8px;
+    width: 24px;
+    height: 20px;
+    background: #075e54;
+    clip-path: polygon(100% 0, 0% 100%, 60% 100%);
+    z-index: 1001;
+  }
+
+  @keyframes whatsappPop {
+    from { opacity: 0; transform: translateY(-10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .whatsapp-header {
+    background: #075e54;
+    color: white;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .whatsapp-avatar {
+    width: 32px;
+    height: 32px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .whatsapp-header-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    text-align: left;
+  }
+
+  .whatsapp-name {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: white;
+  }
+
+  .whatsapp-status {
+    font-size: 10px;
+    opacity: 0.8;
+    color: white;
+  }
+
+  .whatsapp-body {
+    flex: 1;
+    padding: 14px;
+    background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+    background-size: contain;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .whatsapp-message {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-top-left-radius: 0;
+    position: relative;
+    max-width: 90%;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    text-align: left;
+  }
+
+  .whatsapp-message::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -10px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 10px 0;
+    border-color: transparent white transparent transparent;
+  }
+
+  .message-text {
+    font-size: 13px;
+    color: #111;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .message-time {
+    font-size: 10px;
+    color: #999;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  [data-theme="dark"] .whatsapp-message {
+    background: #056162;
+    color: #e9edef;
+  }
+
+  [data-theme="dark"] .whatsapp-message::before {
+    border-color: transparent #056162 transparent transparent;
+  }
+
+  [data-theme="dark"] .message-text {
+    color: #e9edef;
+  }
+
+  [data-theme="dark"] .whatsapp-body {
+    background-color: #0b141a;
+    background-blend-mode: overlay;
+    opacity: 0.9;
+  }
+
   /* Content Containers */
   .page-content {
     padding: 0px;
@@ -1377,10 +1517,35 @@
         <button
           class="btn-view-toggle"
           v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
-          @click="toggleFilter && toggleFilter()"
+          @click="toggleFilter()"
           title="Filter"
+          style="position: relative;"
         >
           <i class="fas fa-filter"></i>
+
+          <!-- WhatsApp Style Popup -->
+          <div 
+            v-if="showFilterPopup" 
+            class="whatsapp-popup"
+            @click.stop
+          >
+            <div class="whatsapp-header">
+              <div class="whatsapp-avatar">
+                <i class="fas fa-filter" style="font-size: 12px; color: white;"></i>
+              </div>
+              <div class="whatsapp-header-info">
+                <span class="whatsapp-name">Filter Options</span>
+                <span class="whatsapp-status">online</span>
+              </div>
+              <i class="fas fa-times" @click.stop="showFilterPopup = false" style="font-size: 12px; cursor: pointer; opacity: 0.8;"></i>
+            </div>
+            <div class="whatsapp-body">
+              <div class="whatsapp-message">
+                <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
+                <div class="message-time">[[ new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) ]]</div>
+              </div>
+            </div>
+          </div>
         </button>
         <button
           class="btn-view-toggle"
@@ -10073,8 +10238,8 @@
       $delimiters: ["[[", "]]"],
       dashboardDisplayMode: "cards",
       isEditing: false,
-      showDispatchHistory: false,
-      dispatchHistory: [],
+      showFilterPopup: false,
+      showDispatchHistory: false,      dispatchHistory: [],
       showInwardCreateView: false,
       showOutwardCreateView: false,
       sidebar: {
@@ -12206,7 +12371,9 @@
       toggleEditMode() {
         this.isEditing = !this.isEditing;
       },
-      async saveRequest() {
+      toggleFilter() {
+        this.showFilterPopup = !this.showFilterPopup;
+      },      async saveRequest() {
         if (!this.detailRecord) return;
 
         // Validation for Employee Material Request
