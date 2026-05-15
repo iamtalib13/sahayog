@@ -461,19 +461,41 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None):
     """
     API to fetch Branch Stock data (reusing report logic)
     """
     from sahayog.procurement.report.branch_stock.branch_stock import execute
-    
+
+    user = frappe.session.user
+    user_warehouse = None
+
+    # Get user's assigned warehouse
+    assigned_warehouse = frappe.db.get_value(
+        "Default Warehouse",
+        {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
+        "warehouse"
+    )
+    if assigned_warehouse:
+        user_warehouse = assigned_warehouse
+    else:
+        # Fallback to sol_id
+        user_warehouse = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+
     filters = {}
     if warehouse:
         filters["warehouse"] = warehouse
-    
+
     _, data = execute(filters)
-    
+
+    # Apply My Stock / Other Stock filtering
+    if filter_type == "My Stock" and user_warehouse:
+        data = [row for row in data if row.get("warehouse") == user_warehouse]
+    elif filter_type == "Other Stock" and user_warehouse:
+        data = [row for row in data if row.get("warehouse") != user_warehouse]
+
     if search_text:
+
         search_text = search_text.lower()
         data = [
             row for row in data 

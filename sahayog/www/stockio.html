@@ -1296,6 +1296,25 @@
             :class="isFullscreen ? 'fa-compress' : 'fa-expand'"
           ></i>
         </button>
+
+        <!-- Branch Stock Filter Buttons -->
+        <div v-if="activeItem === 'Branch Stock'" style="display: flex; gap: 8px; margin-right: 8px;">
+          <button
+            class="btn-create-inline"
+            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); opacity: 1;' : 'background: #64748b; border-color: #64748b; opacity: 0.7;'"
+            @click="setBranchStockFilter('My Stock')"
+          >
+            My Stock
+          </button>
+          <button
+            class="btn-create-inline"
+            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6); opacity: 1;' : 'background: #64748b; border-color: #64748b; opacity: 0.7;'"
+            @click="setBranchStockFilter('Other Stock')"
+          >
+            Other Stock
+          </button>
+        </div>
+
         <button
           class="btn-create-inline"
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
@@ -10360,6 +10379,7 @@
       userEmployeeId: null,
       userDesignation: null,
       userInventoryType: null,
+      branchStockFilter: "My Stock",
       itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
@@ -10854,6 +10874,11 @@
         }
       },
 
+      async setBranchStockFilter(filter) {
+        this.branchStockFilter = filter;
+        await this.fetchData("Branch Stock");
+      },
+
       async fetchUserWarehouse() {
         try {
           const res = await frappe.call({
@@ -11006,6 +11031,7 @@
                 limit: limit,
                 start: start,
                 search_text: this.searchText,
+                filter_type: this.branchStockFilter,
               },
             });
 
