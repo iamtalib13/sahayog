@@ -1244,7 +1244,7 @@
                 style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                 class="hover-primary"
                 title="Skip Approval"
-                @click.stop="skipReportingApproval(detailRecord)"
+                @click.stop="skipStageApproval('Reporting')"
               >
                 <i class="fas fa-ellipsis-v"></i>
               </div>
@@ -1258,9 +1258,9 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting'))"
+                :class="detailRecord.reporting_person_status === 'Rejected' ? 'disabled' : (detailRecord.reporting_person_status === 'Skip' ? 'status-done' : (detailRecord.status === 'Pending Reporting Person' ? 'status-pending' : (detailRecord.reporting_person_status === 'Approved' ? 'status-done' : 'status-waiting')))"
               >
-                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : (detailRecord.status === 'Draft' ? 'Waiting' : 'Draft'))) ]]
+                [[ detailRecord.reporting_person_status === 'Rejected' ? 'Rejected' : (detailRecord.reporting_person_status === 'Skip' ? 'Skipped' : (detailRecord.status === 'Pending Reporting Person' ? 'Pending' : (detailRecord.reporting_person_status === 'Approved' ? 'Approved' : (detailRecord.status === 'Draft' ? 'Waiting' : 'Draft')))) ]]
               </span>
             </div>
 
@@ -1269,7 +1269,16 @@
             </div>
 
             <!-- Step 3: HO Approval -->
-            <div class="inline-flow-step" v-if="detailRecord.reporting_person_status !== 'Rejected'">
+            <div class="inline-flow-step" v-if="detailRecord.reporting_person_status !== 'Rejected'" style="position: relative; padding-right: 24px;">
+              <div 
+                v-if="detailRecord.status === 'Pending HO Approval' && isAdmin"
+                style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                class="hover-primary"
+                title="Skip Approval"
+                @click.stop="skipStageApproval('HO Approval')"
+              >
+                <i class="fas fa-ellipsis-v"></i>
+              </div>
               <div class="inline-step-num">2</div>
               <div class="inline-step-info">
                 <span class="inline-step-role">HO Officer</span>
@@ -1280,9 +1289,9 @@
               </div>
               <span
                 class="inline-step-status badge"
-                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting'))"
+                :class="detailRecord.ho_officer_status === 'Rejected' ? 'disabled' : (detailRecord.ho_officer_status === 'Skip' ? 'status-done' : (detailRecord.status === 'Pending HO Approval' ? 'status-pending' : (detailRecord.ho_officer_status === 'Approved' ? 'status-done' : 'status-waiting')))"
               >
-                [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting')) ]]
+                [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.ho_officer_status === 'Skip' ? 'Skipped' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting'))) ]]
               </span>
             </div>        </h1>
       </div>
@@ -6918,6 +6927,67 @@
     </div>
   </div>
 
+  <!-- Skip Approval Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showSkipModal"
+    @click.self="showSkipModal = false"
+  >
+    <div class="profile-modal" style="max-width: 450px;">
+      <div class="profile-modal-header">
+        <h3>Approval Management</h3>
+        <button class="profile-close" @click="showSkipModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 24px;">
+          Choose an action for this approval stage. You can either skip this stage or reassign it to another person.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label">Change Reporting Person</label>
+          <div class="searchable-select-wrapper">
+            <input
+              type="text"
+              class="form-input"
+              v-model="reassignForm.employee_display"
+              @focus="focusedField = 'reassign_emp'"
+              @blur="onBlurSearchable('reassign_emp')"
+              placeholder="Search Employee"
+            />
+            <div class="searchable-select-dropdown" v-if="focusedField === 'reassign_emp'">
+              <div
+                v-for="emp in employees.filter(e => !reassignForm.employee_display || e.employee_name.toLowerCase().includes(reassignForm.employee_display.toLowerCase()) || e.user_id.toLowerCase().includes(reassignForm.employee_display.toLowerCase()))"
+                :key="emp.user_id"
+                class="searchable-select-option"
+                @mousedown="reassignForm.employee = emp.user_id; reassignForm.employee_display = emp.employee_name; focusedField = null;"
+              >
+                [[ emp.employee_name ]] ([[ emp.user_id ]])
+              </div>
+            </div>
+          </div>
+          <button 
+            class="btn-create" 
+            style="margin-top: 12px; width: 100%; background: var(--blue-600); border-color: var(--blue-600);"
+            @click="handleReassign()"
+            :disabled="!reassignForm.employee"
+          >
+            <i class="fas fa-user-edit"></i> Reassign
+          </button>
+        </div>
+
+        <div style="border-top: 1px solid var(--border-color); padding-top: 24px;">
+          <button 
+            class="btn-create" 
+            style="width: 100%; background: #ef4444; border-color: #ef4444;"
+            @click="handleSkip()"
+          >
+            <i class="fas fa-forward"></i> Skip This Stage
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Profile Modal -->
   <div
     class="profile-modal-overlay"
@@ -10567,6 +10637,12 @@
       },
       showAssetCreateView: false,
       showMovementCreateView: false,
+      showSkipModal: false,
+      currentApprovalStage: "",
+      reassignForm: {
+        employee: "",
+        employee_display: "",
+      },
 
       createAssetForm: {
         asset_name: "",
@@ -11085,6 +11161,64 @@
       getDisplayQty(row) {
         if (this.isAdmin) return "##";
         return row.branch_qty || 0;
+      },
+
+      skipStageApproval(stage) {
+        this.currentApprovalStage = stage;
+        this.reassignForm.employee = "";
+        this.reassignForm.employee_display = "";
+        this.showSkipModal = true;
+      },
+
+      async handleReassign() {
+        if (!this.detailRecord || !this.reassignForm.employee) return;
+        this.loading = true;
+        try {
+          const fieldname = this.currentApprovalStage === 'Reporting' 
+            ? { reporting_person: this.reassignForm.employee, reporting_person_display: this.reassignForm.employee_display }
+            : { head_office_officer: this.reassignForm.employee, head_office_officer_display: this.reassignForm.employee_display };
+
+          await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+              doctype: "Employee Material Request",
+              name: this.detailRecord.name,
+              fieldname: fieldname,
+            },
+          });
+          
+          frappe.show_alert({ message: "Request reassigned successfully", indicator: "green" });
+          this.showSkipModal = false;
+          await this.openRecord(this.detailRecord);
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Failed to reassign request");
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async handleSkip() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.skip_approval_stage",
+            args: {
+              docname: this.detailRecord.name,
+              stage: this.currentApprovalStage
+            }
+          });
+          
+          frappe.show_alert({ message: "Stage skipped successfully", indicator: "green" });
+          this.showSkipModal = false;
+          await this.openRecord(this.detailRecord);
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Failed to skip stage");
+        } finally {
+          this.loading = false;
+        }
       },
 
       async fetchData(doctype = "Item", append = false) {

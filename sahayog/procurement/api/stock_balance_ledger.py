@@ -797,3 +797,30 @@ def get_portal_master_data():
         "locations": [l.name for l in frappe.get_all("Location")],
         "hsn_codes": hsn_codes,
     }
+
+@frappe.whitelist()
+def skip_approval_stage(docname, stage):
+    """
+    Skip the approval process by setting both reporting and HO status to Skip.
+    """
+    if "Administrator" not in frappe.get_roles():
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    update_fields = {
+        "reporting_person_status": "Skip",
+        "ho_officer_status": "Skip",
+        "status": "Approved",
+        "docstatus": 1
+    }
+    
+    # Use db.set_value to bypass workflow and validation rules
+    frappe.db.set_value("Employee Material Request", docname, update_fields)
+    
+    # Record the action in comments
+    doc.add_comment("Comment", f"Approval process skipped at {stage} stage by Administrator.")
+    
+    frappe.db.commit()
+    
+    return {"status": "success"}
