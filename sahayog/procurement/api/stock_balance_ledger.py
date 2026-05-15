@@ -801,12 +801,13 @@ def get_portal_master_data():
 @frappe.whitelist()
 def skip_approval_stage(docname, stage):
     """
-    Skip the approval process by setting both reporting and HO status to Skip.
+    Skip a specific approval stage (Reporting or HO Officer) by bypassing workflow.
+    Allowed for Administrators and the Record Owner.
     """
-    if "Administrator" not in frappe.get_roles():
-        frappe.throw(_("Not permitted"), frappe.PermissionError)
-
     doc = frappe.get_doc("Employee Material Request", docname)
+    
+    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user:
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
     
     update_fields = {
         "reporting_person_status": "Skip",
