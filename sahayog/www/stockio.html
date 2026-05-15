@@ -10658,15 +10658,45 @@
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Department", key: "department", width: 1.2 },
             { label: "Employee", key: "employee_name", width: 1.5 },
-            { label: "Request from Warehouse", key: "target_warehouse", width: 1.5 },
-            { label: "Provider Warehouse", key: "source_warehouse", width: 1.5 },
+            { 
+              label: "Request from Warehouse", 
+              key: "target_warehouse", 
+              width: 1.5,
+              getValue(row) {
+                const val = row.target_warehouse;
+                if (!val) return "";
+                const match = val.match(/\b\d{4}\b/);
+                if (match) {
+                  const solId = match[0];
+                  const branch = this.sahayog_branches.find(b => b.name === solId);
+                  return branch ? branch.branch : val;
+                }
+                return val;
+              }
+            },
+            { 
+              label: "Provider Warehouse", 
+              key: "source_warehouse", 
+              width: 1.5,
+              getValue(row) {
+                const val = row.source_warehouse;
+                if (!val) return "";
+                const match = val.match(/\b\d{4}\b/);
+                if (match) {
+                  const solId = match[0];
+                  const branch = this.sahayog_branches.find(b => b.name === solId);
+                  return branch ? branch.branch : val;
+                }
+                return val;
+              }
+            },
             {
               label: "Status",
               key: "status",
               width: 1,
               type: "badge",
               isCustomStatus: true,
-              getValue: (row) => {
+              getValue(row) {
                 // We only apply this custom logic for requests that are already approved in the workflow
                 const postApprovalStates = [
                   "Approved",
@@ -14048,12 +14078,36 @@
       },
 
       get visibleColumns() {
-        return this.currentView.columns || [];
+        return (this.currentView && this.currentView.columns) || [];
       },
 
       getFieldValue(row, key) {
         if (!row || !key) return "";
+
+        // Check if current column has a custom getValue function
+        const columns = this.visibleColumns;
+        if (columns && columns.length > 0) {
+          const col = columns.find((c) => c.key === key);
+          if (col && typeof col.getValue === "function") {
+            // Bind 'this' so it can access sahayog_branches etc.
+            return col.getValue.call(this, row);
+          }
+        }
+
         let value = row[key];
+
+        // 🔥 Special handling for warehouse ID to branch name
+        if (key === "target_warehouse" || key === "source_warehouse") {
+          const val = value;
+          if (val) {
+            const match = String(val).match(/\b\d{4}\b/);
+            if (match) {
+              const solId = match[0];
+              const branch = this.sahayog_branches.find((b) => b.name === solId);
+              if (branch) return branch.branch;
+            }
+          }
+        }
 
         // 🔥 Special handling for purpose (fetch from child if not in parent)
         if (
