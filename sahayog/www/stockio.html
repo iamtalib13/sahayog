@@ -1384,23 +1384,8 @@
             :class="itemView === 'list' ? 'fas fa-th-large' : 'fas fa-list'"
           ></i>
         </button>
-        <button
-          class="btn-create"
-          v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && (activeItem === 'Requests' || activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Movements' || activeItem === 'Asset Master') && ( (activeItem === 'Requests' && ((detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
-          @click="isEditing ? saveRequest() : toggleEditMode()"
-        >
-          <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
-          <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
-        </button>
-        <button
-          class="btn-cancel"
-          v-if="isEditing"
-          @click="toggleEditMode()"
-          style="margin-left: 8px"
-        >
-          <i class="fas fa-times"></i>
-          <span>Cancel</span>
-        </button>
+        <!-- Edit button removed from top header -->
+        <!-- Cancel button removed from top header -->
         <button
           class="btn-create"
           v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Outward' || activeItem === 'Requests' || activeItem === 'Asset Master' || activeItem === 'Movements') && ( (activeItem === 'Requests' && (detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin))) || (activeItem === 'Asset Master' && detailRecord.status === 'Draft') || (activeItem !== 'Requests' && activeItem !== 'Asset Master') )"
@@ -1411,43 +1396,9 @@
           <span>Submit</span>
         </button>
 
-        <!-- Workflow Buttons for Reporting Person -->
-        <button
-          class="btn-create"
-          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)"
-          style="background: #10b981"
-          @click="handleWorkflowAction('Approve')"
-        >
-          <i class="fas fa-check"></i>
-          <span>Approve</span>
-        </button>
-        <button
-          class="btn-create btn-reject"
-          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)"
-          @click="handleWorkflowAction('Reject')"
-        >
-          <i class="fas fa-times"></i>
-          <span>Reject</span>
-        </button>
+        <!-- Workflow Buttons for Reporting Person removed -->
 
-        <!-- Workflow Buttons for HO Officer -->
-        <button
-          class="btn-create"
-          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)"
-          style="background: #10b981"
-          @click="handleWorkflowAction('Approve')"
-        >
-          <i class="fas fa-check"></i>
-          <span>Approve</span>
-        </button>
-        <button
-          class="btn-create btn-reject"
-          v-if="showDetailView && detailRecord && activeItem === 'Requests' && detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)"
-          @click="handleWorkflowAction('Reject')"
-        >
-          <i class="fas fa-times"></i>
-          <span>Reject</span>
-        </button>
+        <!-- Workflow Buttons for HO Officer removed -->
         <button
           class="btn-create"
           v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
@@ -3586,8 +3537,7 @@
                           font-weight: 800;
                         "
                       >
-                        [[ (comment.comment_by || comment.owner ||
-                        "A").charAt(0).toUpperCase() ]]
+                        [[ (getEmployeeName(comment.comment_by || comment.owner) || "A").charAt(0).toUpperCase() ]]
                       </div>
                       <span
                         class="comment-author"
@@ -3596,9 +3546,8 @@
                           font-size: 0.85rem;
                           color: var(--text-main);
                         "
-                        >[[ comment.comment_by || comment.owner ]]</span
-                      >
-                      <span
+                        >[[ getEmployeeName(comment.comment_by || comment.owner) || comment.comment_by || comment.owner ]]</span
+                      >                      <span
                         class="comment-time"
                         style="
                           font-size: 0.75rem;
@@ -3805,8 +3754,7 @@
                             font-weight: 800;
                           "
                         >
-                          [[ (comment.comment_by || comment.owner ||
-                          "A").charAt(0).toUpperCase() ]]
+                          [[ (getEmployeeName(comment.comment_by || comment.owner) || "A").charAt(0).toUpperCase() ]]
                         </div>
                         <span
                           class="comment-author"
@@ -3815,7 +3763,7 @@
                             font-size: 0.85rem;
                             color: var(--text-main);
                           "
-                          >[[ comment.comment_by || comment.owner ]]</span
+                          >[[ getEmployeeName(comment.comment_by || comment.owner) || comment.comment_by || comment.owner ]]</span
                         >
                         <span
                           class="comment-time"
@@ -4025,6 +3973,46 @@
                       </h4>
                     </div>
                     <div style="display: flex; align-items: center; gap: 16px">
+                      <!-- Action Buttons for Requests -->
+                      <div 
+                        v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && activeItem === 'Requests'"
+                        style="display: flex; gap: 8px;"
+                      >
+                        <button
+                          class="btn-create-inline"
+                          v-if="(detailRecord.status === 'Draft' && (detailRecord.owner === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin))"
+                          @click="isEditing ? saveRequest() : toggleEditMode()"
+                        >
+                          <i class="fas" :class="isEditing ? 'fa-save' : 'fa-pencil-alt'"></i>
+                          <span>[[ isEditing ? 'Save' : 'Edit' ]]</span>
+                        </button>
+                        <button
+                          class="btn-create-inline"
+                          style="background: #ef4444; border-color: #ef4444;"
+                          v-if="isEditing"
+                          @click="toggleEditMode()"
+                        >
+                          <i class="fas fa-times"></i>
+                          <span>Cancel</span>
+                        </button>
+
+                        <template v-if="!isEditing && ( (detailRecord.status === 'Pending Reporting Person' && (detailRecord.reporting_person === frappe.session.user || isAdmin)) || (detailRecord.status === 'Pending HO Approval' && (detailRecord.head_office_officer === frappe.session.user || isAdmin)) )">
+                          <button
+                            class="btn-create-inline"
+                            style="background: #10b981; border-color: #10b981;"
+                            @click="handleWorkflowAction('Approve')"
+                          >
+                            <i class="fas fa-check"></i> Approve
+                          </button>
+                          <button
+                            class="btn-create-inline btn-reject"
+                            @click="handleWorkflowAction('Reject')"
+                          >
+                            <i class="fas fa-times"></i> Reject
+                          </button>
+                        </template>
+                      </div>
+
                       <button
                         v-if="isEditing"
                         class="btn-create-inline"
@@ -4542,9 +4530,9 @@
                     <div v-for="comment in comments" :key="comment.name" class="comment-item" style="margin-bottom: 16px; padding: 12px; background: var(--gray-50); border-radius: 12px; border: 1px solid var(--border-color);">
                       <div class="comment-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <div class="comment-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: #f59e0b; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">
-                          [[ (comment.comment_by || comment.owner || "A").charAt(0).toUpperCase() ]]
+                          [[ (getEmployeeName(comment.comment_by || comment.owner) || "A").charAt(0).toUpperCase() ]]
                         </div>
-                        <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ comment.comment_by || comment.owner ]]</span>
+                        <span class="comment-author" style="font-weight: 700; font-size: 0.85rem; color: var(--text-main);">[[ getEmployeeName(comment.comment_by || comment.owner) || comment.comment_by || comment.owner ]]</span>
                         <span class="comment-time" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">[[ comment.creation.split(' ')[0] ]]</span>
                       </div>
                       <div class="comment-content" style="font-size: 0.9rem; color: var(--text-main); line-height: 1.5;" v-html="comment.content"></div>
