@@ -496,12 +496,13 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_user_branch_warehouse():
+def get_user_branch_warehouse(user=None):
     """
-    Get the warehouse linked to the current user's branch
+    Get the warehouse linked to the branch of the specified user or current session user.
     Checks Sahayog Settings first, then falls back to sol_id from Employee
     """
-    user = frappe.session.user
+    if not user:
+        user = frappe.session.user
 
     # 1. Check Sahayog Settings (Default Warehouse table)
     try:

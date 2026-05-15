@@ -12554,27 +12554,50 @@
           });
           if (res.message) {
             const emp = res.message;
-            if (emp.sol_id) {
-              const branchRes = await frappe.call({
-                method: "frappe.client.get_value",
-                args: {
-                  doctype: "Sahayog Branch",
-                  filters: { name: emp.sol_id },
-                  fieldname: "branch",
-                },
-              });
-              const branchName =
-                branchRes.message && branchRes.message.branch
-                  ? branchRes.message.branch
-                  : "";
-              const displayValue = branchName
-                ? `${branchName} (${emp.sol_id})`
-                : emp.sol_id;
-              this.emrForm.target_location = displayValue;
-              this.emrForm.target_warehouse = displayValue;
-            } else {
-              this.emrForm.target_location = "";
-              this.emrForm.target_warehouse = "";
+
+            // 1. Try to get warehouse/location from Sahayog Settings using the employee's user_id
+            let warehouseSet = false;
+            if (emp.user_id) {
+              try {
+                const whRes = await frappe.call({
+                  method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse",
+                  args: { user: emp.user_id },
+                });
+                if (whRes.message && whRes.message.warehouse) {
+                  const wh = whRes.message.warehouse;
+                  this.emrForm.target_location = wh;
+                  this.emrForm.target_warehouse = wh;
+                  warehouseSet = true;
+                }
+              } catch (e) {
+                console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
+              }
+            }
+
+            // 2. Fallback to existing sol_id logic if Sahayog Settings lookup failed
+            if (!warehouseSet) {
+              if (emp.sol_id) {
+                const branchRes = await frappe.call({
+                  method: "frappe.client.get_value",
+                  args: {
+                    doctype: "Sahayog Branch",
+                    filters: { name: emp.sol_id },
+                    fieldname: "branch",
+                  },
+                });
+                const branchName =
+                  branchRes.message && branchRes.message.branch
+                    ? branchRes.message.branch
+                    : "";
+                const displayValue = branchName
+                  ? `${branchName} (${emp.sol_id})`
+                  : emp.sol_id;
+                this.emrForm.target_location = displayValue;
+                this.emrForm.target_warehouse = displayValue;
+              } else {
+                this.emrForm.target_location = "";
+                this.emrForm.target_warehouse = "";
+              }
             }
 
             if (emp.reports_to) {
