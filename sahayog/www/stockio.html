@@ -942,8 +942,7 @@
           class="page-title"
           v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView"
         >
-          [[ activeItem ]] [[ activeItem === 'Branch Stock' && userWarehouse ?
-          '(' + userWarehouse + ')' : '' ]]
+          [[ activeItem ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
         </h1>
         <h1
           class="page-title"
@@ -11363,20 +11362,15 @@
         
         const selectedDept = String(this.emrForm && this.emrForm.department || "").toLowerCase();
         
-        // 1. If 'Purchase' is selected, show all items
-        if (selectedDept === "purchase") {
-          return list;
-        }
-
-        // 2. If a specific department is selected in the form, filter by it strictly
-        if (selectedDept) {
-          if (selectedDept.includes("stationer")) {
-            list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toLowerCase().includes("stationer"));
-          } else if (selectedDept === "it") {
-            list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toUpperCase() === "IT");
-          }
-        } else if (this.userInventoryType && !this.isAdmin) {
-          // 3. If no department is selected in the form, use the user's Inventory Type as the base filter
+        // 1. Handle strict department filters (Stationery/IT)
+        if (selectedDept.includes("stationer")) {
+          list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toLowerCase().includes("stationer"));
+        } else if (selectedDept === "it") {
+          list = list.filter((d) => !d.custom_item_department || String(d.custom_item_department).toUpperCase() === "IT");
+        } 
+        
+        // 2. Apply Inventory Type restrictions if user is restricted (applies to 'Purchase' or undefined dept)
+        if (this.userInventoryType && !this.isAdmin && (selectedDept === "purchase" || !selectedDept)) {
           const invType = String(this.userInventoryType).toLowerCase();
           list = list.filter((d) => {
             if (!d.custom_item_department) return true;
