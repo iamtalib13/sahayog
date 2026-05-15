@@ -1623,7 +1623,26 @@
               <div class="whatsapp-message" style="width: 100%; max-width: 100%;">
                 <template v-if="activeItem === 'Requests'">
                   <div class="filter-options-grid">
-                    <button class="filter-option-btn">Request</button>
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">Request:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.request_display" 
+                        @focus="activeFilterKey = 'request'"
+                        placeholder="Search Request Name"
+                      />
+                      <div v-if="activeFilterKey === 'request'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="req in filteredFilterRequests" 
+                          :key="req.name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.request = req.name; filterForm.request_display = req.name; activeFilterKey = null"
+                        >
+                          [[ req.name ]]
+                        </div>
+                      </div>
+                    </div>
                     
                     <div class="filter-dropdown-container">
                       <button class="filter-option-btn" @click="toggleFilterDropdown('department')">
@@ -1636,7 +1655,26 @@
                       </div>
                     </div>
 
-                    <button class="filter-option-btn">Owner</button>
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">employee:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.employee_display" 
+                        @focus="activeFilterKey = 'employee'"
+                        placeholder="Search Employee"
+                      />
+                      <div v-if="activeFilterKey === 'employee'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="emp in filteredFilterEmployees" 
+                          :key="emp.name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.employee = emp.name; filterForm.employee_display = emp.employee_name; activeFilterKey = null"
+                        >
+                          [[ emp.employee_name ]] ([[ emp.name ]])
+                        </div>
+                      </div>
+                    </div>
                     
                     <div class="filter-date-row">
                       <div class="filter-date-group">
@@ -10421,9 +10459,10 @@
         status: "",
         department: "",
         owner: "",
-        request: "",
-        from_warehouse: "",
-        from_warehouse_display: "",
+        employee: "",
+        employee_display: "",
+        request: "",        request_display: "",
+        from_warehouse: "",        from_warehouse_display: "",
         to_warehouse: "",
         to_warehouse_display: ""
       },
@@ -11220,10 +11259,25 @@
             (b.branch || "").toLowerCase().includes(q) ||
             (b.sol_id || "").toString().includes(q) ||
             (b.name || "").toLowerCase().includes(q),
-        );
-      },
-
-      get filteredEmployees() {
+            );
+            },
+            get filteredFilterRequests() {
+            const q = (this.filterForm.request_display || "").toLowerCase();
+            if (!this.currentView || !this.currentView.data) return [];
+            if (!q) return this.currentView.data;
+            return this.currentView.data.filter((r) =>
+              (r.name || "").toLowerCase().includes(q),
+            );
+            },
+            get filteredFilterEmployees() {
+            const q = (this.filterForm.employee_display || "").toLowerCase();
+            if (!q) return this.employees;
+            return this.employees.filter(
+              (e) =>
+                (e.employee_name || "").toLowerCase().includes(q) ||
+                (e.name || "").toLowerCase().includes(q),
+            );
+            },      get filteredEmployees() {
         let q = "";
         if (this.showAccessCreateView) {
           q = (this.accessForm.user_id || "").toLowerCase();
