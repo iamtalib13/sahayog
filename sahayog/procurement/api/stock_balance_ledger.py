@@ -343,7 +343,7 @@ def get_emr_list(limit=20, start=0, search_text=None):
     query = f"""
         SELECT emr.*, emp.employee_name
         FROM `tabEmployee Material Request` emr
-        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        LEFT JOIN `tabEmployee` emp ON emp.name = emr.employee
         {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
         {"AND " if perm_cond and search_text else ""}
         {("emr.name LIKE '" + f"%{search_text}%" + "'") if search_text else ""}
