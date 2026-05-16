@@ -1555,7 +1555,7 @@
         <button
           class="btn-create-inline"
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && ['Approved', 'Partially Dispatched', 'Dispatch'].includes(getRequestStatus(detailRecord))"
-          @click="hasWarehouseAccess ? (showDispatchHistory = !showDispatchHistory; fetchDispatchHistory();) : null"
+          @click="toggleDispatchHistory()"
           title="Dispatch History"
           style="
             margin-left: 12px;
@@ -14393,6 +14393,13 @@
       },
       toggleUserMenu() {
         this.showUserMenu = !this.showUserMenu;
+      },
+      toggleDispatchHistory() {
+        if (!this.hasWarehouseAccess) return;
+        this.showDispatchHistory = !this.showDispatchHistory;
+        if (this.showDispatchHistory) {
+          this.fetchDispatchHistory();
+        }
       },
       async fetchDispatchHistory() {
         if (
