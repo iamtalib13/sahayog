@@ -1555,7 +1555,7 @@
         <button
           class="btn-create-inline"
           v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
-          @click="showDispatchHistory = !showDispatchHistory; fetchDispatchHistory();"
+          @click="hasWarehouseAccess ? (showDispatchHistory = !showDispatchHistory; fetchDispatchHistory();) : null"
           title="Dispatch History"
           style="
             margin-left: 12px;
@@ -1563,6 +1563,7 @@
             border-radius: 40px;
             padding: 0 20px;
           "
+          :style="!hasWarehouseAccess ? 'opacity: 0.5; cursor: not-allowed;' : ''"
         >
           [[ showDispatchHistory ? 'Comments Box' : 'Dispatch History' ]]
         </button>
@@ -4528,7 +4529,7 @@
                           <th>Status</th>
                           <th
                             style="width: 80px; text-align: center"
-                            v-if="detailRecord.items && detailRecord.items.some(i => i.status === 'Approved')"
+                            v-if="hasWarehouseAccess && detailRecord.items && detailRecord.items.some(i => i.status === 'Approved')"
                           >
                             Action
                           </th>
@@ -4696,7 +4697,7 @@
                           </td>
                           <td
                             style="text-align: center"
-                            v-if="detailRecord.items && detailRecord.items.some(i => i.status === 'Approved')"
+                            v-if="hasWarehouseAccess && detailRecord.items && detailRecord.items.some(i => i.status === 'Approved')"
                           >
                             <input
                               type="checkbox"
@@ -4968,7 +4969,7 @@
                       </button>
                     </div>
                     <button
-                      v-if="detailRecord.items && detailRecord.items.some(i => i.selected)"
+                      v-if="hasWarehouseAccess && detailRecord.items && detailRecord.items.some(i => i.selected)"
                       class="btn-create-inline"
                       style="
                         padding: 8px 16px !important;
@@ -5946,7 +5947,7 @@
                             Status
                           </th>
                           <th
-                            v-if="detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
+                            v-if="hasWarehouseAccess && detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="
                               padding: 10px 12px !important;
                               font-size: 0.75rem !important;
@@ -6178,7 +6179,7 @@
                             </span>
                           </td>
                           <td
-                            v-if="detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
+                            v-if="hasWarehouseAccess && detailRecord && detailRecord.status === 'Approved' && !(detailRecord.items && detailRecord.items.every(i => i.status === 'Dispatch'))"
                             style="padding: 10px 12px !important"
                           >
                             <div
@@ -6207,7 +6208,7 @@
                   </div>
                   <!-- Bulk Dispatch Button (Moved outside table) -->
                   <div
-                    v-if="detailRecord.items && detailRecord.items.some(i => i.selected)"
+                    v-if="hasWarehouseAccess && detailRecord.items && detailRecord.items.some(i => i.selected)"
                     style="
                       display: flex;
                       justify-content: flex-end;
@@ -7105,8 +7106,10 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      @click.stop="handleDispatch(row, true)"
+                      @click.stop="hasWarehouseAccess ? handleDispatch(row, true) : null"
                       v-if="activeItem === 'Requests' && (row.status === 'Approved' || row.status === 'Partially Dispatched') && (!row.items || !row.items.every(i => i.status === 'Dispatch'))"
+                      :style="!hasWarehouseAccess ? 'opacity: 0.5; cursor: not-allowed;' : ''"
+                      :title="!hasWarehouseAccess ? 'No Warehouse Access' : ''"
                     >
                       [[ (row.items && row.items.some(i => i.item_category ===
                       'Asset')) ? 'Movement' : 'Dispatch' ]]
@@ -11120,7 +11123,12 @@
       userEmployeeId: null,
       userDesignation: null,
       userInventoryType: null,
-      branchStockFilter: "My Stock",      itemQuantities: {},
+      branchStockFilter: "My Stock",
+      get hasWarehouseAccess() {
+        if (this.isAdmin) return true;
+        return this.wh_dept_map.some(m => m.user_id === frappe.session.user);
+      },
+      itemQuantities: {},
       isAdmin: false,
       showDetailView: false,
       showEMRCreateView: false,
