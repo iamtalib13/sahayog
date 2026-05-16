@@ -1910,7 +1910,7 @@
                         v-model="emrForm.target_warehouse_display"
                         @focus="onFocusSearchable('target_warehouse')"
                         @blur="onBlurSearchable('target_warehouse')"
-                        placeholder="Select Warehouse"
+                        placeholder="Auto-filled"
                       />
                       <div class="searchable-select-dropdown" v-if="focusedField === 'target_warehouse'">
                         <div
@@ -2014,7 +2014,7 @@
                         v-model="emrForm.source_warehouse_display"
                         @focus="onFocusSearchable('source_warehouse')"
                         @blur="onBlurSearchable('source_warehouse')"
-                        placeholder="Select Warehouse"
+                        placeholder="Auto-filled"
                       />
                       <div class="searchable-select-dropdown" v-if="focusedField === 'source_warehouse'">
                         <div
@@ -11035,6 +11035,7 @@
         source_warehouse: "",
         source_warehouse_display: "",
         target_warehouse: "",
+        target_warehouse_display: "",
         target_location: "",
         request_type: "New",
         department: "Stationery",
@@ -12208,6 +12209,7 @@
             source_warehouse: "",
             source_warehouse_display: "",
             target_warehouse: "",
+            target_warehouse_display: "",
             target_location: "",
             request_type: "New",
             department: "Stationery",
