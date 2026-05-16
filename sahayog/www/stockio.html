@@ -12203,6 +12203,11 @@
             { item_code: "", item_code_display: "", description: "", uom: "", quantity: 1 },
           ];
 
+          // 🔥 Trigger mapping check immediately for default department
+          setTimeout(() => {
+             this.onDepartmentChange();
+          }, 50);
+
           return;
         }
 
