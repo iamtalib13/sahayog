@@ -1538,14 +1538,14 @@
         <div v-if="activeItem === 'Branch Stock'" style="display: flex; gap: 8px; margin-right: 8px;">
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'My Stock' ? 'background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
+            :style="branchStockFilter === 'My Stock' ? 'background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: white !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;' : 'background: var(--bg-card) !important; color: var(--text-main) !important; border-color: var(--border-color) !important;'"
             @click="setBranchStockFilter('My Stock')"
           >
             My Stock
           </button>
           <button
             class="btn-create-inline"
-            :style="branchStockFilter === 'Other Stock' ? 'background: #3b82f6 !important; border-color: #3b82f6 !important; color: white !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6) !important;' : 'background: white !important; color: #ef4444 !important; border-color: #ef4444 !important;'"
+            :style="branchStockFilter === 'Other Stock' ? 'background: var(--primary-color) !important; border-color: var(--primary-color) !important; color: white !important; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;' : 'background: var(--bg-card) !important; color: var(--text-main) !important; border-color: var(--border-color) !important;'"
             @click="setBranchStockFilter('Other Stock')"
           >
             Other Stock
