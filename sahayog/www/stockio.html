@@ -13635,7 +13635,8 @@
         }
         
         // Find in wh_dept_map (Default Warehouse table from Sahayog Settings)
-        const match = this.wh_dept_map.find(m => m.inventory_type === dept);
+        // Check for department match AND the 'dfault' flag
+        const match = this.wh_dept_map.find(m => m.inventory_type === dept && (m.dfault == 1 || m.dfault == "1" || m.dfault === true));
         if (match) {
           console.log("Matching Warehouse row from Sahayog Settings:", match);
           // 🔥 Auto-fill Provider Warehouse
