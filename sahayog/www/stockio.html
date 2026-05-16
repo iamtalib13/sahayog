@@ -1990,7 +1990,7 @@
                     </div>
                     <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
                       <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Department</label>
-                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department">
+                      <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.department" @change="onDepartmentChange()">
                         <option value="Purchase">Purchase</option>
                         <option value="Stationery">Stationery</option>
                         <option value="it">IT</option>
@@ -11029,6 +11029,7 @@
       },
       employees: [],
       departments: [],
+      wh_dept_map: [],
       warehouses: [],
       sahayog_branches: [],
       emr_names: [],
@@ -12482,6 +12483,7 @@
             const data = res.message;
             this.employees = data.employees || [];
             this.warehouses = data.warehouses || [];
+            this.wh_dept_map = data.wh_dept_map || [];
             this.sahayog_branches = data.sahayog_branches || [];
             this.emr_names = data.emr_names || [];
             this.purchase_receipt_names = data.purchase_receipt_names || [];
@@ -13593,6 +13595,20 @@
           }
         } catch (e) {
           console.error("Error fetching employee details:", e);
+        }
+      },
+      onDepartmentChange() {
+        const dept = this.emrForm.department;
+        if (!dept) return;
+
+        console.log("Department changed to:", dept);
+        
+        // Find in wh_dept_map (Default Warehouse table from Sahayog Settings)
+        const match = this.wh_dept_map.find(m => m.inventory_type === dept);
+        if (match) {
+          console.log("Matching Warehouse row from Sahayog Settings:", match);
+        } else {
+          console.log("No warehouse mapping found for department:", dept);
         }
       },
       addRequestItemRow() {
