@@ -13607,6 +13607,12 @@
         const match = this.wh_dept_map.find(m => m.inventory_type === dept);
         if (match) {
           console.log("Matching Warehouse row from Sahayog Settings:", match);
+          // 🔥 Auto-fill Provider Warehouse
+          if (match.warehouse) {
+            this.emrForm.source_warehouse = match.warehouse;
+            this.emrForm.source_warehouse_display = this.getBranchDisplayText(match.warehouse);
+            console.log("Auto-filled Provider Warehouse with:", match.warehouse);
+          }
         } else {
           console.log("No warehouse mapping found for department:", dept);
         }
