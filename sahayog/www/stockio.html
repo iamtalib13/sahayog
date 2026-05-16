@@ -2050,6 +2050,21 @@
                         Please provide a detailed remark (minimum 5 words) for Asset requests.
                     </span>
                   </div>
+
+                  <!-- Send for Purchase Checkbox inside the card -->
+                  <div style="margin-top: 16px;">
+                    <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--text-main); font-size: 0.9rem;">
+                      <input 
+                        type="checkbox" 
+                        class="form-checkbox" 
+                        v-model="emrForm.custom_send_for_purchase" 
+                        :true-value="1" 
+                        :false-value="0"
+                        style="width: 18px; height: 18px; accent-color: var(--primary-color);"
+                      />
+                      Send for Purchase
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -11026,6 +11041,7 @@
         reporting_person: "",
         reporting_person_display: "",
         remark: "",
+        custom_send_for_purchase: 0,
       },
       employees: [],
       departments: [],
@@ -12198,6 +12214,7 @@
             remark: "",
             reporting_person: "",
             reporting_person_display: "",
+            custom_send_for_purchase: 0,
           };
           this.emrItems = [
             { item_code: "", item_code_display: "", description: "", uom: "", quantity: 1 },
@@ -13794,6 +13811,7 @@
             department: this.emrForm.department,
             reporting_person: this.emrForm.reporting_person,
             head_office_officer: "2800@sahayog.com",
+            show_to_purchase: this.emrForm.custom_send_for_purchase,
             items: this.emrItems.map((item) => ({
               item_code: item.item_code,
               uom: item.uom,
