@@ -907,6 +907,7 @@ class StockIOPage {
       itemsVisible: [],
       itemsOffset: 0,
       itemsPageSize: 10,
+      userInventoryType: null,
 
       // MODALS & FORM STATE
       showCreateItemModal: false,
@@ -1354,6 +1355,27 @@ class StockIOPage {
 
         if (this.pageMode === "item") {
           let list = this.itemsList;
+
+          // Apply Inventory Type Filter
+          if (this.userInventoryType) {
+            const invType = String(this.userInventoryType).toLowerCase();
+            list = list.filter((d) => {
+              // Fallback: If item has NO department set, show it to everyone
+              if (!d.custom_item_department) return true;
+
+              const itemDept = String(d.custom_item_department).toLowerCase();
+
+              if (invType.includes("asset") && !invType.includes("stationery")) {
+                return itemDept === "it";
+              } else if (invType.includes("stationery") && !invType.includes("asset")) {
+                return itemDept.includes("stationer");
+              } else if (invType.includes("stationery") && invType.includes("asset")) {
+                return itemDept === "it" || itemDept.includes("stationer");
+              }
+              return true;
+            });
+          }
+
           if (q) {
             list = list.filter(
               (d) =>
@@ -1739,6 +1761,7 @@ class StockIOPage {
               "item_name",
               "item_group",
               "stock_uom",
+              "custom_item_department"
             ],
             order_by: this.itemSort,
             limit_page_length: 1000,
@@ -3645,6 +3668,20 @@ class StockIOPage {
 
     window.cur_stockio_app = app;
     PetiteVue.createApp(app).mount(this.wrapper[0]);
+
+    // Fetch User Inventory Type
+    frappe.call({
+      method: "sahayog.procurement.page.stockio.stockio.get_user_inventory_type",
+      callback: (r) => {
+        if (r.message) {
+          app.userInventoryType = r.message;
+          if (app.pageMode === "item") {
+            app.performSearch();
+          }
+        }
+      },
+    });
+
     setTimeout(() => {
       app.setMode(app.pageMode, app.subMode);
     }, 100);

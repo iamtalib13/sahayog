@@ -343,7 +343,7 @@ def get_emr_list(limit=20, start=0, search_text=None):
     query = f"""
         SELECT emr.*, emp.employee_name
         FROM `tabEmployee Material Request` emr
-        LEFT JOIN `tabEmployee` emp ON emp.user_id = emr.owner
+        LEFT JOIN `tabEmployee` emp ON emp.name = emr.employee
         {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
         {"AND " if perm_cond and search_text else ""}
         {("emr.name LIKE '" + f"%{search_text}%" + "'") if search_text else ""}
@@ -364,7 +364,7 @@ def get_emr_list(limit=20, start=0, search_text=None):
         row["items"] = frappe.get_all(
             "Material Request Items",
             filters={"parent": row.name},
-            fields=["name", "status", "item_code", "quantity", "item_category"]
+            fields=["name", "status", "item_code", "quantity", "item_category", "description"]
         )
 
     return {"data": data, "total": total_count}
@@ -461,19 +461,41 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None):
     """
     API to fetch Branch Stock data (reusing report logic)
     """
     from sahayog.procurement.report.branch_stock.branch_stock import execute
-    
+
+    user = frappe.session.user
+    user_warehouse = None
+
+    # Get user's assigned warehouse
+    assigned_warehouse = frappe.db.get_value(
+        "Default Warehouse",
+        {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
+        "warehouse"
+    )
+    if assigned_warehouse:
+        user_warehouse = assigned_warehouse
+    else:
+        # Fallback to sol_id
+        user_warehouse = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+
     filters = {}
     if warehouse:
         filters["warehouse"] = warehouse
-    
+
     _, data = execute(filters)
-    
+
+    # Apply My Stock / Other Stock filtering
+    if filter_type == "My Stock" and user_warehouse:
+        data = [row for row in data if row.get("warehouse") == user_warehouse]
+    elif filter_type == "Other Stock" and user_warehouse:
+        data = [row for row in data if row.get("warehouse") != user_warehouse]
+
     if search_text:
+
         search_text = search_text.lower()
         data = [
             row for row in data 
@@ -496,12 +518,13 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_user_branch_warehouse():
+def get_user_branch_warehouse(user=None):
     """
-    Get the warehouse linked to the current user's branch
+    Get the warehouse linked to the branch of the specified user or current session user.
     Checks Sahayog Settings first, then falls back to sol_id from Employee
     """
-    user = frappe.session.user
+    if not user:
+        user = frappe.session.user
 
     # 1. Check Sahayog Settings (Default Warehouse table)
     try:
@@ -744,6 +767,31 @@ def get_warehouse_company(warehouse):
     return frappe.db.get_value("Warehouse", warehouse, "company")
 
 @frappe.whitelist()
+def create_warehouse_if_not_exists(branch_id):
+    """
+    Check if a warehouse exists for the given branch ID.
+    If not, create it with branch_id as name and category 'Branch'.
+    """
+    # Check if a warehouse already exists with this name (branch_id)
+    existing = frappe.db.get_value("Warehouse", {"name": branch_id}, "name")
+    if existing:
+        return existing
+
+    # Get branch details
+    branch_doc = frappe.get_doc("Sahayog Branch", branch_id)
+    
+    # Create the warehouse
+    new_wh = frappe.get_doc({
+        "doctype": "Warehouse",
+        "warehouse_name": branch_id,
+        "custom_warehouse_category": "Branch", 
+        "is_group": 0,
+        "company": frappe.defaults.get_global_default("company") or frappe.get_all("Company")[0].name
+    })
+    new_wh.insert(ignore_permissions=True)
+    return new_wh.name
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.
@@ -764,8 +812,12 @@ def get_portal_master_data():
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
+        "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
+        "wh_dept_map": frappe.get_all("Default Warehouse", filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"}, fields=["inventory_type", "warehouse"]),
+        "emr_names": [r.name for r in frappe.get_all("Employee Material Request", order_by="creation desc", limit=500)],
+        "purchase_receipt_names": [r.name for r in frappe.get_all("Purchase Receipt", order_by="creation desc", limit=500)],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
-        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "custom_item_department", "description"], filters={"disabled": 0}),
         "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian"], filters={"docstatus": 1}),
         "item_groups": [g.name for g in frappe.get_all("Item Group")],
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
@@ -774,3 +826,34 @@ def get_portal_master_data():
         "locations": [l.name for l in frappe.get_all("Location")],
         "hsn_codes": hsn_codes,
     }
+
+@frappe.whitelist()
+def skip_approval_stage(docname, stage):
+    """
+    Skip a specific approval stage (Reporting or HO Officer) by bypassing workflow.
+    Allowed for Administrators and the Record Owner.
+    """
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user:
+        frappe.throw(_("Not permitted"), frappe.PermissionError)
+    
+    update_fields = {
+        "reporting_person_status": "Skip",
+        "ho_officer_status": "Skip",
+        "status": "Approved",
+        "docstatus": 1
+    }
+    
+    # Use db.set_value to bypass workflow and validation rules
+    frappe.db.set_value("Employee Material Request", docname, update_fields)
+    
+    # Get the name of the person performing the action
+    user_name = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name") or frappe.session.user
+    
+    # Record the action in comments
+    doc.add_comment("Comment", f"Approval process skipped at {stage} stage by {user_name}.")
+    
+    frappe.db.commit()
+    
+    return {"status": "success"}

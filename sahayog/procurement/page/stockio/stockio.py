@@ -114,3 +114,13 @@ def get_assets_with_movements():
         ) t
         WHERE t.rn = 1
     """, as_dict=1)
+
+@frappe.whitelist()
+def get_user_inventory_type():
+    user = frappe.session.user
+    # Sahayog Settings is a Single doctype
+    settings = frappe.get_single("Sahayog Settings")
+    for row in settings.wh_dept_map:
+        if row.user_id == user:
+            return row.inventory_type
+    return None

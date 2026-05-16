@@ -225,10 +225,9 @@ def get_employee_material_request_permission(user=None, doctype=None):
         )
     """)
 
-    # Purchase Department access
-    user_dept = frappe.db.get_value("Employee", {"user_id": user}, "department")
-    if user_dept == "Purchase":
-        conditions.append("`tabEmployee Material Request`.department = 'Purchase'")
+    # Purchase Department access: show if department is Purchase OR show_to_purchase is checked
+    if "Purchase Department" in user_roles:
+        conditions.append("(`tabEmployee Material Request`.department = 'Purchase' OR `tabEmployee Material Request`.show_to_purchase = 1)")
 
     # Store Manager → also see records from their branch/sol_id warehouse
     if any("Store Manager" in role for role in user_roles):
