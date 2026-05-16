@@ -29,10 +29,10 @@
   },
   {
    "fieldname": "inventory_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Inventory Type",
-   "options": "\nStationery\nAsset\nStationery & Asset"
+   "label": "Department",
+   "options": "Item Department"
   },
   {
    "fieldname": "employee",
@@ -45,7 +45,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-15 12:49:45.825962",
+ "modified": "2026-05-16 12:14:51.328154",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Default Warehouse",
