@@ -1554,7 +1554,7 @@
 
         <button
           class="btn-create-inline"
-          v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord && ['Approved', 'Partially Dispatched', 'Dispatch'].includes(getRequestStatus(detailRecord))"
           @click="hasWarehouseAccess ? (showDispatchHistory = !showDispatchHistory; fetchDispatchHistory();) : null"
           title="Dispatch History"
           style="
@@ -1569,7 +1569,7 @@
         </button>
         <button
           class="btn-create-inline"
-          v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) === 'Dispatch'"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord && ['Approved', 'Partially Dispatched', 'Dispatch'].includes(getRequestStatus(detailRecord))"
           style="
             background: var(--green-600);
             border-color: var(--green-600);
