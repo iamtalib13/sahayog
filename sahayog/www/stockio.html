@@ -13626,6 +13626,13 @@
         if (!dept) return;
 
         console.log("Department changed to:", dept);
+
+        // If department is 'it' or 'Purchase', we don't need to auto-fill or show the Provider Warehouse
+        if (dept === "it" || dept === "Purchase") {
+          this.emrForm.source_warehouse = "";
+          this.emrForm.source_warehouse_display = "";
+          return;
+        }
         
         // Find in wh_dept_map (Default Warehouse table from Sahayog Settings)
         const match = this.wh_dept_map.find(m => m.inventory_type === dept);
