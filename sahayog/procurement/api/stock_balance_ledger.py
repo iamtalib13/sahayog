@@ -770,21 +770,20 @@ def get_warehouse_company(warehouse):
 def create_warehouse_if_not_exists(branch_id):
     """
     Check if a warehouse exists for the given branch ID.
-    If not, create it as 'Branch Name (ID)' with category 'Branch'.
+    If not, create it with branch_id as name and category 'Branch'.
     """
-    # Check if a warehouse already exists for this branch ID (exact match in parentheses)
-    existing = frappe.db.get_value("Warehouse", {"warehouse_name": ["like", f"%({branch_id})%"]}, "name")
+    # Check if a warehouse already exists with this name (branch_id)
+    existing = frappe.db.get_value("Warehouse", {"name": branch_id}, "name")
     if existing:
         return existing
 
     # Get branch details
     branch_doc = frappe.get_doc("Sahayog Branch", branch_id)
-    warehouse_name = f"{branch_doc.branch} ({branch_id})"
     
     # Create the warehouse
     new_wh = frappe.get_doc({
         "doctype": "Warehouse",
-        "warehouse_name": warehouse_name,
+        "warehouse_name": branch_id,
         "custom_warehouse_category": "Branch", 
         "is_group": 0,
         "company": frappe.defaults.get_global_default("company") or frappe.get_all("Company")[0].name
