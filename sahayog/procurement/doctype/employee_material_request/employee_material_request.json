@@ -18,6 +18,7 @@
   "request_type",
   "status",
   "department",
+  "show_to_purchase",
   "section_break_items",
   "items",
   "approval_section",
@@ -241,6 +242,12 @@
    "label": "Department",
    "options": "\nPurchase\nStationery\nAsset\nit",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "show_to_purchase",
+   "fieldtype": "Check",
+   "label": "Show to Purchase"
   }
  ],
  "index_web_pages_for_search": 1,
