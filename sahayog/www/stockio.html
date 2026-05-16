@@ -1900,7 +1900,7 @@
                 <!-- Row for Warehouse and Location -->
                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from Warehouse <span class="form-required">*</span></label>
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from <span class="form-required">*</span></label>
                     <div class="searchable-select-wrapper">
                       <input
                         type="text"
@@ -2004,7 +2004,7 @@
                     v-if="emrForm.department !== 'it' && emrForm.department !== 'Purchase'"
                     style="margin-bottom: 12px !important;"
                   >
-                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Provider Warehouse <span class="form-required">*</span></label>
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request to <span class="form-required">*</span></label>
                     <div class="searchable-select-wrapper">
                       <input
                         type="text"
@@ -10700,7 +10700,7 @@
             { label: "Department", key: "department", width: 1.2 },
             { label: "Employee", key: "employee_name", width: 1.5 },
             { 
-              label: "Request from Warehouse", 
+              label: "Request from", 
               key: "target_warehouse", 
               width: 1.5,
               getValue(row) {
@@ -10716,7 +10716,7 @@
               }
             },
             { 
-              label: "Provider Warehouse", 
+              label: "Request to", 
               key: "source_warehouse", 
               width: 1.5,
               getValue(row) {
