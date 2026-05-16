@@ -1997,13 +1997,18 @@
                       />
                       <div class="searchable-select-dropdown" v-if="focusedField === 'source_warehouse'">
                         <div
-                          v-for="wh in filteredWarehouses"
-                          :key="wh"
+                          v-for="opt in filteredProviderWarehouses"
+                          :key="opt.id"
                           class="searchable-select-option"
                           style="padding: 8px 12px; font-size: 0.9rem;"
-                          @mousedown="selectEMROption('source_warehouse', wh)"
+                          @mousedown="emrForm.source_warehouse = opt.warehouse || opt.id; emrForm.source_warehouse_display = opt.display_text; focusedField = null"
                         >
-                          [[ wh ]]
+                          <span v-if="opt.is_matched">
+                            [[ opt.branch_label ]] <span style="color: #10b981; font-weight: 700;">([[ opt.warehouse ]])</span>
+                          </span>
+                          <span v-else style="color: #ef4444; font-weight: 700;">
+                            [[ opt.id ]]
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -11331,6 +11336,29 @@
         }
         if (!q) return this.warehouses;
         return this.warehouses.filter((w) => w.toLowerCase().includes(q));
+      },
+
+      get filteredProviderWarehouses() {
+        const q = (this.emrForm.source_warehouse_display || "").toLowerCase();
+        
+        // Map branches to their matching warehouses
+        const options = this.sahayog_branches.map(b => {
+          // Find warehouse that starts with the branch name (ID)
+          const matchedWh = this.warehouses.find(w => w.startsWith(b.name));
+          return {
+            branch_label: b.branch,
+            id: b.name,
+            warehouse: matchedWh,
+            is_matched: !!matchedWh,
+            display_text: matchedWh ? `${b.branch} (${matchedWh})` : b.name
+          };
+        });
+
+        if (!q) return options;
+        return options.filter(o => 
+          o.display_text.toLowerCase().includes(q) || 
+          o.id.toLowerCase().includes(q)
+        );
       },
       get filteredSuppliers() {
         if (!this.inwardForm || !this.inwardForm.supplier_display)
