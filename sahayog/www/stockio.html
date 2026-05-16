@@ -1901,13 +1901,34 @@
                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
                     <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from Warehouse <span class="form-required">*</span></label>
-                    <input
-                      type="text"
-                      class="form-input"
-                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
-                      v-model="emrForm.target_warehouse"
-                      placeholder="Auto-filled"
-                    />
+                    <div class="searchable-select-wrapper">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                        :class="{ focused: focusedField === 'target_warehouse' }"
+                        v-model="emrForm.target_warehouse_display"
+                        @focus="onFocusSearchable('target_warehouse')"
+                        @blur="onBlurSearchable('target_warehouse')"
+                        placeholder="Select Warehouse"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'target_warehouse'">
+                        <div
+                          v-for="opt in filteredTargetWarehouses"
+                          :key="opt.id"
+                          class="searchable-select-option"
+                          style="padding: 8px 12px; font-size: 0.9rem;"
+                          @mousedown="emrForm.target_warehouse = opt.warehouse || opt.id; emrForm.target_warehouse_display = opt.display_text; focusedField = null"
+                        >
+                          <span v-if="opt.is_matched">
+                            [[ opt.branch_label ]] <span style="color: #10b981; font-weight: 700;">([[ opt.warehouse ]])</span>
+                          </span>
+                          <span v-else style="color: #ef4444; font-weight: 700;">
+                            [[ opt.display_text ]]
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
                     <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request from Location <span class="form-required">*</span></label>
@@ -11362,6 +11383,29 @@
           o.id.toLowerCase().includes(q)
         );
       },
+
+      get filteredTargetWarehouses() {
+        const q = (this.emrForm.target_warehouse_display || "").toLowerCase();
+        
+        // Map branches to their matching warehouses
+        const options = this.sahayog_branches.map(b => {
+          const matchedWh = this.warehouses.find(w => w === b.name || w.startsWith(b.name + "-"));
+          const bLabel = b.branch || b.name || "Unknown";
+          return {
+            branch_label: bLabel,
+            id: b.name,
+            warehouse: matchedWh,
+            is_matched: !!matchedWh,
+            display_text: matchedWh ? `${bLabel} (${matchedWh})` : `${bLabel} (${b.name})`
+          };
+        });
+
+        if (!q) return options;
+        return options.filter(o => 
+          o.display_text.toLowerCase().includes(q) || 
+          o.id.toLowerCase().includes(q)
+        );
+      },
       get filteredSuppliers() {
         if (!this.inwardForm || !this.inwardForm.supplier_display)
           return this.suppliers;
@@ -11657,6 +11701,29 @@
       async setBranchStockFilter(filter) {
         this.branchStockFilter = filter;
         await this.fetchData("Branch Stock");
+      },
+
+      getBranchDisplayText(val) {
+        if (!val) return "";
+        // If it's already a full warehouse name with (ID)
+        if (val.includes("(") && val.includes(")")) return val;
+        
+        // Find if this is a branch ID or matched warehouse
+        const match = String(val).match(/\b\d{4}\b/);
+        if (match) {
+          const solId = match[0];
+          // Try to find the branch label from our master data
+          const branch = this.sahayog_branches.find(b => b.name === solId);
+          if (branch) {
+            // Check if it's already a warehouse
+            const matchedWh = this.warehouses.find(w => w === solId || w.startsWith(solId + "-"));
+            if (matchedWh) {
+              return `${branch.branch} (${matchedWh})`;
+            }
+            return `${branch.branch} (${solId})`;
+          }
+        }
+        return val;
       },
 
       async fetchUserWarehouse() {
@@ -12766,7 +12833,11 @@
       },
       selectEMROption(field, value, display) {
         this.emrForm[field] = value;
-        this.emrForm[field + "_display"] = display || value;
+        if (field === "source_warehouse" || field === "target_warehouse") {
+          this.emrForm[field + "_display"] = this.getBranchDisplayText(value);
+        } else {
+          this.emrForm[field + "_display"] = display || value;
+        }
         this.focusedField = null;
         if (field === "employee") {
           this.onEmployeeChange();
@@ -13452,42 +13523,45 @@
                   method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse",
                   args: { user: emp.user_id },
                 });
-                if (whRes.message && whRes.message.warehouse) {
-                  const wh = whRes.message.warehouse;
-                  this.emrForm.target_location = wh;
-                  this.emrForm.target_warehouse = wh;
-                  warehouseSet = true;
+                  if (whRes.message && whRes.message.warehouse) {
+                    const wh = whRes.message.warehouse;
+                    this.emrForm.target_location = wh;
+                    this.emrForm.target_warehouse = wh;
+                    this.emrForm.target_warehouse_display = this.getBranchDisplayText(wh);
+                    warehouseSet = true;
+                  }
+                } catch (e) {
+                  console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
                 }
-              } catch (e) {
-                console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
               }
-            }
 
-            // 2. Fallback to existing sol_id logic if Sahayog Settings lookup failed
-            if (!warehouseSet) {
-              if (emp.sol_id) {
-                const branchRes = await frappe.call({
-                  method: "frappe.client.get_value",
-                  args: {
-                    doctype: "Sahayog Branch",
-                    filters: { name: emp.sol_id },
-                    fieldname: "branch",
-                  },
-                });
-                const branchName =
-                  branchRes.message && branchRes.message.branch
-                    ? branchRes.message.branch
-                    : "";
-                const displayValue = branchName
-                  ? `${branchName} (${emp.sol_id})`
-                  : emp.sol_id;
-                this.emrForm.target_location = displayValue;
-                this.emrForm.target_warehouse = displayValue;
-              } else {
-                this.emrForm.target_location = "";
-                this.emrForm.target_warehouse = "";
+              // 2. Fallback to existing sol_id logic if Sahayog Settings lookup failed
+              if (!warehouseSet) {
+                if (emp.sol_id) {
+                  const branchRes = await frappe.call({
+                    method: "frappe.client.get_value",
+                    args: {
+                      doctype: "Sahayog Branch",
+                      filters: { name: emp.sol_id },
+                      fieldname: "branch",
+                    },
+                  });
+                  const branchName =
+                    branchRes.message && branchRes.message.branch
+                      ? branchRes.message.branch
+                      : "";
+                  const displayValue = branchName
+                    ? `${branchName} (${emp.sol_id})`
+                    : emp.sol_id;
+                  this.emrForm.target_location = displayValue;
+                  this.emrForm.target_warehouse = emp.sol_id;
+                  this.emrForm.target_warehouse_display = displayValue;
+                } else {
+                  this.emrForm.target_location = "";
+                  this.emrForm.target_warehouse = "";
+                  this.emrForm.target_warehouse_display = "";
+                }
               }
-            }
 
             if (emp.reports_to) {
               const resp = await frappe.call({
@@ -13630,20 +13704,25 @@
 
         this.creatingEMR = true;
         try {
-          // 🔥 Auto-create warehouse if it's a branch ID (unmatched case)
-          const isBranchId = this.sahayog_branches.some(b => b.name === this.emrForm.source_warehouse);
-          if (isBranchId) {
-            try {
+          // 🔥 Helper to ensure warehouse exists if it's a branch ID
+          const ensureWarehouseExists = async (val) => {
+            const isBranchId = this.sahayog_branches.some(b => b.name === val);
+            if (isBranchId) {
               const whRes = await frappe.call({
                 method: "sahayog.procurement.api.stock_balance_ledger.create_warehouse_if_not_exists",
-                args: { branch_id: this.emrForm.source_warehouse }
+                args: { branch_id: val }
               });
-              if (whRes.message) {
-                this.emrForm.source_warehouse = whRes.message;
-              }
-            } catch (e) {
-              console.error("Auto-warehouse creation failed:", e);
+              return whRes.message || val;
             }
+            return val;
+          };
+
+          // Check both source and target
+          if (this.emrForm.source_warehouse) {
+            this.emrForm.source_warehouse = await ensureWarehouseExists(this.emrForm.source_warehouse);
+          }
+          if (this.emrForm.target_warehouse) {
+            this.emrForm.target_warehouse = await ensureWarehouseExists(this.emrForm.target_warehouse);
           }
 
           // Fetch missing categories and UOMs for items
