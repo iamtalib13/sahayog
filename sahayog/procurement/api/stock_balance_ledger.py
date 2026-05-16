@@ -767,6 +767,32 @@ def get_warehouse_company(warehouse):
     return frappe.db.get_value("Warehouse", warehouse, "company")
 
 @frappe.whitelist()
+def create_warehouse_if_not_exists(branch_id):
+    """
+    Check if a warehouse exists for the given branch ID.
+    If not, create it as 'Branch Name (ID)' with category 'Branch'.
+    """
+    # Check if a warehouse already exists for this branch ID (exact match in parentheses)
+    existing = frappe.db.get_value("Warehouse", {"warehouse_name": ["like", f"%({branch_id})%"]}, "name")
+    if existing:
+        return existing
+
+    # Get branch details
+    branch_doc = frappe.get_doc("Sahayog Branch", branch_id)
+    warehouse_name = f"{branch_doc.branch} ({branch_id})"
+    
+    # Create the warehouse
+    new_wh = frappe.get_doc({
+        "doctype": "Warehouse",
+        "warehouse_name": warehouse_name,
+        "custom_warehouse_category": "Branch", 
+        "is_group": 0,
+        "company": frappe.defaults.get_global_default("company") or frappe.get_all("Company")[0].name
+    })
+    new_wh.insert(ignore_permissions=True)
+    return new_wh.name
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.

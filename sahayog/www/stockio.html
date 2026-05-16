@@ -13630,6 +13630,22 @@
 
         this.creatingEMR = true;
         try {
+          // 🔥 Auto-create warehouse if it's a branch ID (unmatched case)
+          const isBranchId = this.sahayog_branches.some(b => b.name === this.emrForm.source_warehouse);
+          if (isBranchId) {
+            try {
+              const whRes = await frappe.call({
+                method: "sahayog.procurement.api.stock_balance_ledger.create_warehouse_if_not_exists",
+                args: { branch_id: this.emrForm.source_warehouse }
+              });
+              if (whRes.message) {
+                this.emrForm.source_warehouse = whRes.message;
+              }
+            } catch (e) {
+              console.error("Auto-warehouse creation failed:", e);
+            }
+          }
+
           // Fetch missing categories and UOMs for items
           for (let item of this.emrItems) {
             if (!item.item_category) {
