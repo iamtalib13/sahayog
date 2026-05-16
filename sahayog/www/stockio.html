@@ -2007,7 +2007,7 @@
                             [[ opt.branch_label ]] <span style="color: #10b981; font-weight: 700;">([[ opt.warehouse ]])</span>
                           </span>
                           <span v-else style="color: #ef4444; font-weight: 700;">
-                            [[ opt.id ]]
+                            [[ opt.display_text ]]
                           </span>
                         </div>
                       </div>
@@ -11343,14 +11343,16 @@
         
         // Map branches to their matching warehouses
         const options = this.sahayog_branches.map(b => {
-          // Find warehouse that starts with the branch name (ID)
-          const matchedWh = this.warehouses.find(w => w.startsWith(b.name));
+          // Find warehouse that matches the branch name (ID)
+          // Look for exact match or starting with ID-
+          const matchedWh = this.warehouses.find(w => w === b.name || w.startsWith(b.name + "-"));
+          const bLabel = b.branch || b.name || "Unknown";
           return {
-            branch_label: b.branch,
+            branch_label: bLabel,
             id: b.name,
             warehouse: matchedWh,
             is_matched: !!matchedWh,
-            display_text: matchedWh ? `${b.branch} (${matchedWh})` : b.name
+            display_text: matchedWh ? `${bLabel} (${matchedWh})` : `${bLabel} (${b.name})`
           };
         });
 
@@ -12742,8 +12744,11 @@
       // Searchable select methods
       onFocusSearchable(field) {
         this.focusedField = field;
-      },
-      onBlurSearchable(field) {
+        if (field === 'source_warehouse') {
+          console.log("Provider Warehouse Data (Mapped):", this.filteredProviderWarehouses);
+          console.log("Full Sahayog Branches List:", this.sahayog_branches);
+        }
+      },      onBlurSearchable(field) {
         // Delay closing to allow option click
         setTimeout(() => {
           if (this.focusedField === field) {
