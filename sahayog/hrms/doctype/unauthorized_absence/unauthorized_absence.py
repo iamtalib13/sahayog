@@ -81,7 +81,9 @@ def send_unauthorized_absence_email(docname):
     
     # 1. Fixed CC IDs from settings
     if hr_settings.unauthorized_absence_cc:
-        fixed_emails = [e.strip() for e in hr_settings.unauthorized_absence_cc.split(",") if e.strip()]
+        # Replace newlines, tabs, and quotes with commas, then split and strip
+        raw_cc = hr_settings.unauthorized_absence_cc.replace("\n", ",").replace("\r", ",").replace("\t", ",").replace('"', '')
+        fixed_emails = [e.strip() for e in raw_cc.split(",") if e.strip()]
         cc_list.extend(fixed_emails)
     
     # 2. Reporting Manager's Email
