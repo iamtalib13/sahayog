@@ -1972,7 +1972,7 @@
                         :key="emp.name"
                         class="searchable-select-option"
                         style="padding: 8px 12px; font-size: 0.9rem;"
-                        @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;"
+                        @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = `${emp.employee_name} (${emp.employee_number || emp.name})`; focusedField = null;"
                       >
                         [[ emp.employee_name ]] <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 4px;">([[ emp.employee_number || emp.name ]])</span>
                       </div>
@@ -13619,14 +13619,14 @@
                 args: {
                   doctype: "Employee",
                   filters: { name: emp.reports_to },
-                  fieldname: ["user_id", "employee_name"],
+                  fieldname: ["user_id", "employee_name", "employee_number"],
                 },
               });
               if (resp.message) {
                 if (resp.message.user_id) {
                   this.emrForm.reporting_person = resp.message.user_id;
-                  this.emrForm.reporting_person_display =
-                    resp.message.employee_name;
+                  const empNum = resp.message.employee_number || resp.message.name;
+                  this.emrForm.reporting_person_display = `${resp.message.employee_name} (${empNum})`;
                 } else {
                   this.emrForm.reporting_person = "";
                   this.emrForm.reporting_person_display = "";
