@@ -4180,15 +4180,35 @@
                       class="comment-item"
                       style="
                         margin-bottom: 12px;
-                        padding: 10px;
+                        padding: 12px;
                         border-bottom: 1px solid var(--border-color);
+                        background: rgba(var(--primary-rgb), 0.02);
+                        border-radius: 8px;
                       "
                     >
-                      <div style="font-weight: 700; color: var(--text-main)">
-                        [[ entry.name ]]
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                          [[ entry.name ]]
+                        </div>
+                        <span 
+                          :class="'status-badge status-' + (entry.docstatus === 1 ? 'submitted' : 'draft') "
+                          style="font-size: 0.7rem; padding: 2px 8px;"
+                        >
+                          [[ entry.docstatus === 1 ? 'Submitted' : 'Draft' ]]
+                        </span>
                       </div>
-                      <div style="font-size: 0.85rem; color: var(--text-muted)">
-                        Date: [[ entry.posting_date ]]
+                      
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem;">
+                        <div style="text-align: left;">
+                          <div style="color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase;">Created By</div>
+                          <div style="color: var(--text-main);">[[ getEmployeeName(entry.owner) || entry.owner ]]</div>
+                          <div style="color: var(--text-muted); font-size: 0.75rem;">[[ entry.creation.split(' ')[0] ]]</div>
+                        </div>
+                        <div v-if="entry.docstatus === 1" style="text-align: right;">
+                          <div style="color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase;">Submitted By</div>
+                          <div style="color: var(--text-main);">[[ getEmployeeName(entry.modified_by) || entry.modified_by ]]</div>
+                          <div style="color: var(--text-muted); font-size: 0.75rem;">[[ entry.modified.split(' ')[0] ]]</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -14429,10 +14449,8 @@
               args: {
                 doctype: "Stock Entry",
                 filters: { custom_material_request: this.detailRecord.name },
-                fields: ["name", "posting_date"],
-              },
-            });
-            this.dispatchHistory = res.message || [];
+                fields: ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],              },
+            });            this.dispatchHistory = res.message || [];
           } catch (e) {
             console.error("Error fetching dispatch history:", e);
           }
