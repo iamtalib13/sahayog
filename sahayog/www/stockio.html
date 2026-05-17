@@ -349,23 +349,22 @@
   .whatsapp-popup {
     position: absolute;
     top: calc(100% + 15px);
-    right: 0;
-    width: 280px;
+    right: -10px;
+    width: 320px;
     min-height: 160px;
-    max-height: 450px;
+    max-height: 80vh;
     background: var(--bg-surface);
     border-radius: 12px;
-    z-index: 1000;
+    z-index: 2000;
     display: flex;
     flex-direction: column;
     animation: whatsappPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     cursor: default;
-    overflow: visible;
+    overflow-y: auto;
     border: 1px solid var(--border-color);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 10px 20px rgba(0, 0, 0, 0.2) !important;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
   }
-
   .whatsapp-popup::before {
     content: "";
     position: absolute;
@@ -428,7 +427,7 @@
     padding: 14px;
     background: var(--bg-surface);
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
     overflow-y: auto;
   }
 
@@ -498,11 +497,12 @@
 
   .whatsapp-message {
     background: var(--bg-card);
-    padding: 8px 12px;
+    padding: 12px;
     border-radius: 8px;
     border-top-left-radius: 0;
     position: relative;
-    max-width: 90%;
+    width: 100%;
+    max-width: 100%;
     box-shadow: 0 1px 1px rgba(0,0,0,0.1);
     text-align: left;
     border: 1px solid var(--border-color);
