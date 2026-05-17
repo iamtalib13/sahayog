@@ -11426,6 +11426,8 @@
           };
         });
 
+        console.log("Request from dropdown options:", options);
+
         if (!q) return options;
         return options.filter(o => 
           o.display_text.toLowerCase().includes(q) || 
@@ -13548,54 +13550,59 @@
           });
           if (res.message) {
             const emp = res.message;
+            console.log("Employee selected:", emp.employee_name, "SOL ID:", emp.sol_id);
 
-            // 1. Try to get warehouse/location from Sahayog Settings using the employee's user_id
+            // NEW PRIORITY: 1. Match SOL ID with dropdown options first
             let warehouseSet = false;
-            if (emp.user_id) {
+            if (emp.sol_id) {
+              const options = this.sahayog_branches.map(b => {
+                const matchedWh = this.warehouses.find(w => w === b.name || w.startsWith(b.name + "-"));
+                const bLabel = b.branch || b.name || "Unknown";
+                return {
+                  branch_label: bLabel,
+                  id: b.name,
+                  warehouse: matchedWh,
+                  is_matched: !!matchedWh,
+                  display_text: matchedWh ? `${bLabel} (${matchedWh})` : `${bLabel} (${b.name})`
+                };
+              });
+
+              const match = options.find(opt => opt.id === emp.sol_id);
+              if (match) {
+                console.log("Match found by SOL ID in dropdown:", match);
+                this.emrForm.target_warehouse = match.warehouse || match.id;
+                this.emrForm.target_warehouse_display = match.display_text;
+                this.emrForm.target_location = match.display_text;
+                warehouseSet = true;
+              }
+            }
+
+            // 2. Fallback to Sahayog Settings API if no SOL ID match was found
+            if (!warehouseSet && emp.user_id) {
               try {
                 const whRes = await frappe.call({
                   method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse",
                   args: { user: emp.user_id },
                 });
-                  if (whRes.message && whRes.message.warehouse) {
-                    const wh = whRes.message.warehouse;
-                    this.emrForm.target_location = wh;
-                    this.emrForm.target_warehouse = wh;
-                    this.emrForm.target_warehouse_display = this.getBranchDisplayText(wh);
-                    warehouseSet = true;
-                  }
-                } catch (e) {
-                  console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
+                if (whRes.message && whRes.message.warehouse) {
+                  const wh = whRes.message.warehouse;
+                  console.log("Fallback setting via API:", wh);
+                  this.emrForm.target_location = wh;
+                  this.emrForm.target_warehouse = wh;
+                  this.emrForm.target_warehouse_display = this.getBranchDisplayText(wh);
+                  warehouseSet = true;
                 }
+              } catch (e) {
+                console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
               }
+            }
 
-              // 2. Fallback to existing sol_id logic if Sahayog Settings lookup failed
-              if (!warehouseSet) {
-                if (emp.sol_id) {
-                  const branchRes = await frappe.call({
-                    method: "frappe.client.get_value",
-                    args: {
-                      doctype: "Sahayog Branch",
-                      filters: { name: emp.sol_id },
-                      fieldname: "branch",
-                    },
-                  });
-                  const branchName =
-                    branchRes.message && branchRes.message.branch
-                      ? branchRes.message.branch
-                      : "";
-                  const displayValue = branchName
-                    ? `${branchName} (${emp.sol_id})`
-                    : emp.sol_id;
-                  this.emrForm.target_location = displayValue;
-                  this.emrForm.target_warehouse = emp.sol_id;
-                  this.emrForm.target_warehouse_display = displayValue;
-                } else {
-                  this.emrForm.target_location = "";
-                  this.emrForm.target_warehouse = "";
-                  this.emrForm.target_warehouse_display = "";
-                }
-              }
+            // 3. Final cleanup if still not set
+            if (!warehouseSet) {
+              this.emrForm.target_location = "";
+              this.emrForm.target_warehouse = "";
+              this.emrForm.target_warehouse_display = "";
+            }
 
             if (emp.reports_to) {
               const resp = await frappe.call({
