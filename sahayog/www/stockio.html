@@ -1959,13 +1959,22 @@
                     />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'emr_reporting_person'">
                       <div
-                        v-for="emp in employees.filter(e => !emrForm.reporting_person_display || e.employee_name.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()) || e.user_id.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()))"
-                        :key="emp.user_id"
+                        v-for="emp in employees.filter(e => {
+                          const q = (emrForm.reporting_person_display || '').toLowerCase();
+                          if (!q) return true;
+                          const isNumeric = /^\d+$/.test(q);
+                          if (isNumeric) {
+                            return e.employee_number && e.employee_number.includes(q);
+                          } else {
+                            return e.employee_name.toLowerCase().includes(q);
+                          }
+                        })"
+                        :key="emp.name"
                         class="searchable-select-option"
                         style="padding: 8px 12px; font-size: 0.9rem;"
                         @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;"
                       >
-                        [[ emp.employee_name ]]
+                        [[ emp.employee_name ]] <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 4px;">([[ emp.employee_number || emp.name ]])</span>
                       </div>
                     </div>
                   </div>

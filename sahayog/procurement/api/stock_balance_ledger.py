@@ -810,7 +810,7 @@ def get_portal_master_data():
         pass
 
     return {
-        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id"]),
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
         "wh_dept_map": frappe.get_all("Default Warehouse", filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"}, fields=["inventory_type", "warehouse", "dfault"]),
