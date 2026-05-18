@@ -855,6 +855,17 @@ def get_portal_master_data():
     except Exception:
         pass
 
+    # Fetch available Serial Nos (not linked to any Asset)
+    # Note: Using the logic from get_available_serial_nos
+    used_serial_nos = frappe.get_all("Asset", fields=["serial_no"], pluck="serial_no")
+    used_serial_nos = list(set([s for s in used_serial_nos if s]))
+    
+    serial_no_filters = {}
+    if used_serial_nos:
+        serial_no_filters = {"name": ["not in", used_serial_nos]}
+    
+    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name"])
+
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
@@ -871,6 +882,7 @@ def get_portal_master_data():
         "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
         "locations": [l.name for l in frappe.get_all("Location")],
         "hsn_codes": hsn_codes,
+        "serial_nos": [s.name for s in available_serial_nos],
     }
 
 @frappe.whitelist()

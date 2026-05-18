@@ -644,6 +644,11 @@
     outline: none;
   }
 
+  .form-input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.6;
+  }
+
   /* Enhanced Tables */
   .table-responsive {
     /* border-radius: var(--border-radius-xl); */
@@ -3103,13 +3108,28 @@
                 <!-- Serial No -->
                 <div class="form-group" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Serial No</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    style="padding: 12px 16px !important;"
-                    v-model="createAssetForm.serial_no"
-                    placeholder="Enter Serial No"
-                  />
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_serial_no' }"
+                      v-model="createAssetForm.serial_no"
+                      @focus="onFocusSearchable('asset_serial_no')"
+                      @blur="onBlurSearchable('asset_serial_no')"
+                      placeholder="Search Serial No"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_serial_no'">
+                      <div
+                        v-for="sn in filteredSerialNos"
+                        :key="sn"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.serial_no = sn; focusedField = null;"
+                      >
+                        [[ sn ]]
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Windows Key -->
@@ -3120,7 +3140,7 @@
                     class="form-input"
                     style="padding: 12px 16px !important;"
                     v-model="createAssetForm.windows_key"
-                    placeholder="Enter Windows Key"
+                    placeholder="Windows Key"
                   />
                 </div>
 
@@ -3132,7 +3152,7 @@
                     class="form-input"
                     style="padding: 12px 16px !important;"
                     v-model="createAssetForm.office_key"
-                    placeholder="Enter Office Key"
+                    placeholder="Office Key"
                   />
                 </div>
 
@@ -11340,9 +11360,9 @@
       ],
       assetsList: [],
       locations: [],
+      serial_nos: [],
 
-      inwardForm: {
-        supplier: "",
+      inwardForm: {        supplier: "",
         supplier_display: "",
         posting_date: "",
         set_warehouse: "",
@@ -11691,6 +11711,14 @@
         ).toLowerCase();
         if (!search) return this.locations;
         return this.locations.filter((l) => l.toLowerCase().includes(search));
+      },
+
+      get filteredSerialNos() {
+        const search = (
+          this.createAssetForm.serial_no || ""
+        ).toLowerCase();
+        if (!search) return this.serial_nos;
+        return this.serial_nos.filter((s) => s.toLowerCase().includes(search));
       },
 
       $watch: {
@@ -12472,6 +12500,9 @@
             purchase_date: frappe.datetime.now_date(),
             available_for_use_date: frappe.datetime.now_date(),
             gross_purchase_amount: 0,
+            serial_no: "",
+            windows_key: "",
+            office_key: "",
             is_existing_asset: true,
             is_composite_asset: false,
           };
@@ -12675,6 +12706,7 @@
             this.assetCategories = data.asset_categories || [];
             this.locations = data.locations || [];
             this.hsnCodes = data.hsn_codes || [];
+            this.serial_nos = data.serial_nos || [];
           }
         } catch (e) {
           console.error("Error fetching portal master data:", e);
