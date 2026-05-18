@@ -349,23 +349,22 @@
   .whatsapp-popup {
     position: absolute;
     top: calc(100% + 15px);
-    right: 0;
-    width: 280px;
+    right: -10px;
+    width: 320px;
     min-height: 160px;
-    max-height: 450px;
+    max-height: 80vh;
     background: var(--bg-surface);
     border-radius: 12px;
-    z-index: 1000;
+    z-index: 2000;
     display: flex;
     flex-direction: column;
     animation: whatsappPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     cursor: default;
-    overflow: visible;
+    overflow-y: auto;
     border: 1px solid var(--border-color);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 10px 20px rgba(0, 0, 0, 0.2) !important;
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
   }
-
   .whatsapp-popup::before {
     content: "";
     position: absolute;
@@ -428,7 +427,7 @@
     padding: 14px;
     background: var(--bg-surface);
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
     overflow-y: auto;
   }
 
@@ -498,11 +497,12 @@
 
   .whatsapp-message {
     background: var(--bg-card);
-    padding: 8px 12px;
+    padding: 12px;
     border-radius: 8px;
     border-top-left-radius: 0;
     position: relative;
-    max-width: 90%;
+    width: 100%;
+    max-width: 100%;
     box-shadow: 0 1px 1px rgba(0,0,0,0.1);
     text-align: left;
     border: 1px solid var(--border-color);
@@ -1187,7 +1187,7 @@
     <span class="inventory-label">Receiver</span>
 
     <span class="inventory-name">
-      [[ emrForm.target_warehouse ]]
+      [[ emrForm.target_warehouse_display || emrForm.target_warehouse ]]
     </span>
   </div>
 
@@ -1959,13 +1959,22 @@
                     />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'emr_reporting_person'">
                       <div
-                        v-for="emp in employees.filter(e => !emrForm.reporting_person_display || e.employee_name.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()) || e.user_id.toLowerCase().includes(emrForm.reporting_person_display.toLowerCase()))"
-                        :key="emp.user_id"
+                        v-for="emp in employees.filter(e => {
+                          const q = (emrForm.reporting_person_display || '').toLowerCase();
+                          if (!q) return true;
+                          const isNumeric = /^\d+$/.test(q);
+                          if (isNumeric) {
+                            return e.employee_number && e.employee_number.includes(q);
+                          } else {
+                            return e.employee_name.toLowerCase().includes(q);
+                          }
+                        })"
+                        :key="emp.name"
                         class="searchable-select-option"
                         style="padding: 8px 12px; font-size: 0.9rem;"
-                        @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = emp.employee_name; focusedField = null;"
+                        @mousedown="emrForm.reporting_person = emp.user_id; emrForm.reporting_person_display = `${emp.employee_name} (${emp.employee_number || emp.name})`; focusedField = null;"
                       >
-                        [[ emp.employee_name ]]
+                        [[ emp.employee_name ]] <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 4px;">([[ emp.employee_number || emp.name ]])</span>
                       </div>
                     </div>
                   </div>
@@ -4171,15 +4180,35 @@
                       class="comment-item"
                       style="
                         margin-bottom: 12px;
-                        padding: 10px;
+                        padding: 12px;
                         border-bottom: 1px solid var(--border-color);
+                        background: rgba(var(--primary-rgb), 0.02);
+                        border-radius: 8px;
                       "
                     >
-                      <div style="font-weight: 700; color: var(--text-main)">
-                        [[ entry.name ]]
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">
+                          [[ entry.name ]]
+                        </div>
+                        <span 
+                          :class="'status-badge status-' + (entry.docstatus === 1 ? 'submitted' : 'draft') "
+                          style="font-size: 0.7rem; padding: 2px 8px;"
+                        >
+                          [[ entry.docstatus === 1 ? 'Submitted' : 'Draft' ]]
+                        </span>
                       </div>
-                      <div style="font-size: 0.85rem; color: var(--text-muted)">
-                        Date: [[ entry.posting_date ]]
+                      
+                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem;">
+                        <div style="text-align: left;">
+                          <div style="color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase;">Created By</div>
+                          <div style="color: var(--text-main);">[[ getEmployeeName(entry.owner) || entry.owner ]]</div>
+                          <div style="color: var(--text-muted); font-size: 0.75rem;">[[ entry.creation.split(' ')[0] ]]</div>
+                        </div>
+                        <div v-if="entry.docstatus === 1" style="text-align: right;">
+                          <div style="color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase;">Submitted By</div>
+                          <div style="color: var(--text-main);">[[ getEmployeeName(entry.modified_by) || entry.modified_by ]]</div>
+                          <div style="color: var(--text-muted); font-size: 0.75rem;">[[ entry.modified.split(' ')[0] ]]</div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -11427,6 +11456,8 @@
           };
         });
 
+        console.log("Request from dropdown options:", options);
+
         if (!q) return options;
         return options.filter(o => 
           o.display_text.toLowerCase().includes(q) || 
@@ -13549,54 +13580,59 @@
           });
           if (res.message) {
             const emp = res.message;
+            console.log("Employee selected:", emp.employee_name, "SOL ID:", emp.sol_id);
 
-            // 1. Try to get warehouse/location from Sahayog Settings using the employee's user_id
+            // NEW PRIORITY: 1. Match SOL ID with dropdown options first
             let warehouseSet = false;
-            if (emp.user_id) {
+            if (emp.sol_id) {
+              const options = this.sahayog_branches.map(b => {
+                const matchedWh = this.warehouses.find(w => w === b.name || w.startsWith(b.name + "-"));
+                const bLabel = b.branch || b.name || "Unknown";
+                return {
+                  branch_label: bLabel,
+                  id: b.name,
+                  warehouse: matchedWh,
+                  is_matched: !!matchedWh,
+                  display_text: matchedWh ? `${bLabel} (${matchedWh})` : `${bLabel} (${b.name})`
+                };
+              });
+
+              const match = options.find(opt => opt.id === emp.sol_id);
+              if (match) {
+                console.log("Match found by SOL ID in dropdown:", match);
+                this.emrForm.target_warehouse = match.warehouse || match.id;
+                this.emrForm.target_warehouse_display = match.display_text;
+                this.emrForm.target_location = match.display_text;
+                warehouseSet = true;
+              }
+            }
+
+            // 2. Fallback to Sahayog Settings API if no SOL ID match was found
+            if (!warehouseSet && emp.user_id) {
               try {
                 const whRes = await frappe.call({
                   method: "sahayog.procurement.api.stock_balance_ledger.get_user_branch_warehouse",
                   args: { user: emp.user_id },
                 });
-                  if (whRes.message && whRes.message.warehouse) {
-                    const wh = whRes.message.warehouse;
-                    this.emrForm.target_location = wh;
-                    this.emrForm.target_warehouse = wh;
-                    this.emrForm.target_warehouse_display = this.getBranchDisplayText(wh);
-                    warehouseSet = true;
-                  }
-                } catch (e) {
-                  console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
+                if (whRes.message && whRes.message.warehouse) {
+                  const wh = whRes.message.warehouse;
+                  console.log("Fallback setting via API:", wh);
+                  this.emrForm.target_location = wh;
+                  this.emrForm.target_warehouse = wh;
+                  this.emrForm.target_warehouse_display = this.getBranchDisplayText(wh);
+                  warehouseSet = true;
                 }
+              } catch (e) {
+                console.warn("Failed to fetch warehouse from Sahayog Settings:", e);
               }
+            }
 
-              // 2. Fallback to existing sol_id logic if Sahayog Settings lookup failed
-              if (!warehouseSet) {
-                if (emp.sol_id) {
-                  const branchRes = await frappe.call({
-                    method: "frappe.client.get_value",
-                    args: {
-                      doctype: "Sahayog Branch",
-                      filters: { name: emp.sol_id },
-                      fieldname: "branch",
-                    },
-                  });
-                  const branchName =
-                    branchRes.message && branchRes.message.branch
-                      ? branchRes.message.branch
-                      : "";
-                  const displayValue = branchName
-                    ? `${branchName} (${emp.sol_id})`
-                    : emp.sol_id;
-                  this.emrForm.target_location = displayValue;
-                  this.emrForm.target_warehouse = emp.sol_id;
-                  this.emrForm.target_warehouse_display = displayValue;
-                } else {
-                  this.emrForm.target_location = "";
-                  this.emrForm.target_warehouse = "";
-                  this.emrForm.target_warehouse_display = "";
-                }
-              }
+            // 3. Final cleanup if still not set
+            if (!warehouseSet) {
+              this.emrForm.target_location = "";
+              this.emrForm.target_warehouse = "";
+              this.emrForm.target_warehouse_display = "";
+            }
 
             if (emp.reports_to) {
               const resp = await frappe.call({
@@ -13604,14 +13640,14 @@
                 args: {
                   doctype: "Employee",
                   filters: { name: emp.reports_to },
-                  fieldname: ["user_id", "employee_name"],
+                  fieldname: ["user_id", "employee_name", "employee_number"],
                 },
               });
               if (resp.message) {
                 if (resp.message.user_id) {
                   this.emrForm.reporting_person = resp.message.user_id;
-                  this.emrForm.reporting_person_display =
-                    resp.message.employee_name;
+                  const empNum = resp.message.employee_number || resp.message.name;
+                  this.emrForm.reporting_person_display = `${resp.message.employee_name} (${empNum})`;
                 } else {
                   this.emrForm.reporting_person = "";
                   this.emrForm.reporting_person_display = "";
@@ -14414,10 +14450,8 @@
               args: {
                 doctype: "Stock Entry",
                 filters: { custom_material_request: this.detailRecord.name },
-                fields: ["name", "posting_date"],
-              },
-            });
-            this.dispatchHistory = res.message || [];
+                fields: ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],              },
+            });            this.dispatchHistory = res.message || [];
           } catch (e) {
             console.error("Error fetching dispatch history:", e);
           }
