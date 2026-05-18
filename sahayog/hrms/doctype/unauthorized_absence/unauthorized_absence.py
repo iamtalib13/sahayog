@@ -75,6 +75,26 @@ def send_unauthorized_absence_email(docname):
     if not final_email:
         frappe.throw("No email found for this employee.")
 
+    # Fetch CC Recipients
+    cc_list = []
+    hr_settings = frappe.get_single("Sahayog HR Setting")
+    
+    # 1. Fixed CC IDs from settings
+    if hr_settings.unauthorized_absence_cc:
+        # Replace newlines, tabs, and quotes with commas, then split and strip
+        raw_cc = hr_settings.unauthorized_absence_cc.replace("\n", ",").replace("\r", ",").replace("\t", ",").replace('"', '')
+        fixed_emails = [e.strip() for e in raw_cc.split(",") if e.strip()]
+        cc_list.extend(fixed_emails)
+    
+    # 2. Reporting Manager's Email
+    if emp.reports_to:
+        manager_email = frappe.db.get_value("Employee", emp.reports_to, "company_email")
+        if manager_email:
+            cc_list.append(manager_email)
+            
+    # Clean and deduplicate CC list
+    cc_list = list(set([e for e in cc_list if e]))
+
   # Attach Print Format → **Unauthorized Absence Notice**
     attachments = [
         frappe.attach_print(
@@ -88,6 +108,7 @@ def send_unauthorized_absence_email(docname):
     # Send Email
     frappe.sendmail(
         recipients=[final_email],
+        cc=cc_list,
         subject=subject,
         message=message,
         attachments=attachments,
