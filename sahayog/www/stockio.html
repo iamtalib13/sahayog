@@ -2132,7 +2132,7 @@
                         Item Code <span class="form-required">*</span>
                       </th>
                       <th style="padding: 12px 16px">Description</th>
-                      <th style="padding: 12px 16px">
+                      <th style="padding: 12px 16px; text-align: center;">
                         Qty <span class="form-required">*</span>
                       </th>
                       <th style="padding: 12px 16px">Action</th>
@@ -2215,14 +2215,22 @@
                         >[[ (item.description || '-').trim() ]]</div>
                       </td>
 
-                      <td style="padding: 12px; width: 120px">
-                        <input
-                          type="number"
-                          class="form-input"
-                          style="width: 100%"
-                          v-model.number="item.quantity"
-                          placeholder="Qty"
-                        />
+                      <td style="padding: 12px; min-width: 120px; text-align: center;">
+                        <div style="display: flex; justify-content: center;">
+                          <input
+                            type="number"
+                            class="form-input"
+                            :style="{ 
+                              width: ((item.quantity ? item.quantity.toString().length : 1) * 12 + 60) + 'px',
+                              textAlign: 'center',
+                              padding: '10px 8px !important',
+                              minWidth: '80px',
+                              transition: 'width 0.2s ease'
+                            }"
+                            v-model.number="item.quantity"
+                            placeholder="Qty"
+                          />
+                        </div>
                       </td>
                       <td
                         style="padding: 12px; width: 60px; text-align: center"
