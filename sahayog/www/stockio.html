@@ -11327,6 +11327,7 @@
       itemView: "list",
       requestItemView: "list",
       userWarehouse: null,
+      userSolId: null,
       userEmployeeId: null,
       userDesignation: null,
       userInventoryType: null,
@@ -11834,21 +11835,22 @@
           console.warn("Inventory type fetch failed:", e);
         }
 
-        // Fetch user's Employee ID
+        // Fetch user's Employee ID and SOL ID
         try {
           const empRes = await frappe.call({
             method: "frappe.client.get_value",
             args: {
               doctype: "Employee",
               filters: { user_id: frappe.session.user },
-              fieldname: "name",
+              fieldname: ["name", "sol_id"],
             },
           });
           if (empRes.message) {
             this.userEmployeeId = empRes.message.name;
+            this.userSolId = empRes.message.sol_id;
           }
         } catch (e) {
-          console.warn("Employee ID fetch failed:", e);
+          console.warn("Employee details fetch failed:", e);
         }
 
         // Fetch user's Designation
@@ -12467,13 +12469,31 @@
         if (doctype === "Purchase Receipt") {
           this.showInwardCreateView = true;
           this.showDetailView = false;
+          
+          let defaultWarehouse = "";
+          // Check for Stationery inventory type in wh_dept_map
+          const stationaryMap = this.wh_dept_map.find(
+            (m) => m.user_id === frappe.session.user && m.inventory_type === "Stationery"
+          );
+          
+          if (stationaryMap && this.userSolId) {
+            // Find a warehouse that contains the SOL ID
+            const matchedWh = this.warehouses.find(
+              (w) => w === this.userSolId || w.startsWith(this.userSolId + "-")
+            );
+            if (matchedWh) {
+              defaultWarehouse = matchedWh;
+            }
+          }
+
           this.inwardForm = {
             supplier: "",
             supplier_display: "",
             posting_date: frappe.datetime.now_date(),
             is_past_stock_date: false,
             existing_stock_date: "",
-            set_warehouse: "",            set_warehouse_display: "",
+            set_warehouse: defaultWarehouse,
+            set_warehouse_display: defaultWarehouse,
             custom_po_wo: "Work Order",
             custom_request_for: "Store",
             remarks: "",
