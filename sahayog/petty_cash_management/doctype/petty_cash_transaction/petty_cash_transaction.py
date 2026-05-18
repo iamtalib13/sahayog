@@ -1033,7 +1033,9 @@ class PettyCashTransaction(Document):
 
         # Refund whatever was deducted
         self.amount_deducted = 0
-        self.approval_status = "Draft"
+        # self.approval_status = "Draft"
+        self.approval_status = "Canceled"
+
         self.update_wallet()
 
     def update_wallet(self):
