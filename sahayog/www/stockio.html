@@ -12803,6 +12803,16 @@
 
         this.creatingMovement = true;
         try {
+          // Pre-create missing locations
+          const locationsToCreate = validItems.map(i => i.target_location).filter(l => l);
+          if (locationsToCreate.length > 0) {
+            console.log("Checking/Creating locations:", locationsToCreate);
+            await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.ensure_locations_exist",
+              args: { locations: locationsToCreate }
+            });
+          }
+
           const doc = {
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,

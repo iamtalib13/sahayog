@@ -204,6 +204,35 @@ def get_asset_combine_data(asset_name=None, asset_category=None, status=None, it
 
 
 @frappe.whitelist()
+def ensure_locations_exist(locations):
+    if isinstance(locations, str):
+        locations = frappe.parse_json(locations)
+    
+    for loc in locations:
+        if not loc:
+            continue
+            
+        loc = str(loc).strip()
+        if not frappe.db.exists("Location", loc):
+            try:
+                # Create Location with SOL ID as both name and location_name
+                loc_doc = frappe.new_doc("Location")
+                loc_doc.name = loc
+                loc_doc.location_name = loc
+                loc_doc.is_group = 0
+                loc_doc.insert(ignore_permissions=True)
+                frappe.db.commit()
+                print(f"Created missing location: {loc}")
+            except Exception:
+                # Fallback
+                try:
+                    frappe.db.sql("""INSERT INTO `tabLocation` (name, location_name, is_group, docstatus) 
+                                  VALUES (%s, %s, 0, 0)""", (loc, loc))
+                    frappe.db.commit()
+                except Exception:
+                    pass
+
+@frappe.whitelist()
 def create_asset_movement_from_emmr(emmr, assets):
     if not assets:
         frappe.throw(_("No assets selected"))
@@ -241,6 +270,9 @@ def create_asset_movement_from_emmr(emmr, assets):
         source_loc = row.get("location")
         from_emp = row.get("custodian")
         to_emp = row.get("employee")
+        target_loc = row.get("target_location") or emmr_doc.target_location
+
+        print(target_loc)
 
         # 1. Clean Asset: Clear composite flag and prepare for movement
         asset_name = row["asset"]
@@ -250,6 +282,7 @@ def create_asset_movement_from_emmr(emmr, assets):
             "assets", {
                 "asset": asset_name,
                 "source_location": source_loc,
+                "target_location": target_loc,
                 "from_employee": from_emp,
                 "to_employee": to_emp,
             })
