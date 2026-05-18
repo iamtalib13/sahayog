@@ -328,36 +328,49 @@ def create_asset_movement_from_emmr(emmr, assets):
     return am.name
 
 @frappe.whitelist()
-def get_emr_list(limit=20, start=0, search_text=None):
+def get_emr_list(limit=20, start=0, search_text=None, status=None, department=None, employee=None, start_date=None, end_date=None, request=None):
     from sahayog.permissions import get_employee_material_request_permission
     perm_cond = get_employee_material_request_permission(frappe.session.user)
     
-    filters = {}
+    conditions = []
+    if perm_cond:
+        conditions.append(perm_cond.replace("`tabEmployee Material Request`", "emr"))
+        
     if search_text:
-        filters["name"] = ["like", f"%{search_text}%"]
-
-    # Use frappe.db.get_list which supports 'or_filters' and complex conditions
-    # or apply the permission query manually via SQL if necessary for performance/complexity
-    # Since the permission logic is complex SQL, I will use a hybrid approach
+        conditions.append(f"emr.name LIKE '%%{search_text}%%'")
+        
+    if request:
+        conditions.append(f"emr.name = '{request}'")
+        
+    if status:
+        conditions.append(f"emr.status = '{status}'")
+        
+    if department:
+        conditions.append(f"emr.department = '{department}'")
+        
+    if employee:
+        conditions.append(f"emr.employee = '{employee}'")
+        
+    if start_date:
+        conditions.append(f"emr.creation >= '{start_date} 00:00:00'")
+        
+    if end_date:
+        conditions.append(f"emr.creation <= '{end_date} 23:59:59'")
+        
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
     
     query = f"""
         SELECT emr.*, emp.employee_name
         FROM `tabEmployee Material Request` emr
         LEFT JOIN `tabEmployee` emp ON emp.name = emr.employee
-        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
-        {"AND " if perm_cond and search_text else ""}
-        {("emr.name LIKE '" + f"%{search_text}%" + "'") if search_text else ""}
+        {where_clause}
         ORDER BY emr.creation DESC
         LIMIT {int(limit)} OFFSET {int(start)}
     """
     data = frappe.db.sql(query, as_dict=True)
     
     # Get total count with the same logic
-    count_query = f"""
-        SELECT COUNT(*)
-        FROM `tabEmployee Material Request` emr
-        {"WHERE " + perm_cond.replace("`tabEmployee Material Request`", "emr") if perm_cond else ""}
-    """
+    count_query = f"SELECT COUNT(*) FROM `tabEmployee Material Request` emr {where_clause}"
     total_count = frappe.db.sql(count_query)[0][0]
 
     for row in data:
