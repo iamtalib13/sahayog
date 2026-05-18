@@ -2730,12 +2730,22 @@
               class="form-row"
               style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
             >
+              <!-- Item Code -->
+              <div class="form-group">
+                <label class="form-label">Item Code</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  v-model="createItemForm.item_code"
+                  placeholder="Enter item code (optional)"
+                />
+              </div>
+
               <!-- Item Name -->
               <div class="form-group">
                 <label class="form-label"
                   >Item Name <span class="form-required">*</span></label
-                >
-                <input
+                >                <input
                   type="text"
                   class="form-input"
                   v-model="createItemForm.item_name"
@@ -8392,6 +8402,15 @@
       </div>
       <div class="profile-modal-body">
         <div class="form-group">
+          <label class="form-label">Item Code</label>
+          <input
+            type="text"
+            class="form-input"
+            v-model="createItemForm.item_code"
+            placeholder="Enter item code (optional)"
+          />
+        </div>
+        <div class="form-group">
           <label class="form-label"
             >Item Name <span class="form-required">*</span></label
           >
@@ -11230,6 +11249,7 @@
       creatingItem: false,
       focusedField: null,
       createItemForm: {
+        item_code: "",
         item_name: "",
         item_department: "",
         item_department_display: "",
@@ -12473,6 +12493,7 @@
           this.showItemCreateView = true;
           this.showDetailView = false;
           this.createItemForm = {
+            item_code: "",
             item_name: "",
             item_department: "",
             item_department_display: "",
@@ -12758,6 +12779,7 @@
         try {
           const doc = {
             doctype: "Item",
+            item_code: this.createItemForm.item_code,
             item_name: this.createItemForm.item_name,
             item_group: this.createItemForm.item_group,
             custom_item_department: this.createItemForm.item_department,
