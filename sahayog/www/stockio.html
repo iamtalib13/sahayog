@@ -3074,7 +3074,7 @@
                 </div>
 
                 <!-- Custodian -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
+                <div class="form-group" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Custodian (Employee)</label>
                   <div class="searchable-select-wrapper">
                     <input
@@ -3099,6 +3099,43 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Serial No -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Serial No</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.serial_no"
+                    placeholder="Enter Serial No"
+                  />
+                </div>
+
+                <!-- Windows Key -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Windows Key</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.windows_key"
+                    placeholder="Enter Windows Key"
+                  />
+                </div>
+
+                <!-- Office Key -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Office Key</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.office_key"
+                    placeholder="Enter Office Key"
+                  />
+                </div>
+
               </div>
 
               <!-- Column 2: Purchase & Status -->
@@ -11280,6 +11317,9 @@
         purchase_date: "",
         available_for_use_date: "",
         gross_purchase_amount: 0,
+        serial_no: "",
+        windows_key: "",
+        office_key: "",
         is_existing_asset: true,
         is_composite_asset: false,
       },
@@ -12745,8 +12785,10 @@
               frappe.datetime.now_date(),
             gross_purchase_amount:
               this.createAssetForm.gross_purchase_amount || 0,
-            is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,
-            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
+            serial_no: this.createAssetForm.serial_no,
+            windows_key: this.createAssetForm.windows_key,
+            office_key: this.createAssetForm.office_key,
+            is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
             booked_fixed_asset: 1,
             naming_series: "AST-",
             company: "Sahayog",
