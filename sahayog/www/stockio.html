@@ -1149,27 +1149,27 @@
     <header class="top-header">
       <div class="header-left">
         <template
-          v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView"
+          v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView || showMovementCreateView"
         >
           <button
             class="btn-back-inline"
-            @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false; showAssetCreateView = false;"
+            @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false; showAssetCreateView = false; showMovementCreateView = false;"
           >
             <i class="fas fa-arrow-left"></i>
           </button>
         </template>
         <h1
           class="page-title"
-          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView"
         >
-          [[ activeItem === 'Asset Master' ? 'Create New Asset' : activeItem ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
+          [[ activeItem === 'Asset Master' ? 'Create New Asset' : (activeItem === 'Movements' ? 'Create Asset Movement' : activeItem) ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
         </h1>
         <h1
           class="page-title"
-          v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView"
+          v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView || showMovementCreateView"
           style="display: flex; align-items: center; flex: 1;"
         >
-          <span style="white-space: nowrap;">Create [[ activeItem === 'Asset Master' ? 'New Asset' : (currentView.createLabel || activeItem.slice(0, -1)) ]]</span>
+          <span style="white-space: nowrap;">Create [[ activeItem === 'Asset Master' ? 'New Asset' : (activeItem === 'Movements' ? 'Asset Movement' : (currentView.createLabel || activeItem.slice(0, -1))) ]]</span>
           
 <!-- Inventory Flow Display -->
 <div
@@ -3197,19 +3197,6 @@
       <div v-if="showMovementCreateView" class="detail-view-container">
         <div class="detail-card">
           <div class="profile-modal-body" style="padding: 24px">
-            <h3
-              class="section-subtitle"
-              style="
-                margin-top: 0;
-                margin-bottom: 24px;
-                font-weight: 800;
-                color: var(--text-main);
-                text-transform: uppercase;
-              "
-            >
-              Create Asset Movement
-            </h3>
-
             <div
               class="form-row"
               style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
