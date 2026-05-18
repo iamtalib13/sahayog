@@ -1149,27 +1149,27 @@
     <header class="top-header">
       <div class="header-left">
         <template
-          v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+          v-if="showDetailView || showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView || showMovementCreateView"
         >
           <button
             class="btn-back-inline"
-            @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false;"
+            @click="closeDetailView(); showEMRCreateView = false; showInwardCreateView = false; showOutwardCreateView = false; showItemCreateView = false; showAssetCreateView = false; showMovementCreateView = false;"
           >
             <i class="fas fa-arrow-left"></i>
           </button>
         </template>
         <h1
           class="page-title"
-          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView"
         >
-          [[ activeItem ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
+          [[ activeItem === 'Movements' ? 'Asset Movement' : activeItem ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
         </h1>
         <h1
           class="page-title"
-          v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView"
+          v-else-if="showEMRCreateView || showInwardCreateView || showOutwardCreateView || showItemCreateView || showAssetCreateView || showMovementCreateView"
           style="display: flex; align-items: center; flex: 1;"
         >
-          <span style="white-space: nowrap;">Create [[ currentView.createLabel || activeItem.slice(0, -1) ]]</span>
+          <span style="white-space: nowrap;">[[ activeItem === 'Asset Master' ? 'Create New Asset' : (activeItem === 'Movements' ? 'Create Asset Movement' : 'Create ' + (currentView.createLabel || activeItem.slice(0, -1))) ]]</span>
           
 <!-- Inventory Flow Display -->
 <div
@@ -1584,7 +1584,7 @@
         </button>
         <div
           class="search-container"
-          v-if="!showDetailView && !showEMRCreateView"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
         >
           <i class="fas fa-search search-icon"></i>
           <input
@@ -1847,7 +1847,7 @@
         <!-- Workflow Buttons for HO Officer removed -->
         <button
           class="btn-create"
-          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
+          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
           @click="handleCreate()"
         >
           <i class="fas fa-plus"></i>
@@ -2971,267 +2971,224 @@
       <div v-if="showAssetCreateView" class="detail-view-container">
         <div class="detail-card">
           <div class="profile-modal-body" style="padding: 24px">
-            <h3
-              class="section-subtitle"
-              style="
-                margin-top: 0;
-                margin-bottom: 24px;
-                font-weight: 800;
-                color: var(--text-main);
-                text-transform: uppercase;
-              "
-            >
-              Create New Asset
-            </h3>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px">
+              
+              <!-- Column 1: Asset Information -->
+              <div style="padding: 20px; background: rgba(100, 116, 139, 0.03); border-radius: 12px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 20px; margin-top: 0; color: var(--primary-color); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  <i class="fas fa-info-circle"></i> Asset Details
+                </h4>
 
-            <div
-              class="form-row"
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
-            >
-              <!-- Item Code -->
-              <div class="form-group">
-                <label class="form-label"
-                  >[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]]
-                  <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_item_code' }"
-                    v-model="createAssetForm.item_code_display"
-                    @focus="onFocusSearchable('asset_item_code')"
-                    @blur="onBlurSearchable('asset_item_code')"
-                    placeholder="Search Item"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_item_code'"
-                  >
-                    <div
-                      v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
-                      :key="item.name"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_name = item.item_name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
-                    >
-                      [[ item.item_name ]]
-                      <span
-                        style="color: var(--primary-color); font-weight: 800"
-                        >([[ item.name ]])</span
+                <!-- Item Code -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">[[ createAssetForm.item_code ? 'Item Code' : 'Select Item' ]] <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_item_code' }"
+                      v-model="createAssetForm.item_code_display"
+                      @focus="onFocusSearchable('asset_item_code')"
+                      @blur="onBlurSearchable('asset_item_code')"
+                      placeholder="Search Item"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_item_code'">
+                      <div
+                        v-for="item in itemsList.filter(i => i.is_fixed_asset && (!createAssetForm.item_code_display || i.name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(createAssetForm.item_code_display.toLowerCase()))))"
+                        :key="item.name"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.item_code = item.name; createAssetForm.item_name = item.item_name; createAssetForm.item_code_display = item.item_name ? item.item_name + ' (' + item.name + ')' : item.name; createAssetForm.asset_name = item.item_name; focusedField = null;"
                       >
+                        [[ item.item_name ]] <span style="color: var(--primary-color); font-weight: 800">([[ item.name ]])</span>
+                      </div>
                     </div>
                   </div>
-                  <div
-                    v-if="createAssetForm.item_code && focusedField !== 'asset_item_code'"
-                    class="searchable-select-display"
-                  >
-                    [[ createAssetForm.item_name ]]
-                    <span
-                      style="
-                        color: var(--primary-color);
-                        font-weight: 800;
-                        margin-left: 5px;
-                      "
-                      >([[ createAssetForm.item_code ]])</span
-                    >
+                </div>
+
+                <!-- Asset Category -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Category <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_category_new' }"
+                      v-model="createAssetForm.asset_category_display"
+                      @focus="onFocusSearchable('asset_category_new')"
+                      @blur="onBlurSearchable('asset_category_new')"
+                      placeholder="Search Category"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category_new'">
+                      <div
+                        v-for="cat in filteredAssetCategories"
+                        :key="cat"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.asset_category = cat; createAssetForm.asset_category_display = cat; focusedField = null;"
+                      >
+                        [[ cat ]]
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Asset Category -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Asset Category <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
+                <!-- Asset Name -->
+                <div class="form-group" v-if="createAssetForm.item_code" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Name <span class="form-required">*</span></label>
                   <input
                     type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_category_new' }"
-                    v-model="createAssetForm.asset_category_display"
-                    @focus="onFocusSearchable('asset_category_new')"
-                    @blur="onBlurSearchable('asset_category_new')"
-                    placeholder="Search Category"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.asset_name"
+                    placeholder="Enter asset name"
                   />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_category_new'"
-                  >
-                    <div
-                      v-for="cat in filteredAssetCategories"
-                      :key="cat"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.asset_category = cat; createAssetForm.asset_category_display = cat; focusedField = null;"
-                    >
-                      [[ cat ]]
+                </div>
+
+                <!-- Location -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Location <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_location' }"
+                      v-model="createAssetForm.location_display"
+                      @focus="onFocusSearchable('asset_location')"
+                      @blur="onBlurSearchable('asset_location')"
+                      placeholder="Search Location"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_location'">
+                      <div
+                        v-for="loc in filteredLocations"
+                        :key="loc"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
+                      >
+                        [[ loc ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custodian -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Custodian (Employee)</label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_custodian' }"
+                      v-model="createAssetForm.custodian_display"
+                      @focus="onFocusSearchable('asset_custodian')"
+                      @blur="onBlurSearchable('asset_custodian')"
+                      placeholder="Search Custodian"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_custodian'">
+                      <div
+                        v-for="emp in employees.filter(e => !createAssetForm.custodian_display || e.employee_name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()) || e.name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()))"
+                        :key="emp.name"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.custodian = emp.name; createAssetForm.custodian_display = emp.employee_name; focusedField = null;"
+                      >
+                        [[ emp.name ]] - [[ emp.employee_name ]]
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Asset Name (Hidden until Item selected) -->
-              <div class="form-group" v-if="createAssetForm.item_code">
-                <label class="form-label"
-                  >Asset Name <span class="form-required">*</span></label
-                >
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="createAssetForm.asset_name"
-                  placeholder="Enter asset name"
-                />
-              </div>
+              <!-- Column 2: Purchase & Status -->
+              <div style="padding: 20px; background: rgba(100, 116, 139, 0.03); border-radius: 12px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 20px; margin-top: 0; color: var(--primary-color); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  <i class="fas fa-shopping-cart"></i> Purchase & Status
+                </h4>
 
-              <!-- Location -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Location <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
+                <!-- Purchase Date -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Purchase Date</label>
                   <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_location' }"
-                    v-model="createAssetForm.location_display"
-                    @focus="onFocusSearchable('asset_location')"
-                    @blur="onBlurSearchable('asset_location')"
-                    placeholder="Search Location"
+                    type="date"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.purchase_date"
                   />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_location'"
-                  >
-                    <div
-                      v-for="loc in filteredLocations"
-                      :key="loc"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
-                    >
-                      [[ loc ]]
-                    </div>
-                  </div>
                 </div>
-              </div>
 
-              <!-- Custodian -->
-              <div class="form-group">
-                <label class="form-label">Custodian (Employee)</label>
-                <div class="searchable-select-wrapper">
+                <!-- Available-for-use Date -->
+                <div class="form-group" v-if="createAssetForm.is_existing_asset" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Available-for-use Date</label>
                   <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_custodian' }"
-                    v-model="createAssetForm.custodian_display"
-                    @focus="onFocusSearchable('asset_custodian')"
-                    @blur="onBlurSearchable('asset_custodian')"
-                    placeholder="Search Custodian"
+                    type="date"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.available_for_use_date"
                   />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_custodian'"
-                  >
-                    <div
-                      v-for="emp in employees.filter(e => !createAssetForm.custodian_display || e.employee_name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()) || e.name.toLowerCase().includes(createAssetForm.custodian_display.toLowerCase()))"
-                      :key="emp.name"
-                      class="searchable-select-option"
-                      @mousedown="createAssetForm.custodian = emp.name; createAssetForm.custodian_display = emp.employee_name; focusedField = null;"
-                    >
-                      [[ emp.name ]] - [[ emp.employee_name ]]
-                    </div>
+                </div>
+
+                <!-- Gross Purchase Amount -->
+                <div class="form-group" style="margin-bottom: 24px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Gross Purchase Amount</label>
+                  <div style="position: relative;">
+                    <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-weight: 600;">₹</span>
+                    <input
+                      type="number"
+                      class="form-input"
+                      style="padding: 12px 16px 12px 32px !important;"
+                      v-model.number="createAssetForm.gross_purchase_amount"
+                      placeholder="0.00"
+                    />
                   </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px dashed var(--border-color);">
+                  <label class="form-checkbox-label" style="padding: 10px 14px; background: var(--bg-surface); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 0;">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox"
+                      v-model="createAssetForm.is_existing_asset"
+                      @change="if(createAssetForm.is_existing_asset) createAssetForm.is_composite_asset = false"
+                    />
+                    <span class="checkbox-text" style="font-size: 0.9rem; font-weight: 600;">Is Existing Asset</span>
+                  </label>
+                  <label class="form-checkbox-label" style="padding: 10px 14px; background: var(--bg-surface); border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 0;">
+                    <input
+                      type="checkbox"
+                      class="form-checkbox"
+                      v-model="createAssetForm.is_composite_asset"
+                      @change="if(createAssetForm.is_composite_asset) createAssetForm.is_existing_asset = false"
+                    />
+                    <span class="checkbox-text" style="font-size: 0.9rem; font-weight: 600;">Is Composite Asset</span>
+                  </label>
                 </div>
               </div>
 
-              <!-- Purchase Date -->
-              <div class="form-group">
-                <label class="form-label">Purchase Date</label>
-                <input
-                  type="date"
-                  class="form-input"
-                  v-model="createAssetForm.purchase_date"
-                />
-              </div>
-
-              <!-- Available-for-use Date (Conditional) -->
-              <div class="form-group" v-if="createAssetForm.is_existing_asset">
-                <label class="form-label">Available-for-use Date</label>
-                <input
-                  type="date"
-                  class="form-input"
-                  v-model="createAssetForm.available_for_use_date"
-                />
-              </div>
-
-              <!-- Gross Purchase Amount -->
-              <div class="form-group">
-                <label class="form-label">Gross Purchase Amount</label>
-                <input
-                  type="number"
-                  class="form-input"
-                  v-model.number="createAssetForm.gross_purchase_amount"
-                  placeholder="0.00"
-                />
-              </div>
             </div>
 
-            <div
-              class="form-row"
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-top: 20px;
-                margin-bottom: 10px;
-                flex-wrap: wrap;
-                gap: 20px;
-              "
-            >
-              <div style="display: flex; gap: 40px">
-                <label class="form-checkbox-label">
-                  <input
-                    type="checkbox"
-                    class="form-checkbox"
-                    v-model="createAssetForm.is_existing_asset"
-                    @change="if(createAssetForm.is_existing_asset) createAssetForm.is_composite_asset = false"
-                  />
-                  <span class="checkbox-text">Is Existing Asset</span>
-                </label>
-                <label class="form-checkbox-label">
-                  <input
-                    type="checkbox"
-                    class="form-checkbox"
-                    v-model="createAssetForm.is_composite_asset"
-                    @change="if(createAssetForm.is_composite_asset) createAssetForm.is_existing_asset = false"
-                  />
-                  <span class="checkbox-text">Is Composite Asset</span>
-                </label>
-              </div>
-
-              <div style="display: flex; gap: 12px">
-                <button
-                  class="btn-cancel"
-                  @click="showAssetCreateView = false"
-                  :disabled="creatingAsset"
-                  style="margin: 0"
-                >
-                  Cancel
-                </button>
-                <button
-                  class="btn-create"
-                  @click="submitAsset"
-                  :disabled="creatingAsset"
-                  style="margin: 0"
-                >
-                  <i
-                    class="fas"
-                    :class="creatingAsset ? 'fa-spinner fa-spin' : 'fa-plus'"
-                  ></i>
-                  <span
-                    >[[ creatingAsset ? 'Creating...' : 'Create Asset' ]]</span
-                  >
-                </button>
-              </div>
+            <!-- Footer Actions -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; padding-top: 24px;">
+              <button
+                class="btn-cancel"
+                style="padding: 12px 24px; border-radius: 40px; font-weight: 700; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main);"
+                @click="showAssetCreateView = false"
+                :disabled="creatingAsset"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn-create"
+                style="padding: 12px 32px; border-radius: 40px; font-weight: 700; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: white; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);"
+                @click="submitAsset"
+                :disabled="creatingAsset"
+              >
+                <i class="fas" :class="creatingAsset ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
+                <span>[[ creatingAsset ? 'Creating...' : 'Create Asset' ]]</span>
+              </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -3240,19 +3197,6 @@
       <div v-if="showMovementCreateView" class="detail-view-container">
         <div class="detail-card">
           <div class="profile-modal-body" style="padding: 24px">
-            <h3
-              class="section-subtitle"
-              style="
-                margin-top: 0;
-                margin-bottom: 24px;
-                font-weight: 800;
-                color: var(--text-main);
-                text-transform: uppercase;
-              "
-            >
-              Create Asset Movement
-            </h3>
-
             <div
               class="form-row"
               style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
@@ -5201,7 +5145,108 @@
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
+                <!-- Refined Detail View for Asset Master -->
+                <div v-if="activeItem === 'Asset Master' && !isEditing" style="display: flex; flex-direction: column; gap: 20px;">
+                  
+                  <!-- Card 1: Asset Identity -->
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-tag" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                    </div>
+                    <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
+                      
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-font"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Asset Name</span>
+                          <span class="info-value">[[ detailRecord.asset_name || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-barcode"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Serial No</span>
+                          <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-fingerprint"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Item Code</span>
+                          <span class="info-value" style="color: #369696;">[[ detailRecord.item_code || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Category</span>
+                          <span class="info-value">[[ detailRecord.asset_category || '-' ]]</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Placement & Financials -->
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-info-circle" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Placement & Financials</span>
+                    </div>
+                    <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
+                      
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-user-tie"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Custodian</span>
+                          <span class="info-value">[[ detailRecord.custodian_name || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Location</span>
+                          <span class="info-value">[[ detailRecord.location || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-building"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Department</span>
+                          <span class="info-value">[[ detailRecord.department || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Purchase Date</span>
+                          <span class="info-value">[[ detailRecord.purchase_date || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-wallet"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Purchase Amount</span>
+                          <span class="info-value" style="font-size: 1.1rem; color: #f59e0b;" v-html="detailRecord.gross_purchase_amount ? frappe.format(detailRecord.gross_purchase_amount, {fieldtype: 'Currency'}).replace(/<div[^>]*>|<\/div>/g, '') : '-'">
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+
                 <div
+                  v-else
                   class="detail-grid"
                   :style="activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px;' : 'display: flex; flex-direction: column; gap: 20px;'"
                 >
