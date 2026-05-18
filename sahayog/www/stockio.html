@@ -7944,12 +7944,19 @@
             </div>
             <div class="form-group" style="margin-bottom: 0 !important;">
               <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 8px !important;">Mobile Number</label>
-              <input type="text" class="form-input" v-model="dispatchForm.mobile_number" placeholder="Recipient's contact" />
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="dispatchForm.mobile_number" 
+                placeholder="10-digit mobile number" 
+                maxlength="10"
+                @input="dispatchForm.mobile_number = dispatchForm.mobile_number.replace(/[^0-9]/g, '').slice(0, 10)"
+              />
             </div>
           </div>
 
           <!-- Toggle Button at Bottom Right -->
-          <div style="display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
             <button 
               type="button"
               class="btn-create-inline" 
