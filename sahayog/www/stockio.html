@@ -5158,7 +5158,108 @@
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
+                <!-- Refined Detail View for Asset Master -->
+                <div v-if="activeItem === 'Asset Master' && !isEditing" style="display: flex; flex-direction: column; gap: 20px;">
+                  
+                  <!-- Card 1: Asset Identity -->
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-tag" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                    </div>
+                    <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
+                      
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-font"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Asset Name</span>
+                          <span class="info-value">[[ detailRecord.asset_name || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-barcode"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Serial No</span>
+                          <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-fingerprint"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Item Code</span>
+                          <span class="info-value" style="color: #369696;">[[ detailRecord.item_code || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Category</span>
+                          <span class="info-value">[[ detailRecord.asset_category || '-' ]]</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Placement & Financials -->
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-info-circle" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Placement & Financials</span>
+                    </div>
+                    <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
+                      
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-user-tie"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Custodian</span>
+                          <span class="info-value">[[ detailRecord.custodian_name || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Location</span>
+                          <span class="info-value">[[ detailRecord.location || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-building"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Department</span>
+                          <span class="info-value">[[ detailRecord.department || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Purchase Date</span>
+                          <span class="info-value">[[ detailRecord.purchase_date || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-wallet"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Purchase Amount</span>
+                          <span class="info-value" style="font-size: 1.1rem; color: #f59e0b;" v-html="detailRecord.gross_purchase_amount ? frappe.format(detailRecord.gross_purchase_amount, {fieldtype: 'Currency'}).replace(/<div[^>]*>|<\/div>/g, '') : '-'">
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+
                 <div
+                  v-else
                   class="detail-grid"
                   :style="activeItem === 'Asset Master' ? 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 24px;' : 'display: flex; flex-direction: column; gap: 20px;'"
                 >
