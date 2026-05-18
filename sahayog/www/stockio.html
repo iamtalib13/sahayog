@@ -1584,7 +1584,7 @@
         </button>
         <div
           class="search-container"
-          v-if="!showDetailView && !showEMRCreateView"
+          v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
         >
           <i class="fas fa-search search-icon"></i>
           <input
@@ -1847,7 +1847,7 @@
         <!-- Workflow Buttons for HO Officer removed -->
         <button
           class="btn-create"
-          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView"
+          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
           @click="handleCreate()"
         >
           <i class="fas fa-plus"></i>
