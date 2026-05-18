@@ -2273,238 +2273,267 @@
       </div>
 
       <!-- Inward Inline Creation View -->
-      <div v-if="showInwardCreateView" class="detail-view-container">
-        <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 0">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label"
-                  >Supplier <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'supplier' }"
-                    v-model="inwardForm.supplier_display"
-                    @focus="onFocusSearchable('supplier')"
-                    @blur="onBlurSearchable('supplier')"
-                    placeholder="Search Supplier"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'supplier'"
-                  >
-                    <div
-                      v-for="sup in filteredSuppliers"
-                      :key="sup.name"
-                      class="searchable-select-option"
-                      @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
-                    >
-                      [[ sup.name ]] [[ sup.supplier_name ? '- ' +
-                      sup.supplier_name : '' ]]
+      <div v-if="showInwardCreateView" class="detail-view-container" style="overflow-x: hidden;">
+        <div class="detail-card" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div class="profile-modal-body" style="padding: 16px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+            
+            <!-- Main Form Layout: Compact Columns -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 16px; margin-top: 0 !important; width: 100%;">
+              
+              <!-- Section: Supplier & Date (Column 1) -->
+              <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                  <i class="fas fa-truck-loading"></i> Supplier Info
+                </h4>
+
+                <!-- Supplier Field -->
+                <div class="form-group" style="margin-bottom: 12px !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Supplier <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'supplier' }"
+                      v-model="inwardForm.supplier_display"
+                      @focus="onFocusSearchable('supplier')"
+                      @blur="onBlurSearchable('supplier')"
+                      placeholder="Search Supplier"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                      <div
+                        v-for="sup in filteredSuppliers"
+                        :key="sup.name"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
+                      >
+                        [[ sup.name ]] [[ sup.supplier_name ? '- ' + sup.supplier_name : '' ]]
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Posting Date</label>
-                <input
-                  type="date"
-                  class="form-input"
-                  v-model="inwardForm.posting_date"
-                />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Set Warehouse</label>
-                <div class="searchable-select-wrapper">
+
+                <!-- Posting Date -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Posting Date</label>
                   <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'inward_warehouse' }"
-                    v-model="inwardForm.set_warehouse_display"
-                    @focus="onFocusSearchable('inward_warehouse')"
-                    @blur="onBlurSearchable('inward_warehouse')"
-                    placeholder="Set Warehouse"
+                    type="date"
+                    class="form-input"
+                    style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                    v-model="inwardForm.posting_date"
                   />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'inward_warehouse'"
-                  >
-                    <div
-                      v-for="wh in warehouses.filter(w => !inwardForm.set_warehouse_display || w.toLowerCase().includes(inwardForm.set_warehouse_display.toLowerCase()))"
-                      :key="wh"
-                      class="searchable-select-option"
-                      @mousedown="inwardForm.set_warehouse = wh; inwardForm.set_warehouse_display = wh; focusedField = null;"
-                    >
-                      [[ wh ]]
+                </div>
+              </div>
+
+              <!-- Section: Warehouse & Type (Column 2) -->
+              <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                  <i class="fas fa-warehouse"></i> Receiving Details
+                </h4>
+
+                <!-- Set Warehouse -->
+                <div class="form-group" style="margin-bottom: 12px !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Set Warehouse</label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'inward_warehouse' }"
+                      v-model="inwardForm.set_warehouse_display"
+                      @focus="onFocusSearchable('inward_warehouse')"
+                      @blur="onBlurSearchable('inward_warehouse')"
+                      placeholder="Search Warehouse"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'inward_warehouse'">
+                      <div
+                        v-for="wh in warehouses.filter(w => !inwardForm.set_warehouse_display || w.toLowerCase().includes(inwardForm.set_warehouse_display.toLowerCase()))"
+                        :key="wh"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="inwardForm.set_warehouse = wh; inwardForm.set_warehouse_display = wh; focusedField = null;"
+                      >
+                        [[ wh ]]
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">PO/WO Number</label>
-                <select class="form-input" v-model="inwardForm.custom_po_wo">
-                  <option value="" disabled>Select Type</option>
-                  <option value="Purchase Order">Purchase Order</option>
-                  <option value="Work Order">Work Order</option>
-                </select>
+
+                <div style="display: flex; gap: 12px;">
+                  <!-- PO/WO Number -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">PO/WO Type</label>
+                    <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="inwardForm.custom_po_wo">
+                      <option value="" disabled>Select Type</option>
+                      <option value="Purchase Order">Purchase Order</option>
+                      <option value="Work Order">Work Order</option>
+                    </select>
+                  </div>
+
+                  <!-- Request For -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request For</label>
+                    <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="inwardForm.custom_request_for">
+                      <option value="" disabled>Select Purpose</option>
+                      <option value="Branch">Branch</option>
+                      <option value="Project">Project</option>
+                      <option value="Store">Store</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="form-row">
-              <div class="form-group" style="flex: 1">
-                <label class="form-label">Request For</label>
-                <select
-                  class="form-input"
-                  v-model="inwardForm.custom_request_for"
-                >
-                  <option value="" disabled>Select Request For</option>
-                  <option value="Branch">Branch</option>
-                  <option value="Project">Project</option>
-                  <option value="Store">Store</option>
-                </select>
-              </div>
-              <div class="form-group" style="flex: 1; align-self: flex-end; padding-bottom: 8px;">
-                <label class="form-checkbox-label">
-                  <input type="checkbox" class="form-checkbox" v-model="inwardForm.is_past_stock_date" />
-                  Past Stock Date
-                </label>
-              </div>
-              <div class="form-group" v-if="inwardForm.is_past_stock_date" style="flex: 1">
-                <label class="form-label">Existing Stock Date</label>
+
+            <!-- Past Stock Section -->
+            <div style="margin-bottom: 20px; padding: 14px; background: rgba(100, 116, 139, 0.02); border-radius: 10px; border: 1px dashed var(--border-color); display: flex; align-items: center; gap: 24px;">
+              <label class="form-checkbox-label" style="font-size: 0.9rem; margin-bottom: 0 !important;">
+                <input type="checkbox" class="form-checkbox" v-model="inwardForm.is_past_stock_date" />
+                <span class="checkbox-text" style="font-weight: 600;">Past Stock Date</span>
+              </label>
+              
+              <div v-if="inwardForm.is_past_stock_date" style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 0 !important; white-space: nowrap;">Existing Stock Date:</label>
                 <input
                   type="date"
                   class="form-input"
+                  style="padding: 8px 12px !important; font-size: 0.85rem !important; width: 180px;"
                   v-model="inwardForm.existing_stock_date"
                 />
               </div>
             </div>
+
+            <!-- Items Table -->
             <div style="margin-top: 20px">
-              <label class="form-label">Items</label>
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Item Code</th>
-                    <th>Qty</th>
-                    <th>Rate</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(item, index) in inwardItems" :key="index">
-                    <td>
-                      <div
-                        class="searchable-select-wrapper"
-                        style="width: 200px"
-                      >
-                        <input
-                          type="text"
-                          class="form-input searchable-select-input"
-                          :class="{ focused: focusedField === 'inward_item_' + index }"
-                          v-model="item.item_code_display"
-                          @focus="onFocusSearchable('inward_item_' + index)"
-                          @blur="onBlurSearchable('inward_item_' + index)"
-                          placeholder="Item Code"
-                        />
-                        <div
-                          v-if="item.item_code && focusedField !== 'inward_item_' + index"
-                          class="searchable-select-display"
-                        >
-                          [[ item.item_name ]]
-                          <span
-                            style="
-                              color: var(--primary-color);
-                              font-weight: 800;
-                              margin-left: 5px;
-                            "
-                            >([[ item.item_code ]])</span
-                          >
-                        </div>
-                        <div
-                          class="searchable-select-dropdown"
-                          v-if="focusedField === 'inward_item_' + index"
-                          style="width: 250px"
-                        >
-                          <div
-                            v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
-                            :key="opt.name"
-                            class="searchable-select-option"
-                            @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom)"
-                          >
-                            <div style="font-weight: 500">
-                              [[ opt.item_name ]]
-                              <span
-                                style="
-                                  color: var(--primary-color);
-                                  font-weight: 800;
-                                "
-                                >([[ opt.name ]])</span
-                              >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <label class="form-label" style="margin: 0; font-size: 1rem;">Items <span class="form-required">*</span></label>
+                <button class="btn-create-inline" @click="addInwardItem" style="padding: 8px 16px; border-radius: 20px;">
+                  <i class="fas fa-plus"></i> Add Row
+                </button>
+              </div>
+              
+              <div class="items-table-wrapper table-responsive" style="border-radius: 8px; overflow: visible !important;">
+                <table class="items-table" style="width: 100%; border-collapse: collapse;">
+                  <thead style="position: sticky; top: 0; background: var(--bg-card); z-index: 1;">
+                    <tr>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 350px;">Item Code <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 250px;">Description</th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">Qty <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 100px;">Rate <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; width: 60px;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, index) in inwardItems" :key="index">
+                      <td style="padding: 10px 16px; width: 100%; min-width: 350px;">
+                        <div class="searchable-select-wrapper" style="width: 100%; min-width: 350px;">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            style="padding: 10px 14px !important; font-size: 0.9rem;"
+                            :class="{ focused: focusedField === 'inward_item_' + index }"
+                            v-model="item.item_code_display"
+                            @focus="onFocusSearchable('inward_item_' + index)"
+                            @blur="onBlurSearchable('inward_item_' + index)"
+                            placeholder="Search Item"
+                          />
+                          <div v-if="item.item_code && focusedField !== 'inward_item_' + index" class="searchable-select-display" style="padding: 10px 14px;">
+                            [[ item.item_name ]] <span style="color: var(--primary-color); font-weight: 800; margin-left: 5px;">([[ item.item_code ]])</span>
+                          </div>
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'inward_item_' + index" style="width: 100%; z-index: 1000;">
+                            <div
+                              v-for="opt in itemsList.filter(i => !item.item_code_display || i.name.toLowerCase().includes(item.item_code_display.toLowerCase()) || (i.item_name && i.item_name.toLowerCase().includes(item.item_code_display.toLowerCase())))"
+                              :key="opt.name"
+                              class="searchable-select-option"
+                              style="padding: 8px 12px; font-size: 0.9rem;"
+                              @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description)"
+                            >
+                              <div style="font-weight: 500">[[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span></div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        class="form-input"
-                        v-model.number="item.qty"
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        class="form-input"
-                        v-model.number="item.rate"
-                      />
-                    </td>
-                    <td style="padding: 12px; width: 60px; text-align: center">
-                      <button
-                        class="btn-action"
-                        @click="removeInwardItem(index)"
-                        title="Remove"
-                      >
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <button
-                class="btn-create-inline"
-                style="
-                  margin-top: 12px;
-                  font-size: 0.85rem;
-                  padding: 8px 16px;
-                  border-radius: 20px;
-                  width: auto;
-                  height: auto;
-                "
-                @click="addInwardItem"
-              >
-                <i class="fas fa-plus"></i> Add Row
-              </button>
+                      </td>
+                      <td style="padding: 10px 16px;">
+                        <div
+                          style="
+                            width: 100%;
+                            min-width: 250px;
+                            min-height: 40px;
+                            font-size: 0.85rem;
+                            color: var(--text-muted);
+                            line-height: 1.4;
+                            white-space: pre-wrap;
+                            word-break: break-word;
+                          "
+                        >[[ (item.description || '-').trim() ]]</div>
+                      </td>
+                      <td style="padding: 10px; text-align: center;">
+                        <div style="display: flex; justify-content: center;">
+                          <input
+                            type="number"
+                            class="form-input"
+                            :style="{ 
+                              width: ((item.qty ? item.qty.toString().length : 1) * 12 + 60) + 'px',
+                              textAlign: 'center',
+                              padding: '10px 8px !important',
+                              minWidth: '80px',
+                              transition: 'width 0.2s ease'
+                            }"
+                            v-model.number="item.qty"
+                            placeholder="0"
+                          />
+                        </div>
+                      </td>
+                      <td style="padding: 10px; text-align: center;">
+                        <div style="display: flex; justify-content: center; align-items: center; position: relative;">
+                           <span style="position: absolute; left: calc(50% - ((((item.rate ? item.rate.toString().length : 1) * 12 + 70) / 2)) + 12px); font-size: 0.8rem; color: var(--text-muted);">₹</span>
+                          <input
+                            type="number"
+                            class="form-input"
+                            :style="{ 
+                              width: ((item.rate ? item.rate.toString().length : 1) * 12 + 70) + 'px',
+                              textAlign: 'center',
+                              padding: '10px 8px 10px 24px !important',
+                              minWidth: '100px',
+                              transition: 'width 0.2s ease'
+                            }"
+                            v-model.number="item.rate"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </td>
+                      <td style="padding: 10px; text-align: center;">
+                        <button class="btn-action" @click="removeInwardItem(index)" title="Remove">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="form-actions">
+
+            <!-- Form Actions -->
+            <div class="form-actions" style="margin-top: 32px; display: flex; gap: 12px; padding-bottom: 24px;">
               <button
                 class="btn-create"
                 @click="submitInward"
                 :disabled="creatingInward"
+                style="padding: 12px 32px; border-radius: 40px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);"
               >
                 <i class="fas fa-check" v-if="!creatingInward"></i>
                 <i class="fas fa-spinner fa-spin" v-else></i>
-                <span
-                  >[[ creatingInward ? 'Submitting...' : 'Submit Receipt'
-                  ]]</span
-                >
+                <span>[[ creatingInward ? 'Submitting...' : 'Submit Inward' ]]</span>
               </button>
-              <button class="btn-cancel" @click="showInwardCreateView = false">
+              <button 
+                class="btn-cancel" 
+                @click="showInwardCreateView = false"
+                style="padding: 12px 24px; border-radius: 40px; font-weight: 700; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main);"
+              >
                 Cancel
               </button>
             </div>
+
           </div>
         </div>
       </div>
@@ -13946,24 +13975,24 @@
           item_code: "",
           item_code_display: "",
           uom: "",
+          description: "",
           qty: 1,
           rate: 0,
           warehouse: "",
         });
-      },
-      removeInwardItem(index) {
+      },      removeInwardItem(index) {
         if (this.inwardItems.length > 1) {
           this.inwardItems.splice(index, 1);
         }
       },
-      selectInwardItemOption(index, itemCode, itemName, uom) {
+      selectInwardItemOption(index, itemCode, itemName, uom, description) {
         const item = this.inwardItems[index];
         item.item_code = itemCode;
         item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
+        item.description = description;
         this.focusedField = null;
-      },
-      addOutwardItem() {
+      },      addOutwardItem() {
         this.outwardItems.push({
           item_code: "",
           item_code_display: "",
