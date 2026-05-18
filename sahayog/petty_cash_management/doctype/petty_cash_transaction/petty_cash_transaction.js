@@ -472,19 +472,43 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
     },
 
     bill_date: function(frm, cdt, cdn) {
-        var row = locals[cdt][cdn];
-        if (row.bill_date) {
-            var today_str = frappe.datetime.get_today();
-            if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
-                 frappe.msgprint({
-                    title: __('Invalid Date'),
-                    indicator: 'red',
-                    message: __('Bill Date <b>{0}</b> cannot be in the future.', [row.bill_date])
-                });
-                frappe.model.set_value(cdt, cdn, 'bill_date', '');
-            }
+        let row = locals[cdt][cdn];
+        if (!row.billdate) return;
+
+        let today = frappe.datetime.get_today();
+        let days_diff = frappe.datetime.get_diff(today, row.billdate);
+
+        if (days_diff < 0) {
+            frappe.model.set_value(cdt, cdn, 'billdate', '');
+            frappe.throw(
+                __('Row {0}: Bill Date cannot be in the future.', [row.idx])
+            );
+        }
+
+        if (days_diff > 30) {
+            frappe.model.set_value(cdt, cdn, 'billdate', '');
+            frappe.throw(
+                __('Row {0}: Bill Date cannot be older than 30 days from today.', [row.idx])
+            );
         }
     },
+
+    // bill_date: function(frm, cdt, cdn) {
+    //     var row = locals[cdt][cdn];
+    //     if (row.bill_date) {
+    //         var today_str = frappe.datetime.get_today();
+    //         if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
+    //              frappe.msgprint({
+    //                 title: __('Invalid Date'),
+    //                 indicator: 'red',
+    //                 message: __('Bill Date <b>{0}</b> cannot be in the future.', [row.bill_date])
+    //             });
+    //             frappe.model.set_value(cdt, cdn, 'bill_date', '');
+    //         }
+    //     }
+    // },
+
+    
 
     expense_category: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];

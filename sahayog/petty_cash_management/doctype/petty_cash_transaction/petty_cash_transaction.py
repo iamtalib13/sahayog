@@ -19,6 +19,7 @@ from frappe.utils import (
 from frappe.utils.xlsxutils import make_xlsx
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from frappe.utils import getdate, nowdate, date_diff
 
 # Custom App Imports
 from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
@@ -298,12 +299,30 @@ class PettyCashTransaction(Document):
             self.current_unsettled_cash = flt(
                 wallet_values.unsettled_cash)  # <--- New Field
 
+    # def validate_bill_dates(self):
+    #     current_date = getdate(nowdate())
+    #     for item in self.items:
+    #         if item.bill_date and getdate(item.bill_date) > current_date:
+    #             frappe.throw(
+    #                 _("Row #{0}: Bill Date cannot be in the future.").format(item.idx))
+
     def validate_bill_dates(self):
-        current_date = getdate(nowdate())
-        for item in self.items:
-            if item.bill_date and getdate(item.bill_date) > current_date:
-                frappe.throw(
-                    _("Row #{0}: Bill Date cannot be in the future.").format(item.idx))
+        today = getdate(nowdate())
+
+        for row in self.items:
+            if row.bill_date:
+                bill_date = getdate(row.bill_date)
+                diff = date_diff(today, bill_date)
+
+                if diff < 0:
+                    frappe.throw(
+                        f"Row #{row.idx}: Bill Date cannot be in the future."
+                    )
+
+                if diff > 30:
+                    frappe.throw(
+                        f"Row #{row.idx}: Bill Date cannot be older than 30 days from today."
+                    )
 
     # def calculate_limit_breakdown(self):
     #     """
