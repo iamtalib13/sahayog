@@ -1035,6 +1035,7 @@ class PettyCashTransaction(Document):
         self.amount_deducted = 0
         # self.approval_status = "Draft"
         self.approval_status = "Canceled"
+        self.db_set("approval_status", "Canceled")
 
         self.update_wallet()
 

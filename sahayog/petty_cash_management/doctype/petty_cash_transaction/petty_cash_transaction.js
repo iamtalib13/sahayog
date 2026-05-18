@@ -48,6 +48,31 @@ frappe.router.on('change', () => {
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
+    get_indicator: function(doc) {
+        const status = doc.approvalstatus || 'Draft';
+
+        if (status === 'Draft') {
+            return [__('Draft'), 'grey', 'approvalstatus,=,Draft'];
+        }
+        if (status === 'Pending Approval') {
+            return [__('Pending Approval'), 'orange', 'approvalstatus,=,Pending Approval'];
+        }
+        if (status === 'Approved') {
+            return [__('Approved'), 'blue', 'approvalstatus,=,Approved'];
+        }
+        if (status === 'Verified') {
+            return [__('Verified'), 'green', 'approvalstatus,=,Verified'];
+        }
+        if (status === 'Posted') {
+            return [__('Posted'), 'purple', 'approvalstatus,=,Posted'];
+        }
+        if (status === 'Canceled') {
+            return [__('Canceled'), 'red', 'approvalstatus,=,Canceled'];
+        }
+
+        return [__(status), 'grey', `approvalstatus,=,${status}`];
+    },
+
     validate: function(frm) {
         (frm.doc.items || []).forEach(function(row) {
             if (row.description && row.description.length > 30) {
@@ -110,6 +135,7 @@ frappe.ui.form.on('Petty Cash Transaction', {
     refresh: function(frm) {
         // Set Description Max Length to 30
         set_description_maxlength(frm);
+        
 
         // Add Download Report button in Form View (optional)
     if (!frm.is_new()) {
@@ -311,7 +337,12 @@ frappe.ui.form.on('Petty Cash Transaction', {
             // Or use this more specific approach:
             // frm.page.btn_secondary.hide();
         }
+        set_custom_business_status(frm);
     },
+
+    after_save: function(frm) {
+    set_custom_business_status(frm);
+},
 
 
     transaction_type: function(frm) {
@@ -607,4 +638,40 @@ function set_description_maxlength(frm) {
             }
         });
     }, 300);
+}
+
+// function get_approval_status_color(status) {
+//     if (status === 'Draft') return 'grey';
+//     if (status === 'Pending Approval') return 'orange';
+//     if (status === 'Approved') return 'blue';
+//     if (status === 'Verified') return 'green';
+//     if (status === 'Posted') return 'purple';
+//     if (status === 'Canceled') return 'red';
+//     return 'grey';
+// }
+function get_approval_status_color(status) {
+    const color_map = {
+        'Draft': 'grey',
+        'Pending Approval': 'orange',
+        'Approved': 'blue',
+        'Verified': 'green',
+        'Posted': 'purple',
+        'Canceled': 'red'
+    };
+
+    return color_map[status] || 'grey';
+}
+
+// function set_custom_business_status(frm) {
+//     const status = frm.doc.approval_status || 'Draft';
+//     frm.page.clear_indicator();
+//     frm.page.set_indicator(__(status), get_approval_status_color(status));
+// }
+
+function set_custom_business_status(frm) {
+    const status = frm.doc.approval_status || 'Draft';
+    const color = get_approval_status_color(status);
+
+    frm.page.clear_indicator();
+    frm.page.set_indicator(__(status), color);
 }

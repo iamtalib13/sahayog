@@ -1,4 +1,23 @@
+function get_approval_status_color(status) {
+    const color_map = {
+        'Draft': 'grey',
+        'Pending Approval': 'orange',
+        'Approved': 'blue',
+        'Verified': 'green',
+        'Posted': 'purple',
+        'Canceled': 'red'
+    };
+
+    return color_map[status] || 'grey';
+}
+
 frappe.listview_settings['Petty Cash Transaction'] = {
+    get_indicator: function(doc) {
+        const status = doc.approval_status || 'Draft';
+        return [__(status), get_approval_status_color(status), `approval_status,=,${status}`];
+    },
+
+    
     // onload: function(listview) {
         // Add Download Report button to list view
         // listview.page.add_inner_button(__('Download Report'), function() {
