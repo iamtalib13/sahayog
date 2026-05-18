@@ -7371,7 +7371,10 @@
                   </span>
                   <span
                     v-else
-                    :class="{ 'record-link is-clickable': isRecordLinkColumn(col) }"
+                    :class="{ 
+                      'record-link is-clickable': isRecordLinkColumn(col),
+                      'line-clamp-2': col.key === 'description' 
+                    }"
                     @click.stop="isRecordLinkColumn(col) && openRecord(row)"
                   >
                     [[ getFieldValue(row, col.key) ]]
@@ -10074,6 +10077,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
   }
 
   .mt-4 {
