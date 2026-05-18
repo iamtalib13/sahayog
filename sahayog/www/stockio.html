@@ -7883,79 +7883,89 @@
         </div>
       </div>
 
-      <div class="profile-modal-body">
+      <div class="profile-modal-body" :style="dispatchForm.dispatchStep === 1 ? 'padding: 24px 28px;' : 'padding: 0;'">
         <div
           v-if="dispatchForm.dispatchStep === 2"
           style="
             margin-bottom: 20px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 12px;
+            background: var(--bg-surface);
+            box-shadow: var(--shadow-sm);
           "
         >
-          <h4>Dispatch Details</h4>
-          <div class="form-group">
-            <label>Dispatch Date</label
-            ><input
-              type="date"
-              class="form-input"
-              v-model="dispatchForm.dispatch_date"
-            />
+          <!-- Cards Container -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+            <!-- Card 1: Courier Info -->
+            <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card);">
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.05em; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                Courier Information
+              </div>
+              <div class="form-group" style="margin-bottom: 16px !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">Courier Name</label>
+                <input type="text" class="form-input" v-model="dispatchForm.courier_name" placeholder="e.g. John Doe" />
+              </div>
+              <div class="form-group" style="margin-bottom: 16px !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">Courier Company</label>
+                <input type="text" class="form-input" v-model="dispatchForm.courier_company_name" placeholder="e.g. BlueDart, Delhivery" />
+              </div>
+              <div class="form-group" style="margin-bottom: 0 !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">POD No / Tracking ID</label>
+                <input type="text" class="form-input" v-model="dispatchForm.pod_no" placeholder="Enter tracking number" />
+              </div>
+            </div>
+
+            <!-- Card 2: Timeline & Location -->
+            <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card);">
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--primary-color); letter-spacing: 0.05em; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+                Timeline & Location
+              </div>
+              <div class="form-group" style="margin-bottom: 16px !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">Dispatch Date</label>
+                <input type="date" class="form-input" v-model="dispatchForm.dispatch_date" @click="$event.target.showPicker()" />
+              </div>
+              <div class="form-group" style="margin-bottom: 16px !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">Expected Delivery</label>
+                <input type="date" class="form-input" v-model="dispatchForm.delivery_date" @click="$event.target.showPicker()" />
+              </div>
+              <div class="form-group" style="margin-bottom: 0 !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 6px !important;">Dispatch Location</label>
+                <input type="text" class="form-input" v-model="dispatchForm.dispatch_location" placeholder="City / Branch Name" />
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Delivery Date</label
-            ><input
-              type="date"
-              class="form-input"
-              v-model="dispatchForm.delivery_date"
-            />
+
+          <!-- Below Row: Address & Mobile -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); margin-bottom: 24px;">
+            <div class="form-group" style="margin-bottom: 0 !important;">
+              <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 8px !important;">Full Address</label>
+              <textarea class="form-input" v-model="dispatchForm.address" rows="3" placeholder="Complete delivery address..."></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom: 0 !important;">
+              <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 8px !important;">Mobile Number</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="dispatchForm.mobile_number" 
+                placeholder="10-digit mobile number" 
+                maxlength="10"
+                @input="dispatchForm.mobile_number = dispatchForm.mobile_number.replace(/[^0-9]/g, '').slice(0, 10)"
+              />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Courier Name</label
-            ><input
-              type="text"
-              class="form-input"
-              v-model="dispatchForm.courier_name"
-            />
-          </div>
-          <div class="form-group">
-            <label>Courier Company Name</label
-            ><input
-              type="text"
-              class="form-input"
-              v-model="dispatchForm.courier_company_name"
-            />
-          </div>
-          <div class="form-group">
-            <label>POD No</label
-            ><input
-              type="text"
-              class="form-input"
-              v-model="dispatchForm.pod_no"
-            />
-          </div>
-          <div class="form-group">
-            <label>Dispatch Location</label
-            ><input
-              type="text"
-              class="form-input"
-              v-model="dispatchForm.dispatch_location"
-            />
-          </div>
-          <div class="form-group">
-            <label>Address</label
-            ><textarea
-              class="form-input"
-              v-model="dispatchForm.address"
-            ></textarea>
-          </div>
-          <div class="form-group">
-            <label>Mobile Number</label
-            ><input
-              type="text"
-              class="form-input"
-              v-model="dispatchForm.mobile_number"
-            />
+
+          <!-- Toggle Button at Bottom Right -->
+          <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+            <button 
+              type="button"
+              class="btn-create-inline" 
+              style="padding: 6px 14px; font-size: 0.8rem; border-radius: 8px; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;"
+              @click="showDispatchItems = !showDispatchItems"
+            >
+              <i :class="showDispatchItems ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+              <span style="margin-left: 8px;">[[ showDispatchItems ? 'Hide Items' : 'Show Dispatch Item' ]]</span>
+            </button>
           </div>
         </div>
         <div
@@ -8017,228 +8027,230 @@
           </div>
         </div>
 
-        <!-- Items Table -->
-        <div
-          v-if="dispatchForm.loading"
-          style="text-align: center; padding: 20px; color: var(--text-muted)"
-        >
-          <i class="fas fa-spinner fa-spin"></i> Loading requested items...
-        </div>
-        <div class="form-group">
-          <label class="form-label"
-            >Stock Entry Type <span class="form-required">*</span></label
-          >
-          <select class="form-input" v-model="dispatchForm.stock_entry_type">
-            <option v-for="type in stockEntryTypes" :key="type" :value="type">
-              [[ type ]]
-            </option>
-          </select>
-        </div>
-        <div
-          v-else-if="dispatchForm.items.length > 0"
-          style="margin-bottom: 20px"
-        >
+        <div v-if="dispatchForm.dispatchStep === 1 || showDispatchItems">
+          <!-- Items Table -->
           <div
-            style="
-              font-size: 11px;
-              font-weight: 700;
-              text-transform: uppercase;
-              color: var(--text-muted);
-              margin-bottom: 8px;
-            "
+            v-if="dispatchForm.loading"
+            style="text-align: center; padding: 20px; color: var(--text-muted)"
           >
-            Requested Items
+            <i class="fas fa-spinner fa-spin"></i> Loading requested items...
+          </div>
+          <div class="form-group">
+            <label class="form-label"
+              >Stock Entry Type <span class="form-required">*</span></label
+            >
+            <select class="form-input" v-model="dispatchForm.stock_entry_type">
+              <option v-for="type in stockEntryTypes" :key="type" :value="type">
+                [[ type ]]
+              </option>
+            </select>
           </div>
           <div
-            style="
-              max-height: 200px;
-              overflow-y: auto;
-              border: 1px solid var(--border-color);
-              border-radius: 8px;
-              background: var(--bg-card);
-            "
+            v-else-if="dispatchForm.items.length > 0"
+            style="margin-bottom: 20px"
           >
-            <table style="width: 100%; border-collapse: collapse">
-              <!-- Current thead (add Dispatch Qty th) -->
-              <thead
-                style="
-                  position: sticky;
-                  top: 0;
-                  background: var(--bg-card);
-                  z-index: 1;
-                  border-bottom: 1px solid var(--border-color);
-                "
-              >
-                <tr>
-                  <th
-                    v-if="dispatchForm.isFromList"
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: left;
-                      color: var(--text-muted);
-                      width: 40px;
-                    "
-                  >
-                    <input
-                      type="checkbox"
-                      :checked="dispatchForm.items.length > 0 && dispatchForm.items.every(i => i.selected)"
-                      @change="(e) => dispatchForm.items.forEach(i => i.selected = e.target.checked)"
-                    />
-                  </th>
-                  <th
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: left;
-                      color: var(--text-muted);
-                    "
-                  >
-                    Item
-                  </th>
-                  <th
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: right;
-                      color: var(--text-muted);
-                    "
-                  >
-                    Approved Qty
-                  </th>
-                  <!-- ADD THIS NEW TH -->
-                  <th
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: right;
-                      color: var(--text-muted);
-                    "
-                  >
-                    [[ dispatchForm.items.some(i => i.item_category === 'Asset')
-                    ? 'Movement Qty' : 'Dispatch Qty' ]]
-                  </th>
-                  <th
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: right;
-                      color: var(--text-muted);
-                    "
-                  >
-                    Rate
-                  </th>
-                  <th
-                    style="
-                      font-size: 10px;
-                      text-transform: uppercase;
-                      padding: 8px 12px;
-                      text-align: right;
-                      color: var(--text-muted);
-                    "
-                  >
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in dispatchForm.items"
-                  :key="item.name"
-                  style="border-bottom: 1px solid var(--border-color)"
+            <div
+              style="
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                margin-bottom: 8px;
+              "
+            >
+              Requested Items
+            </div>
+            <div
+              style="
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                background: var(--bg-card);
+              "
+            >
+              <table style="width: 100%; border-collapse: collapse">
+                <!-- Current thead (add Dispatch Qty th) -->
+                <thead
+                  style="
+                    position: sticky;
+                    top: 0;
+                    background: var(--bg-card);
+                    z-index: 1;
+                    border-bottom: 1px solid var(--border-color);
+                  "
                 >
-                  <td
-                    v-if="dispatchForm.isFromList"
-                    style="padding: 8px 12px; width: 40px"
-                  >
-                    <input type="checkbox" v-model="item.selected" />
-                  </td>
-                  <td style="font-size: 12px; padding: 8px 12px">
-                    <div style="font-weight: 600; color: var(--text-main)">
-                      [[ item.item_code ]]
-                    </div>
-                    <div
+                  <tr>
+                    <th
+                      v-if="dispatchForm.isFromList"
                       style="
                         font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: left;
                         color: var(--text-muted);
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 200px;
+                        width: 40px;
                       "
                     >
-                      [[ item.item_name || '-' ]]
-                    </div>
-                  </td>
-                  <td
-                    style="
-                      font-size: 12px;
-                      padding: 8px 12px;
-                      text-align: right;
-                      font-weight: 700;
-                    "
-                  >
-                    [[ item.approved_quantity || 0 ]]
-                  </td>
-                  <td
-                    style="
-                      font-size: 12px;
-                      padding: 8px 12px;
-                      text-align: right;
-                    "
-                  >
-                    <input
-                      type="number"
-                      v-model.number="item.dispatch_qty"
-                      :min="0"
-                      :max="item.approved_quantity || 0"
+                      <input
+                        type="checkbox"
+                        :checked="dispatchForm.items.length > 0 && dispatchForm.items.every(i => i.selected)"
+                        @change="(e) => dispatchForm.items.forEach(i => i.selected = e.target.checked)"
+                      />
+                    </th>
+                    <th
                       style="
-                        width: 60px;
-                        text-align: right;
-                        border: 1px solid var(--border-color);
-                        border-radius: 4px;
-                        padding: 4px 6px;
-                        font-size: 12px;
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: left;
+                        color: var(--text-muted);
                       "
-                    />
-                  </td>
-                  <td
-                    style="
-                      font-size: 12px;
-                      padding: 8px 12px;
-                      text-align: right;
-                    "
+                    >
+                      Item
+                    </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Approved Qty
+                    </th>
+                    <!-- ADD THIS NEW TH -->
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      [[ dispatchForm.items.some(i => i.item_category === 'Asset')
+                      ? 'Movement Qty' : 'Dispatch Qty' ]]
+                    </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Rate
+                    </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: right;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="item in dispatchForm.items"
+                    :key="item.name"
+                    style="border-bottom: 1px solid var(--border-color)"
                   >
-                    <div v-if="item.available_rates && item.available_rates.length > 1">
-                        <select v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
-                            <option value="">Select</option>
-                            <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
-                        </select>
-                    </div>
-                    <div v-else>
-                        [[ formatCurrency(item.rate) ]]
-                    </div>
-                    <div v-if="!item.available_rates" style="font-size: 10px; color: red;">(No rates fetched)</div>
-                  </td>
-                  <td
-                    style="
-                      font-size: 12px;
-                      padding: 8px 12px;
-                      text-align: right;
-                      font-weight: 700;
-                    "
-                  >
-                    [[ formatCurrency((item.dispatch_qty || 0) * (item.rate ||
-                    0)) ]]
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    <td
+                      v-if="dispatchForm.isFromList"
+                      style="padding: 8px 12px; width: 40px"
+                    >
+                      <input type="checkbox" v-model="item.selected" />
+                    </td>
+                    <td style="font-size: 12px; padding: 8px 12px">
+                      <div style="font-weight: 600; color: var(--text-main)">
+                        [[ item.item_code ]]
+                      </div>
+                      <div
+                        style="
+                          font-size: 10px;
+                          color: var(--text-muted);
+                          white-space: nowrap;
+                          overflow: hidden;
+                          text-overflow: ellipsis;
+                          max-width: 200px;
+                        "
+                      >
+                        [[ item.item_name || '-' ]]
+                      </div>
+                    </td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                        font-weight: 700;
+                      "
+                    >
+                      [[ item.approved_quantity || 0 ]]
+                    </td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                      "
+                    >
+                      <input
+                        type="number"
+                        v-model.number="item.dispatch_qty"
+                        :min="0"
+                        :max="item.approved_quantity || 0"
+                        style="
+                          width: 60px;
+                          text-align: right;
+                          border: 1px solid var(--border-color);
+                          border-radius: 4px;
+                          padding: 4px 6px;
+                          font-size: 12px;
+                        "
+                      />
+                    </td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                      "
+                    >
+                      <div v-if="item.available_rates && item.available_rates.length > 1">
+                          <select v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
+                              <option value="">Select</option>
+                              <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
+                          </select>
+                      </div>
+                      <div v-else>
+                          [[ formatCurrency(item.rate) ]]
+                      </div>
+                      <div v-if="!item.available_rates" style="font-size: 10px; color: red;">(No rates fetched)</div>
+                    </td>
+                    <td
+                      style="
+                        font-size: 12px;
+                        padding: 8px 12px;
+                        text-align: right;
+                        font-weight: 700;
+                      "
+                    >
+                      [[ formatCurrency((item.dispatch_qty || 0) * (item.rate ||
+                      0)) ]]
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -11045,6 +11057,7 @@
       showDispatchModal: false,
       showMovementModal: false,
       showWorkflowModal: false,
+      showDispatchItems: false,
       dispatchForm: {
         name: "",
         source_warehouse: "",
@@ -11054,6 +11067,14 @@
         loading: false,
         isFromList: false,
         dispatchStep: 1,
+        courier_name: "",
+        courier_company_name: "",
+        pod_no: "",
+        dispatch_date: "",
+        delivery_date: "",
+        dispatch_location: "",
+        address: "",
+        mobile_number: "",
       },
 
       showBranchStockUseView: false,
@@ -13296,6 +13317,16 @@
         this.dispatchForm.items = [];
         this.dispatchForm.loading = true;
         this.dispatchForm.isFromList = isFromList;
+        this.dispatchForm.courier_name = "";
+        this.dispatchForm.courier_company_name = "";
+        this.dispatchForm.pod_no = "";
+        this.dispatchForm.dispatch_date = frappe.datetime.get_today();
+        this.dispatchForm.delivery_date = "";
+        this.dispatchForm.dispatch_location = "";
+        this.dispatchForm.address = "";
+        this.dispatchForm.mobile_number = "";
+        this.showDispatchItems = false;
+        this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
 
         frappe.call({
