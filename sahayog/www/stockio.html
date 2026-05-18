@@ -11064,6 +11064,14 @@
         loading: false,
         isFromList: false,
         dispatchStep: 1,
+        courier_name: "",
+        courier_company_name: "",
+        pod_no: "",
+        dispatch_date: "",
+        delivery_date: "",
+        dispatch_location: "",
+        address: "",
+        mobile_number: "",
       },
 
       showBranchStockUseView: false,
@@ -13306,6 +13314,14 @@
         this.dispatchForm.items = [];
         this.dispatchForm.loading = true;
         this.dispatchForm.isFromList = isFromList;
+        this.dispatchForm.courier_name = "";
+        this.dispatchForm.courier_company_name = "";
+        this.dispatchForm.pod_no = "";
+        this.dispatchForm.dispatch_date = frappe.datetime.get_today();
+        this.dispatchForm.delivery_date = "";
+        this.dispatchForm.dispatch_location = "";
+        this.dispatchForm.address = "";
+        this.dispatchForm.mobile_number = "";
         this.showDispatchItems = false;
         this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
