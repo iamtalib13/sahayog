@@ -1616,9 +1616,8 @@
               </div>
               <div class="whatsapp-header-info">
                 <span class="whatsapp-name">Filter Options</span>
-                <span class="whatsapp-status">online</span>
-              </div>
-              <i class="fas fa-times" @click.stop="showFilterPopup = false" style="font-size: 12px; cursor: pointer; opacity: 0.8;"></i>
+                <span class="whatsapp-status" @click.stop="clearFilters()" style="cursor: pointer; text-decoration: underline;">Clear All</span>
+              </div>              <i class="fas fa-times" @click.stop="showFilterPopup = false" style="font-size: 12px; cursor: pointer; opacity: 0.8;"></i>
             </div>
             <div class="whatsapp-body">
               <div class="whatsapp-message" style="width: 100%; max-width: 100%;">
@@ -1638,7 +1637,7 @@
                           v-for="name in filteredFilterRequests" 
                           :key="name"
                           class="filter-sub-option"
-                          @mousedown="filterForm.request = name; filterForm.request_display = name; activeFilterKey = null"
+                          @mousedown="filterForm.request = name; filterForm.request_display = name; activeFilterKey = null; applyFilters()"
                         >
                           [[ name ]]
                         </div>
@@ -1650,9 +1649,9 @@
                         Department <i class="fas" :class="activeFilterKey === 'department' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
                       </button>
                       <div v-if="activeFilterKey === 'department'" class="filter-dropdown-content">
-                        <div class="filter-sub-option">Stationery</div>
-                        <div class="filter-sub-option">Purchase</div>
-                        <div class="filter-sub-option">it</div>
+                        <div class="filter-sub-option" @click="filterForm.department = 'Stationery'; activeFilterKey = null; applyFilters()">Stationery</div>
+                        <div class="filter-sub-option" @click="filterForm.department = 'Purchase'; activeFilterKey = null; applyFilters()">Purchase</div>
+                        <div class="filter-sub-option" @click="filterForm.department = 'it'; activeFilterKey = null; applyFilters()">it</div>
                       </div>
                     </div>
 
@@ -1670,7 +1669,7 @@
                           v-for="emp in filteredFilterEmployees" 
                           :key="emp.name"
                           class="filter-sub-option"
-                          @mousedown="filterForm.employee = emp.name; filterForm.employee_display = emp.employee_name; activeFilterKey = null"
+                          @mousedown="filterForm.employee = emp.name; filterForm.employee_display = emp.employee_name; activeFilterKey = null; applyFilters()"
                         >
                           [[ emp.employee_name ]] ([[ emp.name ]])
                         </div>
@@ -1692,7 +1691,7 @@
                             v-for="b in filteredFilterBranches" 
                             :key="b.name"
                             class="filter-sub-option"
-                            @mousedown="filterForm.to_warehouse = b.name; filterForm.to_warehouse_display = b.branch; activeFilterKey = null"
+                            @mousedown="filterForm.to_warehouse = b.name; filterForm.to_warehouse_display = b.branch; activeFilterKey = null; applyFilters()"
                           >
                             [[ b.branch ]] ([[ b.sol_id ]])
                           </div>
@@ -1712,7 +1711,7 @@
                             v-for="b in filteredFilterBranches" 
                             :key="b.name"
                             class="filter-sub-option"
-                            @mousedown="filterForm.from_warehouse = b.name; filterForm.from_warehouse_display = b.branch; activeFilterKey = null"
+                            @mousedown="filterForm.from_warehouse = b.name; filterForm.from_warehouse_display = b.branch; activeFilterKey = null; applyFilters()"
                           >
                             [[ b.branch ]] ([[ b.sol_id ]])
                           </div>
@@ -1725,22 +1724,23 @@
                         Status <i class="fas" :class="activeFilterKey === 'status' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
                       </button>
                       <div v-if="activeFilterKey === 'status'" class="filter-dropdown-content">
-                        <div class="filter-sub-option">Draft</div>
-                        <div class="filter-sub-option">Pending Reporting Person</div>
-                        <div class="filter-sub-option">Pending HO Approval</div>
-                        <div class="filter-sub-option">Approved</div>
-                        <div class="filter-sub-option">Dispatch</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Draft'; activeFilterKey = null; applyFilters()">Draft</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Pending Reporting Person Approval'; activeFilterKey = null; applyFilters()">Pending Reporting Person</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Pending HO Officer Approval'; activeFilterKey = null; applyFilters()">Pending HO Approval</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Approved'; activeFilterKey = null; applyFilters()">Approved</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Partially Dispatched'; activeFilterKey = null; applyFilters()">Partially Dispatched</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Dispatched'; activeFilterKey = null; applyFilters()">Dispatched</div>
                       </div>
                     </div>
 
                     <div class="filter-date-row">
                       <div class="filter-date-group">
                         <label class="filter-date-label">Start Date</label>
-                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" />
+                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" @change="applyFilters()" />
                       </div>
                       <div class="filter-date-group">
                         <label class="filter-date-label">End Date</label>
-                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" />
+                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" @change="applyFilters()" />
                       </div>
                     </div>
                   </div>
@@ -11927,9 +11927,14 @@
                 limit: limit,
                 start: start,
                 search_text: this.searchText,
+                status: this.filterForm.status,
+                department: this.filterForm.department,
+                employee: this.filterForm.employee,
+                start_date: this.filterForm.start_date,
+                end_date: this.filterForm.end_date,
+                request: this.filterForm.request
               },
             });
-
             if (res.message) {
               const data = res.message.data || [];
               if (append) {
@@ -12799,6 +12804,16 @@
 
         this.creatingMovement = true;
         try {
+          // Pre-create missing locations
+          const locationsToCreate = validItems.map(i => i.target_location).filter(l => l);
+          if (locationsToCreate.length > 0) {
+            console.log("Checking/Creating locations:", locationsToCreate);
+            await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.ensure_locations_exist",
+              args: { locations: locationsToCreate }
+            });
+          }
+
           const doc = {
             doctype: "Asset Movement",
             transaction_date: this.movementForm.transaction_date,
@@ -12915,6 +12930,33 @@
       toggleFilter() {
         this.showFilterPopup = !this.showFilterPopup;
         if (!this.showFilterPopup) this.activeFilterKey = null;
+      },
+      async applyFilters() {
+        // Instant apply: refresh data
+        await this.fetchData(this.currentView.doctype);
+      },
+      async clearFilters() {
+        this.filterForm = {
+          start_date: "",
+          end_date: "",
+          status: "",
+          department: "",
+          owner: "",
+          employee: "",
+          employee_display: "",
+          request: "",
+          request_display: "",
+          receipt: "",
+          receipt_display: "",
+          supplier: "",
+          supplier_display: "",
+          from_warehouse: "",
+          from_warehouse_display: "",
+          to_warehouse: "",
+          to_warehouse_display: ""
+        };
+        this.activeFilterKey = null;
+        await this.fetchData(this.currentView.doctype);
       },
       toggleFilterDropdown(key) {
         this.activeFilterKey = this.activeFilterKey === key ? null : key;

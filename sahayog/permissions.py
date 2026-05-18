@@ -204,12 +204,17 @@ def get_employee_material_request_permission(user=None, doctype=None):
     if "Administrator" in user_roles or "Head Office Officer" in user_roles:
         return ""
 
-    # Base conditions (Owner, Reporting Person, HO Officer)
+    # Base conditions (Owner, Reporting Person, HO Officer, Employee)
     conditions = [
         f"`tabEmployee Material Request`.owner = '{user}'",
         f"`tabEmployee Material Request`.reporting_person = '{user}'",
         f"`tabEmployee Material Request`.head_office_officer = '{user}'"
     ]
+
+    # Add condition for the 'employee' field
+    current_employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    if current_employee:
+        conditions.append(f"`tabEmployee Material Request`.employee = '{current_employee}'")
 
     # Sahayog Settings (Default Warehouse) access
     conditions.append(f"""
