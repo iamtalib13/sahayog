@@ -1,12 +1,10 @@
-// --- 1. HIDE PRIVACY TOGGLE BUTTONS GLOBALLY FOR THIS FORM ---
+// --- 1. HIDE PRIVATE / OPTIMIZE CONTROLS GLOBALLY FOR THIS FORM ---
 frappe.dom.set_style(`
-    /* Hide standard sidebar lock/unlock icons and Make Private actions */
     body.pct-active-form [data-action="toggle_private"],
     body.pct-active-form [data-action="make_private"],
     body.pct-active-form .btn-private,
     body.pct-active-form .btn-public,
-    /* Hide dynamically tagged Vue elements inside the Uploader */
-    body.pct-active-form .force-hide-privacy-btn {
+    body.pct-active-form .force-hide-upload-option {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -14,18 +12,26 @@ frappe.dom.set_style(`
 `, 'pct-file-privacy-css');
 
 // --- 2. VUE INTERCEPTOR (MUTATION OBSERVER) ---
-// This continuously monitors the File Uploader modal and actively hides the Private toggles
-const privacyObserver = new MutationObserver((mutations) => {
-    // Only run if we are on the Petty Cash form AND a modal is open
+const privacyObserver = new MutationObserver(() => {
     if ($('body').hasClass('pct-active-form') && $('.modal-dialog').length > 0) {
-        
-        // Target buttons and checkboxes inside the modal that aren't hidden yet
-        $('.modal-dialog label.frappe-checkbox:not(.force-hide-privacy-btn), .modal-dialog button:not(.force-hide-privacy-btn)').each(function() {
-            // Clean up the text to match reliably (removes extra spaces/newlines Vue might add)
+
+        // Force Optimize + Private checkboxes to false before hiding
+        $('.modal-dialog .config-area label.frappe-checkbox').each(function () {
+            let label_text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+            let checkbox = $(this).find('input[type="checkbox"]');
+
+            if (label_text === 'optimize' || label_text === 'private') {
+                checkbox.prop('checked', false).trigger('change');
+                $(this).addClass('force-hide-upload-option');
+            }
+        });
+
+        // Hide Set all private / Set all public buttons
+        $('.modal-dialog button').each(function () {
             let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
-            
-            if (text === 'private' || text === 'set all private' || text === 'set all public') {
-                $(this).addClass('force-hide-privacy-btn');
+
+            if (text === 'set all private' || text === 'set all public') {
+                $(this).addClass('force-hide-upload-option');
             }
         });
     }
@@ -34,7 +40,7 @@ const privacyObserver = new MutationObserver((mutations) => {
 // Start observing the DOM
 privacyObserver.observe(document.body, { childList: true, subtree: true });
 
-// Listen to route changes to safely add/remove the CSS scope
+// Route scope
 frappe.router.on('change', () => {
     if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Petty Cash Transaction') {
         $('body').addClass('pct-active-form');
@@ -47,6 +53,41 @@ frappe.router.on('change', () => {
 
 
 frappe.ui.form.on('Petty Cash Transaction', {
+
+    get_indicator: function(doc) {
+        const status = doc.approvalstatus || 'Draft';
+
+        if (status === 'Draft') {
+            return [__('Draft'), 'grey', 'approvalstatus,=,Draft'];
+        }
+        if (status === 'Pending Approval') {
+            return [__('Pending Approval'), 'orange', 'approvalstatus,=,Pending Approval'];
+        }
+        if (status === 'Approved') {
+            return [__('Approved'), 'blue', 'approvalstatus,=,Approved'];
+        }
+        if (status === 'Verified') {
+            return [__('Verified'), 'green', 'approvalstatus,=,Verified'];
+        }
+        if (status === 'Posted') {
+            return [__('Posted'), 'purple', 'approvalstatus,=,Posted'];
+        }
+        if (status === 'Canceled') {
+            return [__('Canceled'), 'red', 'approvalstatus,=,Canceled'];
+        }
+
+        return [__(status), 'grey', `approvalstatus,=,${status}`];
+    },
+
+    validate: function(frm) {
+        (frm.doc.items || []).forEach(function(row) {
+            if (row.description && row.description.length > 30) {
+                frappe.throw(
+                    __('Row {0}: Description cannot be more than 30 characters including spaces.', [row.idx])
+                );
+            }
+        });
+    },
 
 
 //     setup: function(frm) {
@@ -98,6 +139,9 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
     refresh: function(frm) {
+        // Set Description Max Length to 30
+        set_description_maxlength(frm);
+        
 
         // Add Download Report button in Form View (optional)
     if (!frm.is_new()) {
@@ -299,7 +343,12 @@ frappe.ui.form.on('Petty Cash Transaction', {
             // Or use this more specific approach:
             // frm.page.btn_secondary.hide();
         }
+        set_custom_business_status(frm);
     },
+
+    after_save: function(frm) {
+    set_custom_business_status(frm);
+},
 
 
     transaction_type: function(frm) {
@@ -440,24 +489,63 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 // Child Table Logic
 frappe.ui.form.on('Petty Cash Transaction Item', {
+    description: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (row.description && row.description.length > 30) {
+            frappe.msgprint({
+                title: __('Character Limit Exceeded'),
+                indicator: 'red',
+                message: __('Row {0}: Description can contain maximum 30 characters including spaces.', [row.idx])
+            });
+        }
+    },
+
+    form_render: function(frm, cdt, cdn) {
+        set_description_maxlength(frm);
+    },
+
     amount: function(frm, cdt, cdn) {
         check_limit_warning(frm, cdt, cdn);
     },
 
     bill_date: function(frm, cdt, cdn) {
-        var row = locals[cdt][cdn];
-        if (row.bill_date) {
-            var today_str = frappe.datetime.get_today();
-            if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
-                 frappe.msgprint({
-                    title: __('Invalid Date'),
-                    indicator: 'red',
-                    message: __('Bill Date <b>{0}</b> cannot be in the future.', [row.bill_date])
-                });
-                frappe.model.set_value(cdt, cdn, 'bill_date', '');
-            }
+        let row = locals[cdt][cdn];
+        if (!row.billdate) return;
+
+        let today = frappe.datetime.get_today();
+        let days_diff = frappe.datetime.get_diff(today, row.billdate);
+
+        if (days_diff < 0) {
+            frappe.model.set_value(cdt, cdn, 'billdate', '');
+            frappe.throw(
+                __('Row {0}: Bill Date cannot be in the future.', [row.idx])
+            );
+        }
+
+        if (days_diff > 30) {
+            frappe.model.set_value(cdt, cdn, 'billdate', '');
+            frappe.throw(
+                __('Row {0}: Bill Date cannot be older than 30 days from today.', [row.idx])
+            );
         }
     },
+
+    // bill_date: function(frm, cdt, cdn) {
+    //     var row = locals[cdt][cdn];
+    //     if (row.bill_date) {
+    //         var today_str = frappe.datetime.get_today();
+    //         if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
+    //              frappe.msgprint({
+    //                 title: __('Invalid Date'),
+    //                 indicator: 'red',
+    //                 message: __('Bill Date <b>{0}</b> cannot be in the future.', [row.bill_date])
+    //             });
+    //             frappe.model.set_value(cdt, cdn, 'bill_date', '');
+    //         }
+    //     }
+    // },
+
+    
 
     expense_category: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];
@@ -543,4 +631,53 @@ function download_current_record(frm) {
             }
         }
     });
+}
+
+
+function set_description_maxlength(frm) {
+    setTimeout(() => {
+        frm.fields_dict.items.grid.grid_rows.forEach(row => {
+            if (row.columns && row.columns.description && row.columns.description.field_area) {
+                row.columns.description.field_area
+                    .find('textarea, input')
+                    .attr('maxlength', 30);
+            }
+        });
+    }, 300);
+}
+
+// function get_approval_status_color(status) {
+//     if (status === 'Draft') return 'grey';
+//     if (status === 'Pending Approval') return 'orange';
+//     if (status === 'Approved') return 'blue';
+//     if (status === 'Verified') return 'green';
+//     if (status === 'Posted') return 'purple';
+//     if (status === 'Canceled') return 'red';
+//     return 'grey';
+// }
+function get_approval_status_color(status) {
+    const color_map = {
+        'Draft': 'grey',
+        'Pending Approval': 'orange',
+        'Approved': 'blue',
+        'Verified': 'green',
+        'Posted': 'purple',
+        'Canceled': 'red'
+    };
+
+    return color_map[status] || 'grey';
+}
+
+// function set_custom_business_status(frm) {
+//     const status = frm.doc.approval_status || 'Draft';
+//     frm.page.clear_indicator();
+//     frm.page.set_indicator(__(status), get_approval_status_color(status));
+// }
+
+function set_custom_business_status(frm) {
+    const status = frm.doc.approval_status || 'Draft';
+    const color = get_approval_status_color(status);
+
+    frm.page.clear_indicator();
+    frm.page.set_indicator(__(status), color);
 }

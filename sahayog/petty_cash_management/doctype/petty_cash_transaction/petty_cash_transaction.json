@@ -156,7 +156,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Approval Status",
-   "options": "Draft\nPending Approval\nApproved\nVerified\nPosted",
+   "options": "Draft\nPending Approval\nApproved\nVerified\nPosted\nCanceled",
    "read_only": 1
   },
   {
@@ -265,7 +265,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-16 16:37:41.618876",
+ "modified": "2026-05-18 16:03:24.478337",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
