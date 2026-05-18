@@ -539,7 +539,6 @@ class PettyCashTransaction(Document):
     #         self.create_journal_entry()
     #         self.update_wallet()
 
-
     def on_submit(self):
         # --- 1. Fund Allocation Logic (unchanged) ---
         if self.transaction_type == "Fund Allocation":
@@ -1506,7 +1505,6 @@ class PettyCashTransaction(Document):
     #     frappe.response['filecontent'] = final_txt
     #     frappe.response['type'] = 'download'
 
-
     def download_transaction_txt(self):
         content = []
         from frappe.utils import getdate
@@ -1939,228 +1937,232 @@ def download_txt_api(name):     # <--- Renamed
 
 
 # ==============================================================================
-# [NEW] CONSOLIDATED DOWNLOAD APIs (LIST VIEW)
+# [NEW] CONSOLIDATED DOWNLOAD APIs - Same date (LIST VIEW)
 # ==============================================================================
 
-@frappe.whitelist()
-def download_consolidated_txt_api():
-    """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
-    from frappe.utils import nowdate, getdate
-    import base64
+# @frappe.whitelist()
+# def download_consolidated_txt_api():
+#     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
+#     from frappe.utils import nowdate, getdate
+#     import base64
 
-    # 1. Permission Check
-    # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-    #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+#     # 1. Permission Check
+#     # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+#     #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
 
-    # 1. Permission Check
-    user_roles = frappe.get_roles()
-    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-        frappe.throw(
-            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+#     # 1. Permission Check
+#     user_roles = frappe.get_roles()
+#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+#         frappe.throw(
+#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
 
-    today = nowdate()
+#     today = nowdate()
 
-    # 2. Fetch all matching transactions (Today + Verified)
-    transactions = frappe.get_all(
-        "Petty Cash Transaction",
-        filters={"finacle_tran_date": today, "approval_status": "Verified"},
-        pluck="name",
-        order_by="creation ASC"
-    )
+#     # 2. Fetch all matching transactions (Today + Verified)
+#     transactions = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
+#         pluck="name",
+#         order_by="creation ASC"
+#     )
 
-    # [FIX] Return JSON response instead of msgprint for no data
-    if not transactions:
-        return {
-            "status": "no_data",
-            "message": f"No verified transactions found for today ({today})."
-        }
+#     # [FIX] Return JSON response instead of msgprint for no data
+#     if not transactions:
+#         return {
+#             "status": "no_data",
+#             "message": f"No verified transactions found for today ({today})."
+#         }
 
-    content = []
+#     content = []
 
-    # 3. Loop through each document and aggregate TTUM lines
-    for txn_name in transactions:
-        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+#     # 3. Loop through each document and aggregate TTUM lines
+#     for txn_name in transactions:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
-        date_obj = getdate(doc.finacle_tran_date)
-        ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-        currency_str = f"INR{doc.branch}"
+#         date_obj = getdate(doc.finacle_tran_date)
+#         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
+#         currency_str = f"INR{doc.branch}"
 
-        narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
-        total_debit = 0.0
+#         narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
+#         total_debit = 0.0
 
-        # --- DEBIT ROWS (Expenses) ---
-        for row in doc.items:
-            if not row.finacle_gl_code:
-                frappe.throw(
-                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+#         # --- DEBIT ROWS (Expenses) ---
+#         for row in doc.items:
+#             if not row.finacle_gl_code:
+#                 frappe.throw(
+#                     f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
 
-            amount_str = "{:.2f}".format(row.amount)
-            total_debit += row.amount
+#             amount_str = "{:.2f}".format(row.amount)
+#             total_debit += row.amount
 
-            raw_desc = f"{row.description}" if row.description else narrative_suffix
-            # 30 char limit exactly like single view
-            debitDescription = raw_desc[:30]
+#             raw_desc = f"{row.description}" if row.description else narrative_suffix
+#             # 30 char limit exactly like single view
+#             debitDescription = raw_desc[:30]
 
-            # Formatting/Spacing matching single doc view
-            padding_count = 17 - len(amount_str)
-            if padding_count < 10:
-                padding_count = 10
-            space_str = " " * padding_count
+#             # Formatting/Spacing matching single doc view
+#             padding_count = 17 - len(amount_str)
+#             if padding_count < 10:
+#                 padding_count = 10
+#             space_str = " " * padding_count
 
-            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
-            content.append(line)
+#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+#             content.append(line)
 
-        # --- CREDIT ROW (Branch Wallet) ---
-        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-                                        "branch": doc.branch}, "gl_sub_code")
-        if not wallet_gl:
-            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+#         # --- CREDIT ROW (Branch Wallet) ---
+#         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
+#                                         "branch": doc.branch}, "gl_sub_code")
+#         if not wallet_gl:
+#             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
 
-        total_amount_str = "{:.2f}".format(total_debit)
-        padding_count = 17 - len(total_amount_str)
-        if padding_count < 10:
-            padding_count = 10
-        space_str = " " * padding_count
-        creditDescription = narrative_suffix[:30]
+#         total_amount_str = "{:.2f}".format(total_debit)
+#         padding_count = 17 - len(total_amount_str)
+#         if padding_count < 10:
+#             padding_count = 10
+#         space_str = " " * padding_count
+#         creditDescription = narrative_suffix[:30]
 
-        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
-        content.append(credit_line)
+#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+#         content.append(credit_line)
 
-    final_txt = "\n".join(content)
+#     final_txt = "\n".join(content)
 
-    # 4. Return JSON response with file data
-    return {
-        "status": "success",
-        "filename": f"Consolidated_TTUM_{today}.txt",
-        "filecontent": final_txt
-    }
+#     # 4. Return JSON response with file data
+#     return {
+#         "status": "success",
+#         "filename": f"Consolidated_TTUM_{today}.txt",
+#         "filecontent": final_txt
+#     }
 
 
-@frappe.whitelist()
-def download_consolidated_excel_api():
-    """
-    Generates a Consolidated CSV/Excel report for all Verified transactions of the current date.
-    Each expense item from child table appears as a separate row (matching single transaction format).
-    """
-    from frappe.utils import nowdate
-    import csv
-    import io
-    import base64
+# @frappe.whitelist()
+# def download_consolidated_excel_api():
+#     """
+#     Generates a Consolidated CSV/Excel report for all Verified transactions of the current date.
+#     Each expense item from child table appears as a separate row (matching single transaction format).
+#     """
+#     from frappe.utils import nowdate
+#     import csv
+#     import io
+#     import base64
 
-    # 1. Permission Check
-    # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-    #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
+#     # 1. Permission Check
+#     # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
+#     #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
 
-    # 1. Permission Check
-    user_roles = frappe.get_roles()
-    if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-        frappe.throw(
-            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+#     # 1. Permission Check
+#     user_roles = frappe.get_roles()
+#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+#         frappe.throw(
+#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
 
-    today = nowdate()
-    print("date is:", today)
+#     today = nowdate()
+#     print("date is:", today)
 
-    # 2. Fetch all matching transactions (Today + Verified)
-    transactions = frappe.get_all(
-        "Petty Cash Transaction",
-        filters={"finacle_tran_date": today, "approval_status": "Verified"},
-        pluck="name",
-        order_by="creation ASC"
-    )
+#     # 2. Fetch all matching transactions (Today + Verified)
+#     transactions = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
+#         pluck="name",
+#         order_by="creation ASC"
+#     )
 
-    # [FIX] Return JSON response instead of msgprint for no data
-    if not transactions:
-        return {
-            "status": "no_data",
-            "message": f"No verified transactions found for today ({today})."
-        }
+#     # [FIX] Return JSON response instead of msgprint for no data
+#     if not transactions:
+#         return {
+#             "status": "no_data",
+#             "message": f"No verified transactions found for today ({today})."
+#         }
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+#     output = io.StringIO()
+#     writer = csv.writer(output)
 
-    # Write BOM for Excel UTF-8 compatibility
-    output.write('\ufeff')
+#     # Write BOM for Excel UTF-8 compatibility
+#     output.write('\ufeff')
 
-    # 3. Headers - Matching your single transaction Excel format exactly
-    headers = [
-        "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-        "Total Amount", "Wallet Balance", "Cash in Hand",
-        "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
-        "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
-        # Child Item Fields
-        "Expense Category", "Vendor", "Bill No", "Item Amount", "Description", "Expense GL Code"
-    ]
-    writer.writerow(headers)
+#     # 3. Headers - Matching your single transaction Excel format exactly
+#     headers = [
+#         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
+#         "Total Amount", "Wallet Balance", "Cash in Hand",
+#         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
+#         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
+#         # Child Item Fields
+#         "Expense Category", "Vendor", "Bill No", "Item Amount", "Description", "Expense GL Code"
+#     ]
+#     writer.writerow(headers)
 
-    # Helper to format amounts safely
-    def fmt(val):
-        return flt(val) if val else 0.0
+#     # Helper to format amounts safely
+#     def fmt(val):
+#         return flt(val) if val else 0.0
 
-    # 4. Loop through each transaction and expand child items into separate rows
-    for txn_name in transactions:
-        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+#     # 4. Loop through each transaction and expand child items into separate rows
+#     for txn_name in transactions:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
-        # Fetch Wallet GL Code
-        wallet_gl_code = frappe.db.get_value("Branch Petty Cash Account", {
-                                             "branch": doc.branch}, "gl_sub_code") or ""
+#         # Fetch Wallet GL Code
+#         wallet_gl_code = frappe.db.get_value("Branch Petty Cash Account", {
+#                                              "branch": doc.branch}, "gl_sub_code") or ""
 
-        # Fetch Category Names Map (Optimized - fetch all at once)
-        category_ids = [
-            row.expense_category for row in doc.items if row.expense_category]
-        category_map = {}
-        if category_ids:
-            categories = frappe.get_all("Expense Category", filters={
-                                        "name": ["in", category_ids]}, fields=["name", "category_name"])
-            for cat in categories:
-                category_map[cat.name] = cat.category_name
+#         # Fetch Category Names Map (Optimized - fetch all at once)
+#         category_ids = [
+#             row.expense_category for row in doc.items if row.expense_category]
+#         category_map = {}
+#         if category_ids:
+#             categories = frappe.get_all("Expense Category", filters={
+#                                         "name": ["in", category_ids]}, fields=["name", "category_name"])
+#             for cat in categories:
+#                 category_map[cat.name] = cat.category_name
 
-        # IMPORTANT: Each expense item becomes a separate row
-        for row in doc.items:
-            # Resolve Category Name
-            cat_name = category_map.get(
-                row.expense_category, row.expense_category)
+#         # IMPORTANT: Each expense item becomes a separate row
+#         for row in doc.items:
+#             # Resolve Category Name
+#             cat_name = category_map.get(
+#                 row.expense_category, row.expense_category)
 
-            row_data = [
-                doc.name,
-                doc.branch,
-                doc.branch_name,
-                doc.transaction_date,
-                doc.transaction_type,
-                fmt(doc.amount),
-                fmt(doc.current_branch_balance),
-                fmt(doc.current_unsettled_cash),
-                doc.approval_status,
-                fmt(doc.amount_within_limit),
-                fmt(doc.amount_exceeding_limit),
-                fmt(doc.amount_deducted),
-                doc.approved_by,
-                doc.custom_ttum_remarks,
-                doc.finacle_tran_particular,
-                wallet_gl_code,
-                # Child Data (each item in separate row)
-                cat_name,
-                row.vendor_name,
-                row.bill_number,
-                fmt(row.amount),
-                row.description,
-                row.finacle_gl_code
-            ]
-            writer.writerow(row_data)
+#             row_data = [
+#                 doc.name,
+#                 doc.branch,
+#                 doc.branch_name,
+#                 doc.transaction_date,
+#                 doc.transaction_type,
+#                 fmt(doc.amount),
+#                 fmt(doc.current_branch_balance),
+#                 fmt(doc.current_unsettled_cash),
+#                 doc.approval_status,
+#                 fmt(doc.amount_within_limit),
+#                 fmt(doc.amount_exceeding_limit),
+#                 fmt(doc.amount_deducted),
+#                 doc.approved_by,
+#                 doc.custom_ttum_remarks,
+#                 doc.finacle_tran_particular,
+#                 wallet_gl_code,
+#                 # Child Data (each item in separate row)
+#                 cat_name,
+#                 row.vendor_name,
+#                 row.bill_number,
+#                 fmt(row.amount),
+#                 row.description,
+#                 row.finacle_gl_code
+#             ]
+#             writer.writerow(row_data)
 
-    # 5. Return JSON response with base64 encoded file
-    output.seek(0)
-    csv_content = output.getvalue()
-    output.close()
+#     # 5. Return JSON response with base64 encoded file
+#     output.seek(0)
+#     csv_content = output.getvalue()
+#     output.close()
 
-    # Encode to base64 for safe JSON transport
-    file_data = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
+#     # Encode to base64 for safe JSON transport
+#     file_data = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
 
-    return {
-        "status": "success",
-        "filename": f"Consolidated_Report_{today}.csv",
-        "filecontent": file_data
-    }
+#     return {
+#         "status": "success",
+#         "filename": f"Consolidated_Report_{today}.csv",
+#         "filecontent": file_data
+#     }
 
+
+# ==============================================================================
+# [NEW] CONSOLIDATED DOWNLOAD APIs - old version  (LIST VIEW)
+# ==============================================================================
 
 # @frappe.whitelist()
 # def download_consolidated_txt_api(transaction_date=None):
@@ -2248,3 +2250,228 @@ def download_consolidated_excel_api():
 #         "filename": f"Consolidated_TTUM_{today}.txt",
 #         "filecontent": final_txt
 #     }
+
+
+@frappe.whitelist()
+def download_consolidated_txt_api(transaction_date=None):
+    """Generates a Consolidated TTUM Text file for all Verified transactions of the selected date."""
+    from frappe.utils import nowdate, getdate
+
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(
+        ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+    ).intersection(user_roles):
+        frappe.throw(
+            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+        )
+
+    selected_date = str(getdate(transaction_date)
+                        ) if transaction_date else nowdate()
+
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters={
+            "finacle_tran_date": selected_date,
+            "approval_status": "Verified"
+        },
+        pluck="name",
+        order_by="creation ASC"
+    )
+
+    if not transactions:
+        return {
+            "status": "no_data",
+            "message": f"No verified transactions found for {selected_date}."
+        }
+
+    content = []
+
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+        date_obj = getdate(doc.finacle_tran_date)
+        ttum_date = date_obj.strftime("%b%y").upper()
+        currency_str = f"INR{doc.branch}"
+
+        narrative_suffix = (
+            doc.custom_ttum_remarks
+            if doc.custom_ttum_remarks
+            else f"{ttum_date} STRYEX {doc.name}"
+        )
+
+        total_debit = 0.0
+
+        for row in doc.items:
+            if not row.finacle_gl_code:
+                frappe.throw(
+                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+
+            amount_str = "{:.2f}".format(row.amount)
+            total_debit += row.amount
+
+            raw_desc = row.description if row.description else narrative_suffix
+            debit_description = raw_desc[:30]
+
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            space_str = " " * padding_count
+
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debit_description}"
+            content.append(line)
+
+        wallet_gl = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": doc.branch},
+            "gl_sub_code"
+        )
+        if not wallet_gl:
+            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+
+        total_amount_str = "{:.2f}".format(total_debit)
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+        space_str = " " * padding_count
+        credit_description = narrative_suffix[:30]
+
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+        content.append(credit_line)
+
+    final_txt = "\n".join(content)
+
+    return {
+        "status": "success",
+        "filename": f"Consolidated_TTUM_{selected_date}.txt",
+        "filecontent": final_txt
+    }
+
+
+@frappe.whitelist()
+def download_consolidated_excel_api(transaction_date=None):
+    """Generates a Consolidated CSV/Excel report for all Verified transactions of the selected date."""
+    from frappe.utils import nowdate, getdate
+    import csv
+    import io
+    import base64
+
+    # 1. Permission Check
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(
+        ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+    ).intersection(user_roles):
+        frappe.throw(
+            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+        )
+
+    selected_date = str(getdate(transaction_date)
+                        ) if transaction_date else nowdate()
+
+    # 2. Fetch all matching transactions (Selected Date + Verified)
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters={
+            "finacle_tran_date": selected_date,
+            "approval_status": "Verified"
+        },
+        pluck="name",
+        order_by="creation ASC"
+    )
+
+    if not transactions:
+        return {
+            "status": "no_data",
+            "message": f"No verified transactions found for {selected_date}."
+        }
+
+    # 3. Prepare CSV content in memory
+    output = io.StringIO()
+    output.write("\ufeff")  # BOM for Excel UTF-8 compatibility
+    writer = csv.writer(output)
+
+    headers = [
+        "Transaction ID",
+        "Branch Code",
+        "Branch Name",
+        "Date",
+        "Type",
+        "Total Amount",
+        "Wallet Balance",
+        "Cash in Hand",
+        "Approval Status",
+        "Within Limit",
+        "Exceeding Limit",
+        "Deducted Amount",
+        "Approved By",
+        "TTUM Remarks",
+        "Finacle Remarks",
+        "Branch Petty Cash Account",
+        "Expense Category",
+        "Vendor Name",
+        "Bill Number",
+        "Item Amount",
+        "Description",
+        "Finacle GL Code"
+    ]
+    writer.writerow(headers)
+
+    # 4. Loop through each transaction and expand child items into separate rows
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+        wallet_gl_code = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": doc.branch},
+            "gl_sub_code"
+        ) or ""
+
+        category_ids = [
+            row.expense_category for row in doc.items if row.expense_category]
+        category_map = {}
+
+        if category_ids:
+            categories = frappe.get_all(
+                "Expense Category",
+                filters={"name": ["in", category_ids]},
+                fields=["name", "category_name"]
+            )
+            category_map = {cat.name: cat.category_name for cat in categories}
+
+        for row in doc.items:
+            cat_name = category_map.get(
+                row.expense_category, row.expense_category)
+
+            row_data = [
+                doc.name,
+                doc.branch,
+                doc.branch_name,
+                doc.transaction_date,
+                doc.transaction_type,
+                "{:.2f}".format(doc.amount or 0),
+                "{:.2f}".format(doc.current_branch_balance or 0),
+                "{:.2f}".format(doc.current_unsettled_cash or 0),
+                doc.approval_status,
+                "{:.2f}".format(doc.amount_within_limit or 0),
+                "{:.2f}".format(doc.amount_exceeding_limit or 0),
+                "{:.2f}".format(doc.amount_deducted or 0),
+                doc.approved_by,
+                doc.custom_ttum_remarks,
+                doc.finacle_tran_particular,
+                wallet_gl_code,
+                cat_name,
+                row.vendor_name,
+                row.bill_number,
+                "{:.2f}".format(row.amount or 0),
+                row.description,
+                row.finacle_gl_code
+            ]
+            writer.writerow(row_data)
+
+    csv_content = output.getvalue()
+    output.close()
+
+    return {
+        "status": "success",
+        "filename": f"Consolidated_Report_{selected_date}.csv",
+        "filecontent": base64.b64encode(csv_content.encode("utf-8")).decode("utf-8")
+    }
