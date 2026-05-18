@@ -48,6 +48,16 @@ frappe.router.on('change', () => {
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
+    validate: function(frm) {
+        (frm.doc.items || []).forEach(function(row) {
+            if (row.description && row.description.length > 30) {
+                frappe.throw(
+                    __('Row {0}: Description cannot be more than 30 characters including spaces.', [row.idx])
+                );
+            }
+        });
+    },
+
 
 //     setup: function(frm) {
 //     // Add Download Report button to List View
@@ -98,6 +108,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
     refresh: function(frm) {
+        // Set Description Max Length to 30
+        set_description_maxlength(frm);
 
         // Add Download Report button in Form View (optional)
     if (!frm.is_new()) {
@@ -440,6 +452,21 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 // Child Table Logic
 frappe.ui.form.on('Petty Cash Transaction Item', {
+    description: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (row.description && row.description.length > 30) {
+            frappe.msgprint({
+                title: __('Character Limit Exceeded'),
+                indicator: 'red',
+                message: __('Row {0}: Description can contain maximum 30 characters including spaces.', [row.idx])
+            });
+        }
+    },
+
+    form_render: function(frm, cdt, cdn) {
+        set_description_maxlength(frm);
+    },
+
     amount: function(frm, cdt, cdn) {
         check_limit_warning(frm, cdt, cdn);
     },
@@ -543,4 +570,17 @@ function download_current_record(frm) {
             }
         }
     });
+}
+
+
+function set_description_maxlength(frm) {
+    setTimeout(() => {
+        frm.fields_dict.items.grid.grid_rows.forEach(row => {
+            if (row.columns && row.columns.description && row.columns.description.field_area) {
+                row.columns.description.field_area
+                    .find('textarea, input')
+                    .attr('maxlength', 30);
+            }
+        });
+    }, 300);
 }

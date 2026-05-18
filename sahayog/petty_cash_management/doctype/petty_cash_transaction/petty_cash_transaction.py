@@ -242,6 +242,10 @@ class PettyCashTransaction(Document):
             self.source_bank_account = account_name[0][0]
 
     def validate(self):
+
+        # [NEW] Validate Item Descriptions (Max 30 chars)
+        self.validate_item_descriptions()
+
         # REQUIREMENT 1: On Save, create Draft Journal Entry if Fund Allocation
         # if self.transaction_type == "Fund Allocation" and not self.journal_entry_ref:
         #     self.create_ho_fund_allocation_je()
@@ -495,8 +499,7 @@ class PettyCashTransaction(Document):
 
     #     self.update_wallet()
 
-
-# old
+    # old
     # def on_submit(self):
     #     # 1. Check the Global Control Switch
     #     enable_integration = frappe.db.get_single_value("Finacle Settings", "enable_finacle_integration")
@@ -1447,8 +1450,7 @@ class PettyCashTransaction(Document):
         # We manually created the CSV content, so we treat it as a file download.
         frappe.response['type'] = 'binary'
 
-
-# working on spacing logic and dynamic narrative in the text file generation
+    # working on spacing logic and dynamic narrative in the text file generation
     # def download_transaction_txt(self):
     #     content = []
     #     date_obj = getdate(self.transaction_date)
@@ -1570,6 +1572,13 @@ class PettyCashTransaction(Document):
         frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
+
+    def validate_item_descriptions(self):
+        for row in self.items:
+            if row.description and len(row.description) > 30:
+                frappe.throw(
+                    f"Row #{row.idx}: Description cannot be more than 30 characters including spaces."
+                )
 
 
 # @frappe.whitelist()
