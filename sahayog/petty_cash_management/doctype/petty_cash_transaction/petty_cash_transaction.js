@@ -1,35 +1,46 @@
+// --- 1. HIDE PRIVATE / OPTIMIZE CONTROLS GLOBALLY FOR THIS FORM ---
 frappe.dom.set_style(`
     body.pct-active-form [data-action="toggle_private"],
     body.pct-active-form [data-action="make_private"],
     body.pct-active-form .btn-private,
     body.pct-active-form .btn-public,
-    body.pct-active-form .force-hide-privacy-btn,
-    body.pct-active-form .optimize-checkbox {
+    body.pct-active-form .force-hide-upload-option {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
     }
 `, 'pct-file-privacy-css');
 
+// --- 2. VUE INTERCEPTOR (MUTATION OBSERVER) ---
 const privacyObserver = new MutationObserver(() => {
     if ($('body').hasClass('pct-active-form') && $('.modal-dialog').length > 0) {
-        $('.modal-dialog label.frappe-checkbox:not(.force-hide-privacy-btn), .modal-dialog button:not(.force-hide-privacy-btn)').each(function() {
+
+        // Force Optimize + Private checkboxes to false before hiding
+        $('.modal-dialog .config-area label.frappe-checkbox').each(function () {
+            let label_text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+            let checkbox = $(this).find('input[type="checkbox"]');
+
+            if (label_text === 'optimize' || label_text === 'private') {
+                checkbox.prop('checked', false).trigger('change');
+                $(this).addClass('force-hide-upload-option');
+            }
+        });
+
+        // Hide Set all private / Set all public buttons
+        $('.modal-dialog button').each(function () {
             let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
 
-            if ([
-                'private',
-                'set all private',
-                'set all public',
-                'optimize'
-            ].includes(text)) {
-                $(this).addClass('force-hide-privacy-btn');
+            if (text === 'set all private' || text === 'set all public') {
+                $(this).addClass('force-hide-upload-option');
             }
         });
     }
 });
 
+// Start observing the DOM
 privacyObserver.observe(document.body, { childList: true, subtree: true });
 
+// Route scope
 frappe.router.on('change', () => {
     if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Petty Cash Transaction') {
         $('body').addClass('pct-active-form');

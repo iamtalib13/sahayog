@@ -343,6 +343,12 @@ doc_events = {
     "User": {
         "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
         "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+    },
+    "File": {
+        "before_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
+        "validate": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
+        "after_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save",
+        "on_update": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save"
     }
 }
 # Scheduled Tasks
