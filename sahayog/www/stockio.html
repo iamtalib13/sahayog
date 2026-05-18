@@ -2739,268 +2739,265 @@
       </div>
 
       <!-- Item Inline Creation View -->
-      <div v-if="showItemCreateView" class="detail-view-container">
-        <div class="detail-card">
-          <div class="profile-modal-body" style="padding: 24px">
-
-            <div
-              class="form-row"
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px"
-            >
-              <!-- Item Code -->
-              <div class="form-group">
-                <label class="form-label">Item Code</label>
-                <input
-                  type="text"
-                  class="form-input"
-                  v-model="createItemForm.item_code"
-                  placeholder="Enter item code (optional)"
-                />
-              </div>
-
-              <!-- Item Name -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Item Name <span class="form-required">*</span></label
-                >                <input
-                  type="text"
-                  class="form-input"
-                  v-model="createItemForm.item_name"
-                  placeholder="Enter item name"
-                />
-              </div>
-
-              <!-- Item Department -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Item Department <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'item_department' }"
-                    v-model="createItemForm.item_department_display"
-                    @focus="onFocusSearchable('item_department')"
-                    @blur="onBlurSearchable('item_department')"
-                    placeholder="Search Department"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'item_department'"
-                  >
-                    <div
-                      v-for="dept in filteredItemDepartments"
-                      :key="dept"
-                      class="searchable-select-option"
-                      @mousedown="createItemForm.item_department = dept; createItemForm.item_department_display = dept; focusedField = null;"
-                    >
-                      [[ dept ]]
-                    </div>
+      <!-- Item Creation View -->
+      <div v-if="showItemCreateView" class="detail-view-container" style="overflow-x: hidden;">
+        <div class="detail-card" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+          <div class="profile-modal-body" style="padding: 16px; width: 100%; box-sizing: border-box; overflow-x: hidden;">
+            
+            <!-- Main Form Layout: 2 Columns -->
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 16px; margin-top: 0 !important; width: 100%;">
+              
+              <!-- Section 1: Basic Information -->
+              <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                  <i class="fas fa-tag"></i> Basic Information
+                </h4>
+                
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                  <!-- Item Code -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Item Code <span class="form-required">*</span></label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="createItemForm.item_code"
+                      placeholder="Enter item code"
+                    />
+                  </div>
+                  <!-- Item Name -->
+                  <div class="form-group" style="flex: 2; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Item Name <span class="form-required">*</span></label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="createItemForm.item_name"
+                      placeholder="Enter name"
+                    />
                   </div>
                 </div>
-              </div>
 
-              <!-- Item Group -->
-              <div class="form-group">
-                <label class="form-label"
-                  >Item Group <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'item_group' }"
-                    v-model="createItemForm.item_group_display"
-                    @focus="onFocusSearchable('item_group')"
-                    @blur="onBlurSearchable('item_group')"
-                    placeholder="Search Item Group"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'item_group'"
-                  >
-                    <div
-                      v-for="group in filteredItemGroups"
-                      :key="group"
-                      class="searchable-select-option"
-                      @mousedown="createItemForm.item_group = group; createItemForm.item_group_display = group; focusedField = null;"
-                    >
-                      [[ group ]]
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- HSN/SAC -->
-              <div class="form-group">
-                <label class="form-label">HSN/SAC</label>
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'hsn_sac' }"
-                    v-model="createItemForm.gst_hsn_code_display"
-                    @focus="onFocusSearchable('hsn_sac')"
-                    @blur="onBlurSearchable('hsn_sac')"
-                    placeholder="Search HSN/SAC"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'hsn_sac'"
-                  >
-                    <div
-                      v-for="hsn in filteredHSNCodes"
-                      :key="hsn.name"
-                      class="searchable-select-option"
-                      @mousedown="createItemForm.gst_hsn_code = hsn.name; createItemForm.gst_hsn_code_display = hsn.name; focusedField = null;"
-                    >
-                      <div style="font-weight: 500">[[ hsn.name ]]</div>
+                <!-- Item Department -->
+                <div class="form-group" style="margin-bottom: 12px !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Item Department <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'item_department' }"
+                      v-model="createItemForm.item_department_display"
+                      @focus="onFocusSearchable('item_department')"
+                      @blur="onBlurSearchable('item_department')"
+                      placeholder="Search Department"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'item_department'">
                       <div
-                        style="font-size: 11px; opacity: 0.8"
-                        v-if="hsn.description"
+                        v-for="dept in filteredItemDepartments"
+                        :key="dept"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="createItemForm.item_department = dept; createItemForm.item_department_display = dept; focusedField = null;"
                       >
-                        [[ hsn.description ]]
+                        [[ dept ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Item Group -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Item Group <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'item_group' }"
+                      v-model="createItemForm.item_group_display"
+                      @focus="onFocusSearchable('item_group')"
+                      @blur="onBlurSearchable('item_group')"
+                      placeholder="Search Item Group"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'item_group'">
+                      <div
+                        v-for="group in filteredItemGroups"
+                        :key="group"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="createItemForm.item_group = group; createItemForm.item_group_display = group; focusedField = null;"
+                      >
+                        [[ group ]]
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Valuation Rate -->
-              <div class="form-group">
-                <label class="form-label">Valuation Rate</label>
-                <input
-                  type="number"
+              <!-- Section 2: Accounting & Stock -->
+              <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-top: 0 !important;">
+                <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                  <i class="fas fa-coins"></i> Inventory & Tax
+                </h4>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                  <!-- HSN/SAC -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">HSN/SAC</label>
+                    <div class="searchable-select-wrapper">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                        :class="{ focused: focusedField === 'hsn_sac' }"
+                        v-model="createItemForm.gst_hsn_code_display"
+                        @focus="onFocusSearchable('hsn_sac')"
+                        @blur="onBlurSearchable('hsn_sac')"
+                        placeholder="Search HSN"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'hsn_sac'">
+                        <div
+                          v-for="hsn in filteredHSNCodes"
+                          :key="hsn.name"
+                          class="searchable-select-option"
+                          style="padding: 8px 12px; font-size: 0.9rem;"
+                          @mousedown="createItemForm.gst_hsn_code = hsn.name; createItemForm.gst_hsn_code_display = hsn.name; focusedField = null;"
+                        >
+                          <div style="font-weight: 600">[[ hsn.name ]]</div>
+                          <div style="font-size: 10px; opacity: 0.7" v-if="hsn.description">[[ hsn.description ]]</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Valuation Rate -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Valuation Rate</label>
+                    <input
+                      type="number"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model.number="createItemForm.valuation_rate"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <!-- Stock UOM (Conditional) -->
+                <div class="form-group" v-if="createItemForm.is_stock_item" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Stock UOM <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'stock_uom' }"
+                      v-model="createItemForm.stock_uom_display"
+                      @focus="onFocusSearchable('stock_uom')"
+                      @blur="onBlurSearchable('stock_uom')"
+                      placeholder="Search UOM"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'stock_uom'">
+                      <div
+                        v-for="uom in filteredStockUOMs"
+                        :key="uom"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="createItemForm.stock_uom = uom; createItemForm.stock_uom_display = uom; focusedField = null;"
+                      >
+                        [[ uom ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Asset Category (Conditional) -->
+                <div class="form-group" v-if="createItemForm.is_fixed_asset" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Asset Category <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      :class="{ focused: focusedField === 'asset_category' }"
+                      v-model="createItemForm.asset_category_display"
+                      @focus="onFocusSearchable('asset_category')"
+                      @blur="onBlurSearchable('asset_category')"
+                      placeholder="Search Asset Category"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category'">
+                      <div
+                        v-for="cat in filteredAssetCategories"
+                        :key="cat"
+                        class="searchable-select-option"
+                        style="padding: 8px 12px; font-size: 0.9rem;"
+                        @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;"
+                      >
+                        [[ cat ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Section 3: Settings & Configuration -->
+            <div style="padding: 14px; background: rgba(100, 116, 139, 0.03); border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 16px;">
+              <h4 style="margin-bottom: 12px; margin-top: 0px; color: var(--primary-color); font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.03em;">
+                <i class="fas fa-sliders-h"></i> Configuration
+              </h4>
+              
+              <div style="display: flex; gap: 24px; margin-bottom: 12px;">
+                <label class="form-checkbox-label" style="background: var(--bg-surface); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox"
+                    v-model="createItemForm.is_stock_item"
+                    @change="if(createItemForm.is_stock_item) createItemForm.is_fixed_asset = false"
+                  />
+                  <span class="checkbox-text" style="font-size: 0.9rem;">Maintain Stock</span>
+                </label>
+                <label class="form-checkbox-label" style="background: var(--bg-surface); padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                  <input
+                    type="checkbox"
+                    class="form-checkbox"
+                    v-model="createItemForm.is_fixed_asset"
+                    @change="if(createItemForm.is_fixed_asset) createItemForm.is_stock_item = false"
+                  />
+                  <span class="checkbox-text" style="font-size: 0.9rem;">Is Fixed Asset</span>
+                </label>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0 !important;">
+                <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Description</label>
+                <textarea
                   class="form-input"
-                  v-model.number="createItemForm.valuation_rate"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <!-- UOM (Conditional for Stock Items) -->
-              <div class="form-group" v-if="createItemForm.is_stock_item">
-                <label class="form-label"
-                  >Stock UOM <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'stock_uom' }"
-                    v-model="createItemForm.stock_uom_display"
-                    @focus="onFocusSearchable('stock_uom')"
-                    @blur="onBlurSearchable('stock_uom')"
-                    placeholder="Search UOM"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'stock_uom'"
-                  >
-                    <div
-                      v-for="uom in filteredStockUOMs"
-                      :key="uom"
-                      class="searchable-select-option"
-                      @mousedown="createItemForm.stock_uom = uom; createItemForm.stock_uom_display = uom; focusedField = null;"
-                    >
-                      [[ uom ]]
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Asset Category (Conditional for Fixed Assets) -->
-              <div class="form-group" v-if="createItemForm.is_fixed_asset">
-                <label class="form-label"
-                  >Asset Category <span class="form-required">*</span></label
-                >
-                <div class="searchable-select-wrapper">
-                  <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    :class="{ focused: focusedField === 'asset_category' }"
-                    v-model="createItemForm.asset_category_display"
-                    @focus="onFocusSearchable('asset_category')"
-                    @blur="onBlurSearchable('asset_category')"
-                    placeholder="Search Asset Category"
-                  />
-                  <div
-                    class="searchable-select-dropdown"
-                    v-if="focusedField === 'asset_category'"
-                  >
-                    <div
-                      v-for="cat in filteredAssetCategories"
-                      :key="cat"
-                      class="searchable-select-option"
-                      @mousedown="createItemForm.asset_category = cat; createItemForm.asset_category_display = cat; focusedField = null;"
-                    >
-                      [[ cat ]]
-                    </div>
-                  </div>
-                </div>
+                  style="height: 60px; padding: 10px 14px !important; font-size: 0.9rem !important;"
+                  v-model="createItemForm.description"
+                  placeholder="Enter item description..."
+                  spellcheck="false"
+                  data-gramm="false"
+                ></textarea>
               </div>
             </div>
 
-            <div
-              class="form-row"
-              style="
-                display: flex;
-                gap: 40px;
-                margin-top: 10px;
-                margin-bottom: 20px;
-              "
-            >
-              <label class="form-checkbox-label">
-                <input
-                  type="checkbox"
-                  class="form-checkbox"
-                  v-model="createItemForm.is_stock_item"
-                  @change="if(createItemForm.is_stock_item) createItemForm.is_fixed_asset = false"
-                />
-                <span class="checkbox-text">Maintain Stock</span>
-              </label>
-              <label class="form-checkbox-label">
-                <input
-                  type="checkbox"
-                  class="form-checkbox"
-                  v-model="createItemForm.is_fixed_asset"
-                  @change="if(createItemForm.is_fixed_asset) createItemForm.is_stock_item = false"
-                />
-                <span class="checkbox-text">Is Fixed Asset</span>
-              </label>
-            </div>
-
-            <!-- Description -->
-            <div class="form-group" style="margin-bottom: 24px">
-              <label class="form-label">Description</label>
-              <textarea
-                class="form-input"
-                style="height: 80px; padding: 10px !important"
-                v-model="createItemForm.description"
-                placeholder="Enter item description"
-                spellcheck="false"
-                data-gramm="false"
-              ></textarea>
-            </div>
-
-            <div class="form-actions">
+            <!-- Actions -->
+            <div class="form-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
+              <button
+                class="btn-cancel"
+                style="padding: 10px 24px; border-radius: 8px; font-weight: 600;"
+                @click="showItemCreateView = false"
+              >
+                Cancel
+              </button>
               <button
                 class="btn-create"
+                style="padding: 10px 24px; border-radius: 8px; font-weight: 700; background: var(--primary-color); color: white;"
                 @click="submitNewItem"
                 :disabled="creatingItem"
               >
-                <i
-                  class="fas"
-                  :class="creatingItem ? 'fa-spinner fa-spin' : 'fa-plus'"
-                ></i>
+                <i class="fas" :class="creatingItem ? 'fa-spinner fa-spin' : 'fa-plus'" style="margin-right: 8px;"></i>
                 <span>[[ creatingItem ? 'Creating...' : 'Create Item' ]]</span>
-              </button>
-              <button
-                class="btn-cancel"
-                @click="showItemCreateView = false"
-                :disabled="creatingItem"
-              >
-                Cancel
               </button>
             </div>
           </div>
