@@ -7883,7 +7883,7 @@
         </div>
       </div>
 
-      <div class="profile-modal-body" style="padding: 0;">
+      <div class="profile-modal-body" :style="dispatchForm.dispatchStep === 1 ? 'padding: 24px 28px;' : 'padding: 0;'">
         <div
           v-if="dispatchForm.dispatchStep === 2"
           style="
