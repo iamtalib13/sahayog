@@ -28,6 +28,19 @@ class CaseClosure(Document):
         Populate info from source document.
         Strictly relies on explicit reference_doctype and reference_name.
         """
+        
+        # ----------------------------------------------------------------------
+        # LEGACY AUTO-DETECTION (Commented out as per request)
+        # ----------------------------------------------------------------------
+        # if not self.reference_doctype and self.case_id:
+        #     if frappe.db.exists("Disciplinary Case", self.case_id):
+        #         self.reference_doctype = "Disciplinary Case"
+        #         self.reference_name = self.case_id
+        #     elif frappe.db.exists("Unauthorized Absence", self.case_id):
+        #         self.reference_doctype = "Unauthorized Absence"
+        #         self.reference_name = self.case_id
+        # ----------------------------------------------------------------------
+
         if self.reference_doctype and self.reference_name:
 
             source_doc = frappe.get_doc(
@@ -112,7 +125,7 @@ def get_reference_details(reference_doctype, reference_name):
 
     source_doc = frappe.get_doc(reference_doctype, reference_name)
 
-    return {
+    data = {
         "case_id": source_doc.get("case_id") or source_doc.name,
         "employee_id": source_doc.get("employee_id"),
         "employee_name": source_doc.get("employee_name"),
@@ -126,6 +139,37 @@ def get_reference_details(reference_doctype, reference_name):
         "issue_reported_to_hr": source_doc.get("issue_reported_to_hr") or source_doc.get("issue_report_to_hr"),
         "issue_occurrence_date": source_doc.get("issue_occurrence_date"),
     }
+
+    # Field Mappings by Doctype
+    if reference_doctype == "Response to SCN":
+        data.update({
+            "status_of_response": source_doc.get("status_of_response"),
+        })
+    
+    elif reference_doctype in ["Domestic Enquiry", "Enquiry Reminder"]:
+        data.update({
+            "domestic_enquiry": source_doc.get("domestic_enquiry"),
+            "status_of_response": source_doc.get("status_of_response"),
+            "place_of_enquiry": source_doc.get("place_of_enquiry"),
+            "date_of_enquiry": source_doc.get("date_of_enquiry") or source_doc.get("date_of_2nd_enquiry"),
+            "enquiry_officer_name": source_doc.get("enquiry_officer_name"),
+        })
+
+    elif reference_doctype in [
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence"
+       ]:
+        data.update({
+        "status_of_response": source_doc.get("status_of_response"),
+        })
+        
+    elif reference_doctype == "Ex Parte Enquiry":
+        data.update({
+            "date_of_enquiry": source_doc.get("date_of_enquiry"),
+            "enquiry_officer_name": source_doc.get("enquiry_officer_name"),
+        })
+
+    return data
 
 
 # ============================================================================
