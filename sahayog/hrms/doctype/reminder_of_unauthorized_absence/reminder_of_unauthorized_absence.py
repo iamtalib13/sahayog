@@ -80,25 +80,9 @@ def send_reminder_unauthorized_absence_email(docname):
     if not final_email:
         frappe.throw("No email found for this employee.")
 
-    # Fetch CC Recipients
-    cc_list = []
-    hr_settings = frappe.get_single("Sahayog HR Setting")
-
-    # 1. Fixed CC IDs from settings
-    if hr_settings.unauthorized_absence_cc:
-        # Replace newlines, tabs, and quotes with commas, then split and strip
-        raw_cc = hr_settings.unauthorized_absence_cc.replace("\n", ",").replace("\r", ",").replace("\t", ",").replace('"', '')
-        fixed_emails = [e.strip() for e in raw_cc.split(",") if e.strip()]
-        cc_list.extend(fixed_emails)
-
-    # 2. Reporting Manager's Email
-    if emp.reports_to:
-        manager_email = frappe.db.get_value("Employee", emp.reports_to, "company_email")
-        if manager_email:
-            cc_list.append(manager_email)
-
-    # Clean and deduplicate CC list
-    cc_list = list(set([e for e in cc_list if e]))
+    # Fetch CC Recipients using centralized utility
+    from sahayog.utils.hr_utils import get_hr_cc_recipients
+    cc_list = get_hr_cc_recipients("Reminder Of Unauthorized Absence", doc.employee_id, doc.name)
 
     # Attach Print Format → **Reminder Of Unauthorized Absence Notice**
     attachments = [

@@ -344,6 +344,8 @@ doc_events = {
         "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
         "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
     },
+    "Communication": {
+        "after_insert": "sahayog.utils.hr_utils.notify_cc_on_incoming_reply"
     "File": {
         "before_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
         "validate": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
