@@ -23,14 +23,14 @@ frappe.ui.form.on('Branch Petty Cash Account', {
             frm.trigger('generate_gl_code');
         }
 
-        if(frappe.session.user === 'Administrator'){
+        // if(frappe.session.user === 'Administrator'){
          // Only show button if GL Code exists
             if (!frm.is_new() && frm.doc.gl_sub_code) {
             frm.add_custom_button(__('Sync Finacle Balance'), function() {
                 frm.trigger('get_finacle_balance');
             });
         }
-        }
+        // }
         
 
         // Check if the user is Administrator OR has the HO Manager role
@@ -47,29 +47,29 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         
     },
 
-    //     get_finacle_balance: function(frm) {
-    //     frappe.call({
-    //         method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
-    //         args: {
-    //             branch: frm.doc.branch
-    //         },
-    //         freeze: true,
-    //         freeze_message: __("Syncing with Finacle..."),
-    //         callback: function(r) {
-    //             if (r.message != null) {
-    //                 // 1. Reload the document
-    //                 // This updates the UI with the saved value and keeps the form "Clean" (Saved)
-    //                 frm.reload_doc();
+        get_finacle_balance: function(frm) {
+        frappe.call({
+            method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
+            args: {
+                branch: frm.doc.branch
+            },
+            freeze: true,
+            freeze_message: __("Syncing with Finacle..."),
+            callback: function(r) {
+                if (r.message != null) {
+                    // 1. Reload the document
+                    // This updates the UI with the saved value and keeps the form "Clean" (Saved)
+                    frm.reload_doc();
 
-    //                 frappe.msgprint({
-    //                     title: __('Success'),
-    //                     indicator: 'green',
-    //                     message: __('Balance Synced: <b>{0}</b>', [format_currency(r.message)])
-    //                 });
-    //             }
-    //         }
-    //     });
-    // },
+                    frappe.msgprint({
+                        title: __('Success'),
+                        indicator: 'green',
+                        message: __('Balance Synced: <b>{0}</b>', [format_currency(r.message)])
+                    });
+                }
+            }
+        });
+    },
 
     branch: function(frm) {
         if (frm.doc.branch) {
