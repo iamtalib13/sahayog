@@ -46,7 +46,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
       }, 500);
     }
 
-    if (frm.doc.case_id) {
+    if (frm.is_new() && frm.doc.case_id) {
       frappe.db
         .get_list("Unauthorized Absence", {
           filters: { case_id: frm.doc.case_id },
@@ -59,10 +59,16 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
             frm.set_value("amount_of_fraud", list[0].amount_of_fraud);
             frm.set_df_property("amount_of_fraud", "hidden", 0);
           } else {
-            frm.set_value("amount_of_fraud", "");
             frm.set_df_property("amount_of_fraud", "hidden", 1);
           }
         });
+    } else if (!frm.is_new()) {
+        // Ensure visibility is correct for existing documents without trying to update the value
+        if (frm.doc.amount_of_fraud) {
+            frm.set_df_property("amount_of_fraud", "hidden", 0);
+        } else {
+            frm.set_df_property("amount_of_fraud", "hidden", 1);
+        }
     } else {
       frm.set_df_property("amount_of_fraud", "hidden", 1);
     }
