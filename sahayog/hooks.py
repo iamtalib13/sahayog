@@ -72,6 +72,7 @@ doctype_list_js = {
     "Material Request": "public/js/material_request_list.js",
     "Shareholder": "public/js/shareholder_list.js",
     "Share Transfer": "public/js/share_transfer_list.js",
+    "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = ["/assets/sahayog/js/assignmate.js",

@@ -67,7 +67,8 @@ frappe.listview_settings['Petty Cash Transaction'] = {
 
     onload: function(listview) {
         listview.page.add_inner_button(__('Download Report'), function() {
-            download_filtered_report_listview(listview);
+            // download_filtered_report_listview(listview);
+            ask_date_range_and_download();
         });
 
         if (
@@ -428,3 +429,96 @@ function download_consolidated_txt() {
     });
 }
 
+
+
+function ask_date_range_and_download() {
+    const dialog = new frappe.ui.Dialog({
+        title: __('Select Date Range'),
+        fields: [
+            {
+                label: __('Start Date'),
+                fieldname: 'from_date',
+                fieldtype: 'Date',
+                reqd: 1
+            },
+            {
+                label: __('End Date'),
+                fieldname: 'to_date',
+                fieldtype: 'Date',
+                reqd: 1
+            }
+        ],
+        primary_action_label: __('Download'),
+        primary_action(values) {
+            if (values.from_date > values.to_date) {
+                frappe.msgprint({
+                    title: __('Invalid Date Range'),
+                    message: __('Start Date cannot be greater than End Date.'),
+                    indicator: 'red'
+                });
+                return;
+            }
+
+            dialog.hide();
+            download_detailed_report_by_date_range(values.from_date, values.to_date);
+        }
+    });
+
+    dialog.show();
+}
+
+function download_detailed_report_by_date_range(from_date, to_date) {
+    frappe.show_alert({
+        message: __('Generating detailed report...'),
+        indicator: 'blue'
+    }, 5);
+
+    frappe.call({
+        method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_detailed_report_by_date_range',
+        args: {
+            from_date: from_date,
+            to_date: to_date
+        },
+        freeze: true,
+        freeze_message: __('Preparing detailed Excel report...'),
+        callback: function(r) {
+            if (r.message) {
+                let filedata = r.message.filecontent;
+                let filename = r.message.filename;
+                let recordcount = r.message.recordcount;
+
+                let binary = atob(filedata);
+                let array = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    array[i] = binary.charCodeAt(i);
+                }
+
+                let blob = new Blob(
+                    [array],
+                    { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+                );
+
+                let url = window.URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                frappe.show_alert({
+                    message: __('Downloaded {0} records successfully!', [recordcount]),
+                    indicator: 'green'
+                }, 5);
+            }
+        },
+        error: function(r) {
+            frappe.show_alert({
+                message: __('Failed to generate detailed report.'),
+                indicator: 'red'
+            }, 5);
+            console.error('Detailed report error:', r);
+        }
+    });
+}

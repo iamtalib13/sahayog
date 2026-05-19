@@ -23,12 +23,15 @@ frappe.ui.form.on('Branch Petty Cash Account', {
             frm.trigger('generate_gl_code');
         }
 
+        // if(frappe.session.user === 'Administrator'){
          // Only show button if GL Code exists
-        if (!frm.is_new() && frm.doc.gl_sub_code) {
+            if (!frm.is_new() && frm.doc.gl_sub_code) {
             frm.add_custom_button(__('Sync Finacle Balance'), function() {
                 frm.trigger('get_finacle_balance');
             });
         }
+        // }
+        
 
         // Check if the user is Administrator OR has the HO Manager role
         let is_admin = frappe.session.user === 'Administrator';
