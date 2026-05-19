@@ -516,23 +516,33 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
     user = frappe.session.user
     user_warehouse = None
 
-    # Get user's assigned warehouse
+    # 1. Get assigned warehouse from settings
     assigned_warehouse = frappe.db.get_value(
         "Default Warehouse",
         {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": user},
         "warehouse"
     )
-    if assigned_warehouse:
-        user_warehouse = assigned_warehouse
-    else:
-        # Fallback to sol_id
-        user_warehouse = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+    
+    # 2. Get sol_id from Employee as fallback
+    sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     filters = {}
     if warehouse:
         filters["warehouse"] = warehouse
 
     _, data = execute(filters)
+
+    # Determine user_warehouse with fallback logic
+    if assigned_warehouse:
+        # Check if the assigned warehouse exists in the data
+        has_match = any(row.get("warehouse") == assigned_warehouse for row in data)
+        if has_match:
+            user_warehouse = assigned_warehouse
+        elif sol_id:
+            # Fallback if settings warehouse doesn't match actual data
+            user_warehouse = sol_id
+    else:
+        user_warehouse = sol_id
 
     # Apply My Stock / Other Stock filtering
     if filter_type == "My Stock" and user_warehouse:
@@ -855,6 +865,17 @@ def get_portal_master_data():
     except Exception:
         pass
 
+    # Fetch available Serial Nos (not linked to any Asset)
+    # Note: Using the logic from get_available_serial_nos
+    used_serial_nos = frappe.get_all("Asset", fields=["serial_no"], pluck="serial_no")
+    used_serial_nos = list(set([s for s in used_serial_nos if s]))
+    
+    serial_no_filters = {}
+    if used_serial_nos:
+        serial_no_filters = {"name": ["not in", used_serial_nos]}
+    
+    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name"])
+
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
@@ -871,6 +892,7 @@ def get_portal_master_data():
         "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
         "locations": [l.name for l in frappe.get_all("Location")],
         "hsn_codes": hsn_codes,
+        "serial_nos": [s.name for s in available_serial_nos],
     }
 
 @frappe.whitelist()
