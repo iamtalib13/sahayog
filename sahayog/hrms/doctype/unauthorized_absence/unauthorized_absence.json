@@ -23,11 +23,10 @@
   "issue_occurrence_date",
   "issue_reported_to_hr",
   "amount_of_fraud",
-  "status",
-  "hr_employee_id",
-  "column_break_mqjo",
-  "amended_from",
   "issue_in_details",
+  "hr_employee_id",
+  "status",
+  "amended_from",
   "response_tab",
   "response_of_ua",
   "status_of_response",
@@ -54,10 +53,6 @@
    "fieldname": "case_details_section",
    "fieldtype": "Section Break",
    "label": "Case Details"
-  },
-  {
-   "fieldname": "column_break_mqjo",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "issue_reported_to_hr",
@@ -125,7 +120,8 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Case Status",
-   "options": "\nDraft\nUnder Process\nClosed"
+   "options": "\nDraft\nUnder Process\nClosed",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -222,7 +218,7 @@
    "link_fieldname": "case_id"
   }
  ],
- "modified": "2026-04-09 12:45:00.000000",
+ "modified": "2026-05-19 12:38:36.259196",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",

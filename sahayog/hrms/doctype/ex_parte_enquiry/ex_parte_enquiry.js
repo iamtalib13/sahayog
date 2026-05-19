@@ -8,14 +8,16 @@ frappe.ui.form.on("Ex Parte Enquiry", {
 
     // Convert strings to Date objects
     const selectedDate = frappe.datetime.str_to_obj(frm.doc.date_of_enquiry);
-    const reminderDate = frappe.datetime.str_to_obj(frm.doc.date_of_reminder_letter);
+    const reminderDate = frappe.datetime.str_to_obj(
+      frm.doc.date_of_reminder_letter,
+    );
 
     // Compare Date objects
-    if (selectedDate < reminderDate) {
+    if (selectedDate <= reminderDate) {
       frappe.msgprint({
         title: __("Invalid Date"),
         message: __(
-          `Date of Ex Parte Enquiry cannot be before the Date of Reminder Unauthorized Absence letter (${frappe.datetime.str_to_user(frm.doc.date_of_reminder_letter)}).`
+          `Date of Ex Parte Enquiry must be after the Date of Reminder Unauthorized Absence letter (${frappe.datetime.str_to_user(frm.doc.date_of_reminder_letter)}).`,
         ),
         indicator: "red",
       });
@@ -98,10 +100,10 @@ frappe.ui.form.on("Ex Parte Enquiry", {
             iframe.style.display = "none";
             iframe.src = frappe.urllib.get_full_url(
               `/printview?doctype=${encodeURIComponent(
-                frm.doc.doctype
+                frm.doc.doctype,
               )}&name=${encodeURIComponent(
-                frm.doc.name
-              )}&format=${encodeURIComponent("Ex Parte Enquiry")}`
+                frm.doc.name,
+              )}&format=${encodeURIComponent("Ex Parte Enquiry")}`,
             );
             document.body.appendChild(iframe);
 
@@ -187,7 +189,7 @@ function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
     "render_timeline payload:",
-    data && data.timeline ? data.timeline : data
+    data && data.timeline ? data.timeline : data,
   );
 
   const wrap = $(frm.wrapper).find(".case-timeline-box");
@@ -303,7 +305,7 @@ function timeline_badge(stage_obj) {
         const optsDate = { day: "2-digit", month: "short", year: "numeric" };
         formatted = `${d.toLocaleTimeString(
           [],
-          optsTime
+          optsTime,
         )}, ${d.toLocaleDateString([], optsDate)}`;
       }
     } catch (e) {
@@ -401,17 +403,17 @@ function timeline_badge(stage_obj) {
       } else {
         html += `<br>Records created: ${info.count}`;
         html += `<br><span style="opacity:.8;">${info.names.join(
-          "<br>"
+          "<br>",
         )}</span>`;
       }
 
       show_tooltip(this, html);
-    }
+    },
   );
 
   $(document).on(
     "mouseleave",
     ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip
+    hide_tooltip,
   );
 })();

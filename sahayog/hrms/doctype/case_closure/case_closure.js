@@ -20,24 +20,18 @@ frappe.ui.form.on("Case Closure", {
           "Domestic Enquiry",
           "Enquiry Reminder",
         ];
+        if (ua_workflow.includes(src_dt) || dc_workflow.includes(src_dt)) {
+          // ✅ Actual source doctype preserve karo
+          frm.set_value("reference_doctype", src_dt);
 
-        if (ua_workflow.includes(src_dt)) {
-          frm.set_value("reference_doctype", "Unauthorized Absence");
-          if (src_dt === "Unauthorized Absence") {
+          if (
+            src_dt === "Disciplinary Case" ||
+            src_dt === "Unauthorized Absence"
+          ) {
             frm.set_value("reference_name", src_nm);
           } else {
-            frappe.db.get_value(src_dt, src_nm, "case_id", (r) => {
-              if (r && r.case_id) frm.set_value("reference_name", r.case_id);
-            });
-          }
-        } else if (dc_workflow.includes(src_dt)) {
-          frm.set_value("reference_doctype", "Disciplinary Case");
-          if (src_dt === "Disciplinary Case") {
+            // Child workflow doctypes ka actual document name preserve karo
             frm.set_value("reference_name", src_nm);
-          } else {
-            frappe.db.get_value(src_dt, src_nm, "case_id", (r) => {
-              if (r && r.case_id) frm.set_value("reference_name", r.case_id);
-            });
           }
         }
       }
@@ -46,6 +40,14 @@ frappe.ui.form.on("Case Closure", {
     // If case_id is not present, nothing to process
     if (!frm.doc.case_id) return;
 
+    // Trigger details fetch if reference is already set (for existing docs)
+    if (frm.doc.reference_doctype && frm.doc.reference_name) {
+      frm.trigger("reference_name");
+    }
+
+    /* -------------------------------------------------------------------------
+    // LEGACY LOGIC (Commented out as per request)
+    // -------------------------------------------------------------------------
     // List of workflow-related fields to control visibility
     const workflow_fields = [
       "status_of_response",
@@ -65,12 +67,10 @@ frappe.ui.form.on("Case Closure", {
 
     // Fetch the latest linked enquiry for this case
     frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.get_latest_linked_enquiry",
+      method: "sahayog.hrms.doctype.case_closure.case_closure.get_latest_linked_enquiry",
       args: { case_id: frm.doc.case_id },
       callback: function (r) {
         if (!r.message) return;
-
         const { linked_enquiry_type, linked_enquiry, data } = r.message;
         if (!linked_enquiry_type || !linked_enquiry) return;
 
@@ -97,49 +97,21 @@ frappe.ui.form.on("Case Closure", {
           ],
         };
 
-        // Initialize fields_to_show before logging
-        const fields_to_show =
-          visible_fields_by_doctype[linked_enquiry_type] || [];
-
-        console.group("Case Closure Fetch Debug");
-        console.log("Linked Doctype:", linked_enquiry_type);
-        console.log("Linked Record:", linked_enquiry);
-        console.log("Fields requested:", fields_to_show);
-        console.log("Fetched data:", data);
-        console.groupEnd();
-        // Override date_of_enquiry with date_of_2nd_enquiry when source is Enquiry Reminder
-        if (linked_enquiry_type === "Enquiry Reminder") {
-          if (data.date_of_2nd_enquiry) {
-            data.date_of_enquiry = data.date_of_2nd_enquiry;
-          }
-        }
-
+        const fields_to_show = visible_fields_by_doctype[linked_enquiry_type] || [];
+        
         // Unhide & populate relevant fields
         fields_to_show.forEach((f) => {
-          if (!frm.fields_dict[f]) {
-            console.warn("Skipping missing Case Closure field:", f);
-            return;
-          }
-
-          frm.set_df_property(f, "hidden", 0);
-          frm.set_df_property(f, "read_only", 1);
-
-          if (data && data[f] != null) {
-            if (f === "date_of_enquiry") {
-              let d = data[f];
-
-              if (d) {
-                // Normalize datetime → YYYY-MM-DD
-                let date_only = d.split(" ")[0];
-                frm.set_value(f, date_only);
-              }
-            } else {
-              frm.set_value(f, data[f]);
+          if (frm.fields_dict[f]) {
+            frm.set_df_property(f, "hidden", 0);
+            frm.set_df_property(f, "read_only", 1);
+            if (data && data[f] != null) {
+               frm.set_value(f, data[f]);
             }
           }
         });
       },
     });
+    ------------------------------------------------------------------------- */
   },
 
   // --------------------------------------------------------------------------
@@ -148,7 +120,8 @@ frappe.ui.form.on("Case Closure", {
   reference_name(frm) {
     if (frm.doc.reference_doctype && frm.doc.reference_name) {
       frappe.call({
-        method: "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
+        method:
+          "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
         args: {
           reference_doctype: frm.doc.reference_doctype,
           reference_name: frm.doc.reference_name,
@@ -156,6 +129,25 @@ frappe.ui.form.on("Case Closure", {
         callback: function (r) {
           if (r.message) {
             frm.set_value(r.message);
+
+            // Define list of all enquiry-related fields
+            const all_enquiry_fields = [
+              "status_of_response",
+              "domestic_enquiry",
+              "place_of_enquiry",
+              "date_of_enquiry",
+              "enquiry_officer_name",
+            ];
+
+            // Dynamically show fields that are present in the response
+            all_enquiry_fields.forEach((f) => {
+              if (r.message[f] !== undefined && r.message[f] !== null) {
+                frm.set_df_property(f, "hidden", 0);
+                frm.set_df_property(f, "read_only", 1);
+              } else {
+                frm.set_df_property(f, "hidden", 1);
+              }
+            });
           }
         },
       });
@@ -380,7 +372,7 @@ frappe.ui.form.on("Case Closure", {
 
     // Create a dropdown-style primary button
     const $btn = $(
-      frm.page.add_button("Select Print Format", null, "btn-primary")
+      frm.page.add_button("Select Print Format", null, "btn-primary"),
     );
     $btn
       .removeClass("btn-default")
@@ -433,10 +425,10 @@ frappe.ui.form.on("Case Closure", {
 
       const url = frappe.urllib.get_full_url(
         `/printview?doctype=${encodeURIComponent(
-          frm.doc.doctype
+          frm.doc.doctype,
         )}&name=${encodeURIComponent(frm.doc.name)}&format=${encodeURIComponent(
-          format
-        )}&no_letterhead=1`
+          format,
+        )}&no_letterhead=1`,
       );
 
       const iframe = document.createElement("iframe");
@@ -498,7 +490,7 @@ function render_timeline(frm, data) {
   // debug: show incoming timeline payload in console
   console.debug(
     "render_timeline payload:",
-    data && data.timeline ? data.timeline : data
+    data && data.timeline ? data.timeline : data,
   );
   // Remove existing timeline if any
   const wrap = $(frm.wrapper).find(".case-timeline-box");
@@ -616,7 +608,7 @@ function timeline_badge(stage_obj) {
         const optsDate = { day: "2-digit", month: "short", year: "numeric" };
         formatted = `${d.toLocaleTimeString(
           [],
-          optsTime
+          optsTime,
         )}, ${d.toLocaleDateString([], optsDate)}`;
       }
     } catch (e) {
@@ -714,18 +706,18 @@ function timeline_badge(stage_obj) {
       } else {
         html += `<br>Records created: ${info.count}`;
         html += `<br><span style="opacity:.8;">${info.names.join(
-          "<br>"
+          "<br>",
         )}</span>`;
       }
 
       show_tooltip(this, html);
-    }
+    },
   );
 
   $(document).on(
     "mouseleave",
     ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip
+    hide_tooltip,
   );
 })();
 
@@ -829,7 +821,7 @@ function open_approver_dialog(frm) {
                   frappe.msgprint({
                     title: __("Invalid Reviewer"),
                     message: __(
-                      "The employee involved in the case cannot act as a reviewer."
+                      "The employee involved in the case cannot act as a reviewer.",
                     ),
                     indicator: "red",
                   });
@@ -843,12 +835,12 @@ function open_approver_dialog(frm) {
                 //BLOCK: Duplicate reviewer in dialog or parent table
                 let dialog_rows = d.fields_dict.approver_table.grid.get_data();
                 let duplicate_in_dialog = dialog_rows.some(
-                  (r) => r.employee_id === row.employee_id && r !== row
+                  (r) => r.employee_id === row.employee_id && r !== row,
                 );
                 // BLOCK: Duplicate reviewer in dialog
                 if (duplicate_in_dialog) {
                   frappe.msgprint(
-                    "This reviewer is already selected in the dialog."
+                    "This reviewer is already selected in the dialog.",
                   );
                   row.employee_id = "";
                   row.employee_name = "";
@@ -858,12 +850,12 @@ function open_approver_dialog(frm) {
                 }
 
                 let duplicate_in_parent = (frm.doc.review_details || []).some(
-                  (r) => r.employee_id === row.employee_id
+                  (r) => r.employee_id === row.employee_id,
                 );
 
                 if (duplicate_in_parent) {
                   frappe.msgprint(
-                    "This reviewer is already selected in the list."
+                    "This reviewer is already selected in the list.",
                   );
                   row.employee_id = "";
                   row.employee_name = "";
@@ -913,7 +905,7 @@ function open_approver_dialog(frm) {
         frappe.confirm(
           "Please confirm that the reviewer selection is accurate before submitting.",
           () => submit_approvers(frm, values, d),
-          () => {}
+          () => {},
         );
       },
     });
@@ -950,7 +942,7 @@ function open_approver_dialog(frm) {
       d.fields_dict.existing_reviewers_html.$wrapper.html(html);
     } else {
       d.fields_dict.existing_reviewers_html.$wrapper.html(
-        "<p style='color:#888'>No reviewers selected yet.</p>"
+        "<p style='color:#888'>No reviewers selected yet.</p>",
       );
     }
 
@@ -959,9 +951,9 @@ function open_approver_dialog(frm) {
 }
 
 function submit_approvers(frm, values, dialog) {
-// A. Validate new reviewers
+  // A. Validate new reviewers
   const new_reviewers = values.approver_table || [];
-// B. Add new reviewers to parent document
+  // B. Add new reviewers to parent document
   if (new_reviewers.length === 0) {
     frappe.msgprint(__("No new reviewers selected."));
     dialog.hide();
@@ -985,7 +977,6 @@ function submit_approvers(frm, values, dialog) {
 
   frm.refresh_field("review_details");
   frm.save().then(() => {
-
     // -----------------------------------------------------
     // FIRST CALL → VERIFICATION PROCESS EMAILS
     // -----------------------------------------------------

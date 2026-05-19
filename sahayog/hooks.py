@@ -346,6 +346,11 @@ doc_events = {
     },
     "Communication": {
         "after_insert": "sahayog.utils.hr_utils.notify_cc_on_incoming_reply"
+    "File": {
+        "before_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
+        "validate": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
+        "after_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save",
+        "on_update": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save"
     }
 }
 # Scheduled Tasks
