@@ -1,10 +1,64 @@
 // --- 1. HIDE PRIVATE / OPTIMIZE CONTROLS GLOBALLY FOR THIS FORM ---
+// frappe.dom.set_style(`
+//     body.pct-active-form [data-action="toggle_private"],
+//     body.pct-active-form [data-action="make_private"],
+//     body.pct-active-form .btn-private,
+//     body.pct-active-form .btn-public,
+//     body.pct-active-form .force-hide-upload-option {
+//         display: none !important;
+//         visibility: hidden !important;
+//         pointer-events: none !important;
+//     }
+// `, 'pct-file-privacy-css');
+
+// // --- 2. VUE INTERCEPTOR (MUTATION OBSERVER) ---
+// const privacyObserver = new MutationObserver(() => {
+//     if ($('body').hasClass('pct-active-form') && $('.modal-dialog').length > 0) {
+
+//         // Force Optimize + Private checkboxes to false before hiding
+//         $('.modal-dialog .config-area label.frappe-checkbox').each(function () {
+//             let label_text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+//             let checkbox = $(this).find('input[type="checkbox"]');
+
+//             if (label_text === 'optimize' || label_text === 'private') {
+//                 checkbox.prop('checked', false).trigger('change');
+//                 $(this).addClass('force-hide-upload-option');
+//             }
+//         });
+
+//         // Hide Set all private / Set all public buttons
+//         $('.modal-dialog button').each(function () {
+//             let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
+
+//             if (text === 'set all private' || text === 'set all public') {
+//                 $(this).addClass('force-hide-upload-option');
+//             }
+//         });
+//     }
+// });
+
+// // Start observing the DOM
+// privacyObserver.observe(document.body, { childList: true, subtree: true });
+
+// // Route scope
+// frappe.router.on('change', () => {
+//     if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Petty Cash Transaction') {
+//         $('body').addClass('pct-active-form');
+//     } else {
+//         $('body').removeClass('pct-active-form');
+//     }
+// });
+// -------------------------------------------------------------
+
+// --- 1. HIDE PRIVACY TOGGLE BUTTONS GLOBALLY FOR THIS FORM ---
 frappe.dom.set_style(`
+    /* Hide standard sidebar lock/unlock icons and Make Private actions */
     body.pct-active-form [data-action="toggle_private"],
     body.pct-active-form [data-action="make_private"],
     body.pct-active-form .btn-private,
     body.pct-active-form .btn-public,
-    body.pct-active-form .force-hide-upload-option {
+    /* Hide dynamically tagged Vue elements inside the Uploader */
+    body.pct-active-form .force-hide-privacy-btn {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -12,26 +66,18 @@ frappe.dom.set_style(`
 `, 'pct-file-privacy-css');
 
 // --- 2. VUE INTERCEPTOR (MUTATION OBSERVER) ---
-const privacyObserver = new MutationObserver(() => {
+// This continuously monitors the File Uploader modal and actively hides the Private toggles
+const privacyObserver = new MutationObserver((mutations) => {
+    // Only run if we are on the Petty Cash form AND a modal is open
     if ($('body').hasClass('pct-active-form') && $('.modal-dialog').length > 0) {
-
-        // Force Optimize + Private checkboxes to false before hiding
-        $('.modal-dialog .config-area label.frappe-checkbox').each(function () {
-            let label_text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
-            let checkbox = $(this).find('input[type="checkbox"]');
-
-            if (label_text === 'optimize' || label_text === 'private') {
-                checkbox.prop('checked', false).trigger('change');
-                $(this).addClass('force-hide-upload-option');
-            }
-        });
-
-        // Hide Set all private / Set all public buttons
-        $('.modal-dialog button').each(function () {
+        
+        // Target buttons and checkboxes inside the modal that aren't hidden yet
+        $('.modal-dialog label.frappe-checkbox:not(.force-hide-privacy-btn), .modal-dialog button:not(.force-hide-privacy-btn)').each(function() {
+            // Clean up the text to match reliably (removes extra spaces/newlines Vue might add)
             let text = $(this).text().toLowerCase().trim().replace(/\s+/g, ' ');
-
-            if (text === 'set all private' || text === 'set all public') {
-                $(this).addClass('force-hide-upload-option');
+            
+            if (text === 'private' || text === 'set all private' || text === 'set all public' || text === 'optimize') {
+                $(this).addClass('force-hide-privacy-btn');
             }
         });
     }
@@ -40,7 +86,7 @@ const privacyObserver = new MutationObserver(() => {
 // Start observing the DOM
 privacyObserver.observe(document.body, { childList: true, subtree: true });
 
-// Route scope
+// Listen to route changes to safely add/remove the CSS scope
 frappe.router.on('change', () => {
     if (frappe.get_route()[0] === 'Form' && frappe.get_route()[1] === 'Petty Cash Transaction') {
         $('body').addClass('pct-active-form');
