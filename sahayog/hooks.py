@@ -343,6 +343,9 @@ doc_events = {
     "User": {
         "before_save": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
         "on_update": "sahayog.doc_events.delete_user_permissions.delete_user_permissions",
+    },
+    "Communication": {
+        "after_insert": "sahayog.utils.hr_utils.notify_cc_on_incoming_reply"
     }
 }
 # Scheduled Tasks
