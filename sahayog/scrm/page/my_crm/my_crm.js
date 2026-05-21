@@ -3111,7 +3111,7 @@ createLead() {
           options: `
             <div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>
             <div id="duplicate-warning-banner" style="display: none; padding: 10px; margin-bottom: 16px; border-radius: 6px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 13px;">
-                <strong>⚠️ Warning:</strong> Duplicate lead (Same Product & Amount) detected for today.
+                <strong>⚠️ Warning:</strong> Duplicate lead (Same Product & Amount) detected within the last 7 days.
             </div>
           `,
         },
@@ -3247,38 +3247,26 @@ createLead() {
     // --- 🛡️ Global Warning Logic ---
     const checkDuplicateWarning = async (isSave = false) => {
         const mobile = dialog.get_value("mobile_no");
-        const source = dialog.get_value("source");
         const warningBanner = $("#duplicate-warning-banner");
 
-        if (!mobile || !source || productsData.length === 0) {
+        if (!mobile || productsData.length === 0) {
             warningBanner.hide();
             return false;
         }
 
-        const today = frappe.datetime.get_today();
         const res = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Lead",
-                filters: { mobile_no: mobile, source: source, creation: [">=", today + " 00:00:00"] },
-                fields: ["name"]
-            }
+            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
+            args: { mobile_no: mobile, products: productsData }
         });
 
-        let duplicateFound = false;
-        if (res.message && res.message.length > 0) {
-            for (let lead of res.message) {
-                const fullLead = await frappe.db.get_doc("Lead", lead.name);
-                const existingPairs = (fullLead.custom_product_table || []).map(p => `${p.product}|${p.product_amount}`);
-                duplicateFound = productsData.some(p => existingPairs.includes(`${p.product}|${p.product_amount}`));
-                if (duplicateFound) break;
-            }
-        }
-
-        if (duplicateFound) {
+        if (res.message && res.message.duplicate) {
             warningBanner.show();
             if (isSave) {
-                frappe.msgprint({ title: __("Duplicate Detected"), indicator: "red", message: __("Lead block: Same Product & Amount already exists for today.") });
+                frappe.msgprint({ 
+                    title: __("Duplicate Detected"), 
+                    indicator: "red", 
+                    message: __(`A lead for Product (${res.message.product}) already exists for this number within the last 7 days.`) 
+                });
             }
             return true;
         } else {
