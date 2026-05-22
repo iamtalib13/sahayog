@@ -106,7 +106,14 @@
    "fieldname": "enable_finacle_integration",
    "fieldtype": "Check",
    "label": "Enable Finacle Integration"
-  }
+  },
+  {
+  "default": "0",
+  "description": "If enabled, old unsettled cash / withdrawal flow will be used. If disabled, new current balance only flow will be active.",
+  "fieldname": "enable_unsettled_cash_flow",
+  "fieldtype": "Check",
+  "label": "Enable Legacy Unsettled Cash Flow"
+}
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,

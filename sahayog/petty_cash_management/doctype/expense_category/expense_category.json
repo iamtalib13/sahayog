@@ -119,7 +119,16 @@
    "role": "HO Petty Cash Verifier",
    "share": 1,
    "write": 1
-  }
+  },
+  {
+  "email": 0,
+  "export": 0,
+  "print": 0,
+  "read": 1,
+  "report": 0,
+  "role": "HO Petty Cash Auditor",
+  "share": 0
+}
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,

@@ -39,7 +39,11 @@
   "finacle_transaction_id",
   "remarks",
   "amended_from",
-  "column_break_limits"
+  "column_break_limits",
+  "wallet_effect_applied",
+  "wallet_effect_amount",
+  "wallet_effect_reference_status",
+  "wallet_terminal_action"
  ],
  "fields": [
   {
@@ -160,6 +164,32 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "fieldname": "wallet_effect_applied",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Wallet Effect Applied"
+  },
+  {
+   "default": "0",
+   "fieldname": "wallet_effect_amount",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Wallet Effect Amount"
+  },
+  {
+   "fieldname": "wallet_effect_reference_status",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Wallet Effect Reference Status"
+  },
+  {
+   "fieldname": "wallet_terminal_action",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Wallet Terminal Action"
+  },
+  {
    "fieldname": "column_break_limits",
    "fieldtype": "Column Break"
   },
@@ -265,7 +295,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-18 16:03:24.478337",
+ "modified": "2026-05-20 12:23:31.031540",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
@@ -331,7 +361,16 @@
    "role": "HO Petty Cash Verifier",
    "share": 1,
    "write": 1
-  }
+  },
+  {
+  "email": 0,
+  "export": 0,
+  "print": 0,
+  "read": 1,
+  "report": 0,
+  "role": "HO Petty Cash Auditor",
+  "share": 0
+}
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,

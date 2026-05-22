@@ -73,6 +73,7 @@
 # ###########################################################################################################
 # new code with real-time progress updates and better error handling
 
+from frappe.utils import cint
 import frappe
 from frappe import _
 import psycopg2
@@ -190,6 +191,73 @@ def sync_all_branches():
     return start_bulk_finacle_balance_sync()
 
 
+# @frappe.whitelist()
+# def fetch_finacle_balance(branch=None, from_bulk=False):
+#     if not from_bulk:
+#         _ensure_admin()
+
+#     if not branch:
+#         if from_bulk:
+#             return
+#         return start_bulk_finacle_balance_sync()
+
+#     conn = None
+
+#     try:
+#         wallet = frappe.db.get_value(
+#             "Branch Petty Cash Account",
+#             {"branch": branch},
+#             ["name", "gl_sub_code"],
+#             as_dict=True
+#         )
+
+#         if not wallet or not wallet.gl_sub_code:
+#             msg = f"Skipping {branch}: No Wallet or GL Code found."
+#             frappe.log_error(msg, "Petty Cash Sync Skip")
+#             return None
+
+#         conn = db_connection()
+#         if not conn:
+#             raise Exception("Unable to connect to Finacle database")
+
+#         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+#             sql = """
+#                 SELECT clr_bal_amt
+#                 FROM tbaadm.gam
+#                 WHERE del_flg = 'N' AND foracid = %s
+#             """
+#             cursor.execute(sql, (wallet.gl_sub_code,))
+#             result = cursor.fetchone()
+
+#         if result:
+#             balance = float(result.get("clr_bal_amt", 0.0))
+
+#             frappe.db.sql("""
+#                 UPDATE `tabBranch Petty Cash Account`
+#                 SET current_balance = %s
+#                 WHERE name = %s
+#             """, (balance, wallet.name))
+
+#             frappe.db.commit()
+#             return balance
+
+#         return None
+
+#     except Exception as e:
+#         frappe.db.rollback()
+#         frappe.log_error(
+#             f"Error syncing {branch}: {str(e)}", "Petty Cash Sync")
+
+#         if not from_bulk and getattr(frappe, "request", None):
+#             frappe.throw(str(e))
+
+#         raise
+
+#     finally:
+#         if conn:
+#             conn.close()
+
+
 @frappe.whitelist()
 def fetch_finacle_balance(branch=None, from_bulk=False):
     if not from_bulk:
@@ -206,7 +274,7 @@ def fetch_finacle_balance(branch=None, from_bulk=False):
         wallet = frappe.db.get_value(
             "Branch Petty Cash Account",
             {"branch": branch},
-            ["name", "gl_sub_code"],
+            ["name", "gl_sub_code", "finacle_opening_balance_fetched"],
             as_dict=True
         )
 
@@ -214,6 +282,15 @@ def fetch_finacle_balance(branch=None, from_bulk=False):
             msg = f"Skipping {branch}: No Wallet or GL Code found."
             frappe.log_error(msg, "Petty Cash Sync Skip")
             return None
+
+        legacy_flow = cint(
+            frappe.db.get_single_value(
+                "Sahayog Settings", "enable_unsettled_cash_flow") or 0
+        )
+
+        # if not legacy_flow and cint(wallet.finacle_opening_balance_fetched):
+        #     frappe.throw(
+        #         _("Opening balance has already been fetched once for this branch."))
 
         conn = db_connection()
         if not conn:
@@ -231,11 +308,20 @@ def fetch_finacle_balance(branch=None, from_bulk=False):
         if result:
             balance = float(result.get("clr_bal_amt", 0.0))
 
-            frappe.db.sql("""
-                UPDATE `tabBranch Petty Cash Account`
-                SET current_balance = %s
-                WHERE name = %s
-            """, (balance, wallet.name))
+            update_values = {
+                "current_balance": balance,
+                "last_synced_fund_date": frappe.utils.nowdate()
+            }
+
+            # if not legacy_flow:
+            # update_values["finacle_opening_balance_fetched"] = 1
+
+            frappe.db.set_value(
+                "Branch Petty Cash Account",
+                wallet.name,
+                update_values,
+                update_modified=False
+            )
 
             frappe.db.commit()
             return balance
@@ -245,7 +331,9 @@ def fetch_finacle_balance(branch=None, from_bulk=False):
     except Exception as e:
         frappe.db.rollback()
         frappe.log_error(
-            f"Error syncing {branch}: {str(e)}", "Petty Cash Sync")
+            f"Error syncing {branch}: {str(e)}",
+            "Petty Cash Sync"
+        )
 
         if not from_bulk and getattr(frappe, "request", None):
             frappe.throw(str(e))
