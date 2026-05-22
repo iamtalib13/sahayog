@@ -16,8 +16,9 @@
   "request_date",
   "required_by_date",
   "request_type",
-  "status",
+  "column_break_fkib",
   "department",
+  "status",
   "show_to_purchase",
   "section_break_items",
   "items",
@@ -248,12 +249,16 @@
    "fieldname": "show_to_purchase",
    "fieldtype": "Check",
    "label": "Show to Purchase"
+  },
+  {
+   "fieldname": "column_break_fkib",
+   "fieldtype": "Column Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-14 11:29:09.695481",
+ "modified": "2026-05-22 11:22:16.529498",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",
