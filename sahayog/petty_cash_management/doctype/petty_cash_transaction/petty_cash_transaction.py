@@ -35,10 +35,10 @@ from sahayog.petty_cash_management.permissions import get_user_allowed_branches
 
 class PettyCashTransaction(Document):
 
-    def before_cancel(self):
-        if self.approval_status in ["Approved", "Verified"]:
-            frappe.throw(
-                "This transaction cannot be cancelled after HO limit approval or verification.")
+    # def before_cancel(self):
+    #     if self.approval_status in ["Approved", "Verified"]:
+    #         frappe.throw(
+    #             "This transaction cannot be cancelled after HO limit approval or verification.")
 
     def before_insert(self):
         if not self.transaction_date:
