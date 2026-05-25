@@ -201,9 +201,9 @@ frappe.ui.form.on('Branch Petty Cash Account', {
 
                         if (!frm.doc.monthly_limit || frm.doc.monthly_limit == 0) {
                             if (b_type === "Metro") {
-                                frm.set_value('monthly_limit', 25000);
+                                frm.set_value('monthly_limit', 30000);
                             } else {
-                                frm.set_value('monthly_limit', 15000);
+                                frm.set_value('monthly_limit', 25000);
                             }
                         }
                     }
