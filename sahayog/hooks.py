@@ -171,6 +171,7 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_naming_controls_to_asset.execute"
 
 ]
 # Uninstallation
@@ -354,6 +355,9 @@ doc_events = {
         "validate": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
         "after_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save",
         "on_update": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save"
+    },
+    "Asset": {
+        "autoname": "sahayog.doc_events.asset.custom_asset_autoname"
     }
 }
 
