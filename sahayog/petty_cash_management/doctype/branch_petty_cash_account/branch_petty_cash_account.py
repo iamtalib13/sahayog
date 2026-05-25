@@ -128,9 +128,9 @@ class BranchPettyCashAccount(Document):
 
         if not self.monthly_limit:
             if actual_branch_type == "Metro":
-                self.monthly_limit = 25000
+                self.monthly_limit = 30000
             else:
-                self.monthly_limit = 15000
+                self.monthly_limit = 25000
 
         # 1. Auto-generate GL Sub Code
         if self.branch:
