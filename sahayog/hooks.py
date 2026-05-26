@@ -65,6 +65,7 @@ doctype_js = {
     "Shareholder": "public/js/shareholder.js",
     "Share Transfer": "public/js/share_transfer.js",
     "Asset Movement": "public/js/asset_movement.js",
+    "Asset": "public/js/asset_custom.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -170,6 +171,8 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
+    "sahayog.patches.custom_fields.add_naming_controls_to_asset.execute",
+    "sahayog.patches.set_asset_status_options.execute"
 
 ]
 # Uninstallation
@@ -353,6 +356,9 @@ doc_events = {
         "validate": "sahayog.petty_cash_management.api.file_hooks.force_public_for_petty_cash_transaction",
         "after_insert": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save",
         "on_update": "sahayog.petty_cash_management.api.file_hooks.force_public_after_save"
+    },
+    "Asset": {
+        "autoname": "sahayog.doc_events.asset.custom_asset_autoname"
     }
 }
 

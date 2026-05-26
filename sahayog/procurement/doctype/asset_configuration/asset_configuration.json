@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-05-22 11:39:39.657400",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "type",
+  "value"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "\nMAC Address\nModel Number\nOffice Key\nOperating System\nProcessor\nRAM\nSerial Number\nStorage\nVendor\nWarranty Expiry\nWindows Key",
+   "reqd": 1
+  },
+  {
+   "columns": 5,
+   "fieldname": "value",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Value",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-05-25 13:59:03.285277",
+ "modified_by": "Administrator",
+ "module": "Procurement",
+ "name": "Asset Configuration",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

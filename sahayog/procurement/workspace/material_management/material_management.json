@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"R5CjkY5JmZ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">StockIO</span>\",\"col\":12}},{\"id\":\"V2r_roXMpV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stockio\",\"col\":3}},{\"id\":\"whWJCIrXe9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Employee Material Request\",\"col\":3}},{\"id\":\"shlbf4IzWO\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stock and asset reports\",\"col\":3}},{\"id\":\"tM0sTKrfXo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Material Requests\",\"col\":3}},{\"id\":\"0H-ABT2Eb-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Store Asset Master\",\"col\":3}},{\"id\":\"8_ZgwAb2ij\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Store Material Request\",\"col\":3}},{\"id\":\"ar6wovBNVo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Pending Approvals\",\"col\":3}},{\"id\":\"RpOLCcaqww\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Asset Transfer\",\"col\":3}},{\"id\":\"v8xA1EhCTV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Consumed Items\",\"col\":3}},{\"id\":\"5Yubo8xyTW\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Stock\",\"col\":3}},{\"id\":\"n0Ier-hSQi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"My Assets\",\"col\":3}}]",
+ "content": "[{\"id\":\"R5CjkY5JmZ\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">StockIO</span>\",\"col\":12}},{\"id\":\"V2r_roXMpV\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stockio\",\"col\":3}},{\"id\":\"whWJCIrXe9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Material Request\",\"col\":3}},{\"id\":\"Bb-bXSro1b\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Purchase Entry\",\"col\":3}},{\"id\":\"n0Ier-hSQi\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Asset Report\",\"col\":3}}]",
  "creation": "2025-11-15 15:22:39.294056",
  "custom_blocks": [],
  "docstatus": 0,
@@ -13,7 +13,7 @@
  "is_hidden": 0,
  "label": "Material Management",
  "links": [],
- "modified": "2026-02-03 10:52:45.200653",
+ "modified": "2026-05-22 11:32:15.643069",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Material Management",
@@ -24,30 +24,36 @@
  "quick_lists": [],
  "roles": [
   {
-   "role": "Employee"
-  },
-  {
    "role": "System Manager"
   },
   {
-   "role": "Stock Manager"
+   "role": "Store Manager"
   }
  ],
  "sequence_id": 93.0,
  "shortcuts": [
   {
-   "color": "Grey",
-   "doc_view": "New",
-   "label": "Employee Material Request",
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Material Request",
    "link_to": "Employee Material Request",
+   "stats_filter": "[[\"Employee Material Request\",\"status\",\"=\",null,false]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} Inward",
+   "label": "Purchase Entry",
+   "link_to": "Purchase Receipt",
    "stats_filter": "[]",
    "type": "DocType"
   },
   {
    "color": "Grey",
    "doc_view": "List",
-   "label": "Stock and asset reports",
-   "link_to": "My Material Requests",
+   "label": "Asset Report",
+   "link_to": "My Assets",
    "report_ref_doctype": "Employee Material Request",
    "type": "Report"
   },
@@ -57,70 +63,6 @@
    "label": "Stockio",
    "link_to": "stockio",
    "type": "Page"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "My Material Requests",
-   "link_to": "My Material Requests",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Store Asset Master",
-   "link_to": "Store Asset Master",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Store Material Request",
-   "link_to": "Store material request",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "My Pending Approvals",
-   "link_to": "My Pending Approvals",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Asset Transfer",
-   "link_to": "Asset Transfer",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Consumed Items",
-   "link_to": "Consumed Items",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Branch Stock",
-   "link_to": "Branch Stock",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "My Assets",
-   "link_to": "My Assets",
-   "report_ref_doctype": "Employee Material Request",
-   "type": "Report"
   }
  ],
  "title": "Material Management"
