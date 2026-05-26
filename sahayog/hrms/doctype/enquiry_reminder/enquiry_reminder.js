@@ -112,6 +112,9 @@ frappe.ui.form.on("Enquiry Reminder", {
   },
 
   refresh(frm) {
+    if (frm.page && frm.page.set_title) {
+      frm.page.set_title(__("Reminder Notice of Enquiry"));
+    }
     // Send Email Button
     frm.remove_custom_button("Send Email");
 

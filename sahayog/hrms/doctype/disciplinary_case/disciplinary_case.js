@@ -3,6 +3,9 @@
 
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
+    if (frm.page && frm.page.set_title) {
+      frm.page.set_title(__("Initiate disciplinary process"));
+    }
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
         frappe.call({

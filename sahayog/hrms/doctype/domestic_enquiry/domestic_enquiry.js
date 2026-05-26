@@ -3,6 +3,9 @@
 
 frappe.ui.form.on("Domestic Enquiry", {
   refresh(frm) {
+    if (frm.page && frm.page.set_title) {
+      frm.page.set_title(__("Domestic Enquiry Process"));
+    }
     // send email button
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
