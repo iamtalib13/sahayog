@@ -2,6 +2,13 @@ import csv
 import io
 from datetime import datetime
 
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import flt, cint, nowdate, getdate, get_first_day, get_last_day, date_diff
+
+
 import frappe
 import openpyxl
 from frappe import _
@@ -27,6 +34,11 @@ from sahayog.petty_cash_management.permissions import get_user_allowed_branches
 
 
 class PettyCashTransaction(Document):
+
+    # def before_cancel(self):
+    #     if self.approval_status in ["Approved", "Verified"]:
+    #         frappe.throw(
+    #             "This transaction cannot be cancelled after HO limit approval or verification.")
 
     def before_insert(self):
         if not self.transaction_date:
@@ -285,7 +297,8 @@ class PettyCashTransaction(Document):
             self.amount = sum(flt(item.amount) for item in self.items)
             self.calculate_limit_breakdown()
             self.validate_bill_dates()
-            self.validate_expense_soft(wallet)
+            # self.validate_expense_soft(wallet)
+            self.validate_expense_against_active_wallet()
 
         # [FIX] Fetch BOTH Real Balance and Unsettled Cash for display
         wallet_values = frappe.db.get_value("Branch Petty Cash Account",
@@ -480,6 +493,7 @@ class PettyCashTransaction(Document):
             frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(
                 self.amount_exceeding_limit), alert=True)
 
+    # old
     # def on_submit(self):
 
     #      # On Submit, Trigger Finacle API
@@ -561,44 +575,90 @@ class PettyCashTransaction(Document):
     #         self.create_journal_entry()
     #         self.update_wallet()
 
+    # previous
+    # def on_submit(self):
+    #     # --- 1. Fund Allocation Logic (unchanged) ---
+    #     if self.transaction_type == "Fund Allocation":
+    #         if not self.posted_to_finacle:
+    #             # Only process if not already synced from Finacle
+    #             self.process_finacle_transfer()
+    #         else:
+    #             frappe.msgprint(
+    #                 _("Fund Allocation Synced from Finacle successfully."))
+
+    #     # --- 2. Expense Logic (Modified for Switch) ---
+    #     elif self.transaction_type == "Expense":
+    #         # A. Always update wallet tracking (This is internal Frappe logic, independent of Finacle)
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {
+    #                                 "branch": self.branch})
+    #         wallet.update_unsettled_cash(self.amount, "Expense")
+
+    #         # B. Handle Limits (Internal Approval Logic)
+    #         if self.amount_exceeding_limit > 0:
+    #             self.db_set('amount_deducted', self.amount_within_limit)
+    #             self.db_set('approval_status', 'Pending Approval')
+    #         else:
+    #             self.db_set('amount_deducted', self.amount)
+    #             self.db_set('approval_status', 'Approved')
+
+    #         # C. CONTROL SWITCH: Journal Entry Creation
+    #         # [UPDATE] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
+    #         enable_integration = frappe.db.get_single_value(
+    #             "Sahayog Settings", "enable_finacle_integration")
+
+    #         if enable_integration:
+    #             # OLD FLOW: Create JE -> Update Wallet -> Wait for Verification API
+    #             self.create_journal_entry()
+    #         else:
+    #             # NEW FLOW: Skip JE -> Just Update Wallet -> Wait for Manual Verification
+    #             pass
+
+    #         # D. Update Wallet Balance (Internal)
+    #         self.update_wallet()
+
     def on_submit(self):
-        # --- 1. Fund Allocation Logic (unchanged) ---
+        if self.transaction_type == "Expense":
+            self.validate_expense_against_active_wallet()
+        # 1. Fund Allocation flow
         if self.transaction_type == "Fund Allocation":
-            if not self.posted_to_finacle:
-                # Only process if not already synced from Finacle
-                self.process_finacle_transfer()
+            if not self.postedtofinacle:
+                self.processfinacletransfer()
             else:
                 frappe.msgprint(
                     _("Fund Allocation Synced from Finacle successfully."))
 
-        # --- 2. Expense Logic (Modified for Switch) ---
-        elif self.transaction_type == "Expense":
-            # A. Always update wallet tracking (This is internal Frappe logic, independent of Finacle)
-            wallet = frappe.get_doc("Branch Petty Cash Account", {
-                                    "branch": self.branch})
-            wallet.update_unsettled_cash(self.amount, "Expense")
+            self.db_set("amount_deducted", 0, update_modified=False)
+            self.db_set("approval_status", "Posted", update_modified=False)
+            self.update_wallet()
+            return
 
-            # B. Handle Limits (Internal Approval Logic)
+        # 2. Expense flow
+        if self.transaction_type == "Expense":
             if self.amount_exceeding_limit > 0:
-                self.db_set('amount_deducted', self.amount_within_limit)
-                self.db_set('approval_status', 'Pending Approval')
+                self.db_set("amount_deducted",
+                            self.amount_within_limit, update_modified=False)
+                self.db_set("approval_status", "Pending Approval",
+                            update_modified=False)
             else:
-                self.db_set('amount_deducted', self.amount)
-                self.db_set('approval_status', 'Approved')
+                self.db_set("amount_deducted", self.amount,
+                            update_modified=False)
+                self.db_set("approval_status", "Approved",
+                            update_modified=False)
 
-            # C. CONTROL SWITCH: Journal Entry Creation
-            # [UPDATE] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
-            enable_integration = frappe.db.get_single_value(
-                "Sahayog Settings", "enable_finacle_integration")
+            if self.is_legacy_unsettled_cash_flow_enabled():
+                wallet = self.get_branch_wallet_doc()
+                wallet.update_unsettled_cash(self.amount, "Expense")
+            else:
+                self.apply_new_flow_wallet_deduction()
+
+            enable_integration = cint(
+                frappe.db.get_single_value(
+                    "Sahayog Settings", "enable_finacle_integration") or 0
+            )
 
             if enable_integration:
-                # OLD FLOW: Create JE -> Update Wallet -> Wait for Verification API
-                self.create_journal_entry()
-            else:
-                # NEW FLOW: Skip JE -> Just Update Wallet -> Wait for Manual Verification
-                pass
+                self.createjournalentry()
 
-            # D. Update Wallet Balance (Internal)
             self.update_wallet()
 
     def create_ho_fund_allocation_je(self):
@@ -1022,20 +1082,35 @@ class PettyCashTransaction(Document):
 
         return new_account.name
 
+    # previous code
+    # def on_cancel(self):
+
+    #     # If cancelled, the cash is legally "back" with the user (unaccounted for)
+    #     if self.transaction_type == "Expense":
+    #         wallet = frappe.get_doc("Branch Petty Cash Account", {
+    #                                 "branch": self.branch})
+    #         # Treat it like a Withdrawal (Add it back to liability)
+    #         wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+    #     # Refund whatever was deducted
+    #     self.amount_deducted = 0
+    #     # self.approval_status = "Draft"
+    #     self.approval_status = "Canceled"
+    #     self.db_set("approval_status", "Canceled")
+
+    #     self.update_wallet()
+
+    # new flow
+
     def on_cancel(self):
-
-        # If cancelled, the cash is legally "back" with the user (unaccounted for)
         if self.transaction_type == "Expense":
-            wallet = frappe.get_doc("Branch Petty Cash Account", {
-                                    "branch": self.branch})
-            # Treat it like a Withdrawal (Add it back to liability)
-            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+            if self.is_legacy_unsettled_cash_flow_enabled():
+                wallet = self.get_branch_wallet_doc()
+                wallet.update_unsettled_cash(self.amount, "Withdrawal")
+            else:
+                self.apply_new_flow_terminal_credit("Canceled")
 
-        # Refund whatever was deducted
-        self.amount_deducted = 0
-        # self.approval_status = "Draft"
-        self.approval_status = "Canceled"
-        self.db_set("approval_status", "Canceled")
+            self.db_set("approval_status", "Canceled", update_modified=False)
 
         self.update_wallet()
 
@@ -1052,39 +1127,121 @@ class PettyCashTransaction(Document):
             frappe.db.set_value("Branch Petty Cash Account", {
                                 "branch": self.branch}, "last_funded_on", self.transaction_date)
 
+    # previous
+    # @frappe.whitelist()
+    # def ho_approve_limit(self):
+    #     """
+    #     Scenario 2 Step 2: HO Manager approves the excess.
+    #     """
+    #     # if "HO Petty Cash Manager" not in frappe.get_roles():
+    #     #     frappe.throw(_("Only HO Petty Cash Manager can approve limits."))
+
+    #     user_roles = frappe.get_roles()
+    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
+    #         frappe.throw("Only HO Petty Cash Manager or Approver can approve.")
+
+    #     if self.docstatus != 1 or self.approval_status != "Pending Approval":
+    #         frappe.throw(_("Document is not pending approval."))
+
+    #     # Deduct the remaining amount
+    #     self.amount_deducted = self.amount  # Now we deduct the full amount
+    #     self.approval_status = "Approved"  # Limit is cleared
+
+    #     self.db_set('amount_deducted', self.amount)
+    #     self.db_set('approval_status', 'Approved')
+
+    #     # Update Wallet Balance
+    #     self.update_wallet()
+
+    #     # frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
+    #     frappe.msgprint(
+    #         msg="Limit Exceedance Approved. Full amount deducted from wallet.",
+    #         title="Message",
+    #         indicator='blue',
+    #         alert=True  # <--- Added this to make it a floating alert
+    #     )
+
     @frappe.whitelist()
     def ho_approve_limit(self):
-        """
-        Scenario 2 Step 2: HO Manager approves the excess.
-        """
-        # if "HO Petty Cash Manager" not in frappe.get_roles():
-        #     frappe.throw(_("Only HO Petty Cash Manager can approve limits."))
-
         user_roles = frappe.get_roles()
+
         if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
-            frappe.throw("Only HO Petty Cash Manager or Approver can approve.")
+            frappe.throw(
+                _("Only HO Petty Cash Manager or Approver can approve."))
 
         if self.docstatus != 1 or self.approval_status != "Pending Approval":
             frappe.throw(_("Document is not pending approval."))
 
-        # Deduct the remaining amount
-        self.amount_deducted = self.amount  # Now we deduct the full amount
-        self.approval_status = "Approved"  # Limit is cleared
+        self.db_set("amount_deducted", self.amount, update_modified=False)
+        self.db_set("approval_status", "Approved", update_modified=False)
 
-        self.db_set('amount_deducted', self.amount)
-        self.db_set('approval_status', 'Approved')
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            self.update_wallet()
+        else:
+            self.apply_new_flow_pending_approval_deduction()
 
-        # Update Wallet Balance
-        self.update_wallet()
-
-        # frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
         frappe.msgprint(
-            msg="Limit Exceedance Approved. Full amount deducted from wallet.",
-            title="Message",
-            indicator='blue',
-            alert=True  # <--- Added this to make it a floating alert
+            msg=_("Limit Exceedance Approved. Full amount approved."),
+            title=_("Message"),
+            indicator="blue"
         )
 
+    # new flow
+
+    # @frappe.whitelist()
+    # def ho_approve_limit(self):
+    #     user_roles = frappe.get_roles()
+
+    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
+    #         frappe.throw(
+    #             _("Only HO Petty Cash Manager or Approver can approve."))
+
+    #     if self.docstatus != 1 or self.approval_status != "Pending Approval":
+    #         frappe.throw(_("Document is not pending approval."))
+
+    #     self.db_set("amount_deducted", self.amount, update_modified=False)
+    #     self.db_set("approval_status", "Approved", update_modified=False)
+
+    #     if self.is_legacy_unsettled_cash_flow_enabled():
+    #         self.update_wallet()
+
+    #     frappe.msgprint(
+    #         msg=_("Limit Exceedance Approved. Full amount approved."),
+    #         title=_("Message"),
+    #         indicator="blue"
+    #     )
+
+    def apply_new_flow_pending_approval_deduction(self):
+        if self.transaction_type != "Expense":
+            return
+
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            return
+
+        if self.approval_status != "Approved":
+            return
+
+        already_deducted = flt(self.wallet_effect_amount)
+        target_total = flt(self.amount_deducted)
+        pending_amount = target_total - already_deducted
+
+        if pending_amount <= 0:
+            return
+
+        wallet = self.get_branch_wallet_doc()
+        wallet.deduct_current_balance(
+            amount=pending_amount,
+            reference_doctype=self.doctype,
+            reference_name=self.name
+        )
+
+        self.db_set("wallet_effect_applied", 1, update_modified=False)
+        self.db_set("wallet_effect_amount",
+                    target_total, update_modified=False)
+        self.db_set("wallet_effect_reference_status",
+                    self.approval_status, update_modified=False)
+
+    # old
     # @frappe.whitelist()
     # def ho_verify_bill(self):
     #     """
@@ -1165,86 +1322,217 @@ class PettyCashTransaction(Document):
     #             indicator='red'
     #         )
 
+
+##############################################################
+# previous
+
+    # @frappe.whitelist()
+    # def ho_verify_bill(self):
+    #     """
+    #     Modified to support Manual Mode (File Download)
+    #     """
+    #     # Permission Check (Same as before)
+    #     # if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
+    #     #     frappe.throw(_("Only HO Petty Cash Manager can verify."))
+
+    #     user_roles = frappe.get_roles()
+    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+    #         frappe.throw("Only HO Petty Cash Manager or Verifier can verify.")
+
+    #     if self.approval_status != "Approved":
+    #         frappe.throw(_("Document must be Approved before Verification."))
+
+    #     # [FIX] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
+    #     enable_integration = frappe.db.get_single_value(
+    #         "Sahayog Settings", "enable_finacle_integration")
+
+    #     if enable_integration:
+    #         # --- OLD LOGIC (Finacle Mode) ---
+    #         if not self.journal_entry_ref:
+    #             frappe.throw(_("Journal Entry Reference is missing."))
+
+    #         # Call your existing API function
+    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+    #         response = individual_finacle_fund_transfer_api(
+    #             self.journal_entry_ref)
+
+    #         if response.get("status") == "SUCCESS":
+    #             frappe.db.set_value(self.doctype, self.name, {
+    #                 "finacle_tran_id": response.get("trn_id"),
+    #                 "finacle_tran_date": nowdate(),
+    #                 "approval_status": "Verified",
+    #                 "approved_by": frappe.session.user
+    #             })
+
+    #             frappe.msgprint(
+    #                 # msg=f"Finacle Success: {response.get('message')}",
+    #                 msg=(f"Finacle Success: {response.get('trn_id')}"),
+    #                 title="Success",
+    #                 indicator='green',
+    #                 alert=True  # <--- Added this to make it a floating alert
+    #             )
+
+    #             # frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
+    #         else:
+    #             frappe.msgprint(
+    #                 # msg=f"Finacle Failed: {response.get('message')}",
+    #                 msg=(f"Finacle Failed: {response.get('message')}"),
+    #                 title="Error",
+    #                 indicator='red',
+    #                 alert=True  # <--- Added this to make it a floating alert
+    #             )
+
+    #             # frappe.msgprint(f"Finacle Failed: {response.get('message')}")
+
+    #     else:
+    #         # --- NEW LOGIC (Manual/Excel Mode) ---
+    #         # Just mark it as Verified so the download buttons appear
+    #         frappe.db.set_value(self.doctype, self.name, {
+    #             "approval_status": "Verified",
+    #             "approved_by": frappe.session.user,
+    #             "finacle_tran_date": nowdate(),  # Log when it was manually verified
+    #             "finacle_tran_particular": "Manual Verification (TTUM Mode)"
+    #         })
+
+    #         # frappe.msgprint(
+    #         #     msg="Record Verified Manually. Please download the TTUM/Excel files now.",
+    #         #     title="Verified (Offline Mode)",
+    #         #     indicator='green'
+    #         # )
+
+    #         frappe.msgprint(
+    #             msg="Record Verified Manually. Please download the TTUM/Excel files now.",
+    #             title="Verified (Offline Mode)",
+    #             indicator='green',
+    #             alert=True  # <--- Added this to make it a floating alert
+    #         )
+
+    # new flow
+
+    # new giving error
+    # @frappe.whitelist()
+    # def ho_verify_bill(self):
+    #     user_roles = frappe.get_roles()
+
+    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+    #         frappe.throw(
+    #             _("Only HO Petty Cash Manager or Verifier can verify."))
+
+    #     if self.approval_status != "Approved":
+    #         frappe.throw(_("Document must be Approved before Verification."))
+
+    #     enable_integration = cint(
+    #         frappe.db.get_single_value(
+    #             "Sahayog Settings", "enable_finacle_integration") or 0
+    #     )
+
+    #     if enable_integration:
+    #         if not self.journalentryref:
+    #             frappe.throw(_("Journal Entry Reference is missing."))
+
+    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+
+    #         response = individual_finacle_fund_transfer_api(
+    #             self.journalentryref)
+
+    #         if response.get("status") != "SUCCESS":
+    #             frappe.msgprint({
+    #                 "message": _("Finacle Failed: {0}").format(response.get("message")),
+    #                 "title": _("Error"),
+    #                 "indicator": "red",
+    #                 "alert": True
+    #             })
+    #             return
+
+    #         frappe.db.set_value(
+    #             self.doctype,
+    #             self.name,
+    #             {
+    #                 "finacle_tran_id": response.get("trn_id"),
+    #                 "finacle_tran_date": nowdate(),
+    #                 "approved_by": frappe.session.user
+    #             },
+    #             update_modified=False
+    #         )
+    #     else:
+    #         self.db_set("approved_by", frappe.session.user,
+    #                     update_modified=False)
+
+    #     if self.is_legacy_unsettled_cash_flow_enabled():
+    #         self.db_set("approval_status", "Verified", update_modified=False)
+    #     else:
+    #         self.apply_new_flow_terminal_credit("Verified")
+    #         self.db_set("approval_status", "Verified", update_modified=False)
+
+    #     frappe.msgprint({
+    #         "ho_verify_bill": _("Bills Verified successfully."),
+    #         "title": _("Verification Complete"),
+    #         "indicator": "green",
+    #         "alert": True
+    #     })
+
+
+    @frappe.whitelist()
+    #
     @frappe.whitelist()
     def ho_verify_bill(self):
-        """
-        Modified to support Manual Mode (File Download)
-        """
-        # Permission Check (Same as before)
-        # if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
-        #     frappe.throw(_("Only HO Petty Cash Manager can verify."))
-
         user_roles = frappe.get_roles()
+
         if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
-            frappe.throw("Only HO Petty Cash Manager or Verifier can verify.")
+            frappe.throw(
+                _("Only HO Petty Cash Manager or Verifier can verify."))
 
         if self.approval_status != "Approved":
             frappe.throw(_("Document must be Approved before Verification."))
 
-        # [FIX] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
-        enable_integration = frappe.db.get_single_value(
-            "Sahayog Settings", "enable_finacle_integration")
+        enable_integration = cint(
+            frappe.db.get_single_value(
+                "Sahayog Settings", "enable_finacle_integration") or 0
+        )
 
         if enable_integration:
-            # --- OLD LOGIC (Finacle Mode) ---
             if not self.journal_entry_ref:
                 frappe.throw(_("Journal Entry Reference is missing."))
 
-            # Call your existing API function
             from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+
             response = individual_finacle_fund_transfer_api(
                 self.journal_entry_ref)
 
-            if response.get("status") == "SUCCESS":
-                frappe.db.set_value(self.doctype, self.name, {
+            if response.get("status") != "SUCCESS":
+                frappe.msgprint(
+                    msg=_("Finacle Failed: {0}").format(
+                        response.get("message")),
+                    title=_("Error"),
+                    indicator="red"
+                )
+                return
+
+            frappe.db.set_value(
+                self.doctype,
+                self.name,
+                {
                     "finacle_tran_id": response.get("trn_id"),
                     "finacle_tran_date": nowdate(),
-                    "approval_status": "Verified",
                     "approved_by": frappe.session.user
-                })
-
-                frappe.msgprint(
-                    # msg=f"Finacle Success: {response.get('message')}",
-                    msg=(f"Finacle Success: {response.get('trn_id')}"),
-                    title="Success",
-                    indicator='green',
-                    alert=True  # <--- Added this to make it a floating alert
-                )
-
-                # frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
-            else:
-                frappe.msgprint(
-                    # msg=f"Finacle Failed: {response.get('message')}",
-                    msg=(f"Finacle Failed: {response.get('message')}"),
-                    title="Error",
-                    indicator='red',
-                    alert=True  # <--- Added this to make it a floating alert
-                )
-
-                # frappe.msgprint(f"Finacle Failed: {response.get('message')}")
-
-        else:
-            # --- NEW LOGIC (Manual/Excel Mode) ---
-            # Just mark it as Verified so the download buttons appear
-            frappe.db.set_value(self.doctype, self.name, {
-                "approval_status": "Verified",
-                "approved_by": frappe.session.user,
-                "finacle_tran_date": nowdate(),  # Log when it was manually verified
-                "finacle_tran_particular": "Manual Verification (TTUM Mode)"
-            })
-
-            # frappe.msgprint(
-            #     msg="Record Verified Manually. Please download the TTUM/Excel files now.",
-            #     title="Verified (Offline Mode)",
-            #     indicator='green'
-            # )
-
-            frappe.msgprint(
-                msg="Record Verified Manually. Please download the TTUM/Excel files now.",
-                title="Verified (Offline Mode)",
-                indicator='green',
-                alert=True  # <--- Added this to make it a floating alert
+                },
+                update_modified=False
             )
+        else:
+            self.db_set("approved_by", frappe.session.user,
+                        update_modified=False)
+
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            self.db_set("approval_status", "Verified", update_modified=False)
+        else:
+            self.apply_new_flow_terminal_credit("Verified")
+            self.db_set("approval_status", "Verified", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Bills Verified successfully."),
+            title=_("Verification Complete"),
+            indicator="green"
+        )
 
     # def has_permission(self, permtype="read"):
     #     """
@@ -1274,7 +1562,7 @@ class PettyCashTransaction(Document):
         user_roles = frappe.get_roles(user)
 
         # [UPDATED] Allow Administrator and all HO roles to open the document
-        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "System Manager"]):
+        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "System Manager", "HO Petty Cash Auditor",]):
             return True
 
         # Existing branch logic fallback
@@ -1602,6 +1890,160 @@ class PettyCashTransaction(Document):
                     f"Row #{row.idx}: Description cannot be more than 30 characters including spaces."
                 )
 
+    def is_legacy_unsettled_cash_flow_enabled(self):
+        return cint(
+            frappe.db.get_single_value(
+                "Sahayog Settings", "enable_unsettled_cash_flow") or 0
+        )
+
+    def get_branch_wallet_doc(self):
+        wallet_name = frappe.db.get_value("Branch Petty Cash Account", {
+                                          "branch": self.branch}, "name")
+        if not wallet_name:
+            frappe.throw(
+                _("Branch Petty Cash Account for branch {0} not found.").format(self.branch))
+        return frappe.get_doc("Branch Petty Cash Account", wallet_name)
+
+    # def get_effective_deduction_amount(self):
+    #     return flt(self.amount_deducted) if flt(self.amount_deducted) > 0 else flt(self.amount)
+
+    def get_effective_deduction_amount(self):
+        return flt(self.amount_deducted)
+
+    def apply_new_flow_wallet_deduction(self):
+        if self.transaction_type != "Expense":
+            return
+
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            return
+
+        if cint(self.wallet_effect_applied):
+            return
+
+        if self.approval_status not in ["Approved", "Pending Approval"]:
+            return
+
+        deduct_amount = flt(self.get_effective_deduction_amount())
+
+        if deduct_amount <= 0:
+            self.db_set("wallet_effect_applied", 0, update_modified=False)
+            self.db_set("wallet_effect_amount", 0, update_modified=False)
+            self.db_set("wallet_effect_reference_status",
+                        self.approval_status, update_modified=False)
+            return
+
+        wallet = self.get_branch_wallet_doc()
+        wallet.deduct_current_balance(
+            amount=deduct_amount,
+            reference_doctype=self.doctype,
+            reference_name=self.name
+        )
+
+        self.db_set("wallet_effect_applied", 1, update_modified=False)
+        self.db_set("wallet_effect_amount",
+                    deduct_amount, update_modified=False)
+        self.db_set("wallet_effect_reference_status",
+                    self.approval_status, update_modified=False)
+
+    def apply_new_flow_terminal_credit(self, action):
+        if self.transaction_type != "Expense":
+            return
+
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            return
+
+        if not cint(self.wallet_effect_applied):
+            return
+
+        if self.wallet_terminal_action:
+            return
+
+        credit_amount = flt(self.wallet_effect_amount)
+        if credit_amount <= 0:
+            return
+
+        wallet = self.get_branch_wallet_doc()
+        wallet.credit_current_balance(
+            amount=credit_amount,
+            reference_doctype=self.doctype,
+            reference_name=self.name
+        )
+
+        self.db_set("wallet_terminal_action", action, update_modified=False)
+    # working
+    # def validate_expense_against_active_wallet(self):
+    #     if self.transaction_type != "Expense":
+    #         return
+
+    #     wallet_data = frappe.db.get_value(
+    #         "Branch Petty Cash Account",
+    #         {"branch": self.branch},
+    #         ["current_balance", "unsettled_cash"],
+    #         as_dict=True
+    #     )
+
+    #     if not wallet_data:
+    #         return
+
+    #     current_balance = flt(wallet_data.current_balance)
+    #     unsettled_cash = flt(wallet_data.unsettled_cash)
+
+    #     if self.is_legacy_unsettled_cash_flow_enabled():
+    #         total_buying_power = current_balance + unsettled_cash
+    #         if total_buying_power < flt(self.amount):
+    #             frappe.throw(
+    #                 _("Insufficient Funds. Bank: {0}, Cash-in-Hand: {1}, Total: {2}, Required: {3}").format(
+    #                     current_balance, unsettled_cash, total_buying_power, self.amount
+    #                 )
+    #             )
+    #     else:
+    #         if current_balance < flt(self.amount):
+    #             frappe.throw(
+    #                 _("Insufficient Current Balance. Available: {0}, Required: {1}").format(
+    #                     current_balance, self.amount
+    #                 )
+    #             )
+
+    def validate_expense_against_active_wallet(self):
+        if self.transaction_type != "Expense":
+            return
+
+        wallet_data = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": self.branch},
+            ["current_balance", "unsettled_cash"],
+            as_dict=True
+        )
+
+        if not wallet_data:
+            frappe.throw(
+                _("Branch Petty Cash Account not found for branch {0}.").format(self.branch))
+
+        current_balance = flt(wallet_data.current_balance)
+        unsettled_cash = flt(wallet_data.unsettled_cash)
+
+        if self.is_legacy_unsettled_cash_flow_enabled():
+            total_buying_power = current_balance + unsettled_cash
+            if total_buying_power < flt(self.amount):
+                frappe.throw(
+                    _("Insufficient Funds. Bank: {0}, Cash-in-Hand: {1}, Total: {2}, Required: {3}").format(
+                        current_balance, unsettled_cash, total_buying_power, self.amount
+                    )
+                )
+        else:
+            if current_balance <= 0:
+                frappe.throw(
+                    _("Current Balance is 0 for branch {0}. You cannot submit an expense transaction.").format(
+                        self.branch
+                    )
+                )
+
+            if flt(self.amount) > current_balance:
+                frappe.throw(
+                    _("You cannot submit this expense because the available Current Balance for branch {0} is {1} and requested expense amount is {2}. Current Balance can never go negative.").format(
+                        self.branch, current_balance, self.amount
+                    )
+                )
 
 # @frappe.whitelist()
 # def get_category_limit_status(branch, category, transaction_date, doc_name=None):
@@ -1643,6 +2085,7 @@ class PettyCashTransaction(Document):
 #     available = flt(limit) - flt(spent)
 #     return max(available, 0)
 
+
 @frappe.whitelist()
 def get_category_limit_status(branch, category, transaction_date, docname=None):
     """
@@ -1680,22 +2123,42 @@ def get_category_limit_status(branch, category, transaction_date, docname=None):
 
     return max(flt(limit) - flt(already_spent), 0)
 
+# old
+# @frappe.whitelist()
+# def get_branch_balance(branch):
+#     """
+#     Returns both Bank Balance and Unsettled Cash for the UI.
+#     """
+#     if not branch:
+#         return {}
+
+#     data = frappe.db.get_value("Branch Petty Cash Account",
+#                                {"branch": branch},
+#                                ["current_balance", "unsettled_cash"],
+#                                as_dict=True
+#                                )
+
+#     # Return 0 if None
+#     return {
+#         "current_balance": flt(data.current_balance) if data else 0.0,
+#         "unsettled_cash": flt(data.unsettled_cash) if data else 0.0
+#     }
+
+# new flow
+
 
 @frappe.whitelist()
 def get_branch_balance(branch):
-    """
-    Returns both Bank Balance and Unsettled Cash for the UI.
-    """
     if not branch:
-        return {}
+        return
 
-    data = frappe.db.get_value("Branch Petty Cash Account",
-                               {"branch": branch},
-                               ["current_balance", "unsettled_cash"],
-                               as_dict=True
-                               )
+    data = frappe.db.get_value(
+        "Branch Petty Cash Account",
+        {"branch": branch},
+        ["current_balance", "unsettled_cash"],
+        as_dict=True
+    )
 
-    # Return 0 if None
     return {
         "current_balance": flt(data.current_balance) if data else 0.0,
         "unsettled_cash": flt(data.unsettled_cash) if data else 0.0

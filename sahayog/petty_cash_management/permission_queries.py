@@ -36,9 +36,8 @@
 #     return f"`tabBranch Petty Cash Account`.branch IN ('{branches_str}')"
 
 
-
-
 import frappe
+
 
 def get_transaction_query_conditions(user):
     """
@@ -53,7 +52,7 @@ def get_transaction_query_conditions(user):
     #     return None
 
     roles = frappe.get_roles(user)
-    if 'System Manager' in roles or 'Administrator' in roles or any(r in roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier"]):
+    if 'System Manager' in roles or 'Administrator' in roles or any(r in roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "HO Petty Cash Auditor",]):
         return None
 
     # Dynamic Subquery - Database evaluates this live on every request
@@ -72,12 +71,12 @@ def has_transaction_permission(doc, ptype, user):
     #     return True
 
     user_roles = frappe.get_roles(user)
-    if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier"]):
+    if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "HO Petty Cash Auditor",]):
         return True
 
     # SQL bypasses frappe.db.get_value caching
     branch_data = frappe.db.sql(
-        "SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = %s AND status = 'Active' LIMIT 1", 
+        "SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = %s AND status = 'Active' LIMIT 1",
         (user,)
     )
 
@@ -85,5 +84,5 @@ def has_transaction_permission(doc, ptype, user):
         live_branch = branch_data[0][0]
         if doc.branch == live_branch:
             return True
-            
+
     return False

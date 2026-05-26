@@ -100,6 +100,14 @@ frappe.router.on('change', () => {
 
 frappe.ui.form.on('Petty Cash Transaction', {
 
+    toggle_unsettled_cash_field: function(frm) {
+    frappe.db.get_single_value('Sahayog Settings', 'enable_unsettled_cash_flow')
+        .then((value) => {
+            const show_unsettled_cash = Number(value) === 1;
+            frm.toggle_display('current_unsettled_cash', show_unsettled_cash);
+        });
+},
+
     get_indicator: function(doc) {
         const status = doc.approvalstatus || 'Draft';
 
@@ -185,8 +193,15 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
     refresh: function(frm) {
+
+        // Toggle Unsettled Cash field based on settings
+        frm.trigger('toggle_unsettled_cash_field');
+        frm.set_df_property('custom_ttum_remarks', 'hidden', 1);
+
+
         // Set Description Max Length to 30
         set_description_maxlength(frm);
+
         
 
         // Add Download Report button in Form View (optional)
@@ -384,10 +399,30 @@ frappe.ui.form.on('Petty Cash Transaction', {
         
 
          // Hide Cancel button if status is Verified
-        if (frm.doc.approval_status === 'Verified') {
-            frm.page.clear_secondary_action();  // Removes Cancel button
-            // Or use this more specific approach:
-            // frm.page.btn_secondary.hide();
+        // if (frm.doc.approval_status === 'Verified') {
+        //     frm.page.clear_secondary_action();  // Removes Cancel button
+        //     // Or use this more specific approach:
+        //     // frm.page.btn_secondary.hide();
+        // }
+
+        // Hide Cancel button if limit exceedance is already approved or fully verified
+        if (["Approved", "Verified"].includes(frm.doc.approval_status)) {
+            frm.page.clear_secondary_action();
+
+            if (frm.page.btn_secondary) {
+                frm.page.btn_secondary.hide();
+            }
+
+            frm.page.wrapper.find('button[data-label="Cancel"]').hide();
+        }
+        if(frappe.user.has_role('HO Petty Cash Verifier') && frm.doc.approval_status === 'Pending Approval') {
+            frm.page.clear_secondary_action();
+
+            if (frm.page.btn_secondary) {
+                frm.page.btn_secondary.hide();
+            }
+
+            frm.page.wrapper.find('button[data-label="Cancel"]').hide();
         }
         set_custom_business_status(frm);
     },
