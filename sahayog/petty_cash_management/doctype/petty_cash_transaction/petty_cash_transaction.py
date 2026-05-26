@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import flt, cint, nowdate, getdate, get_first_day, get_last_day, date_diff
+from frappe.utils import now_datetime
 
 
 import frappe
@@ -1471,9 +1472,74 @@ class PettyCashTransaction(Document):
     #         "alert": True
     #     })
 
+    ############################################################################
 
-    @frappe.whitelist()
-    #
+    # @frappe.whitelist()
+    # #
+    # @frappe.whitelist()
+    # def ho_verify_bill(self):
+    #     user_roles = frappe.get_roles()
+
+    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+    #         frappe.throw(
+    #             _("Only HO Petty Cash Manager or Verifier can verify."))
+
+    #     if self.approval_status != "Approved":
+    #         frappe.throw(_("Document must be Approved before Verification."))
+
+    #     enable_integration = cint(
+    #         frappe.db.get_single_value(
+    #             "Sahayog Settings", "enable_finacle_integration") or 0
+    #     )
+
+    #     if enable_integration:
+    #         if not self.journal_entry_ref:
+    #             frappe.throw(_("Journal Entry Reference is missing."))
+
+    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
+
+    #         response = individual_finacle_fund_transfer_api(
+    #             self.journal_entry_ref)
+
+    #         if response.get("status") != "SUCCESS":
+    #             frappe.msgprint(
+    #                 msg=_("Finacle Failed: {0}").format(
+    #                     response.get("message")),
+    #                 title=_("Error"),
+    #                 indicator="red"
+    #             )
+    #             return
+
+    #         frappe.db.set_value(
+    #             self.doctype,
+    #             self.name,
+    #             {
+    #                 "finacle_tran_id": response.get("trn_id"),
+    #                 "finacle_tran_date": now_datetime(),
+    #                 "approved_by": frappe.session.user
+    #             },
+    #             update_modified=False
+    #         )
+    #     else:
+    #         self.db_set("approved_by", frappe.session.user,
+    #                     update_modified=False)
+
+    #     if self.is_legacy_unsettled_cash_flow_enabled():
+    #         self.db_set("approval_status", "Verified", update_modified=False)
+    #     else:
+    #         self.apply_new_flow_terminal_credit("Verified")
+    #         self.db_set("approval_status", "Verified", update_modified=False)
+
+    #     frappe.msgprint(
+    #         msg=_("Bills Verified successfully."),
+    #         title=_("Verification Complete"),
+    #         indicator="green"
+    #     )
+
+        ############################################################################
+
+    from frappe.utils import now_datetime
+
     @frappe.whitelist()
     def ho_verify_bill(self):
         user_roles = frappe.get_roles()
@@ -1513,7 +1579,7 @@ class PettyCashTransaction(Document):
                 self.name,
                 {
                     "finacle_tran_id": response.get("trn_id"),
-                    "finacle_tran_date": nowdate(),
+                    "finacle_tran_date": now_datetime(),
                     "approved_by": frappe.session.user
                 },
                 update_modified=False
@@ -1527,6 +1593,8 @@ class PettyCashTransaction(Document):
         else:
             self.apply_new_flow_terminal_credit("Verified")
             self.db_set("approval_status", "Verified", update_modified=False)
+            self.db_set("finacle_tran_date", now_datetime(),
+                        update_modified=False)
 
         frappe.msgprint(
             msg=_("Bills Verified successfully."),
@@ -1824,7 +1892,7 @@ class PettyCashTransaction(Document):
         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
         currency_str = f"INR{self.branch}"
 
-        narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} STRYEX {self.name}"
+        narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
         debitDescription = ""
         total_debit = 0.0
 
@@ -2790,7 +2858,7 @@ def download_consolidated_txt_api(transaction_date=None):
         narrative_suffix = (
             doc.custom_ttum_remarks
             if doc.custom_ttum_remarks
-            else f"{ttum_date} STRYEX {doc.name}"
+            else f"{ttum_date} {doc.name}"
         )
 
         total_debit = 0.0
