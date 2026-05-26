@@ -1,3 +1,122 @@
+const ASSET_STATUS = Object.freeze({
+	DRAFT: "Draft",
+	AVAILABLE: "Available",
+	ASSIGNED: "Assigned",
+	IN_REPAIR: "In Repair",
+	SCRAPPED: "Scrapped",
+	SUBMITTED: "Submitted",
+	CANCELLED: "Cancelled"
+});
+
+function get_asset_status(frm) {
+	return (frm.doc.status || "").trim();
+}
+
+async function update_asset_intro(frm) {
+	if (frm.is_new()) {
+		frm.trigger('preview_asset_id');
+		return;
+	}
+
+	if (frm.doc.custodian && get_asset_status(frm) === ASSET_STATUS.ASSIGNED) {
+		try {
+			const employee = await frappe.db.get_doc('Employee', frm.doc.custodian);
+			const details = [
+				{ label: __('Employee ID'), value: employee.name },
+				{ label: __('Employee Name'), value: employee.employee_name },
+				{ label: __('Designation'), value: employee.designation },
+				{ label: __('Department'), value: employee.department },
+				{ label: __('Branch'), value: employee.branch || frm.doc.branch_name },
+				{ label: __('User ID'), value: employee.user_id },
+			];
+
+			const html = `
+<div style="
+	padding: 12px 14px;
+	border-left: 4px solid #15803d;
+	background: linear-gradient(135deg, #f4fff7 0%, #ecfdf3 100%);
+	border-radius: 8px;
+	font-family: Inter, sans-serif;
+">
+	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+		<div>
+			<div style="font-size:14px;font-weight:700;color:#166534;">${__('Assigned Asset')}</div>
+			<div style="font-size:12px;color:#4b5563;margin-top:4px;">${__('This asset is currently assigned to the following employee.')}</div>
+		</div>
+		<div style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">
+			${frm.doc.status || __('Assigned')}
+		</div>
+	</div>
+	<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-top:12px;">
+		${details.filter(row => row.value).map(row => `
+			<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px 12px;">
+				<div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.4px;">${row.label}</div>
+				<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;word-break:break-word;">${row.value}</div>
+			</div>
+		`).join('')}
+	</div>
+</div>`;
+
+			frm.set_intro(html);
+			return;
+		} catch (error) {
+			console.error('Failed to load custodian details for asset intro:', error);
+		}
+	}
+
+	frm.set_intro('');
+}
+
+function add_asset_action_buttons(frm) {
+	if (frm.is_new() || frm.doc.docstatus === 2) {
+		return;
+	}
+
+	const status = get_asset_status(frm);
+	const actions_group = __('Actions');
+
+	if ([ASSET_STATUS.DRAFT, ASSET_STATUS.SUBMITTED, ASSET_STATUS.AVAILABLE, ""].includes(status)) {
+		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
+		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
+		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
+		return;
+	}
+
+	if (status === ASSET_STATUS.ASSIGNED) {
+		frm.add_custom_button(__('Transfer'), () => frm.trigger('transfer_asset'), actions_group);
+		frm.add_custom_button(__('Return'), () => frm.trigger('return_asset'), actions_group);
+		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
+		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
+		return;
+	}
+
+	if (status === ASSET_STATUS.IN_REPAIR) {
+		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
+		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
+		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
+	}
+}
+
+async function run_asset_action(frm, action, args = {}) {
+	const response = await frappe.call({
+		method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+		args: {
+			asset_name: frm.doc.name,
+			action,
+			...args
+		}
+	});
+
+	await frm.reload_doc();
+	const result = response.message || {};
+	const status = result.status || frm.doc.status || '';
+	frappe.show_alert({
+		message: __('Asset updated successfully. Current status: {0}', [status]),
+		indicator: 'green'
+	});
+}
+
+
 frappe.ui.form.on('Asset', {
 	refresh: function(frm) {
 		frm.toggle_display('naming_details_section', frm.is_new());
@@ -5,14 +124,14 @@ frappe.ui.form.on('Asset', {
 		if (frm.is_new()) {
 			frm.set_value('is_existing_asset', 1);
 			frm.set_value('asset_owner', 'Company');
-			frm.trigger('preview_asset_id');
 		}
 
-		// Array of fieldnames that should only be visible to 'System Manager'
 		const system_manager_only_fields = [
 			'is_composite_asset',
 			'depreciation_schedule_sb',
 			'accounting_dimensions_section',
+			'section_break_31',
+			'section_break_23',
 			'insurance_details',
 			'asset_owner',
 			'asset_owner_company'
@@ -23,6 +142,9 @@ frappe.ui.form.on('Asset', {
 		system_manager_only_fields.forEach(field => {
 			frm.toggle_display(field, is_system_manager);
 		});
+
+		add_asset_action_buttons(frm);
+		update_asset_intro(frm);
 	},
 
 	asset_location_type: (frm) => frm.trigger('preview_asset_id'),
@@ -35,56 +157,213 @@ frappe.ui.form.on('Asset', {
 	item_name: (frm) => frm.trigger('preview_asset_id'),
 	item_code: (frm) => frm.trigger('preview_asset_id'),
 	brand: (frm) => frm.trigger('preview_asset_id'),
+	custodian: (frm) => update_asset_intro(frm),
+
+	assign_custodian: function(frm) {
+		const draft_notice = frm.doc.docstatus === 0
+			? '<div class="text-muted">Assigning a draft asset will also submit it.</div>'
+			: '';
+
+		const dialog = new frappe.ui.Dialog({
+			title: __('Assign Asset'),
+			fields: [
+				{
+					fieldname: 'assign_notice',
+					fieldtype: 'HTML',
+					options: draft_notice
+				},
+				{
+					label: __('Custodian'),
+					fieldname: 'custodian',
+					fieldtype: 'Link',
+					options: 'Employee',
+					reqd: 1,
+					default: frm.doc.custodian || ''
+				},
+				{
+					label: __('Branch / Location'),
+					fieldname: 'location',
+					fieldtype: 'Link',
+					options: 'Sahayog Branch',
+					reqd: 1,
+					default: frm.doc.location || ''
+				}
+			],
+			primary_action_label: frm.doc.docstatus === 0 ? __('Assign & Submit') : __('Assign'),
+			primary_action: async (values) => {
+				await run_asset_action(frm, 'assign', values);
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
+
+	transfer_asset: function(frm) {
+		const dialog = new frappe.ui.Dialog({
+			title: __('Transfer Asset'),
+			fields: [
+				{
+					label: __('New Custodian'),
+					fieldname: 'custodian',
+					fieldtype: 'Link',
+					options: 'Employee',
+					reqd: 1,
+					default: frm.doc.custodian || ''
+				},
+				{
+					label: __('New Branch / Location'),
+					fieldname: 'location',
+					fieldtype: 'Link',
+					options: 'Sahayog Branch',
+					reqd: 1,
+					default: frm.doc.location || ''
+				}
+			],
+			primary_action_label: __('Transfer'),
+			primary_action: async (values) => {
+				await run_asset_action(frm, 'transfer', values);
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
+
+	return_asset: function(frm) {
+		const dialog = new frappe.ui.Dialog({
+			title: __('Return Asset'),
+			fields: [
+				{
+					label: __('Return Branch / Location'),
+					fieldname: 'location',
+					fieldtype: 'Link',
+					options: 'Sahayog Branch',
+					reqd: 1,
+					default: frm.doc.location || ''
+				}
+			],
+			primary_action_label: __('Return'),
+			primary_action: async (values) => {
+				await run_asset_action(frm, 'return', values);
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
+
+	send_for_repair: function(frm) {
+		const dialog = new frappe.ui.Dialog({
+			title: __('Send Asset For Repair'),
+			fields: [
+				{
+					label: __('Repair Branch / Location'),
+					fieldname: 'location',
+					fieldtype: 'Link',
+					options: 'Sahayog Branch',
+					default: frm.doc.location || ''
+				}
+			],
+			primary_action_label: __('Update Status'),
+			primary_action: async (values) => {
+				await run_asset_action(frm, 'send_for_repair', values);
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
+
+	mark_available: function(frm) {
+		const dialog = new frappe.ui.Dialog({
+			title: __('Mark Asset Available'),
+			fields: [
+				{
+					label: __('Available Branch / Location'),
+					fieldname: 'location',
+					fieldtype: 'Link',
+					options: 'Sahayog Branch',
+					reqd: 1,
+					default: frm.doc.location || ''
+				}
+			],
+			primary_action_label: __('Mark Available'),
+			primary_action: async (values) => {
+				await run_asset_action(frm, 'mark_available', values);
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
+
+	scrap_asset: function(frm) {
+		const dialog = new frappe.ui.Dialog({
+			title: __('Scrap Asset'),
+			fields: [
+				{
+					fieldname: 'scrap_notice',
+					fieldtype: 'HTML',
+					options: '<div class="text-muted">This will mark the asset as Scrapped and clear the custodian.</div>'
+				}
+			],
+			primary_action_label: __('Scrap'),
+			primary_action: async () => {
+				await run_asset_action(frm, 'scrap');
+				dialog.hide();
+			}
+		});
+
+		dialog.show();
+	},
 
 	preview_asset_id: function(frm) {
 		if (!frm.is_new()) return;
 
-		frm.set_intro("");
+		frm.set_intro('');
 
-		let parts = ["SAHA"];
+		let parts = ['SAHA'];
 
-		// Zone
 		if (frm.doc.zone) {
 			let zone_digits = frm.doc.zone.match(/\d+/);
-			parts.push(zone_digits ? "Z" + zone_digits[0] : frm.doc.zone.substring(0, 2).toUpperCase());
+			parts.push(zone_digits ? 'Z' + zone_digits[0] : frm.doc.zone.substring(0, 2).toUpperCase());
 		} else {
-			parts.push("[ZONE]");
+			parts.push('[ZONE]');
 		}
 
-		// State Mapping
 		const state_mapping = {
-			"Andaman and Nicobar Islands": "AN", "Andhra Pradesh": "AP", "Arunachal Pradesh": "AR", "Assam": "AS",
-			"Bihar": "BR", "Chandigarh": "CH", "Chhattisgarh": "CT", "Dadra and Nagar Haveli and Daman and Diu": "DN",
-			"Delhi": "DL", "Goa": "GA", "Gujarat": "GJ", "Haryana": "HR", "Himachal Pradesh": "HP",
-			"Jammu and Kashmir": "JK", "Jharkhand": "JH", "Karnataka": "KA", "Kerala": "KL", "Ladakh": "LA",
-			"Lakshadweep": "LD", "Madhya Pradesh": "MP", "Maharashtra": "MH", "Manipur": "MN", "Meghalaya": "ML",
-			"Mizoram": "MZ", "Nagaland": "NL", "Odisha": "OR", "Puducherry": "PY", "Punjab": "PB",
-			"Rajasthan": "RJ", "Sikkim": "SK", "Tamil Nadu": "TN", "Telangana": "TG", "Tripura": "TR",
-			"Uttar Pradesh": "UP", "Uttarakhand": "UT", "West Bengal": "WB"
+			'Andaman and Nicobar Islands': 'AN', 'Andhra Pradesh': 'AP', 'Arunachal Pradesh': 'AR', 'Assam': 'AS',
+			'Bihar': 'BR', 'Chandigarh': 'CH', 'Chhattisgarh': 'CT', 'Dadra and Nagar Haveli and Daman and Diu': 'DN',
+			'Delhi': 'DL', 'Goa': 'GA', 'Gujarat': 'GJ', 'Haryana': 'HR', 'Himachal Pradesh': 'HP',
+			'Jammu and Kashmir': 'JK', 'Jharkhand': 'JH', 'Karnataka': 'KA', 'Kerala': 'KL', 'Ladakh': 'LA',
+			'Lakshadweep': 'LD', 'Madhya Pradesh': 'MP', 'Maharashtra': 'MH', 'Manipur': 'MN', 'Meghalaya': 'ML',
+			'Mizoram': 'MZ', 'Nagaland': 'NL', 'Odisha': 'OR', 'Puducherry': 'PY', 'Punjab': 'PB',
+			'Rajasthan': 'RJ', 'Sikkim': 'SK', 'Tamil Nadu': 'TN', 'Telangana': 'TG', 'Tripura': 'TR',
+			'Uttar Pradesh': 'UP', 'Uttarakhand': 'UT', 'West Bengal': 'WB'
 		};
 		if (frm.doc.state && state_mapping[frm.doc.state]) {
 			parts.push(state_mapping[frm.doc.state]);
 		} else {
-			parts.push("[STATE]");
+			parts.push('[STATE]');
 		}
 
-		// Location (Using branch_name)
 		let loc_val = frm.doc.branch_name || frm.doc.location;
 		if (loc_val) {
 			parts.push(loc_val.substring(0, 3).toUpperCase());
 		} else {
-			parts.push("[LOC]");
+			parts.push('[LOC]');
 		}
 
-		parts.push(frm.doc.division ? frm.doc.division.toUpperCase() : "[DIVISION]");
-		
-		let asset_code = (frm.doc.item_name || frm.doc.item_code || "").substring(0, 3).toUpperCase();
-		parts.push(asset_code || "[ASSET]");
+		parts.push(frm.doc.division ? frm.doc.division.toUpperCase() : '[DIVISION]');
 
-		let brand_name = (frm.doc.brand || "").toUpperCase();
-		parts.push(brand_name || "[BRAND]");
+		let asset_code = (frm.doc.item_name || frm.doc.item_code || '').substring(0, 3).toUpperCase();
+		parts.push(asset_code || '[ASSET]');
 
-		let preview_id = parts.join("/") + "/[SERIAL NO]";
+		let brand_name = (frm.doc.brand || '').toUpperCase();
+		parts.push(brand_name || '[BRAND]');
+
+		let preview_id = parts.join('/') + '/[SERIAL NO]';
 
 		let html = `
 <div style="
@@ -116,7 +395,7 @@ frappe.ui.form.on('Asset', {
 			">
 				${p}
 			</span>
-		`).join("")}
+		`).join('')}
 
 		<span style="
 			background:#dff7e6;

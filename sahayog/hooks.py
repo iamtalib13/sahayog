@@ -171,7 +171,8 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_field_stock_entry_employee_material_request.execute",
     "sahayog.patches.custom_fields.add_custom_emr_asset_connection_fields.execute",
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
-    "sahayog.patches.custom_fields.add_naming_controls_to_asset.execute"
+    "sahayog.patches.custom_fields.add_naming_controls_to_asset.execute",
+    "sahayog.patches.set_asset_status_options.execute"
 
 ]
 # Uninstallation

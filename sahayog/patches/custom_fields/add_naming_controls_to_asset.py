@@ -86,6 +86,7 @@ def execute():
             "label": "Configuration Table",
             "fieldtype": "Table",
             "options": "Asset Configuration",
+            "allow_on_submit": 1,
             "insert_after": "config_details_section"
         }
     ]
