@@ -215,14 +215,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Case Closed",
-   "link_doctype": "Case Closure",
-   "link_fieldname": "case_id"
-  }
- ],
- "modified": "2026-01-30 11:59:17.312779",
+ "links": [],
+ "modified": "2026-05-27 16:36:27.669744",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",

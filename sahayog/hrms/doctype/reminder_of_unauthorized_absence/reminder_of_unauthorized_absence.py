@@ -5,6 +5,35 @@ from frappe.model.document import Document
 from frappe.utils import formatdate
 
 class ReminderOfUnauthorizedAbsence(Document):
+    def before_insert(self):
+        self._validate_ua_response()
+
+    def validate(self):
+        self._validate_ua_response()
+
+    def _latest_ua_response(self):
+        if not self.case_id:
+            return None
+
+        latest_ua = frappe.get_all(
+            "Unauthorized Absence",
+            filters={"case_id": self.case_id},
+            fields=["response_of_ua"],
+            order_by="creation desc",
+            limit_page_length=1,
+        )
+
+        if not latest_ua:
+            return None
+
+        return latest_ua[0].get("response_of_ua")
+
+    def _validate_ua_response(self):
+        if self._latest_ua_response() == "Satisfactory":
+            frappe.throw(
+                "Reminder Of Unauthorized Absence cannot be created because the linked Unauthorized Absence has Status of Response set to Satisfactory."
+            )
+
     def autoname(self):
         """Generate structured name and link with latest Unauthorized Absence"""
         if self.case_id:

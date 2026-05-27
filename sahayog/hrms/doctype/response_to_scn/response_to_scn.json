@@ -193,19 +193,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Enquiry Process",
-   "link_doctype": "Domestic Enquiry",
-   "link_fieldname": "previous_record"
-  },
-  {
-   "group": "Case Closed",
-   "link_doctype": "Case Closure",
-   "link_fieldname": "case_id"
-  }
- ],
- "modified": "2026-01-30 11:29:37.886968",
+ "links": [],
+ "modified": "2026-05-27 15:06:49.763135",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

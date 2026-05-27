@@ -136,28 +136,8 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
     // ✅ Call print button function
 
     frm.trigger("show_print_button");
-    if (!frm.is_new() && frm.doc.case_id) {
-      // STEP 1: Load timeline counts
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
-        args: { case_id: frm.doc.case_id },
-        callback(r) {
-          frm._timeline_counts = r.message || {};
-
-          // STEP 2: Load timeline stages AFTER counts are ready
-          frappe.call({
-            method:
-              "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
-            args: { case_id: frm.doc.case_id },
-            callback(res) {
-              if (res.message) {
-                render_timeline(frm, res.message);
-              }
-            },
-          });
-        },
-      });
+    if (!frm.is_new()) {
+      load_case_timeline(frm);
     }
 
     // -------------------------------------------------------------------------
@@ -575,3 +555,137 @@ function timeline_badge(stage_obj) {
     hide_tooltip
   );
 })();
+
+function load_case_timeline(frm) {
+  const case_id = frm.doc.case_id || frm.doc.name;
+  if (!case_id) return;
+
+  const standard_stages = [
+    { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
+    { doctype: "Suspension Process", label: "Suspension Process" },
+    { doctype: "Response to SCN", label: "Response to SCN" },
+    { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
+    { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+    { doctype: "Case Closure", label: "Case Closure" },
+  ];
+
+  const ua_stages = [
+    { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
+    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence" },
+    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+    { doctype: "Case Closure", label: "Case Closure" },
+  ];
+
+  const is_ua =
+    String(case_id).startsWith("UA") ||
+    (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
+    frm.doctype === "Unauthorized Absence" ||
+    frm.doctype === "Reminder Of Unauthorized Absence" ||
+    frm.doctype === "Ex Parte Enquiry";
+
+  const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
+    ...stage,
+    key: `${stage.doctype}-${index}`,
+    status: "current",
+    modified: null,
+    record_count: 0,
+    names: [],
+    can_create: stage.can_create !== false,
+    allow_multiple: false,
+    quick_entry: true,
+    defaults: {
+      case_id,
+      ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
+    },
+  }));
+
+  const build_config = (stages) => ({
+    title: __("Case Progress Timeline"),
+    case_id,
+    stages,
+    get_defaults(stage) {
+      return stage.defaults || { case_id };
+    },
+    before_open() {
+      if (frm.is_dirty()) {
+        frappe.msgprint({
+          title: __("Please Save First"),
+          message: __("Save the form before creating a linked record."),
+          indicator: "orange",
+        });
+        return false;
+      }
+    },
+    after_insert() {
+      frm.reload_doc();
+    },
+  });
+
+  const merge_stage_meta = (timeline, record_summaries) => {
+    return stage_defs.map((stage) => {
+      const status_match = timeline.find(
+        (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
+      );
+      const summary_match = record_summaries.find((item) => item.doctype === stage.doctype) || {};
+      return {
+        ...stage,
+        status: status_match?.status || stage.status,
+        modified: status_match?.modified || stage.modified,
+        record_count: summary_match.count || 0,
+        names: summary_match.names || [],
+      };
+    });
+  };
+
+  const render_with_data = (timeline, summaries) => {
+    const merged = merge_stage_meta(timeline || [], summaries || []);
+    window.sahayogCaseTimeline.render(frm, build_config(merged));
+  };
+
+  const load_record_summaries = () => {
+    return Promise.all(
+      stage_defs.map((stage) =>
+        frappe.db
+          .get_list(stage.doctype, {
+            filters: { case_id },
+            fields: ["name"],
+            order_by: "creation asc",
+            limit_page_length: 500,
+          })
+          .then((records) => ({
+            doctype: stage.doctype,
+            count: (records || []).length,
+            names: (records || []).map((row) => row.name),
+          }))
+          .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
+      ),
+    );
+  };
+
+  const load_timeline = () =>
+    frappe.xcall(
+      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+      { case_id },
+    );
+
+  const init = () => {
+    if (!window.sahayogCaseTimeline) return;
+
+    Promise.all([load_record_summaries(), load_timeline()])
+      .then(([summaries, timeline_res]) => {
+        const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
+        render_with_data(timeline, summaries || []);
+      })
+      .catch((error) => {
+        console.warn("Timeline load failed", error);
+        render_with_data([], []);
+      });
+  };
+
+  if (window.sahayogCaseTimeline) {
+    init();
+    return;
+  }
+
+  frappe.require("/assets/sahayog/js/case_timeline.js", init);
+}
