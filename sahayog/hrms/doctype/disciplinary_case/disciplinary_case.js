@@ -103,6 +103,11 @@ frappe.ui.form.on("Disciplinary Case", {
     if (frm.page && frm.page.set_title) {
       frm.page.set_title(__("Initiate Disciplinary Process"));
     }
+
+    if (frm.is_new()) {
+      $(frm.wrapper).find(".case-timeline-box").remove();
+    }
+
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
         frappe.call({
@@ -540,6 +545,10 @@ frappe.ui.form.on("Disciplinary Case", {
 });
 
 function load_case_timeline(frm) {
+  if (!frm || (typeof frm.is_new === "function" && frm.is_new())) {
+    return;
+  }
+
   const get_stage_config = () => {
     const base_stages = [
       { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
@@ -622,6 +631,7 @@ function load_case_timeline(frm) {
 
   const init_timeline = () => {
     if (!window.sahayogCaseTimeline) return;
+    if (!frm || (typeof frm.is_new === "function" && frm.is_new())) return;
 
     const fallback_stages = get_stage_config();
 
