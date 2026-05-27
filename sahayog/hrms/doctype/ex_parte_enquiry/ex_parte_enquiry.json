@@ -204,14 +204,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Case Closed",
-   "link_doctype": "Case Closure",
-   "link_fieldname": "case_id"
-  }
- ],
- "modified": "2026-05-14 12:09:21.348566",
+ "links": [],
+ "modified": "2026-05-27 16:35:22.613301",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",
