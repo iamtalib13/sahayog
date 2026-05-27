@@ -12,7 +12,8 @@ class UnauthorizedAbsence(Document):
 
     def on_submit(self):
         try:
-            send_unauthorized_absence_email(self.name)
+            from sahayog.utils.hr_utils import send_hr_workflow_email
+            send_hr_workflow_email(self.name, "Unauthorized Absence")
         except Exception:
             frappe.log_error(
                 frappe.get_traceback(),
@@ -49,56 +50,9 @@ def check_employee_email(employee):
 
 @frappe.whitelist()
 def send_unauthorized_absence_email(docname):
-    """Send Unauthorized Absence Email using Email Template."""
-    
-    doc = frappe.get_doc("Unauthorized Absence", docname)
+    """Send Unauthorized Absence Email using centralized dynamic utility."""
+    from sahayog.utils.hr_utils import send_hr_workflow_email
+    # Falls back to "Unauthorized Absence" for template and print format
+    return send_hr_workflow_email(docname, "Unauthorized Absence")
 
-    # Convert doc to dictionary for Jinja
-    doc_dict = doc.as_dict()
-
-    # Format dates (optional)
-    date_fields = ["issue_occurrence_date", "issue_reported_to_hr", "date_of_1st_letter"]
-    for df in date_fields:
-        if doc_dict.get(df):
-            doc_dict[df] = formatdate(doc_dict[df])
-
-    # Load Email Template
-    template = frappe.get_doc("Email Template", "Unauthorized Absence")
-
-    # Render Subject & Body
-    subject = frappe.render_template(template.subject, doc_dict)
-    message = frappe.render_template(template.response_html, {"doc": doc_dict})
-
-    # Get Employee Email
-    emp = frappe.get_doc("Employee", doc.employee_id)
-    final_email = emp.company_email
-    if not final_email:
-        frappe.throw("No email found for this employee.")
-
-    # Fetch CC Recipients using centralized utility
-    from sahayog.utils.hr_utils import get_hr_cc_recipients
-    cc_list = get_hr_cc_recipients("Unauthorized Absence", doc.employee_id, doc.name)
-
-  # Attach Print Format → **Unauthorized Absence Notice**
-    attachments = [
-        frappe.attach_print(
-            doctype="Unauthorized Absence",
-            name=docname,
-            print_format="Unauthorized Absence",
-            file_name=f"{docname}"
-        )
-    ]
-
-    # Send Email
-    frappe.sendmail(
-        recipients=[final_email],
-        cc=cc_list,
-        subject=subject,
-        message=message,
-        attachments=attachments,
-        reference_doctype="Unauthorized Absence",
-        reference_name=docname,
-        now=False
-    )
-    return "Email Sent Successfully"
 
