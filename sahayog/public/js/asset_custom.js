@@ -21,10 +21,20 @@ async function update_asset_intro(frm) {
 	if (frm.doc.custodian && get_asset_status(frm) === ASSET_STATUS.ASSIGNED) {
 		try {
 			const employee = await frappe.db.get_doc('Employee', frm.doc.custodian);
+			const cleanedBranch = (employee.branch || frm.doc.branch_name || '').replace(/BRANCH/gi, '').trim();
+			let displayBranch = cleanedBranch;
+			
+			if (cleanedBranch) {
+				const branchRecord = await frappe.db.get_value("Sahayog Branch", {"branch": ["like", `%${cleanedBranch}%`]}, ["branch", "name"]);
+				if (branchRecord && branchRecord.message && branchRecord.message.branch) {
+					displayBranch = `${branchRecord.message.branch} (${branchRecord.message.name})`;
+				}
+			}
+
 			const details = [
 				{ label: __('ID'), value: employee.name },
 				{ label: __('Employee'), value: `${employee.employee_name} (${employee.designation})` },
-				{ label: __('Branch'), value: employee.branch || frm.doc.branch_name },
+				{ label: __('Branch'), value: displayBranch },
 			];
 
 			const all_statuses = ['Available', 'Assigned', 'In Repair', 'Scrapped'];
