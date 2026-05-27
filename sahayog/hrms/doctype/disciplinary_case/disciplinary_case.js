@@ -1,10 +1,107 @@
 // Copyright (c) 2025, Developer Team and contributors
 // For license information, please see license.txt
 
+function get_save_action(frm) {
+  return frm && frm.doc && frm.doc.docstatus === 1 ? "Update" : "Save";
+}
+
+function prompt_save_before_linked_action(frm, on_success) {
+  const d = new frappe.ui.Dialog({
+    title: __("Save Disciplinary Case"),
+    fields: [
+      {
+        fieldtype: "HTML",
+        fieldname: "info_html",
+        options: `
+          <div style="font-size:13px; line-height:1.6; color:#344054;">
+            <p style="margin:0 0 6px 0;">${__("This form has unsaved changes.")}</p>
+            <p style="margin:0;">${__("Save first, then continue with the linked record action.")}</p>
+          </div>
+        `,
+      },
+    ],
+    primary_action_label: __("Save & Continue"),
+    secondary_action_label: __("Cancel"),
+    primary_action() {
+      d.get_primary_btn().prop("disabled", true);
+      d.hide();
+
+      frm.save(get_save_action(frm))
+        .then(() => {
+          if (typeof on_success === "function") on_success();
+        })
+        .catch((error) => {
+          console.error("Failed to save Disciplinary Case", error);
+          frappe.msgprint({
+            title: __("Save Failed"),
+            message: __("Unable to save right now. Please try again."),
+            indicator: "red",
+          });
+        });
+    },
+  });
+
+  d.show();
+}
+
+function prompt_enable_suspension_required(frm, on_success) {
+  const current_value = frm.doc.suspension_required || "";
+  const d = new frappe.ui.Dialog({
+    title: __("Set Suspension Required"),
+    fields: [
+      {
+        fieldtype: "HTML",
+        fieldname: "info_html",
+        options: `
+          <div style="font-size:13px; line-height:1.6; color:#344054; margin-bottom:10px;">
+            <p style="margin:0 0 6px 0;">${__("Suspension Process cannot be created while Suspension Required is set to No.")}</p>
+            <p style="margin:0;">${__("Choose the value below, save the Disciplinary Case, and continue.")}</p>
+          </div>
+        `,
+      },
+      {
+        fieldname: "suspension_required",
+        fieldtype: "Select",
+        label: __("Suspension Required"),
+        options: "\nYes\nNo",
+        default: current_value || "No",
+        reqd: 1,
+      },
+    ],
+    primary_action_label: __("Save"),
+    secondary_action_label: __("Cancel"),
+    primary_action(values) {
+      const selected_value = values && values.suspension_required ? values.suspension_required : "";
+      d.get_primary_btn().prop("disabled", true);
+
+      frm.set_value("suspension_required", selected_value)
+        .then(() => frm.save(get_save_action(frm)))
+        .then(() => {
+          d.hide();
+          if (selected_value === "Yes" && typeof on_success === "function") {
+            on_success();
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to update suspension_required", error);
+          d.get_primary_btn().prop("disabled", false);
+          frappe.msgprint({
+            title: __("Save Failed"),
+            message: __("Unable to update Suspension Required right now. Please try again."),
+            indicator: "red",
+          });
+        });
+    },
+  });
+
+  d.set_values({ suspension_required: current_value || "No" });
+  d.show();
+}
+
 frappe.ui.form.on("Disciplinary Case", {
   refresh: function (frm) {
     if (frm.page && frm.page.set_title) {
-      frm.page.set_title(__("Initiate disciplinary process"));
+      frm.page.set_title(__("Initiate Disciplinary Process"));
     }
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
@@ -161,15 +258,11 @@ frappe.ui.form.on("Disciplinary Case", {
       $unauth_abs_btn.off("mousedown.ua_check");
 
       // 🧩 Common Save Check
-      const ensureSaved = (e) => {
+      const ensureSaved = (e, on_saved) => {
         if (frm.is_dirty()) {
           e.preventDefault();
           e.stopImmediatePropagation();
-          frappe.msgprint({
-            title: __("Please Save First"),
-            message: __("Save the form before creating a linked record."),
-            indicator: "orange",
-          });
+          prompt_save_before_linked_action(frm, on_saved);
           return false;
         }
         return true;
@@ -177,7 +270,7 @@ frappe.ui.form.on("Disciplinary Case", {
 
       // 🔸 Suspension Process Restriction
       $suspension_btn.on("mousedown.suspension_check", (e) => {
-        if (!ensureSaved(e)) return;
+        if (!ensureSaved(e, () => $suspension_btn.trigger("click"))) return;
 
         // 🚫 Block if Case Type = Unauthorized Absence
         if (frm.doc.case_type === "Unauthorized Absence") {
@@ -193,23 +286,22 @@ frappe.ui.form.on("Disciplinary Case", {
           return;
         }
 
-        // Normal rule based on suspension_required
+        // If suspension is not required, offer to enable it and continue.
         if (frm.doc.suspension_required === "No") {
           e.preventDefault();
           e.stopImmediatePropagation();
-          frappe.msgprint({
-            title: __("Not Allowed"),
-            message: __(
-              "Suspension Process cannot be created because 'Suspension Required' is set to 'No'.",
-            ),
-            indicator: "red",
+          prompt_enable_suspension_required(frm, () => {
+            const button = $suspension_btn.get(0);
+            if (button) {
+              button.click();
+            }
           });
         }
       });
 
       // 🔸 Response to SCN Restriction
       $response_btn.on("mousedown.response_check", (e) => {
-        if (!ensureSaved(e)) return;
+        if (!ensureSaved(e, () => $response_btn.trigger("click"))) return;
 
         // 🚫 Block if Case Type = Unauthorized Absence
         if (frm.doc.case_type === "Unauthorized Absence") {
@@ -241,7 +333,7 @@ frappe.ui.form.on("Disciplinary Case", {
 
       // 🔸 Unauthorized Absence Restriction (only allowed for that case type)
       $unauth_abs_btn.on("mousedown.ua_check", (e) => {
-        if (!ensureSaved(e)) return;
+        if (!ensureSaved(e, () => $unauth_abs_btn.trigger("click"))) return;
 
         if (frm.doc.case_type !== "Unauthorized Absence") {
           e.preventDefault();
@@ -269,32 +361,8 @@ frappe.ui.form.on("Disciplinary Case", {
 
     frm.trigger("show_print_button");
 
-    // Timeline only for saved documents
     if (!frm.is_new()) {
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
-        args: { case_id: frm.doc.name },
-        callback: function (r) {
-          if (r.message) render_timeline(frm, r.message);
-        },
-      });
-    }
-    // Fetch timeline record counts (ONE TIME)
-    if (!frm.is_new()) {
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts",
-        args: {
-          case_id: frm.doc.name,
-        },
-        callback(r) {
-          if (r.message) {
-            frm._timeline_counts = r.message;
-            console.debug("Timeline counts loaded:", frm._timeline_counts);
-          }
-        },
-      });
+      load_case_timeline(frm);
     }
   },
   // -------------------
@@ -471,256 +539,205 @@ frappe.ui.form.on("Disciplinary Case", {
   },
 });
 
-// -------------------
-// Helper Function
-// -------------------
-// function handle_suspension_required(frm) {
-//   if (frm.doc.case_type === "Unauthorized Absence") {
-//     frm.set_df_property("suspension_required", "hidden", 1);
-//     frm.set_df_property("suspension_required", "reqd", 0);
-//     frm.set_value("suspension_required", ""); // clear previous value
-//   } else {
-//     frm.set_df_property("suspension_required", "hidden", 0);
-//     frm.set_df_property("suspension_required", "reqd", 1);
-//   }
-// }
-function render_timeline(frm, data) {
-  // debug: show incoming timeline payload in console
-  console.debug(
-    "render_timeline payload:",
-    data && data.timeline ? data.timeline : data,
-  );
+function load_case_timeline(frm) {
+  const get_stage_config = () => {
+    const base_stages = [
+      { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
+      { doctype: "Suspension Process", label: "Suspension Process" },
+      { doctype: "Response to SCN", label: "Response to SCN" },
+      { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
+      { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+      { doctype: "Case Closure", label: "Case Closure" },
+    ];
 
-  const wrap = $(frm.wrapper).find(".case-timeline-box");
-  if (wrap.length) wrap.remove();
+    const ua_stages = [
+      { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
+      {
+        doctype: "Reminder Of Unauthorized Absence",
+        label: "Reminder Of Unauthorized Absence",
+      },
+      { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+      { doctype: "Case Closure", label: "Case Closure" },
+    ];
 
-  const insertion_point = $(".form-dashboard");
+    const is_ua = (frm.doc.case_type || "").toLowerCase() === "unauthorized absence";
+    const stages = is_ua ? ua_stages : base_stages;
 
-  let html = `
-    <div class="case-timeline-box" style="
-        background:#ffffff;
-        border:1px solid #e0e0e0;
-        padding:10px;
-        margin-bottom:10px;
-        border-radius:8px;
-        box-shadow:0 1px 2px rgba(0,0,0,0.05);
-        font-size:13px;
-    ">
-        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-            Case Progress Timeline
-        </h4>
+    return stages.map((stage, index) => ({
+      ...stage,
+      key: `${stage.doctype}-${index}`,
+      status: "current",
+      modified: null,
+      can_create: stage.can_create !== false,
+      allow_multiple: false,
+      quick_entry: true,
+      defaults: {
+        case_id: frm.doc.case_id || frm.doc.name,
+        ...(stage.doctype === "Unauthorized Absence" ? { employee_id: frm.doc.employee_id } : {}),
+      },
+    }));
+  };
 
-        <!-- TIMELINE BADGES -->
-        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
-  `;
+  const hydrate_statuses = () => {
+    return frappe
+      .call({
+        method:
+          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+        args: { case_id: frm.doc.case_id || frm.doc.name },
+      })
+      .then((r) => {
+        const timeline = r && r.message && r.message.timeline ? r.message.timeline : [];
+        return Array.isArray(timeline) ? timeline : [];
+      })
+      .catch((error) => {
+        console.warn("Stage status fetch failed; using fallback stage list.", error);
+        return [];
+      });
+  };
 
-  // guard: if no timeline array, do nothing
-  const timeline_arr =
-    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
-  if (!timeline_arr.length) {
-    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
-  } else {
-    timeline_arr.forEach((stage_obj, index) => {
-      html += timeline_badge(stage_obj);
-      if (index < timeline_arr.length - 1) {
-        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
-      }
-    });
-  }
+  const hydrate_counts = (stages) => {
+    const case_id = frm.doc.case_id || frm.doc.name;
+    return Promise.all(
+      stages.map((stage) => {
+        if (stage.doctype === frm.doctype) {
+          return Promise.resolve({ ...stage, record_count: frm.doc.name ? 1 : 0, names: frm.doc.name ? [frm.doc.name] : [] });
+        }
 
-  html += `
-        </div>
+        return frappe.db
+          .get_list(stage.doctype, {
+            filters: { case_id },
+            fields: ["name"],
+            order_by: "creation asc",
+            limit_page_length: 500,
+          })
+          .then((records) => ({
+            ...stage,
+            record_count: (records || []).length,
+            names: (records || []).map((row) => row.name),
+          }))
+          .catch(() => ({ ...stage, record_count: 0, names: [] }));
+      }),
+    );
+  };
 
-        <!-- LEGEND OUTSIDE / BELOW -->
-        <div style="
-            margin-top:10px;
-            padding-top:6px;
-            border-top:1px solid #e0e0e0;
-            font-size:11px;
-            color:#777;
-            display:flex;
-            gap:14px;
-            justify-content:right;
-        ">
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟢</span><span>Completed</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟠</span><span>In Progress</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">⚪</span><span>Not Created</span>
-            </div>
-        </div>
+  const init_timeline = () => {
+    if (!window.sahayogCaseTimeline) return;
 
-    </div>
-  `;
+    const fallback_stages = get_stage_config();
 
-  insertion_point.before(html);
-}
-function timeline_badge(stage_obj) {
-  let bg = "#eeeeee",
-    color = "#555",
-    icon = "⚪";
-  switch ((stage_obj.status || "").toLowerCase()) {
-    case "submitted":
-      bg = "#e8f5e9";
-      color = "#1b5e20";
-      icon = "🟢";
-      break;
-    case "saved":
-      bg = "#fff4e5";
-      color = "#e65100";
-      icon = "🟠";
-      break;
-    case "cancelled":
-      bg = "#f0f0f0"; // light gray
-      color = "#999";
-      icon = "⚪";
-      break;
-    default:
-      bg = "#eeeeee";
-      color = "#555";
-      icon = "⚪";
-  }
+    const timeline_config = {
+      title: __("Case Progress Timeline"),
+      stages: fallback_stages,
+      get_defaults(stage) {
+        return stage.defaults || { case_id: frm.doc.case_id || frm.doc.name };
+      },
+      before_open(stage) {
+        if (frm.is_dirty()) {
+          prompt_save_before_linked_action(frm, () => {
+            if (window.sahayogCaseTimeline) {
+              window.sahayogCaseTimeline.open_stage_quick_entry(frm, stage, timeline_config);
+            }
+          });
+          return false;
+        }
 
-  // Get modified timestamp
-  let ts =
-    stage_obj.modified ||
-    stage_obj.modified_on ||
-    stage_obj.modified_at ||
-    stage_obj.modified_date ||
-    stage_obj.timestamp ||
-    null;
+        if (stage.doctype === "Suspension Process") {
+          if (frm.doc.case_type === "Unauthorized Absence") {
+            frappe.msgprint({
+              title: __("Not Allowed"),
+              message: __(
+                "Suspension Process cannot be created when Case Type is 'Unauthorized Absence'.",
+              ),
+              indicator: "red",
+            });
+            return false;
+          }
+          if (frm.doc.suspension_required === "No") {
+            prompt_enable_suspension_required(frm, () => {
+              if (window.sahayogCaseTimeline) {
+                window.sahayogCaseTimeline.open_stage_quick_entry(frm, stage, timeline_config);
+              }
+            });
+            return false;
+          }
+        }
 
-  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
-  let formatted = "-";
-  if (ts) {
-    try {
-      let d = new Date(ts);
-      if (!isNaN(d.getTime())) {
-        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
-        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
-        formatted = `${d.toLocaleTimeString(
-          [],
-          optsTime,
-        )}, ${d.toLocaleDateString([], optsDate)}`;
-      }
-    } catch (e) {
-      console.warn("Failed to format timestamp", e);
-      formatted = String(ts);
-    }
-  }
+        if (stage.doctype === "Response to SCN") {
+          if (frm.doc.case_type === "Unauthorized Absence") {
+            frappe.msgprint({
+              title: __("Not Allowed"),
+              message: __(
+                "Response to SCN cannot be created when Case Type is 'Unauthorized Absence'.",
+              ),
+              indicator: "red",
+            });
+            return false;
+          }
+          if (frm.doc.suspension_required === "Yes") {
+            frappe.msgprint({
+              title: __("Not Allowed"),
+              message: __(
+                "Response to SCN cannot be created because 'Suspension Required' is set to 'Yes'.",
+              ),
+              indicator: "red",
+            });
+            return false;
+          }
+        }
 
-  const stage_label =
-    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
+        if (
+          stage.doctype === "Unauthorized Absence" &&
+          frm.doc.case_type !== "Unauthorized Absence"
+        ) {
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Unauthorized Absence record can only be created when Case Type is 'Unauthorized Absence'.",
+            ),
+            indicator: "red",
+          });
+          return false;
+        }
+      },
+      after_insert() {
+        frm.reload_doc();
+      },
+    };
 
-  return `
-    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-      <!-- TIMESTAMP (small, above badge) -->
-      <div style="font-size:10px; color:#777; margin-bottom:3px;">
-        ${formatted}
-      </div>
+    window.sahayogCaseTimeline.render(frm, timeline_config);
 
-      <!-- EXISTING BADGE -->
-      <div style="
-          padding:3px 6px;
-          background:${bg};
-          color:${color};
-          border-radius:14px;
-          font-weight:600;
-          display:flex;
-          align-items:center;
-          gap:4px;
-          font-size:11px;
-      ">
-        ${icon} ${stage_label}
-      </div>
-    </div>
-  `;
-}
-// --------------------------------------------------
-// Timeline Hover Tooltip (Records Count)
-// --------------------------------------------------
-(function () {
-  let tooltip = null;
+    Promise.all([hydrate_statuses(), hydrate_counts(fallback_stages)]).then(([timeline, counted_stages]) => {
+      const stage_map = new Map();
+      counted_stages.forEach((stage) => {
+        stage_map.set(stage.doctype, stage);
+      });
 
-  function show_tooltip(target, html) {
-    hide_tooltip();
-
-    tooltip = $(`
-      <div style="
-        position:absolute;
-        background:#2e2e2e;
-        color:#fff;
-        padding:8px 10px;
-        border-radius:6px;
-        font-size:11px;
-        z-index:99999;
-        box-shadow:0 2px 6px rgba(0,0,0,0.25);
-        max-width:260px;
-      ">
-        ${html}
-      </div>
-    `);
-
-    $("body").append(tooltip);
-
-    const offset = $(target).offset();
-    tooltip.css({
-      top: offset.top - tooltip.outerHeight() - 8,
-      left: offset.left + $(target).outerWidth() / 2 - tooltip.outerWidth() / 2,
-    });
-  }
-
-  function hide_tooltip() {
-    if (tooltip) {
-      tooltip.remove();
-      tooltip = null;
-    }
-  }
-
-  $(document).on(
-    "mouseenter",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    function () {
-      const frm = cur_frm;
-      if (!frm || !frm._timeline_counts) return;
-
-      const label = $(this)
-        .text()
-        .replace(/^[^\w]+/, "")
-        .trim();
-
-      const data = frm._timeline_counts[label];
-
-      let html = `<b>${label}</b>`;
-
-      if (!data) {
-        show_tooltip(this, html);
-        return;
-      }
-
-      if (data.count === 0) {
-        html += `<br>No records created yet`;
-      } else {
-        html += `<br>Records created: ${data.count}`;
-        html += `<div style="margin-top:4px;">`;
-
-        data.names.forEach((name) => {
-          html += `<div style="opacity:0.9;">• ${name}</div>`;
+      if (timeline.length) {
+        timeline.forEach((item) => {
+          const existing = stage_map.get(item.doctype) || stage_map.get(item.stage);
+          if (!existing) return;
+          stage_map.set(existing.doctype, {
+            ...existing,
+            status: item.status || existing.status,
+            modified: item.modified || existing.modified,
+          });
         });
-
-        html += `</div>`;
       }
 
-      show_tooltip(this, html);
-    },
-  );
+      const mapped = fallback_stages.map((stage) => stage_map.get(stage.doctype) || stage);
 
-  $(document).on(
-    "mouseleave",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip,
-  );
-})();
+      window.sahayogCaseTimeline.render(frm, {
+        ...timeline_config,
+        stages: mapped,
+      });
+    });
+  };
+
+  if (window.sahayogCaseTimeline) {
+    init_timeline();
+    return;
+  }
+
+  frappe.require("/assets/sahayog/js/case_timeline.js", init_timeline);
+}
+

@@ -131,7 +131,8 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks"
+   "label": "Remarks",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_fqsb",
@@ -205,14 +206,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Response SCN",
-   "link_doctype": "Response to SCN",
-   "link_fieldname": "previous_record"
-  }
- ],
- "modified": "2026-01-30 11:26:25.971572",
+ "links": [],
+ "modified": "2026-05-27 16:12:36.252541",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",

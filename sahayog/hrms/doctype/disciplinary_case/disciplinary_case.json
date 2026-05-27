@@ -225,19 +225,8 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [
-  {
-   "group": "Suspension",
-   "link_doctype": "Suspension Process",
-   "link_fieldname": "case_id"
-  },
-  {
-   "group": "Response SCN",
-   "link_doctype": "Response to SCN",
-   "link_fieldname": "case_id"
-  }
- ],
- "modified": "2026-02-20 13:05:29.979132",
+ "links": [],
+ "modified": "2026-05-27 15:02:46.993932",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
