@@ -22,45 +22,52 @@ async function update_asset_intro(frm) {
 		try {
 			const employee = await frappe.db.get_doc('Employee', frm.doc.custodian);
 			const details = [
-				{ label: __('Employee ID'), value: employee.name },
-				{ label: __('Employee Name'), value: employee.employee_name },
-				{ label: __('Designation'), value: employee.designation },
-				{ label: __('Department'), value: employee.department },
+				{ label: __('ID'), value: employee.name },
+				{ label: __('Employee'), value: `${employee.employee_name} (${employee.designation})` },
 				{ label: __('Branch'), value: employee.branch || frm.doc.branch_name },
-				{ label: __('User ID'), value: employee.user_id },
 			];
+
+			const all_statuses = ['Available', 'Assigned', 'In Repair', 'Scrapped'];
+			const current_status = frm.doc.status || 'Available';
+			
+			const status_html = all_statuses.map(s => {
+				const isActive = (s === current_status);
+				return `<div style="
+					font-size: 10px;
+					padding: 2px 8px;
+					border-radius: 4px;
+					${isActive ? 'background: #dcfce7; color: #166534; font-weight: 700; box-shadow: 0 0 8px #86efac;' : 'background: #f3f4f6; color: #9ca3af;'}
+				">${s}</div>`;
+			}).join('');
 
 			const html = `
 <div style="
-	padding: 12px 14px;
+	padding: 8px 12px;
 	border-left: 4px solid #15803d;
-	background: linear-gradient(135deg, #f4fff7 0%, #ecfdf3 100%);
-	border-radius: 8px;
+	background: #f0fdf4;
+	border-radius: 4px;
 	font-family: Inter, sans-serif;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 ">
-	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-		<div>
-			<div style="font-size:14px;font-weight:700;color:#166534;">${__('Assigned Asset')}</div>
-			<div style="font-size:12px;color:#4b5563;margin-top:4px;">${__('This asset is currently assigned to the following employee.')}</div>
-		</div>
-		<div style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">
-			${frm.doc.status || __('Assigned')}
-		</div>
-	</div>
-	<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-top:12px;">
+	<div style="display: flex; gap: 16px;">
 		${details.filter(row => row.value).map(row => `
-			<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px 12px;">
-				<div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.4px;">${row.label}</div>
-				<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;word-break:break-word;">${row.value}</div>
+			<div>
+				<div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">${row.label}</div>
+				<div style="font-size: 12px; font-weight: 600; color: #111827;">${row.value}</div>
 			</div>
 		`).join('')}
+	</div>
+	<div style="display: flex; gap: 6px;">
+		${status_html}
 	</div>
 </div>`;
 
 			frm.set_intro(html);
 			return;
 		} catch (error) {
-			console.error('Failed to load custodian details for asset intro:', error);
+			console.error('Failed to load custodian details:', error);
 		}
 	}
 
