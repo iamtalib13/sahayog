@@ -94,6 +94,13 @@ function add_asset_action_buttons(frm) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
+		return;
+	}
+
+	if (status === ASSET_STATUS.SCRAPPED) {
+		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
+		frm.add_custom_button(__('Restore to Previous'), () => frm.trigger('restore_to_previous'), actions_group);
+		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
 	}
 }
 
@@ -316,6 +323,28 @@ frappe.ui.form.on('Asset', {
 		});
 
 		dialog.show();
+	},
+
+	restore_to_previous: async function(frm) {
+		const response = await frappe.call({
+			method: 'sahayog.procurement.api.asset_actions.get_previous_custodian',
+			args: { asset_name: frm.doc.name }
+		});
+
+		if (response.message) {
+			const { to_employee, target_location } = response.message;
+			frappe.confirm(
+				__('Are you sure you want to restore this asset to {0} at {1}?', [to_employee, target_location]),
+				async () => {
+					await run_asset_action(frm, 'assign', {
+						custodian: to_employee,
+						location: target_location
+					});
+				}
+			);
+		} else {
+			frappe.msgprint(__('No previous custodian found in history for this asset.'));
+		}
 	},
 
 	preview_asset_id: function(frm) {
