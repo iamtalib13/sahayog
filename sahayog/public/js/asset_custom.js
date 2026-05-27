@@ -69,12 +69,33 @@ async function update_asset_intro(frm) {
 			</div>
 		`).join('')}
 	</div>
-	<div style="display: flex; gap: 6px;">
-		${status_html}
+	<div style="display: flex; align-items: center; gap: 10px;">
+		<div style="display: flex; gap: 6px;">
+			${status_html}
+		</div>
+		<div id="intro-action-dropdown" class="dropdown">
+			<button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<i class="fa fa-ellipsis-v"></i>
+			</button>
+			<ul class="dropdown-menu dropdown-menu-right"></ul>
+		</div>
 	</div>
 </div>`;
 
 			frm.set_intro(html);
+
+			// Populate dropdown
+			const $dropdown = $(frm.wrapper).find('#intro-action-dropdown .dropdown-menu');
+			$dropdown.empty();
+			
+			const actions = get_asset_actions(frm);
+			actions.forEach(act => {
+				$dropdown.append(`<li><a href="#">${act.label}</a></li>`);
+				$dropdown.find('li:last a').on('click', (e) => {
+					e.preventDefault();
+					act.action();
+				});
+			});
 			return;
 		} catch (error) {
 			console.error('Failed to load custodian details:', error);
@@ -82,6 +103,31 @@ async function update_asset_intro(frm) {
 	}
 
 	frm.set_intro('');
+}
+
+function get_asset_actions(frm) {
+	const status = get_asset_status(frm);
+	const actions = [];
+
+	if ([ASSET_STATUS.DRAFT, ASSET_STATUS.SUBMITTED, ASSET_STATUS.AVAILABLE, ""].includes(status)) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Send For Repair'), action: () => frm.trigger('send_for_repair')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.ASSIGNED) {
+		actions.push({label: __('Transfer'), action: () => frm.trigger('transfer_asset')});
+		actions.push({label: __('Return'), action: () => frm.trigger('return_asset')});
+		actions.push({label: __('Send For Repair'), action: () => frm.trigger('send_for_repair')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.IN_REPAIR) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Mark Available'), action: () => frm.trigger('mark_available')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.SCRAPPED) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Restore to Previous'), action: () => frm.trigger('restore_to_previous')});
+		actions.push({label: __('Mark Available'), action: () => frm.trigger('mark_available')});
+	}
+	return actions;
 }
 
 function add_asset_action_buttons(frm) {
@@ -96,25 +142,16 @@ function add_asset_action_buttons(frm) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
-		return;
-	}
-
-	if (status === ASSET_STATUS.ASSIGNED) {
+	} else if (status === ASSET_STATUS.ASSIGNED) {
 		frm.add_custom_button(__('Transfer'), () => frm.trigger('transfer_asset'), actions_group);
 		frm.add_custom_button(__('Return'), () => frm.trigger('return_asset'), actions_group);
 		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
-		return;
-	}
-
-	if (status === ASSET_STATUS.IN_REPAIR) {
+	} else if (status === ASSET_STATUS.IN_REPAIR) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
-		return;
-	}
-
-	if (status === ASSET_STATUS.SCRAPPED) {
+	} else if (status === ASSET_STATUS.SCRAPPED) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Restore to Previous'), () => frm.trigger('restore_to_previous'), actions_group);
 		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
@@ -148,6 +185,7 @@ frappe.ui.form.on('Asset', {
 			frm.dashboard.render_graph = function() { return; };
 		}
 
+		add_asset_action_buttons(frm);
 		frm.toggle_display('naming_details_section', frm.is_new());
 
 		if (frm.is_new()) {
