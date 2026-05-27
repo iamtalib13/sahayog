@@ -1,4 +1,6 @@
 import frappe
+from frappe import scrub
+from frappe.utils import formatdate
 
 def get_hr_cc_recipients(doctype, employee_id, docname=None):
     """
@@ -11,7 +13,7 @@ def get_hr_cc_recipients(doctype, employee_id, docname=None):
     cc_list = []
     hr_settings = frappe.get_single("Sahayog HR Setting")
     
-    # Define flows
+    # Define flows (Original categories)
     ua_flow = ["Unauthorized Absence", "Reminder Of Unauthorized Absence"]
     disc_flow = [
         "Disciplinary Case", 
@@ -50,6 +52,97 @@ def get_hr_cc_recipients(doctype, employee_id, docname=None):
                 cc_list.append(hr_email)
             
     return list(set([e for e in cc_list if e]))
+
+
+def send_hr_workflow_email(docname, doctype, template_name=None, print_format=None):
+    """
+    Centralized dynamic function to send HR workflow emails.
+    - template_name: Defaults to Doctype name.
+    - print_format: Defaults to Doctype name.
+    """
+    from frappe.utils import formatdate
+
+    doc = frappe.get_doc(doctype, docname)
+    emp_id = doc.get("employee_id")
+    if not emp_id:
+        return
+
+    # 1. Recipient Details
+    emp = frappe.get_doc("Employee", emp_id)
+    recipient = emp.company_email
+    if not recipient:
+        return
+
+    # 2. CC List (Manager, HR, Fixed IDs)
+    cc_list = get_hr_cc_recipients(doctype, emp_id, docname)
+
+    # 3. Prepare Data (Format dates for rendering)
+    doc_dict = doc.as_dict()
+    for field, value in doc_dict.items():
+        if isinstance(value, (frappe.utils.datetime.date, frappe.utils.datetime.datetime)):
+            doc_dict[field] = formatdate(value)
+
+    # 4. Load Template & Render
+    template_name = template_name or doctype
+    try:
+        template = frappe.get_doc("Email Template", template_name)
+        subject = frappe.render_template(template.subject, doc_dict)
+        message = frappe.render_template(template.response_html, {"doc": doc_dict})
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), f"HR Email Template Error: {template_name}")
+        return
+
+    # 5. Attachments
+    attachments = []
+    
+    # Use provided print_format or fallback to doctype
+    final_print_format = print_format or doctype
+    
+    try:
+        attachments.append(
+            frappe.attach_print(
+                doctype=doctype,
+                name=docname,
+                print_format=final_print_format,
+                file_name=f"{docname}"
+            )
+        )
+    except Exception:
+        # Fallback if specific print format fails, try default
+        try:
+            attachments.append(
+                frappe.attach_print(
+                    doctype=doctype,
+                    name=docname,
+                    file_name=f"{docname}"
+                )
+            )
+        except Exception:
+            pass
+
+    # Special Case: Attach uploaded document if exists (e.g., Response to SCN)
+    if doc.get("document_upload"):
+        try:
+            file_doc = frappe.get_doc("File", {"file_url": doc.document_upload})
+            attachments.append({
+                "fname": file_doc.file_name,
+                "fcontent": file_doc.get_content()
+            })
+        except Exception:
+            pass
+
+    # 6. Send Email
+    frappe.sendmail(
+        recipients=[recipient],
+        cc=cc_list,
+        subject=subject,
+        message=message,
+        attachments=attachments,
+        reference_doctype=doctype,
+        reference_name=docname,
+        now=False
+    )
+    return "Success"
 
 
 def notify_cc_on_incoming_reply(doc, method):
