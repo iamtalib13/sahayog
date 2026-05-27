@@ -180,10 +180,10 @@ async function run_asset_action(frm, action, args = {}) {
 
 frappe.ui.form.on('Asset', {
 	refresh: function(frm) {
-		// Aggressively override render_graph to prevent any chart-related errors
-		if (frm.dashboard) {
-			frm.dashboard.render_graph = function() { return; };
-		}
+		// Permanently hide the chart via CSS
+		const style = document.createElement('style');
+		style.innerHTML = '.form-graph { display: none !important; } .frappe-chart { display: none !important; }';
+		document.head.appendChild(style);
 
 		add_asset_action_buttons(frm);
 		frm.toggle_display('naming_details_section', frm.is_new());
