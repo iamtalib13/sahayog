@@ -35,7 +35,12 @@ class ReminderOfUnauthorizedAbsence(Document):
         Existing email logic is reused without modification.
         """
         try:
-            send_reminder_unauthorized_absence_email(self.name)
+            from sahayog.utils.hr_utils import send_hr_workflow_email
+            send_hr_workflow_email(
+                self.name, 
+                "Reminder Of Unauthorized Absence",
+                print_format="Reminder Unauthorized absence"
+            )
         except Exception:
             # Do not block submission if email fails
             frappe.log_error(
@@ -51,58 +56,10 @@ def check_employee_email(employee):
 
 @frappe.whitelist()
 def send_reminder_unauthorized_absence_email(docname):
-    """Send Reminder Unauthorized Absence Email using Email Template."""
-
-    doc = frappe.get_doc("Reminder Of Unauthorized Absence", docname)
-    doc_dict = doc.as_dict()
-
-    # Format dates if required
-    date_fields = [
-        "issue_occurrence_date",
-        "issue_date_reported_to_hr",
-        "date_of_unauthorized_absence_letter",
-        "date_of_reminder_unauthorized_absence_letter"
-    ]
-    for df in date_fields:
-        if doc_dict.get(df):
-            doc_dict[df] = formatdate(doc_dict[df])
-
-    # Load Email Template
-    template = frappe.get_doc("Email Template", "Reminder Of Unauthorized Absence")
-
-    # Render Subject and Body
-    subject = frappe.render_template(template.subject, doc_dict)
-    message = frappe.render_template(template.response_html, {"doc": doc_dict})
-
-    # Get employee email
-    emp = frappe.get_doc("Employee", doc.employee_id)
-    final_email = emp.company_email
-    if not final_email:
-        frappe.throw("No email found for this employee.")
-
-    # Fetch CC Recipients using centralized utility
-    from sahayog.utils.hr_utils import get_hr_cc_recipients
-    cc_list = get_hr_cc_recipients("Reminder Of Unauthorized Absence", doc.employee_id, doc.name)
-
-    # Attach Print Format → **Reminder Of Unauthorized Absence Notice**
-    attachments = [
-        frappe.attach_print(
-            doctype="Reminder Of Unauthorized Absence",
-            name=docname,
-            print_format="Reminder Unauthorized absence",
-            file_name=f"{docname}"
-        )
-    ]
-
-    # Send mail
-    frappe.sendmail(
-        recipients=[final_email],
-        cc=cc_list,
-        subject=subject,
-        message=message,
-        attachments=attachments,
-        reference_doctype="Reminder Of Unauthorized Absence",
-        reference_name=docname,
-        now=False
+    """Send Reminder Unauthorized Absence Email using centralized utility."""
+    from sahayog.utils.hr_utils import send_hr_workflow_email
+    return send_hr_workflow_email(
+        docname, 
+        "Reminder Of Unauthorized Absence",
+        print_format="Reminder Unauthorized absence"
     )
-    return "Email Sent Successfully"
