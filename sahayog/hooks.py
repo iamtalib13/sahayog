@@ -518,7 +518,7 @@ exempt_from_csrf = [
 fixtures = [
     # Workflow Fixtures - Employee Material Request
     {"dt": "Workflow", "filters": [
-        ["name", "=", "Employee Material Request"]]},
+        ["name", "in", ["Employee Material Request", "Asset state"]]]},
     # Disciplinary case Workflow
     {
         "dt": "Workflow",
@@ -544,7 +544,11 @@ fixtures = [
                     "Closed",
                     "Assign",
                     "Self Approve",
-                    "Self Approved"
+                    "Self Approved",
+                    "Assigned",
+                    "In Repair",
+                    "Scrapped",
+                    "Available"
                 ]
             ]
         ]
@@ -622,6 +626,10 @@ fixtures = [
                     "Material Request-schedule_date-reqd",
                     "Purchase Receipt-main-field_order",
                     "Stock Entry-section_break_jwgn-collapsible",
+                    "Asset Movement Item-target_location-fieldtype",
+                    "Asset Movement Item-target_location-options",
+                    "Asset Movement Item-source_location-fieldtype",
+                    "Asset Movement Item-source_location-options"
                 ],
             ]
         ],

@@ -1,15 +1,31 @@
 import frappe
 from frappe import _
+from frappe.utils import now_datetime
 
 
 ALLOWED_STATUS_FLOW = {
-    "assign": {"to_status": "Assigned", "allowed_from": {"", "Draft", "Submitted", "Available", "In Repair"}},
-    "transfer": {"to_status": "Assigned", "allowed_from": {"Assigned"}},
-    "return": {"to_status": "Available", "allowed_from": {"Assigned"}},
-    "send_for_repair": {"to_status": "In Repair", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}},
-    "mark_available": {"to_status": "Available", "allowed_from": {"In Repair"}},
-    "scrap": {"to_status": "Scrapped", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}},
+    "assign": {"to_status": "Assigned", "allowed_from": {"", "Draft", "Submitted", "Available", "In Repair", "Scrapped"}, "purpose": "Receipt"},
+    "transfer": {"to_status": "Assigned", "allowed_from": {"Assigned"}, "purpose": "Transfer"},
+    "return": {"to_status": "Available", "allowed_from": {"Assigned"}, "purpose": "Transfer"},
+    "send_for_repair": {"to_status": "In Repair", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
+    "mark_available": {"to_status": "Available", "allowed_from": {"In Repair", "Scrapped"}, "purpose": "Transfer"},
+    "scrap": {"to_status": "Scrapped", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
 }
+
+
+@frappe.whitelist()
+def get_previous_custodian(asset_name):
+    # Find the last movement item where a custodian was assigned
+    last_movement = frappe.db.sql("""
+        SELECT item.to_employee, item.target_location
+        FROM `tabAsset Movement Item` item
+        JOIN `tabAsset Movement` main ON item.parent = main.name
+        WHERE item.asset = %s AND main.docstatus = 1 AND item.to_employee != ''
+        ORDER BY main.transaction_date DESC, main.creation DESC
+        LIMIT 1
+    """, (asset_name,), as_dict=True)
+
+    return last_movement[0] if last_movement else None
 
 
 @frappe.whitelist()
@@ -36,6 +52,16 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
     if action in {"assign", "transfer", "return", "mark_available"} and not location:
         frappe.throw(_("Location is required for this action."))
 
+    target_status = rule["to_status"]
+    purpose = rule["purpose"]
+
+    # For submitted assets, we create a Movement record first
+    if asset.docstatus == 1 and action != "scrap":
+        _create_asset_movement(asset, purpose, custodian, location)
+        # Reload to get the new 'modified' timestamp set by Asset Movement submission
+        asset.reload()
+
+    # Update Asset fields
     if location:
         asset.location = location
         asset.branch_name = _get_branch_name(location)
@@ -45,41 +71,34 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
     elif action in {"return", "send_for_repair", "mark_available", "scrap"}:
         asset.custodian = ""
 
-    target_status = rule["to_status"]
+    asset.status = target_status
+    asset.workflow_state = target_status
 
     if asset.docstatus == 0:
-        asset.status = target_status
         asset.save(ignore_permissions=True)
-
         if action == "assign":
             asset.submit()
-            asset.reload()
-            _apply_final_asset_state(
-                asset,
-                status=target_status,
-                custodian=asset.custodian,
-                location=asset.location,
-                branch_name=getattr(asset, "branch_name", None),
-            )
+            # Standard submit() calls set_status(), we must force our custom status again
+            asset.db_set({
+                "status": target_status,
+                "workflow_state": target_status
+            })
     else:
-        if asset.docstatus == 1:
-            asset.flags.ignore_validate_update_after_submit = True
+        # For already submitted assets, use db_set to bypass standard status calculation
+        asset.db_set({
+            "status": target_status,
+            "workflow_state": target_status,
+            "custodian": asset.custodian,
+            "location": asset.location,
+            "branch_name": asset.branch_name
+        })
 
-        asset.status = target_status
-        asset.save(ignore_permissions=True)
-        asset.reload()
-        _apply_final_asset_state(
-            asset,
-            status=target_status,
-            custodian=asset.custodian,
-            location=asset.location,
-            branch_name=getattr(asset, "branch_name", None),
-        )
-
+    asset.reload()
     return {
         "name": asset.name,
         "docstatus": asset.docstatus,
         "status": asset.status,
+        "workflow_state": asset.workflow_state,
         "custodian": asset.custodian,
         "location": asset.location,
         "branch_name": getattr(asset, "branch_name", None),
@@ -91,16 +110,25 @@ def _get_branch_name(location):
     return branch_name or location
 
 
+def _create_asset_movement(asset, purpose, to_employee, target_location):
+    if not target_location:
+        target_location = asset.location
 
-def _apply_final_asset_state(asset, status, custodian, location, branch_name):
-    updates = {
-        "status": status,
-        "custodian": custodian or "",
-        "location": location or "",
-    }
+    # Only create movement if there is an actual change
+    if to_employee == asset.custodian and target_location == asset.location:
+        return
 
-    if hasattr(asset, "branch_name"):
-        updates["branch_name"] = branch_name or location or ""
-
-    asset.db_set(updates, update_modified=True)
-    asset.reload()
+    movement = frappe.new_doc("Asset Movement")
+    movement.company = asset.company
+    movement.transaction_date = now_datetime()
+    movement.purpose = purpose
+    movement.append("assets", {
+        "asset": asset.name,
+        "asset_name": asset.asset_name,
+        "source_location": asset.location,
+        "from_employee": asset.custodian,
+        "target_location": target_location,
+        "to_employee": to_employee or ""
+    })
+    movement.insert(ignore_permissions=True)
+    movement.submit()

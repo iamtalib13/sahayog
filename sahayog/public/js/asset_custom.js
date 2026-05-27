@@ -21,50 +21,113 @@ async function update_asset_intro(frm) {
 	if (frm.doc.custodian && get_asset_status(frm) === ASSET_STATUS.ASSIGNED) {
 		try {
 			const employee = await frappe.db.get_doc('Employee', frm.doc.custodian);
+			const cleanedBranch = (employee.branch || frm.doc.branch_name || '').replace(/BRANCH/gi, '').trim();
+			let displayBranch = cleanedBranch;
+			
+			if (cleanedBranch) {
+				const branchRecord = await frappe.db.get_value("Sahayog Branch", {"branch": ["like", `%${cleanedBranch}%`]}, ["branch", "name"]);
+				if (branchRecord && branchRecord.message && branchRecord.message.branch) {
+					displayBranch = `${branchRecord.message.branch} (${branchRecord.message.name})`;
+				}
+			}
+
 			const details = [
-				{ label: __('Employee ID'), value: employee.name },
-				{ label: __('Employee Name'), value: employee.employee_name },
-				{ label: __('Designation'), value: employee.designation },
-				{ label: __('Department'), value: employee.department },
-				{ label: __('Branch'), value: employee.branch || frm.doc.branch_name },
-				{ label: __('User ID'), value: employee.user_id },
+				{ label: __('ID'), value: employee.name },
+				{ label: __('Employee'), value: `${employee.employee_name} (${employee.designation})` },
+				{ label: __('Branch'), value: displayBranch },
 			];
+
+			const all_statuses = ['Available', 'Assigned', 'In Repair', 'Scrapped'];
+			const current_status = frm.doc.status || 'Available';
+			
+			const status_html = all_statuses.map(s => {
+				const isActive = (s === current_status);
+				return `<div style="
+					font-size: 10px;
+					padding: 2px 8px;
+					border-radius: 4px;
+					${isActive ? 'background: #dcfce7; color: #166534; font-weight: 700; box-shadow: 0 0 8px #86efac;' : 'background: #f3f4f6; color: #9ca3af;'}
+				">${s}</div>`;
+			}).join('');
 
 			const html = `
 <div style="
-	padding: 12px 14px;
+	padding: 8px 12px;
 	border-left: 4px solid #15803d;
-	background: linear-gradient(135deg, #f4fff7 0%, #ecfdf3 100%);
-	border-radius: 8px;
+	background: #f0fdf4;
+	border-radius: 4px;
 	font-family: Inter, sans-serif;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 ">
-	<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-		<div>
-			<div style="font-size:14px;font-weight:700;color:#166534;">${__('Assigned Asset')}</div>
-			<div style="font-size:12px;color:#4b5563;margin-top:4px;">${__('This asset is currently assigned to the following employee.')}</div>
-		</div>
-		<div style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;">
-			${frm.doc.status || __('Assigned')}
-		</div>
-	</div>
-	<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:10px;margin-top:12px;">
+	<div style="display: flex; gap: 16px;">
 		${details.filter(row => row.value).map(row => `
-			<div style="background:#fff;border:1px solid #d1fae5;border-radius:8px;padding:10px 12px;">
-				<div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.4px;">${row.label}</div>
-				<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;word-break:break-word;">${row.value}</div>
+			<div>
+				<div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">${row.label}</div>
+				<div style="font-size: 12px; font-weight: 600; color: #111827;">${row.value}</div>
 			</div>
 		`).join('')}
+	</div>
+	<div style="display: flex; align-items: center; gap: 10px;">
+		<div style="display: flex; gap: 6px;">
+			${status_html}
+		</div>
+		<div id="intro-action-dropdown" class="dropdown">
+			<button class="btn btn-default btn-xs dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				<i class="fa fa-ellipsis-v"></i>
+			</button>
+			<ul class="dropdown-menu dropdown-menu-right"></ul>
+		</div>
 	</div>
 </div>`;
 
 			frm.set_intro(html);
+
+			// Populate dropdown
+			const $dropdown = $(frm.wrapper).find('#intro-action-dropdown .dropdown-menu');
+			$dropdown.empty();
+			
+			const actions = get_asset_actions(frm);
+			actions.forEach(act => {
+				$dropdown.append(`<li><a href="#">${act.label}</a></li>`);
+				$dropdown.find('li:last a').on('click', (e) => {
+					e.preventDefault();
+					act.action();
+				});
+			});
 			return;
 		} catch (error) {
-			console.error('Failed to load custodian details for asset intro:', error);
+			console.error('Failed to load custodian details:', error);
 		}
 	}
 
 	frm.set_intro('');
+}
+
+function get_asset_actions(frm) {
+	const status = get_asset_status(frm);
+	const actions = [];
+
+	if ([ASSET_STATUS.DRAFT, ASSET_STATUS.SUBMITTED, ASSET_STATUS.AVAILABLE, ""].includes(status)) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Send For Repair'), action: () => frm.trigger('send_for_repair')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.ASSIGNED) {
+		actions.push({label: __('Transfer'), action: () => frm.trigger('transfer_asset')});
+		actions.push({label: __('Return'), action: () => frm.trigger('return_asset')});
+		actions.push({label: __('Send For Repair'), action: () => frm.trigger('send_for_repair')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.IN_REPAIR) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Mark Available'), action: () => frm.trigger('mark_available')});
+		actions.push({label: __('Scrap'), action: () => frm.trigger('scrap_asset')});
+	} else if (status === ASSET_STATUS.SCRAPPED) {
+		actions.push({label: __('Assign'), action: () => frm.trigger('assign_custodian')});
+		actions.push({label: __('Restore to Previous'), action: () => frm.trigger('restore_to_previous')});
+		actions.push({label: __('Mark Available'), action: () => frm.trigger('mark_available')});
+	}
+	return actions;
 }
 
 function add_asset_action_buttons(frm) {
@@ -79,21 +142,19 @@ function add_asset_action_buttons(frm) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
-		return;
-	}
-
-	if (status === ASSET_STATUS.ASSIGNED) {
+	} else if (status === ASSET_STATUS.ASSIGNED) {
 		frm.add_custom_button(__('Transfer'), () => frm.trigger('transfer_asset'), actions_group);
 		frm.add_custom_button(__('Return'), () => frm.trigger('return_asset'), actions_group);
 		frm.add_custom_button(__('Send For Repair'), () => frm.trigger('send_for_repair'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
-		return;
-	}
-
-	if (status === ASSET_STATUS.IN_REPAIR) {
+	} else if (status === ASSET_STATUS.IN_REPAIR) {
 		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
 		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
 		frm.add_custom_button(__('Scrap'), () => frm.trigger('scrap_asset'), actions_group);
+	} else if (status === ASSET_STATUS.SCRAPPED) {
+		frm.add_custom_button(__('Assign'), () => frm.trigger('assign_custodian'), actions_group);
+		frm.add_custom_button(__('Restore to Previous'), () => frm.trigger('restore_to_previous'), actions_group);
+		frm.add_custom_button(__('Mark Available'), () => frm.trigger('mark_available'), actions_group);
 	}
 }
 
@@ -119,6 +180,12 @@ async function run_asset_action(frm, action, args = {}) {
 
 frappe.ui.form.on('Asset', {
 	refresh: function(frm) {
+		// Permanently hide the chart via CSS
+		const style = document.createElement('style');
+		style.innerHTML = '.form-graph { display: none !important; } .frappe-chart { display: none !important; }';
+		document.head.appendChild(style);
+
+		add_asset_action_buttons(frm);
 		frm.toggle_display('naming_details_section', frm.is_new());
 
 		if (frm.is_new()) {
@@ -316,6 +383,28 @@ frappe.ui.form.on('Asset', {
 		});
 
 		dialog.show();
+	},
+
+	restore_to_previous: async function(frm) {
+		const response = await frappe.call({
+			method: 'sahayog.procurement.api.asset_actions.get_previous_custodian',
+			args: { asset_name: frm.doc.name }
+		});
+
+		if (response.message) {
+			const { to_employee, target_location } = response.message;
+			frappe.confirm(
+				__('Are you sure you want to restore this asset to {0} at {1}?', [to_employee, target_location]),
+				async () => {
+					await run_asset_action(frm, 'assign', {
+						custodian: to_employee,
+						location: target_location
+					});
+				}
+			);
+		} else {
+			frappe.msgprint(__('No previous custodian found in history for this asset.'));
+		}
 	},
 
 	preview_asset_id: function(frm) {
