@@ -53,7 +53,6 @@ async function update_asset_intro(frm) {
 			const html = `
 <div style="
 	padding: 8px 12px;
-	border-left: 4px solid #15803d;
 	background: #f0fdf4;
 	border-radius: 4px;
 	font-family: Inter, sans-serif;
