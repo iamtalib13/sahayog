@@ -159,9 +159,27 @@ frappe.ui.form.on("Unauthorized Absence", {
         return true;
       };
 
+      const block_due_to_satisfactory_response = (doctype_label) => {
+        frappe.msgprint({
+          title: __("Not Allowed"),
+          message: __(
+            "{0} cannot be created because 'Status of Response' is set to 'Satisfactory'.",
+            [doctype_label],
+          ),
+          indicator: "red",
+        });
+      };
+
       // Restriction for Reminder Of Unauthorized Absence
       $ruaBtn.on("mousedown.rua_check", (e) => {
         if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_ua === "Satisfactory") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          block_due_to_satisfactory_response(__("Reminder of Unauthorized Absence"));
+          return;
+        }
 
         if (frm.doc.response_of_ua !== "No") {
           e.preventDefault();
@@ -170,6 +188,33 @@ frappe.ui.form.on("Unauthorized Absence", {
             title: __("Not Allowed"),
             message: __(
               "Reminder of Unauthorized Absence can only be created if the response to Unauthorized Absence is <b>No</b>.",
+            ),
+            indicator: "red",
+          });
+        }
+      });
+
+      // Restriction for Ex Parte Enquiry and Case Closure
+      const $exParteBtn = $('button[data-doctype="Ex Parte Enquiry"]');
+      $exParteBtn.off("mousedown.ex_parte_check");
+
+      $exParteBtn.on("mousedown.ex_parte_check", (e) => {
+        if (!ensureSaved(e)) return;
+
+        if (frm.doc.response_of_ua === "Satisfactory") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          block_due_to_satisfactory_response(__("Ex Parte Enquiry"));
+          return;
+        }
+
+        if (frm.doc.response_of_ua !== "No") {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          frappe.msgprint({
+            title: __("Not Allowed"),
+            message: __(
+              "Ex Parte Enquiry can only be created if the response to Unauthorized Absence is <b>No</b>.",
             ),
             indicator: "red",
           });
@@ -216,6 +261,26 @@ frappe.ui.form.on("Unauthorized Absence", {
 
     if (frm.doc.date_of_1st_letter && frm.doc.date_of_1st_letter < today) {
       frappe.throw(__("Date of Unauthorized Absence cannot be in past."));
+    }
+  },
+
+  before_submit(frm) {
+    const missing_fields = [];
+
+    if (!frm.doc.response_of_ua) {
+      missing_fields.push(__("Response of UA"));
+    }
+
+    if (!String(frm.doc.remarks || "").trim()) {
+      missing_fields.push(__("Remarks"));
+    }
+
+    if (missing_fields.length) {
+      frappe.throw(
+        __("Please fill the following fields before submitting: {0}", [
+          missing_fields.join(", "),
+        ]),
+      );
     }
   },
 
@@ -684,12 +749,24 @@ function load_case_timeline(frm) {
     get_defaults(stage) {
       return stage.defaults || { case_id };
     },
-    before_open() {
+    before_open(stage) {
       if (frm.is_dirty()) {
         frappe.msgprint({
           title: __("Please Save First"),
           message: __("Save the form before creating a linked record."),
           indicator: "orange",
+        });
+        return false;
+      }
+
+      if (frm.doc.response_of_ua === "Satisfactory" && ["Reminder Of Unauthorized Absence", "Ex Parte Enquiry"].includes(stage.doctype)) {
+        frappe.msgprint({
+          title: __("Not Allowed"),
+          message: __(
+            "{0} cannot be created because 'Status of Response' is set to 'Satisfactory'.",
+            [stage.label],
+          ),
+          indicator: "red",
         });
         return false;
       }
