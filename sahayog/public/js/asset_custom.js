@@ -133,10 +133,10 @@ async function run_asset_action(frm, action, args = {}) {
 
 frappe.ui.form.on('Asset', {
 	refresh: function(frm) {
-		// Use CSS to hide the chart to avoid JS re-rendering conflicts
-		const style = document.createElement('style');
-		style.innerHTML = '.frappe-chart { display: none !important; }';
-		document.head.appendChild(style);
+		// Aggressively override render_graph to prevent any chart-related errors
+		if (frm.dashboard) {
+			frm.dashboard.render_graph = function() { return; };
+		}
 
 		frm.toggle_display('naming_details_section', frm.is_new());
 
