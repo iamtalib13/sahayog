@@ -17,6 +17,7 @@
   "enquiry_status",
   "enquiry_report_upload",
   "linked_enquiry",
+  "case_close_with",
   "section_break_ekou",
   "review_details_html",
   "section_break_wfuu",
@@ -246,13 +247,19 @@
   {
    "fieldname": "section_break_ekou",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_close_with",
+   "fieldtype": "Select",
+   "label": "Case Close With",
+   "options": "\nTermination\nAccepting Resignation\nWarning Letter\nCaution Letter\nDrop Charges"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-15 12:00:00.000000",
+ "modified": "2026-05-30 10:14:25.530272",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

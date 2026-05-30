@@ -204,8 +204,14 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2026-05-27 16:35:22.613301",
+ "links": [
+  {
+   "group": "Case Closed",
+   "link_doctype": "Case Closure",
+   "link_fieldname": "case_id"
+  }
+ ],
+ "modified": "2026-05-30 10:32:21.344085",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",
@@ -222,6 +228,30 @@
    "role": "System Manager",
    "share": 1,
    "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Executive",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Support Manager",
+   "share": 1,
    "write": 1
   }
  ],
