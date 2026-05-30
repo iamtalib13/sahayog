@@ -325,6 +325,55 @@ frappe.ui.form.on("Case Closure", {
         frm.refresh_field("review_details");
       },
     });
+
+    // ---------------- SUBMIT FEEDBACK BUTTON ----------------
+
+
+    if (!frm.is_new()) {
+    frappe.call({
+        method: "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_current_user_for_review",
+        args: {
+            case_closure_name: frm.doc.name
+        },
+        callback: function (r) {
+            if (!r.message || !r.message.allowed) return;
+
+            frm.add_custom_button("Submit Feedback", function () {
+                let d = new frappe.ui.Dialog({
+                    title: "Submit Feedback",
+                    fields: [
+                        {
+                            fieldtype: "Small Text",
+                            fieldname: "feedback",
+                            label: "Feedback",
+                            reqd: 1
+                        }
+                    ],
+                    primary_action_label: "Submit",
+                    primary_action(values) {
+                        frappe.call({
+                            method: "sahayog.hrms.doctype.case_closure.case_closure.submit_feedback",
+                            args: {
+                                case_closure_name: frm.doc.name,
+                                feedback: values.feedback
+                            },
+                            freeze: true,
+                            freeze_message: "Submitting feedback...",
+                            callback: function (res) {
+                                if (res.message && res.message.status === "success") {
+                                    frappe.msgprint("Feedback submitted successfully.");
+                                    d.hide();
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+                    }
+                });
+                d.show();
+            });
+        }
+    });
+}
   },
 
   show_print_button: function (frm) {
