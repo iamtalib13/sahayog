@@ -217,238 +217,6 @@ frappe.ui.form.on("Suspension Process", {
   },
 });
 
-function render_timeline(frm, data) {
-  // debug: show incoming timeline payload in console
-  console.debug(
-    "render_timeline payload:",
-    data && data.timeline ? data.timeline : data
-  );
-
-  const wrap = $(frm.wrapper).find(".case-timeline-box");
-  if (wrap.length) wrap.remove();
-
-  const insertion_point = $(".form-dashboard");
-
-  let html = `
-    <div class="case-timeline-box" style="
-        background:#ffffff;
-        border:1px solid #e0e0e0;
-        padding:10px;
-        margin-bottom:10px;
-        border-radius:8px;
-        box-shadow:0 1px 2px rgba(0,0,0,0.05);
-        font-size:13px;
-    ">
-        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-            Case Progress Timeline
-        </h4>
-
-        <!-- TIMELINE BADGES -->
-        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
-  `;
-
-  // guard: if no timeline array, do nothing
-  const timeline_arr =
-    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
-  if (!timeline_arr.length) {
-    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
-  } else {
-    timeline_arr.forEach((stage_obj, index) => {
-      html += timeline_badge(stage_obj);
-      if (index < timeline_arr.length - 1) {
-        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
-      }
-    });
-  }
-
-  html += `
-        </div>
-
-        <!-- LEGEND OUTSIDE / BELOW -->
-        <div style="
-            margin-top:10px;
-            padding-top:6px;
-            border-top:1px solid #e0e0e0;
-            font-size:11px;
-            color:#777;
-            display:flex;
-            gap:14px;
-            justify-content:right;
-        ">
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟢</span><span>Completed</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟠</span><span>In Progress</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">⚪</span><span>Not Created</span>
-            </div>
-        </div>
-
-    </div>
-  `;
-
-  insertion_point.before(html);
-}
-function timeline_badge(stage_obj) {
-  let bg = "#eeeeee",
-    color = "#555",
-    icon = "⚪";
-  switch ((stage_obj.status || "").toLowerCase()) {
-    case "submitted":
-      bg = "#e8f5e9";
-      color = "#1b5e20";
-      icon = "🟢";
-      break;
-    case "saved":
-      bg = "#fff4e5";
-      color = "#e65100";
-      icon = "🟠";
-      break;
-    case "cancelled":
-      bg = "#f0f0f0"; // light gray
-      color = "#999";
-      icon = "⚪";
-      break;
-    default:
-      bg = "#eeeeee";
-      color = "#555";
-      icon = "⚪";
-  }
-
-  // Get modified timestamp
-  let ts =
-    stage_obj.modified ||
-    stage_obj.modified_on ||
-    stage_obj.modified_at ||
-    stage_obj.modified_date ||
-    stage_obj.timestamp ||
-    null;
-
-  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
-  let formatted = "-";
-  if (ts) {
-    try {
-      let d = new Date(ts);
-      if (!isNaN(d.getTime())) {
-        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
-        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
-        formatted = `${d.toLocaleTimeString(
-          [],
-          optsTime
-        )}, ${d.toLocaleDateString([], optsDate)}`;
-      }
-    } catch (e) {
-      console.warn("Failed to format timestamp", e);
-      formatted = String(ts);
-    }
-  }
-
-  const stage_label =
-    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
-
-  return `
-    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-      <!-- TIMESTAMP (small, above badge) -->
-      <div style="font-size:10px; color:#777; margin-bottom:3px;">
-        ${formatted}
-      </div>
-
-      <!-- EXISTING BADGE -->
-      <div style="
-          padding:3px 6px;
-          background:${bg};
-          color:${color};
-          border-radius:14px;
-          font-weight:600;
-          display:flex;
-          align-items:center;
-          gap:4px;
-          font-size:11px;
-      ">
-        ${icon} ${stage_label}
-      </div>
-    </div>
-  `;
-}
-// ===============================
-// DAMS Timeline Hover Tooltip
-// ===============================
-(function () {
-  let tooltip = null;
-
-  function show_tooltip(target, html) {
-    hide_tooltip();
-
-    tooltip = $(`
-      <div style="
-        position:absolute;
-        background:#2e2e2e;
-        color:#fff;
-        padding:6px 8px;
-        border-radius:6px;
-        font-size:11px;
-        z-index:99999;
-        box-shadow:0 2px 6px rgba(0,0,0,0.25);
-        max-width:220px;
-      ">
-        ${html}
-      </div>
-    `);
-
-    $("body").append(tooltip);
-
-    const offset = $(target).offset();
-    tooltip.css({
-      top: offset.top - tooltip.outerHeight() - 6,
-      left: offset.left + $(target).outerWidth() / 2 - tooltip.outerWidth() / 2,
-    });
-  }
-
-  function hide_tooltip() {
-    if (tooltip) {
-      tooltip.remove();
-      tooltip = null;
-    }
-  }
-
-  $(document).on(
-    "mouseenter",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    function () {
-      const frm = cur_frm;
-      if (!frm || !frm._timeline_counts) return;
-
-      const label = $(this)
-        .text()
-        .replace(/^[^\w]+/, "")
-        .trim();
-
-      const info = frm._timeline_counts[label];
-
-      let html = `<b>${label}</b>`;
-
-      if (!info || info.count === 0) {
-        html += `<br>No records created yet`;
-      } else {
-        html += `<br>Records created: ${info.count}`;
-        html += `<br><span style="opacity:.8;">${info.names.join(
-          "<br>"
-        )}</span>`;
-      }
-
-      show_tooltip(this, html);
-    }
-  );
-
-  $(document).on(
-    "mouseleave",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip
-  );
-})();
-
 function load_case_timeline(frm) {
   const case_id = frm.doc.case_id || frm.doc.name;
   if (!case_id) return;
@@ -456,25 +224,20 @@ function load_case_timeline(frm) {
   const standard_stages = [
     { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
     { doctype: "Suspension Process", label: "Suspension Process" },
-    { doctype: "Response to SCN", label: "Response to SCN" },
-    { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
-    { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+    { doctype: "Response to SCN", label: "Response to SCN", allow_multiple: true },
+    { doctype: "Domestic Enquiry", label: "Domestic Enquiry", allow_multiple: true },
+    { doctype: "Enquiry Reminder", label: "Enquiry Reminder", allow_multiple: true },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
   const ua_stages = [
-    { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
-    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence" },
-    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+    { doctype: "Unauthorized Absence", label: "Unauthorized Absence", allow_multiple: true },
+    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence", allow_multiple: true },
+    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry", allow_multiple: true },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
-  const is_ua =
-    String(case_id).startsWith("UA") ||
-    (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
-    frm.doctype === "Unauthorized Absence" ||
-    frm.doctype === "Reminder Of Unauthorized Absence" ||
-    frm.doctype === "Ex Parte Enquiry";
+  const is_ua = String(case_id).startsWith("UA") || (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" || frm.doctype === "Unauthorized Absence" || frm.doctype === "Reminder Of Unauthorized Absence" || frm.doctype === "Ex Parte Enquiry";
 
   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
     ...stage,
@@ -484,8 +247,9 @@ function load_case_timeline(frm) {
     record_count: 0,
     names: [],
     can_create: stage.can_create !== false,
-    allow_multiple: false,
+    allow_multiple: stage.allow_multiple || false,
     quick_entry: true,
+    only_save: true,
     defaults: {
       case_id,
       ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
@@ -496,37 +260,56 @@ function load_case_timeline(frm) {
     title: __("Case Progress Timeline"),
     case_id,
     stages,
-    get_defaults(stage) {
-      return stage.defaults || { case_id };
-    },
+    get_defaults(stage) { return stage.defaults || { case_id }; },
     before_open() {
+      if (frm.doc.docstatus === 0) {
+        frappe.msgprint({ title: __("Not Allowed"), message: __("Please <b>Submit</b> the current document before creating the next stage record."), indicator: "red" });
+        return false;
+      }
       if (frm.is_dirty()) {
-        frappe.msgprint({
-          title: __("Please Save First"),
-          message: __("Save the form before creating a linked record."),
-          indicator: "orange",
-        });
+        frappe.msgprint({ title: __("Please Save First"), message: __("Save the form before creating a linked record."), indicator: "orange" });
         return false;
       }
     },
-    after_insert() {
-      frm.reload_doc();
-    },
+    after_insert() { frm.reload_doc(); },
   });
 
   const merge_stage_meta = (timeline, record_summaries) => {
-    return stage_defs.map((stage) => {
-      const status_match = timeline.find(
-        (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
-      );
-      const summary_match = record_summaries.find((item) => item.doctype === stage.doctype) || {};
-      return {
-        ...stage,
-        status: status_match?.status || stage.status,
-        modified: status_match?.modified || stage.modified,
-        record_count: summary_match.count || 0,
-        names: summary_match.names || [],
-      };
+    let last_submitted_doctype = "";
+    for (let stage of stage_defs) {
+        const match = timeline.find(item => item.doctype === stage.doctype);
+        if (match && match.status === "submitted") { last_submitted_doctype = stage.doctype; }
+    }
+
+    let next_doctype = "";
+    if (!last_submitted_doctype) {
+        next_doctype = stage_defs[0].doctype;
+    } else {
+        let last_match = timeline.find(t => t.doctype === last_submitted_doctype);
+        let meta = last_match?.meta || {};
+        let dt = last_submitted_doctype;
+        if (dt === "Disciplinary Case") next_doctype = (meta.suspension_required === "Yes") ? "Suspension Process" : "Response to SCN";
+        else if (dt === "Suspension Process") next_doctype = "Response to SCN";
+        else if (dt === "Response to SCN") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Domestic Enquiry";
+        else if (dt === "Domestic Enquiry") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Enquiry Reminder";
+        else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
+        else if (dt === "Unauthorized Absence") next_doctype = (String(meta.response_of_ua).toLowerCase() === "yes") ? "Case Closure" : "Reminder Of Unauthorized Absence";
+        else if (dt === "Reminder Of Unauthorized Absence") next_doctype = (String(meta.response_of_reminder).toLowerCase() === "no") ? "Ex Parte Enquiry" : "Case Closure";
+        else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
+    }
+
+    const has_draft = (frm.doc.docstatus === 0);
+    const next_stage_index = stage_defs.findIndex(s => s.doctype === next_doctype);
+
+    return stage_defs.map((stage, index) => {
+      const status_match = timeline.find(item => item.doctype === stage.doctype);
+      const summary_match = record_summaries.find(item => item.doctype === stage.doctype);
+      let is_next_step = (stage.doctype === next_doctype);
+      let is_already_started = (status_match && status_match.status !== "pending");
+      let is_past_or_current = (index <= next_stage_index);
+      let can_create = (is_next_step || (stage.allow_multiple && is_already_started && is_past_or_current)) && !has_draft;
+      if (status_match && !stage.allow_multiple) { can_create = false; }
+      return { ...stage, status: status_match?.status || stage.status, record_count: summary_match?.count || 0, names: summary_match?.names || [], can_create: can_create };
     });
   };
 
@@ -536,49 +319,16 @@ function load_case_timeline(frm) {
   };
 
   const load_record_summaries = () => {
-    return Promise.all(
-      stage_defs.map((stage) =>
-        frappe.db
-          .get_list(stage.doctype, {
-            filters: { case_id },
-            fields: ["name"],
-            order_by: "creation asc",
-            limit_page_length: 500,
-          })
-          .then((records) => ({
-            doctype: stage.doctype,
-            count: (records || []).length,
-            names: (records || []).map((row) => row.name),
-          }))
-          .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
-      ),
-    );
+    return Promise.all(stage_defs.map((stage) => frappe.db.get_list(stage.doctype, { filters: { case_id }, fields: ["name"], order_by: "creation asc", limit_page_length: 500 }).then((records) => ({ doctype: stage.doctype, count: (records || []).length, names: (records || []).map((row) => row.name) })).catch(() => ({ doctype: stage.doctype, count: 0, names: [] }))));
   };
 
-  const load_timeline = () =>
-    frappe.xcall(
-      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
-      { case_id },
-    );
+  const load_timeline = () => frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages", { case_id });
 
   const init = () => {
     if (!window.sahayogCaseTimeline) return;
-
-    Promise.all([load_record_summaries(), load_timeline()])
-      .then(([summaries, timeline_res]) => {
-        const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
-        render_with_data(timeline, summaries || []);
-      })
-      .catch((error) => {
-        console.warn("Timeline load failed", error);
-        render_with_data([], []);
-      });
+    Promise.all([load_record_summaries(), load_timeline()]).then(([summaries, timeline_res]) => { const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : []; render_with_data(timeline, summaries || []); }).catch((error) => { console.warn("Timeline load failed", error); render_with_data([], []); });
   };
 
-  if (window.sahayogCaseTimeline) {
-    init();
-    return;
-  }
-
+  if (window.sahayogCaseTimeline) { init(); return; }
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
 }

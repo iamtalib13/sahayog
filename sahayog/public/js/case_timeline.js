@@ -74,6 +74,7 @@
       can_create: stage.can_create !== false,
       allow_multiple: stage.allow_multiple !== false,
       quick_entry: stage.quick_entry !== false,
+      only_save: !!stage.only_save,
       defaults: stage.defaults || {},
       route_options: stage.route_options || {},
       tooltip: stage.tooltip || "",
@@ -148,7 +149,7 @@
 
     const create_disabled = !stage.can_create;
     const create_title = create_disabled
-      ? __("Creation disabled")
+      ? __("Locked / Not allowed")
       : __("Create {0}", [stage.label]);
 
     const count_value = stage.record_count ?? stage.count ?? stage.names.length ?? 0;
@@ -168,12 +169,12 @@
 
           <button
             type="button"
-            class="btn btn-xs btn-primary sahayog-case-timeline__add"
+            class="btn btn-xs ${create_disabled ? "btn-default" : "btn-primary"} sahayog-case-timeline__add"
             data-stage-index="${index}"
             title="${escape_html(create_title)}"
             ${create_disabled ? "disabled" : ""}
           >
-            +
+            ${create_disabled ? "🔒" : "+"}
           </button>
         </div>
 
@@ -569,8 +570,25 @@
       return;
     }
 
-    const doc = create_doc_for_stage(frm, stage, config);
+    // Prepare defaults
+    const defaults =
+      typeof config.get_defaults === "function"
+        ? config.get_defaults(stage, frm) || {}
+        : {};
+    
+    const combined_defaults = Object.assign({}, defaults, stage.defaults || {});
+    if (!combined_defaults.case_id && config.case_id) {
+        combined_defaults.case_id = config.case_id;
+    }
 
+    // 🚀 STABLE APPROACH: Use frappe.new_doc for "only_save" stages
+    // This opens the full form instead of a buggy Quick Entry dialog
+    if (stage.only_save) {
+        frappe.new_doc(stage.doctype, combined_defaults);
+        return;
+    }
+
+    // Normal Quick Entry for stages that don't require strict "Save as Draft"
     frappe.ui.form.make_quick_entry(
       stage.doctype,
       (saved_doc) => {
@@ -584,7 +602,7 @@
         }
       },
       null,
-      doc,
+      combined_defaults,
       true,
     );
   }
