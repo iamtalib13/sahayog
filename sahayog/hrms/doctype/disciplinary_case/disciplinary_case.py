@@ -104,12 +104,24 @@ def get_case_stages(case_id):
                 status = "submitted"  # 🟢
             else:
                 status = "saved"      # 🟠
+            
+            # Fetch additional metadata for branching logic
+            extra_meta = {}
+            # Ensure we fetch values even if they are empty
+            fields_to_fetch = ["status_of_response", "response_of_ua", "suspension_required", "response_of_reminder"]
+            
+            # Get the actual document values
+            doc = frappe.get_doc(stage, docinfo.name)
+            for field in fields_to_fetch:
+                if hasattr(doc, field):
+                    extra_meta[field] = doc.get(field)
 
             timeline.append({
                 "stage": stage,
                 "doctype": stage,
                 "status": status,
-                "modified": docinfo.modified
+                "modified": docinfo.modified,
+                "meta": extra_meta
             })
         else:
             # fallback: only cancelled exists
