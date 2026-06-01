@@ -53,7 +53,7 @@
    "fieldtype": "Select",
    "hidden": 1,
    "label": "Reference DocType",
-   "options": "\nDisciplinary Case\nUnauthorized Absence"
+   "options": "\nDisciplinary Case\nUnauthorized Absence\nResponse to SCN\nDomestic Enquiry\nEnquiry Reminder\nReminder Of Unauthorized Absence\nEx Parte Enquiry"
   },
   {
    "fieldname": "reference_name",

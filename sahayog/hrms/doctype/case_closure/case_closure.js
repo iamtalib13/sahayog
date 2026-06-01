@@ -441,7 +441,6 @@ frappe.ui.form.on("Case Closure", {
 
     // PRINT LOGIC
     function open_print_for_format(format) {
-      console.log("Selected print format:", format);
 
       const overlay = document.createElement("div");
       overlay.id = "print-overlay";
@@ -516,674 +515,6 @@ frappe.ui.form.on("Case Closure", {
     }
   },
 });
-// ===============================
-// CASE TIMELINE RENDERING
-
-function render_timeline(frm, data) {
-  // debug: show incoming timeline payload in console
-  console.debug(
-    "render_timeline payload:",
-    data && data.timeline ? data.timeline : data,
-  );
-  // Remove existing timeline if any
-  const wrap = $(frm.wrapper).find(".case-timeline-box");
-  if (wrap.length) wrap.remove();
-  // Insertion point before dashboard
-  const insertion_point = $(".form-dashboard");
-
-  let html = `
-    <div class="case-timeline-box" style="
-        background:#ffffff;
-        border:1px solid #e0e0e0;
-        padding:10px;
-        margin-bottom:10px;
-        border-radius:8px;
-        box-shadow:0 1px 2px rgba(0,0,0,0.05);
-        font-size:13px;
-    ">
-        <h4 style="margin-top:0; color:#1a73e8; font-weight:600; font-size:14px;">
-            Case Progress Timeline
-        </h4>
-
-        <!-- TIMELINE BADGES -->
-        <div style="display:flex; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-top:6px;">
-  `;
-
-  // guard: if no timeline array, do nothing
-  const timeline_arr =
-    data && data.timeline ? data.timeline : Array.isArray(data) ? data : [];
-  if (!timeline_arr.length) {
-    html += `<div style="color:#777; font-size:14px;">No timeline data available.</div>`;
-  } else {
-    timeline_arr.forEach((stage_obj, index) => {
-      html += timeline_badge(stage_obj);
-      if (index < timeline_arr.length - 1) {
-        html += `<div style="font-size:20px; color:#9e9e9e; margin-top:15px;">→</div>`;
-      }
-    });
-  }
-
-  html += `
-        </div>
-
-        <!-- LEGEND OUTSIDE / BELOW -->
-        <div style="
-            margin-top:10px;
-            padding-top:6px;
-            border-top:1px solid #e0e0e0;
-            font-size:11px;
-            color:#777;
-            display:flex;
-            gap:14px;
-            justify-content:right;
-        ">
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟢</span><span>Completed</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">🟠</span><span>In Progress</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;">
-                <span style="font-size:14px;">⚪</span><span>Not Created</span>
-            </div>
-        </div>
-
-    </div>
-  `;
-
-  insertion_point.before(html);
-}
-// ===============================
-// TIMELINE BADGE HTML GENERATOR
-function timeline_badge(stage_obj) {
-  let bg = "#eeeeee",
-    color = "#555",
-    icon = "⚪";
-
-  switch ((stage_obj.status || "").toLowerCase()) {
-    case "submitted":
-      bg = "#e8f5e9";
-      color = "#1b5e20";
-      icon = "🟢";
-      break;
-    case "saved":
-      bg = "#fff4e5";
-      color = "#e65100";
-      icon = "🟠";
-      break;
-    case "cancelled":
-      bg = "#f0f0f0"; // light gray
-      color = "#999";
-      icon = "⚪";
-      break;
-    default:
-      bg = "#eeeeee";
-      color = "#555";
-      icon = "⚪";
-  }
-
-  // Get modified timestamp
-  let ts =
-    stage_obj.modified ||
-    stage_obj.modified_on ||
-    stage_obj.modified_at ||
-    stage_obj.modified_date ||
-    stage_obj.timestamp ||
-    null;
-
-  // Format timestamp in hh:mm AM/PM, dd MMM yyyy
-  let formatted = "-";
-  if (ts) {
-    try {
-      let d = new Date(ts);
-      if (!isNaN(d.getTime())) {
-        const optsTime = { hour: "2-digit", minute: "2-digit", hour12: true };
-        const optsDate = { day: "2-digit", month: "short", year: "numeric" };
-        formatted = `${d.toLocaleTimeString(
-          [],
-          optsTime,
-        )}, ${d.toLocaleDateString([], optsDate)}`;
-      }
-    } catch (e) {
-      console.warn("Failed to format timestamp", e);
-      formatted = String(ts);
-    }
-  }
-  // Stage label fallbacks
-  const stage_label =
-    stage_obj.stage || stage_obj.doctype || stage_obj.title || "";
-
-  return `
-    <div style="display:flex; flex-direction:column; align-items:center; text-align:center;">
-      <!-- TIMESTAMP (small, above badge) -->
-      <div style="font-size:10px; color:#777; margin-bottom:3px;">
-        ${formatted}
-      </div>
-
-      <!-- EXISTING BADGE -->
-      <div style="
-          padding:3px 6px;
-          background:${bg};
-          color:${color};
-          border-radius:14px;
-          font-weight:600;
-          display:flex;
-          align-items:center;
-          gap:4px;
-          font-size:11px;
-      ">
-        ${icon} ${stage_label}
-      </div>
-    </div>
-  `;
-}
-// ===============================
-// DAMS Timeline Hover Tooltip
-// ===============================
-(function () {
-  let tooltip = null;
-
-  function show_tooltip(target, html) {
-    hide_tooltip();
-
-    tooltip = $(`
-      <div style="
-        position:absolute;
-        background:#2e2e2e;
-        color:#fff;
-        padding:6px 8px;
-        border-radius:6px;
-        font-size:11px;
-        z-index:99999;
-        box-shadow:0 2px 6px rgba(0,0,0,0.25);
-        max-width:220px;
-      ">
-        ${html}
-      </div>
-    `);
-
-    $("body").append(tooltip);
-
-    const offset = $(target).offset();
-    tooltip.css({
-      top: offset.top - tooltip.outerHeight() - 6,
-      left: offset.left + $(target).outerWidth() / 2 - tooltip.outerWidth() / 2,
-    });
-  }
-
-  function hide_tooltip() {
-    if (tooltip) {
-      tooltip.remove();
-      tooltip = null;
-    }
-  }
-
-  $(document).on(
-    "mouseenter",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    function () {
-      const frm = cur_frm;
-      if (!frm || !frm._timeline_counts) return;
-
-      const label = $(this)
-        .text()
-        .replace(/^[^\w]+/, "")
-        .trim();
-
-      const info = frm._timeline_counts[label];
-
-      let html = `<b>${label}</b>`;
-
-      if (!info || info.count === 0) {
-        html += `<br>No records created yet`;
-      } else {
-        html += `<br>Records created: ${info.count}`;
-        html += `<br><span style="opacity:.8;">${info.names.join(
-          "<br>",
-        )}</span>`;
-      }
-
-      show_tooltip(this, html);
-    },
-  );
-
-  $(document).on(
-    "mouseleave",
-    ".case-timeline-box div[style*='border-radius:14px']",
-    hide_tooltip,
-  );
-})();
-
-// FUNCTION TO OPEN REVIEWER SELECTION DIALOG BOX
-function open_approver_dialog(frm) {
-  let case_employee_id = frm.doc.employee_id;
-
-  if (!case_employee_id) {
-    frappe.msgprint("No employee found for this case.");
-    return;
-  }
-
-  frappe.db.get_doc("Employee", case_employee_id).then((emp) => {
-    let default_zone = emp.custom_zone;
-
-    if (!default_zone) {
-      frappe.msgprint("Employee does not have a zone assigned.");
-      return;
-    }
-
-    let d = new frappe.ui.Dialog({
-      title: "Select Reviewers",
-      size: "extra-large",
-
-      fields: [
-        // ---------------- EXISTING REVIEWERS (READ-ONLY SECTION) ----------------
-        {
-          fieldname: "already_selected_section",
-          fieldtype: "Section Break",
-          label: "Already Selected Reviewers",
-          collapsible: 1,
-        },
-        {
-          fieldname: "existing_reviewers_html",
-          fieldtype: "HTML",
-        },
-
-        // ---------------- NEW REVIEWERS (ADD NEW) ----------------
-        {
-          fieldname: "section_new",
-          fieldtype: "Section Break",
-          label: "Add New Reviewers",
-        },
-
-        {
-          fieldtype: "Link",
-          fieldname: "selected_zone",
-          label: "Zone",
-          options: "Zone",
-          default: default_zone,
-          reqd: 1,
-
-          onchange() {
-            d.fields_dict.approver_table.grid.refresh();
-          },
-        },
-
-        {
-          fieldname: "approver_table",
-          fieldtype: "Table",
-          label: "Reviewer List",
-          cannot_add_rows: false,
-          in_place_edit: true,
-
-          fields: [
-            {
-              fieldtype: "Link",
-              fieldname: "employee_id",
-              label: "Employee ID",
-              options: "Employee",
-              in_list_view: true,
-              reqd: 1,
-
-              // get_query() {
-              //   let zone = d.get_value("selected_zone");
-              //   if (!zone) return {};
-              //   return { filters: { custom_zone: zone } };
-              // },
-              // UPDATED get_query to exclude case employee
-              get_query() {
-                let zone = d.get_value("selected_zone");
-                let case_employee = frm.doc.employee_id;
-
-                if (!zone) return {};
-
-                return {
-                  filters: {
-                    custom_zone: zone,
-                    name: ["!=", case_employee], //exclude case employee
-                  },
-                };
-              },
-
-              onchange() {
-                let row = this.grid_row.doc;
-                if (!row.employee_id) return;
-
-                let case_employee = frm.doc.employee_id;
-                //BLOCK: Case employee cannot be reviewer
-                if (row.employee_id === case_employee) {
-                  frappe.msgprint({
-                    title: __("Invalid Reviewer"),
-                    message: __(
-                      "The employee involved in the case cannot act as a reviewer.",
-                    ),
-                    indicator: "red",
-                  });
-
-                  row.employee_id = "";
-                  row.employee_name = "";
-                  row.company_email = "";
-                  d.fields_dict.approver_table.grid.refresh();
-                  return;
-                }
-                //BLOCK: Duplicate reviewer in dialog or parent table
-                let dialog_rows = d.fields_dict.approver_table.grid.get_data();
-                let duplicate_in_dialog = dialog_rows.some(
-                  (r) => r.employee_id === row.employee_id && r !== row,
-                );
-                // BLOCK: Duplicate reviewer in dialog
-                if (duplicate_in_dialog) {
-                  frappe.msgprint(
-                    "This reviewer is already selected in the dialog.",
-                  );
-                  row.employee_id = "";
-                  row.employee_name = "";
-                  row.company_email = "";
-                  d.fields_dict.approver_table.grid.refresh();
-                  return;
-                }
-
-                let duplicate_in_parent = (frm.doc.review_details || []).some(
-                  (r) => r.employee_id === row.employee_id,
-                );
-
-                if (duplicate_in_parent) {
-                  frappe.msgprint(
-                    "This reviewer is already selected in the list.",
-                  );
-                  row.employee_id = "";
-                  row.employee_name = "";
-                  row.company_email = "";
-                  d.fields_dict.approver_table.grid.refresh();
-                  return;
-                }
-
-                frappe.db
-                  .get_doc("Employee", row.employee_id)
-                  .then((emp_data) => {
-                    row.employee_name = emp_data.employee_name;
-                    row.company_email =
-                      emp_data.company_email || emp_data.prefered_email;
-                    d.fields_dict.approver_table.grid.refresh();
-                  });
-              },
-            },
-            {
-              fieldtype: "Data",
-              fieldname: "employee_name",
-              label: "Employee Name",
-              in_list_view: true,
-              read_only: 1,
-            },
-            {
-              fieldtype: "Data",
-              fieldname: "company_email",
-              label: "Company Email",
-              in_list_view: true,
-              reqd: 1,
-            },
-          ],
-        },
-      ],
-
-      primary_action_label: "Submit",
-
-      primary_action(values) {
-        for (let row of values.approver_table || []) {
-          if (!row.company_email) {
-            frappe.msgprint("Please fill Company Email for all reviewers.");
-            return;
-          }
-        }
-
-        frappe.confirm(
-          "Please confirm that the reviewer selection is accurate before submitting.",
-          () => submit_approvers(frm, values, d),
-          () => {},
-        );
-      },
-    });
-
-    // ---------- SHOW EXISTING REVIEWERS IN READ-ONLY HTML ----------
-    let existing = frm.doc.review_details || [];
-
-    if (existing.length > 0) {
-      let html = `
-          <table class="table table-bordered" style="margin-top:10px">
-            <thead>
-              <tr>
-                <th>Employee ID</th>
-                <th>Remarks</th>
-                <th>Status</th>
-                <th>Date & Time</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-      existing.forEach((r) => {
-        html += `
-            <tr>
-              <td>${r.employee_id}</td>
-              <td>${r.remarks || ""}</td>
-              <td>${r.status || ""}</td>
-              <td>${r.date_and_time || ""}</td>
-            </tr>
-        `;
-      });
-
-      html += `</tbody></table>`;
-      d.fields_dict.existing_reviewers_html.$wrapper.html(html);
-    } else {
-      d.fields_dict.existing_reviewers_html.$wrapper.html(
-        "<p style='color:#888'>No reviewers selected yet.</p>",
-      );
-    }
-
-    d.show();
-  });
-}
-
-function submit_approvers(frm, values, dialog) {
-  // A. Validate new reviewers
-  const new_reviewers = values.approver_table || [];
-  // B. Add new reviewers to parent document
-  if (new_reviewers.length === 0) {
-    frappe.msgprint(__("No new reviewers selected."));
-    dialog.hide();
-    return;
-  }
-
-  // add each new reviewer to parent doc's review_details child table
-  new_reviewers.forEach((row) => {
-    let child = frm.add_child("review_details");
-
-    // ensure employee details are copied from dialog to child table
-    child.employee_id = row.employee_id;
-    child.employee_name = row.employee_name; // Add employee name
-    child.company_email = row.company_email; // Add company email
-
-    // other fields with default values
-    child.remarks = "";
-    child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime();
-  });
-
-  frm.refresh_field("review_details");
-
-  // C. Update status to "Under Review" if new reviewers are added 
-  if (new_reviewers.length > 0) {
-    frm.set_value("status", "Under Review");
-  }
-
-  //  D. Save parent document
-  frm.save().then(() => {
-    // -----------------------------------------------------
-    // FIRST CALL → VERIFICATION PROCESS EMAILS
-    // -----------------------------------------------------
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
-      args: {
-        // Pass only the new reviewers, as existing ones might already be processed
-        approvers: new_reviewers,
-        case_id: frm.doc.name,
-      },
-      freeze: true,
-      freeze_message: __("Sending verification emails..."),
-      callback(r) {
-        console.log("START VERIFICATION RESPONSE:", r);
-
-        if (r.message?.status !== "ok") {
-          frappe.msgprint({
-            title: __("Verification Failed"),
-            message: r.message?.msg,
-            indicator: "red",
-          });
-          return;
-        }
-
-        frappe.msgprint({
-          title: __("Verification Started"),
-          message: __("Case Review process started successfully."),
-          indicator: "green",
-        });
-      },
-    });
-
-    // -----------------------------------------------------
-    // SECOND CALL → TEMPLATE-BASED EMAIL
-    // -----------------------------------------------------
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
-      args: {
-        case_id: frm.doc.name,
-        // Pass only the new approvers' details for the email content
-        approvers: JSON.stringify(new_reviewers),
-      },
-      freeze: true,
-      freeze_message: __("Sending review notification email..."),
-      callback(r) {
-        console.log("TEMPLATE EMAIL RESPONSE:", r);
-        // (Callback logic remains the same)
-        if (r.message?.status === "disabled") {
-          frappe.msgprint({
-            title: __("Email Disabled"),
-            message: __("Email notifications are disabled."),
-            indicator: "orange",
-          });
-          return;
-        }
-
-        if (r.message?.status === "ok") {
-          frappe.msgprint({
-            title: __("Success"),
-            message: __("Review notification email has been sent."),
-            indicator: "green",
-          });
-          return;
-        }
-
-        frappe.msgprint({
-          title: __("Email Failed"),
-          message:
-            r.message?.msg || __("Could not send review notification email."),
-          indicator: "red",
-        });
-      },
-    });
-
-    dialog.hide();
-  });
-}
-
-// function to display review details with employee info
-function display_review_details_with_employee_info(frm) {
-  let wrapper = frm.fields_dict.review_details_html.$wrapper;
-  wrapper.html(`<div>Loading review details...</div>`);
-
-  if (!frm.doc.review_details || frm.doc.review_details.length === 0) {
-    wrapper.html(`<div style="color:#888;">No review details available.</div>`);
-    return;
-  }
-
-  let rows = frm.doc.review_details;
-  let employee_ids = rows.map((r) => r.employee_id);
-
-  frappe.call({
-    method: "frappe.client.get_list",
-    args: {
-      doctype: "Employee",
-      filters: { name: ["in", employee_ids] },
-      fields: [
-        "name",
-        "employee_name",
-        "designation",
-        "sol_id",
-        "branch",
-        "custom_zone",
-        "custom_region",
-      ],
-    },
-    callback(r) {
-      let employees = {};
-      (r.message || []).forEach((emp) => {
-        employees[emp.name] = emp;
-      });
-      let html = `
-  <table class="table table-bordered"
-         style="font-size:12px; width:100%; table-layout:fixed;">
-
-      <thead>
-          <tr>
-              <th style="word-wrap:break-word;">Employee ID</th>
-              <th style="word-wrap:break-word;">Name</th>
-              <th style="word-wrap:break-word;">Designation</th>
-              <th style="word-wrap:break-word;">Branch ID</th>
-              <th style="word-wrap:break-word;">Branch Name</th>
-              <th style="word-wrap:break-word;">Zone</th>
-              <th style="word-wrap:break-word;">Region</th>
-              <th style="word-wrap:break-word;">Status</th>
-              <th style="word-wrap:break-word;">Remarks</th>
-              <th style="word-wrap:break-word;">Date & Time</th>
-          </tr>
-      </thead>
-      <tbody>
-`;
-
-      rows.forEach((row) => {
-        let emp = employees[row.employee_id] || {};
-
-        // ✅ Convert date to DD-MM-YYYY hh:mm A
-        // Correct date formatting using moment.js
-        let formatted_date = "-";
-        if (row.date_and_time) {
-          let dt = frappe.datetime.str_to_obj(row.date_and_time);
-          formatted_date = moment(dt).format("DD-MM-YYYY hh:mm A");
-        }
-
-        html += `
-                <tr>
-                    <td>${row.employee_id}</td>
-                    <td>${emp.employee_name || "-"}</td>
-                    <td>${emp.designation || "-"}</td>
-                    <td>${emp.sol_id || "-"}</td>
-                    <td>${emp.branch || "-"}</td>
-                    <td>${emp.custom_zone || "-"}</td>
-                    <td>${emp.custom_region || "-"}</td>
-                    <td>${row.status || "-"}</td>
-                    <td>${row.remarks || "-"}</td>
-                    <td>${formatted_date}</td>
-                </tr>
-            `;
-      });
-
-      html += `</tbody></table>`;
-      wrapper.html(html);
-    },
-  });
-}
-
 function load_case_timeline(frm) {
   const case_id = frm.doc.case_id || frm.doc.name;
   if (!case_id) return;
@@ -1191,25 +522,20 @@ function load_case_timeline(frm) {
   const standard_stages = [
     { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
     { doctype: "Suspension Process", label: "Suspension Process" },
-    { doctype: "Response to SCN", label: "Response to SCN" },
-    { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
-    { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+    { doctype: "Response to SCN", label: "Response to SCN", allow_multiple: true },
+    { doctype: "Domestic Enquiry", label: "Domestic Enquiry", allow_multiple: true },
+    { doctype: "Enquiry Reminder", label: "Enquiry Reminder", allow_multiple: true },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
   const ua_stages = [
-    { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
-    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence" },
-    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+    { doctype: "Unauthorized Absence", label: "Unauthorized Absence", allow_multiple: true },
+    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence", allow_multiple: true },
+    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry", allow_multiple: true },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
-  const is_ua =
-    String(case_id).startsWith("UA") ||
-    (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
-    frm.doctype === "Unauthorized Absence" ||
-    frm.doctype === "Reminder Of Unauthorized Absence" ||
-    frm.doctype === "Ex Parte Enquiry";
+  const is_ua = String(case_id).startsWith("UA") || (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" || frm.doctype === "Unauthorized Absence" || frm.doctype === "Reminder Of Unauthorized Absence" || frm.doctype === "Ex Parte Enquiry";
 
   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
     ...stage,
@@ -1219,8 +545,9 @@ function load_case_timeline(frm) {
     record_count: 0,
     names: [],
     can_create: stage.can_create !== false,
-    allow_multiple: false,
+    allow_multiple: stage.allow_multiple || false,
     quick_entry: true,
+    only_save: true,
     defaults: {
       case_id,
       ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
@@ -1276,20 +603,67 @@ function load_case_timeline(frm) {
     frm.reload_doc();
   },
 });
+    title: __("Case Progress Timeline"),
+    case_id,
+    stages,
+    get_defaults(stage) { return stage.defaults || { case_id }; },
+    before_open() {
+      if (frm.doc.docstatus === 0) {
+        frappe.msgprint({ title: __("Not Allowed"), message: __("Please <b>Submit</b> the current document before creating the next stage record."), indicator: "red" });
+        return false;
+      }
+      if (frm.is_dirty()) {
+        frappe.msgprint({ title: __("Please Save First"), message: __("Save the form before creating a linked record."), indicator: "orange" });
+        return false;
+      }
+    },
+    after_insert() { frm.reload_doc(); },
+  });
 
   const merge_stage_meta = (timeline, record_summaries) => {
-    return stage_defs.map((stage) => {
-      const status_match = timeline.find(
-        (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
-      );
-      const summary_match = record_summaries.find((item) => item.doctype === stage.doctype) || {};
-      return {
-        ...stage,
-        status: status_match?.status || stage.status,
-        modified: status_match?.modified || stage.modified,
-        record_count: summary_match.count || 0,
-        names: summary_match.names || [],
-      };
+    let last_submitted_doctype = "";
+    for (let stage of stage_defs) {
+        const match = timeline.find(item => item.doctype === stage.doctype);
+        if (match && match.status === "submitted") { last_submitted_doctype = stage.doctype; }
+    }
+
+    let next_doctype = "";
+    if (!last_submitted_doctype) {
+        next_doctype = stage_defs[0].doctype;
+    } else {
+        let last_match = timeline.find(t => t.doctype === last_submitted_doctype);
+        let meta = last_match?.meta || {};
+        let dt = last_submitted_doctype;
+        if (dt === "Disciplinary Case") next_doctype = (meta.suspension_required === "Yes") ? "Suspension Process" : "Response to SCN";
+        else if (dt === "Suspension Process") next_doctype = "Response to SCN";
+        else if (dt === "Response to SCN") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Domestic Enquiry";
+        else if (dt === "Domestic Enquiry") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Enquiry Reminder";
+        else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
+        else if (dt === "Unauthorized Absence") next_doctype = (String(meta.response_of_ua).toLowerCase() === "yes") ? "Case Closure" : "Reminder Of Unauthorized Absence";
+        else if (dt === "Reminder Of Unauthorized Absence") next_doctype = (String(meta.response_of_reminder).toLowerCase() === "no") ? "Ex Parte Enquiry" : "Case Closure";
+        else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
+    }
+
+    const has_draft = (frm.doc.docstatus === 0);
+    const next_stage_index = stage_defs.findIndex(stage => stage.doctype === next_doctype);
+
+    return stage_defs.map((stage, index) => {
+      const status_match = timeline.find(item => item.doctype === stage.doctype);
+      const summary_match = record_summaries.find(item => item.doctype === stage.doctype);
+      
+      let is_next_step = (stage.doctype === next_doctype);
+      let is_already_started = (status_match && status_match.status !== "pending");
+      let is_past_or_current = (index <= next_stage_index);
+      
+      // Default: Strict progression logic
+      let can_create = (is_next_step || (stage.allow_multiple && is_already_started && is_past_or_current)) && !has_draft;
+
+      // Force disable if it's already created and doesn't allow multiple
+      if (status_match && !stage.allow_multiple && ["saved", "submitted"].includes((status_match.status || "").toLowerCase())) {
+          can_create = false;
+      }
+      
+      return { ...stage, status: status_match?.status || stage.status, record_count: summary_match?.count || 0, names: summary_match?.names || [], can_create: can_create };
     });
   };
 
@@ -1299,50 +673,17 @@ function load_case_timeline(frm) {
   };
 
   const load_record_summaries = () => {
-    return Promise.all(
-      stage_defs.map((stage) =>
-        frappe.db
-          .get_list(stage.doctype, {
-            filters: { case_id },
-            fields: ["name"],
-            order_by: "creation asc",
-            limit_page_length: 500,
-          })
-          .then((records) => ({
-            doctype: stage.doctype,
-            count: (records || []).length,
-            names: (records || []).map((row) => row.name),
-          }))
-          .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
-      ),
-    );
+    return Promise.all(stage_defs.map((stage) => frappe.db.get_list(stage.doctype, { filters: { case_id }, fields: ["name"], order_by: "creation asc", limit_page_length: 500 }).then((records) => ({ doctype: stage.doctype, count: (records || []).length, names: (records || []).map((row) => row.name) })).catch(() => ({ doctype: stage.doctype, count: 0, names: [] }))));
   };
 
-  const load_timeline = () =>
-    frappe.xcall(
-      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
-      { case_id },
-    );
+  const load_timeline = () => frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages", { case_id });
 
   const init = () => {
     if (!window.sahayogCaseTimeline) return;
-
-    Promise.all([load_record_summaries(), load_timeline()])
-      .then(([summaries, timeline_res]) => {
-        const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
-        render_with_data(timeline, summaries || []);
-      })
-      .catch((error) => {
-        console.warn("Timeline load failed", error);
-        render_with_data([], []);
-      });
+    Promise.all([load_record_summaries(), load_timeline()]).then(([summaries, timeline_res]) => { const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : []; render_with_data(timeline, summaries || []); }).catch((error) => { render_with_data([], []); });
   };
 
-  if (window.sahayogCaseTimeline) {
-    init();
-    return;
-  }
-
+  if (window.sahayogCaseTimeline) { init(); return; }
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
 }
 
