@@ -1227,27 +1227,55 @@ function load_case_timeline(frm) {
     },
   }));
 
+  // const build_config = (stages) => ({
+  //   title: __("Case Progress Timeline"),
+  //   case_id,
+  //   stages,
+  //   get_defaults(stage) {
+  //     return stage.defaults || { case_id };
+  //   },
+  //   before_open() {
+  //     if (frm.is_dirty()) {
+  //       frappe.msgprint({
+  //         title: __("Please Save First"),
+  //         message: __("Save the form before creating a linked record."),
+  //         indicator: "orange",
+  //       });
+  //       return false;
+  //     }
+  //   },
+  //   after_insert() {
+  //     frm.reload_doc();
+  //   },
+  // });
+
+
   const build_config = (stages) => ({
-    title: __("Case Progress Timeline"),
-    case_id,
-    stages,
-    get_defaults(stage) {
-      return stage.defaults || { case_id };
-    },
-    before_open() {
-      if (frm.is_dirty()) {
-        frappe.msgprint({
-          title: __("Please Save First"),
-          message: __("Save the form before creating a linked record."),
-          indicator: "orange",
-        });
-        return false;
-      }
-    },
-    after_insert() {
-      frm.reload_doc();
-    },
-  });
+  title: "Case Progress Timeline",
+  case_id,
+  stages,
+  get_defaults(stage) {
+    return stage.defaults || { case_id };
+  },
+  before_open(stage) {
+    if (stage.doctype === "Case Closure") {
+      open_approver_dialog(frm);
+      return false;
+    }
+
+    if (frm.is_dirty()) {
+      frappe.msgprint({
+        title: "Please Save First",
+        message: "Save the form before creating a linked record.",
+        indicator: "orange",
+      });
+      return false;
+    }
+  },
+  after_insert() {
+    frm.reload_doc();
+  },
+});
 
   const merge_stage_meta = (timeline, record_summaries) => {
     return stage_defs.map((stage) => {
