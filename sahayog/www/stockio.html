@@ -3618,7 +3618,7 @@
                   <option value="">Select Type</option>
                   <option value="Stationery">Stationery</option>
                   <option value="Asset">Asset</option>
-                  <option value="Stationery & Asset">Stationery & Asset</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -11479,7 +11479,7 @@
         const allowedOutward =
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
 
-        const type = this.userInventoryType;
+        const type = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
 
         return this.sidebar.sections
           .filter((section) => {
@@ -11491,15 +11491,15 @@
 
             // Assets Section logic
             if (section.label === "Assets") {
-              return type === "Asset" || type === "Stationery & Asset";
+              return type === "asset" || type === "other";
             }
 
             // Reports Section logic
             if (section.label === "Reports") {
               return (
-                type === "Stationery" ||
-                type === "Asset" ||
-                type === "Stationery & Asset"
+                type === "stationery" ||
+                type === "asset" ||
+                type === "other"
               );
             }
 
@@ -11518,7 +11518,7 @@
 
             if (section.label === "Inventory") {
               // Relabel to Requests if type is Asset
-              if (!this.isAdmin && type === "Asset") {
+              if (!this.isAdmin && type === "asset") {
                 newSection.label = "Requests";
               }
 
@@ -11526,7 +11526,7 @@
 
               // Filter based on inventory_type for non-admins
               if (!this.isAdmin) {
-                if (type === "Asset") {
+                if (type === "asset") {
                   // If Asset, only show Requests in this section (Items moved to Assets)
                   filteredItems = filteredItems.filter(
                     (item) => item.label === "Requests",
@@ -11554,7 +11554,7 @@
             if (
               section.label === "Assets" &&
               !this.isAdmin &&
-              type === "Asset"
+              type === "asset"
             ) {
               // Move "Items" to Assets section below "Movements"
               const itemsObj = this.sidebar.sections
@@ -11885,11 +11885,12 @@
 
         // Determine default item based on inventory type and sidebar visibility
         let defaultItemLabel = "Items";
+        const invType = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
         if (
           !this.isAdmin &&
-          (!this.userInventoryType ||
-            (this.userInventoryType !== "Stationery" &&
-              this.userInventoryType !== "Stationery & Asset"))
+          (!invType ||
+            (invType !== "stationery" &&
+              invType !== "other"))
         ) {
           defaultItemLabel = "Requests";
         }
