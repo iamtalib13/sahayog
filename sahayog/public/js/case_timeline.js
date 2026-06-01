@@ -242,8 +242,8 @@
 
       .sahayog-case-timeline__card-head {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: flex-start;
         gap: 8px;
       }
 
@@ -449,7 +449,9 @@
         font-weight: 600;
         color: #20262e;
         line-height: 1.15;
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-word;
+        max-width: 120px;
       }
 
       .sahayog-case-timeline__subline,
@@ -479,8 +481,9 @@
       }
 
       .sahayog-case-timeline__add {
-        min-width: 24px;
-        min-height: 24px;
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
         font-weight: 700;
         line-height: 1;
         padding: 0;
