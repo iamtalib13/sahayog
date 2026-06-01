@@ -96,13 +96,11 @@
    "read_only": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "document_upload",
    "fieldtype": "Attach",
    "label": "Document Upload"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks",
@@ -193,7 +191,6 @@
    "label": "Date Details"
   },
   {
-   "allow_on_submit": 1,
    "depends_on": "eval:doc.response_of_ua == 'Yes'",
    "fieldname": "status_of_response",
    "fieldtype": "Select",
@@ -202,7 +199,6 @@
    "options": "\nSatisfactory\nNot Satisfactory"
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "response_of_ua",
    "fieldtype": "Select",
    "label": "Response of Unauthorized Absence",
@@ -214,7 +210,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-27 16:34:55.408882",
+ "modified": "2026-06-01 14:47:10.638414",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
