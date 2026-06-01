@@ -26,7 +26,8 @@ function prompt_save_before_linked_action(frm, on_success) {
       d.get_primary_btn().prop("disabled", true);
       d.hide();
 
-      frm.save(get_save_action(frm))
+      frm
+        .save(get_save_action(frm))
         .then(() => {
           if (typeof on_success === "function") on_success();
         })
@@ -71,10 +72,12 @@ function prompt_enable_suspension_required(frm, on_success) {
     primary_action_label: __("Save"),
     secondary_action_label: __("Cancel"),
     primary_action(values) {
-      const selected_value = values && values.suspension_required ? values.suspension_required : "";
+      const selected_value =
+        values && values.suspension_required ? values.suspension_required : "";
       d.get_primary_btn().prop("disabled", true);
 
-      frm.set_value("suspension_required", selected_value)
+      frm
+        .set_value("suspension_required", selected_value)
         .then(() => frm.save(get_save_action(frm)))
         .then(() => {
           d.hide();
@@ -87,7 +90,9 @@ function prompt_enable_suspension_required(frm, on_success) {
           d.get_primary_btn().prop("disabled", false);
           frappe.msgprint({
             title: __("Save Failed"),
-            message: __("Unable to update Suspension Required right now. Please try again."),
+            message: __(
+              "Unable to update Suspension Required right now. Please try again.",
+            ),
             indicator: "red",
           });
         });
@@ -99,6 +104,18 @@ function prompt_enable_suspension_required(frm, on_success) {
 }
 
 frappe.ui.form.on("Disciplinary Case", {
+  setup(frm) {
+    // Exclude higher authority employees from employee selection
+    frm.set_query("employee_id", function () {
+      return {
+        filters: {
+          status: "Active",
+          cxo_level: 0,
+        },
+      };
+    });
+  },
+
   refresh: function (frm) {
     if (frm.page && frm.page.set_title) {
       frm.page.set_title(__("Initiate Disciplinary Process"));
@@ -110,109 +127,461 @@ frappe.ui.form.on("Disciplinary Case", {
 
     if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
-        frappe.call({
-          method:
-            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.check_employee_email",
-          args: { employee: frm.doc.employee_id },
-          callback(r) {
-            let email = r.message;
+        // 1. Fetch CC setting from Sahayog HR Setting
+        frappe.db
+          .get_single_value("Sahayog HR Setting", "disciplinary_case_cc")
+          .then((fixed_cc) => {
+            frappe.call({
+              method: "frappe.client.get",
+              args: { doctype: "Email Template", name: "Disciplinary - SCN" },
+              callback: function (r_template) {
+                const template = r_template.message || {};
 
-            // CASE 1: Email exists
-            if (email) {
-              frappe.confirm(
-                `This employee already has an email:<br><b>${email}</b><br><br>Do you want to send the SCN email?`,
-                function () {
-                  // Show freeze while sending email
-                  frappe.call({
-                    method:
-                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
-                    args: { docname: frm.doc.name },
-                    freeze: true,
-                    freeze_message: __("Sending SCN email..."),
-                    callback(r) {
-                      frappe.msgprint(__("SCN Email sent successfully!"));
+                let render_data = Object.assign({}, frm.doc);
+                if (!render_data.document_upload)
+                  render_data.document_upload = "";
+                if (!render_data.remarks) render_data.remarks = "";
+
+                let subject = "";
+                let body = "";
+                try {
+                  subject = frappe.render_template(
+                    template.subject,
+                    render_data,
+                  );
+                  body = frappe.render_template(
+                    template.response_html,
+                    render_data,
+                  );
+                } catch (e) {
+                  console.error("Template Rendering Error:", e);
+                  subject = template.subject;
+                  body = template.response_html;
+                }
+
+                // CC values parsing
+                let cc_values = [];
+                if (fixed_cc) {
+                  cc_values = fixed_cc
+                    .split(/[,\n]/)
+                    .map((email) => email.trim())
+                    .filter(Boolean);
+                }
+
+                // Open Dialog with Custom HTML for Outlook Look
+                const d = new frappe.ui.Dialog({
+                  title: " ",
+                  size: "extra-large",
+                  fields: [
+                    {
+                      fieldtype: "HTML",
+                      fieldname: "outlook_header",
+                      options: `
+                        <style>
+                          /* Dialog Container Reset */
+                          .modal-content { border-radius: 4px !important; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important; border: 1px solid #d2d0ce !important; }
+                          .modal-header { display: none !important; } 
+                          .modal-body { padding: 0 !important; background: #fff !important; }
+                          .modal-footer { display: none !important; } 
+                          
+                          /* Outlook Top Action Bar */
+                          .outlook-top-bar {
+                            display: flex; justify-content: space-between; align-items: center;
+                            padding: 12px 16px; background-color: #fff; border-bottom: 1px solid #f3f2f1;
+                          }
+                          .outlook-send-btn-grp { display: flex; align-items: center; }
+                          .outlook-send-main {
+                            background-color: #0078d4; color: #fff; border: none;
+                            padding: 7px 20px; border-radius: 4px 0 0 4px; font-weight: 600;
+                            display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer;
+                          }
+                          .outlook-send-main:hover { background-color: #106ebe; }
+                          .outlook-send-arrow {
+                            background-color: #0078d4; color: #fff; border: none; border-left: 1px solid #106ebe;
+                            padding: 9px 10px; border-radius: 0 4px 4px 0; font-size: 11px; cursor: pointer;
+                          }
+                          .outlook-send-arrow:hover { background-color: #106ebe; }
+                          .outlook-top-icons { display: flex; gap: 18px; color: #605e5c; font-size: 16px; align-items: center; }
+                          .outlook-top-icons i { cursor: pointer; padding: 6px; border-radius: 4px; }
+                          .outlook-top-icons i:hover { background-color: #f3f2f1; }
+
+                          /* Row Adjustments for Outlook Fields */
+                          .outlook-row {
+                            display: flex; align-items: flex-start; padding: 8px 16px;
+                            border-bottom: 1px solid #e0e0e0 !important; min-height: 44px; width: 100%;
+                            flex-wrap: wrap;
+                          }
+                          .outlook-btn-label {
+                            width: 52px; height: 26px; background: #fff; border: 1px solid #8a8886;
+                            border-radius: 4px; color: #323130; font-size: 13px; font-weight: 400;
+                            display: flex; align-items: center; justify-content: center; margin-right: 12px;
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.04); cursor: default; flex-shrink: 0;
+                            margin-top: 4px;
+                          }
+                          
+                          .outlook-chip-container {
+                            display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1;
+                          }
+
+                          .outlook-chip {
+                            background: #f3f2f1;
+                            border: 1px solid #d2d0ce;
+                            border-radius: 14px;
+                            padding: 2px 10px;
+                            font-size: 13px;
+                            display: inline-flex;
+                            align-items: center;
+                            color: #323130;
+                            margin: 2px 0;
+                            font-family: inherit;
+                          }
+
+                          .outlook-chip .remove-chip {
+                            cursor: pointer; margin-left: 6px; font-size: 10px; color: #605e5c;
+                          }
+
+                          .outlook-chip-wrapper {
+                            display: flex;
+                            flex-wrap: wrap;
+                            align-items: center;
+                            gap: 6px;
+                            flex: 1;
+                            min-height: 32px;
+                          }
+
+                          /* Hide placeholder if container has chips */
+                          .outlook-chip-container:not(:empty) + .outlook-email-input::placeholder {
+                            color: transparent;
+                          }
+
+                          .outlook-email-input {
+                            border: none !important;
+                            outline: none !important;
+                            flex: 1;
+                            min-width: 150px;
+                            padding: 6px 0;
+                            font-size: 14px;
+                            background: transparent;
+                          }
+
+                          /* Subject Field Adjustments - Full Width Fix */
+                          .outlook-subject-row { 
+                            padding: 10px 16px !important; border-bottom: 1px solid #e0e0e0; 
+                            display: block !important; width: 100% !important; 
+                          }
+                          .outlook-subject-row .form-group { margin-bottom: 0 !important; width: 100% !important; }
+                          .outlook-subject-row .control-label { display: none !important; }
+                          .outlook-subject-row .control-input-wrapper,
+                          .outlook-subject-row input { 
+                            font-size: 15px !important; font-weight: 400; border: none !important; 
+                            box-shadow: none !important; padding: 6px 0 !important; width: 100% !important;
+                          }
+
+                          /* Text Editor Container */
+                          .outlook-body-container { padding: 8px 16px; }
+                          .outlook-body-container .form-group { margin-bottom: 0 !important; }
+                          .outlook-body-container .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f3f2f1 !important; background: #fff; padding: 8px 0; }
+                          .outlook-body-container .ql-container.ql-snow { border: none !important; min-height: 380px; font-size: 14px; }
+                          
+                          /* Attachment Styling */
+                          .outlook-attachment {
+                            display: inline-flex; align-items: center; gap: 8px;
+                            padding: 6px 12px; background: #f3f2f1; border: 1px solid #edebe9;
+                            border-radius: 4px; font-size: 13px; color: #323130; margin: 12px 16px;
+                          }
+                        </style>
+
+                        <div class="outlook-top-bar">
+                          <div class="outlook-send-btn-grp">
+                            <button class="outlook-send-main" id="outlook_btn_send">
+                              <i class="fa fa-paper-plane"></i> Send
+                            </button>
+                            <button class="outlook-send-arrow"><i class="fa fa-chevron-down"></i></button>
+                          </div>
+                          <div class="outlook-top-icons">
+                            <i class="fa fa-shield" title="Security"></i>
+                            <i class="fa fa-chevron-down" style="font-size:11px;"></i>
+                            <i class="fa fa-trash-o" title="Discard" id="outlook_btn_close"></i>
+                            <i class="fa fa-external-link" title="Pop out"></i>
+                          </div>
+                        </div>
+                      `,
                     },
+                    {
+                      fieldtype: "HTML",
+                      fieldname: "to_row",
+                      options: `
+                        <div class="outlook-row">
+                            <div class="outlook-btn-label">To</div>
+                            <div class="outlook-chip-wrapper">
+                                <div id="to-chips" class="outlook-chip-container"></div>
+                                <input type="text" id="to-input" class="outlook-email-input" placeholder="Add recipient">
+                            </div>
+                        </div>
+                      `,
+                    },
+                    {
+                      fieldtype: "HTML",
+                      fieldname: "cc_row",
+                      options: `
+                        <div class="outlook-row">
+                            <div class="outlook-btn-label">Cc</div>
+                            <div class="outlook-chip-wrapper">
+                                <div id="cc-chips" class="outlook-chip-container"></div>
+                                <input type="text" id="cc-input" class="outlook-email-input" placeholder="Add recipient">
+                            </div>
+                        </div>
+                      `,
+                    },
+                    {
+                      fieldname: "subject",
+                      fieldtype: "Data",
+                      default: subject,
+                      placeholder: __("Add a subject"),
+                      reqd: 1,
+                    },
+                    {
+                      fieldname: "message",
+                      fieldtype: "Text Editor",
+                      default: body,
+                      reqd: 1,
+                    },
+                    {
+                      fieldtype: "HTML",
+                      fieldname: "attachment_box",
+                      options: `
+                        <div class="outlook-attachment">
+                          <i class="fa fa-paperclip" style="color: #605e5c;"></i> 
+                          <span><b>${frm.doc.name}.pdf</b> (Disciplinary Case Notice)</span>
+                        </div>
+                      `,
+                    },
+                  ],
+                });
+
+                d.show();
+
+                // --- Helper and DOM Logic ---
+                const add_outlook_chip = (container_selector, email) => {
+                  email = email.trim();
+                  if (!email || !email.includes("@")) return;
+
+                  // Avoid duplicates
+                  let exists = false;
+                  $(container_selector)
+                    .find(".outlook-chip")
+                    .each(function () {
+                      if ($(this).data("email") === email) exists = true;
+                    });
+                  if (exists) return;
+
+                  $(container_selector).append(`
+                    <span class="outlook-chip" data-email="${email}">
+                      ${email}
+                      <i class="fa fa-times remove-chip"></i>
+                    </span>
+                  `);
+                };
+
+                // --- DOM & Event Listeners ---
+                setTimeout(() => {
+                  console.log("Pre-filling chips...");
+                  // Force set subject value after show to prevent truncation
+                  d.set_value("subject", subject);
+
+                  console.log("Employee Email:", frm.doc.employee_email);
+                  console.log("Personal Email:", frm.doc.personal_email);
+                  console.log("CC Values Raw:", fixed_cc);
+
+                  // Pre-fill chips after DOM is ready
+                  const to_emails = [
+                    frm.doc.employee_email,
+                    frm.doc.personal_email,
+                  ].filter(Boolean);
+
+                  to_emails.forEach((email) => {
+                    console.log("Adding To Chip:", email);
+                    add_outlook_chip("#to-chips", email);
                   });
-                },
-              );
-            }
-            // CASE 2: No email
-            else {
-              let d = new frappe.ui.Dialog({
-                title: "Enter Employee Email",
-                fields: [
-                  {
-                    fieldtype: "HTML",
-                    fieldname: "info_html",
-                    options: `
-          <div style="margin-bottom: 10px; color:#a00; font-weight:bold;">
-            No email address is stored for this employee.
-          </div>
-          <div style="margin-bottom: 10px;">
-            Please enter the employee's email address below. 
-            This will be saved to the Employee master and used for sending future emails.
-          </div>
-        `,
-                  },
-                  {
-                    label: "Email",
-                    fieldname: "manual_email",
-                    fieldtype: "Data",
-                    reqd: true,
-                  },
-                ],
-                primary_action_label: "Submit",
 
-                primary_action(values) {
-                  let entered_email = values.manual_email;
+                  cc_values.forEach((email) => {
+                    console.log("Adding CC Chip:", email);
+                    add_outlook_chip("#cc-chips", email);
+                  });
 
-                  // STEP 1: Save the entered email
-                  frappe.call({
-                    method:
-                      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.save_employee_email",
-                    args: {
-                      employee: frm.doc.employee_id,
-                      email: entered_email,
+                  // Fallback for To chips
+                  if (
+                    d.$wrapper.find("#to-chips .outlook-chip").length === 0 &&
+                    to_emails.length > 0
+                  ) {
+                    console.log("Fallback: Retrying To chips with d.$wrapper");
+                    to_emails.forEach((email) => {
+                      add_outlook_chip_manual(
+                        d.$wrapper.find("#to-chips"),
+                        email,
+                      );
+                    });
+                  }
+
+                  // Fallback for CC chips
+                  if (
+                    d.$wrapper.find("#cc-chips .outlook-chip").length === 0 &&
+                    cc_values.length > 0
+                  ) {
+                    console.log("Fallback: Retrying CC chips with d.$wrapper");
+                    cc_values.forEach((email) => {
+                      add_outlook_chip_manual(
+                        d.$wrapper.find("#cc-chips"),
+                        email,
+                      );
+                    });
+                  }
+
+                  // Helper for manual fallback append
+                  function add_outlook_chip_manual($container, email) {
+                    let exists = false;
+                    $container.find(".outlook-chip").each(function () {
+                      if ($(this).data("email") === email) exists = true;
+                    });
+                    if (!exists && email && email.includes("@")) {
+                      $container.append(`
+                        <span class="outlook-chip" data-email="${email}">
+                          ${email}
+                          <i class="fa fa-times remove-chip"></i>
+                        </span>
+                      `);
+                    }
+                  }
+
+                  // Structure 'Subject' Row
+                  let $subject_field = d.get_field("subject").$wrapper;
+                  $subject_field.wrap(
+                    '<div class="outlook-row outlook-subject-row"></div>',
+                  );
+
+                  // Wrap & Strip Text Editor
+                  let $message_field = d.get_field("message").$wrapper;
+                  $message_field.wrap(
+                    '<div class="outlook-body-container"></div>',
+                  );
+                  $message_field.find(".control-label").remove();
+
+                  // Chip addition listeners
+                  d.$wrapper.on(
+                    "keydown",
+                    ".outlook-email-input",
+                    function (e) {
+                      if (["Enter", ",", "Tab"].includes(e.key)) {
+                        e.preventDefault();
+                        let val = $(this).val().replace(",", "").trim();
+                        if (val) {
+                          let container_id =
+                            "#" +
+                            $(this)
+                              .siblings(".outlook-chip-container")
+                              .attr("id");
+                          add_outlook_chip(container_id, val);
+                          $(this).val("");
+                        }
+                      }
                     },
-                    freeze: true,
-                    freeze_message: __("Saving Email..."),
+                  );
 
-                    callback() {
-                      // STEP 2: Send SCN email after saving
-                      frappe.call({
-                        method:
-                          "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
-                        args: { docname: frm.doc.name },
-                        freeze: true,
-                        freeze_message: __("Sending SCN Email..."),
+                  d.$wrapper.on("blur", ".outlook-email-input", function () {
+                    let val = $(this).val().replace(",", "").trim();
+                    if (val) {
+                      let container_id =
+                        "#" +
+                        $(this).siblings(".outlook-chip-container").attr("id");
+                      add_outlook_chip(container_id, val);
+                      $(this).val("");
+                    }
+                  });
 
-                        callback() {
-                          frappe.msgprint(
-                            __("Email saved and SCN Email sent successfully!"),
-                          );
+                  // Chip removal
+                  d.$wrapper.on("click", ".remove-chip", function () {
+                    $(this).parent().remove();
+                  });
+
+                  // Ensure click on wrapper focuses input
+                  d.$wrapper.on("click", ".outlook-chip-wrapper", function (e) {
+                    if (
+                      !$(e.target).hasClass("remove-chip") &&
+                      !$(e.target).hasClass("outlook-chip")
+                    ) {
+                      $(this).find(".outlook-email-input").focus();
+                    }
+                  });
+
+                  // Bind Custom Send Button Functionality
+                  d.$wrapper.find("#outlook_btn_send").on("click", function () {
+                    let subject = d.get_values().subject;
+                    let message = d.get_values().message;
+
+                    if (!subject || !message) {
+                      frappe.msgprint(__("Subject and Message are mandatory."));
+                      return;
+                    }
+
+                    let recipients = [];
+                    d.$wrapper.find("#to-chips .outlook-chip").each(function () {
+                      recipients.push($(this).data("email"));
+                    });
+
+                    let cc = [];
+                    d.$wrapper.find("#cc-chips .outlook-chip").each(function () {
+                      cc.push($(this).data("email"));
+                    });
+
+                    if (recipients.length === 0) {
+                      frappe.msgprint(
+                        __("At least one recipient is required in 'To'."),
+                      );
+                      return;
+                    }
+
+                    d.$wrapper.find("#outlook_btn_send")
+                      .prop("disabled", true)
+                      .text("Sending...");
+
+                    frappe.call({
+                      method:
+                        "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_custom_email",
+                      args: {
+                        docname: frm.doc.name,
+                        recipients: recipients.join(","),
+                        cc: cc.join(","),
+                        subject: subject,
+                        message: message,
+                      },
+                      freeze: true,
+                      freeze_message: __("Sending Email..."),
+                      callback: function (r) {
+                        if (r.message === "OK") {
+                          frappe.show_alert({
+                            message: __("Email sent successfully"),
+                            indicator: "green",
+                          });
                           d.hide();
-                        },
-                      });
-                    },
+                        }
+                      },
+                      error: function () {
+                        d.$wrapper.find("#outlook_btn_send")
+                          .prop("disabled", false)
+                          .html('<i class="fa fa-paper-plane"></i> Send');
+                      },
+                    });
                   });
-                },
-              });
 
-              d.show();
-            }
-          },
-        });
+                  // Bind Custom Close Icon Functionality
+                  $("#outlook_btn_close").on("click", function () {
+                    d.hide();
+                  });
+                }, 60);
+              },
+            });
+          });
       });
-      function sendEmail(docname) {
-        frappe.call({
-          method:
-            "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_scn_email",
-          args: { docname },
-          callback() {
-            frappe.msgprint("SCN Email Sent Successfully!");
-          },
-        });
-      }
     }
     let today = frappe.datetime.now_date();
 
@@ -226,9 +595,7 @@ frappe.ui.form.on("Disciplinary Case", {
       frm.fields_dict.issue_report_to_hr.refresh();
     }
 
-    // -------------------
     // Prevent typing alphabets in Amount of Fraud field
-    // -------------------
     if (
       frm.fields_dict.amount_of_fraud &&
       frm.fields_dict.amount_of_fraud.$input
@@ -245,24 +612,16 @@ frappe.ui.form.on("Disciplinary Case", {
       );
     }
 
-    // -------------------
-    // Conditional Mandatory + Hide for suspension_required
-    // -------------------
-    // handle_suspension_required(frm);
-    // -------------------
     // Restrict linked records with save-check
-    // -------------------
     setTimeout(() => {
       const $suspension_btn = $('button[data-doctype="Suspension Process"]');
       const $response_btn = $('button[data-doctype="Response to SCN"]');
       const $unauth_abs_btn = $('button[data-doctype="Unauthorized Absence"]');
 
-      // Remove previous handlers (avoid duplicates)
       $suspension_btn.off("mousedown.suspension_check");
       $response_btn.off("mousedown.response_check");
       $unauth_abs_btn.off("mousedown.ua_check");
 
-      // 🧩 Common Save Check
       const ensureSaved = (e, on_saved) => {
         if (frm.is_dirty()) {
           e.preventDefault();
@@ -273,11 +632,9 @@ frappe.ui.form.on("Disciplinary Case", {
         return true;
       };
 
-      // 🔸 Suspension Process Restriction
       $suspension_btn.on("mousedown.suspension_check", (e) => {
         if (!ensureSaved(e, () => $suspension_btn.trigger("click"))) return;
 
-        // 🚫 Block if Case Type = Unauthorized Absence
         if (frm.doc.case_type === "Unauthorized Absence") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -291,7 +648,6 @@ frappe.ui.form.on("Disciplinary Case", {
           return;
         }
 
-        // If suspension is not required, offer to enable it and continue.
         if (frm.doc.suspension_required === "No") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -304,11 +660,9 @@ frappe.ui.form.on("Disciplinary Case", {
         }
       });
 
-      // 🔸 Response to SCN Restriction
       $response_btn.on("mousedown.response_check", (e) => {
         if (!ensureSaved(e, () => $response_btn.trigger("click"))) return;
 
-        // 🚫 Block if Case Type = Unauthorized Absence
         if (frm.doc.case_type === "Unauthorized Absence") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -322,7 +676,6 @@ frappe.ui.form.on("Disciplinary Case", {
           return;
         }
 
-        // Normal rule based on suspension_required
         if (frm.doc.suspension_required === "Yes") {
           e.preventDefault();
           e.stopImmediatePropagation();
@@ -336,7 +689,6 @@ frappe.ui.form.on("Disciplinary Case", {
         }
       });
 
-      // 🔸 Unauthorized Absence Restriction (only allowed for that case type)
       $unauth_abs_btn.on("mousedown.ua_check", (e) => {
         if (!ensureSaved(e, () => $unauth_abs_btn.trigger("click"))) return;
 
@@ -360,7 +712,6 @@ frappe.ui.form.on("Disciplinary Case", {
           case_id: frm.doc.name,
         });
       });
-
       btn.removeClass("btn-default").addClass("btn-primary");
     }
 
@@ -370,16 +721,29 @@ frappe.ui.form.on("Disciplinary Case", {
       load_case_timeline(frm);
     }
   },
-  // -------------------
-  // Case Type Change
-  // -------------------
+
   case_type(frm) {
     // handle_suspension_required(frm);
   },
 
-  // -------------------
-  // Field-level triggers
-  // -------------------
+  employee_id: function (frm) {
+    if (frm.doc.employee_id) {
+      frappe.db.get_value(
+        "Employee",
+        frm.doc.employee_id,
+        ["company_email", "personal_email"],
+        (r) => {
+          if (r) {
+            if (r.company_email)
+              frm.set_value("employee_email", r.company_email);
+            if (r.personal_email)
+              frm.set_value("personal_email", r.personal_email);
+          }
+        },
+      );
+    }
+  },
+
   issue_occurrence_date: function (frm) {
     let today = frappe.datetime.now_date();
     if (
@@ -432,6 +796,7 @@ frappe.ui.form.on("Disciplinary Case", {
       frappe.throw(__("Amount of Fraud must be a valid number."));
     }
   },
+
   show_print_button: function (frm) {
     if (!frm.is_new()) {
       const allowed_roles = [
@@ -466,46 +831,23 @@ frappe.ui.form.on("Disciplinary Case", {
 
           iframe.onload = () => {
             const doc = iframe.contentWindow.document;
-
             const style = doc.createElement("style");
             style.innerHTML = `
-                    @page {
-                        size: A4;
-                        margin: 0 !important;
-                    }
-
+                    @page { size: A4; margin: 0 !important; }
                     html, body {
-                        margin:0 !important;
-                        padding:0 !important;
-                        width:210mm !important;
-                        height:297mm !important;
+                        margin:0 !important; padding:0 !important;
+                        width:210mm !important; height:297mm !important;
                         overflow:hidden !important;
                         -webkit-print-color-adjust: exact !important;
                         print-color-adjust: exact !important;
                     }
-
-                    .print-page {
-                        position:relative;
-                        width:210mm; height:297mm;
-                        overflow:hidden;
-                    }
-
-                    .print-body {
-                        padding: 145px 30px 40px 30px;
-                        height:100%;
-                        box-sizing:border-box;
-                        page-break-inside: avoid;
-                    }
+                    .print-page { position:relative; width:210mm; height:297mm; overflow:hidden; }
+                    .print-body { padding: 145px 30px 40px 30px; height:100%; box-sizing:border-box; page-break-inside: avoid; }
                 `;
             doc.head.appendChild(style);
 
             const original = doc.body.innerHTML;
-
-            doc.body.innerHTML = `
-                    <div class="print-page">
-                        ${original}
-                    </div>
-                `;
+            doc.body.innerHTML = `<div class="print-page">${original}</div>`;
 
             setTimeout(() => {
               iframe.contentWindow.focus();
@@ -529,19 +871,6 @@ frappe.ui.form.on("Disciplinary Case", {
         .addClass("btn-primary");
     }
   },
-  // -------------------
-  // excluded higher authority employees from employee selection
-  // -------------------
-  setup(frm) {
-    frm.set_query("employee_id", function () {
-      return {
-        filters: {
-          status: "Active",
-          cxo_level: 0,
-        },
-      };
-    });
-  },
 });
 
 function load_case_timeline(frm) {
@@ -549,102 +878,197 @@ function load_case_timeline(frm) {
   if (!case_id) return;
 
   const standard_stages = [
-    { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
+    {
+      doctype: "Disciplinary Case",
+      label: "Disciplinary Case",
+      can_create: false,
+    },
     { doctype: "Suspension Process", label: "Suspension Process" },
-    { doctype: "Response to SCN", label: "Response to SCN", allow_multiple: true },
-    { doctype: "Domestic Enquiry", label: "Domestic Enquiry", allow_multiple: true },
-    { doctype: "Enquiry Reminder", label: "Enquiry Reminder", allow_multiple: true },
+    {
+      doctype: "Response to SCN",
+      label: "Response to SCN",
+      allow_multiple: true,
+    },
+    {
+      doctype: "Domestic Enquiry",
+      label: "Domestic Enquiry",
+      allow_multiple: true,
+    },
+    {
+      doctype: "Enquiry Reminder",
+      label: "Enquiry Reminder",
+      allow_multiple: true,
+    },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
   const ua_stages = [
-    { doctype: "Unauthorized Absence", label: "Unauthorized Absence", allow_multiple: true },
-    { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence", allow_multiple: true },
-    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry", allow_multiple: true },
+    {
+      doctype: "Unauthorized Absence",
+      label: "Unauthorized Absence",
+      allow_multiple: true,
+    },
+    {
+      doctype: "Reminder Of Unauthorized Absence",
+      label: "Reminder Of Unauthorized Absence",
+      allow_multiple: true,
+    },
+    {
+      doctype: "Ex Parte Enquiry",
+      label: "Ex Parte Enquiry",
+      allow_multiple: true,
+    },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
-  const is_ua = String(case_id).startsWith("UA") || (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" || frm.doctype === "Unauthorized Absence" || frm.doctype === "Reminder Of Unauthorized Absence" || frm.doctype === "Ex Parte Enquiry";
+  const is_ua =
+    String(case_id).startsWith("UA") ||
+    (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
+    frm.doctype === "Unauthorized Absence" ||
+    frm.doctype === "Reminder Of Unauthorized Absence" ||
+    frm.doctype === "Ex Parte Enquiry";
 
-  const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
-    ...stage,
-    key: `${stage.doctype}-${index}`,
-    status: "current",
-    modified: null,
-    record_count: 0,
-    names: [],
-    can_create: stage.can_create !== false,
-    allow_multiple: stage.allow_multiple || false,
-    quick_entry: true,
-    only_save: true,
-    defaults: {
-      case_id,
-      ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
-    },
-  }));
+  const stage_defs = (is_ua ? ua_stages : standard_stages).map(
+    (stage, index) => ({
+      ...stage,
+      key: `${stage.doctype}-${index}`,
+      status: "current",
+      modified: null,
+      record_count: 0,
+      names: [],
+      can_create: stage.can_create !== false,
+      allow_multiple: stage.allow_multiple || false,
+      quick_entry: true,
+      only_save: true,
+      defaults: {
+        case_id,
+        ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
+      },
+    }),
+  );
 
   const build_config = (stages) => ({
     title: __("Case Progress Timeline"),
     case_id,
     stages,
-    get_defaults(stage) { return stage.defaults || { case_id }; },
+    get_defaults(stage) {
+      return stage.defaults || { case_id };
+    },
     before_open() {
       if (frm.doc.docstatus === 0) {
-        frappe.msgprint({ title: __("Not Allowed"), message: __("Please <b>Submit</b> the current document before creating the next stage record."), indicator: "red" });
+        frappe.msgprint({
+          title: __("Not Allowed"),
+          message: __(
+            "Please <b>Submit</b> the current document before creating the next stage record.",
+          ),
+          indicator: "red",
+        });
         return false;
       }
       if (frm.is_dirty()) {
-        frappe.msgprint({ title: __("Please Save First"), message: __("Save the form before creating a linked record."), indicator: "orange" });
+        frappe.msgprint({
+          title: __("Please Save First"),
+          message: __("Save the form before creating a linked record."),
+          indicator: "orange",
+        });
         return false;
       }
     },
-    after_insert() { frm.reload_doc(); },
+    after_insert() {
+      frm.reload_doc();
+    },
   });
 
   const merge_stage_meta = (timeline, record_summaries) => {
     let last_submitted_doctype = "";
     for (let stage of stage_defs) {
-        const match = timeline.find(item => item.doctype === stage.doctype);
-        if (match && match.status === "submitted") { last_submitted_doctype = stage.doctype; }
+      const match = timeline.find((item) => item.doctype === stage.doctype);
+      if (match && match.status === "submitted") {
+        last_submitted_doctype = stage.doctype;
+      }
     }
 
     let next_doctype = "";
     if (!last_submitted_doctype) {
-        next_doctype = stage_defs[0].doctype;
+      next_doctype = stage_defs[0].doctype;
     } else {
-        let last_match = timeline.find(t => t.doctype === last_submitted_doctype);
-        let meta = last_match?.meta || {};
-        let dt = last_submitted_doctype;
-        if (dt === "Disciplinary Case") next_doctype = (meta.suspension_required === "Yes") ? "Suspension Process" : "Response to SCN";
-        else if (dt === "Suspension Process") next_doctype = "Response to SCN";
-        else if (dt === "Response to SCN") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Domestic Enquiry";
-        else if (dt === "Domestic Enquiry") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Enquiry Reminder";
-        else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
-        else if (dt === "Unauthorized Absence") next_doctype = (String(meta.response_of_ua).toLowerCase() === "yes") ? "Case Closure" : "Reminder Of Unauthorized Absence";
-        else if (dt === "Reminder Of Unauthorized Absence") next_doctype = (String(meta.response_of_reminder).toLowerCase() === "no") ? "Ex Parte Enquiry" : "Case Closure";
-        else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
+      let last_match = timeline.find(
+        (t) => t.doctype === last_submitted_doctype,
+      );
+      let meta = last_match?.meta || {};
+      let dt = last_submitted_doctype;
+      if (dt === "Disciplinary Case")
+        next_doctype =
+          meta.suspension_required === "Yes"
+            ? "Suspension Process"
+            : "Response to SCN";
+      else if (dt === "Suspension Process") next_doctype = "Response to SCN";
+      else if (dt === "Response to SCN")
+        next_doctype =
+          String(meta.status_of_response).toLowerCase() === "satisfactory"
+            ? "Case Closure"
+            : "Domestic Enquiry";
+      else if (dt === "Domestic Enquiry")
+        next_doctype =
+          String(meta.status_of_response).toLowerCase() === "satisfactory"
+            ? "Case Closure"
+            : "Enquiry Reminder";
+      else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
+      else if (dt === "Unauthorized Absence")
+        next_doctype =
+          String(meta.response_of_ua).toLowerCase() === "yes"
+            ? "Case Closure"
+            : "Reminder Of Unauthorized Absence";
+      else if (dt === "Reminder Of Unauthorized Absence")
+        next_doctype =
+          String(meta.response_of_reminder).toLowerCase() === "no"
+            ? "Ex Parte Enquiry"
+            : "Case Closure";
+      else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
     }
 
-    const has_draft = (frm.doc.docstatus === 0);
-    const next_stage_index = stage_defs.findIndex(stage => stage.doctype === next_doctype);
+    const has_draft = frm.doc.docstatus === 0;
+    const next_stage_index = stage_defs.findIndex(
+      (stage) => stage.doctype === next_doctype,
+    );
 
     return stage_defs.map((stage, index) => {
-      const status_match = timeline.find(item => item.doctype === stage.doctype);
-      const summary_match = record_summaries.find(item => item.doctype === stage.doctype);
-      
-      let is_next_step = (stage.doctype === next_doctype);
-      let is_already_started = (status_match && !["pending", "current"].includes(status_match.status));
-      let is_past_or_current = (index <= next_stage_index);
-      
+      const status_match = timeline.find(
+        (item) => item.doctype === stage.doctype,
+      );
+      const summary_match = record_summaries.find(
+        (item) => item.doctype === stage.doctype,
+      );
+
+      let is_next_step = stage.doctype === next_doctype;
+      let is_already_started =
+        status_match && !["pending", "current"].includes(status_match.status);
+      let is_past_or_current = index <= next_stage_index;
+
       // Default: Strict progression logic
-      let can_create = (is_next_step || (stage.allow_multiple && is_already_started && is_past_or_current)) && !has_draft;
+      let can_create =
+        (is_next_step ||
+          (stage.allow_multiple && is_already_started && is_past_or_current)) &&
+        !has_draft;
 
       // Force disable if it's already created and doesn't allow multiple
-      if (status_match && !stage.allow_multiple && ["saved", "submitted"].includes((status_match.status || "").toLowerCase())) {
-          can_create = false;
+      if (
+        status_match &&
+        !stage.allow_multiple &&
+        ["saved", "submitted"].includes(
+          (status_match.status || "").toLowerCase(),
+        )
+      ) {
+        can_create = false;
       }
-      
-      return { ...stage, status: status_match?.status || stage.status, record_count: summary_match?.count || 0, names: summary_match?.names || [], can_create: can_create };
+
+      return {
+        ...stage,
+        status: status_match?.status || stage.status,
+        record_count: summary_match?.count || 0,
+        names: summary_match?.names || [],
+        can_create: can_create,
+      };
     });
   };
 
@@ -654,16 +1078,47 @@ function load_case_timeline(frm) {
   };
 
   const load_record_summaries = () => {
-    return Promise.all(stage_defs.map((stage) => frappe.db.get_list(stage.doctype, { filters: { case_id }, fields: ["name"], order_by: "creation asc", limit_page_length: 500 }).then((records) => ({ doctype: stage.doctype, count: (records || []).length, names: (records || []).map((row) => row.name) })).catch(() => ({ doctype: stage.doctype, count: 0, names: [] }))));
+    return Promise.all(
+      stage_defs.map((stage) =>
+        frappe.db
+          .get_list(stage.doctype, {
+            filters: { case_id },
+            fields: ["name"],
+            order_by: "creation asc",
+            limit_page_length: 500,
+          })
+          .then((records) => ({
+            doctype: stage.doctype,
+            count: (records || []).length,
+            names: (records || []).map((row) => row.name),
+          }))
+          .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
+      ),
+    );
   };
 
-  const load_timeline = () => frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages", { case_id });
+  const load_timeline = () =>
+    frappe.xcall(
+      "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+      { case_id },
+    );
 
   const init = () => {
     if (!window.sahayogCaseTimeline) return;
-    Promise.all([load_record_summaries(), load_timeline()]).then(([summaries, timeline_res]) => { const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : []; render_with_data(timeline, summaries || []); }).catch((error) => { render_with_data([], []); });
+    Promise.all([load_record_summaries(), load_timeline()])
+      .then(([summaries, timeline_res]) => {
+        const timeline =
+          timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
+        render_with_data(timeline, summaries || []);
+      })
+      .catch((error) => {
+        render_with_data([], []);
+      });
   };
 
-  if (window.sahayogCaseTimeline) { init(); return; }
+  if (window.sahayogCaseTimeline) {
+    init();
+    return;
+  }
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
 }

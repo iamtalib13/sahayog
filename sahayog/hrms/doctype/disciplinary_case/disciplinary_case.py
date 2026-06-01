@@ -65,6 +65,33 @@ class DisciplinaryCase(Document):
         # Set case_id = name after record is created
         self.db_set("case_id", self.name, update_modified=False)
 
+    def validate(self):
+        if self.employee_id:
+            cxo = frappe.db.get_value("Employee", self.employee_id, "cxo_level")
+            if cxo:
+                frappe.throw("CXO / Higher Management employees cannot be added in Disciplinary Case")
+
+        self.update_employee_emails_in_master()
+
+    def update_employee_emails_in_master(self):
+        if not self.employee_id:
+            return
+
+        emp = frappe.get_doc("Employee", self.employee_id)
+        updated = False
+
+        if self.employee_email and not emp.company_email:
+            emp.company_email = self.employee_email
+            updated = True
+
+        if self.personal_email and not emp.personal_email:
+            emp.personal_email = self.personal_email
+            updated = True
+
+        if updated:
+            emp.save(ignore_permissions=True)
+            frappe.msgprint("Employee email addresses updated in Employee master.")
+
 @frappe.whitelist()
 def get_case_stages(case_id):
     if case_id and case_id.startswith("UA"):
@@ -253,6 +280,34 @@ def save_and_send_email(employee, email, docname):
 #     return "Queued"
 
 @frappe.whitelist()
+def send_custom_email(docname, recipients, cc, subject, message):
+    if not recipients:
+        frappe.throw("Recipients are mandatory.")
+
+    # Convert recipients and cc strings/lists to lists if they are strings
+    if isinstance(recipients, str):
+        recipients = [r.strip() for r in recipients.split(",") if r.strip()]
+    if isinstance(cc, str):
+        cc = [c.strip() for c in cc.split(",") if c.strip()]
+
+    frappe.sendmail(
+        recipients=recipients,
+        cc=cc,
+        subject=subject,
+        content=message,
+        reference_doctype="Disciplinary Case",
+        reference_name=docname,
+        attachments=[{
+            "print_format": "Disciplinary Case Notice",
+            "doctype": "Disciplinary Case",
+            "name": docname,
+            "file_name": f"{docname}.pdf"
+        }],
+        now=True
+    )
+    return "OK"
+
+@frappe.whitelist()
 def send_scn_email(docname):
         """Send welcome notification for first time membership"""
         try:
@@ -273,11 +328,3 @@ def save_employee_email(employee, email):
     emp.company_email = email
     emp.db_update()
     return "OK"
-# -------------------
-# excluded higher authority employees from employee selection
-# -------------------
-def validate(self):
-    if self.employee_id:
-        cxo = frappe.db.get_value("Employee", self.employee_id, "cxo_level")
-        if cxo:
-            frappe.throw("CXO / Higher Management employees cannot be added in Disciplinary Case")
