@@ -20,7 +20,7 @@ def execute():
         "label": "Asset",
         "fieldtype": "Link",
         "options": "Asset",
-        "insert_after": "status"
+        "insert_after": "state"
     }
 
     if not frappe.db.exists("Custom Field", {"dt": "Employee Material Request", "fieldname": "custom_asset"}):
