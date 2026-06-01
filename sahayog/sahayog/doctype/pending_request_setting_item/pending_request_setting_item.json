@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-01 11:55:09.909236",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "doctype_name",
+  "display_title",
+  "section_break_yyey",
+  "user_field",
+  "column_break_fsxi",
+  "user_status_field",
+  "childtable"
+ ],
+ "fields": [
+  {
+   "fieldname": "doctype_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Doctype Name",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "display_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Display Title"
+  },
+  {
+   "fieldname": "user_field",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "User field",
+   "reqd": 1
+  },
+  {
+   "fieldname": "user_status_field",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "User Status field",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "childtable",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "childtable"
+  },
+  {
+   "fieldname": "section_break_yyey",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_fsxi",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-01 12:20:49.487143",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Pending Request Setting Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
