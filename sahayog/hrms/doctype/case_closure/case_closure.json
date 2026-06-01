@@ -158,7 +158,6 @@
    "read_only": 1
   },
   {
-   "default": "Completed Enquiry",
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -259,7 +258,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-01 10:33:35.321682",
+ "modified": "2026-06-01 11:12:04.680562",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",

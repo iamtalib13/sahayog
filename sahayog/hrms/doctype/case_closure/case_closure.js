@@ -180,6 +180,9 @@ frappe.ui.form.on("Case Closure", {
   // REFRESH: Buttons, Timeline, Reviewer actions
   // --------------------------------------------------------------------------
   refresh(frm) {
+    // Toggle closure fields based on status and reference doctype presence or absence (Only when new)
+    toggle_closure_fields(frm);
+
     // Remove duplicate Send Email button
     frm.remove_custom_button("Send Email");
     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
@@ -1306,4 +1309,44 @@ function load_case_timeline(frm) {
   }
 
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
+}
+
+
+
+function toggle_closure_fields(frm) {
+    const controlled_fields = [
+        "remarks",
+        "enquiry_status",
+        "enquiry_report_upload",
+        "case_close_with"
+    ];
+
+    const allowed_roles = ["Administrator", "HR Manager", "HR Support Executive"];
+    const has_allowed_role =
+        frappe.user.has_role("Administrator") ||
+        allowed_roles.some(role => frappe.user.has_role(role));
+
+    const all_reviews_submitted =
+        Array.isArray(frm.doc.review_details) &&
+        frm.doc.review_details.length > 0 &&
+        frm.doc.review_details.every(row =>
+            row.employee_id &&
+            row.remarks &&
+            String(row.remarks).trim() &&
+            String(row.status || "").toLowerCase() === "submitted"
+        );
+
+    const can_edit = has_allowed_role && all_reviews_submitted;
+
+    controlled_fields.forEach(fieldname => {
+        if (frm.fields_dict[fieldname]) {
+            frm.set_df_property(fieldname, "read_only", can_edit ? 0 : 1);
+
+            if (!has_allowed_role) {
+                frm.set_df_property(fieldname, "hidden", 1);
+            } else {
+                frm.set_df_property(fieldname, "hidden", 0);
+            }
+        }
+    });
 }

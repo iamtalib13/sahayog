@@ -18,6 +18,59 @@ class CaseClosure(Document):
     Handles autonaming and server-side business logic.
     """
 
+    def validate(self):
+        self.validate_closure_fields_access()
+
+    def validate_closure_fields_access(self):
+        controlled_fields = [
+            "remarks",
+            "enquiry_status",
+            "enquiry_report_upload",
+            "case_close_with",
+        ]
+
+        allowed_roles = {"Administrator", "HR Manager", "HR Support Executive"}
+
+        user_roles = set(frappe.get_roles(frappe.session.user))
+        has_allowed_role = "Administrator" in user_roles or bool(
+            user_roles.intersection(allowed_roles))
+
+        all_reviews_submitted = (
+            len(self.review_details) > 0 and
+            all(
+                row.employee_id and
+                row.remarks and
+                str(row.remarks).strip() and
+                str(row.status or "").strip().lower() == "submitted"
+                for row in self.review_details
+            )
+        )
+
+        if self.is_new():
+            return
+
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        changed_restricted_field = any(
+            old_doc.get(fieldname) != self.get(fieldname)
+            for fieldname in controlled_fields
+        )
+
+        if not changed_restricted_field:
+            return
+
+        if not has_allowed_role:
+            frappe.throw(
+                "Only HR Manager, HR Support Executive, or Administrator can update Remarks, Enquiry Status, Enquiry Report Upload, and Case Close With."
+            )
+
+        if not all_reviews_submitted:
+            frappe.throw(
+                "These fields can be edited only after all employees in Review Details have submitted their feedback."
+            )
+
     def autoname(self):
         if self.case_id:
             count = frappe.db.count(
@@ -1026,3 +1079,54 @@ def get_next_pending_reviewer(doc):
         if not row.remarks or str(row.status).strip().lower() != "submitted":
             return row.employee_id
     return None
+
+
+def validate_closure_fields_access(self):
+    controlled_fields = [
+        "remarks",
+        "enquirystatus",
+        "enquiryreportupload",
+        "caseclosewith",
+    ]
+
+    allowed_roles = {"Administrator", "HR Manager", "HR Support Executive"}
+
+    user_roles = set(frappe.get_roles(frappe.session.user))
+    has_allowed_role = "Administrator" in user_roles or bool(
+        user_roles.intersection(allowed_roles))
+
+    all_reviews_submitted = (
+        len(self.review_details) > 0 and
+        all(
+            row.employeeid and
+            row.remarks and
+            str(row.remarks).strip() and
+            str(row.status or "").strip().lower() == "submitted"
+            for row in self.review_details
+        )
+    )
+
+    if self.is_new():
+        return
+
+    old_doc = self.get_doc_before_save()
+    if not old_doc:
+        return
+
+    changed_restricted_field = any(
+        old_doc.get(fieldname) != self.get(fieldname)
+        for fieldname in controlled_fields
+    )
+
+    if not changed_restricted_field:
+        return
+
+    if not has_allowed_role:
+        frappe.throw(
+            "Only HR Manager, HR Support Executive, or Administrator can update Remarks, Enquiry Status, Enquiry Report Upload, and Case Close With."
+        )
+
+    if not all_reviews_submitted:
+        frappe.throw(
+            "These fields can be edited only after all employees in Review Details have submitted their feedback."
+        )
