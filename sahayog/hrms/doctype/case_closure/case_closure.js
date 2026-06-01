@@ -1009,6 +1009,13 @@ function submit_approvers(frm, values, dialog) {
   });
 
   frm.refresh_field("review_details");
+
+  // C. Update status to "Under Review" if new reviewers are added 
+  if (new_reviewers.length > 0) {
+    frm.set_value("status", "Under Review");
+  }
+
+  //  D. Save parent document
   frm.save().then(() => {
     // -----------------------------------------------------
     // FIRST CALL → VERIFICATION PROCESS EMAILS
