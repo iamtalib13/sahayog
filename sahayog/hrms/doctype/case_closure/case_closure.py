@@ -874,44 +874,44 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         frappe.db.commit()
 
 
-@frappe.whitelist()
-def submit_feedback(case_closure_name, feedback):
-    if not case_closure_name or not feedback:
-        frappe.throw("Case Closure and feedback are required.")
+# @frappe.whitelist()
+# def submit_feedback(case_closure_name, feedback):
+#     if not case_closure_name or not feedback:
+#         frappe.throw("Case Closure and feedback are required.")
 
-    employee = frappe.db.get_value(
-        "Employee",
-        {"user_id": frappe.session.user},
-        "name"
-    ) or frappe.db.get_value(
-        "Employee",
-        {"user_id": frappe.session.user},
-        "name"
-    )
+#     employee = frappe.db.get_value(
+#         "Employee",
+#         {"user_id": frappe.session.user},
+#         "name"
+#     ) or frappe.db.get_value(
+#         "Employee",
+#         {"user_id": frappe.session.user},
+#         "name"
+#     )
 
-    if not employee:
-        frappe.throw("No Employee is linked with the logged-in user.")
+#     if not employee:
+#         frappe.throw("No Employee is linked with the logged-in user.")
 
-    doc = frappe.get_doc("Case Closure", case_closure_name)
+#     doc = frappe.get_doc("Case Closure", case_closure_name)
 
-    matched_row = None
-    for row in doc.review_details:
-        if row.employee_id == employee:
-            matched_row = row
-            break
+#     matched_row = None
+#     for row in doc.review_details:
+#         if row.employee_id == employee:
+#             matched_row = row
+#             break
 
-    if not matched_row:
-        frappe.throw(
-            "You are not assigned in Review Details for this document.")
+#     if not matched_row:
+#         frappe.throw(
+#             "You are not assigned in Review Details for this document.")
 
-    matched_row.remarks = feedback
-    matched_row.status = "Submitted"
-    matched_row.date_and_time = now_datetime()
+#     matched_row.remarks = feedback
+#     matched_row.status = "Submitted"
+#     matched_row.date_and_time = now_datetime()
 
-    doc.save(ignore_permissions=True)
-    frappe.db.commit()
+#     doc.save(ignore_permissions=True)
+#     frappe.db.commit()
 
-    return {"status": "success", "employee": employee}
+#     return {"status": "success", "employee": employee}
 
 
 @frappe.whitelist()
@@ -929,3 +929,100 @@ def get_employee_from_current_user_for_review(case_closure_name):
         "allowed": allowed,
         "employee": employee
     }
+
+
+@frappe.whitelist()
+def can_submit_feedback(case_closure_name):
+    if not case_closure_name:
+        return {"allowed": False, "reason": "Missing document."}
+
+    current_employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    ) or frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    )
+
+    if not current_employee:
+        return {"allowed": False, "reason": "No Employee linked with current user."}
+
+    doc = frappe.get_doc("Case Closure", case_closure_name)
+
+    active_row = None
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            active_row = row
+            break
+
+    if not active_row:
+        return {
+            "allowed": False,
+            "reason": "All reviewers have already submitted.",
+            "employee": current_employee
+        }
+
+    return {
+        "allowed": active_row.employee_id == current_employee,
+        "employee": current_employee,
+        "active_employee": active_row.employee_id,
+        "reason": None if active_row.employee_id == current_employee else "Feedback is pending from another reviewer first."
+    }
+
+
+@frappe.whitelist()
+def submit_feedback(case_closure_name, feedback):
+    if not case_closure_name:
+        frappe.throw("Case Closure is required.")
+    if not feedback or not str(feedback).strip():
+        frappe.throw("Feedback is required.")
+
+    current_employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    ) or frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    )
+
+    if not current_employee:
+        frappe.throw("No Employee linked with current user.")
+
+    doc = frappe.get_doc("Case Closure", case_closure_name)
+
+    active_row = None
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            active_row = row
+            break
+
+    if not active_row:
+        frappe.throw("All reviewers have already submitted feedback.")
+
+    if active_row.employee_id != current_employee:
+        frappe.throw(
+            "You cannot submit feedback yet. Previous reviewer is pending.")
+
+    active_row.remarks = feedback.strip()
+    active_row.status = "Submitted"
+    active_row.date_and_time = now_datetime()
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "employee": current_employee,
+        "next_employee": get_next_pending_reviewer(doc)
+    }
+
+
+def get_next_pending_reviewer(doc):
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            return row.employee_id
+    return None
