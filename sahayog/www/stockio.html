@@ -1852,7 +1852,7 @@
         <!-- Workflow Buttons for HO Officer removed -->
         <button
           class="btn-create"
-          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView && !(activeItem === 'Asset Master' && !isAdmin)"
           @click="handleCreate()"
         >
           <i class="fas fa-plus"></i>
@@ -1863,8 +1863,8 @@
           v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
           @click="openNewAssetDesk()"
         >
-          <i class="fas fa-external-link-alt"></i>
-          <span>New Asset (Desk)</span>
+          <i :class="isAdmin ? 'fas fa-external-link-alt' : 'fas fa-plus'"></i>
+          <span>[[ isAdmin ? 'New Asset (Desk)' : 'Create' ]]</span>
         </button>
       </div>
     </header>
