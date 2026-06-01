@@ -1858,6 +1858,14 @@
           <i class="fas fa-plus"></i>
           <span>Create</span>
         </button>
+        <button
+          class="btn-create"
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="openNewAssetDesk()"
+        >
+          <i class="fas fa-external-link-alt"></i>
+          <span>New Asset (Desk)</span>
+        </button>
       </div>
     </header>
 
@@ -12429,6 +12437,10 @@
         const i = this.selectedRows.indexOf(name);
         if (i > -1) this.selectedRows.splice(i, 1);
         else this.selectedRows.push(name);
+      },
+
+      openNewAssetDesk() {
+        window.location.href = '/app/asset/new-asset-bbqcsfzfkb';
       },
 
       handleCreate() {
