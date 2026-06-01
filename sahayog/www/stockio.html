@@ -3617,7 +3617,7 @@
                 <select class="form-input" v-model="accessForm.inventory_type">
                   <option value="">Select Type</option>
                   <option value="Stationery">Stationery</option>
-                  <option value="Asset">Asset</option>
+                  <option value="IT">IT</option>
                   <option value="Other">Other</option>
                 </select>
               </div>
@@ -11491,14 +11491,14 @@
 
             // Assets Section logic
             if (section.label === "Assets") {
-              return type === "asset" || type === "other";
+              return type === "it" || type === "other";
             }
 
             // Reports Section logic
             if (section.label === "Reports") {
               return (
                 type === "stationery" ||
-                type === "asset" ||
+                type === "it" ||
                 type === "other"
               );
             }
@@ -11518,7 +11518,7 @@
 
             if (section.label === "Inventory") {
               // Relabel to Requests if type is Asset
-              if (!this.isAdmin && type === "asset") {
+              if (!this.isAdmin && type === "it") {
                 newSection.label = "Requests";
               }
 
@@ -11526,7 +11526,7 @@
 
               // Filter based on inventory_type for non-admins
               if (!this.isAdmin) {
-                if (type === "asset") {
+                if (type === "it") {
                   // If Asset, only show Requests in this section (Items moved to Assets)
                   filteredItems = filteredItems.filter(
                     (item) => item.label === "Requests",
@@ -11554,7 +11554,7 @@
             if (
               section.label === "Assets" &&
               !this.isAdmin &&
-              type === "asset"
+              type === "it"
             ) {
               // Move "Items" to Assets section below "Movements"
               const itemsObj = this.sidebar.sections
@@ -12275,11 +12275,11 @@
 
                   const itemDept = String(d.custom_item_department).toLowerCase();
                   
-                  if (invType.includes("asset") && !invType.includes("stationery")) {
+                  if (invType.includes("it") && !invType.includes("stationery")) {
                     return itemDept === "it";
-                  } else if (invType.includes("stationery") && !invType.includes("asset")) {
+                  } else if (invType.includes("stationery") && !invType.includes("it")) {
                     return itemDept.includes("stationer");
-                  } else if (invType.includes("stationery") && invType.includes("asset")) {
+                  } else if (invType.includes("stationery") && invType.includes("it")) {
                     return itemDept === "it" || itemDept.includes("stationer");
                   }
                   return true;
@@ -12400,11 +12400,11 @@
             if (!d.custom_item_department) return true;
             const itemDept = String(d.custom_item_department).toLowerCase();
             
-            if (invType.includes("asset") && !invType.includes("stationery")) {
+            if (invType.includes("it") && !invType.includes("stationery")) {
               return itemDept === "it";
-            } else if (invType.includes("stationery") && !invType.includes("asset")) {
+            } else if (invType.includes("stationery") && !invType.includes("it")) {
               return itemDept.includes("stationer");
-            } else if (invType.includes("stationery") && invType.includes("asset")) {
+            } else if (invType.includes("stationery") && invType.includes("it")) {
               return itemDept === "it" || itemDept.includes("stationer");
             }
             return true;
