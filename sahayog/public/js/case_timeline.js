@@ -516,6 +516,40 @@
           grid-template-columns: 1fr;
         }
       }
+
+
+
+    // Card specific styles for timeline view with badges and timestamps added
+  .sahayog-case-timeline__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sahayog-case-timeline__stage-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.sahayog-case-timeline__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sahayog-case-timeline__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #20262e;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
     `;
     document.head.appendChild(style);
   }

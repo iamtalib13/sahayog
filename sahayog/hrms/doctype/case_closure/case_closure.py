@@ -11,14 +11,144 @@ from sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting import (
     email_notification_enabled
 )
 
+
 class CaseClosure(Document):
     """
     Controller for Case Closure DocType.
     Handles autonaming and server-side business logic.
     """
+
+    def validate(self):
+        self.validate_verified_transition()
+        self.validate_closure_fields_access()
+
+    # def validate_closure_fields_access(self):
+    #     controlled_fields = [
+    #         "remarks",
+    #         "enquiry_status",
+    #         "enquiry_report_upload",
+    #         "case_close_with",
+    #     ]
+
+    #     allowed_roles = {"Administrator", "HR Manager", "HR Support Executive"}
+
+    #     user_roles = set(frappe.get_roles(frappe.session.user))
+    #     has_allowed_role = "Administrator" in user_roles or bool(
+    #         user_roles.intersection(allowed_roles))
+
+    #     all_reviews_submitted = (
+    #         len(self.review_details) > 0 and
+    #         all(
+    #             row.employee_id and
+    #             row.remarks and
+    #             str(row.remarks).strip() and
+    #             str(row.status or "").strip().lower() == "submitted"
+    #             for row in self.review_details
+    #         )
+    #     )
+
+    #     if self.is_new():
+    #         return
+
+    #     old_doc = self.get_doc_before_save()
+    #     if not old_doc:
+    #         return
+
+    #     changed_restricted_field = any(
+    #         old_doc.get(fieldname) != self.get(fieldname)
+    #         for fieldname in controlled_fields
+    #     )
+
+    #     if not changed_restricted_field:
+    #         return
+
+    #     if not has_allowed_role:
+    #         frappe.throw(
+    #             "Only HR Manager, HR Support Executive, or Administrator can update Remarks, Enquiry Status, Enquiry Report Upload, and Case Close With."
+    #         )
+
+    #     if not all_reviews_submitted:
+    #         frappe.throw(
+    #             "These fields can be edited only after all employees in Review Details have submitted their feedback."
+    #         )
+
+    def validate_closure_fields_access(self):
+        controlled_fields = ["remarks", "enquiry_status",
+                             "enquiry_report_upload", "case_close_with"]
+
+        allowed_roles = {"Administrator", "HR Support Executive",
+                         "HR Manager", "HR Support Manager"}
+        user_roles = set(frappe.get_roles(frappe.session.user))
+        has_allowed_role = bool(user_roles.intersection(
+            allowed_roles)) or "Administrator" in user_roles
+
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        changed = any(old_doc.get(f) != self.get(f) for f in controlled_fields)
+        if not changed:
+            return
+
+        if not has_allowed_role:
+            frappe.throw(
+                "Only HR Manager, HR Support Executive, HR Support Manager, or Administrator can update closure fields."
+            )
+
+        all_reviews_submitted = (
+            len(self.review_details) > 0 and
+            all(
+                row.employee_id and row.remarks and str(row.remarks).strip() and
+                str(row.status or "").strip().lower() == "submitted"
+                for row in self.review_details
+            )
+        )
+
+        if not all_reviews_submitted and self.status != "Verified":
+            frappe.throw(
+                "Closure fields can be edited only after all reviewers have submitted feedback."
+            )
+
+    def validate_verified_transition(self):
+        if self.is_new():
+            return
+
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        moving_to_verified = old_doc.status != "Verified" and self.status == "Verified"
+        if not moving_to_verified:
+            return
+
+        if not self.review_details:
+            frappe.throw("Please select reviewers before approving the case.")
+
+        pending_reviews = [
+            row.employee_id for row in self.review_details
+            if not row.remarks or str(row.status or "").strip().lower() != "submitted"
+        ]
+        if pending_reviews:
+            frappe.throw(
+                "All reviewers must submit feedback before approving.")
+
+        required_fields = {
+            "remarks": "Remarks",
+            "enquiry_status": "Enquiry Status",
+            # "enquiry_report_upload": "Enquiry Report Upload",
+            "case_close_with": "Case Close With",
+        }
+
+        missing = [label for field, label in required_fields.items()
+                   if not self.get(field)]
+        if missing:
+            frappe.throw(
+                "Please fill the following fields before approving: " + ", ".join(missing))
+
     def autoname(self):
         if self.case_id:
-            count = frappe.db.count("Case Closure", {"case_id": self.case_id}) + 1
+            count = frappe.db.count(
+                "Case Closure", {"case_id": self.case_id}) + 1
             self.name = f"{self.case_id}-CLS-{count:02d}"
         else:
             self.name = frappe.model.naming.make_autoname("CLS-.#####")
@@ -28,7 +158,7 @@ class CaseClosure(Document):
         Populate info from source document.
         Strictly relies on explicit reference_doctype and reference_name.
         """
-        
+
         # ----------------------------------------------------------------------
         # LEGACY AUTO-DETECTION (Commented out as per request)
         # ----------------------------------------------------------------------
@@ -76,7 +206,8 @@ class CaseClosure(Document):
                 or source_doc.get("issue_report_to_hr")
             )
 
-            self.issue_occurrence_date = source_doc.get("issue_occurrence_date")
+            self.issue_occurrence_date = source_doc.get(
+                "issue_occurrence_date")
 
 # ✅ ONLY ADDITION — existing logic untouched
     def on_submit(self):
@@ -108,7 +239,6 @@ class CaseClosure(Document):
                 frappe.get_traceback(),
                 "Auto Case Closure Email Failed on Submit"
             )
-            
 
 
 # ---------------------------------------------------------
@@ -145,7 +275,7 @@ def get_reference_details(reference_doctype, reference_name):
         data.update({
             "status_of_response": source_doc.get("status_of_response"),
         })
-    
+
     elif reference_doctype in ["Domestic Enquiry", "Enquiry Reminder"]:
         data.update({
             "domestic_enquiry": source_doc.get("domestic_enquiry"),
@@ -158,11 +288,11 @@ def get_reference_details(reference_doctype, reference_name):
     elif reference_doctype in [
         "Unauthorized Absence",
         "Reminder Of Unauthorized Absence"
-       ]:
+    ]:
         data.update({
-        "status_of_response": source_doc.get("status_of_response"),
+            "status_of_response": source_doc.get("status_of_response"),
         })
-        
+
     elif reference_doctype == "Ex Parte Enquiry":
         data.update({
             "date_of_enquiry": source_doc.get("date_of_enquiry"),
@@ -202,7 +332,7 @@ def close_linked_case(case_id):
         frappe.throw(
             "Case Closure must be submitted before closing linked cases"
         )
-    
+
     # All DAMS-related doctypes linked via case_id
     linked_doctypes = [
         "Disciplinary Case",
@@ -214,8 +344,8 @@ def close_linked_case(case_id):
         "Domestic Enquiry",
         "Enquiry Reminder",
     ]
-    
-     # Iterate through each linked doctype
+
+    # Iterate through each linked doctype
     for doctype in linked_doctypes:
         # Skip if DocType is not installed
         if not frappe.db.exists("DocType", doctype):
@@ -233,7 +363,7 @@ def close_linked_case(case_id):
         for d in docs:
             doc = frappe.get_doc(doctype, d.name)
 
-             # Do not touch cancelled documents
+            # Do not touch cancelled documents
             if doc.docstatus == 2:
                 continue
 
@@ -247,6 +377,8 @@ def close_linked_case(case_id):
 # ============================================================================
 # FETCH LATEST LINKED ENQUIRY DETAILS FOR CASE HISTORY
 # ============================================================================
+
+
 @frappe.whitelist()
 def get_latest_linked_enquiry(case_id):
     """
@@ -262,7 +394,6 @@ def get_latest_linked_enquiry(case_id):
 
     docs = []
 
-   
     # -----------------------------
     # Response to SCN (Only if Satisfactory)
     # -----------------------------
@@ -284,7 +415,6 @@ def get_latest_linked_enquiry(case_id):
             },
         })
 
-   
     # -----------------------------
     # Domestic Enquiry
     # -----------------------------
@@ -317,7 +447,6 @@ def get_latest_linked_enquiry(case_id):
             "data": d,
         })
 
-    
     # -----------------------------
     # Enquiry Reminder
     # -----------------------------
@@ -365,6 +494,8 @@ def get_latest_linked_enquiry(case_id):
 # -------------------------------------------------------------------------
 # START VERIFICATION PROCESS - SIMPLE EMAILS
 # -------------------------------------------------------------------------
+
+
 @frappe.whitelist()
 def start_verification_process(approvers=None, case_id=None):
     import json
@@ -421,6 +552,8 @@ def get_common_template(context):
 # -------------------------------------------------------------------------
 # SEND EMAIL TO APPROVERS FOR CASE REVIEW
 # -------------------------------------------------------------------------
+
+
 @frappe.whitelist()
 @email_notification_enabled
 def send_email_for_review(case_id=None, approvers=None):
@@ -439,7 +572,7 @@ def send_email_for_review(case_id=None, approvers=None):
     ref_name = closure_doc.reference_name or closure_doc.case_id
 
     if not ref_name:
-         return {"message": {"status": "error", "msg": "Reference Case ID not found"}}
+        return {"message": {"status": "error", "msg": "Reference Case ID not found"}}
 
     parent_case = frappe.get_doc(ref_doctype, ref_name)
 
@@ -452,7 +585,8 @@ def send_email_for_review(case_id=None, approvers=None):
     if not approvers:
         return {"message": {"status": "error", "msg": "No approvers selected"}}
 
-    email_list = [a.get("company_email") for a in approvers if a.get("company_email")]
+    email_list = [a.get("company_email")
+                  for a in approvers if a.get("company_email")]
 
     if not email_list:
         return {"message": {"status": "error", "msg": "No valid approver email found"}}
@@ -479,7 +613,7 @@ def send_email_for_review(case_id=None, approvers=None):
         "region": parent_case.get("region"),
         "zone": parent_case.get("zone") or parent_case.get("zone_name"),
         "case_type": parent_case.get("case_type"),
-        
+
         # FIX: Agar workflow_state nahi hai, toh status use karein ya ise khali chodein
         "stage": parent_case.get("workflow_state") or parent_case.get("status") or "N/A",
         "hr_name": parent_case.get("hr_name") or parent_case.get("hr_employee_id"),
@@ -518,9 +652,9 @@ def send_email_for_review(case_id=None, approvers=None):
         }
 # success message
     return {
-    "status": "ok",
-    "msg": "Verification email sent successfully."
-}
+        "status": "ok",
+        "msg": "Verification email sent successfully."
+    }
 
 # @frappe.whitelist()
 # @email_notification_enabled
@@ -573,7 +707,7 @@ def send_email_for_review(case_id=None, approvers=None):
 #         "sort_by": "Creation Date",
 #         "show_versions": 1
 #     }
-    
+
 #     # urlencode use karne se "Case History" aur "Case ID" ke spaces automatically handle ho jayenge
 #     base_url = f"{get_url()}/app/query-report/Case%20History"
 #     case_history_link = f"{base_url}?{urlencode(report_filters)}"
@@ -630,8 +764,8 @@ def send_email_for_review(case_id=None, approvers=None):
 #         "status": "ok",
 #         "msg": "Verification email sent successfully."
 #     }
-    
-    
+
+
 # ---------------------------------------------------------
 # Get Employee Email of Case against Employee
 # ---------------------------------------------------------
@@ -687,6 +821,8 @@ def send_case_closure_email(docname, print_format=None):
 # ============================================================================
 # FETCH EMPLOYEE LINKED TO LOGGED-IN USER
 # ============================================================================
+
+
 @frappe.whitelist()
 def get_employee_from_user():
     """
@@ -716,7 +852,7 @@ def case_history_can_review(case_id, reviewer):
      # Load Case Closure document
     cc_doc = frappe.get_doc("Case Closure", cc_name)
     # Iterate through reviewer child table
-    ignore_permissions=True   # 🔥 REQUIRED
+    ignore_permissions = True   # 🔥 REQUIRED
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
             return True
@@ -738,7 +874,7 @@ def reviewer_pending_review(case_id, reviewer):
         return False   # or None (important)
     # Load Case Closure document
     cc_doc = frappe.get_doc("Case Closure", cc_name)
-    ignore_permissions=True   # 🔥 REQUIRED
+    ignore_permissions = True   # 🔥 REQUIRED
     # Check reviewer row
     for r in cc_doc.get("review_details"):
         if r.employee_id == reviewer:
@@ -748,6 +884,8 @@ def reviewer_pending_review(case_id, reviewer):
 # ============================================================================
 # SUBMIT REVIEWER REMARKS FROM CASE HISTORY
 # ============================================================================
+
+
 @frappe.whitelist()
 def case_history_submit_review(case_id, reviewer, remarks):
     """
@@ -763,44 +901,44 @@ def case_history_submit_review(case_id, reviewer, remarks):
     - Date & time of submission
     """
     try:
-         # Mandatory value check
+        # Mandatory value check
         if not case_id or not reviewer or not remarks:
             frappe.throw("Missing required values")
 
-         # Fetch Case Closure name
-        cc_name = frappe.db.get_value("Case Closure", {"case_id": case_id}, "name")
+        # Fetch Case Closure name
+        cc_name = frappe.db.get_value(
+            "Case Closure", {"case_id": case_id}, "name")
         if not cc_name:
-           return False   # or None (important)
+            return False   # or None (important)
 
         cc_doc = frappe.get_doc("Case Closure", cc_name)
-        ignore_permissions=True   # 🔥 REQUIRED
-         # Identify reviewer row
+        ignore_permissions = True   # 🔥 REQUIRED
+        # Identify reviewer row
         reviewer_row = None
         for row in cc_doc.review_details:
             if row.employee_id == reviewer:
                 reviewer_row = row
                 break
-         # Reviewer not assigned
+        # Reviewer not assigned
         if not reviewer_row:
             frappe.throw("You are not assigned as reviewer for this case")
-         # Save reviewer inputs
+        # Save reviewer inputs
         reviewer_row.remarks = remarks
         reviewer_row.status = "Submitted"   # ✅ VALID VALUE
         reviewer_row.date_and_time = frappe.utils.now()
-          # Save Case Closure with permission override
+        # Save Case Closure with permission override
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
 
         return True
 
     except Exception:
-         # Log technical error for debugging
+        # Log technical error for debugging
         frappe.log_error(
             frappe.get_traceback(),
             "Case History Review Submit Error"
         )
         frappe.throw("Unable to submit review")
-
 
 
 # ============================================================================
@@ -861,3 +999,208 @@ def sync_reviewer_mail_checkbox(case_closure_name):
     if updated:
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
+
+
+# @frappe.whitelist()
+# def submit_feedback(case_closure_name, feedback):
+#     if not case_closure_name or not feedback:
+#         frappe.throw("Case Closure and feedback are required.")
+
+#     employee = frappe.db.get_value(
+#         "Employee",
+#         {"user_id": frappe.session.user},
+#         "name"
+#     ) or frappe.db.get_value(
+#         "Employee",
+#         {"user_id": frappe.session.user},
+#         "name"
+#     )
+
+#     if not employee:
+#         frappe.throw("No Employee is linked with the logged-in user.")
+
+#     doc = frappe.get_doc("Case Closure", case_closure_name)
+
+#     matched_row = None
+#     for row in doc.review_details:
+#         if row.employee_id == employee:
+#             matched_row = row
+#             break
+
+#     if not matched_row:
+#         frappe.throw(
+#             "You are not assigned in Review Details for this document.")
+
+#     matched_row.remarks = feedback
+#     matched_row.status = "Submitted"
+#     matched_row.date_and_time = now_datetime()
+
+#     doc.save(ignore_permissions=True)
+#     frappe.db.commit()
+
+#     return {"status": "success", "employee": employee}
+
+
+@frappe.whitelist()
+def get_employee_from_current_user_for_review(case_closure_name):
+    employee = frappe.db.get_value(
+        "Employee", {"user_id": frappe.session.user}, "name")
+
+    if not employee:
+        return {"allowed": False}
+
+    doc = frappe.get_doc("Case Closure", case_closure_name)
+    allowed = any(row.employee_id == employee for row in doc.review_details)
+
+    return {
+        "allowed": allowed,
+        "employee": employee
+    }
+
+
+@frappe.whitelist()
+def can_submit_feedback(case_closure_name):
+    if not case_closure_name:
+        return {"allowed": False, "reason": "Missing document."}
+
+    current_employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    ) or frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    )
+
+    if not current_employee:
+        return {"allowed": False, "reason": "No Employee linked with current user."}
+
+    doc = frappe.get_doc("Case Closure", case_closure_name)
+
+    active_row = None
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            active_row = row
+            break
+
+    if not active_row:
+        return {
+            "allowed": False,
+            "reason": "All reviewers have already submitted.",
+            "employee": current_employee
+        }
+
+    return {
+        "allowed": active_row.employee_id == current_employee,
+        "employee": current_employee,
+        "active_employee": active_row.employee_id,
+        "reason": None if active_row.employee_id == current_employee else "Feedback is pending from another reviewer first."
+    }
+
+
+@frappe.whitelist()
+def submit_feedback(case_closure_name, feedback):
+    if not case_closure_name:
+        frappe.throw("Case Closure is required.")
+    if not feedback or not str(feedback).strip():
+        frappe.throw("Feedback is required.")
+
+    current_employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    ) or frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        "name"
+    )
+
+    if not current_employee:
+        frappe.throw("No Employee linked with current user.")
+
+    doc = frappe.get_doc("Case Closure", case_closure_name)
+
+    active_row = None
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            active_row = row
+            break
+
+    if not active_row:
+        frappe.throw("All reviewers have already submitted feedback.")
+
+    if active_row.employee_id != current_employee:
+        frappe.throw(
+            "You cannot submit feedback yet. Previous reviewer is pending.")
+
+    active_row.remarks = feedback.strip()
+    active_row.status = "Submitted"
+    active_row.date_and_time = now_datetime()
+
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "employee": current_employee,
+        "next_employee": get_next_pending_reviewer(doc)
+    }
+
+
+def get_next_pending_reviewer(doc):
+    for row in doc.review_details:
+        if not row.remarks or str(row.status).strip().lower() != "submitted":
+            return row.employee_id
+    return None
+
+
+def validate_closure_fields_access(self):
+    controlled_fields = [
+        "remarks",
+        "enquirystatus",
+        "enquiryreportupload",
+        "caseclosewith",
+    ]
+
+    allowed_roles = {"Administrator", "HR Manager", "HR Support Executive"}
+
+    user_roles = set(frappe.get_roles(frappe.session.user))
+    has_allowed_role = "Administrator" in user_roles or bool(
+        user_roles.intersection(allowed_roles))
+
+    all_reviews_submitted = (
+        len(self.review_details) > 0 and
+        all(
+            row.employee_id and
+            row.remarks and
+            str(row.remarks).strip() and
+            str(row.status or "").strip().lower() == "submitted"
+            for row in self.review_details
+        )
+    )
+
+    if self.is_new():
+        return
+
+    old_doc = self.get_doc_before_save()
+    if not old_doc:
+        return
+
+    changed_restricted_field = any(
+        old_doc.get(fieldname) != self.get(fieldname)
+        for fieldname in controlled_fields
+    )
+
+    if not changed_restricted_field:
+        return
+
+    if not has_allowed_role:
+        frappe.throw(
+            "Only HR Manager, HR Support Executive, or Administrator can update Remarks, Enquiry Status, Enquiry Report Upload, and Case Close With."
+        )
+
+    if not all_reviews_submitted:
+        frappe.throw(
+            "These fields can be edited only after all employees in Review Details have submitted their feedback."
+        )

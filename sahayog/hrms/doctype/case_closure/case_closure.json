@@ -17,6 +17,7 @@
   "enquiry_status",
   "enquiry_report_upload",
   "linked_enquiry",
+  "case_close_with",
   "section_break_ekou",
   "review_details_html",
   "section_break_wfuu",
@@ -157,7 +158,6 @@
    "read_only": 1
   },
   {
-   "default": "Completed Enquiry",
    "fieldname": "enquiry_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -246,13 +246,19 @@
   {
    "fieldname": "section_break_ekou",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "case_close_with",
+   "fieldtype": "Select",
+   "label": "Case Close With",
+   "options": "\nTermination\nAccepting Resignation\nWarning Letter\nCaution Letter\nDrop Charges"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-15 12:00:00.000000",
+ "modified": "2026-06-01 11:12:04.680562",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
@@ -295,6 +301,16 @@
    "role": "HR Support Manager",
    "share": 1,
    "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
    "write": 1
   }
  ],

@@ -180,6 +180,9 @@ frappe.ui.form.on("Case Closure", {
   // REFRESH: Buttons, Timeline, Reviewer actions
   // --------------------------------------------------------------------------
   refresh(frm) {
+    // Toggle closure fields based on status and reference doctype presence or absence (Only when new)
+    toggle_closure_fields(frm);
+
     // Remove duplicate Send Email button
     frm.remove_custom_button("Send Email");
     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
@@ -325,6 +328,56 @@ frappe.ui.form.on("Case Closure", {
         frm.refresh_field("review_details");
       },
     });
+
+    // ---------------- SUBMIT FEEDBACK BUTTON ----------------
+
+
+    if (!frm.is_new()) {
+    frappe.call({
+        method: "sahayog.hrms.doctype.case_closure.case_closure.can_submit_feedback",
+        args: {
+            case_closure_name: frm.doc.name
+        },
+        callback: function (r) {
+            const data = r.message || {};
+            if (!data.allowed) return;
+
+            frm.add_custom_button("Submit Feedback", function () {
+                const d = new frappe.ui.Dialog({
+                    title: "Submit Feedback",
+                    fields: [
+                        {
+                            fieldtype: "Small Text",
+                            fieldname: "feedback",
+                            label: "Feedback",
+                            reqd: 1
+                        }
+                    ],
+                    primary_action_label: "Submit",
+                    primary_action(values) {
+                        frappe.call({
+                            method: "sahayog.hrms.doctype.case_closure.case_closure.submit_feedback",
+                            args: {
+                                case_closure_name: frm.doc.name,
+                                feedback: values.feedback
+                            },
+                            freeze: true,
+                            freeze_message: "Submitting feedback...",
+                            callback: function (res) {
+                                if (res.message && res.message.status === "success") {
+                                    frappe.msgprint("Feedback submitted successfully.");
+                                    d.hide();
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+                    }
+                });
+                d.show();
+            });
+        }
+    });
+}
   },
 
   show_print_button: function (frm) {
@@ -501,7 +554,55 @@ function load_case_timeline(frm) {
     },
   }));
 
+  // const build_config = (stages) => ({
+  //   title: __("Case Progress Timeline"),
+  //   case_id,
+  //   stages,
+  //   get_defaults(stage) {
+  //     return stage.defaults || { case_id };
+  //   },
+  //   before_open() {
+  //     if (frm.is_dirty()) {
+  //       frappe.msgprint({
+  //         title: __("Please Save First"),
+  //         message: __("Save the form before creating a linked record."),
+  //         indicator: "orange",
+  //       });
+  //       return false;
+  //     }
+  //   },
+  //   after_insert() {
+  //     frm.reload_doc();
+  //   },
+  // });
+
+
   const build_config = (stages) => ({
+  title: "Case Progress Timeline",
+  case_id,
+  stages,
+  get_defaults(stage) {
+    return stage.defaults || { case_id };
+  },
+  before_open(stage) {
+    if (stage.doctype === "Case Closure") {
+      open_approver_dialog(frm);
+      return false;
+    }
+
+    if (frm.is_dirty()) {
+      frappe.msgprint({
+        title: "Please Save First",
+        message: "Save the form before creating a linked record.",
+        indicator: "orange",
+      });
+      return false;
+    }
+  },
+  after_insert() {
+    frm.reload_doc();
+  },
+});
     title: __("Case Progress Timeline"),
     case_id,
     stages,
@@ -584,4 +685,44 @@ function load_case_timeline(frm) {
 
   if (window.sahayogCaseTimeline) { init(); return; }
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
+}
+
+
+
+function toggle_closure_fields(frm) {
+    const controlled_fields = [
+        "remarks",
+        "enquiry_status",
+        "enquiry_report_upload",
+        "case_close_with"
+    ];
+
+    const allowed_roles = ["Administrator", "HR Manager", "HR Support Executive"];
+    const has_allowed_role =
+        frappe.user.has_role("Administrator") ||
+        allowed_roles.some(role => frappe.user.has_role(role));
+
+    const all_reviews_submitted =
+        Array.isArray(frm.doc.review_details) &&
+        frm.doc.review_details.length > 0 &&
+        frm.doc.review_details.every(row =>
+            row.employee_id &&
+            row.remarks &&
+            String(row.remarks).trim() &&
+            String(row.status || "").toLowerCase() === "submitted"
+        );
+
+    const can_edit = has_allowed_role && all_reviews_submitted;
+
+    controlled_fields.forEach(fieldname => {
+        if (frm.fields_dict[fieldname]) {
+            frm.set_df_property(fieldname, "read_only", can_edit ? 0 : 1);
+
+            if (!has_allowed_role) {
+                frm.set_df_property(fieldname, "hidden", 1);
+            } else {
+                frm.set_df_property(fieldname, "hidden", 0);
+            }
+        }
+    });
 }
