@@ -25,7 +25,7 @@ frappe.pages["pending-request"].on_page_load = function (wrapper) {
                         <span class="value">2026 Cycle</span>
                     </div>
                     <div class="stat-item pending">
-                        <span class="label">Total Pending</span>
+                        <span class="label top-count-label">Total Pending</span>
                         <span class="value count-pill">0</span>
                     </div>
                 </div>
@@ -37,9 +37,9 @@ frappe.pages["pending-request"].on_page_load = function (wrapper) {
                     <nav class="category-nav">
                         <a href="#" class="cat-item active" data-category="all">
                             <div class="icon-box"><i class="fa fa-th-large"></i></div>
-                            <span>All Notifications</span>
+                            <span class="cat-label">All Notifications</span>
+                            <span class="cat-count">0</span>
                         </a>
-                        <!-- Categories will be injected here -->
                     </nav>
                 </aside>
 
@@ -103,10 +103,11 @@ function init_dashboard(wrapper) {
     data: [],
     configs: [],
     activeCategory: "all",
-    activeStatus: "pending",
+    activeStatus: "all",
     search: "",
     page: 1,
     perPage: 8,
+    categoryGroups: {},
   };
 
   const tableBody = root.querySelector("#tableBody");
@@ -136,59 +137,44 @@ function init_dashboard(wrapper) {
       console.log("Final data objects:", state.data);
     }
 
+    buildCategoryGroups();
     updateCounts();
   }
 
-  function renderCategories() {
-    if (!navList) return;
-    
-    // Get unique categories based on display_category
-    const categoryMap = {};
-    state.data.forEach(item => {
-        if (!categoryMap[item.category]) {
-            categoryMap[item.category] = item.display_category;
-        }
+  function buildCategoryGroups() {
+    const groups = {};
+
+    state.data.forEach((item) => {
+      const label = item.display_category || item.category;
+
+      if (!groups[label]) {
+        groups[label] = {
+          label: label,
+          categories: new Set(),
+        };
+      }
+
+      groups[label].categories.add(item.category);
     });
 
-    // Also add from configs if data is empty for those categories
-    state.configs.forEach(config => {
-        if (!categoryMap[config.doctype_name]) {
-            categoryMap[config.doctype_name] = config.display_title || config.doctype_name;
-        }
+    state.configs.forEach((config) => {
+      const label = config.display_title || config.doctype_name;
+
+      if (!groups[label]) {
+        groups[label] = {
+          label: label,
+          categories: new Set(),
+        };
+      }
+
+      groups[label].categories.add(config.doctype_name);
     });
 
-    let html = `
-            <a href="#" class="cat-item active" data-category="all">
-                <div class="icon-box"><i class="fa fa-th-large"></i></div>
-                <span>All Notifications</span>
-            </a>
-        `;
-    
-    Object.keys(categoryMap).forEach(cat => {
-      html += `
-                <a href="#" class="cat-item" data-category="${cat}">
-                    <div class="icon-box"><i class="fa fa-folder"></i></div>
-                    <span>${categoryMap[cat]}</span>
-                </a>
-            `;
+    Object.keys(groups).forEach((key) => {
+      groups[key].categories = Array.from(groups[key].categories);
     });
-    navList.innerHTML = html;
 
-    $(navList)
-      .find(".cat-item")
-      .on("click", function (e) {
-        e.preventDefault();
-        $(navList).find(".cat-item").removeClass("active");
-        $(this).addClass("active");
-        state.activeCategory = $(this).data("category");
-        state.page = 1;
-        render();
-      });
-  }
-
-  function updateCounts() {
-    const count = state.data.length;
-    $(root).find(".count-pill").text(count);
+    state.categoryGroups = groups;
   }
 
   function formatDate(iso) {
@@ -204,26 +190,123 @@ function init_dashboard(wrapper) {
     return days + "d";
   }
 
+  function getSearchMatch(row) {
+    const q = (state.search || "").trim().toLowerCase();
+    if (!q) return true;
+
+    return (
+      (row.requestedBy || "").toLowerCase().includes(q) ||
+      (row.details || "").toLowerCase().includes(q) ||
+      (row.display_category || "").toLowerCase().includes(q) ||
+      (row.category || "").toLowerCase().includes(q) ||
+      (row.id || "").toLowerCase().includes(q)
+    );
+  }
+
+  function getCategoryMatch(row, categoryLabel) {
+    if (categoryLabel === "all") return true;
+
+    const group = state.categoryGroups[categoryLabel];
+    if (!group) return false;
+
+    return group.categories.includes(row.category);
+  }
+
   function getFiltered() {
     return state.data.filter((row) => {
-      const catMatch =
-        state.activeCategory === "all" || row.category === state.activeCategory;
+      const catMatch = getCategoryMatch(row, state.activeCategory);
       const statusMatch =
         state.activeStatus === "all" || row.status === state.activeStatus;
-      const q = state.search.trim().toLowerCase();
-      const searchMatch =
-        !q ||
-        row.requestedBy.toLowerCase().includes(q) ||
-        row.details.toLowerCase().includes(q);
+      const searchMatch = getSearchMatch(row);
+
       return catMatch && statusMatch && searchMatch;
     });
+  }
+
+  function getCategoryCount(categoryLabel) {
+    return state.data.filter((row) => {
+      const catMatch = getCategoryMatch(row, categoryLabel);
+      const statusMatch =
+        state.activeStatus === "all" || row.status === state.activeStatus;
+      const searchMatch = getSearchMatch(row);
+
+      return catMatch && statusMatch && searchMatch;
+    }).length;
+  }
+
+  function renderCategories() {
+    if (!navList) return;
+
+    let html = `
+      <a href="#" class="cat-item ${state.activeCategory === "all" ? "active" : ""}" data-category="all">
+        <div class="icon-box"><i class="fa fa-th-large"></i></div>
+        <span class="cat-label">All Notifications</span>
+        <span class="cat-count">${getCategoryCount("all")}</span>
+      </a>
+    `;
+
+    Object.values(state.categoryGroups)
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .forEach((group) => {
+        html += `
+          <a href="#" class="cat-item ${state.activeCategory === group.label ? "active" : ""}" data-category="${group.label}">
+            <div class="icon-box"><i class="fa fa-folder"></i></div>
+            <span class="cat-label">${group.label}</span>
+            <span class="cat-count">${getCategoryCount(group.label)}</span>
+          </a>
+        `;
+      });
+
+    navList.innerHTML = html;
+
+    $(navList)
+      .find(".cat-item")
+      .on("click", function (e) {
+        e.preventDefault();
+        $(navList).find(".cat-item").removeClass("active");
+        $(this).addClass("active");
+        state.activeCategory = $(this).data("category");
+        state.page = 1;
+        render();
+      });
+  }
+
+  function updateCounts() {
+    const filteredCount = getFiltered().length;
+    const totalCount = state.data.length;
+
+    $(root).find(".count-pill").text(filteredCount);
+
+    let topLabel = "Total Pending";
+    if (state.activeCategory !== "all") {
+      topLabel = state.activeCategory;
+    }
+
+    if (state.activeStatus !== "all") {
+      const statusText =
+        state.activeStatus.charAt(0).toUpperCase() + state.activeStatus.slice(1);
+      topLabel = `${topLabel} (${statusText})`;
+    }
+
+    $(root).find(".top-count-label").text(topLabel);
+    $(root)
+      .find(".header-stats .pending")
+      .attr("title", `Showing ${filteredCount} of ${totalCount}`);
   }
 
   function render() {
     const filtered = getFiltered();
     const totalPages = Math.max(1, Math.ceil(filtered.length / state.perPage));
+
+    if (state.page > totalPages) {
+      state.page = 1;
+    }
+
     const start = (state.page - 1) * state.perPage;
     const pageData = filtered.slice(start, start + state.perPage);
+
+    updateCounts();
+    renderCategories();
 
     if (filtered.length === 0) {
       $(tableBody).empty();
@@ -236,15 +319,16 @@ function init_dashboard(wrapper) {
                 <tr class="clickable-row" data-doctype="${row.category}" data-name="${row.id}">
                     <td><span class="date-pill">${formatDate(row.appliedDate)}</span></td>
                     <td>
-                        <div class="req-name">${row.requestedBy}</div>
-                        <div class="req-dept">${row.display_category}</div>
+                        <div class="req-name">${row.requestedBy || "-"}</div>
+                        <div class="req-dept">${row.display_category || row.category || "-"}</div>
                     </td>
-                    <td style="font-weight: 500;">${row.details}</td>
+                    <td style="font-weight: 500;">${row.details || row.id || "-"}</td>
                     <td><span class="waiting-time">${timeAgo(row.pendingSince)}</span></td>
                 </tr>
             `,
         )
         .join("");
+
       $(tableBody).html(html);
 
       $(tableBody)
@@ -286,7 +370,7 @@ function init_dashboard(wrapper) {
     });
 
     $(recordsPerPage).on("change", function () {
-      state.perPage = parseInt($(this).val());
+      state.perPage = parseInt($(this).val(), 10);
       state.page = 1;
       render();
     });
@@ -303,7 +387,6 @@ function init_dashboard(wrapper) {
   }
 
   fetchSettingsAndData().then(() => {
-    renderCategories();
     render();
     bindEvents();
   });
