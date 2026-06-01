@@ -20,7 +20,10 @@
   "email_tab",
   "send",
   "petty_cash_management_tab",
-  "enable_finacle_integration"
+  "enable_finacle_integration",
+  "enable_unsettled_cash_flow",
+  "pending_request_dashboard_tab",
+  "pending_request_setting"
  ],
  "fields": [
   {
@@ -108,18 +111,29 @@
    "label": "Enable Finacle Integration"
   },
   {
-  "default": "0",
-  "description": "If enabled, old unsettled cash / withdrawal flow will be used. If disabled, new current balance only flow will be active.",
-  "fieldname": "enable_unsettled_cash_flow",
-  "fieldtype": "Check",
-  "label": "Enable Legacy Unsettled Cash Flow"
-}
+   "default": "0",
+   "description": "If enabled, old unsettled cash / withdrawal flow will be used. If disabled, new current balance only flow will be active.",
+   "fieldname": "enable_unsettled_cash_flow",
+   "fieldtype": "Check",
+   "label": "Enable Legacy Unsettled Cash Flow"
+  },
+  {
+   "fieldname": "pending_request_dashboard_tab",
+   "fieldtype": "Tab Break",
+   "label": "Pending Request Dashboard"
+  },
+  {
+   "fieldname": "pending_request_setting",
+   "fieldtype": "Table",
+   "label": "Pending Request Setting",
+   "options": "Pending Request Setting Item"
+  }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-02-09 16:51:47.132440",
+ "modified": "2026-06-01 12:31:20.280182",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
@@ -134,6 +148,13 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "All",
+   "share": 1
   }
  ],
  "row_format": "Dynamic",

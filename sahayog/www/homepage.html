@@ -317,6 +317,55 @@
       .animate-ping {
         animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
       }
+
+      /* New Pending Actions Button */
+      .pending-actions-wrapper {
+        margin-bottom: 2rem;
+      }
+
+      .pending-actions-btn {
+        background-color: #34d399; /* Default Soft Green */
+        color: white;
+        padding: 0.85rem 2rem;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-decoration: none !important;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .pending-actions-btn.has-pending {
+        background-color: #fb7185; /* Soft Red */
+        box-shadow: 0 4px 12px rgba(251, 113, 133, 0.3);
+      }
+
+      .pending-actions-btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(0.95);
+        color: white;
+      }
+
+      .pending-actions-btn .count-val {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+      }
+
+      .pending-actions-btn i.fa-arrow-right {
+        transition: transform 0.3s ease;
+      }
+
+      .pending-actions-btn:hover i.fa-arrow-right {
+        transform: translateX(5px);
+      }
     </style>
   </head>
 
@@ -362,6 +411,15 @@
             <span class="profile-role" id="emp_designation">Admin</span>
             <span class="profile-role" id="emp_branch_sol"></span>
           </div>
+        </div>
+
+        <!-- Pending Actions Button (Right Aligned) -->
+        <div class="pending-actions-wrapper" id="pending-actions-container" style="display: none; margin-bottom: 0;">
+          <a href="/app/pending-request" class="pending-actions-btn" id="pending-actions-link" style="padding: 0.6rem 1.5rem; max-width: none;">
+            <span>Pending Actions</span>
+            <span class="count-val" id="global-pending-count">0</span>
+            <i class="fas fa-arrow-right"></i>
+          </a>
         </div>
       </header>
       <main class="app-main">
@@ -868,9 +926,42 @@
         }
       }
 
+      // Function to fetch global pending count from the new Python API
+      async function fetchGlobalPendingCount() {
+        console.log("Starting fetchGlobalPendingCount...");
+        const container = document.getElementById("pending-actions-container");
+        const btnLink = document.getElementById("pending-actions-link");
+        const countSpan = document.getElementById("global-pending-count");
+        
+        try {
+          const res = await fetch("/api/method/sahayog.sahayog.page.pending_request.pending_request.get_pending_requests_count");
+          
+          if (!res.ok) {
+            console.error("API Response not OK:", res.status, res.statusText);
+            return;
+          }
+
+          const data = await res.json();
+          const count = (data && data.hasOwnProperty('message')) ? data.message : 0;
+
+          countSpan.textContent = count;
+          container.style.display = "block"; // Always show
+
+          if (count > 0) {
+            btnLink.classList.add("has-pending"); // Becomes Red
+          } else {
+            btnLink.classList.remove("has-pending"); // Becomes Green
+          }
+          
+        } catch (error) {
+          console.error("Critical error in fetchGlobalPendingCount:", error);
+        }
+      }
+
       document.addEventListener("DOMContentLoaded", function () {
         fetchAssignedTaskCount();
         fetchPendingRequestsCount();
+        fetchGlobalPendingCount();
       });
 
       async function fetchEmployeeDetails() {
@@ -994,6 +1085,12 @@
             item.addEventListener("click", handleLinkClick);
           }
         });
+
+        // Add listener for the new pending actions button
+        const pendingLink = document.getElementById("pending-actions-link");
+        if (pendingLink) {
+          pendingLink.addEventListener("click", handleLinkClick);
+        }
 
         // Close modal when clicking outside
         window.addEventListener("click", function (event) {
