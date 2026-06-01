@@ -380,6 +380,16 @@ frappe.ui.form.on("Disciplinary Case", {
   // -------------------
   // Field-level triggers
   // -------------------
+  employee_id: function (frm) {
+    if (frm.doc.employee_id) {
+      frappe.db.get_value("Employee", frm.doc.employee_id, ["company_email", "personal_email"], (r) => {
+        if (r) {
+          if (r.company_email) frm.set_value("employee_email", r.company_email);
+          if (r.personal_email) frm.set_value("personal_email", r.personal_email);
+        }
+      });
+    }
+  },
   issue_occurrence_date: function (frm) {
     let today = frappe.datetime.now_date();
     if (
