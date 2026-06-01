@@ -68,10 +68,10 @@ function prompt_enable_suspension_required(frm, on_success) {
         default: current_value || "No",
         reqd: 1,
       },
-      ],
-      primary_action_label: __("Send"),
-      secondary_action_label: __("Cancel"),
-      primary_action(values) {
+    ],
+    primary_action_label: __("Save"),
+    secondary_action_label: __("Cancel"),
+    primary_action(values) {
       const selected_value =
         values && values.suspension_required ? values.suspension_required : "";
       d.get_primary_btn().prop("disabled", true);
@@ -220,7 +220,7 @@ frappe.ui.form.on("Disciplinary Case", {
                           }
                           
                           .outlook-chip-container {
-                            display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; min-height: 32px;
+                            display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1;
                           }
 
                           .outlook-chip {
@@ -240,6 +240,14 @@ frappe.ui.form.on("Disciplinary Case", {
                             cursor: pointer; margin-left: 6px; font-size: 10px; color: #605e5c;
                           }
 
+                          .outlook-chip-wrapper {
+                            display: flex;
+                            flex-wrap: wrap;
+                            align-items: center;
+                            gap: 6px;
+                            flex: 1;
+                            min-height: 32px;
+                          }
 
                           /* Hide placeholder if container has chips */
                           .outlook-chip-container:not(:empty) + .outlook-email-input::placeholder {
@@ -249,7 +257,7 @@ frappe.ui.form.on("Disciplinary Case", {
                           .outlook-email-input {
                             border: none !important;
                             outline: none !important;
-                            flex: 1; min-height: 32px;
+                            flex: 1;
                             min-width: 150px;
                             padding: 6px 0;
                             font-size: 14px;
@@ -305,11 +313,12 @@ frappe.ui.form.on("Disciplinary Case", {
                       options: `
                         <div class="outlook-row">
                             <div class="outlook-btn-label">To</div>
-                            <div id="to-chips" class="outlook-chip-container">
+                            <div class="outlook-chip-wrapper">
+                                <div id="to-chips" class="outlook-chip-container"></div>
                                 <input type="text" id="to-input" class="outlook-email-input" placeholder="Add recipient">
                             </div>
                         </div>
-                      `
+                      `,
                     },
                     {
                       fieldtype: "HTML",
@@ -317,11 +326,12 @@ frappe.ui.form.on("Disciplinary Case", {
                       options: `
                         <div class="outlook-row">
                             <div class="outlook-btn-label">Cc</div>
-                            <div id="cc-chips" class="outlook-chip-container">
+                            <div class="outlook-chip-wrapper">
+                                <div id="cc-chips" class="outlook-chip-container"></div>
                                 <input type="text" id="cc-input" class="outlook-email-input" placeholder="Add recipient">
                             </div>
                         </div>
-                      `
+                      `,
                     },
                     {
                       fieldname: "subject",
@@ -354,13 +364,15 @@ frappe.ui.form.on("Disciplinary Case", {
                 // --- Helper and DOM Logic ---
                 const add_outlook_chip = (container_selector, email) => {
                   email = email.trim();
-                  if (!email || !email.includes('@')) return;
+                  if (!email || !email.includes("@")) return;
 
                   // Avoid duplicates
                   let exists = false;
-                  $(container_selector).find('.outlook-chip').each(function() {
-                    if ($(this).data('email') === email) exists = true;
-                  });
+                  $(container_selector)
+                    .find(".outlook-chip")
+                    .each(function () {
+                      if ($(this).data("email") === email) exists = true;
+                    });
                   if (exists) return;
 
                   $(container_selector).append(`
@@ -376,47 +388,62 @@ frappe.ui.form.on("Disciplinary Case", {
                   console.log("Pre-filling chips...");
                   // Force set subject value after show to prevent truncation
                   d.set_value("subject", subject);
-                  
+
                   console.log("Employee Email:", frm.doc.employee_email);
                   console.log("Personal Email:", frm.doc.personal_email);
                   console.log("CC Values Raw:", fixed_cc);
 
                   // Pre-fill chips after DOM is ready
-                  const to_emails = [frm.doc.employee_email, frm.doc.personal_email].filter(Boolean);
-                  
-                  to_emails.forEach(email => {
+                  const to_emails = [
+                    frm.doc.employee_email,
+                    frm.doc.personal_email,
+                  ].filter(Boolean);
+
+                  to_emails.forEach((email) => {
                     console.log("Adding To Chip:", email);
                     add_outlook_chip("#to-chips", email);
                   });
 
-                  cc_values.forEach(email => {
+                  cc_values.forEach((email) => {
                     console.log("Adding CC Chip:", email);
                     add_outlook_chip("#cc-chips", email);
                   });
 
                   // Fallback for To chips
-                  if (d.$wrapper.find("#to-chips .outlook-chip").length === 0 && to_emails.length > 0) {
-                     console.log("Fallback: Retrying To chips with d.$wrapper");
-                     to_emails.forEach(email => {
-                        add_outlook_chip_manual(d.$wrapper.find("#to-chips"), email);
-                     });
+                  if (
+                    d.$wrapper.find("#to-chips .outlook-chip").length === 0 &&
+                    to_emails.length > 0
+                  ) {
+                    console.log("Fallback: Retrying To chips with d.$wrapper");
+                    to_emails.forEach((email) => {
+                      add_outlook_chip_manual(
+                        d.$wrapper.find("#to-chips"),
+                        email,
+                      );
+                    });
                   }
 
                   // Fallback for CC chips
-                  if (d.$wrapper.find("#cc-chips .outlook-chip").length === 0 && cc_values.length > 0) {
-                     console.log("Fallback: Retrying CC chips with d.$wrapper");
-                     cc_values.forEach(email => {
-                        add_outlook_chip_manual(d.$wrapper.find("#cc-chips"), email);
-                     });
+                  if (
+                    d.$wrapper.find("#cc-chips .outlook-chip").length === 0 &&
+                    cc_values.length > 0
+                  ) {
+                    console.log("Fallback: Retrying CC chips with d.$wrapper");
+                    cc_values.forEach((email) => {
+                      add_outlook_chip_manual(
+                        d.$wrapper.find("#cc-chips"),
+                        email,
+                      );
+                    });
                   }
 
                   // Helper for manual fallback append
                   function add_outlook_chip_manual($container, email) {
                     let exists = false;
-                    $container.find('.outlook-chip').each(function() {
-                      if ($(this).data('email') === email) exists = true;
+                    $container.find(".outlook-chip").each(function () {
+                      if ($(this).data("email") === email) exists = true;
                     });
-                    if (!exists && email && email.includes('@')) {
+                    if (!exists && email && email.includes("@")) {
                       $container.append(`
                         <span class="outlook-chip" data-email="${email}">
                           ${email}
@@ -428,49 +455,66 @@ frappe.ui.form.on("Disciplinary Case", {
 
                   // Structure 'Subject' Row
                   let $subject_field = d.get_field("subject").$wrapper;
-                  $subject_field.wrap('<div class="outlook-row outlook-subject-row"></div>');
+                  $subject_field.wrap(
+                    '<div class="outlook-row outlook-subject-row"></div>',
+                  );
 
                   // Wrap & Strip Text Editor
                   let $message_field = d.get_field("message").$wrapper;
-                  $message_field.wrap('<div class="outlook-body-container"></div>');
+                  $message_field.wrap(
+                    '<div class="outlook-body-container"></div>',
+                  );
                   $message_field.find(".control-label").remove();
 
                   // Chip addition listeners
-                  d.$wrapper.on('keydown', '.outlook-email-input', function(e) {
-                    if (['Enter', ',', 'Tab'].includes(e.key)) {
-                      e.preventDefault();
-                      let val = $(this).val().replace(',', '').trim();
-                      if (val) {
-                        let container_id = "#" + $(this).siblings('.outlook-chip-container').attr('id');
-                        add_outlook_chip(container_id, val);
-                        $(this).val('');
+                  d.$wrapper.on(
+                    "keydown",
+                    ".outlook-email-input",
+                    function (e) {
+                      if (["Enter", ",", "Tab"].includes(e.key)) {
+                        e.preventDefault();
+                        let val = $(this).val().replace(",", "").trim();
+                        if (val) {
+                          let container_id =
+                            "#" +
+                            $(this)
+                              .siblings(".outlook-chip-container")
+                              .attr("id");
+                          add_outlook_chip(container_id, val);
+                          $(this).val("");
+                        }
                       }
-                    }
-                  });
+                    },
+                  );
 
-                  d.$wrapper.on('blur', '.outlook-email-input', function() {
-                    let val = $(this).val().replace(',', '').trim();
+                  d.$wrapper.on("blur", ".outlook-email-input", function () {
+                    let val = $(this).val().replace(",", "").trim();
                     if (val) {
-                      let container_id = "#" + $(this).siblings('.outlook-chip-container').attr('id');
+                      let container_id =
+                        "#" +
+                        $(this).siblings(".outlook-chip-container").attr("id");
                       add_outlook_chip(container_id, val);
-                      $(this).val('');
+                      $(this).val("");
                     }
                   });
 
                   // Chip removal
-                  d.$wrapper.on('click', '.remove-chip', function() {
+                  d.$wrapper.on("click", ".remove-chip", function () {
                     $(this).parent().remove();
                   });
 
                   // Ensure click on wrapper focuses input
-                  d.$wrapper.on('click', '.outlook-chip-wrapper', function (e) {
-                      if (!$(e.target).hasClass('remove-chip') && !$(e.target).hasClass('outlook-chip')) {
-                          $(this).find('.outlook-email-input').focus();
-                      }
+                  d.$wrapper.on("click", ".outlook-chip-wrapper", function (e) {
+                    if (
+                      !$(e.target).hasClass("remove-chip") &&
+                      !$(e.target).hasClass("outlook-chip")
+                    ) {
+                      $(this).find(".outlook-email-input").focus();
+                    }
                   });
 
                   // Bind Custom Send Button Functionality
-                  $("#outlook_btn_send").on("click", function () {
+                  d.$wrapper.find("#outlook_btn_send").on("click", function () {
                     let subject = d.get_values().subject;
                     let message = d.get_values().message;
 
@@ -480,21 +524,25 @@ frappe.ui.form.on("Disciplinary Case", {
                     }
 
                     let recipients = [];
-                    $("#to-chips .outlook-chip").each(function() {
-                      recipients.push($(this).data('email'));
+                    d.$wrapper.find("#to-chips .outlook-chip").each(function () {
+                      recipients.push($(this).data("email"));
                     });
 
                     let cc = [];
-                    $("#cc-chips .outlook-chip").each(function() {
-                      cc.push($(this).data('email'));
+                    d.$wrapper.find("#cc-chips .outlook-chip").each(function () {
+                      cc.push($(this).data("email"));
                     });
 
                     if (recipients.length === 0) {
-                      frappe.msgprint(__("At least one recipient is required in 'To'."));
+                      frappe.msgprint(
+                        __("At least one recipient is required in 'To'."),
+                      );
                       return;
                     }
 
-                    $("#outlook_btn_send").prop("disabled", true).text("Sending...");
+                    d.$wrapper.find("#outlook_btn_send")
+                      .prop("disabled", true)
+                      .text("Sending...");
 
                     frappe.call({
                       method:
@@ -518,7 +566,9 @@ frappe.ui.form.on("Disciplinary Case", {
                         }
                       },
                       error: function () {
-                        $("#outlook_btn_send").prop("disabled", false).html('<i class="fa fa-paper-plane"></i> Send');
+                        d.$wrapper.find("#outlook_btn_send")
+                          .prop("disabled", false)
+                          .html('<i class="fa fa-paper-plane"></i> Send');
                       },
                     });
                   });
@@ -533,7 +583,6 @@ frappe.ui.form.on("Disciplinary Case", {
           });
       });
     }
-
     let today = frappe.datetime.now_date();
 
     if (frm.fields_dict.issue_occurrence_date) {
