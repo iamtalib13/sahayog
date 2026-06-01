@@ -249,3 +249,42 @@ def get_employee_material_request_permission(user=None, doctype=None):
                 conditions.append(f"LOWER(`tabEmployee Material Request`.source_warehouse) LIKE LOWER('%{sol_val}%')")
 
     return f"({' OR '.join(conditions)})"
+
+
+def get_item_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    # Admin and System Manager can see all
+    user_roles = frappe.get_roles(user)
+    if "Administrator" in user_roles or "System Manager" in user_roles:
+        return ""
+
+    # Get employee department
+    dept = frappe.db.get_value("Employee", {"user_id": user}, "department")
+
+    if dept == "Information Technology":
+        # IT department users see only IT items
+        return "(`tabItem`.custom_item_department = 'IT')"
+    else:
+        # Non-IT department users see everything EXCEPT IT items
+        return "(`tabItem`.custom_item_department != 'IT' OR `tabItem`.custom_item_department IS NULL OR `tabItem`.custom_item_department = '')"
+
+
+def has_item_permission(doc, ptype, user):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+    if "Administrator" in user_roles or "System Manager" in user_roles:
+        return True
+
+    dept = frappe.db.get_value("Employee", {"user_id": user}, "department")
+    item_dept = doc.get("custom_item_department")
+
+    if dept == "Information Technology":
+        # IT department users can only see/access IT items
+        return item_dept == "IT"
+    else:
+        # Non-IT department users cannot see/access IT items
+        return item_dept != "IT"

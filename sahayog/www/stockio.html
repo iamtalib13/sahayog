@@ -1852,11 +1852,19 @@
         <!-- Workflow Buttons for HO Officer removed -->
         <button
           class="btn-create"
-          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          v-if="currentView.createDoctype && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView && !(activeItem === 'Asset Master' && !isAdmin)"
           @click="handleCreate()"
         >
           <i class="fas fa-plus"></i>
           <span>Create</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="openNewAssetDesk()"
+        >
+          <i :class="isAdmin ? 'fas fa-external-link-alt' : 'fas fa-plus'"></i>
+          <span>[[ isAdmin ? 'New Asset (Desk)' : 'Create' ]]</span>
         </button>
       </div>
     </header>
@@ -3617,8 +3625,8 @@
                 <select class="form-input" v-model="accessForm.inventory_type">
                   <option value="">Select Type</option>
                   <option value="Stationery">Stationery</option>
-                  <option value="Asset">Asset</option>
-                  <option value="Stationery & Asset">Stationery & Asset</option>
+                  <option value="IT">IT</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
             </div>
@@ -7152,7 +7160,8 @@
                 :key="row.name"
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
-                @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
+                :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
+                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -7179,7 +7188,7 @@
                     </div>
                     <span
                       class="truncate record-link"
-                      :class="{ 'is-clickable': isRecordLinkColumn(col) }"
+                      :class="{ 'is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin) }"
                       @click.stop="isRecordLinkColumn(col) && openRecord(row)"
                       >[[ getFieldValue(row, col.key) ]]</span
                     >
@@ -7324,7 +7333,7 @@
                     <button
                       class="btn-create-inline"
                       style="background: #369696; border-color: #369696"
-                      @click.stop="openRecord(row)"
+                      @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
                       View
@@ -7369,7 +7378,7 @@
                   <span
                     v-else
                     :class="{ 
-                      'record-link is-clickable': isRecordLinkColumn(col),
+                      'record-link is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin),
                       'line-clamp-2': col.key === 'description' 
                     }"
                     @click.stop="isRecordLinkColumn(col) && openRecord(row)"
@@ -11479,7 +11488,7 @@
         const allowedOutward =
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
 
-        const type = this.userInventoryType;
+        const type = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
 
         return this.sidebar.sections
           .filter((section) => {
@@ -11491,15 +11500,15 @@
 
             // Assets Section logic
             if (section.label === "Assets") {
-              return type === "Asset" || type === "Stationery & Asset";
+              return type === "it" || type === "other";
             }
 
             // Reports Section logic
             if (section.label === "Reports") {
               return (
-                type === "Stationery" ||
-                type === "Asset" ||
-                type === "Stationery & Asset"
+                type === "stationery" ||
+                type === "it" ||
+                type === "other"
               );
             }
 
@@ -11518,7 +11527,7 @@
 
             if (section.label === "Inventory") {
               // Relabel to Requests if type is Asset
-              if (!this.isAdmin && type === "Asset") {
+              if (!this.isAdmin && type === "it") {
                 newSection.label = "Requests";
               }
 
@@ -11526,7 +11535,7 @@
 
               // Filter based on inventory_type for non-admins
               if (!this.isAdmin) {
-                if (type === "Asset") {
+                if (type === "it") {
                   // If Asset, only show Requests in this section (Items moved to Assets)
                   filteredItems = filteredItems.filter(
                     (item) => item.label === "Requests",
@@ -11554,7 +11563,7 @@
             if (
               section.label === "Assets" &&
               !this.isAdmin &&
-              type === "Asset"
+              type === "it"
             ) {
               // Move "Items" to Assets section below "Movements"
               const itemsObj = this.sidebar.sections
@@ -11885,11 +11894,12 @@
 
         // Determine default item based on inventory type and sidebar visibility
         let defaultItemLabel = "Items";
+        const invType = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
         if (
           !this.isAdmin &&
-          (!this.userInventoryType ||
-            (this.userInventoryType !== "Stationery" &&
-              this.userInventoryType !== "Stationery & Asset"))
+          (!invType ||
+            (invType !== "stationery" &&
+              invType !== "other"))
         ) {
           defaultItemLabel = "Requests";
         }
@@ -12274,11 +12284,11 @@
 
                   const itemDept = String(d.custom_item_department).toLowerCase();
                   
-                  if (invType.includes("asset") && !invType.includes("stationery")) {
+                  if (invType.includes("it") && !invType.includes("stationery")) {
                     return itemDept === "it";
-                  } else if (invType.includes("stationery") && !invType.includes("asset")) {
+                  } else if (invType.includes("stationery") && !invType.includes("it")) {
                     return itemDept.includes("stationer");
-                  } else if (invType.includes("stationery") && invType.includes("asset")) {
+                  } else if (invType.includes("stationery") && invType.includes("it")) {
                     return itemDept === "it" || itemDept.includes("stationer");
                   }
                   return true;
@@ -12399,11 +12409,11 @@
             if (!d.custom_item_department) return true;
             const itemDept = String(d.custom_item_department).toLowerCase();
             
-            if (invType.includes("asset") && !invType.includes("stationery")) {
+            if (invType.includes("it") && !invType.includes("stationery")) {
               return itemDept === "it";
-            } else if (invType.includes("stationery") && !invType.includes("asset")) {
+            } else if (invType.includes("stationery") && !invType.includes("it")) {
               return itemDept.includes("stationer");
-            } else if (invType.includes("stationery") && invType.includes("asset")) {
+            } else if (invType.includes("stationery") && invType.includes("it")) {
               return itemDept === "it" || itemDept.includes("stationer");
             }
             return true;
@@ -12428,6 +12438,14 @@
         const i = this.selectedRows.indexOf(name);
         if (i > -1) this.selectedRows.splice(i, 1);
         else this.selectedRows.push(name);
+      },
+
+      openNewAssetDesk() {
+        window.location.href = '/app/asset/new-asset-bbqcsfzfkb';
+      },
+
+      redirectToAssetDesk(name) {
+        window.location.href = `/app/asset/${encodeURIComponent(name)}`;
       },
 
       handleCreate() {
@@ -14361,6 +14379,7 @@
       },
       async openRecord(row) {
         if (!row || !this.currentView.doctype) return;
+        if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         // Show detail view inline for Requests
