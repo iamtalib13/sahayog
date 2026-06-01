@@ -7160,7 +7160,8 @@
                 :key="row.name"
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
-                @click="currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name)"
+                :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
+                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -7187,7 +7188,7 @@
                     </div>
                     <span
                       class="truncate record-link"
-                      :class="{ 'is-clickable': isRecordLinkColumn(col) }"
+                      :class="{ 'is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin) }"
                       @click.stop="isRecordLinkColumn(col) && openRecord(row)"
                       >[[ getFieldValue(row, col.key) ]]</span
                     >
@@ -7332,7 +7333,7 @@
                     <button
                       class="btn-create-inline"
                       style="background: #369696; border-color: #369696"
-                      @click.stop="openRecord(row)"
+                      @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
                       View
@@ -7377,7 +7378,7 @@
                   <span
                     v-else
                     :class="{ 
-                      'record-link is-clickable': isRecordLinkColumn(col),
+                      'record-link is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin),
                       'line-clamp-2': col.key === 'description' 
                     }"
                     @click.stop="isRecordLinkColumn(col) && openRecord(row)"
@@ -12443,6 +12444,10 @@
         window.location.href = '/app/asset/new-asset-bbqcsfzfkb';
       },
 
+      redirectToAssetDesk(name) {
+        window.location.href = `/app/asset/${encodeURIComponent(name)}`;
+      },
+
       handleCreate() {
         const doctype = this.currentView.createDoctype;
         if (doctype === "Employee Material Request") {
@@ -14374,6 +14379,7 @@
       },
       async openRecord(row) {
         if (!row || !this.currentView.doctype) return;
+        if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         // Show detail view inline for Requests
