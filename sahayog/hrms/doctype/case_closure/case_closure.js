@@ -331,15 +331,16 @@ frappe.ui.form.on("Case Closure", {
 
     if (!frm.is_new()) {
     frappe.call({
-        method: "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_current_user_for_review",
+        method: "sahayog.hrms.doctype.case_closure.case_closure.can_submit_feedback",
         args: {
             case_closure_name: frm.doc.name
         },
         callback: function (r) {
-            if (!r.message || !r.message.allowed) return;
+            const data = r.message || {};
+            if (!data.allowed) return;
 
             frm.add_custom_button("Submit Feedback", function () {
-                let d = new frappe.ui.Dialog({
+                const d = new frappe.ui.Dialog({
                     title: "Submit Feedback",
                     fields: [
                         {
