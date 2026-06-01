@@ -220,7 +220,7 @@ frappe.ui.form.on("Disciplinary Case", {
                           }
                           
                           .outlook-chip-container {
-                            display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1;
+                            display: flex; flex-wrap: wrap; gap: 6px; align-items: center; flex: 1; min-height: 32px;
                           }
 
                           .outlook-chip {
@@ -240,14 +240,6 @@ frappe.ui.form.on("Disciplinary Case", {
                             cursor: pointer; margin-left: 6px; font-size: 10px; color: #605e5c;
                           }
 
-                          .outlook-chip-wrapper {
-                            display: flex;
-                            flex-wrap: wrap;
-                            align-items: center;
-                            gap: 6px;
-                            flex: 1;
-                            min-height: 32px;
-                          }
 
                           /* Hide placeholder if container has chips */
                           .outlook-chip-container:not(:empty) + .outlook-email-input::placeholder {
@@ -257,7 +249,7 @@ frappe.ui.form.on("Disciplinary Case", {
                           .outlook-email-input {
                             border: none !important;
                             outline: none !important;
-                            flex: 1;
+                            flex: 1; min-height: 32px;
                             min-width: 150px;
                             padding: 6px 0;
                             font-size: 14px;
