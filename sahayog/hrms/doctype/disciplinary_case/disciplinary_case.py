@@ -280,6 +280,34 @@ def save_and_send_email(employee, email, docname):
 #     return "Queued"
 
 @frappe.whitelist()
+def send_custom_email(docname, recipients, cc, subject, message):
+    if not recipients:
+        frappe.throw("Recipients are mandatory.")
+
+    # Convert recipients and cc strings/lists to lists if they are strings
+    if isinstance(recipients, str):
+        recipients = [r.strip() for r in recipients.split(",") if r.strip()]
+    if isinstance(cc, str):
+        cc = [c.strip() for c in cc.split(",") if c.strip()]
+
+    frappe.sendmail(
+        recipients=recipients,
+        cc=cc,
+        subject=subject,
+        content=message,
+        reference_doctype="Disciplinary Case",
+        reference_name=docname,
+        attachments=[{
+            "print_format": "Disciplinary Case Notice",
+            "doctype": "Disciplinary Case",
+            "name": docname,
+            "file_name": f"{docname}.pdf"
+        }],
+        now=True
+    )
+    return "OK"
+
+@frappe.whitelist()
 def send_scn_email(docname):
         """Send welcome notification for first time membership"""
         try:
