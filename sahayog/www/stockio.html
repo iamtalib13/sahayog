@@ -3119,7 +3119,7 @@
                 </div>
 
                 <!-- Serial No -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
+                <div class="form-group" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Serial No</label>
                   <div class="searchable-select-wrapper">
                     <input
@@ -3143,6 +3143,126 @@
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <!-- Zone -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Zone <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_zone' }"
+                      v-model="createAssetForm.zone_display"
+                      @focus="onFocusSearchable('asset_zone')"
+                      @blur="onBlurSearchable('asset_zone')"
+                      placeholder="Search Zone"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_zone'">
+                      <div
+                        v-for="zone in filteredZones"
+                        :key="zone"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.zone = zone; createAssetForm.zone_display = zone; focusedField = null;"
+                      >
+                        [[ zone ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- State -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">State <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_state' }"
+                      v-model="createAssetForm.state"
+                      @focus="onFocusSearchable('asset_state')"
+                      @blur="onBlurSearchable('asset_state')"
+                      placeholder="Search State"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_state'">
+                      <div
+                        v-for="state in filteredStates"
+                        :key="state"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.state = state; focusedField = null;"
+                      >
+                        [[ state ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Division -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Division <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_division' }"
+                      v-model="createAssetForm.division_display"
+                      @focus="onFocusSearchable('asset_division')"
+                      @blur="onBlurSearchable('asset_division')"
+                      placeholder="Search Division"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_division'">
+                      <div
+                        v-for="div in filteredDivisions"
+                        :key="div"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.division = div; createAssetForm.division_display = div; focusedField = null;"
+                      >
+                        [[ div ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Brand -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Brand <span class="form-required">*</span></label>
+                  <div class="searchable-select-wrapper">
+                    <input
+                      type="text"
+                      class="form-input searchable-select-input"
+                      style="padding: 12px 16px !important;"
+                      :class="{ focused: focusedField === 'asset_brand' }"
+                      v-model="createAssetForm.brand_display"
+                      @focus="onFocusSearchable('asset_brand')"
+                      @blur="onBlurSearchable('asset_brand')"
+                      placeholder="Search Brand"
+                    />
+                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_brand'">
+                      <div
+                        v-for="brand in filteredBrands"
+                        :key="brand"
+                        class="searchable-select-option"
+                        @mousedown="createAssetForm.brand = brand; createAssetForm.brand_display = brand; focusedField = null;"
+                      >
+                        [[ brand ]]
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Invoice Number -->
+                <div class="form-group" style="margin-bottom: 0 !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Invoice Number</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.custom_invoice_number"
+                    placeholder="Enter Invoice Number"
+                  />
                 </div>
 
               </div>
@@ -11348,20 +11468,24 @@
 
       createAssetForm: {
         asset_name: "",
-        asset_category: "",
-        asset_category_display: "",
         item_code: "",
         item_code_display: "",
         location: "",
         location_display: "",
         custodian: "",
         custodian_display: "",
+        zone: "",
+        zone_display: "",
+        state: "",
+        division: "",
+        division_display: "",
+        brand: "",
+        brand_display: "",
+        custom_invoice_number: "",
         purchase_date: "",
         available_for_use_date: "",
         gross_purchase_amount: 0,
         serial_no: "",
-        windows_key: "",
-        office_key: "",
         is_existing_asset: true,
         is_composite_asset: false,
       },
@@ -11382,6 +11506,10 @@
       ],
       assetsList: [],
       locations: [],
+      zones: [],
+      divisions: [],
+      brands: [],
+      states: [],
       serial_nos: [],
 
       inwardForm: {
@@ -11742,6 +11870,30 @@
         ).toLowerCase();
         if (!search) return this.serial_nos;
         return this.serial_nos.filter((s) => s.toLowerCase().includes(search));
+      },
+
+      get filteredZones() {
+        const search = (this.createAssetForm.zone_display || "").toLowerCase();
+        if (!search) return this.zones;
+        return this.zones.filter((z) => z.toLowerCase().includes(search));
+      },
+
+      get filteredDivisions() {
+        const search = (this.createAssetForm.division_display || "").toLowerCase();
+        if (!search) return this.divisions;
+        return this.divisions.filter((d) => d.toLowerCase().includes(search));
+      },
+
+      get filteredBrands() {
+        const search = (this.createAssetForm.brand_display || "").toLowerCase();
+        if (!search) return this.brands;
+        return this.brands.filter((b) => b.toLowerCase().includes(search));
+      },
+
+      get filteredStates() {
+        const search = (this.createAssetForm.state || "").toLowerCase();
+        if (!search) return this.states;
+        return this.states.filter((s) => s.toLowerCase().includes(search));
       },
 
       $watch: {
@@ -12757,6 +12909,10 @@
                 : ["Nos", "Box", "Piece", "Kg", "Liter", "Meter"];
             this.assetCategories = data.asset_categories || [];
             this.locations = data.locations || [];
+            this.zones = data.zones || [];
+            this.divisions = data.divisions || [];
+            this.brands = data.brands || [];
+            this.states = data.states || [];
             this.hsnCodes = data.hsn_codes || [];
             this.serial_nos = data.serial_nos || [];
           }
@@ -12845,10 +13001,14 @@
         if (
           !this.createAssetForm.asset_name.trim() ||
           !this.createAssetForm.location ||
-          !this.createAssetForm.item_code
+          !this.createAssetForm.item_code ||
+          !this.createAssetForm.zone ||
+          !this.createAssetForm.state ||
+          !this.createAssetForm.division ||
+          !this.createAssetForm.brand
         ) {
           frappe.msgprint(
-            "Please fill all mandatory fields: Asset Name, Item Code, and Location",
+            "Please fill all mandatory fields: Asset Name, Item Code, Location, Zone, State, Division, and Brand",
           );
           return;
         }
@@ -12861,6 +13021,11 @@
             item_code: this.createAssetForm.item_code,
             location: this.createAssetForm.location,
             custodian: this.createAssetForm.custodian,
+            zone: this.createAssetForm.zone,
+            state: this.createAssetForm.state,
+            division: this.createAssetForm.division,
+            brand: this.createAssetForm.brand,
+            custom_invoice_number: this.createAssetForm.custom_invoice_number,
             purchase_date:
               this.createAssetForm.purchase_date || frappe.datetime.now_date(),
             available_for_use_date:
@@ -12872,9 +13037,9 @@
             is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
             booked_fixed_asset: 1,
             naming_series: "AST-",
-            company: "Sahayog",
+            company: "Sahayog Multistate Credit Co-op Society Ltd",
             asset_owner: "Company",
-            asset_owner_company: "Sahayog",
+            asset_owner_company: "Sahayog Multistate Credit Co-op Society Ltd",
           };
 
           const res = await frappe.call({
