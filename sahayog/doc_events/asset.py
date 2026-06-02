@@ -3,7 +3,7 @@ import re
 
 def custom_asset_autoname(doc, method):
     # Prefix 1: Hardcoded
-    company_prefix = "SMCSL"
+    company_prefix = "SMCCSL"
 
     # Prefix 2: Zone (Z1, Z2, etc.)
     zone_code = ""
