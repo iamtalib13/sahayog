@@ -27,6 +27,10 @@ frappe.ui.form.on("Ex Parte Enquiry", {
 
   refresh(frm) {
     if (!frm.is_new()) {
+      sahayog.dams.add_send_email_button(frm);
+    }
+    
+    if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
         frappe.set_route("query-report", "Case History", {
           case_id: frm.doc.case_id,
