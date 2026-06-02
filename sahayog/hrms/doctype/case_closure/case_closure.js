@@ -239,14 +239,293 @@ frappe.ui.form.on("Case Closure", {
   // --------------------------------------------------------------------------
   // REFRESH: Buttons, Timeline, Reviewer actions
   // --------------------------------------------------------------------------
-  refresh(frm) {
+//   refresh(frm) {
+//     // Toggle closure fields based on status and reference doctype presence or absence (Only when new)
+//     toggle_closure_fields(frm);
+
+//     // Remove duplicate Send Email button
+//     // frm.remove_custom_button("Send Email");
+
+//     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
+//     if (!frm.is_new() && frm.doc.status === "Closed") {
+//       frm.add_custom_button("Send Email", function () {
+//         // Step 1: Validate employee email exists
+//         frappe.call({
+//           method:
+//             "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
+//           args: { employee: frm.doc.employee_id },
+//           callback(r) {
+//             if (!r.message) {
+//               frappe.msgprint({
+//                 title: __("Email Not Found"),
+//                 indicator: "red",
+//                 message: __("No email is stored for this employee."),
+//               });
+//               return;
+//             }
+
+//             // Step 2: Fetch active print formats
+//             frappe.call({
+//               method: "frappe.client.get_list",
+//               args: {
+//                 doctype: "Print Format",
+//                 filters: {
+//                   doc_type: "Case Closure",
+//                   disabled: 0,
+//                 },
+//                 fields: ["name"],
+//               },
+//               callback(res) {
+//                 if (!res.message || !res.message.length) {
+//                   frappe.msgprint("No Print Formats found.");
+//                   return;
+//                 }
+
+//                 // Preferred print format ordering
+//                 const preferred_order = [
+//                   "Warning Letter",
+//                   "Caution Letter",
+//                   "Termination due to abandonment",
+//                   "Office Order Termination of Services",
+//                 ];
+
+//                 let fetched_formats = res.message.map((p) => p.name);
+
+//                 // Arrange formats in preferred order
+//                 let ordered_formats = [];
+
+//                 preferred_order.forEach((name) => {
+//                   if (fetched_formats.includes(name)) {
+//                     ordered_formats.push(name);
+//                   }
+//                 });
+
+//                 // Add remaining formats (if any)
+//                 fetched_formats.forEach((name) => {
+//                   if (!ordered_formats.includes(name)) {
+//                     ordered_formats.push(name);
+//                   }
+//                 });
+
+//                 let options = ordered_formats.join("\n");
+
+//                 // Print format selection dialog
+//                 let d = new frappe.ui.Dialog({
+//                   title: "Send Case Closure Email",
+//                   fields: [
+//                     {
+//                       fieldtype: "Select",
+//                       fieldname: "print_format",
+//                       label: "Select Print Format",
+//                       options: options,
+//                       reqd: 1,
+//                     },
+//                   ],
+//                   primary_action_label: "Send Email",
+//                   primary_action(values) {
+//                     frappe.call({
+//                       method:
+//                         "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
+//                       args: {
+//                         docname: frm.doc.name,
+//                         print_format: values.print_format,
+//                       },
+//                       freeze: true,
+//                       freeze_message: __("Sending Email..."),
+//                       callback() {
+//                         frappe.msgprint(__("Email sent successfully!"));
+//                         d.hide();
+//                       },
+//                     });
+//                   },
+//                 });
+
+//                 d.show();
+//               },
+//             });
+//           },
+//         });
+//       });
+//     }
+
+//     // ---------------- VIEW CASE HISTORY BUTTON ----------------
+//     if (!frm.is_new()) {
+//       const btn = frm.add_custom_button("View Case History", function () {
+//         frappe.set_route("query-report", "Case History", {
+//           case_id: frm.doc.case_id,
+//         });
+//       });
+
+//       btn.removeClass("btn-default").addClass("btn-primary");
+//     }
+//     // ---------------- CUSTOM PRINT BUTTON ----------------
+//     frappe.after_ajax(() => {
+//       frm.trigger("show_print_button");
+//     });
+//     // Render Timeline
+//     if (!frm.is_new()) {
+//       load_case_timeline(frm);
+//     }
+
+//     // ---------------- CASE REVIEW BUTTON ----------------
+//     // if (!frm.is_new()) {
+//     //   frm.add_custom_button("Case Review", () => {
+//     //     open_approver_dialog(frm);
+//     //   });
+//     // }
+
+//     // ---------------- CASE REVIEW BUTTON ----------------
+//     if (!frm.is_new() && frm.doc.status !== "Verified" && frm.doc.status !== "Closed") {
+//         frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
+//     }
+
+//     // ---------------- REVIEWER MAIL SYNC ----------------
+//     // if (frm.__reviewer_mail_synced || frm.is_new()) return;
+
+//     // frm.__reviewer_mail_synced = true;
+
+//     // frappe.call({
+//     //   method:
+//     //     "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+//     //   args: {
+//     //     case_closure_name: frm.doc.name,
+//     //   },
+//     //   callback() {
+//     //     frm.refresh_field("review_details");
+//     //   },
+//     // });
+
+//     // ---------------- REVIEWER MAIL SYNC ----------------
+//     if (!frm.is_new() && !frm.__reviewer_mail_synced) {
+//   frm.__reviewer_mail_synced = true;
+
+//   frappe.call({
+//     method: "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+//     args: {
+//       case_closure_name: frm.doc.name,
+//     },
+//     callback: function (r) {
+//       if (r.message && r.message.updated) {
+//         frm.reload_doc();
+//       }
+//     },
+//   });
+// }
+
+//     // ---------------- SUBMIT FEEDBACK BUTTON ----------------
+
+
+//     if (!frm.is_new()) {
+//     frappe.call({
+//         method: "sahayog.hrms.doctype.case_closure.case_closure.can_submit_feedback",
+//         args: {
+//             case_closure_name: frm.doc.name
+//         },
+//         callback: function (r) {
+//             const data = r.message || {};
+//             if (!data.allowed) return;
+
+//             frm.add_custom_button("Submit Feedback", function () {
+//                 const d = new frappe.ui.Dialog({
+//                     title: "Submit Feedback",
+//                     fields: [
+//                         {
+//                             fieldtype: "Small Text",
+//                             fieldname: "feedback",
+//                             label: "Feedback",
+//                             reqd: 1
+//                         }
+//                     ],
+//                     primary_action_label: "Submit",
+//                     primary_action(values) {
+//                         frappe.call({
+//                             method: "sahayog.hrms.doctype.case_closure.case_closure.submit_feedback",
+//                             args: {
+//                                 case_closure_name: frm.doc.name,
+//                                 feedback: values.feedback
+//                             },
+//                             freeze: true,
+//                             freeze_message: "Submitting feedback...",
+//                             callback: function (res) {
+//                                 if (res.message && res.message.status === "success") {
+//                                     frappe.msgprint("Feedback submitted successfully.");
+//                                     d.hide();
+//                                     frm.reload_doc();
+//                                 }
+//                             }
+//                         });
+//                     }
+//                 });
+//                 d.show();
+//             });
+//         }
+//     });
+// }
+
+// if (!frm.__dirty_debug_installed) {
+//   frm.__dirty_debug_installed = true;
+
+//   const original_set_value = frm.set_value.bind(frm);
+//   frm.set_value = function (field, value, if_missing, skip_dirty_trigger = false) {
+//     console.group("frm.set_value called");
+//     console.log("Field:", field);
+//     console.log("Value:", value);
+//     console.log("Docname:", frm.doc.name);
+//     console.log("is_dirty before:", frm.is_dirty());
+//     console.trace("set_value trace");
+//     console.groupEnd();
+
+//     return original_set_value(field, value, if_missing, skip_dirty_trigger);
+//   };
+
+//   const original_dirty = frm.dirty.bind(frm);
+//   frm.dirty = function () {
+//     console.group("frm.dirty called");
+//     console.log("Docname:", frm.doc.name);
+//     console.log("Current doc snapshot:", JSON.parse(JSON.stringify(frm.doc)));
+//     console.trace("dirty trace");
+//     console.groupEnd();
+
+//     return original_dirty();
+//   };
+
+//   frm.script_manager.trigger = (function (original_trigger) {
+//     return async function (event_name, doctype, name) {
+//       console.group("script_manager.trigger");
+//       console.log("Event:", event_name);
+//       console.log("Doctype:", doctype);
+//       console.log("Name:", name);
+//       console.trace("trigger trace");
+//       console.groupEnd();
+
+//       return original_trigger.apply(this, arguments);
+//     };
+//   })(frm.script_manager.trigger);
+// }
+
+// setTimeout(() => {
+//     if (frm.doc.status === "Closed" && frm.page.btn_secondary) {
+//         frm.page.btn_secondary.addClass("hide");
+//     } else if (frm.page.btn_secondary) {
+//         frm.page.btn_secondary.removeClass("hide");
+//     }
+// }, 100);
+//   },
+
+refresh(frm) {
     // Toggle closure fields based on status and reference doctype presence or absence (Only when new)
     toggle_closure_fields(frm);
 
+    const can_manage_case_closure_buttons =
+      frappe.user.has_role("Administrator") ||
+      frappe.user.has_role("HR Manager") ||
+      frappe.user.has_role("HR Support Executive");
+
     // Remove duplicate Send Email button
-    frm.remove_custom_button("Send Email");
+    // frm.remove_custom_button("Send Email");
+
     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
-    if (!frm.is_new() && frm.doc.status === "Closed") {
+    if (!frm.is_new() && frm.doc.status === "Closed" && can_manage_case_closure_buttons) {
       frm.add_custom_button("Send Email", function () {
         // Step 1: Validate employee email exists
         frappe.call({
@@ -357,10 +636,12 @@ frappe.ui.form.on("Case Closure", {
 
       btn.removeClass("btn-default").addClass("btn-primary");
     }
+
     // ---------------- CUSTOM PRINT BUTTON ----------------
     frappe.after_ajax(() => {
       frm.trigger("show_print_button");
     });
+
     // Render Timeline
     if (!frm.is_new()) {
       load_case_timeline(frm);
@@ -374,8 +655,13 @@ frappe.ui.form.on("Case Closure", {
     // }
 
     // ---------------- CASE REVIEW BUTTON ----------------
-    if (!frm.is_new() && frm.doc.status !== "Verified" && frm.doc.status !== "Closed") {
-        frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
+    if (
+      !frm.is_new() &&
+      frm.doc.status !== "Verified" &&
+      frm.doc.status !== "Closed" &&
+      can_manage_case_closure_buttons
+    ) {
+      frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
     }
 
     // ---------------- REVIEWER MAIL SYNC ----------------
@@ -396,120 +682,118 @@ frappe.ui.form.on("Case Closure", {
 
     // ---------------- REVIEWER MAIL SYNC ----------------
     if (!frm.is_new() && !frm.__reviewer_mail_synced) {
-  frm.__reviewer_mail_synced = true;
+      frm.__reviewer_mail_synced = true;
 
-  frappe.call({
-    method: "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
-    args: {
-      case_closure_name: frm.doc.name,
-    },
-    callback: function (r) {
-      if (r.message && r.message.updated) {
-        frm.reload_doc();
-      }
-    },
-  });
-}
-
-    // ---------------- SUBMIT FEEDBACK BUTTON ----------------
-
-
-    if (!frm.is_new()) {
-    frappe.call({
-        method: "sahayog.hrms.doctype.case_closure.case_closure.can_submit_feedback",
+      frappe.call({
+        method: "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
         args: {
-            case_closure_name: frm.doc.name
+          case_closure_name: frm.doc.name,
         },
         callback: function (r) {
-            const data = r.message || {};
-            if (!data.allowed) return;
-
-            frm.add_custom_button("Submit Feedback", function () {
-                const d = new frappe.ui.Dialog({
-                    title: "Submit Feedback",
-                    fields: [
-                        {
-                            fieldtype: "Small Text",
-                            fieldname: "feedback",
-                            label: "Feedback",
-                            reqd: 1
-                        }
-                    ],
-                    primary_action_label: "Submit",
-                    primary_action(values) {
-                        frappe.call({
-                            method: "sahayog.hrms.doctype.case_closure.case_closure.submit_feedback",
-                            args: {
-                                case_closure_name: frm.doc.name,
-                                feedback: values.feedback
-                            },
-                            freeze: true,
-                            freeze_message: "Submitting feedback...",
-                            callback: function (res) {
-                                if (res.message && res.message.status === "success") {
-                                    frappe.msgprint("Feedback submitted successfully.");
-                                    d.hide();
-                                    frm.reload_doc();
-                                }
-                            }
-                        });
-                    }
-                });
-                d.show();
-            });
-        }
-    });
-}
-
-if (!frm.__dirty_debug_installed) {
-  frm.__dirty_debug_installed = true;
-
-  const original_set_value = frm.set_value.bind(frm);
-  frm.set_value = function (field, value, if_missing, skip_dirty_trigger = false) {
-    console.group("frm.set_value called");
-    console.log("Field:", field);
-    console.log("Value:", value);
-    console.log("Docname:", frm.doc.name);
-    console.log("is_dirty before:", frm.is_dirty());
-    console.trace("set_value trace");
-    console.groupEnd();
-
-    return original_set_value(field, value, if_missing, skip_dirty_trigger);
-  };
-
-  const original_dirty = frm.dirty.bind(frm);
-  frm.dirty = function () {
-    console.group("frm.dirty called");
-    console.log("Docname:", frm.doc.name);
-    console.log("Current doc snapshot:", JSON.parse(JSON.stringify(frm.doc)));
-    console.trace("dirty trace");
-    console.groupEnd();
-
-    return original_dirty();
-  };
-
-  frm.script_manager.trigger = (function (original_trigger) {
-    return async function (event_name, doctype, name) {
-      console.group("script_manager.trigger");
-      console.log("Event:", event_name);
-      console.log("Doctype:", doctype);
-      console.log("Name:", name);
-      console.trace("trigger trace");
-      console.groupEnd();
-
-      return original_trigger.apply(this, arguments);
-    };
-  })(frm.script_manager.trigger);
-}
-
-setTimeout(() => {
-    if (frm.doc.status === "Closed" && frm.page.btn_secondary) {
-        frm.page.btn_secondary.addClass("hide");
-    } else if (frm.page.btn_secondary) {
-        frm.page.btn_secondary.removeClass("hide");
+          if (r.message && r.message.updated) {
+            frm.reload_doc();
+          }
+        },
+      });
     }
-}, 100);
-  },
+
+    // ---------------- SUBMIT FEEDBACK BUTTON ----------------
+    if (!frm.is_new()) {
+      frappe.call({
+        method: "sahayog.hrms.doctype.case_closure.case_closure.can_submit_feedback",
+        args: {
+          case_closure_name: frm.doc.name
+        },
+        callback: function (r) {
+          const data = r.message || {};
+          if (!data.allowed) return;
+
+          frm.add_custom_button("Submit Feedback", function () {
+            const d = new frappe.ui.Dialog({
+              title: "Submit Feedback",
+              fields: [
+                {
+                  fieldtype: "Small Text",
+                  fieldname: "feedback",
+                  label: "Feedback",
+                  reqd: 1
+                }
+              ],
+              primary_action_label: "Submit",
+              primary_action(values) {
+                frappe.call({
+                  method: "sahayog.hrms.doctype.case_closure.case_closure.submit_feedback",
+                  args: {
+                    case_closure_name: frm.doc.name,
+                    feedback: values.feedback
+                  },
+                  freeze: true,
+                  freeze_message: "Submitting feedback...",
+                  callback: function (res) {
+                    if (res.message && res.message.status === "success") {
+                      frappe.msgprint("Feedback submitted successfully.");
+                      d.hide();
+                      frm.reload_doc();
+                    }
+                  }
+                });
+              }
+            });
+            d.show();
+          });
+        }
+      });
+    }
+
+    if (!frm.__dirty_debug_installed) {
+      frm.__dirty_debug_installed = true;
+
+      const original_set_value = frm.set_value.bind(frm);
+      frm.set_value = function (field, value, if_missing, skip_dirty_trigger = false) {
+        console.group("frm.set_value called");
+        console.log("Field:", field);
+        console.log("Value:", value);
+        console.log("Docname:", frm.doc.name);
+        console.log("is_dirty before:", frm.is_dirty());
+        console.trace("set_value trace");
+        console.groupEnd();
+
+        return original_set_value(field, value, if_missing, skip_dirty_trigger);
+      };
+
+      const original_dirty = frm.dirty.bind(frm);
+      frm.dirty = function () {
+        console.group("frm.dirty called");
+        console.log("Docname:", frm.doc.name);
+        console.log("Current doc snapshot:", JSON.parse(JSON.stringify(frm.doc)));
+        console.trace("dirty trace");
+        console.groupEnd();
+
+        return original_dirty();
+      };
+
+      frm.script_manager.trigger = (function (original_trigger) {
+        return async function (event_name, doctype, name) {
+          console.group("script_manager.trigger");
+          console.log("Event:", event_name);
+          console.log("Doctype:", doctype);
+          console.log("Name:", name);
+          console.trace("trigger trace");
+          console.groupEnd();
+
+          return original_trigger.apply(this, arguments);
+        };
+      })(frm.script_manager.trigger);
+    }
+
+    setTimeout(() => {
+      if (frm.doc.status === "Closed" && frm.page.btn_secondary) {
+        frm.page.btn_secondary.addClass("hide");
+      } else if (frm.page.btn_secondary) {
+        frm.page.btn_secondary.removeClass("hide");
+      }
+    }, 100);
+},
 
   show_print_button: function (frm) {
     // Do not show print options for new (unsaved) documents
