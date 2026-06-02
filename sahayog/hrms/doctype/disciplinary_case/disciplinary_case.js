@@ -132,32 +132,16 @@ frappe.ui.form.on("Disciplinary Case", {
           .get_single_value("Sahayog HR Setting", "disciplinary_case_cc")
           .then((fixed_cc) => {
             frappe.call({
-              method: "frappe.client.get",
-              args: { doctype: "Email Template", name: "Disciplinary - SCN" },
-              callback: function (r_template) {
-                const template = r_template.message || {};
-
-                let render_data = Object.assign({}, frm.doc);
-                if (!render_data.document_upload)
-                  render_data.document_upload = "";
-                if (!render_data.remarks) render_data.remarks = "";
-
-                let subject = "";
-                let body = "";
-                try {
-                  subject = frappe.render_template(
-                    template.subject,
-                    render_data,
-                  );
-                  body = frappe.render_template(
-                    template.response_html,
-                    render_data,
-                  );
-                } catch (e) {
-                  console.error("Template Rendering Error:", e);
-                  subject = template.subject;
-                  body = template.response_html;
-                }
+              method: "sahayog.hrms.dams_email_service.get_email_template_preview",
+              args: {
+                template_name: "Disciplinary - SCN",
+                doctype: frm.doc.doctype,
+                docname: frm.doc.name,
+              },
+              callback: function (r) {
+                const preview = r.message || {};
+                const subject = preview.subject || "";
+                const body = preview.message || "";
 
                 // CC values parsing
                 let cc_values = [];
