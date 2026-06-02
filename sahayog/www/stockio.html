@@ -3227,7 +3227,7 @@
                 </div>
 
                 <!-- Brand -->
-                <div class="form-group" style="margin-bottom: 16px !important;">
+                <div class="form-group" style="margin-bottom: 0 !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Brand <span class="form-required">*</span></label>
                   <div class="searchable-select-wrapper">
                     <input
@@ -3253,8 +3253,16 @@
                   </div>
                 </div>
 
+              </div>
+
+              <!-- Column 2: Purchase & Status -->
+              <div style="padding: 20px; background: rgba(100, 116, 139, 0.03); border-radius: 12px; border: 1px solid var(--border-color);">
+                <h4 style="margin-bottom: 20px; margin-top: 0; color: var(--primary-color); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
+                  <i class="fas fa-shopping-cart"></i> Purchase & Status
+                </h4>
+
                 <!-- Invoice Number -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
+                <div class="form-group" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Invoice Number</label>
                   <input
                     type="text"
@@ -3265,17 +3273,9 @@
                   />
                 </div>
 
-              </div>
-
-              <!-- Column 2: Purchase & Status -->
-              <div style="padding: 20px; background: rgba(100, 116, 139, 0.03); border-radius: 12px; border: 1px solid var(--border-color);">
-                <h4 style="margin-bottom: 20px; margin-top: 0; color: var(--primary-color); font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.05em;">
-                  <i class="fas fa-shopping-cart"></i> Purchase & Status
-                </h4>
-
-                <!-- Purchase Date -->
+                <!-- Invoice Date -->
                 <div class="form-group" style="margin-bottom: 16px !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Purchase Date</label>
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Invoice Date</label>
                   <input
                     type="date"
                     class="form-input"
@@ -5392,7 +5392,7 @@
                       <div class="info-item">
                         <div class="info-icon"><i class="fas fa-calendar-day"></i></div>
                         <div class="info-content">
-                          <span class="info-label">Purchase Date</span>
+                          <span class="info-label">Invoice Date</span>
                           <span class="info-value">[[ detailRecord.purchase_date || '-' ]]</span>
                         </div>
                       </div>
@@ -5849,7 +5849,7 @@
                             <i class="fas fa-times"></i>
                           </button>
                         </div>
-                        <!-- Asset Master Purchase Date -->
+                        <!-- Asset Master Invoice Date -->
                         <div
                           v-else-if="activeItem === 'Asset Master' && field.key === 'purchase_date'"
                           style="
@@ -11189,7 +11189,7 @@
             { label: "Custodian", key: "custodian_name" },
             { label: "Department", key: "department" },
             { label: "Location", key: "location" },
-            { label: "Purchase Date", key: "purchase_date" },
+            { label: "Invoice Date", key: "purchase_date" },
             { label: "Gross Purchase Amount", key: "gross_purchase_amount" },
           ],
         },
