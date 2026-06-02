@@ -33,6 +33,10 @@ def get_dams_email_defaults(doctype, docname):
         "cc": fixed_cc
     }
 
+
+# =========================
+# 1.1 TEMPLATE PREVIEW (SERVER-SIDE RENDERING)
+# =========================
 @frappe.whitelist()
 def get_email_template_preview(template_name, doctype, docname):
     if not template_name or not doctype or not docname:
@@ -41,39 +45,69 @@ def get_email_template_preview(template_name, doctype, docname):
     doc = frappe.get_doc(doctype, docname)
     template = frappe.get_doc("Email Template", template_name)
 
-    context = doc.as_dict()
-    context["doc"] = doc
+    # Use a standard context with 'doc' for consistency
+    context = {"doc": doc}
 
     try:
         subject = frappe.render_template(template.subject, context)
         body = frappe.render_template(template.response_html, context)
-
-        frappe.log_error(
-            title="EMAIL PREVIEW DEBUG",
-            message=f"""
-Template: {template_name}
-
-SUBJECT:
-{subject}
-
-BODY:
-{body}
-"""
-        )
-
     except Exception:
+        # Fallback to direct string if rendering fails (e.g. malformed jinja)
         subject = template.subject
         body = template.response_html
-
-        frappe.log_error(
-            title="EMAIL PREVIEW ERROR",
-            message=frappe.get_traceback()
-        )
 
     return {
         "subject": subject,
         "message": body
     }
+
+
+@frappe.whitelist()
+def standardize_all_email_templates():
+    """Update all DAMS email templates in DB to use 'doc.' prefix and fix field names."""
+    dams_templates = [
+        "Disciplinary - SCN",
+        "Suspension Process",
+        "Response to SCN",
+        "Domestic Enquiry Notice",
+        "Reminder Notice of Enquiry",
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
+        "Ex Parte Enquiry",
+        "Case Closure Update"
+    ]
+
+    fields = ["employee_name", "case_id", "case_type", "branch_name", "issue_occurrence_date", 
+              "hr_name", "remarks", "employee_id", "status_of_response", "date_of_enquiry", 
+              "place_of_enquiry", "enquiry_officer_name", "level", "issue_reported_to_hr", "issue_in_details"]
+
+    for name in dams_templates:
+        if frappe.db.exists("Email Template", name):
+            et = frappe.get_doc("Email Template", name)
+            
+            # 1. Fix specific field name bug
+            if name == "Reminder Of Unauthorized Absence":
+                et.response_html = et.response_html.replace("issue_date_reported_to_hr", "doc.issue_reported_to_hr")
+
+            # 2. Standardize tags: {{ field }} -> {{ doc.field }}
+            for field in fields:
+                old_tags = [
+                    "{{" + f" {field} " + "}}",
+                    "{{" + f"{field}" + "}}"
+                ]
+                new_tag = "{{" + f" doc.{field} " + "}}"
+                
+                for old in old_tags:
+                    if et.subject:
+                        et.subject = et.subject.replace(old, new_tag)
+                    if et.response_html:
+                        et.response_html = et.response_html.replace(old, new_tag)
+
+            et.save(ignore_permissions=True)
+    
+    frappe.db.commit()
+    return "Templates Standardized"
+
 
 # =========================
 # 2. CORE EMAIL SENDER
