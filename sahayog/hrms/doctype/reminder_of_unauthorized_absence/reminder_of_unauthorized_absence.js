@@ -140,6 +140,23 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
     }, 1000);
   },
 
+  before_submit(frm) {
+    if (!frm.doc.response_of_reminder && !frm.__confirmed_submit) {
+      frappe.validated = false;
+      frappe.confirm(
+        __("The 'Response of Reminder' field is empty. Are you sure you want to submit without filling the Response tab?"),
+        function () {
+          frm.__confirmed_submit = true;
+          frm.save("Submit");
+        }
+      );
+      return;
+    }
+    if (!String(frm.doc.remarks || "").trim()) {
+      frappe.throw(__("Please fill Remarks before submitting."));
+    }
+  },
+
   show_print_button: function (frm) {
     if (!frm.is_new()) {
       const allowed_roles = ["System Manager", "HR Support Executive", "HR Support Manager"];
