@@ -13,8 +13,9 @@ class DisciplinaryCase(Document):
     def on_submit(self):
         """
         Auto-send SCN email on submit.
-        Manual Send Email button remains unchanged.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             # Fetch employee
             emp = frappe.get_doc("Employee", self.employee_id)
