@@ -1176,6 +1176,20 @@
         >
           <span style="white-space: nowrap;">[[ activeItem === 'Asset Master' ? 'Create New Asset' : (activeItem === 'Movements' ? 'Create New Asset Movement' : (activeItem === 'Requests' ? 'Create New Request' : (activeItem === 'Items' ? 'Create New Item' : (activeItem === 'Inward' ? 'Create New Inward' : (activeItem === 'Outward' ? 'Create New Outward' : 'Create ' + (currentView.createLabel || activeItem.slice(0, -1))))))) ]]</span>
           
+          <!-- Asset ID Preview (Moved to top) -->
+          <div v-if="showAssetCreateView && projectedAssetId" style="
+              margin-left: 20px;
+              padding: 8px 16px;
+              border-left: 4px solid #2980b9;
+              background: #f5f9ff;
+              border-radius: 6px;
+              font-family: Inter, sans-serif;
+              font-size: 12px;
+          ">
+              <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
+              <span style="font-weight: 600; color: #2980b9;">[[ projectedAssetId.full_id ]]</span>
+          </div>
+          
 <!-- Inventory Flow Display -->
 <div
   v-if="showEMRCreateView && (emrForm.target_warehouse || emrForm.source_warehouse)"
@@ -3329,6 +3343,18 @@
                     />
                     <span class="checkbox-text" style="font-size: 0.9rem; font-weight: 600;">Is Composite Asset</span>
                   </label>
+                </div>
+
+                <!-- Remark -->
+                <div class="form-group" style="margin-top: 12px; margin-bottom: 0px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Remark</label>
+                  <textarea
+                    class="form-input"
+                    style="padding: 12px 16px !important; width: 100%; border-radius: 8px; border: 1px solid var(--border-color);"
+                    v-model="createAssetForm.custom_remark"
+                    placeholder="Enter detailed remarks"
+                    rows="3"
+                  ></textarea>
                 </div>
               </div>
 
@@ -11488,6 +11514,7 @@
         serial_no: "",
         is_existing_asset: true,
         is_composite_asset: false,
+        remark: "",
       },
       movementForm: {
         transaction_date: "",
@@ -11680,6 +11707,58 @@
         return this.itemDepartments.filter((d) =>
           d.toLowerCase().includes(search),
         );
+      },
+      get projectedAssetId() {
+        let parts = ['SMCSL'];
+
+        // Zone logic
+        if (this.createAssetForm.zone) {
+          let zone_digits = this.createAssetForm.zone.match(/\d+/);
+          parts.push(zone_digits ? 'Z' + zone_digits[0] : this.createAssetForm.zone.substring(0, 2).toUpperCase());
+        } else {
+          parts.push('[ZONE]');
+        }
+
+        // State mapping
+        const state_mapping = {
+            'Andaman and Nicobar Islands': 'AN', 'Andhra Pradesh': 'AP', 'Arunachal Pradesh': 'AR', 'Assam': 'AS',
+            'Bihar': 'BR', 'Chandigarh': 'CH', 'Chhattisgarh': 'CT', 'Dadra and Nagar Haveli and Daman and Diu': 'DN',
+            'Delhi': 'DL', 'Goa': 'GA', 'Gujarat': 'GJ', 'Haryana': 'HR', 'Himachal Pradesh': 'HP',
+            'Jammu and Kashmir': 'JK', 'Jharkhand': 'JH', 'Karnataka': 'KA', 'Kerala': 'KL', 'Ladakh': 'LA',
+            'Lakshadweep': 'LD', 'Madhya Pradesh': 'MP', 'Maharashtra': 'MH', 'Manipur': 'MN', 'Meghalaya': 'ML',
+            'Mizoram': 'MZ', 'Nagaland': 'NL', 'Odisha': 'OR', 'Puducherry': 'PY', 'Punjab': 'PB',
+            'Rajasthan': 'RJ', 'Sikkim': 'SK', 'Tamil Nadu': 'TN', 'Telangana': 'TG', 'Tripura': 'TR',
+            'Uttar Pradesh': 'UP', 'Uttarakhand': 'UT', 'West Bengal': 'WB'
+        };
+        if (this.createAssetForm.state && state_mapping[this.createAssetForm.state]) {
+            parts.push(state_mapping[this.createAssetForm.state]);
+        } else {
+            parts.push('[STATE]');
+        }
+
+        // Location/Branch
+        let loc_val = this.createAssetForm.branch_name || this.createAssetForm.location;
+        if (loc_val) {
+            parts.push(loc_val.substring(0, 3).toUpperCase());
+        } else {
+            parts.push('[LOC]');
+        }
+
+        // Division
+        parts.push(this.createAssetForm.division ? this.createAssetForm.division.toUpperCase() : '[DIVISION]');
+
+        // Asset Code (Item)
+        let asset_code = (this.createAssetForm.item_name || this.createAssetForm.item_code || '').substring(0, 3).toUpperCase();
+        parts.push(asset_code || '[ASSET]');
+
+        // Brand
+        let brand_name = (this.createAssetForm.brand || '').toUpperCase();
+        parts.push(brand_name || '[BRAND]');
+
+        return {
+          parts: parts,
+          full_id: parts.join('/') + '/[SERIAL NO]'
+        };
       },
       get filteredWarehouses() {
         let q = "";
@@ -13016,30 +13095,32 @@
         this.creatingAsset = true;
         try {
           const doc = {
-            doctype: "Asset",
-            asset_name: this.createAssetForm.asset_name,
-            item_code: this.createAssetForm.item_code,
-            location: this.createAssetForm.location,
-            custodian: this.createAssetForm.custodian,
-            zone: this.createAssetForm.zone,
-            state: this.createAssetForm.state,
-            division: this.createAssetForm.division,
-            brand: this.createAssetForm.brand,
-            custom_invoice_number: this.createAssetForm.custom_invoice_number,
-            purchase_date:
-              this.createAssetForm.purchase_date || frappe.datetime.now_date(),
-            available_for_use_date:
-              this.createAssetForm.available_for_use_date ||
-              frappe.datetime.now_date(),
-            gross_purchase_amount:
-              this.createAssetForm.gross_purchase_amount || 0,
-            serial_no: this.createAssetForm.serial_no,
-            is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
-            booked_fixed_asset: 1,
-            naming_series: "AST-",
-            company: "Sahayog Multistate Credit Co-op Society Ltd",
-            asset_owner: "Company",
-            asset_owner_company: "Sahayog Multistate Credit Co-op Society Ltd",
+          doctype: "Asset",
+          asset_name: this.createAssetForm.asset_name,
+          item_code: this.createAssetForm.item_code,
+          location: this.createAssetForm.location,
+          custodian: this.createAssetForm.custodian,
+          zone: this.createAssetForm.zone,
+          state: this.createAssetForm.state,
+          division: this.createAssetForm.division,
+          brand: this.createAssetForm.brand,
+          custom_invoice_number: this.createAssetForm.custom_invoice_number,
+          purchase_date:
+            this.createAssetForm.purchase_date || frappe.datetime.now_date(),
+          available_for_use_date:
+            this.createAssetForm.available_for_use_date ||
+            frappe.datetime.now_date(),
+          gross_purchase_amount:
+            this.createAssetForm.gross_purchase_amount || 0,
+          serial_no: this.createAssetForm.serial_no,
+          is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,
+          is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
+          custom_remark: this.createAssetForm.custom_remark,
+          booked_fixed_asset: 1,
+          naming_series: "AST-",
+          company: "Sahayog Multistate Credit Co-op Society Ltd",
+          asset_owner: "Company",
+          asset_owner_company: "Sahayog Multistate Credit Co-op Society Ltd",
           };
 
           const res = await frappe.call({
