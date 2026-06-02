@@ -36,8 +36,9 @@ class SuspensionProcess(Document):
     def on_submit(self):
         """
         Auto-send Suspension email on submit.
-        Manual Send Email button remains unchanged.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             emp = frappe.get_doc("Employee", self.employee_id)
 
@@ -108,8 +109,12 @@ def send_suspension_email(docname):
 
     # Load suspension email template
     template = frappe.get_doc("Email Template", "Suspension Process")
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
+    
+    # Use standard 'doc' context
+    context = {"doc": doc}
+    
+    message = frappe.render_template(template.response_html, context)
+    subject = frappe.render_template(template.subject, context)
 
     # Attach Print Format → **Suspension Process Notice**
     attachments = [
