@@ -2644,7 +2644,7 @@ class StockIOPage {
                   reqd: 1,
                 },
                 {
-                  label: "Purchase Date",
+                  label: "Invoice Date",
                   fieldname: "purchase_date",
                   fieldtype: "Date",
                   default: frappe.datetime.get_today(),

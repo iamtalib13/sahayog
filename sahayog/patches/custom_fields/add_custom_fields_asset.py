@@ -16,6 +16,12 @@ def execute():
             "fieldtype": "Table",
             "options": "Asset Configuration",
             "insert_after": "asset_configuration_section"
+        },
+        {
+            "fieldname": "custom_invoice_number",
+            "label": "Invoice Number",
+            "fieldtype": "Data",
+            "insert_after": "purchase_invoice"
         }
     ]
 

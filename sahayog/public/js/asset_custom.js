@@ -411,7 +411,7 @@ frappe.ui.form.on('Asset', {
 
 		frm.set_intro('');
 
-		let parts = ['SAHA'];
+		let parts = ['SMCSL'];
 
 		if (frm.doc.zone) {
 			let zone_digits = frm.doc.zone.match(/\d+/);

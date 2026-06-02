@@ -3,7 +3,7 @@ import re
 
 def custom_asset_autoname(doc, method):
     # Prefix 1: Hardcoded
-    company_prefix = "SAHA"
+    company_prefix = "SMCCSL"
 
     # Prefix 2: Zone (Z1, Z2, etc.)
     zone_code = ""
@@ -56,19 +56,11 @@ def custom_asset_autoname(doc, method):
     }
     state_code = state_mapping.get(doc.state, "") if doc.state else ""
 
-    # Prefix 4: Branch / HO / RO / ZO Part (First 3 letters)
-    location_name = doc.branch_name
-    if not location_name and doc.location:
-        # Fetch branch name from Sahayog Branch if not yet populated in doc
-        location_name = frappe.db.get_value("Sahayog Branch", doc.location, "branch")
-    
-    if not location_name:
-        location_name = doc.location or ""
-    
-    location_part = location_name.strip().upper()[:3]
+    # Prefix 4: Sahayog Branch Name (Complete)
+    location_part = (doc.location or "").strip().upper()
 
-    # Prefix 5: Division
-    division_code = (doc.division or "").strip().upper()
+    # Prefix 5: Division (First 3 letters)
+    division_code = (doc.division or "").strip().upper()[:3]
 
     # Prefix 6: Asset Name (First 3 letters)
     asset_name_code = (doc.item_name or doc.item_code or "").strip().upper()[:3]
@@ -77,7 +69,7 @@ def custom_asset_autoname(doc, method):
     brand_code = (doc.brand or "").strip().upper()
 
     # Construct the base prefix for serial number
-    # Syntax: SAHA/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
+    # Syntax: SMCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
     parts = [
         company_prefix,
         zone_code,

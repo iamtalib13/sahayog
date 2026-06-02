@@ -891,6 +891,10 @@ def get_portal_master_data():
         "uoms": [u.name for u in frappe.get_all("UOM")],
         "asset_categories": [c.name for c in frappe.get_all("Asset Category")],
         "locations": [l.name for l in frappe.get_all("Location")],
+        "zones": [z.name for z in frappe.get_all("Zone")],
+        "divisions": [d.name for d in frappe.get_all("Division")],
+        "brands": [b.name for b in frappe.get_all("Brand")],
+        "states": [s for s in frappe.get_meta("Asset").get_field("state").options.split("\n") if s],
         "hsn_codes": hsn_codes,
         "serial_nos": [s.name for s in available_serial_nos],
     }

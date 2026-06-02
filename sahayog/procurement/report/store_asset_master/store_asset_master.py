@@ -28,7 +28,7 @@ def get_columns():
         # NEW: EMPLOYEE NAME
         {"fieldname": "employee_name", "label": "Employee Name", "fieldtype": "Data", "width": 180},
 
-
+        {"fieldname": "purchase_date", "label": "Invoice Date", "fieldtype": "Date", "width": 120},
     ]
 
 
