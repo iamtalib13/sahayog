@@ -59,8 +59,8 @@ def custom_asset_autoname(doc, method):
     # Prefix 4: Sahayog Branch Name (Complete)
     location_part = (doc.location or "").strip().upper()
 
-    # Prefix 5: Division
-    division_code = (doc.division or "").strip().upper()
+    # Prefix 5: Division (First 3 letters)
+    division_code = (doc.division or "").strip().upper()[:3]
 
     # Prefix 6: Asset Name (First 3 letters)
     asset_name_code = (doc.item_name or doc.item_code or "").strip().upper()[:3]
