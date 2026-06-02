@@ -8,6 +8,10 @@ frappe.ui.form.on("Domestic Enquiry", {
     }
     // send email button
     if (!frm.is_new()) {
+      sahayog.dams.add_send_email_button(frm);
+    }
+    /*
+    if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
         frappe.call({
           method:
@@ -53,6 +57,7 @@ frappe.ui.form.on("Domestic Enquiry", {
         });
       });
     }
+    */
     // view case history button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
