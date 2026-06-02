@@ -3,7 +3,7 @@ import re
 
 def custom_asset_autoname(doc, method):
     # Prefix 1: Hardcoded
-    company_prefix = "SAHA"
+    company_prefix = "SMCSL"
 
     # Prefix 2: Zone (Z1, Z2, etc.)
     zone_code = ""
@@ -69,7 +69,7 @@ def custom_asset_autoname(doc, method):
     brand_code = (doc.brand or "").strip().upper()
 
     # Construct the base prefix for serial number
-    # Syntax: SAHA/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
+    # Syntax: SMCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
     parts = [
         company_prefix,
         zone_code,
