@@ -12812,7 +12812,7 @@
         );
       },
       selectSerialBatchItem(item) {
-        this.serialBatchSearch = item.item_name;
+        this.serialBatchSearch = `${item.item_name} (${item.name})`;
         this.focusedField = null;
         // Logic to handle item selection could be added here
       },
