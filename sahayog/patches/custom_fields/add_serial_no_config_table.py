@@ -35,7 +35,9 @@ def execute():
                 "fieldname": "asset_configuration_section",
                 "fieldtype": "Section Break",
                 "insert_after": "item_code",
-                "label": "Asset Configuration Details"
+                "label": "Asset Configuration Details",
+                "collapsible": 1,
+                "default_collapsed": 0
             },
             {
                 "fieldname": "configuration_table",
