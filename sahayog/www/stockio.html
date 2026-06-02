@@ -1039,6 +1039,30 @@
   @vue:mounted="mounted()"
   v-cloak
 >
+  <!-- Custom Warehouse Modal -->
+  <div v-if="showWarehouseCreateModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0;">Create Warehouse</h3>
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">Warehouse Name</label>
+        <input type="text" class="form-input" v-model="newWarehouseName" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" placeholder="Enter Warehouse Name" />
+      </div>
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">Warehouse Category</label>
+        <select class="form-input" v-model="newWarehouseCategory" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+            <option value="">Select Category</option>
+            <option value="Store">Store</option>
+            <option value="Branch">Branch</option>
+            <option value="Project">Project</option>
+        </select>
+      </div>
+      <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" @click="showWarehouseCreateModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-create" @click="submitNewWarehouse" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Sidebar -->
   <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
     <!-- Profile Header -->
@@ -1871,6 +1895,14 @@
         >
           <i class="fas fa-plus"></i>
           <span>Create</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="activeItem === 'Inward'"
+          @click="openCreateWarehouse()"
+        >
+          <i class="fas fa-warehouse"></i>
+          <span>Create Warehouse</span>
         </button>
         <button
           class="btn-create"
@@ -10889,6 +10921,9 @@
       },
       showDispatchHistory: false,      dispatchHistory: [],
       showInwardCreateView: false,
+      showWarehouseCreateModal: false,
+      newWarehouseName: '',
+      newWarehouseCategory: '',
       showOutwardCreateView: false,
       sidebar: {
         header: {
@@ -12634,6 +12669,36 @@
 
       openNewAssetDesk() {
         window.location.href = '/app/asset/new-asset-bbqcsfzfkb';
+      },
+
+      openCreateWarehouse() {
+        this.showWarehouseCreateModal = true;
+        this.newWarehouseName = '';
+        this.newWarehouseCategory = '';
+      },
+      async submitNewWarehouse() {
+        if (!this.newWarehouseName) {
+            frappe.msgprint('Please enter warehouse name');
+            return;
+        }
+        try {
+            await frappe.call({
+                method: 'frappe.client.insert',
+                args: {
+                    doc: {
+                        doctype: 'Warehouse',
+                        warehouse_name: this.newWarehouseName,
+                        custom_warehouse_category: this.newWarehouseCategory,
+                        company: "Sahayog Multistate Credit Co-op Society Ltd"
+                    }
+                }
+            });
+            frappe.show_alert({message: 'Warehouse created successfully', indicator: 'green'});
+            this.showWarehouseCreateModal = false;
+        } catch (e) {
+            frappe.msgprint('Error creating warehouse: ' + (e.message || e));
+            console.error(e);
+        }
       },
 
       redirectToAssetDesk(name) {
