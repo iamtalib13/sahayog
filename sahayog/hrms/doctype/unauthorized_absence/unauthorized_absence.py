@@ -11,6 +11,11 @@ class UnauthorizedAbsence(Document):
         self.name = frappe.model.naming.make_autoname(f"UA-FY-{fy}-.####")
 
     def on_submit(self):
+        """
+        Auto-send UA email on submit.
+        [DISABLED TEMPORARILY]
+        """
+        return
         try:
             from sahayog.utils.hr_utils import send_hr_workflow_email
             send_hr_workflow_email(self.name, "Unauthorized Absence")
