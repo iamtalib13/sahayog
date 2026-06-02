@@ -86,8 +86,12 @@ def send_hr_workflow_email(docname, doctype, template_name=None, print_format=No
     template_name = template_name or doctype
     try:
         template = frappe.get_doc("Email Template", template_name)
-        subject = frappe.render_template(template.subject, doc_dict)
-        message = frappe.render_template(template.response_html, {"doc": doc_dict})
+        
+        # Use standard 'doc' context for consistency across all templates
+        context = {"doc": doc}
+        
+        subject = frappe.render_template(template.subject, context)
+        message = frappe.render_template(template.response_html, context)
     except Exception:
         frappe.log_error(frappe.get_traceback(), f"HR Email Template Error: {template_name}")
         return
