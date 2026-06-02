@@ -1906,6 +1906,14 @@
         </button>
         <button
           class="btn-create"
+          v-if="activeItem === 'Inward'"
+          @click="openNewSerialBatch()"
+        >
+          <i class="fas fa-barcode"></i>
+          <span>New Serial Batch</span>
+        </button>
+        <button
+          class="btn-create"
           v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
           @click="openNewAssetDesk()"
         >
@@ -12675,6 +12683,9 @@
         this.showWarehouseCreateModal = true;
         this.newWarehouseName = '';
         this.newWarehouseCategory = '';
+      },
+      openNewSerialBatch() {
+        frappe.msgprint('New Serial Batch functionality to be implemented.');
       },
       async submitNewWarehouse() {
         if (!this.newWarehouseName) {
