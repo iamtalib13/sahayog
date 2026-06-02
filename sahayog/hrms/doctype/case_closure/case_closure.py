@@ -1020,6 +1020,63 @@ def case_history_submit_review(case_id, reviewer, remarks):
 # ============================================================================
 # SYNC REVIEWER EMAIL SENT STATUS
 # ============================================================================
+# @frappe.whitelist()
+# def sync_reviewer_mail_checkbox(case_closure_name):
+#     """
+#     Updates 'mail_sent' flag in review_details child table
+#     based on Email Queue status.
+
+#     Purpose:
+#     - Visually track whether reviewer notification email was delivered
+#     - Avoid duplicate notifications
+#     """
+
+#     if not case_closure_name:
+#         return
+#     # Load Case Closure document
+#     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
+#     updated = False
+
+#     for row in cc_doc.review_details:
+
+#         # already checked → skip
+#         if row.mail_sent:
+#             continue
+
+#         if not row.employee_id:
+#             continue
+
+#         # 🔹 Fetch employee email (since child table has no email field)
+#         emp_email = frappe.db.get_value(
+#             "Employee",
+#             row.employee_id,
+#             ["company_email", "prefered_email"],
+#         )
+
+#         if isinstance(emp_email, (list, tuple)):
+#             emp_email = emp_email[0] or emp_email[1]
+
+#         if not emp_email:
+#             continue
+
+#         # 🔍 Check Email Queue Recipient
+#         sent = frappe.db.exists(
+#             "Email Queue Recipient",
+#             {
+#                 "recipient": emp_email,
+#                 "status": "Sent"
+#             }
+#         )
+
+#         if sent:
+#             row.mail_sent = 1
+#             updated = True
+#      # Save only if changes were made
+#     if updated:
+#         cc_doc.save(ignore_permissions=True)
+#         frappe.db.commit()
+
+
 @frappe.whitelist()
 def sync_reviewer_mail_checkbox(case_closure_name):
     """
@@ -1032,21 +1089,18 @@ def sync_reviewer_mail_checkbox(case_closure_name):
     """
 
     if not case_closure_name:
-        return
-    # Load Case Closure document
+        return {"updated": False}
+
     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
     updated = False
 
     for row in cc_doc.review_details:
-
-        # already checked → skip
         if row.mail_sent:
             continue
 
         if not row.employee_id:
             continue
 
-        # 🔹 Fetch employee email (since child table has no email field)
         emp_email = frappe.db.get_value(
             "Employee",
             row.employee_id,
@@ -1059,7 +1113,6 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if not emp_email:
             continue
 
-        # 🔍 Check Email Queue Recipient
         sent = frappe.db.exists(
             "Email Queue Recipient",
             {
@@ -1071,10 +1124,12 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if sent:
             row.mail_sent = 1
             updated = True
-     # Save only if changes were made
+
     if updated:
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
+
+    return {"updated": updated}
 
 
 # @frappe.whitelist()
@@ -1280,3 +1335,25 @@ def validate_closure_fields_access(self):
         frappe.throw(
             "These fields can be edited only after all employees in Review Details have submitted their feedback."
         )
+
+
+@frappe.whitelist()
+def sync_reviewer_mail_checkbox(case_closure_name):
+    if not case_closure_name:
+        return {"updated": False}
+
+    cc_doc = frappe.get_doc("Case Closure", case_closure_name)
+    updated = False
+
+    for row in cc_doc.review_details:
+        # your existing email queue logic here
+        # if row.mailsent changes:
+        #     row.mailsent = 1
+        #     updated = True
+        pass
+
+    if updated:
+        cc_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+
+    return {"updated": updated}
