@@ -56,16 +56,8 @@ def custom_asset_autoname(doc, method):
     }
     state_code = state_mapping.get(doc.state, "") if doc.state else ""
 
-    # Prefix 4: Branch / HO / RO / ZO Part (First 3 letters)
-    location_name = doc.branch_name
-    if not location_name and doc.location:
-        # Fetch branch name from Sahayog Branch if not yet populated in doc
-        location_name = frappe.db.get_value("Sahayog Branch", doc.location, "branch")
-    
-    if not location_name:
-        location_name = doc.location or ""
-    
-    location_part = location_name.strip().upper()[:3]
+    # Prefix 4: Sahayog Branch Name (Complete)
+    location_part = (doc.location or "").strip().upper()
 
     # Prefix 5: Division
     division_code = (doc.division or "").strip().upper()
