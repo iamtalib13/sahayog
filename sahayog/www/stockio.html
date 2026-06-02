@@ -12828,12 +12828,34 @@
               };
 
               try {
-                  await frappe.call({
+                  const res = await frappe.call({
                       method: 'frappe.client.insert',
                       args: { doc: doc }
                   });
+                  
+                  // Create Serial and Batch Bundle
+                  if (res.message && res.message.name) {
+                      await frappe.call({
+                          method: 'frappe.client.insert',
+                          args: {
+                              doc: {
+                                  doctype: 'Serial and Batch Bundle',
+                                  item_code: itemCode,
+                                  type_of_transaction: 'Inward',
+                                  voucher_type: 'Stock Entry',
+                                  warehouse: '1000',
+                                  entries: [
+                                      {
+                                          serial_no: res.message.name,
+                                          warehouse: '1000'
+                                      }
+                                  ]
+                              }
+                          }
+                      });
+                  }
               } catch (e) {
-                  console.error('Error creating serial no:', item.serial_no, e);
+                  console.error('Error creating serial no or bundle:', item.serial_no, e);
                   frappe.msgprint(`Error creating Serial No ${item.serial_no}: ${e.message || e}`);
               }
           });
