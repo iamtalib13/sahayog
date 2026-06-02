@@ -12800,7 +12800,11 @@
       },
       get filteredSerialBatchItems() {
         const search = (this.serialBatchSearch || "").toLowerCase();
-        let list = this.itemsList || [];
+        // Filter by IT department first
+        let list = (this.itemsList || []).filter(i => 
+          i.custom_item_department && String(i.custom_item_department).toUpperCase() === 'IT'
+        );
+        
         if (!search) return list.slice(0, 10);
         return list.filter(i => 
           i.name.toLowerCase().includes(search) || 
