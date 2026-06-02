@@ -1335,25 +1335,3 @@ def validate_closure_fields_access(self):
         frappe.throw(
             "These fields can be edited only after all employees in Review Details have submitted their feedback."
         )
-
-
-@frappe.whitelist()
-def sync_reviewer_mail_checkbox(case_closure_name):
-    if not case_closure_name:
-        return {"updated": False}
-
-    cc_doc = frappe.get_doc("Case Closure", case_closure_name)
-    updated = False
-
-    for row in cc_doc.review_details:
-        # your existing email queue logic here
-        # if row.mailsent changes:
-        #     row.mailsent = 1
-        #     updated = True
-        pass
-
-    if updated:
-        cc_doc.save(ignore_permissions=True)
-        frappe.db.commit()
-
-    return {"updated": updated}

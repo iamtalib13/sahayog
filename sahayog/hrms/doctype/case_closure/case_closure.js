@@ -367,10 +367,15 @@ frappe.ui.form.on("Case Closure", {
     }
 
     // ---------------- CASE REVIEW BUTTON ----------------
-    if (!frm.is_new()) {
-      frm.add_custom_button("Case Review", () => {
-        open_approver_dialog(frm);
-      });
+    // if (!frm.is_new()) {
+    //   frm.add_custom_button("Case Review", () => {
+    //     open_approver_dialog(frm);
+    //   });
+    // }
+
+    // ---------------- CASE REVIEW BUTTON ----------------
+    if (!frm.is_new() && frm.doc.status !== "Verified" && frm.doc.status !== "Closed") {
+        frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
     }
 
     // ---------------- REVIEWER MAIL SYNC ----------------
@@ -496,6 +501,14 @@ if (!frm.__dirty_debug_installed) {
     };
   })(frm.script_manager.trigger);
 }
+
+setTimeout(() => {
+    if (frm.doc.status === "Closed" && frm.page.btn_secondary) {
+        frm.page.btn_secondary.addClass("hide");
+    } else if (frm.page.btn_secondary) {
+        frm.page.btn_secondary.removeClass("hide");
+    }
+}, 100);
   },
 
   show_print_button: function (frm) {
@@ -1877,4 +1890,7 @@ function toggle_closure_fields(frm) {
             }
         }
     });
+     if (frm.fields_dict.section_break_webc) {
+    frm.set_df_property("section_break_webc", "hidden", can_edit ? 0 : 1);
+  }
 }
