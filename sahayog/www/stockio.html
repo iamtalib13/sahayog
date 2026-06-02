@@ -12796,7 +12796,50 @@
           });
       },
       submitSerialBatch() {
-          frappe.msgprint('Submit functionality to be implemented.');
+          if (!this.serialBatchSearch || !this.serialBatchSearch.includes('(')) {
+              frappe.msgprint('Please select a valid item.');
+              return;
+          }
+          
+          // Extract Item Code from search string: "Item Name (ITEM-CODE)"
+          const itemCode = this.serialBatchSearch.match(/\(([^)]+)\)/)[1];
+
+          this.serialBatchItems.forEach(async (item) => {
+              if (!item.serial_no) return; // Skip if serial no is empty
+
+              const doc = {
+                  doctype: 'Serial No',
+                  serial_no: item.serial_no,
+                  item_code: itemCode,
+                  configuration_table: [
+                      { config_type: 'MAC Address', config_value: item.mac_address },
+                      { config_type: 'Model Number', config_value: item.model_number },
+                      { config_type: 'Office Key', config_value: item.office_key },
+                      { config_type: 'Operating System', config_value: item.operating_system },
+                      { config_type: 'Processor', config_value: item.processor },
+                      { config_type: 'RAM', config_value: item.ram },
+                      { config_type: 'Storage', config_value: item.storage },
+                      { config_type: 'Vend', config_value: item.vendor },
+                      { config_type: 'Warranty start date', config_value: item.warranty_start_date },
+                      { config_type: 'Warranty end date', config_value: item.warranty_end_date },
+                      { config_type: 'Windows Key', config_value: item.windows_key },
+                      { config_type: 'Make', config_value: item.make }
+                  ].filter(row => row.config_value) // Only include filled rows
+              };
+
+              try {
+                  await frappe.call({
+                      method: 'frappe.client.insert',
+                      args: { doc: doc }
+                  });
+              } catch (e) {
+                  console.error('Error creating serial no:', item.serial_no, e);
+                  frappe.msgprint(`Error creating Serial No ${item.serial_no}: ${e.message || e}`);
+              }
+          });
+          
+          frappe.show_alert({message: 'Serial Batch submission processed', indicator: 'green'});
+          this.showSerialBatchModal = false;
       },
       get filteredSerialBatchItems() {
         const search = (this.serialBatchSearch || "").toLowerCase();
