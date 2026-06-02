@@ -33,6 +33,47 @@ def get_dams_email_defaults(doctype, docname):
         "cc": fixed_cc
     }
 
+@frappe.whitelist()
+def get_email_template_preview(template_name, doctype, docname):
+    if not template_name or not doctype or not docname:
+        return {"subject": "", "message": ""}
+
+    doc = frappe.get_doc(doctype, docname)
+    template = frappe.get_doc("Email Template", template_name)
+
+    context = doc.as_dict()
+    context["doc"] = doc
+
+    try:
+        subject = frappe.render_template(template.subject, context)
+        body = frappe.render_template(template.response_html, context)
+
+        frappe.log_error(
+            title="EMAIL PREVIEW DEBUG",
+            message=f"""
+Template: {template_name}
+
+SUBJECT:
+{subject}
+
+BODY:
+{body}
+"""
+        )
+
+    except Exception:
+        subject = template.subject
+        body = template.response_html
+
+        frappe.log_error(
+            title="EMAIL PREVIEW ERROR",
+            message=frappe.get_traceback()
+        )
+
+    return {
+        "subject": subject,
+        "message": body
+    }
 
 # =========================
 # 2. CORE EMAIL SENDER
