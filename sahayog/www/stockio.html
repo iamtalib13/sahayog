@@ -3052,33 +3052,6 @@
                   </div>
                 </div>
 
-                <!-- Asset Category -->
-                <div class="form-group" style="margin-bottom: 16px !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Category <span class="form-required">*</span></label>
-                  <div class="searchable-select-wrapper">
-                    <input
-                      type="text"
-                      class="form-input searchable-select-input"
-                      style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_category_new' }"
-                      v-model="createAssetForm.asset_category_display"
-                      @focus="onFocusSearchable('asset_category_new')"
-                      @blur="onBlurSearchable('asset_category_new')"
-                      placeholder="Search Category"
-                    />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_category_new'">
-                      <div
-                        v-for="cat in filteredAssetCategories"
-                        :key="cat"
-                        class="searchable-select-option"
-                        @mousedown="createAssetForm.asset_category = cat; createAssetForm.asset_category_display = cat; focusedField = null;"
-                      >
-                        [[ cat ]]
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Asset Name -->
                 <div class="form-group" v-if="createAssetForm.item_code" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Name <span class="form-required">*</span></label>
@@ -3146,7 +3119,7 @@
                 </div>
 
                 <!-- Serial No -->
-                <div class="form-group" style="margin-bottom: 16px !important;">
+                <div class="form-group" style="margin-bottom: 0 !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Serial No</label>
                   <div class="searchable-select-wrapper">
                     <input
@@ -3170,30 +3143,6 @@
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <!-- Windows Key -->
-                <div class="form-group" style="margin-bottom: 16px !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Windows Key</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    style="padding: 12px 16px !important;"
-                    v-model="createAssetForm.windows_key"
-                    placeholder="Windows Key"
-                  />
-                </div>
-
-                <!-- Office Key -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Office Key</label>
-                  <input
-                    type="text"
-                    class="form-input"
-                    style="padding: 12px 16px !important;"
-                    v-model="createAssetForm.office_key"
-                    placeholder="Office Key"
-                  />
                 </div>
 
               </div>
@@ -12895,12 +12844,11 @@
       async submitAsset() {
         if (
           !this.createAssetForm.asset_name.trim() ||
-          !this.createAssetForm.asset_category ||
           !this.createAssetForm.location ||
           !this.createAssetForm.item_code
         ) {
           frappe.msgprint(
-            "Please fill all mandatory fields: Asset Name, Category, Item Code, and Location",
+            "Please fill all mandatory fields: Asset Name, Item Code, and Location",
           );
           return;
         }
@@ -12910,7 +12858,6 @@
           const doc = {
             doctype: "Asset",
             asset_name: this.createAssetForm.asset_name,
-            asset_category: this.createAssetForm.asset_category,
             item_code: this.createAssetForm.item_code,
             location: this.createAssetForm.location,
             custodian: this.createAssetForm.custodian,
@@ -12922,8 +12869,6 @@
             gross_purchase_amount:
               this.createAssetForm.gross_purchase_amount || 0,
             serial_no: this.createAssetForm.serial_no,
-            windows_key: this.createAssetForm.windows_key,
-            office_key: this.createAssetForm.office_key,
             is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,            is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
             booked_fixed_asset: 1,
             naming_series: "AST-",
