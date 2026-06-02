@@ -74,13 +74,13 @@ class CaseClosure(Document):
 
     def validate_closure_fields_access(self):
         controlled_fields = ["remarks", "enquiry_status",
-                             "enquiry_report_upload", "case_close_with"]
-
+                             "enquiry_report_upload",
+                             "case_close_with"]
         allowed_roles = {"Administrator", "HR Support Executive",
-                         "HR Manager", "HR Support Manager"}
-        user_roles = set(frappe.get_roles(frappe.session.user))
-        has_allowed_role = bool(user_roles.intersection(
-            allowed_roles)) or "Administrator" in user_roles
+                         "HR Support Manager", "HR Manager"}
+
+        if self.is_new():
+            return
 
         old_doc = self.get_doc_before_save()
         if not old_doc:
@@ -90,26 +90,63 @@ class CaseClosure(Document):
         if not changed:
             return
 
+        user_roles = set(frappe.get_roles(frappe.session.user))
+        has_allowed_role = bool(user_roles.intersection(
+            allowed_roles)) or "Administrator" in user_roles
+
         if not has_allowed_role:
             frappe.throw(
                 "Only HR Manager, HR Support Executive, HR Support Manager, or Administrator can update closure fields."
             )
 
-        all_reviews_submitted = (
-            len(self.review_details) > 0 and
-            all(
-                row.employee_id and row.remarks and str(row.remarks).strip() and
-                str(row.status or "").strip().lower() == "submitted"
-                for row in self.review_details
-            )
+        all_reviews_submitted = len(self.review_details) > 0 and all(
+            row.employee_id and row.remarks and str(row.remarks).strip() and str(
+                row.status or "").strip().lower() == "submitted"
+            for row in self.review_details
         )
 
         if not all_reviews_submitted and self.status != "Verified":
             frappe.throw(
-                "Closure fields can be edited only after all reviewers have submitted feedback."
-            )
+                "Closure fields can be edited only after all reviewers have submitted feedback.")
 
-    def validate_verified_transition(self):
+    # def validate_closure_fields_access(self):
+    #     controlled_fields = ["remarks", "enquiry_status",
+    #                          "enquiry_report_upload", "case_close_with"]
+
+    #     allowed_roles = {"Administrator", "HR Support Executive",
+    #                      "HR Manager", "HR Support Manager"}
+    #     user_roles = set(frappe.get_roles(frappe.session.user))
+    #     has_allowed_role = bool(user_roles.intersection(
+    #         allowed_roles)) or "Administrator" in user_roles
+
+    #     old_doc = self.get_doc_before_save()
+    #     if not old_doc:
+    #         return
+
+    #     changed = any(old_doc.get(f) != self.get(f) for f in controlled_fields)
+    #     if not changed:
+    #         return
+
+    #     if not has_allowed_role:
+    #         frappe.throw(
+    #             "Only HR Manager, HR Support Executive, HR Support Manager, or Administrator can update closure fields."
+    #         )
+
+    #     all_reviews_submitted = (
+    #         len(self.review_details) > 0 and
+    #         all(
+    #             row.employee_id and row.remarks and str(row.remarks).strip() and
+    #             str(row.status or "").strip().lower() == "submitted"
+    #             for row in self.review_details
+    #         )
+    #     )
+
+    #     if not all_reviews_submitted and self.status != "Verified":
+    #         frappe.throw(
+    #             "Closure fields can be edited only after all reviewers have submitted feedback."
+    #         )
+
+    # def validate_verified_transition(self):
         if self.is_new():
             return
 
@@ -144,6 +181,45 @@ class CaseClosure(Document):
         if missing:
             frappe.throw(
                 "Please fill the following fields before approving: " + ", ".join(missing))
+
+    def validate_verified_transition(self):
+        if self.is_new():
+            return
+
+        old_doc = self.get_doc_before_save()
+        if not old_doc:
+            return
+
+        moving_to_verified = old_doc.status != "Verified" and self.status == "Verified"
+        if not moving_to_verified:
+            return
+
+        if not self.review_details:
+            frappe.throw("Please select reviewers before approving the case.")
+
+        pending_reviews = [
+            row.employee_id for row in self.review_details
+            if not row.remarks or str(row.status or "").strip().lower() != "submitted"
+        ]
+
+        if pending_reviews:
+            frappe.throw(
+                "All reviewers must submit feedback before approving.")
+
+        required_fields = {
+            "remarks": "Remarks",
+            "enquiry_status": "Enquiry Status",
+            # "enquiry_report_upload": "Enquiry Report Upload",
+            "case_close_with": "Case Close With",
+        }
+
+        missing = [label for field, label in required_fields.items()
+                   if not self.get(field)]
+        if missing:
+            frappe.throw(
+                "Please fill the following fields before approving: " +
+                ", ".join(missing)
+            )
 
     def autoname(self):
         if self.case_id:
@@ -944,6 +1020,63 @@ def case_history_submit_review(case_id, reviewer, remarks):
 # ============================================================================
 # SYNC REVIEWER EMAIL SENT STATUS
 # ============================================================================
+# @frappe.whitelist()
+# def sync_reviewer_mail_checkbox(case_closure_name):
+#     """
+#     Updates 'mail_sent' flag in review_details child table
+#     based on Email Queue status.
+
+#     Purpose:
+#     - Visually track whether reviewer notification email was delivered
+#     - Avoid duplicate notifications
+#     """
+
+#     if not case_closure_name:
+#         return
+#     # Load Case Closure document
+#     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
+#     updated = False
+
+#     for row in cc_doc.review_details:
+
+#         # already checked → skip
+#         if row.mail_sent:
+#             continue
+
+#         if not row.employee_id:
+#             continue
+
+#         # 🔹 Fetch employee email (since child table has no email field)
+#         emp_email = frappe.db.get_value(
+#             "Employee",
+#             row.employee_id,
+#             ["company_email", "prefered_email"],
+#         )
+
+#         if isinstance(emp_email, (list, tuple)):
+#             emp_email = emp_email[0] or emp_email[1]
+
+#         if not emp_email:
+#             continue
+
+#         # 🔍 Check Email Queue Recipient
+#         sent = frappe.db.exists(
+#             "Email Queue Recipient",
+#             {
+#                 "recipient": emp_email,
+#                 "status": "Sent"
+#             }
+#         )
+
+#         if sent:
+#             row.mail_sent = 1
+#             updated = True
+#      # Save only if changes were made
+#     if updated:
+#         cc_doc.save(ignore_permissions=True)
+#         frappe.db.commit()
+
+
 @frappe.whitelist()
 def sync_reviewer_mail_checkbox(case_closure_name):
     """
@@ -956,21 +1089,18 @@ def sync_reviewer_mail_checkbox(case_closure_name):
     """
 
     if not case_closure_name:
-        return
-    # Load Case Closure document
+        return {"updated": False}
+
     cc_doc = frappe.get_doc("Case Closure", case_closure_name)
     updated = False
 
     for row in cc_doc.review_details:
-
-        # already checked → skip
         if row.mail_sent:
             continue
 
         if not row.employee_id:
             continue
 
-        # 🔹 Fetch employee email (since child table has no email field)
         emp_email = frappe.db.get_value(
             "Employee",
             row.employee_id,
@@ -983,7 +1113,6 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if not emp_email:
             continue
 
-        # 🔍 Check Email Queue Recipient
         sent = frappe.db.exists(
             "Email Queue Recipient",
             {
@@ -995,10 +1124,12 @@ def sync_reviewer_mail_checkbox(case_closure_name):
         if sent:
             row.mail_sent = 1
             updated = True
-     # Save only if changes were made
+
     if updated:
         cc_doc.save(ignore_permissions=True)
         frappe.db.commit()
+
+    return {"updated": updated}
 
 
 # @frappe.whitelist()

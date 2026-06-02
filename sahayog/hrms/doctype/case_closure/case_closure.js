@@ -117,42 +117,102 @@ frappe.ui.form.on("Case Closure", {
   // --------------------------------------------------------------------------
   // ON SUBMIT: Close linked case stages
   // --------------------------------------------------------------------------
-  reference_name(frm) {
-    if (frm.doc.reference_doctype && frm.doc.reference_name) {
-      frappe.call({
-        method:
-          "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
-        args: {
-          reference_doctype: frm.doc.reference_doctype,
-          reference_name: frm.doc.reference_name,
-        },
-        callback: function (r) {
-          if (r.message) {
-            frm.set_value(r.message);
 
-            // Define list of all enquiry-related fields
-            const all_enquiry_fields = [
-              "status_of_response",
+  // old logic (commented out as per request)
+  // reference_name(frm) {
+  //   if (frm.doc.reference_doctype && frm.doc.reference_name) {
+  //     frappe.call({
+  //       method:
+  //         "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
+  //       args: {
+  //         reference_doctype: frm.doc.reference_doctype,
+  //         reference_name: frm.doc.reference_name,
+  //       },
+  //       callback: function (r) {
+  //         if (r.message) {
+  //           frm.set_value(r.message);
+
+  //           // Define list of all enquiry-related fields
+  //           const all_enquiry_fields = [
+  //             "status_of_response",
+  //             "domestic_enquiry",
+  //             "place_of_enquiry",
+  //             "date_of_enquiry",
+  //             "enquiry_officer_name",
+  //           ];
+
+  //           // Dynamically show fields that are present in the response
+  //           all_enquiry_fields.forEach((f) => {
+  //             if (r.message[f] !== undefined && r.message[f] !== null) {
+  //               frm.set_df_property(f, "hidden", 0);
+  //               frm.set_df_property(f, "read_only", 1);
+  //             } else {
+  //               frm.set_df_property(f, "hidden", 1);
+  //             }
+  //           });
+  //         }
+  //       },
+  //     });
+  //   }
+  // },
+// -------------------------------------------------------------------------- 
+  reference_name(frm) {
+  if (frm.doc.reference_doctype && frm.doc.reference_name) {
+    frappe.call({
+      method:
+                  "sahayog.hrms.doctype.case_closure.case_closure.get_reference_details",
+      args: {
+        reference_doctype: frm.doc.reference_doctype,
+        reference_name: frm.doc.reference_name,
+      },
+      callback: function (r) {
+        if (r.message) {
+          const updates = {};
+
+          Object.keys(r.message).forEach((key) => {
+            const current_value = frm.doc[key];
+            const incoming_value = r.message[key];
+
+            const current_normalized =
+              current_value === undefined || current_value === null || current_value === ""
+                ? null
+                : String(current_value).trim();
+
+            const incoming_normalized =
+              incoming_value === undefined || incoming_value === null || incoming_value === ""
+                ? null
+                : String(incoming_value).trim();
+
+            if (current_normalized !== incoming_normalized) {
+              updates[key] = incoming_value;
+            }
+          });
+
+          if (Object.keys(updates).length > 0) {
+            frm.set_value(updates);
+          }
+
+          const all_enquiry_fields = [
+            "status_of_response",
               "domestic_enquiry",
               "place_of_enquiry",
               "date_of_enquiry",
               "enquiry_officer_name",
-            ];
+          ];
 
-            // Dynamically show fields that are present in the response
-            all_enquiry_fields.forEach((f) => {
-              if (r.message[f] !== undefined && r.message[f] !== null) {
-                frm.set_df_property(f, "hidden", 0);
-                frm.set_df_property(f, "read_only", 1);
-              } else {
-                frm.set_df_property(f, "hidden", 1);
-              }
-            });
-          }
-        },
-      });
-    }
-  },
+          all_enquiry_fields.forEach((f) => {
+            if (r.message[f] !== undefined && r.message[f] !== null) {
+              frm.set_df_property(f, "hidden", 0);
+              frm.set_df_property(f, "read_only", 1);
+            } else {
+              frm.set_df_property(f, "hidden", 1);
+            }
+          });
+        }
+      },
+    });
+  }
+},
 
   on_submit(frm) {
     if (!frm.doc.case_id) return;
@@ -307,27 +367,49 @@ frappe.ui.form.on("Case Closure", {
     }
 
     // ---------------- CASE REVIEW BUTTON ----------------
-    if (!frm.is_new()) {
-      frm.add_custom_button("Case Review", () => {
-        open_approver_dialog(frm);
-      });
+    // if (!frm.is_new()) {
+    //   frm.add_custom_button("Case Review", () => {
+    //     open_approver_dialog(frm);
+    //   });
+    // }
+
+    // ---------------- CASE REVIEW BUTTON ----------------
+    if (!frm.is_new() && frm.doc.status !== "Verified" && frm.doc.status !== "Closed") {
+        frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
     }
 
     // ---------------- REVIEWER MAIL SYNC ----------------
-    if (frm.__reviewer_mail_synced || frm.is_new()) return;
+    // if (frm.__reviewer_mail_synced || frm.is_new()) return;
 
-    frm.__reviewer_mail_synced = true;
+    // frm.__reviewer_mail_synced = true;
 
-    frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
-      args: {
-        case_closure_name: frm.doc.name,
-      },
-      callback() {
-        frm.refresh_field("review_details");
-      },
-    });
+    // frappe.call({
+    //   method:
+    //     "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+    //   args: {
+    //     case_closure_name: frm.doc.name,
+    //   },
+    //   callback() {
+    //     frm.refresh_field("review_details");
+    //   },
+    // });
+
+    // ---------------- REVIEWER MAIL SYNC ----------------
+    if (!frm.is_new() && !frm.__reviewer_mail_synced) {
+  frm.__reviewer_mail_synced = true;
+
+  frappe.call({
+    method: "sahayog.hrms.doctype.case_closure.case_closure.sync_reviewer_mail_checkbox",
+    args: {
+      case_closure_name: frm.doc.name,
+    },
+    callback: function (r) {
+      if (r.message && r.message.updated) {
+        frm.reload_doc();
+      }
+    },
+  });
+}
 
     // ---------------- SUBMIT FEEDBACK BUTTON ----------------
 
@@ -378,6 +460,55 @@ frappe.ui.form.on("Case Closure", {
         }
     });
 }
+
+if (!frm.__dirty_debug_installed) {
+  frm.__dirty_debug_installed = true;
+
+  const original_set_value = frm.set_value.bind(frm);
+  frm.set_value = function (field, value, if_missing, skip_dirty_trigger = false) {
+    console.group("frm.set_value called");
+    console.log("Field:", field);
+    console.log("Value:", value);
+    console.log("Docname:", frm.doc.name);
+    console.log("is_dirty before:", frm.is_dirty());
+    console.trace("set_value trace");
+    console.groupEnd();
+
+    return original_set_value(field, value, if_missing, skip_dirty_trigger);
+  };
+
+  const original_dirty = frm.dirty.bind(frm);
+  frm.dirty = function () {
+    console.group("frm.dirty called");
+    console.log("Docname:", frm.doc.name);
+    console.log("Current doc snapshot:", JSON.parse(JSON.stringify(frm.doc)));
+    console.trace("dirty trace");
+    console.groupEnd();
+
+    return original_dirty();
+  };
+
+  frm.script_manager.trigger = (function (original_trigger) {
+    return async function (event_name, doctype, name) {
+      console.group("script_manager.trigger");
+      console.log("Event:", event_name);
+      console.log("Doctype:", doctype);
+      console.log("Name:", name);
+      console.trace("trigger trace");
+      console.groupEnd();
+
+      return original_trigger.apply(this, arguments);
+    };
+  })(frm.script_manager.trigger);
+}
+
+setTimeout(() => {
+    if (frm.doc.status === "Closed" && frm.page.btn_secondary) {
+        frm.page.btn_secondary.addClass("hide");
+    } else if (frm.page.btn_secondary) {
+        frm.page.btn_secondary.removeClass("hide");
+    }
+}, 100);
   },
 
   show_print_button: function (frm) {
@@ -983,121 +1114,179 @@ function open_approver_dialog(frm) {
   });
 }
 
+// function submit_approvers(frm, values, dialog) {
+//   // A. Validate new reviewers
+//   const new_reviewers = values.approver_table || [];
+//   // B. Add new reviewers to parent document
+//   if (new_reviewers.length === 0) {
+//     frappe.msgprint(__("No new reviewers selected."));
+//     dialog.hide();
+//     return;
+//   }
+
+//   // add each new reviewer to parent doc's review_details child table
+//   new_reviewers.forEach((row) => {
+//     let child = frm.add_child("review_details");
+
+//     // ensure employee details are copied from dialog to child table
+//     child.employee_id = row.employee_id;
+//     child.employee_name = row.employee_name; // Add employee name
+//     child.company_email = row.company_email; // Add company email
+
+//     // other fields with default values
+//     child.remarks = "";
+//     child.status = "Pending";
+//     child.date_and_time = frappe.datetime.now_datetime();
+//   });
+
+//   frm.refresh_field("review_details");
+
+//   // C. Update status to "Under Review" if new reviewers are added 
+//   if (new_reviewers.length > 0) {
+//     frm.set_value("status", "Under Review");
+//   }
+
+//   //  D. Save parent document
+//   frm.save().then(() => {
+//     // -----------------------------------------------------
+//     // FIRST CALL → VERIFICATION PROCESS EMAILS
+//     // -----------------------------------------------------
+//     frappe.call({
+//       method:
+//         "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+//       args: {
+//         // Pass only the new reviewers, as existing ones might already be processed
+//         approvers: new_reviewers,
+//         case_id: frm.doc.name,
+//       },
+//       freeze: true,
+//       freeze_message: __("Sending verification emails..."),
+//       callback(r) {
+//         console.log("START VERIFICATION RESPONSE:", r);
+
+//         if (r.message?.status !== "ok") {
+//           frappe.msgprint({
+//             title: __("Verification Failed"),
+//             message: r.message?.msg,
+//             indicator: "red",
+//           });
+//           return;
+//         }
+
+//         frappe.msgprint({
+//           title: __("Verification Started"),
+//           message: __("Case Review process started successfully."),
+//           indicator: "green",
+//         });
+//       },
+//     });
+
+//     // -----------------------------------------------------
+//     // SECOND CALL → TEMPLATE-BASED EMAIL
+//     // -----------------------------------------------------
+//     frappe.call({
+//       method:
+//         "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+//       args: {
+//         case_id: frm.doc.name,
+//         // Pass only the new approvers' details for the email content
+//         approvers: JSON.stringify(new_reviewers),
+//       },
+//       freeze: true,
+//       freeze_message: __("Sending review notification email..."),
+//       callback(r) {
+//         console.log("TEMPLATE EMAIL RESPONSE:", r);
+//         // (Callback logic remains the same)
+//         if (r.message?.status === "disabled") {
+//           frappe.msgprint({
+//             title: __("Email Disabled"),
+//             message: __("Email notifications are disabled."),
+//             indicator: "orange",
+//           });
+//           return;
+//         }
+
+//         if (r.message?.status === "ok") {
+//           frappe.msgprint({
+//             title: __("Success"),
+//             message: __("Review notification email has been sent."),
+//             indicator: "green",
+//           });
+//           return;
+//         }
+
+//         frappe.msgprint({
+//           title: __("Email Failed"),
+//           message:
+//             r.message?.msg || __("Could not send review notification email."),
+//           indicator: "red",
+//         });
+//       },
+//     });
+
+//     dialog.hide();
+//   });
+// }
+
+// function to display review details with employee info
+
+
 function submit_approvers(frm, values, dialog) {
-  // A. Validate new reviewers
   const new_reviewers = values.approver_table || [];
-  // B. Add new reviewers to parent document
-  if (new_reviewers.length === 0) {
-    frappe.msgprint(__("No new reviewers selected."));
+
+  if (!new_reviewers.length) {
+    frappe.msgprint("No new reviewers selected.");
     dialog.hide();
     return;
   }
 
-  // add each new reviewer to parent doc's review_details child table
   new_reviewers.forEach((row) => {
-    let child = frm.add_child("review_details");
-
-    // ensure employee details are copied from dialog to child table
+    const child = frm.add_child("review_details");
     child.employee_id = row.employee_id;
-    child.employee_name = row.employee_name; // Add employee name
-    child.company_email = row.company_email; // Add company email
-
-    // other fields with default values
+    child.employee_name = row.employee_name;
+    child.company_email = row.company_email;
     child.remarks = "";
     child.status = "Pending";
-    child.date_and_time = frappe.datetime.now_datetime();
+    child.date_time = frappe.datetime.now_datetime();
   });
 
+  frm.set_value("status", "Under Review");
   frm.refresh_field("review_details");
 
-  // C. Update status to "Under Review" if new reviewers are added 
-  if (new_reviewers.length > 0) {
-    frm.set_value("status", "Under Review");
-  }
-
-  //  D. Save parent document
   frm.save().then(() => {
-    // -----------------------------------------------------
-    // FIRST CALL → VERIFICATION PROCESS EMAILS
-    // -----------------------------------------------------
     frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
+      method: "sahayog.hrms.doctype.case_closure.case_closure.start_verification_process",
       args: {
-        // Pass only the new reviewers, as existing ones might already be processed
         approvers: new_reviewers,
         case_id: frm.doc.name,
       },
       freeze: true,
-      freeze_message: __("Sending verification emails..."),
-      callback(r) {
-        console.log("START VERIFICATION RESPONSE:", r);
-
-        if (r.message?.status !== "ok") {
-          frappe.msgprint({
-            title: __("Verification Failed"),
-            message: r.message?.msg,
-            indicator: "red",
-          });
-          return;
-        }
-
-        frappe.msgprint({
-          title: __("Verification Started"),
-          message: __("Case Review process started successfully."),
-          indicator: "green",
-        });
-      },
+      freeze_message: "Sending verification emails...",
     });
 
-    // -----------------------------------------------------
-    // SECOND CALL → TEMPLATE-BASED EMAIL
-    // -----------------------------------------------------
     frappe.call({
-      method:
-        "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
+      method: "sahayog.hrms.doctype.case_closure.case_closure.send_email_for_review",
       args: {
         case_id: frm.doc.name,
-        // Pass only the new approvers' details for the email content
         approvers: JSON.stringify(new_reviewers),
       },
       freeze: true,
-      freeze_message: __("Sending review notification email..."),
-      callback(r) {
-        console.log("TEMPLATE EMAIL RESPONSE:", r);
-        // (Callback logic remains the same)
-        if (r.message?.status === "disabled") {
-          frappe.msgprint({
-            title: __("Email Disabled"),
-            message: __("Email notifications are disabled."),
-            indicator: "orange",
-          });
-          return;
-        }
+      freeze_message: "Sending review notification email...",
+    });
 
-        if (r.message?.status === "ok") {
-          frappe.msgprint({
-            title: __("Success"),
-            message: __("Review notification email has been sent."),
-            indicator: "green",
-          });
-          return;
-        }
-
-        frappe.msgprint({
-          title: __("Email Failed"),
-          message:
-            r.message?.msg || __("Could not send review notification email."),
-          indicator: "red",
-        });
-      },
+    frappe.msgprint({
+      title: "Success",
+      message: "Review process started and status changed to Under Review.",
+      indicator: "green",
     });
 
     dialog.hide();
+    frm.reload_doc();
   });
 }
 
-// function to display review details with employee info
+
+
 function display_review_details_with_employee_info(frm) {
   let wrapper = frm.fields_dict.review_details_html.$wrapper;
   wrapper.html(`<div>Loading review details...</div>`);
@@ -1184,6 +1373,330 @@ function display_review_details_with_employee_info(frm) {
   });
 }
 
+// function load_case_timeline(frm) {
+//   const case_id = frm.doc.case_id || frm.doc.name;
+//   if (!case_id) return;
+
+//   const standard_stages = [
+//     { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
+//     { doctype: "Suspension Process", label: "Suspension Process" },
+//     { doctype: "Response to SCN", label: "Response to SCN" },
+//     { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
+//     { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+//     { doctype: "Case Closure", label: "Case Closure" },
+//   ];
+
+//   const ua_stages = [
+//     { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
+//     { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence" },
+//     { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+//     { doctype: "Case Closure", label: "Case Closure" },
+//   ];
+
+//   const is_ua =
+//     String(case_id).startsWith("UA") ||
+//     (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
+//     frm.doctype === "Unauthorized Absence" ||
+//     frm.doctype === "Reminder Of Unauthorized Absence" ||
+//     frm.doctype === "Ex Parte Enquiry";
+
+//   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
+//     ...stage,
+//     key: `${stage.doctype}-${index}`,
+//     status: "current",
+//     modified: null,
+//     record_count: 0,
+//     names: [],
+//     can_create: stage.can_create !== false,
+//     allow_multiple: false,
+//     quick_entry: true,
+//     defaults: {
+//       case_id,
+//       ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
+//     },
+//   }));
+
+//   // const build_config = (stages) => ({
+//   //   title: __("Case Progress Timeline"),
+//   //   case_id,
+//   //   stages,
+//   //   get_defaults(stage) {
+//   //     return stage.defaults || { case_id };
+//   //   },
+//   //   before_open() {
+//   //     if (frm.is_dirty()) {
+//   //       frappe.msgprint({
+//   //         title: __("Please Save First"),
+//   //         message: __("Save the form before creating a linked record."),
+//   //         indicator: "orange",
+//   //       });
+//   //       return false;
+//   //     }
+//   //   },
+//   //   after_insert() {
+//   //     frm.reload_doc();
+//   //   },
+//   // });
+
+
+//   const build_config = (stages) => ({
+//   title: "Case Progress Timeline",
+//   case_id,
+//   stages,
+//   get_defaults(stage) {
+//     return stage.defaults || { case_id };
+//   },
+//   before_open(stage) {
+//     if (stage.doctype === "Case Closure") {
+//       open_approver_dialog(frm);
+//       return false;
+//     }
+
+//     if (frm.is_dirty()) {
+//       frappe.msgprint({
+//         title: "Please Save First",
+//         message: "Save the form before creating a linked record.",
+//         indicator: "orange",
+//       });
+//       return false;
+//     }
+//   },
+//   after_insert() {
+//     frm.reload_doc();
+//   },
+// });
+
+//   const merge_stage_meta = (timeline, record_summaries) => {
+//     return stage_defs.map((stage) => {
+//       const status_match = timeline.find(
+//         (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
+//       );
+//       const summary_match = record_summaries.find((item) => item.doctype === stage.doctype) || {};
+//       return {
+//         ...stage,
+//         status: status_match?.status || stage.status,
+//         modified: status_match?.modified || stage.modified,
+//         record_count: summary_match.count || 0,
+//         names: summary_match.names || [],
+//       };
+//     });
+//   };
+
+//   const render_with_data = (timeline, summaries) => {
+//     const merged = merge_stage_meta(timeline || [], summaries || []);
+//     window.sahayogCaseTimeline.render(frm, build_config(merged));
+//   };
+
+//   const load_record_summaries = () => {
+//     return Promise.all(
+//       stage_defs.map((stage) =>
+//         frappe.db
+//           .get_list(stage.doctype, {
+//             filters: { case_id },
+//             fields: ["name"],
+//             order_by: "creation asc",
+//             limit_page_length: 500,
+//           })
+//           .then((records) => ({
+//             doctype: stage.doctype,
+//             count: (records || []).length,
+//             names: (records || []).map((row) => row.name),
+//           }))
+//           .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
+//       ),
+//     );
+//   };
+
+//   const load_timeline = () =>
+//     frappe.xcall(
+//       "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+//       { case_id },
+//     );
+
+//   const init = () => {
+//     if (!window.sahayogCaseTimeline) return;
+
+//     Promise.all([load_record_summaries(), load_timeline()])
+//       .then(([summaries, timeline_res]) => {
+//         const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
+//         render_with_data(timeline, summaries || []);
+//       })
+//       .catch((error) => {
+//         console.warn("Timeline load failed", error);
+//         render_with_data([], []);
+//       });
+//   };
+
+//   if (window.sahayogCaseTimeline) {
+//     init();
+//     return;
+//   }
+
+//   frappe.require("/assets/sahayog/js/case_timeline.js", init);
+// }
+
+
+
+// exisiting working
+// function load_case_timeline(frm) {
+//   const case_id = frm.doc.case_id || frm.doc.name;
+//   if (!case_id) return;
+
+//   const standard_stages = [
+//     { doctype: "Disciplinary Case", label: "Disciplinary Case", can_create: false },
+//     { doctype: "Suspension Process", label: "Suspension Process" },
+//     { doctype: "Response to SCN", label: "Response to SCN" },
+//     { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
+//     { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+//     { doctype: "Case Closure", label: "Case Closure" },
+//   ];
+
+//   const ua_stages = [
+//     { doctype: "Unauthorized Absence", label: "Unauthorized Absence" },
+//     { doctype: "Reminder Of Unauthorized Absence", label: "Reminder Of Unauthorized Absence" },
+//     { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
+//     { doctype: "Case Closure", label: "Case Closure" },
+//   ];
+
+//   const is_ua =
+//     String(case_id).startsWith("UA") ||
+//     (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
+//     frm.doctype === "Unauthorized Absence" ||
+//     frm.doctype === "Reminder Of Unauthorized Absence" ||
+//     frm.doctype === "Ex Parte Enquiry";
+
+//   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
+//     ...stage,
+//     key: `${stage.doctype}-${index}`,
+//     status: "current",
+//     modified: null,
+//     record_count: 0,
+//     names: [],
+//     can_create: stage.can_create !== false,
+//     allow_multiple: false,
+//     quick_entry: true,
+//     defaults: {
+//       case_id,
+//       ...(frm.doc.employee_id ? { employee_id: frm.doc.employee_id } : {}),
+//     },
+//   }));
+
+//   const build_config = (stages) => ({
+//     title: "Case Progress Timeline",
+//     case_id,
+//     stages,
+
+//     get_defaults(stage) {
+//       return stage.defaults || { case_id };
+//     },
+
+//     before_open(stage) {
+//       if (frm.is_dirty()) {
+//         frappe.msgprint({
+//           title: "Please Save First",
+//           message: "Save the form before creating a linked record.",
+//           indicator: "orange",
+//         });
+//         return false;
+//       }
+
+//       if (stage.doctype === "Case Closure") {
+//         open_approver_dialog(frm);
+//         return false;
+//       }
+
+//       return true;
+//     },
+
+//     after_insert() {
+//       frm.reload_doc();
+//     },
+//   });
+
+//   const merge_stage_meta = (timeline, record_summaries) => {
+//     return stage_defs.map((stage) => {
+//       const status_match = (timeline || []).find(
+//         (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
+//       );
+
+//       const summary_match =
+//         (record_summaries || []).find((item) => item.doctype === stage.doctype) || {};
+
+//       return {
+//         ...stage,
+//         status: status_match?.status || stage.status,
+//         modified: status_match?.modified || stage.modified,
+//         record_count: summary_match.count || 0,
+//         names: summary_match.names || [],
+//       };
+//     });
+//   };
+
+//   const render_with_data = (timeline, summaries) => {
+//     const merged = merge_stage_meta(timeline || [], summaries || []);
+//     window.sahayogCaseTimeline.render(frm, build_config(merged));
+//   };
+
+//   const load_record_summaries = () => {
+//     return Promise.all(
+//       stage_defs.map((stage) =>
+//         frappe.db
+//           .get_list(stage.doctype, {
+//             filters: { case_id },
+//             fields: ["name"],
+//             order_by: "creation asc",
+//             limit_page_length: 500,
+//           })
+//           .then((records) => ({
+//             doctype: stage.doctype,
+//             count: (records || []).length,
+//             names: (records || []).map((row) => row.name),
+//           }))
+//           .catch(() => ({
+//             doctype: stage.doctype,
+//             count: 0,
+//             names: [],
+//           })),
+//       ),
+//     );
+//   };
+
+//   const load_timeline = () =>
+//     frappe.xcall(
+//       "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages",
+//       { case_id },
+//     );
+
+//   const init = () => {
+//     if (!window.sahayogCaseTimeline) return;
+
+//     Promise.all([load_record_summaries(), load_timeline()])
+//       .then(([summaries, timeline_res]) => {
+//         const timeline =
+//           timeline_res && Array.isArray(timeline_res.timeline)
+//             ? timeline_res.timeline
+//             : Array.isArray(timeline_res)
+//             ? timeline_res
+//             : [];
+
+//         render_with_data(timeline, summaries || []);
+//       })
+//       .catch((error) => {
+//         console.warn("Timeline load failed", error);
+//         render_with_data([], []);
+//       });
+//   };
+
+//   if (window.sahayogCaseTimeline) {
+//     init();
+//     return;
+//   }
+
+//   frappe.require("/assets/sahayog/js/case_timeline.js", init);
+// }
+
+
+// new 
 function load_case_timeline(frm) {
   const case_id = frm.doc.case_id || frm.doc.name;
   if (!case_id) return;
@@ -1227,62 +1740,47 @@ function load_case_timeline(frm) {
     },
   }));
 
-  // const build_config = (stages) => ({
-  //   title: __("Case Progress Timeline"),
-  //   case_id,
-  //   stages,
-  //   get_defaults(stage) {
-  //     return stage.defaults || { case_id };
-  //   },
-  //   before_open() {
-  //     if (frm.is_dirty()) {
-  //       frappe.msgprint({
-  //         title: __("Please Save First"),
-  //         message: __("Save the form before creating a linked record."),
-  //         indicator: "orange",
-  //       });
-  //       return false;
-  //     }
-  //   },
-  //   after_insert() {
-  //     frm.reload_doc();
-  //   },
-  // });
-
-
   const build_config = (stages) => ({
-  title: "Case Progress Timeline",
-  case_id,
-  stages,
-  get_defaults(stage) {
-    return stage.defaults || { case_id };
-  },
-  before_open(stage) {
-    if (stage.doctype === "Case Closure") {
-      open_approver_dialog(frm);
-      return false;
-    }
+    title: "Case Progress Timeline",
+    case_id,
+    stages,
 
-    if (frm.is_dirty()) {
-      frappe.msgprint({
-        title: "Please Save First",
-        message: "Save the form before creating a linked record.",
-        indicator: "orange",
-      });
-      return false;
-    }
-  },
-  after_insert() {
-    frm.reload_doc();
-  },
-});
+    get_defaults(stage) {
+      return stage.defaults || { case_id };
+    },
+
+    before_open(stage) {
+      if (frm.is_dirty()) {
+        frappe.msgprint({
+          title: "Please Save First",
+          message: "Save the form before creating a linked record.",
+          indicator: "orange",
+        });
+        return false;
+      }
+
+      if (stage.doctype === "Case Closure") {
+        open_approver_dialog(frm);
+        return false;
+      }
+
+      return true;
+    },
+
+    after_insert() {
+      frm.reload_doc();
+    },
+  });
 
   const merge_stage_meta = (timeline, record_summaries) => {
     return stage_defs.map((stage) => {
-      const status_match = timeline.find(
+      const status_match = (timeline || []).find(
         (item) => item.doctype === stage.doctype || item.stage === stage.doctype,
       );
-      const summary_match = record_summaries.find((item) => item.doctype === stage.doctype) || {};
+
+      const summary_match =
+        (record_summaries || []).find((item) => item.doctype === stage.doctype) || {};
+
       return {
         ...stage,
         status: status_match?.status || stage.status,
@@ -1313,7 +1811,11 @@ function load_case_timeline(frm) {
             count: (records || []).length,
             names: (records || []).map((row) => row.name),
           }))
-          .catch(() => ({ doctype: stage.doctype, count: 0, names: [] })),
+          .catch(() => ({
+            doctype: stage.doctype,
+            count: 0,
+            names: [],
+          })),
       ),
     );
   };
@@ -1329,7 +1831,13 @@ function load_case_timeline(frm) {
 
     Promise.all([load_record_summaries(), load_timeline()])
       .then(([summaries, timeline_res]) => {
-        const timeline = timeline_res && timeline_res.timeline ? timeline_res.timeline : [];
+        const timeline =
+          timeline_res && Array.isArray(timeline_res.timeline)
+            ? timeline_res.timeline
+            : Array.isArray(timeline_res)
+            ? timeline_res
+            : [];
+
         render_with_data(timeline, summaries || []);
       })
       .catch((error) => {
@@ -1345,8 +1853,6 @@ function load_case_timeline(frm) {
 
   frappe.require("/assets/sahayog/js/case_timeline.js", init);
 }
-
-
 
 function toggle_closure_fields(frm) {
     const controlled_fields = [
@@ -1384,4 +1890,7 @@ function toggle_closure_fields(frm) {
             }
         }
     });
+     if (frm.fields_dict.section_break_webc) {
+    frm.set_df_property("section_break_webc", "hidden", can_edit ? 0 : 1);
+  }
 }
