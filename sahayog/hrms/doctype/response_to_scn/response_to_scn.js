@@ -17,6 +17,11 @@ frappe.ui.form.on("Response to SCN", {
   refresh(frm) {
     // --- SHOW SEND EMAIL BUTTON ---
     if (!frm.is_new()) {
+      frm.remove_custom_button("Send Email");
+      sahayog.dams.add_send_email_button(frm);
+    }
+    /*
+    if (!frm.is_new()) {
       frm.add_custom_button("Send Email", function () {
         frappe.call({
           method:
@@ -56,6 +61,7 @@ frappe.ui.form.on("Response to SCN", {
         });
       });
     }
+    */
     // ➡️ View Case History Button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {

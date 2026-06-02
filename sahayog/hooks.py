@@ -77,7 +77,9 @@ doctype_list_js = {
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = ["/assets/sahayog/js/assignmate.js",
-                  "/assets/sahayog/js/petite-vue.iife.js",]
+                  "/assets/sahayog/js/petite-vue.iife.js",
+                  "/assets/sahayog/js/dams_email.js"
+                  ]
 
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}

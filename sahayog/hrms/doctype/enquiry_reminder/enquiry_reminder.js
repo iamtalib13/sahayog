@@ -119,6 +119,10 @@ frappe.ui.form.on("Enquiry Reminder", {
     frm.remove_custom_button("Send Email");
 
     if (!frm.is_new() && frm.doc.status === "Under Process") {
+      sahayog.dams.add_send_email_button(frm);
+    }
+    /*
+    if (!frm.is_new() && frm.doc.status === "Under Process") {
       frm.add_custom_button("Send Email", function () {
         // Step 1: Check employee email
         frappe.call({
@@ -216,6 +220,7 @@ frappe.ui.form.on("Enquiry Reminder", {
         });
       });
     }
+    */
     // View Case History Button
     if (!frm.is_new()) {
       const btn = frm.add_custom_button("View Case History", function () {
