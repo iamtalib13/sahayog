@@ -35,9 +35,9 @@ class EnquiryReminder(Document):
     def on_submit(self):
         """
         Auto-send Enquiry Reminder email on submit.
-        Manual Send Email button remains unchanged.
-        Does NOT block submit if email fails.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             emp = frappe.get_doc("Employee", self.employee_id)
 
@@ -60,11 +60,11 @@ class EnquiryReminder(Document):
             )
 
         except Exception:
+            # Do not block submit if email fails
             frappe.log_error(
                 frappe.get_traceback(),
                 "Enquiry Reminder Auto Email Failed on Submit",
             )
-
 
 # get latest enquiry documents for a case   
 @frappe.whitelist()
@@ -92,8 +92,12 @@ def send_reminder_enquiry_email(docname, print_format):
         doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
 
     template = frappe.get_doc("Email Template", "Reminder Notice of Enquiry")
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
+    
+    # Use standard 'doc' context
+    context = {"doc": doc}
+
+    message = frappe.render_template(template.response_html, context)
+    subject = frappe.render_template(template.subject, context)
 
     attachments = [
         frappe.attach_print(

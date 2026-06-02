@@ -60,25 +60,16 @@ sahayog.dams.render_email_dialog = function (frm, options) {
     .get_single_value("Sahayog HR Setting", options.cc_setting_field)
     .then((fixed_cc) => {
       frappe.call({
-        method: "frappe.client.get",
+        method: "sahayog.hrms.dams_email_service.get_email_template_preview",
         args: {
-          doctype: "Email Template",
-          name: options.template,
+          template_name: options.template,
+          doctype: frm.doc.doctype,
+          docname: frm.doc.name,
         },
         callback: function (r) {
-          const template = r.message || {};
-          let data = Object.assign({}, frm.doc);
-
-          let subject = "";
-          let body = "";
-
-          try {
-            subject = frappe.render_template(template.subject, data);
-            body = frappe.render_template(template.response_html, data);
-          } catch (e) {
-            subject = template.subject;
-            body = template.response_html;
-          }
+          const preview = r.message || {};
+          const subject = preview.subject || "";
+          const body = preview.message || "";
 
           // CC values parsing
           let cc_values = [];
@@ -283,7 +274,8 @@ sahayog.dams.render_email_dialog = function (frm, options) {
 
             // Avoid duplicates
             let exists = false;
-            d.$wrapper.find(container_selector)
+            d.$wrapper
+              .find(container_selector)
               .find(".outlook-chip")
               .each(function () {
                 if ($(this).data("email") === email) exists = true;
@@ -307,7 +299,7 @@ sahayog.dams.render_email_dialog = function (frm, options) {
             const to_emails = (options.recipients || []).filter(Boolean);
             const personal_email = frm.doc.personal_email;
             if (personal_email && !to_emails.includes(personal_email)) {
-                to_emails.push(personal_email);
+              to_emails.push(personal_email);
             }
 
             to_emails.forEach((email) => {
@@ -326,38 +318,29 @@ sahayog.dams.render_email_dialog = function (frm, options) {
 
             // Wrap & Strip Text Editor
             let $message_field = d.get_field("message").$wrapper;
-            $message_field.wrap(
-              '<div class="outlook-body-container"></div>',
-            );
+            $message_field.wrap('<div class="outlook-body-container"></div>');
             $message_field.find(".control-label").remove();
 
             // Chip addition listeners
-            d.$wrapper.on(
-              "keydown",
-              ".outlook-email-input",
-              function (e) {
-                if (["Enter", ",", "Tab"].includes(e.key)) {
-                  e.preventDefault();
-                  let val = $(this).val().replace(",", "").trim();
-                  if (val) {
-                    let container_id =
-                      "#" +
-                      $(this)
-                        .siblings(".outlook-chip-container")
-                        .attr("id");
-                    add_outlook_chip(container_id, val);
-                    $(this).val("");
-                  }
+            d.$wrapper.on("keydown", ".outlook-email-input", function (e) {
+              if (["Enter", ",", "Tab"].includes(e.key)) {
+                e.preventDefault();
+                let val = $(this).val().replace(",", "").trim();
+                if (val) {
+                  let container_id =
+                    "#" +
+                    $(this).siblings(".outlook-chip-container").attr("id");
+                  add_outlook_chip(container_id, val);
+                  $(this).val("");
                 }
-              },
-            );
+              }
+            });
 
             d.$wrapper.on("blur", ".outlook-email-input", function () {
               let val = $(this).val().replace(",", "").trim();
               if (val) {
                 let container_id =
-                  "#" +
-                  $(this).siblings(".outlook-chip-container").attr("id");
+                  "#" + $(this).siblings(".outlook-chip-container").attr("id");
                 add_outlook_chip(container_id, val);
                 $(this).val("");
               }
@@ -405,7 +388,8 @@ sahayog.dams.render_email_dialog = function (frm, options) {
                 return;
               }
 
-              d.$wrapper.find("#outlook_btn_send")
+              d.$wrapper
+                .find("#outlook_btn_send")
                 .prop("disabled", true)
                 .text("Sending...");
 
@@ -432,7 +416,8 @@ sahayog.dams.render_email_dialog = function (frm, options) {
                   }
                 },
                 error: function () {
-                  d.$wrapper.find("#outlook_btn_send")
+                  d.$wrapper
+                    .find("#outlook_btn_send")
                     .prop("disabled", false)
                     .html('<i class="fa fa-paper-plane"></i> Send');
                 },

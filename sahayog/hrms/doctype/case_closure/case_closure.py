@@ -289,8 +289,9 @@ class CaseClosure(Document):
     def on_submit(self):
         """
         Auto-send Case Closure email on submit.
-        Manual Send Email button remains unchanged.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             emp = frappe.get_doc("Employee", self.employee_id)
 
@@ -863,13 +864,14 @@ def send_case_closure_email(docname, print_format=None):
     if not emp.company_email:
         frappe.throw("No email found for this employee.")
 
-    # Directly convert doc to dict (NO date formatting)
-    doc_dict = doc.as_dict()
-
     # Load Email Template
     template = frappe.get_doc("Email Template", "Case Closure Update")
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
+    
+    # Use standard 'doc' context for consistency with standardized templates
+    context = {"doc": doc}
+    
+    message = frappe.render_template(template.response_html, context)
+    subject = frappe.render_template(template.subject, context)
 
     # Attach selected print format if provided
     attachments = []

@@ -61,8 +61,9 @@ class ReminderOfUnauthorizedAbsence(Document):
     def on_submit(self):
         """
         Auto send Reminder Unauthorized Absence email on submit.
-        Existing email logic is reused without modification.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             from sahayog.utils.hr_utils import send_hr_workflow_email
             send_hr_workflow_email(

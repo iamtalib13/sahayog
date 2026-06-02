@@ -27,8 +27,9 @@ class DomesticEnquiry(Document):
     def on_submit(self):
         """
         Auto-send Domestic Enquiry email on submit.
-        Existing manual send email logic remains unchanged.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             emp = frappe.get_doc("Employee", self.employee_id)
 
@@ -86,9 +87,12 @@ def send_domestic_enquiry_email(docname):
     # Load Email Template
     template = frappe.get_doc("Email Template", "Domestic Enquiry Notice")
 
+    # Use standard 'doc' context
+    context = {"doc": doc}
+
     # Render Email
-    message = frappe.render_template(template.response_html, doc_dict)
-    subject = frappe.render_template(template.subject, doc_dict)
+    message = frappe.render_template(template.response_html, context)
+    subject = frappe.render_template(template.subject, context)
 
   # Attach Print Format → **Domestic Enquiry Notice**
     attachments = [
