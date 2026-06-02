@@ -1069,14 +1069,21 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 20px;">
             <h3 style="margin: 0;">New Serial Batch</h3>
-            <div class="searchable-select-wrapper" style="width: 250px;">
+            <div class="searchable-select-wrapper" style="width: 250px; position: relative;">
                 <input
                     type="text"
                     class="form-input searchable-select-input"
-                    style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;"
+                    style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%;"
                     placeholder="Search Item..."
                     v-model="serialBatchSearch"
+                    @focus="focusedField = 'serial_batch_item'"
+                    @blur="setTimeout(() => focusedField = null, 200)"
                 />
+                <div class="searchable-select-dropdown" v-if="focusedField === 'serial_batch_item'" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                    <div v-for="item in filteredSerialBatchItems" :key="item.name" class="searchable-select-option" style="padding: 8px; cursor: pointer;" @mousedown="selectSerialBatchItem(item)">
+                        [[ item.item_name ]] ([[ item.name ]])
+                    </div>
+                </div>
             </div>
         </div>
         <button class="btn-create" @click="submitSerialBatch" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
@@ -12790,6 +12797,20 @@
       },
       submitSerialBatch() {
           frappe.msgprint('Submit functionality to be implemented.');
+      },
+      get filteredSerialBatchItems() {
+        const search = (this.serialBatchSearch || "").toLowerCase();
+        let list = this.itemsList || [];
+        if (!search) return list.slice(0, 10);
+        return list.filter(i => 
+          i.name.toLowerCase().includes(search) || 
+          (i.item_name && i.item_name.toLowerCase().includes(search))
+        );
+      },
+      selectSerialBatchItem(item) {
+        this.serialBatchSearch = item.item_name;
+        this.focusedField = null;
+        // Logic to handle item selection could be added here
       },
       async submitNewWarehouse() {
         if (!this.newWarehouseName) {
