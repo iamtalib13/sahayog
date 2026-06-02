@@ -1086,6 +1086,7 @@
                       <th>Warranty End Date</th>
                       <th>Windows Key</th>
                       <th>Make</th>
+                      <th>Remove</th>
                   </tr>
               </thead>
               <tbody>
@@ -1104,6 +1105,9 @@
                       <td><input type="date" v-model="item.warranty_end_date" style="width: 130px;"/></td>
                       <td><input type="text" v-model="item.windows_key" style="width: 100px;"/></td>
                       <td><input type="text" v-model="item.make" style="width: 100px;"/></td>
+                      <td style="text-align: center;">
+                          <button type="button" @click="removeSerialBatchRow(index)" style="background: red; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">x</button>
+                      </td>
                   </tr>
               </tbody>
           </table>
@@ -12760,6 +12764,13 @@
               warranty_end_date: '',
               windows_key: '',
               make: ''
+          });
+      },
+      removeSerialBatchRow(index) {
+          this.serialBatchItems.splice(index, 1);
+          // Re-index remaining rows
+          this.serialBatchItems.forEach((item, idx) => {
+              item.srno = idx + 1;
           });
       },
       async submitNewWarehouse() {
