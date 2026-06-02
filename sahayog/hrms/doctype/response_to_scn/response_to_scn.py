@@ -17,9 +17,9 @@ class ResponsetoSCN(Document):
     def on_submit(self):
         """
         Auto-send Response to SCN email on submit.
-        Does NOT block submit if email fails.
-        Manual Send Email button remains unchanged.
+        [DISABLED TEMPORARILY]
         """
+        return
         try:
             emp = frappe.get_doc("Employee", self.employee_id)
 
@@ -66,9 +66,11 @@ def send_response_scn_email(docname):
     # Load template
     template = frappe.get_doc("Email Template", "Response to SCN")
     
-    # Render using dict
-    message = frappe.render_template(template.response_html, {"doc": doc_dict})
-    subject = frappe.render_template(template.subject, doc_dict)
+    # Use standard 'doc' context
+    context = {"doc": doc}
+    
+    message = frappe.render_template(template.response_html, context)
+    subject = frappe.render_template(template.subject, context)
 
     # Get employee email
     emp = frappe.get_doc("Employee", doc.employee_id)
