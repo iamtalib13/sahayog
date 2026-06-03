@@ -251,14 +251,14 @@
    "fieldname": "case_close_with",
    "fieldtype": "Select",
    "label": "Case Close With",
-   "options": "\nTermination\nAccepting Resignation\nWarning Letter\nCaution Letter\nDrop Charges"
+   "options": "\nTermination\nTermination-Abandonment\nAccepting Resignation\nWarning Letter\nCaution Letter\nDrop Charges"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-01 11:12:04.680562",
+ "modified": "2026-06-03 12:53:20.715240",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Case Closure",
