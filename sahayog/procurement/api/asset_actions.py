@@ -114,7 +114,7 @@ def _create_asset_movement(asset, purpose, to_employee, target_location):
     if not target_location:
         target_location = asset.location
 
-    # Only create movement if there is an actual change
+    # Only create movement if there is an actual change in either location or custodian
     if to_employee == asset.custodian and target_location == asset.location:
         return
 
@@ -130,5 +130,6 @@ def _create_asset_movement(asset, purpose, to_employee, target_location):
         "target_location": target_location,
         "to_employee": to_employee or ""
     })
+    movement.flags.ignore_validate = True
     movement.insert(ignore_permissions=True)
     movement.submit()
