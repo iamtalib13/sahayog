@@ -1984,7 +1984,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="activeItem === 'Inward'"
+          v-if="activeItem === 'Inward' && !showInwardCreateView"
           @click="openNewSerialBatch()"
         >
           <i class="fas fa-barcode"></i>
