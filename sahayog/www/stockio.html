@@ -11311,6 +11311,10 @@
               type: "badge",
               isCustomStatus: true,
               getValue(row) {
+                // Shorten statuses for list view
+                if (row.status === "Pending HO Approval") return "HO Pending";
+                if (row.status === "Pending Reporting Person") return "Reporting Pending";
+
                 // We only apply this custom logic for requests that are already approved in the workflow
                 const postApprovalStates = [
                   "Approved",
