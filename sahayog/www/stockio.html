@@ -13620,12 +13620,51 @@
           this.showAssetActionModal = true;
           console.log("Debug: showAssetActionModal set to true");
       },
-      sendForRepair(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
-      scrapAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
-      transferAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
-      returnAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
-      markAvailable(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
-      restoreToPrevious(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      transferAsset(doc) {
+          this.assetActionTitle = 'Transfer Asset';
+          this.assetActionFields = [
+              {label: 'New Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'New Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'transfer', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      returnAsset(doc) {
+          this.assetActionTitle = 'Return Asset';
+          this.assetActionFields = [
+              {label: 'Return Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'return', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      sendForRepair(doc) {
+          this.assetActionTitle = 'Send Asset For Repair';
+          this.assetActionFields = [
+              {label: 'Repair Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'send_for_repair', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      markAvailable(doc) {
+          this.assetActionTitle = 'Mark Asset Available';
+          this.assetActionFields = [
+              {label: 'Available Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'mark_available', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      scrapAsset(doc) {
+          this.assetActionTitle = 'Scrap Asset';
+          this.assetActionFields = [];
+          this.assetActionData = { action: 'scrap', asset_name: doc.name };
+          this.showAssetActionModal = true;
+      },
+      restoreToPrevious(doc) {
+          this.assetActionTitle = 'Restore Asset';
+          this.assetActionFields = [];
+          this.assetActionData = { action: 'restore_to_previous', asset_name: doc.name };
+          this.showAssetActionModal = true;
+      },
 
       async submitMovement() {
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
