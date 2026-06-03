@@ -12309,11 +12309,14 @@
         }
 
         // Initialize from URL
-        const path = window.location.hash.split("/");
-        if (path.length > 3) {
-          const itemLabel = path[3].toLowerCase();
+        const hash = window.location.hash.split('/');
+        let initialRecordId = null;
+
+        if (hash.length > 1) {
+          const itemLabel = hash[1].toLowerCase();
           const item = this.findSidebarItem(itemLabel);
           if (item) defaultItemLabel = item.label;
+          if (hash.length > 2) initialRecordId = hash[2];
         }
 
         const defaultItem =
@@ -12323,6 +12326,11 @@
 
         if (defaultItem) {
           await this.setPage(defaultItem);
+          // If a record ID was provided, open it
+          if (initialRecordId) {
+             const row = this.rows.find(r => r.name === initialRecordId);
+             if (row) await this.openRecord(row);
+          }
         }
         if (this.activeItem === "Dashboard") {
           await this.fetchRequestStats();
@@ -15106,6 +15114,7 @@
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
+          window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase() + '/' + row.name);
           this.loading = true;
           try {
             const res = await frappe.call({
