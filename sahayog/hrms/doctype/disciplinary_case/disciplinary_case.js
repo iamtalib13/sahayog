@@ -529,14 +529,15 @@ frappe.ui.form.on("Disciplinary Case", {
                       .text("Sending...");
 
                     frappe.call({
-                      method:
-                        "sahayog.hrms.doctype.disciplinary_case.disciplinary_case.send_custom_email",
+                      method: "sahayog.hrms.dams_email_service.send_custom_email",
                       args: {
                         docname: frm.doc.name,
+                        doctype: frm.doc.doctype,
                         recipients: recipients.join(","),
                         cc: cc.join(","),
                         subject: subject,
                         message: message,
+                        print_format: "Disciplinary Case Notice",
                       },
                       freeze: true,
                       freeze_message: __("Sending Email..."),
