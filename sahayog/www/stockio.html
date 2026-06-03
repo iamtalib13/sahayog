@@ -11033,7 +11033,9 @@
         to_warehouse: "",
         to_warehouse_display: ""
       },
-      showDispatchHistory: false,      dispatchHistory: [],
+      showDispatchHistory: false,
+      dispatchHistory: [],
+      serialAndBatchBundles: [],
       showInwardCreateView: false,
       showWarehouseCreateModal: false,
       showSerialBatchModal: false,
@@ -12156,6 +12158,7 @@
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
         // Fetch user's full name from User doctype
         try {
+          this.fetchSerialAndBatchBundles();
           const res = await frappe.call({
             method: "frappe.client.get_value",
             args: {
@@ -12916,6 +12919,23 @@
         this.focusedField = null;
         // Logic to handle item selection could be added here
       },
+      async fetchSerialAndBatchBundles() {
+        try {
+          const res = await frappe.call({
+            method: 'frappe.client.get_list',
+            args: {
+              doctype: 'Serial and Batch Bundle',
+              fields: ['name']
+            }
+          });
+          if (res.message) {
+            this.serialAndBatchBundles = res.message;
+          }
+        } catch (e) {
+          console.error('Error fetching Serial and Batch Bundles:', e);
+        }
+      },
+
       async submitNewWarehouse() {
         if (!this.newWarehouseName) {
             frappe.msgprint('Please enter warehouse name');
