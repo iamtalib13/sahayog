@@ -12795,7 +12795,7 @@
               item.srno = idx + 1;
           });
       },
-      submitSerialBatch() {
+      async submitSerialBatch() {
           if (!this.serialBatchSearch || !this.serialBatchSearch.includes('(')) {
               frappe.msgprint('Please select a valid item.');
               return;
@@ -12803,9 +12803,10 @@
           
           // Extract Item Code from search string: "Item Name (ITEM-CODE)"
           const itemCode = this.serialBatchSearch.match(/\(([^)]+)\)/)[1];
+          const createdSerials = [];
 
-          this.serialBatchItems.forEach(async (item) => {
-              if (!item.serial_no) return; // Skip if serial no is empty
+          for (const item of this.serialBatchItems) {
+              if (!item.serial_no) continue; 
 
               const doc = {
                   doctype: 'Serial No',
@@ -12815,14 +12816,14 @@
                       { config_type: 'MAC Address', config_value: item.mac_address },
                       { config_type: 'Model Number', config_value: item.model_number },
                       { config_type: 'Office Key', config_value: item.office_key },
+                      { config_type: 'Windows Key', config_value: item.windows_key },
                       { config_type: 'Operating System', config_value: item.operating_system },
                       { config_type: 'Processor', config_value: item.processor },
                       { config_type: 'RAM', config_value: item.ram },
                       { config_type: 'Storage', config_value: item.storage },
-                      { config_type: 'Vend', config_value: item.vendor },
+                      { config_type: 'Vendor', config_value: item.vendor },
                       { config_type: 'Warranty start date', config_value: item.warranty_start_date },
                       { config_type: 'Warranty end date', config_value: item.warranty_end_date },
-                      { config_type: 'Windows Key', config_value: item.windows_key },
                       { config_type: 'Make', config_value: item.make }
                   ].filter(row => row.config_value) // Only include filled rows
               };
@@ -12832,33 +12833,39 @@
                       method: 'frappe.client.insert',
                       args: { doc: doc }
                   });
-                  
-                  // Create Serial and Batch Bundle
-                  if (res.message && res.message.name) {
-                      await frappe.call({
-                          method: 'frappe.client.insert',
-                          args: {
-                              doc: {
-                                  doctype: 'Serial and Batch Bundle',
-                                  item_code: itemCode,
-                                  type_of_transaction: 'Inward',
-                                  voucher_type: 'Stock Entry',
-                                  warehouse: '1000',
-                                  entries: [
-                                      {
-                                          serial_no: res.message.name,
-                                          warehouse: '1000'
-                                      }
-                                  ]
-                              }
-                          }
-                      });
+                  if (res && res.message && res.message.name) {
+                      createdSerials.push(res.message.name);
                   }
               } catch (e) {
-                  console.error('Error creating serial no or bundle:', item.serial_no, e);
+                  console.error('Error creating serial no:', item.serial_no, e);
                   frappe.msgprint(`Error creating Serial No ${item.serial_no}: ${e.message || e}`);
               }
-          });
+          }
+          
+          // Create ONE single Serial and Batch Bundle
+          if (createdSerials.length > 0) {
+              try {
+                  await frappe.call({
+                      method: 'frappe.client.insert',
+                      args: {
+                          doc: {
+                              doctype: 'Serial and Batch Bundle',
+                              item_code: itemCode,
+                              type_of_transaction: 'Inward',
+                              voucher_type: 'Purchase Receipt',
+                              warehouse: '1000',
+                              entries: createdSerials.map(sn => ({
+                                  serial_no: sn,
+                                  warehouse: '1000'
+                              }))
+                          }
+                      }
+                  });
+              } catch (e) {
+                  console.error('Error creating Serial and Batch Bundle:', e);
+                  frappe.msgprint(`Error creating Serial and Batch Bundle: ${e.message || e}`);
+              }
+          }
           
           frappe.show_alert({message: 'Serial Batch submission processed', indicator: 'green'});
           this.showSerialBatchModal = false;
