@@ -12800,10 +12800,29 @@
         this.newWarehouseName = '';
         this.newWarehouseCategory = '';
       },
-      openNewSerialBatch(item) {
+      async openNewSerialBatch(item) {
         this.showSerialBatchModal = true;
         this.serialBatchItems = [];
-        this.addSerialBatchRow();
+        
+        // Fetch restrict_inward setting
+        const settings = await frappe.call({
+            method: 'frappe.client.get_value',
+            args: {
+                doctype: 'Sahayog Settings',
+                filters: {},
+                fieldname: 'restrict_inward'
+            }
+        });
+        
+        let rowCount = 1;
+        if (settings.message && settings.message.restrict_inward && item.qty) {
+            rowCount = Math.max(1, parseInt(item.qty) || 1);
+        }
+
+        for (let i = 0; i < rowCount; i++) {
+            this.addSerialBatchRow();
+        }
+
         if (item && item.item_name) {
             this.serialBatchSearch = `${item.item_name} (${item.item_code})`;
         } else {
