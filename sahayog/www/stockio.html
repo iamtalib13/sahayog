@@ -3530,14 +3530,14 @@
                   </label>
                 </div>
 
-                <!-- Remark -->
+                <!-- Detailed Description -->
                 <div class="form-group" style="margin-top: 12px; margin-bottom: 0px !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Remark</label>
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Detailed Description</label>
                   <textarea
                     class="form-input"
                     style="padding: 12px 16px !important; width: 100%; border-radius: 8px; border: 1px solid var(--border-color);"
                     v-model="createAssetForm.custom_remark"
-                    placeholder="Enter detailed remarks"
+                    placeholder="Enter detailed description"
                     rows="3"
                   ></textarea>
                 </div>
@@ -13223,6 +13223,7 @@
             division_display: "",
             brand: "",
             brand_display: "",
+            custom_remark: "",
             windows_key: "",
             office_key: "",
             is_existing_asset: true,
@@ -13572,7 +13573,7 @@
               args: {
                 reference_doctype: "Asset",
                 reference_name: res.message.name,
-                content: "Remark: " + this.createAssetForm.custom_remark,
+                content: "Detailed Description: " + this.createAssetForm.custom_remark,
                 comment_email: frappe.session.user,
                 comment_by: this.sidebar.header.subtitle || frappe.session.user,
               },
