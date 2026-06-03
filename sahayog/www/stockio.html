@@ -1251,6 +1251,41 @@
     </div>
   </aside>
 
+  <!-- Custom Asset Action Modal -->
+  <div v-if="showAssetActionModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
+      <div v-for="field in assetActionFields" :key="field.fieldname" class="form-group" style="margin-top: 16px; position: relative;">
+        <label class="form-label">[[ field.label ]]</label>
+        
+        <!-- Searchable Select for Link fields -->
+        <div v-if="field.fieldtype === 'Link'" class="searchable-select-wrapper" style="width: 100%;">
+            <input 
+                type="text" 
+                class="form-input" 
+                v-model="assetActionData[field.fieldname + '_display']"
+                @focus="focusedField = field.fieldname"
+                @blur="setTimeout(() => focusedField = null, 200)"
+                style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" 
+                :placeholder="'Search ' + field.label" 
+            />
+            <div class="searchable-select-dropdown" v-if="focusedField === field.fieldname" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <div v-for="opt in getLinkOptions(field)" :key="opt.name" class="searchable-select-option" style="padding: 8px; cursor: pointer;" @mousedown="assetActionData[field.fieldname] = opt.name; assetActionData[field.fieldname + '_display'] = opt.name; focusedField = null;">
+                    [[ opt.name ]]
+                </div>
+            </div>
+        </div>
+        
+        <!-- Standard input for Data fields -->
+        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" :placeholder="'Enter ' + field.label" />
+      </div>
+      <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" @click="showAssetActionModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-create" @click="submitAssetAction" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content Area -->
   <main class="main-area">
     <header class="top-header">
@@ -5491,10 +5526,23 @@
                 <div v-if="activeItem === 'Asset Master' && !isEditing" style="display: flex; flex-direction: column; gap: 20px;">
                   
                   <!-- Card 1: Asset Identity -->
-                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
-                      <i class="fas fa-tag" style="color: #369696;"></i>
-                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-tag" style="color: #369696;"></i>
+                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                      </div>
+                      <!-- Three-dot menu -->
+                      <div class="dropdown" style="position: relative; z-index: 10000;">
+                        <button class="btn btn-default btn-xs dropdown-toggle" type="button" @click="showAssetActions = !showAssetActions; console.log('Actions:', getAssetActions(detailRecord))" style="background: transparent; border: none; cursor: pointer;">
+                          <i class="fa fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" v-show="showAssetActions" style="position: absolute; right: 0; top: 100%; z-index: 10001; min-width: 150px; background: white; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; padding: 5px 0; display: block;">
+                          <li v-for="action in getAssetActions(detailRecord)" :key="action.label" style="list-style: none;">
+                              <a href="#" style="display: block; padding: 8px 16px; color: #333; text-decoration: none;" @click.prevent="action.action(detailRecord); showAssetActions = false;">[[ action.label ]]</a>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                     <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
                       
@@ -11642,6 +11690,11 @@
         onConfirm: null,
       },
       showAssetCreateView: false,
+      showAssetActions: false,
+      showAssetActionModal: false,
+      assetActionTitle: '',
+      assetActionFields: [],
+      assetActionData: {},
       showMovementCreateView: false,
       showSkipModal: false,
       currentApprovalStage: "",
@@ -13518,20 +13571,61 @@
         });
       },
 
-      removeMovementItem(index) {
-        if (this.movementItems.length > 1) {
-          this.movementItems.splice(index, 1);
-        } else {
-          frappe.msgprint("At least one item is required");
+      getAssetActions(doc) {
+          const status = (doc.status || "").trim();
+          console.log("Debug Asset Actions - Status:", status, "Doc:", doc);
+          const actions = [];
+          
+          if (['Draft', 'Submitted', 'Available', ''].includes(status)) {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'Assigned') {
+              actions.push({label: 'Transfer', action: (d) => this.transferAsset(d)});
+              actions.push({label: 'Return', action: (d) => this.returnAsset(d)});
+              actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'In Repair') {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'Scrapped') {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Restore to Previous', action: (d) => this.restoreToPrevious(d)});
+              actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+          }
+          console.log("Debug Asset Actions - Returning:", actions);
+          return actions;
+      },
+      
+      getLinkOptions(field) {
+        if (field.options === 'Employee') {
+            const search = (this.assetActionData[field.fieldname + '_display'] || "").toLowerCase();
+            return (this.employees || []).filter(e => e.name.toLowerCase().includes(search) || e.employee_name.toLowerCase().includes(search));
+        } else if (field.options === 'Sahayog Branch') {
+            const search = (this.assetActionData[field.fieldname + '_display'] || "").toLowerCase();
+            return (this.sahayog_branches || []).filter(b => b.name.toLowerCase().includes(search));
         }
+        return [];
       },
-
-      selectMovementAssetOption(index, assetName, assetLabel) {
-        this.movementItems[index].asset = assetName;
-        this.movementItems[index].asset_name = assetLabel.split(" (")[0];
-        this.movementItems[index].asset_display = assetLabel;
-        this.focusedField = null;
+      
+      assignCustodian(doc) {
+          console.log("Debug: Assign clicked for", doc.name);
+          this.assetActionTitle = 'Assign Asset';
+          this.assetActionFields = [
+              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.showAssetActionModal = true;
+          console.log("Debug: showAssetActionModal set to true");
       },
+      sendForRepair(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      scrapAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      transferAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      returnAsset(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      markAvailable(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
+      restoreToPrevious(doc) { window.location.href = `/app/asset/${encodeURIComponent(doc.name)}`; },
 
       async submitMovement() {
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
