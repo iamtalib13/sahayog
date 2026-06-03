@@ -112,6 +112,8 @@ def standardize_all_email_templates():
 # =========================
 # 2. CORE EMAIL SENDER
 # =========================
+from frappe import attach_print
+
 def _send_email(docname, doctype, recipients, cc, subject, message, print_format):
 
     if isinstance(recipients, str):
@@ -120,6 +122,21 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
     if isinstance(cc, str):
         cc = [c.strip() for c in cc.split(",") if c.strip()]
 
+    attachments = []
+
+    if print_format:
+        try:
+            # Generate the attachment object using attach_print
+            attachment = attach_print(
+                doctype,
+                docname,
+                print_format=print_format,
+                file_name=f"{docname}.pdf"
+            )
+            attachments.append(attachment)
+        except Exception as e:
+            frappe.log_error(f"Failed to attach print format: {str(e)}", "Email Attachment Error")
+
     frappe.sendmail(
         recipients=recipients,
         cc=cc,
@@ -127,12 +144,7 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
         content=message,
         reference_doctype=doctype,
         reference_name=docname,
-        attachments=[{
-            "print_format": print_format,
-            "doctype": doctype,
-            "name": docname,
-            "file_name": f"{docname}.pdf"
-        }],
+        attachments=attachments,
         now=True
     )
 
