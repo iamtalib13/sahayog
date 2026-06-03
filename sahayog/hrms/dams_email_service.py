@@ -52,16 +52,16 @@ def get_dams_email_defaults(doctype, docname):
     else:
         # Mapping for single print format doctypes
         format_mapping = {
-            "Disciplinary Case": "Disciplinary-SCN",
+            "Disciplinary Case": "Disciplinary Case Notice",
             "Suspension Process": "Suspension Order",
-            "Response to SCN": "Show Cause Notice",
+            "Response to SCN": None,  # No print format exists for this
             "Domestic Enquiry": "Domestic Enquiry",
             "Enquiry Reminder": "Reminder Notice Of Enquiry",
             "Unauthorized Absence": "Unauthorized Absence",
             "Reminder Of Unauthorized Absence": "Reminder Unauthorized absence",
             "Ex Parte Enquiry": "Ex Parte Enquiry",
         }
-        response["print_format"] = format_mapping.get(doctype, "Standard")
+        response["print_format"] = format_mapping.get(doctype)
 
     return response
 
@@ -110,7 +110,7 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
         cc = [c.strip() for c in cc.split(",") if c.strip()]
 
     attachments = []
-
+    
     if print_format:
         try:
             # Generate the attachment object using attach_print
