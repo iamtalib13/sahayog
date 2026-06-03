@@ -2635,7 +2635,7 @@
                                 </div>
                               </div>
                             </div>
-                            <button type="button" @click="openNewSerialBatch()" style="background: #369696; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; width: 28px; height: 28px; cursor: pointer; flex-shrink: 0;">+</button>
+                            <button type="button" @click="openNewSerialBatch(item)" style="background: #369696; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; width: 28px; height: 28px; cursor: pointer; flex-shrink: 0;">+</button>
                         </div>
                       </td>
                       <td style="padding: 10px 16px;" v-else-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')"></td>
@@ -12800,10 +12800,15 @@
         this.newWarehouseName = '';
         this.newWarehouseCategory = '';
       },
-      openNewSerialBatch() {
+      openNewSerialBatch(item) {
         this.showSerialBatchModal = true;
         this.serialBatchItems = [];
         this.addSerialBatchRow();
+        if (item && item.item_name) {
+            this.serialBatchSearch = `${item.item_name} (${item.item_code})`;
+        } else {
+            this.serialBatchSearch = '';
+        }
       },
       addSerialBatchRow() {
           this.serialBatchItems.push({
