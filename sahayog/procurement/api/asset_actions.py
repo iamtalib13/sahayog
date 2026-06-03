@@ -10,6 +10,7 @@ ALLOWED_STATUS_FLOW = {
     "send_for_repair": {"to_status": "In Repair", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
     "mark_available": {"to_status": "Available", "allowed_from": {"In Repair", "Scrapped"}, "purpose": "Transfer"},
     "scrap": {"to_status": "Scrapped", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
+    "restore_to_previous": {"to_status": "Assigned", "allowed_from": {"Scrapped"}, "purpose": "Transfer"},
 }
 
 
@@ -54,6 +55,15 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
 
     target_status = rule["to_status"]
     purpose = rule["purpose"]
+    
+    # Special handling for restore_to_previous
+    if action == "restore_to_previous":
+        prev = get_previous_custodian(asset.name)
+        if prev:
+            custodian = prev.to_employee
+            location = prev.target_location
+        else:
+            frappe.throw(_("No previous custodian/location found to restore."))
 
     # For submitted assets, we create a Movement record first
     if asset.docstatus == 1 and action != "scrap":
@@ -66,7 +76,7 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
         asset.location = location
         asset.branch_name = _get_branch_name(location)
 
-    if action in {"assign", "transfer"}:
+    if action in {"assign", "transfer", "restore_to_previous"}:
         asset.custodian = custodian
     elif action in {"return", "send_for_repair", "mark_available", "scrap"}:
         asset.custodian = ""
