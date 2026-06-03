@@ -1251,6 +1251,41 @@
     </div>
   </aside>
 
+  <!-- Custom Asset Action Modal -->
+  <div v-if="showAssetActionModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
+      <div v-for="field in assetActionFields" :key="field.fieldname" class="form-group" style="margin-top: 16px; position: relative;">
+        <label class="form-label">[[ field.label ]]</label>
+        
+        <!-- Searchable Select for Link fields -->
+        <div v-if="field.fieldtype === 'Link'" class="searchable-select-wrapper" style="width: 100%;">
+            <input 
+                type="text" 
+                class="form-input" 
+                v-model="assetActionData[field.fieldname + '_display']"
+                @focus="focusedField = field.fieldname"
+                @blur="setTimeout(() => focusedField = null, 200)"
+                style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" 
+                :placeholder="'Search ' + field.label" 
+            />
+            <div class="searchable-select-dropdown" v-if="focusedField === field.fieldname" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
+                <div v-for="opt in getLinkOptions(field)" :key="opt.name" class="searchable-select-option" style="padding: 8px; cursor: pointer;" @mousedown="assetActionData[field.fieldname] = opt.name; assetActionData[field.fieldname + '_display'] = opt.name; focusedField = null;">
+                    [[ opt.name ]]
+                </div>
+            </div>
+        </div>
+        
+        <!-- Standard input for Data fields -->
+        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" :placeholder="'Enter ' + field.label" />
+      </div>
+      <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" @click="showAssetActionModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-create" @click="submitAssetAction" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content Area -->
   <main class="main-area">
     <header class="top-header">
@@ -1542,14 +1577,14 @@
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="detailRecord ? getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null) : ''"
+            :class="activeItem === 'Asset Master' ? (detailRecord.status === 'Assigned' ? 'active' : 'pending') : getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null)"
           >
-            [[ detailRecord ? (activeItem === 'Requests' ?
+            [[ activeItem === 'Asset Master' ? detailRecord.status : (detailRecord ? (activeItem === 'Requests' ?
             (currentView.columns.find(c => c.key ===
             'status')?.getValue?.(detailRecord) || getBadgeText(detailRecord,
             'status')) : getBadgeText(detailRecord,
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
-            : '' ]]
+            : '') ]]
           </span>
 
           <!-- Inline Approval Flow -->
@@ -5491,10 +5526,23 @@
                 <div v-if="activeItem === 'Asset Master' && !isEditing" style="display: flex; flex-direction: column; gap: 20px;">
                   
                   <!-- Card 1: Asset Identity -->
-                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
-                      <i class="fas fa-tag" style="color: #369696;"></i>
-                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                  <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-tag" style="color: #369696;"></i>
+                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
+                      </div>
+                      <!-- Three-dot menu -->
+                      <div class="dropdown" style="position: relative; z-index: 10000;">
+                        <button class="btn btn-default btn-xs dropdown-toggle" type="button" @click="showAssetActions = !showAssetActions; console.log('Actions:', getAssetActions(detailRecord))" style="background: transparent; border: none; cursor: pointer;">
+                          <i class="fa fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" v-show="showAssetActions" style="position: absolute; right: 0; top: 100%; z-index: 10001; min-width: 150px; background: white; border: 1px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 4px; padding: 5px 0; display: block;">
+                          <li v-for="action in getAssetActions(detailRecord)" :key="action.label" style="list-style: none;">
+                              <a href="#" style="display: block; padding: 8px 16px; color: #333; text-decoration: none;" @click.prevent="action.action(detailRecord); showAssetActions = false;">[[ action.label ]]</a>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                     <div class="info-strip" style="border: none; background: transparent; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); padding: 20px;">
                       
@@ -5545,9 +5593,9 @@
                         <div class="info-icon"><i class="fas fa-user-tie"></i></div>
                         <div class="info-content">
                           <span class="info-label">Custodian</span>
-                          <span class="info-value">[[ detailRecord.custodian_name || '-' ]]</span>
-                        </div>
-                      </div>
+                          <span class="info-value">[[ detailRecord.custodian_display || detailRecord.custodian || '-' ]]</span>
+                          </div>
+                          </div>
 
                       <div class="info-item">
                         <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
@@ -5557,7 +5605,7 @@
                         </div>
                       </div>
 
-                      <div class="info-item">
+                      <div class="info-item" v-if="activeItem !== 'Asset Master'">
                         <div class="info-icon"><i class="fas fa-building"></i></div>
                         <div class="info-content">
                           <span class="info-label">Department</span>
@@ -11642,6 +11690,11 @@
         onConfirm: null,
       },
       showAssetCreateView: false,
+      showAssetActions: false,
+      showAssetActionModal: false,
+      assetActionTitle: '',
+      assetActionFields: [],
+      assetActionData: {},
       showMovementCreateView: false,
       showSkipModal: false,
       currentApprovalStage: "",
@@ -12255,6 +12308,17 @@
           defaultItemLabel = "Requests";
         }
 
+        // Initialize from URL
+        const hash = window.location.hash.split('/');
+        let initialRecordId = null;
+
+        if (hash.length > 1) {
+          const itemLabel = hash[1].toLowerCase();
+          const item = this.findSidebarItem(itemLabel);
+          if (item) defaultItemLabel = item.label;
+          if (hash.length > 2) initialRecordId = hash[2];
+        }
+
         const defaultItem =
           this.findSidebarItem(this.activeItem || defaultItemLabel) ||
           this.findSidebarItem("Requests") ||
@@ -12262,6 +12326,11 @@
 
         if (defaultItem) {
           await this.setPage(defaultItem);
+          // If a record ID was provided, open it
+          if (initialRecordId) {
+             const row = this.rows.find(r => r.name === initialRecordId);
+             if (row) await this.openRecord(row);
+          }
         }
         if (this.activeItem === "Dashboard") {
           await this.fetchRequestStats();
@@ -12270,6 +12339,7 @@
       },
 
       async setPage(item) {
+        window.history.pushState(null, "", "/stockio#/" + item.label.toLowerCase());
         this.activeItem = item.label;
         this.searchText = "";
         this.selectedRows = [];
@@ -13518,19 +13588,113 @@
         });
       },
 
-      removeMovementItem(index) {
-        if (this.movementItems.length > 1) {
-          this.movementItems.splice(index, 1);
-        } else {
-          frappe.msgprint("At least one item is required");
-        }
+      getAssetActions(doc) {
+          const status = (doc.status || "").trim();
+          console.log("Debug Asset Actions - Status:", status, "Doc:", doc);
+          const actions = [];
+          
+          if (['Draft', 'Submitted', 'Available', ''].includes(status)) {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'Assigned') {
+              actions.push({label: 'Transfer', action: (d) => this.transferAsset(d)});
+              actions.push({label: 'Return', action: (d) => this.returnAsset(d)});
+              actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'In Repair') {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+          } else if (status === 'Scrapped') {
+              actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
+              actions.push({label: 'Restore to Previous', action: (d) => this.restoreToPrevious(d)});
+              actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+          }
+          console.log("Debug Asset Actions - Returning:", actions);
+          return actions;
       },
-
-      selectMovementAssetOption(index, assetName, assetLabel) {
-        this.movementItems[index].asset = assetName;
-        this.movementItems[index].asset_name = assetLabel.split(" (")[0];
-        this.movementItems[index].asset_display = assetLabel;
-        this.focusedField = null;
+      
+      getLinkOptions(field) {
+        if (field.options === 'Employee') {
+            const search = (this.assetActionData[field.fieldname + '_display'] || "").toLowerCase();
+            return (this.employees || []).filter(e => e.name.toLowerCase().includes(search) || e.employee_name.toLowerCase().includes(search));
+        } else if (field.options === 'Sahayog Branch') {
+            const search = (this.assetActionData[field.fieldname + '_display'] || "").toLowerCase();
+            return (this.sahayog_branches || []).filter(b => b.name.toLowerCase().includes(search));
+        }
+        return [];
+      },
+      
+      assignCustodian(doc) {
+          console.log("Debug: Assign clicked for", doc.name);
+          this.assetActionTitle = 'Assign Asset';
+          this.assetActionFields = [
+              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.showAssetActionModal = true;
+          console.log("Debug: showAssetActionModal set to true");
+      },
+      transferAsset(doc) {
+          this.assetActionTitle = 'Transfer Asset';
+          this.assetActionFields = [
+              {label: 'New Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'New Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'transfer', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      returnAsset(doc) {
+          this.assetActionTitle = 'Return Asset';
+          this.assetActionFields = [
+              {label: 'Return Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'return', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      sendForRepair(doc) {
+          this.assetActionTitle = 'Send Asset For Repair';
+          this.assetActionFields = [
+              {label: 'Repair Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'send_for_repair', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      markAvailable(doc) {
+          this.assetActionTitle = 'Mark Asset Available';
+          this.assetActionFields = [
+              {label: 'Available Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'mark_available', asset_name: doc.name, location: doc.location, location_display: doc.location };
+          this.showAssetActionModal = true;
+      },
+      scrapAsset(doc) {
+          this.assetActionTitle = 'Scrap Asset';
+          this.assetActionFields = [];
+          this.assetActionData = { action: 'scrap', asset_name: doc.name };
+          this.showAssetActionModal = true;
+      },
+      restoreToPrevious(doc) {
+          this.assetActionTitle = 'Restore Asset';
+          this.assetActionFields = [];
+          this.assetActionData = { action: 'restore_to_previous', asset_name: doc.name };
+          this.showAssetActionModal = true;
+      },
+      
+      async submitAssetAction() {
+          try {
+              const response = await frappe.call({
+                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                args: this.assetActionData
+              });
+              frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
+              this.showAssetActionModal = false;
+              await this.fetchData("Asset");
+          } catch (e) {
+              frappe.msgprint('Error: ' + (e.message || e));
+          }
       },
 
       async submitMovement() {
@@ -14950,6 +15114,7 @@
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
+          window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase() + '/' + row.name);
           this.loading = true;
           try {
             const res = await frappe.call({
@@ -14969,6 +15134,11 @@
                   a.target_location_display = a.target_location;
                   a.to_employee_display = this.getEmployeeName(a.to_employee);
                 });
+              }
+
+              // Initialize custodian_display for Asset Master
+              if (this.activeItem === "Asset Master" && this.detailRecord.custodian) {
+                this.detailRecord.custodian_display = this.getEmployeeName(this.detailRecord.custodian);
               }
 
               this.fetchComments(row.name);
@@ -15003,6 +15173,9 @@
       closeDetailView() {
         this.showDetailView = false;
         this.isEditing = false;
+        // Update URL to remove record ID
+        window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
+        
         // Delay nullifying to prevent UI errors during transition
         setTimeout(() => {
           if (!this.showDetailView) {
