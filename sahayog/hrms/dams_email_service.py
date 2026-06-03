@@ -7,32 +7,63 @@ from frappe import _
 # =========================
 @frappe.whitelist()
 def get_dams_email_defaults(doctype, docname):
-
-    mapping = {
-        "Disciplinary Case": ("Disciplinary - SCN", "Disciplinary-SCN"),
-        "Suspension Process": ("Suspension Process", "Suspension Process"),
-        "Response to SCN": ("Response to SCN", "Response to SCN"),
-        "Domestic Enquiry": ("Domestic Enquiry Notice", "Domestic Enquiry"),
-        "Enquiry Reminder": ("Reminder Notice of Enquiry", "Enquiry Reminder"),
-        "Case Closure": ("Case Closure Update", "Case Closure"),
-        "Unauthorized Absence": ("Unauthorized Absence", "Unauthorized Absence"),
-        "Reminder Of Unauthorized Absence": ("Reminder Of Unauthorized Absence", "Reminder Unauthorized absence"),
-        "Ex Parte Enquiry": ("Ex Parte Enquiry", "Ex Parte Enquiry"),
+    # Mapping for templates
+    template_mapping = {
+        "Disciplinary Case": "Disciplinary - SCN",
+        "Suspension Process": "Suspension Process",
+        "Response to SCN": "Response to SCN",
+        "Domestic Enquiry": "Domestic Enquiry Notice",
+        "Enquiry Reminder": "Reminder Notice of Enquiry",
+        "Case Closure": "Case Closure Update",
+        "Unauthorized Absence": "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence": "Reminder Of Unauthorized Absence",
+        "Ex Parte Enquiry": "Ex Parte Enquiry"
     }
 
-    template_name, print_format = mapping.get(doctype, (None, None))
+    absence_doctypes = [
+        "Unauthorized Absence",
+        "Reminder Of Unauthorized Absence",
+        "Ex Parte Enquiry"
+    ]
 
-    if doctype in ["Unauthorized Absence", "Reminder Of Unauthorized Absence", "Ex Parte Enquiry"]:
-        fixed_cc = frappe.db.get_single_value("Sahayog HR Setting", "unauthorized_absence_cc")
-    else:
-        fixed_cc = frappe.db.get_single_value("Sahayog HR Setting", "disciplinary_case_cc")
+    fixed_cc = frappe.db.get_single_value(
+        "Sahayog HR Setting",
+        "unauthorized_absence_cc" if doctype in absence_doctypes else "disciplinary_case_cc"
+    )
 
-    return {
-        "template": template_name,
-        "print_format": print_format,
+    response = {
+        "template": template_mapping.get(doctype),
         "cc": fixed_cc
     }
 
+    if doctype == "Case Closure":
+        # Map case_close_with to Print Format
+        format_mapping = {
+            "Termination": "Office Order Termination of Services",
+            "Termination-Abandonment": "Termination due to abandonment",
+            "Accepting Resignation": None,
+            "Warning Letter": "Warning Letter",
+            "Caution Letter": "Caution Letter",
+            "Drop Charges": None
+        }
+        
+        doc = frappe.get_doc("Case Closure", docname)
+        response["print_format"] = format_mapping.get(doc.case_close_with)
+    else:
+        # Mapping for single print format doctypes
+        format_mapping = {
+            "Disciplinary Case": "Disciplinary-SCN",
+            "Suspension Process": "Suspension Order",
+            "Response to SCN": "Show Cause Notice",
+            "Domestic Enquiry": "Domestic Enquiry",
+            "Enquiry Reminder": "Reminder Notice Of Enquiry",
+            "Unauthorized Absence": "Unauthorized Absence",
+            "Reminder Of Unauthorized Absence": "Reminder Unauthorized absence",
+            "Ex Parte Enquiry": "Ex Parte Enquiry",
+        }
+        response["print_format"] = format_mapping.get(doctype, "Standard")
+
+    return response
 
 # =========================
 # 1.1 TEMPLATE PREVIEW (SERVER-SIDE RENDERING)
@@ -62,52 +93,8 @@ def get_email_template_preview(template_name, doctype, docname):
     }
 
 
-@frappe.whitelist()
-def standardize_all_email_templates():
-    """Update all DAMS email templates in DB to use 'doc.' prefix and fix field names."""
-    dams_templates = [
-        "Disciplinary - SCN",
-        "Suspension Process",
-        "Response to SCN",
-        "Domestic Enquiry Notice",
-        "Reminder Notice of Enquiry",
-        "Unauthorized Absence",
-        "Reminder Of Unauthorized Absence",
-        "Ex Parte Enquiry",
-        "Case Closure Update"
-    ]
-
-    fields = ["employee_name", "case_id", "case_type", "branch_name", "issue_occurrence_date", 
-              "hr_name", "remarks", "employee_id", "status_of_response", "date_of_enquiry", 
-              "place_of_enquiry", "enquiry_officer_name", "level", "issue_reported_to_hr", "issue_in_details"]
-
-    for name in dams_templates:
-        if frappe.db.exists("Email Template", name):
-            et = frappe.get_doc("Email Template", name)
-            
-            # 1. Fix specific field name bug
-            if name == "Reminder Of Unauthorized Absence":
-                et.response_html = et.response_html.replace("issue_date_reported_to_hr", "doc.issue_reported_to_hr")
-
-            # 2. Standardize tags: {{ field }} -> {{ doc.field }}
-            for field in fields:
-                old_tags = [
-                    "{{" + f" {field} " + "}}",
-                    "{{" + f"{field}" + "}}"
-                ]
-                new_tag = "{{" + f" doc.{field} " + "}}"
-                
-                for old in old_tags:
-                    if et.subject:
-                        et.subject = et.subject.replace(old, new_tag)
-                    if et.response_html:
-                        et.response_html = et.response_html.replace(old, new_tag)
-
-            et.save(ignore_permissions=True)
-    
-    frappe.db.commit()
-    return "Templates Standardized"
-
+# ... (rest of the file content until _send_email)
+# ...
 
 # =========================
 # 2. CORE EMAIL SENDER
@@ -134,8 +121,9 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
                 file_name=f"{docname}.pdf"
             )
             attachments.append(attachment)
-        except Exception as e:
-            frappe.log_error(f"Failed to attach print format: {str(e)}", "Email Attachment Error")
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Print Format Attachment Failed - {doctype}")
+            frappe.throw(_("Unable to generate attachment for print format {0}").format(print_format))
 
     frappe.sendmail(
         recipients=recipients,
