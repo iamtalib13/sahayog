@@ -13665,6 +13665,20 @@
           this.assetActionData = { action: 'restore_to_previous', asset_name: doc.name };
           this.showAssetActionModal = true;
       },
+      
+      async submitAssetAction() {
+          try {
+              const response = await frappe.call({
+                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                args: this.assetActionData
+              });
+              frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
+              this.showAssetActionModal = false;
+              await this.fetchData("Asset");
+          } catch (e) {
+              frappe.msgprint('Error: ' + (e.message || e));
+          }
+      },
 
       async submitMovement() {
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
