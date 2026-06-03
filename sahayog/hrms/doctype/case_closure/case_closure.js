@@ -542,89 +542,115 @@ refresh(frm) {
               return;
             }
 
-            // Step 2: Fetch active print formats
-            frappe.call({
-              method: "frappe.client.get_list",
-              args: {
-                doctype: "Print Format",
-                filters: {
-                  doc_type: "Case Closure",
-                  disabled: 0,
-                },
-                fields: ["name"],
-              },
-              callback(res) {
-                if (!res.message || !res.message.length) {
-                  frappe.msgprint("No Print Formats found.");
-                  return;
-                }
-
-                // Preferred print format ordering
-                const preferred_order = [
-                  "Warning Letter",
-                  "Caution Letter",
-                  "Termination due to abandonment",
-                  "Office Order Termination of Services",
-                ];
-
-                let fetched_formats = res.message.map((p) => p.name);
-
-                // Arrange formats in preferred order
-                let ordered_formats = [];
-
-                preferred_order.forEach((name) => {
-                  if (fetched_formats.includes(name)) {
-                    ordered_formats.push(name);
-                  }
-                });
-
-                // Add remaining formats (if any)
-                fetched_formats.forEach((name) => {
-                  if (!ordered_formats.includes(name)) {
-                    ordered_formats.push(name);
-                  }
-                });
-
-                let options = ordered_formats.join("\n");
-
-                // Print format selection dialog
-                let d = new frappe.ui.Dialog({
-                  title: "Send Case Closure Email",
-                  fields: [
-                    {
-                      fieldtype: "Select",
-                      fieldname: "print_format",
-                      label: "Select Print Format",
-                      options: options,
-                      reqd: 1,
-                    },
-                  ],
-                  primary_action_label: "Send Email",
-                  primary_action(values) {
-                    frappe.call({
-                      method:
-                        "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
-                      args: {
-                        docname: frm.doc.name,
-                        print_format: values.print_format,
-                      },
-                      freeze: true,
-                      freeze_message: __("Sending Email..."),
-                      callback() {
-                        frappe.msgprint(__("Email sent successfully!"));
-                        d.hide();
-                      },
-                    });
-                  },
-                });
-
-                d.show();
-              },
-            });
+            // USE SHARED DAMS EMAIL UTILITY
+            sahayog.dams.open_email_composer(frm);
           },
         });
       });
     }
+
+    /* 
+    // ---------------- CUSTOM SEND EMAIL IMPLEMENTATION (COMMENTED OUT) ----------------
+    // if (!frm.is_new() && frm.doc.status === "Closed" && can_manage_case_closure_buttons) {
+    //   frm.add_custom_button("Send Email", function () {
+    //     frappe.call({
+    //       method:
+    //         "sahayog.hrms.doctype.case_closure.case_closure.check_employee_email",
+    //       args: { employee: frm.doc.employee_id },
+    //       callback(r) {
+    //         if (!r.message) {
+    //           frappe.msgprint({
+    //             title: __("Email Not Found"),
+    //             indicator: "red",
+    //             message: __("No email is stored for this employee."),
+    //           });
+    //           return;
+    //         }
+    //
+    //         // Step 2: Fetch active print formats
+    //         frappe.call({
+    //           method: "frappe.client.get_list",
+    //           args: {
+    //             doctype: "Print Format",
+    //             filters: {
+    //               doc_type: "Case Closure",
+    //               disabled: 0,
+    //             },
+    //             fields: ["name"],
+    //           },
+    //           callback(res) {
+    //             if (!res.message || !res.message.length) {
+    //               frappe.msgprint("No Print Formats found.");
+    //               return;
+    //             }
+    //
+    //             // Preferred print format ordering
+    //             const preferred_order = [
+    //               "Warning Letter",
+    //               "Caution Letter",
+    //               "Termination due to abandonment",
+    //               "Office Order Termination of Services",
+    //             ];
+    //
+    //             let fetched_formats = res.message.map((p) => p.name);
+    //
+    //             // Arrange formats in preferred order
+    //             let ordered_formats = [];
+    //
+    //             preferred_order.forEach((name) => {
+    //               if (fetched_formats.includes(name)) {
+    //                 ordered_formats.push(name);
+    //               }
+    //             });
+    //
+    //             // Add remaining formats (if any)
+    //             fetched_formats.forEach((name) => {
+    //               if (!ordered_formats.includes(name)) {
+    //                 ordered_formats.push(name);
+    //               }
+    //             });
+    //
+    //             let options = ordered_formats.join("\n");
+    //
+    //             // Print format selection dialog
+    //             let d = new frappe.ui.Dialog({
+    //               title: "Send Case Closure Email",
+    //               fields: [
+    //                 {
+    //                   fieldtype: "Select",
+    //                   fieldname: "print_format",
+    //                   label: "Select Print Format",
+    //                   options: options,
+    //                   reqd: 1,
+    //                 },
+    //               ],
+    //               primary_action_label: "Send Email",
+    //               primary_action(values) {
+    //                 frappe.call({
+    //                   method:
+    //                     "sahayog.hrms.doctype.case_closure.case_closure.send_case_closure_email",
+    //                   args: {
+    //                     docname: frm.doc.name,
+    //                     print_format: values.print_format,
+    //                   },
+    //                   freeze: true,
+    //                   freeze_message: __("Sending Email..."),
+    //                   callback() {
+    //                     frappe.msgprint(__("Email sent successfully!"));
+    //                     d.hide();
+    //                   },
+    //                 });
+    //               },
+    //             });
+    //
+    //             d.show();
+    //           },
+    //         });
+    //       },
+    //     });
+    //   });
+    // }
+    */
 
     // ---------------- VIEW CASE HISTORY BUTTON ----------------
     if (!frm.is_new()) {

@@ -48,6 +48,7 @@
    "search_index": 1
   },
   {
+   "default": "Yes",
    "fieldname": "ex_parte_enquiry",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -206,7 +207,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-02 12:07:49.728031",
+ "modified": "2026-06-03 10:48:20.802588",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",
