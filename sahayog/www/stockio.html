@@ -2558,6 +2558,7 @@
                     <tr>
                       <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 350px;">Item Code <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 250px;">Description</th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 200px;" v-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')">Serial and Batch Bundle</th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">Qty <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 100px;">Rate <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; width: 60px;">Action</th>
@@ -2566,6 +2567,7 @@
                   <tbody>
                     <tr v-for="(item, index) in inwardItems" :key="index">
                       <td style="padding: 10px 16px; width: 100%; min-width: 350px;">
+                        <!-- Item Code Input -->
                         <div class="searchable-select-wrapper" style="width: 100%; min-width: 350px;">
                           <input
                             type="text"
@@ -2586,7 +2588,7 @@
                               :key="opt.name"
                               class="searchable-select-option"
                               style="padding: 8px 12px; font-size: 0.9rem;"
-                              @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description)"
+                              @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description); item.custom_item_department = opt.custom_item_department;"
                             >
                               <div style="font-weight: 500">[[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span></div>
                             </div>
@@ -2607,6 +2609,32 @@
                           "
                         >[[ (item.description || '-').trim() ]]</div>
                       </td>
+                      <td style="padding: 10px 16px;" v-if="item.custom_item_department && item.custom_item_department.toUpperCase() === 'IT'">
+                        <div class="searchable-select-wrapper" style="width: 100%; min-width: 200px;">
+                          <input
+                            type="text"
+                            class="form-input searchable-select-input"
+                            style="padding: 10px 14px !important; font-size: 0.9rem;"
+                            :class="{ focused: focusedField === 'inward_bundle_' + index }"
+                            v-model="item.serial_and_batch_bundle"
+                            @focus="onFocusSearchable('inward_bundle_' + index)"
+                            @blur="onBlurSearchable('inward_bundle_' + index)"
+                            placeholder="Search Bundle"
+                          />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'inward_bundle_' + index" style="width: 100%; z-index: 1000;">
+                            <div
+                              v-for="bundle in serialAndBatchBundles.filter(b => !item.serial_and_batch_bundle || b.name.toLowerCase().includes(item.serial_and_batch_bundle.toLowerCase()))"
+                              :key="bundle.name"
+                              class="searchable-select-option"
+                              style="padding: 8px 12px; font-size: 0.9rem;"
+                              @mousedown="item.serial_and_batch_bundle = bundle.name; focusedField = null;"
+                            >
+                              [[ bundle.name ]]
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="padding: 10px 16px;" v-else-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')"></td>
                       <td style="padding: 10px; text-align: center;">
                         <div style="display: flex; justify-content: center;">
                           <input
