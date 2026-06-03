@@ -1984,7 +1984,7 @@
         </button>
         <button
           class="btn-create"
-          v-if="activeItem === 'Inward'"
+          v-if="activeItem === 'Inward' && !showInwardCreateView"
           @click="openNewSerialBatch()"
         >
           <i class="fas fa-barcode"></i>
@@ -2558,6 +2558,7 @@
                     <tr>
                       <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 350px;">Item Code <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 250px;">Description</th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 200px;" v-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')">Serial and Batch Bundle</th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">Qty <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 100px;">Rate <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; width: 60px;">Action</th>
@@ -2566,6 +2567,7 @@
                   <tbody>
                     <tr v-for="(item, index) in inwardItems" :key="index">
                       <td style="padding: 10px 16px; width: 100%; min-width: 350px;">
+                        <!-- Item Code Input -->
                         <div class="searchable-select-wrapper" style="width: 100%; min-width: 350px;">
                           <input
                             type="text"
@@ -2586,7 +2588,7 @@
                               :key="opt.name"
                               class="searchable-select-option"
                               style="padding: 8px 12px; font-size: 0.9rem;"
-                              @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description)"
+                              @mousedown="selectInwardItemOption(index, opt.name, opt.item_name, opt.stock_uom, opt.description); item.custom_item_department = opt.custom_item_department;"
                             >
                               <div style="font-weight: 500">[[ opt.item_name ]] <span style="color: var(--primary-color); font-weight: 800;">([[ opt.name ]])</span></div>
                             </div>
@@ -2607,6 +2609,36 @@
                           "
                         >[[ (item.description || '-').trim() ]]</div>
                       </td>
+                      <td style="padding: 10px 16px;" v-if="item.custom_item_department && item.custom_item_department.toUpperCase() === 'IT'">
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <div class="searchable-select-wrapper" style="width: 100%; min-width: 200px;">
+                              <input
+                                type="text"
+                                class="form-input searchable-select-input"
+                                style="padding: 10px 14px !important; font-size: 0.9rem;"
+                                :class="{ focused: focusedField === 'inward_bundle_' + index }"
+                                :value="item.serial_and_batch_bundle || ''"
+                                @input="item.serial_and_batch_bundle = $event.target.value"
+                                @focus="onFocusSearchable('inward_bundle_' + index)"
+                                @blur="onBlurSearchable('inward_bundle_' + index)"
+                                placeholder="Search Bundle"
+                              />
+                              <div class="searchable-select-dropdown" v-if="focusedField === 'inward_bundle_' + index" style="width: 100%; z-index: 1000;">
+                                <div
+                                  v-for="bundle in serialAndBatchBundles.filter(b => !item.serial_and_batch_bundle || b.name.toLowerCase().includes(item.serial_and_batch_bundle.toLowerCase()))"
+                                  :key="bundle.name"
+                                  class="searchable-select-option"
+                                  style="padding: 8px 12px; font-size: 0.9rem;"
+                                  @mousedown="item.serial_and_batch_bundle = bundle.name; focusedField = null;"
+                                >
+                                  [[ bundle.name ]]
+                                </div>
+                              </div>
+                            </div>
+                            <button type="button" @click="openNewSerialBatch(item)" style="background: #369696; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; width: 28px; height: 28px; cursor: pointer; flex-shrink: 0;">+</button>
+                        </div>
+                      </td>
+                      <td style="padding: 10px 16px;" v-else-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')"></td>
                       <td style="padding: 10px; text-align: center;">
                         <div style="display: flex; justify-content: center;">
                           <input
@@ -11005,7 +11037,9 @@
         to_warehouse: "",
         to_warehouse_display: ""
       },
-      showDispatchHistory: false,      dispatchHistory: [],
+      showDispatchHistory: false,
+      dispatchHistory: [],
+      serialAndBatchBundles: [],
       showInwardCreateView: false,
       showWarehouseCreateModal: false,
       showSerialBatchModal: false,
@@ -12128,6 +12162,7 @@
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
         // Fetch user's full name from User doctype
         try {
+          this.fetchSerialAndBatchBundles();
           const res = await frappe.call({
             method: "frappe.client.get_value",
             args: {
@@ -12765,10 +12800,35 @@
         this.newWarehouseName = '';
         this.newWarehouseCategory = '';
       },
-      openNewSerialBatch() {
+      async openNewSerialBatch(item) {
         this.showSerialBatchModal = true;
         this.serialBatchItems = [];
-        this.addSerialBatchRow();
+        this.activeInwardItem = item; // Store reference to the row being edited
+        
+        // Fetch restrict_inward setting
+        const settings = await frappe.call({
+            method: 'frappe.client.get_value',
+            args: {
+                doctype: 'Sahayog Settings',
+                filters: {},
+                fieldname: 'restrict_inward'
+            }
+        });
+        
+        let rowCount = 1;
+        if (settings.message && settings.message.restrict_inward && item.qty) {
+            rowCount = Math.max(1, parseInt(item.qty) || 1);
+        }
+
+        for (let i = 0; i < rowCount; i++) {
+            this.addSerialBatchRow();
+        }
+
+        if (item && item.item_name) {
+            this.serialBatchSearch = `${item.item_name} (${item.item_code})`;
+        } else {
+            this.serialBatchSearch = '';
+        }
       },
       addSerialBatchRow() {
           this.serialBatchItems.push({
@@ -12845,7 +12905,7 @@
           // Create ONE single Serial and Batch Bundle
           if (createdSerials.length > 0) {
               try {
-                  await frappe.call({
+                  const res = await frappe.call({
                       method: 'frappe.client.insert',
                       args: {
                           doc: {
@@ -12861,14 +12921,21 @@
                           }
                       }
                   });
+                  
+                  // Update the inward item row
+                  if (res && res.message && res.message.name && this.activeInwardItem) {
+                      this.activeInwardItem.serial_and_batch_bundle = res.message.name;
+                      this.activeInwardItem.qty = createdSerials.length;
+                  }
+                  frappe.show_alert({message: 'Serial Batch Bundle created: ' + res.message.name, indicator: 'green'});
               } catch (e) {
                   console.error('Error creating Serial and Batch Bundle:', e);
                   frappe.msgprint(`Error creating Serial and Batch Bundle: ${e.message || e}`);
               }
           }
           
-          frappe.show_alert({message: 'Serial Batch submission processed', indicator: 'green'});
           this.showSerialBatchModal = false;
+          this.activeInwardItem = null;
       },
       get filteredSerialBatchItems() {
         const search = (this.serialBatchSearch || "").toLowerCase();
@@ -12888,6 +12955,23 @@
         this.focusedField = null;
         // Logic to handle item selection could be added here
       },
+      async fetchSerialAndBatchBundles() {
+        try {
+          const res = await frappe.call({
+            method: 'frappe.client.get_list',
+            args: {
+              doctype: 'Serial and Batch Bundle',
+              fields: ['name']
+            }
+          });
+          if (res.message) {
+            this.serialAndBatchBundles = res.message;
+          }
+        } catch (e) {
+          console.error('Error fetching Serial and Batch Bundles:', e);
+        }
+      },
+
       async submitNewWarehouse() {
         if (!this.newWarehouseName) {
             frappe.msgprint('Please enter warehouse name');
@@ -14752,6 +14836,7 @@
                 uom: i.uom,
                 warehouse: i.warehouse || this.inwardForm.set_warehouse,
                 rate: i.rate || 0,
+                serial_and_batch_bundle: i.serial_and_batch_bundle || null,
               })),
           };
 
