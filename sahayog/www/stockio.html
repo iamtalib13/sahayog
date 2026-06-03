@@ -1581,8 +1581,7 @@
         <h1 class="page-title" v-else>
           [[ activeItem ]]
           <span class="detail-id-badge" v-if="detailRecord"
-            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name :
-            detailRecord.name ]]</span
+            >[[ detailRecord.name ]]</span
           >
           <span
             class="detail-status-badge"
@@ -5655,8 +5654,15 @@
                       </div>
 
                       <div class="info-item">
-                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="info-icon"><i class="fas fa-file-invoice"></i></div>
                         <div class="info-content">
+                          <span class="info-label">Invoice Number</span>
+                          <span class="info-value">[[ detailRecord.custom_invoice_number || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>                        <div class="info-content">
                           <span class="info-label">Invoice Date</span>
                           <span class="info-value">[[ detailRecord.purchase_date || '-' ]]</span>
                         </div>
@@ -11476,6 +11482,7 @@
             { label: "Custodian", key: "custodian_name" },
             { label: "Department", key: "department" },
             { label: "Location", key: "location" },
+            { label: "Invoice Number", key: "custom_invoice_number" },
             { label: "Invoice Date", key: "purchase_date" },
             { label: "Gross Purchase Amount", key: "gross_purchase_amount" },
           ],
