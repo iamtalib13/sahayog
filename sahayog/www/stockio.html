@@ -15168,6 +15168,9 @@
       closeDetailView() {
         this.showDetailView = false;
         this.isEditing = false;
+        // Update URL to remove record ID
+        window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
+        
         // Delay nullifying to prevent UI errors during transition
         setTimeout(() => {
           if (!this.showDetailView) {
