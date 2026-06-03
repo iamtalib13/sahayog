@@ -682,7 +682,7 @@ def send_email_for_review(case_id=None, approvers=None):
     # -----------------------------
     # CONTEXT for template
     # -----------------------------
-    context = {
+    doc_context = {
         # From Parent Case (Disciplinary or Unauthorized)
         "case_id": parent_case.name,
         "employee_name": parent_case.employee_name,
@@ -703,6 +703,7 @@ def send_email_for_review(case_id=None, approvers=None):
         # CASE HISTORY REPORT LINK (CORRECT)
         "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={parent_case.name}"
     }
+    context = {"doc": doc_context}
 
     # -----------------------------
     # Render Template
