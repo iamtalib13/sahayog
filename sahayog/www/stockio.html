@@ -12803,6 +12803,7 @@
       async openNewSerialBatch(item) {
         this.showSerialBatchModal = true;
         this.serialBatchItems = [];
+        this.activeInwardItem = item; // Store reference to the row being edited
         
         // Fetch restrict_inward setting
         const settings = await frappe.call({
@@ -12904,7 +12905,7 @@
           // Create ONE single Serial and Batch Bundle
           if (createdSerials.length > 0) {
               try {
-                  await frappe.call({
+                  const res = await frappe.call({
                       method: 'frappe.client.insert',
                       args: {
                           doc: {
@@ -12920,14 +12921,21 @@
                           }
                       }
                   });
+                  
+                  // Update the inward item row
+                  if (res && res.message && res.message.name && this.activeInwardItem) {
+                      this.activeInwardItem.serial_and_batch_bundle = res.message.name;
+                      this.activeInwardItem.qty = createdSerials.length;
+                  }
+                  frappe.show_alert({message: 'Serial Batch Bundle created: ' + res.message.name, indicator: 'green'});
               } catch (e) {
                   console.error('Error creating Serial and Batch Bundle:', e);
                   frappe.msgprint(`Error creating Serial and Batch Bundle: ${e.message || e}`);
               }
           }
           
-          frappe.show_alert({message: 'Serial Batch submission processed', indicator: 'green'});
           this.showSerialBatchModal = false;
+          this.activeInwardItem = null;
       },
       get filteredSerialBatchItems() {
         const search = (this.serialBatchSearch || "").toLowerCase();
