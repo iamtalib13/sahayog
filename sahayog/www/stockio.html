@@ -5633,6 +5633,16 @@
                     </div>
                   </div>
 
+                  <!-- Card 3: Detailed Description -->
+                  <div v-if="assetDetailedDescription" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-align-left" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Detailed Description</span>
+                    </div>
+                    <div style="padding: 20px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);" v-html="assetDetailedDescription">
+                    </div>
+                  </div>
+
                 </div>
 
                 <div
@@ -6759,9 +6769,9 @@
                     padding-right: 8px;
                   "
                 >
-                  <div v-if="comments && comments.length">
+                  <div v-if="filteredComments && filteredComments.length">
                     <div
-                      v-for="c in comments"
+                      v-for="c in filteredComments"
                       :key="c.name"
                       class="comment-item"
                       style="
@@ -11809,6 +11819,18 @@
           ...i,
           percentage: (i.value / total) * 100,
         }));
+      },
+
+      get assetDetailedDescription() {
+        if (!this.comments || this.comments.length === 0 || this.activeItem !== 'Asset Master') return null;
+        const found = this.comments.find(c => c.content && c.content.includes("Detailed Description:"));
+        return found ? found.content.replace("Detailed Description:", "").trim() : null;
+      },
+
+      get filteredComments() {
+        if (!this.comments) return [];
+        if (this.activeItem !== 'Asset Master') return this.comments;
+        return this.comments.filter(c => !c.content.includes("Detailed Description:"));
       },
 
       get computedSidebarSections() {
