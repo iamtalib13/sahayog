@@ -12308,6 +12308,14 @@
           defaultItemLabel = "Requests";
         }
 
+        // Initialize from URL
+        const path = window.location.hash.split("/");
+        if (path.length > 3) {
+          const itemLabel = path[3].toLowerCase();
+          const item = this.findSidebarItem(itemLabel);
+          if (item) defaultItemLabel = item.label;
+        }
+
         const defaultItem =
           this.findSidebarItem(this.activeItem || defaultItemLabel) ||
           this.findSidebarItem("Requests") ||
@@ -12323,6 +12331,7 @@
       },
 
       async setPage(item) {
+        window.history.pushState(null, "", "/stockio#/" + item.label.toLowerCase());
         this.activeItem = item.label;
         this.searchText = "";
         this.selectedRows = [];
