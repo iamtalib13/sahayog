@@ -15,7 +15,7 @@ def execute():
                     "fieldname": "config_type",
                     "fieldtype": "Select",
                     "label": "Type",
-                    "options": "\nMAC Address\nModel Number\nOffice Key\nOperating System\nProcessor\nRAM\nSerial Number\nStorage\nVend\nWarranty start date\nWarranty end date\nWindows Key\nMake",
+                    "options": "\nMAC Address\nModel Number\nOffice Key\nOperating System\nProcessor\nRAM\nSerial Number\nStorage\nVendor\nWarranty start date\nWarranty end date\nWindows Key\nMake",
                     "in_list_view": 1
                 },
                 {
