@@ -1577,14 +1577,14 @@
           <span
             class="detail-status-badge"
             v-if="detailRecord"
-            :class="detailRecord ? getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null) : ''"
+            :class="activeItem === 'Asset Master' ? (detailRecord.status === 'Assigned' ? 'active' : 'pending') : getBadgeClass(detailRecord, activeItem === 'Requests' ? 'status' : (detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'), activeItem === 'Requests' ? (currentView.columns.find(c => c.key === 'status')?.getValue?.(detailRecord)) : null)"
           >
-            [[ detailRecord ? (activeItem === 'Requests' ?
+            [[ activeItem === 'Asset Master' ? detailRecord.status : (detailRecord ? (activeItem === 'Requests' ?
             (currentView.columns.find(c => c.key ===
             'status')?.getValue?.(detailRecord) || getBadgeText(detailRecord,
             'status')) : getBadgeText(detailRecord,
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
-            : '' ]]
+            : '') ]]
           </span>
 
           <!-- Inline Approval Flow -->
