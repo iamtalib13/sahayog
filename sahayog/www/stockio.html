@@ -1021,6 +1021,16 @@
     color: #f87171;
     border-color: rgba(248, 113, 113, 0.2);
   }
+
+  @keyframes activeGlow {
+    0% { box-shadow: 0 0 5px currentColor; }
+    50% { box-shadow: 0 0 15px currentColor; }
+    100% { box-shadow: 0 0 5px currentColor; }
+  }
+
+  .status-pill {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -5534,23 +5544,31 @@
                       </div>
                       
                       <!-- Asset Status Bar -->
-                      <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; margin-right: 15px;">
+                      <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 15px;">
                         <div v-for="s in ['Available', 'Assigned', 'In Repair', 'Scrapped']" 
+                             class="status-pill"
                              :style="{
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.65rem',
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                fontSize: '0.6rem',
                                 fontWeight: '800',
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.05em',
-                                transition: 'all 0.3s ease',
-                                background: detailRecord.status === s ? (s === 'Available' ? '#10b981' : s === 'Assigned' ? '#3b82f6' : s === 'In Repair' ? '#f59e0b' : '#ef4444') : 'rgba(100, 116, 139, 0.05)',
-                                color: detailRecord.status === s ? '#fff' : 'var(--text-muted)',
-                                border: '1px solid ' + (detailRecord.status === s ? 'transparent' : 'var(--border-color)'),
-                                boxShadow: detailRecord.status === s ? '0 0 15px ' + (s === 'Available' ? 'rgba(16, 185, 129, 0.6)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.6)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.6)' : 'rgba(239, 68, 68, 0.6)') : 'none',
-                                opacity: detailRecord.status === s ? '1' : '0.7'
+                                letterSpacing: '0.04em',
+                                cursor: 'default',
+                                border: '1px solid ' + (detailRecord.status === s 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.4)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.4)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)') 
+                                    : 'var(--border-color)'),
+                                background: detailRecord.status === s 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.15)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.15)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)') 
+                                    : 'transparent',
+                                color: detailRecord.status === s 
+                                    ? (s === 'Available' ? '#10b981' : s === 'Assigned' ? '#3b82f6' : s === 'In Repair' ? '#f59e0b' : '#ef4444') 
+                                    : 'var(--text-muted)',
+                                opacity: detailRecord.status === s ? '1' : '0.4',
+                                animation: detailRecord.status === s ? 'activeGlow 1.8s ease-in-out infinite' : 'none'
                              }"
                         >
+                          <i class="fas fa-circle" style="font-size: 5px; margin-right: 5px;" v-if="detailRecord.status === s"></i>
                           [[ s ]]
                         </div>
                       </div>
