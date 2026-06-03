@@ -13546,7 +13546,6 @@
           serial_no: this.createAssetForm.serial_no,
           is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,
           is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
-          custom_remark: this.createAssetForm.custom_remark,
           booked_fixed_asset: 1,
           naming_series: "AST-",
           company: "Sahayog Multistate Credit Co-op Society Ltd",
@@ -13558,6 +13557,19 @@
             method: "frappe.client.insert",
             args: { doc },
           });
+
+          if (res.message && res.message.name && this.createAssetForm.custom_remark) {
+            await frappe.call({
+              method: "frappe.desk.form.utils.add_comment",
+              args: {
+                reference_doctype: "Asset",
+                reference_name: res.message.name,
+                content: "Remark: " + this.createAssetForm.custom_remark,
+                comment_email: frappe.session.user,
+                comment_by: this.sidebar.header.subtitle || frappe.session.user,
+              },
+            });
+          }
 
           if (res.message) {
             frappe.show_alert({
