@@ -258,7 +258,9 @@ sahayog.dams.render_email_dialog = function (frm, options) {
                 options: `
                   <div class="outlook-attachment">
                     <i class="fa fa-paperclip" style="color: #605e5c;"></i> 
-                    <span><b>${frm.doc.name}.pdf</b></span>
+                    <a href="/printview?doctype=${frm.doc.doctype}&name=${frm.doc.name}&format=${options.print_format}" target="_blank">
+                        <span><b>${frm.doc.name}.pdf</b></span>
+                    </a>
                   </div>
                 `,
               },
