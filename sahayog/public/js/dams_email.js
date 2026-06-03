@@ -24,6 +24,8 @@ sahayog.dams.open_email_composer = function (frm) {
       docname: frm.doc.name,
     },
     callback: function (r) {
+      console.log("DAMS Defaults =>", r.message);
+
       if (!r.message) {
         frappe.msgprint("Email defaults not found");
         return;
@@ -41,8 +43,13 @@ sahayog.dams.open_email_composer = function (frm) {
           sahayog.dams.render_email_dialog(frm, {
             template: defaults.template,
             print_format: defaults.print_format,
+            print_formats: defaults.print_formats || null,
             recipients: recipients,
-            cc_setting_field: frm.doc.doctype.toLowerCase().includes("absence")
+            cc_setting_field: [
+                "Unauthorized Absence",
+                "Reminder Of Unauthorized Absence",
+                "Ex Parte Enquiry"
+            ].includes(frm.doc.doctype)
               ? "unauthorized_absence_cc"
               : "disciplinary_case_cc",
           });
@@ -56,6 +63,8 @@ sahayog.dams.open_email_composer = function (frm) {
 // 3. EMAIL DIALOG UI (OUTLOOK STYLE)
 // ============================
 sahayog.dams.render_email_dialog = function (frm, options) {
+  console.log("DEBUG: Rendering dialog with options:", options);
+
   frappe.db
     .get_single_value("Sahayog HR Setting", options.cc_setting_field)
     .then((fixed_cc) => {
@@ -67,11 +76,15 @@ sahayog.dams.render_email_dialog = function (frm, options) {
           docname: frm.doc.name,
         },
         callback: function (r) {
+          console.log("DEBUG: Template preview response:", r);
           const preview = r.message || {};
           const subject = preview.subject || "";
           const body = preview.message || "";
 
-          // CC values parsing
+          console.log("DEBUG: Options print_formats:", options.print_formats);
+          console.log("DEBUG: Selector condition:", options.print_formats && options.print_formats.length > 1);
+
+          // ... (rest of the function)
           let cc_values = [];
           if (fixed_cc) {
             cc_values = fixed_cc
@@ -256,9 +269,9 @@ sahayog.dams.render_email_dialog = function (frm, options) {
                 fieldtype: "HTML",
                 fieldname: "attachment_box",
                 options: `
-                  <div class="outlook-attachment">
+                  <div class="outlook-attachment" id="attachment_container">
                     <i class="fa fa-paperclip" style="color: #605e5c;"></i> 
-                    <a href="/printview?doctype=${frm.doc.doctype}&name=${frm.doc.name}&format=${options.print_format}" target="_blank">
+                    <a id="attachment_link" href="/printview?doctype=${frm.doc.doctype}&name=${frm.doc.name}&format=${encodeURIComponent(options.print_format)}" target="_blank">
                         <span><b>${frm.doc.name}.pdf</b></span>
                     </a>
                   </div>
@@ -365,8 +378,13 @@ sahayog.dams.render_email_dialog = function (frm, options) {
 
             // Bind Custom Send Button Functionality
             d.$wrapper.find("#outlook_btn_send").on("click", function () {
-              let subject = d.get_values().subject;
-              let message = d.get_values().message;
+              let values = d.get_values();
+              let subject = values.subject;
+              let message = values.message;
+              let selected_format =
+                  values.print_format_selector ||
+                  options.print_format ||
+                  "Standard";
 
               if (!subject || !message) {
                 frappe.msgprint(__("Subject and Message are mandatory."));
@@ -404,7 +422,7 @@ sahayog.dams.render_email_dialog = function (frm, options) {
                   cc: cc.join(","),
                   subject: subject,
                   message: message,
-                  print_format: options.print_format,
+                  print_format: selected_format, // Send selected format
                 },
                 freeze: true,
                 freeze_message: __("Sending Email..."),
@@ -426,8 +444,8 @@ sahayog.dams.render_email_dialog = function (frm, options) {
               });
             });
 
-            // Bind Custom Close Icon Functionality
-            $("#outlook_btn_close").on("click", function () {
+            // Bind Custom Close Icon Functionality (Scoped)
+            d.$wrapper.find("#outlook_btn_close").on("click", function () {
               d.hide();
             });
           }, 100);
