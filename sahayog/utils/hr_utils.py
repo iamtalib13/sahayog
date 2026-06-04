@@ -14,7 +14,7 @@ def get_hr_cc_recipients(doctype, employee_id, docname=None):
     hr_settings = frappe.get_single("Sahayog HR Setting")
     
     # Define flows (Original categories)
-    ua_flow = ["Unauthorized Absence", "Reminder Of Unauthorized Absence"]
+    ua_flow = ["Unauthorized Absence", "Reminder Of Unauthorized Absence", "Ex Parte Enquiry"]
     disc_flow = [
         "Disciplinary Case", 
         "Suspension Process", 
@@ -87,8 +87,8 @@ def send_hr_workflow_email(docname, doctype, template_name=None, print_format=No
     try:
         template = frappe.get_doc("Email Template", template_name)
         
-        # Use standard 'doc' context for consistency across all templates
-        context = {"doc": doc}
+        # Use doc_dict for rendering to ensure dates are formatted
+        context = {"doc": doc_dict}
         
         subject = frappe.render_template(template.subject, context)
         message = frappe.render_template(template.response_html, context)
@@ -161,6 +161,7 @@ def notify_cc_on_incoming_reply(doc, method):
        and doc.reference_doctype in [
            "Unauthorized Absence", 
            "Reminder Of Unauthorized Absence", 
+           "Ex Parte Enquiry",
            "Disciplinary Case"
        ]:
         
