@@ -341,7 +341,7 @@ def get_reference_details(reference_doctype, reference_name):
         "branch_name": source_doc.get("branch_name"),
         "zone_name": source_doc.get("zone_name") or source_doc.get("zone"),
         "issue_in_details": source_doc.get("issue_in_details") or source_doc.get("description"),
-        "case_type": source_doc.get("case_type"),
+        "case_type": source_doc.get("case_type") or ("Unauthorized Absence" if reference_doctype in ["Unauthorized Absence", "Reminder Of Unauthorized Absence", "Ex Parte Enquiry"] else None),
         "category": source_doc.get("category"),
         "issue_reported_to_hr": source_doc.get("issue_reported_to_hr") or source_doc.get("issue_report_to_hr"),
         "issue_occurrence_date": source_doc.get("issue_occurrence_date"),
