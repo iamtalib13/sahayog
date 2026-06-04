@@ -138,6 +138,7 @@ def send_hr_workflow_email(docname, doctype, template_name=None, print_format=No
     # 6. Send Email
     frappe.sendmail(
         recipients=[recipient],
+        sender="dcm@sahayogmultistate.com",
         cc=cc_list,
         subject=subject,
         message=message,
@@ -178,6 +179,7 @@ def notify_cc_on_incoming_reply(doc, method):
                 # Forward/Notify CC members about the reply
                 frappe.sendmail(
                     recipients=cc_list,
+                    sender="dcm@sahayogmultistate.com",
                     subject=f"Reply Received: {doc.subject}",
                     message=f"A new reply has been received from the employee regarding the case <b>{doc.reference_name}</b>.<br><br><b>Message Content:</b><br>{doc.content}",
                     reference_doctype=doc.reference_doctype,
