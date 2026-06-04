@@ -1021,6 +1021,16 @@
     color: #f87171;
     border-color: rgba(248, 113, 113, 0.2);
   }
+
+  @keyframes activeGlow {
+    0% { box-shadow: 0 0 5px currentColor; }
+    50% { box-shadow: 0 0 15px currentColor; }
+    100% { box-shadow: 0 0 5px currentColor; }
+  }
+
+  .status-pill {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -1064,84 +1074,84 @@
   </div>
 
   <!-- Custom Serial Batch Modal -->
-  <div v-if="showSerialBatchModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 1200px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <div v-if="showSerialBatchModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 10px;">
+    <div class="modal-card" style="background: var(--bg-surface); border-radius: 12px; width: 98%; max-width: 1800px; height: 95vh; display: flex; flex-direction: column; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); overflow: hidden;">
+
+      <!-- Compact Header -->
+      <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
         <div style="display: flex; align-items: center; gap: 20px;">
-            <h3 style="margin: 0;">New Serial Batch</h3>
-            <div class="searchable-select-wrapper" style="width: 250px; position: relative;">
-                <input
-                    type="text"
-                    class="form-input searchable-select-input"
-                    style="padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%;"
-                    placeholder="Search Item..."
-                    v-model="serialBatchSearch"
-                    @focus="focusedField = 'serial_batch_item'"
-                    @blur="setTimeout(() => focusedField = null, 200)"
-                />
-                <div class="searchable-select-dropdown" v-if="focusedField === 'serial_batch_item'" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; z-index: 1000;">
-                    <div v-for="item in filteredSerialBatchItems" :key="item.name" class="searchable-select-option" style="padding: 8px; cursor: pointer;" @mousedown="selectSerialBatchItem(item)">
-                        [[ item.item_name ]] ([[ item.name ]])
-                    </div>
-                </div>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--text-main);"><i class="fas fa-barcode"></i> Serial Batch</h3>
+          <div class="searchable-select-wrapper" style="width: 450px; position: relative;">
+            <input type="text" class="form-input" style="padding: 6px 12px; font-size: 0.85rem; background: var(--bg-surface);" placeholder="Search Item..." v-model="serialBatchSearch" @focus="focusedField = 'serial_batch_item'" @blur="setTimeout(() => focusedField = null, 200)" />
+            <div class="searchable-select-dropdown" v-if="focusedField === 'serial_batch_item'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+              <div v-for="item in filteredSerialBatchItems" :key="item.name" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 0.8rem;" @mousedown="selectSerialBatchItem(item)">
+                [[ item.item_name ]] ([[ item.name ]])
+              </div>
             </div>
+          </div>
         </div>
-        <button class="btn-create" @click="submitSerialBatch" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
-      </div>
-      
-      <div style="overflow-x: auto;">
-          <table class="table table-bordered">
-              <thead>
-                  <tr>
-                      <th>Sr No</th>
-                      <th>Serial No</th>
-                      <th>MAC Address</th>
-                      <th>Model Number</th>
-                      <th>Office Key</th>
-                      <th>Operating System</th>
-                      <th>Processor</th>
-                      <th>RAM</th>
-                      <th>Storage</th>
-                      <th>Vendor</th>
-                      <th>Warranty Start Date</th>
-                      <th>Warranty End Date</th>
-                      <th>Windows Key</th>
-                      <th>Make</th>
-                      <th>Remove</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  <tr v-for="(item, index) in serialBatchItems" :key="index">
-                      <td>[[ item.srno ]]</td>
-                      <td><input type="text" v-model="item.serial_no" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.mac_address" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.model_number" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.office_key" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.operating_system" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.processor" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.ram" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.storage" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.vendor" style="width: 100px;"/></td>
-                      <td><input type="date" v-model="item.warranty_start_date" style="width: 130px;"/></td>
-                      <td><input type="date" v-model="item.warranty_end_date" style="width: 130px;"/></td>
-                      <td><input type="text" v-model="item.windows_key" style="width: 100px;"/></td>
-                      <td><input type="text" v-model="item.make" style="width: 100px;"/></td>
-                      <td style="text-align: center;">
-                          <button type="button" @click="removeSerialBatchRow(index)" style="background: red; color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">x</button>
-                      </td>
-                  </tr>
-              </tbody>
-          </table>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-create" @click="submitSerialBatch" style="padding: 6px 16px; font-size: 0.85rem; font-weight: 700;">Submit Batch</button>
+          <button class="btn-cancel" @click="showSerialBatchModal = false" style="padding: 6px 16px; font-size: 0.85rem;">Cancel</button>
+        </div>
       </div>
 
-      <div style="margin-top: 24px; display: flex; justify-content: center; gap: 10px;">
-        <button class="btn-create" @click="addSerialBatchRow" style="padding: 10px 20px; border-radius: 6px;">Add</button>
-        <button class="btn-cancel" @click="showSerialBatchModal = false" style="padding: 10px 20px; border-radius: 6px;">Close</button>
+      <!-- High-Density Grid Body -->
+      <div style="flex: 1; overflow-y: auto; overflow-x: hidden; background: var(--bg-surface); padding: 0;">
+        <table style="width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;">
+          <thead style="position: sticky; top: 0; z-index: 10; background: var(--bg-card); box-shadow: 0 1px 0 var(--border-color);">
+            <tr style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); white-space: nowrap;">
+              <th style="width: 2.5%; padding: 10px 2px; border-right: 1px solid var(--border-color); text-align: center;">#</th>
+              <th style="width: 12%; padding: 10px 4px; text-align: left;">Serial No *</th>
+              <th style="width: 10%; padding: 10px 4px; text-align: left;">MAC Address</th>
+              <th style="width: 12%; padding: 10px 4px; text-align: left;">Make / Model</th>
+              <th style="width: 8%; padding: 10px 4px; text-align: left;">Processor</th>
+              <th style="width: 5%; padding: 10px 4px; text-align: left;">RAM</th>
+              <th style="width: 5.5%; padding: 10px 4px; text-align: left;">Storage</th>
+              <th style="width: 12%; padding: 10px 4px; text-align: left;">OS / Win Key</th>
+              <th style="width: 10%; padding: 10px 4px; text-align: left;">Office Key</th>
+              <th style="width: 8.5%; padding: 10px 4px; text-align: left;">Warr. Start</th>
+              <th style="width: 8.5%; padding: 10px 4px; text-align: left;">Warr. End</th>
+              <th style="width: 4%; padding: 10px 2px; text-align: center;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(item, index) in serialBatchItems" :key="index" style="border-bottom: 1px solid var(--border-color); transition: background 0.1s;" onmouseover="this.style.background='rgba(100, 116, 139, 0.05)'" onmouseout="this.style.background='transparent'">
+              <td style="text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); border-right: 1px solid var(--border-color); padding: 8px 24px !important;">[[ item.srno ]]</td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.serial_no" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem; color: var(--text-main);" placeholder="Serial..."/></td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.mac_address" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem; color: var(--text-main);" placeholder="MAC..."/></td>
+              <td style="padding: 8px 24px !important;">
+                <div style="display: flex; gap: 2px;">
+                  <input type="text" v-model="item.make" style="width: 40%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="Make"/>
+                  <input type="text" v-model="item.model_number" style="width: 60%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="Model"/>
+                </div>
+              </td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.processor" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="i5..."/></td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.ram" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="8GB"/></td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.storage" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="256G"/></td>
+              <td style="padding: 8px 24px !important;">
+                <div style="display: flex; gap: 2px;">
+                  <input type="text" v-model="item.operating_system" style="width: 35%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="OS"/>
+                  <input type="text" v-model="item.windows_key" style="width: 65%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="Win Key"/>
+                </div>
+              </td>
+              <td style="padding: 8px 24px !important;"><input type="text" v-model="item.office_key" style="width: 100%; border: none; background: transparent; padding: 4px; font-size: 0.75rem;" placeholder="Off Key"/></td>
+              <td style="padding: 8px 24px !important;"><input type="date" v-model="item.warranty_start_date" style="width: 100%; border: none; background: transparent; padding: 2px; font-size: 0.75rem; color: var(--text-main);"/></td>
+              <td style="padding: 8px 24px !important;"><input type="date" v-model="item.warranty_end_date" style="width: 100%; border: none; background: transparent; padding: 2px; font-size: 0.75rem; color: var(--text-main);"/></td>
+              <td style="padding: 8px 24px !important; text-align: center;">
+                <button type="button" @click="removeSerialBatchRow(index)" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 0.75rem; padding: 4px;"><i class="fas fa-times"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- Compact Footer -->
+      <div style="padding: 8px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; gap: 10px; background: var(--bg-card);">
+        <button class="btn-create" @click="addSerialBatchRow" style="padding: 6px 20px; font-size: 0.85rem; border-radius: 4px;"><i class="fas fa-plus"></i> Add Row</button>
+        <button class="btn-cancel" @click="showSerialBatchModal = false" style="padding: 6px 20px; font-size: 0.85rem; border-radius: 4px;">Close</button>
       </div>
     </div>
-  </div>
-
-  <!-- Sidebar -->
+  </div>  <!-- Sidebar -->
   <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
     <!-- Profile Header -->
     <div class="sidebar-header">
@@ -1571,8 +1581,7 @@
         <h1 class="page-title" v-else>
           [[ activeItem ]]
           <span class="detail-id-badge" v-if="detailRecord"
-            >[[ activeItem === 'Asset Master' ? detailRecord.asset_name :
-            detailRecord.name ]]</span
+            >[[ detailRecord.name ]]</span
           >
           <span
             class="detail-status-badge"
@@ -3530,14 +3539,14 @@
                   </label>
                 </div>
 
-                <!-- Remark -->
+                <!-- Detailed Description -->
                 <div class="form-group" style="margin-top: 12px; margin-bottom: 0px !important;">
-                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Remark</label>
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Detailed Description</label>
                   <textarea
                     class="form-input"
                     style="padding: 12px 16px !important; width: 100%; border-radius: 8px; border: 1px solid var(--border-color);"
                     v-model="createAssetForm.custom_remark"
-                    placeholder="Enter detailed remarks"
+                    placeholder="Enter detailed description"
                     rows="3"
                   ></textarea>
                 </div>
@@ -5439,6 +5448,7 @@
                         <tr>
                           <th style="width: 50px; text-align: center">#</th>
                           <th>Item</th>
+                          <th v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">Serial Bundle</th>
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
                           <th style="text-align: right">Amount</th>
@@ -5457,6 +5467,15 @@
                                 <span style="font-size: 11px; color: var(--text-muted);">[[ item.item_name || 'Stock Item' ]]</span>
                               </div>
                             </div>
+                          </td>
+                          <td v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">
+                             <div v-if="item.serial_and_batch_bundle" style="display: flex; align-items: center; gap: 6px;">
+                               <i class="fas fa-barcode" style="color: #f59e0b; font-size: 10px;"></i>
+                               <span style="font-family: monospace; font-size: 11px; padding: 2px 8px; background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); font-weight: 700;">
+                                 [[ item.serial_and_batch_bundle ]]
+                               </span>
+                             </div>
+                             <span v-else style="color: var(--text-muted); font-size: 11px; opacity: 0.5">-</span>
                           </td>
                           <td style="text-align: right; font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</td>
                           <td style="text-align: right;" v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></td>
@@ -5532,6 +5551,37 @@
                         <i class="fas fa-tag" style="color: #369696;"></i>
                         <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Asset Identity</span>
                       </div>
+                      
+                      <!-- Asset Status Bar -->
+                      <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 15px;">
+                        <div v-for="s in ['Available', 'Assigned', 'In Repair', 'Scrapped']" 
+                             class="status-pill"
+                             :style="{
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                fontSize: '0.6rem',
+                                fontWeight: '800',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.04em',
+                                cursor: 'default',
+                                border: '1px solid ' + (detailRecord.status === s 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.4)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.4)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)') 
+                                    : 'var(--border-color)'),
+                                background: detailRecord.status === s 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.15)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.15)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)') 
+                                    : 'transparent',
+                                color: detailRecord.status === s 
+                                    ? (s === 'Available' ? '#10b981' : s === 'Assigned' ? '#3b82f6' : s === 'In Repair' ? '#f59e0b' : '#ef4444') 
+                                    : 'var(--text-muted)',
+                                opacity: detailRecord.status === s ? '1' : '0.4',
+                                animation: detailRecord.status === s ? 'activeGlow 1.8s ease-in-out infinite' : 'none'
+                             }"
+                        >
+                          <i class="fas fa-circle" style="font-size: 5px; margin-right: 5px;" v-if="detailRecord.status === s"></i>
+                          [[ s ]]
+                        </div>
+                      </div>
+
                       <!-- Three-dot menu -->
                       <div class="dropdown" style="position: relative; z-index: 10000;">
                         <button class="btn btn-default btn-xs dropdown-toggle" type="button" @click="showAssetActions = !showAssetActions; console.log('Actions:', getAssetActions(detailRecord))" style="background: transparent; border: none; cursor: pointer;">
@@ -5614,8 +5664,15 @@
                       </div>
 
                       <div class="info-item">
-                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>
+                        <div class="info-icon"><i class="fas fa-file-invoice"></i></div>
                         <div class="info-content">
+                          <span class="info-label">Invoice Number</span>
+                          <span class="info-value">[[ detailRecord.custom_invoice_number || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-calendar-day"></i></div>                        <div class="info-content">
                           <span class="info-label">Invoice Date</span>
                           <span class="info-value">[[ detailRecord.purchase_date || '-' ]]</span>
                         </div>
@@ -5630,6 +5687,16 @@
                         </div>
                       </div>
 
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Detailed Description -->
+                  <div v-if="assetDetailedDescription" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; gap: 10px;">
+                      <i class="fas fa-align-left" style="color: #369696;"></i>
+                      <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Detailed Description</span>
+                    </div>
+                    <div style="padding: 20px; font-size: 0.95rem; line-height: 1.6; color: var(--text-main);" v-html="assetDetailedDescription">
                     </div>
                   </div>
 
@@ -6759,9 +6826,9 @@
                     padding-right: 8px;
                   "
                 >
-                  <div v-if="comments && comments.length">
+                  <div v-if="filteredComments && filteredComments.length">
                     <div
-                      v-for="c in comments"
+                      v-for="c in filteredComments"
                       :key="c.name"
                       class="comment-item"
                       style="
@@ -11220,7 +11287,7 @@
           columns: [
             { label: "Request", key: "name", width: 2, type: "avatar" },
             { label: "Department", key: "department", width: 1.2 },
-            { label: "Employee", key: "employee_name", width: 1.5 },
+            { label: "Employee", key: "employee_name", width: 1.3 },
             { 
               label: "Request from", 
               key: "target_warehouse", 
@@ -11256,10 +11323,14 @@
             {
               label: "Status",
               key: "status",
-              width: 1,
+              width: 1.4,
               type: "badge",
               isCustomStatus: true,
               getValue(row) {
+                // Shorten statuses for list view
+                if (row.status === "Pending HO Approval") return "HO Pending";
+                if (row.status === "Pending Reporting Person") return "Reporting Pending";
+
                 // We only apply this custom logic for requests that are already approved in the workflow
                 const postApprovalStates = [
                   "Approved",
@@ -11421,6 +11492,7 @@
             { label: "Custodian", key: "custodian_name" },
             { label: "Department", key: "department" },
             { label: "Location", key: "location" },
+            { label: "Invoice Number", key: "custom_invoice_number" },
             { label: "Invoice Date", key: "purchase_date" },
             { label: "Gross Purchase Amount", key: "gross_purchase_amount" },
           ],
@@ -11809,6 +11881,18 @@
           ...i,
           percentage: (i.value / total) * 100,
         }));
+      },
+
+      get assetDetailedDescription() {
+        if (!this.comments || this.comments.length === 0 || this.activeItem !== 'Asset Master') return null;
+        const found = this.comments.find(c => c.content && c.content.includes("Detailed Description:"));
+        return found ? found.content.replace("Detailed Description:", "").trim() : null;
+      },
+
+      get filteredComments() {
+        if (!this.comments) return [];
+        if (this.activeItem !== 'Asset Master') return this.comments;
+        return this.comments.filter(c => !c.content.includes("Detailed Description:"));
       },
 
       get computedSidebarSections() {
@@ -13215,6 +13299,15 @@
             available_for_use_date: frappe.datetime.now_date(),
             gross_purchase_amount: 0,
             serial_no: "",
+            custom_invoice_number: "",
+            zone: "",
+            zone_display: "",
+            state: "",
+            division: "",
+            division_display: "",
+            brand: "",
+            brand_display: "",
+            custom_remark: "",
             windows_key: "",
             office_key: "",
             is_existing_asset: true,
@@ -13564,7 +13657,7 @@
               args: {
                 reference_doctype: "Asset",
                 reference_name: res.message.name,
-                content: "Remark: " + this.createAssetForm.custom_remark,
+                content: "Detailed Description: " + this.createAssetForm.custom_remark,
                 comment_email: frappe.session.user,
                 comment_by: this.sidebar.header.subtitle || frappe.session.user,
               },
