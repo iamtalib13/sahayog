@@ -106,6 +106,7 @@ def send_domestic_enquiry_email(docname):
     # Send Email
     frappe.sendmail(
         recipients=[final_email],
+        sender="dcm@sahayogmultistate.com",
         subject=subject,
         message=message,
         attachments=attachments,
