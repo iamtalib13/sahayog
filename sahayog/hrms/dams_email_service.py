@@ -127,6 +127,7 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
 
     frappe.sendmail(
         recipients=recipients,
+        sender="dcm@sahayogmultistate.com",
         cc=cc,
         subject=subject,
         content=message,
