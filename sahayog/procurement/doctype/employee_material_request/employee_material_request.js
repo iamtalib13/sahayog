@@ -1203,14 +1203,14 @@ frappe.ui.form.on("Material Request Items", {
 
             // Auto-detect and set item category
             let category = "";
-            if (item.is_fixed_asset) {
+            if (item.is_stock_item) {
+              category = "Stock Item";
+            } else if (item.is_fixed_asset) {
               category = "Asset";
               // Set quantity to 1 for assets by default
               if (!row.quantity || row.quantity === 0) {
                 frappe.model.set_value(cdt, cdn, "quantity", 1);
               }
-            } else if (item.is_stock_item) {
-              category = "Stock Item";
             } else {
               // Item is neither asset nor stock item - show error
               frappe.msgprint({

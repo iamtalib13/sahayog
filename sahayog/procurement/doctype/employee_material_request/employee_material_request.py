@@ -78,12 +78,22 @@ class EmployeeMaterialRequest(Document):
         if not self.items:
             frappe.throw(_("Please add at least one item"))
         for item in self.items:
-            if not item.item_category:
-                frappe.throw(_("Row {0}: Item Category not set.").format(item.idx))
-            if item.item_category == "Asset":
-                self.validate_asset_item(item)
-            elif item.item_category == "Stock Item":
+            if not item.item_code:
+                frappe.throw(_("Row {0}: Item Code not set.").format(item.idx))
+                
+            # Fetch actual item data from DB to ensure backend consistency
+            item_details = frappe.db.get_value("Item", item.item_code, ["is_stock_item", "is_fixed_asset"], as_dict=1)
+            
+            if not item_details:
+                frappe.throw(_("Row {0}: {1} not found").format(item.idx, item.item_code))
+
+            # Backend logic: prioritize Stock Item if it is a stock item
+            if item_details.is_stock_item:
                 self.validate_stock_item(item)
+            elif item_details.is_fixed_asset:
+                self.validate_asset_item(item)
+            else:
+                frappe.throw(_("Row {0}: {1} is neither a Stock item nor an Asset item").format(item.idx, item.item_code))
 
     def validate_asset_item(self, item):
         is_asset = frappe.db.get_value("Item", item.item_code, "is_fixed_asset")
