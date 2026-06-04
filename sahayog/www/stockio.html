@@ -7583,7 +7583,7 @@
                         style="font-size: 0.7rem; padding: 2px 8px;"
                       >
                         [[ row.status ]]
-                        <span v-if="row.config_count" style="margin-left: 5px; opacity: 0.8;">([[ row.config_count ]])</span>
+                        <span v-if="serialMode === 'individual' && row.config_count" style="margin-left: 5px; opacity: 0.8;">([[ row.config_count ]])</span>
                       </span>
                       <span v-else-if="row.total_qty !== undefined"
                         class="status-badge"
@@ -11561,7 +11561,7 @@
           columns: [
             { label: "Serial No", key: "name", width: 2, type: "avatar" },
             { label: "Item Code", key: "item_code", width: 1.5 },
-            { label: "Status", key: "status", width: 1, type: "badge" },
+            { label: "Config Count", key: "config_count", width: 1 },
           ],
           detailFields: [
             { label: "Serial No", key: "name" },
@@ -12789,6 +12789,28 @@
             res = await frappe.call({
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: limit,
+                start: start,
+                search_text: this.searchText,
+              },
+            });
+
+            if (res.message) {
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows = this.rows.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Serial No") {
+            res = await frappe.call({
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_serial_no_list",
               args: {
                 limit: limit,
                 start: start,
