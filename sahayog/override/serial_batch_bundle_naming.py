@@ -6,7 +6,7 @@ class CustomSerialAndBatchBundle(Document):
     def autoname(self):
         """
         Custom naming for Serial and Batch Bundle:
-        {ITEM_CODE}-BATCH-.YYYY.-.#####
+        BATCH-.YYYY.-{self.item_code}-.#####
         """
-        series = f"{self.item_code}-BATCH-.YYYY.-.#####"
+        series = f"BATCH-.YYYY.-{self.item_code}-.#####"
         self.name = make_autoname(series)
