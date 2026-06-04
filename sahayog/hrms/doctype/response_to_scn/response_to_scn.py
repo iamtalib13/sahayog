@@ -93,6 +93,7 @@ def send_response_scn_email(docname):
     # Send email
     frappe.sendmail(
         recipients=[final_email],
+        sender="dcm@sahayogmultistate.com",
         subject=subject,
         message=message,
         attachments=attachments,
