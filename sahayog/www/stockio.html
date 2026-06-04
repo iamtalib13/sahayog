@@ -1682,8 +1682,8 @@
       </div>
       <div class="header-right">
         <div v-if="activeItem === 'Serial No'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
-            <button @click="serialMode = 'batch'" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
-            <button @click="serialMode = 'individual'" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
+            <button @click="setSerialMode('batch')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
+            <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
         <button
           class="btn-view-toggle"
@@ -11485,6 +11485,27 @@
             { label: "Warehouse", key: "warehouse" },
           ],
         },
+        "Serial and Batch Bundle": {
+          doctype: "Serial and Batch Bundle",
+          labelPlural: "serial and batch bundles",
+          emptyIcon: "fa-boxes",
+          emptyTitle: "No bundles found",
+          emptyMessage: "No serial and batch bundles match the current search.",
+          searchableFields: ["name", "item_code", "voucher_no"],
+          columns: [
+            { label: "Bundle ID", key: "name", width: 2, type: "avatar" },
+            { label: "Item Code", key: "item_code", width: 1.5 },
+            { label: "Voucher No", key: "voucher_no", width: 1.5 },
+            { label: "Qty", key: "total_qty", width: 1 },
+          ],
+          detailFields: [
+            { label: "Bundle ID", key: "name" },
+            { label: "Item Code", key: "item_code" },
+            { label: "Voucher No", key: "voucher_no" },
+            { label: "Warehouse", key: "warehouse" },
+            { label: "Total Qty", key: "total_qty" },
+          ],
+        },
         "Asset Master": {
           doctype: "Asset",
           createDoctype: "Asset",
@@ -15448,8 +15469,12 @@
       },
 
       get currentView() {
+        let viewKey = this.activeItem;
+        if (this.activeItem === 'Serial No' && this.serialMode === 'batch') {
+          viewKey = 'Serial and Batch Bundle';
+        }
         return (
-          this.sectionViews[this.activeItem] || {
+          this.sectionViews[viewKey] || {
             doctype: null,
             createDoctype: null,
             emptyTitle: this.activeItem,
@@ -15654,6 +15679,10 @@
       toggleItemView() {
         this.itemView = this.itemView === "list" ? "card" : "list";
         localStorage.setItem("stockio_item_view", this.itemView);
+      },
+      async setSerialMode(mode) {
+        this.serialMode = mode;
+        await this.fetchData(this.currentView.doctype);
       },
       toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "light" : "dark";
