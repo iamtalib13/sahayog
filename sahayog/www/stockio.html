@@ -13245,8 +13245,9 @@
           }
           
           // Create ONE single Serial and Batch Bundle
-          if (createdSerials.length > 0 && this.serialMode === 'batch') {
+          if (createdSerials.length > 0) {
               try {
+                  const warehouse = (this.activeInwardItem && this.activeInwardItem.warehouse) ? this.activeInwardItem.warehouse : '1000';
                   const res = await frappe.call({
                       method: 'frappe.client.insert',
                       args: {
@@ -13255,10 +13256,11 @@
                               item_code: itemCode,
                               type_of_transaction: 'Inward',
                               voucher_type: 'Purchase Receipt',
-                              warehouse: '1000',
+                              warehouse: warehouse,
                               entries: createdSerials.map(sn => ({
                                   serial_no: sn,
-                                  warehouse: '1000'
+                                  warehouse: warehouse,
+                                  qty: 1
                               }))
                           }
                       }
