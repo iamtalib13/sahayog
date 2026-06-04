@@ -605,6 +605,7 @@ def start_verification_process(approvers=None, case_id=None):
 
         frappe.sendmail(
             recipients=[email],
+            sender="dcm@sahayogmultistate.com",
             subject="Case Closure Approval Required",
             message=f"""
                 Dear {emp_name or 'Approver'},
@@ -717,6 +718,7 @@ def send_email_for_review(case_id=None, approvers=None):
     try:
         frappe.sendmail(
             recipients=email_list,
+            sender="dcm@sahayogmultistate.com",
             subject=rendered_subject,
             message=rendered_message,
             now=True,
@@ -888,6 +890,7 @@ def send_case_closure_email(docname, print_format=None):
 
     frappe.sendmail(
         recipients=[emp.company_email],
+        sender="dcm@sahayogmultistate.com",
         subject=subject,
         message=message,
         attachments=attachments,

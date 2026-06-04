@@ -110,6 +110,7 @@ def send_reminder_enquiry_email(docname, print_format):
 
     frappe.sendmail(
         recipients=[emp.company_email],
+        sender="dcm@sahayogmultistate.com",
         subject=subject,
         message=message,
         attachments=attachments,
