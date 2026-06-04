@@ -40,90 +40,90 @@ frappe.query_reports["Case History"] = {
     // =====================================================
     // ✅ ADD REVIEW BUTTON (MOVED TO TOP)
     // =====================================================
-    report.page
-      .add_inner_button(__("Add Review"), function () {
-        const case_id = report.get_filter_value("case_id");
-        if (!case_id) {
-          frappe.msgprint(__("Please select a Case ID."));
-          return;
-        }
+    // report.page
+    //   .add_inner_button(__("Add Review"), function () {
+    //     const case_id = report.get_filter_value("case_id");
+    //     if (!case_id) {
+    //       frappe.msgprint(__("Please select a Case ID."));
+    //       return;
+    //     }
 
-        frappe.call({
-          method:
-            "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_user",
-          callback: function (r) {
-            const employee_id = r.message;
-            if (!employee_id) {
-              frappe.msgprint("No Employee linked with your user.");
-              return;
-            }
+    //     frappe.call({
+    //       method:
+    //         "sahayog.hrms.doctype.case_closure.case_closure.get_employee_from_user",
+    //       callback: function (r) {
+    //         const employee_id = r.message;
+    //         if (!employee_id) {
+    //           frappe.msgprint("No Employee linked with your user.");
+    //           return;
+    //         }
 
-            frappe.call({
-              method:
-                "sahayog.hrms.doctype.case_closure.case_closure.case_history_can_review",
-              args: { case_id, reviewer: employee_id },
-              callback: function (res) {
-                if (!res.message) {
-                  frappe.msgprint(
-                    __("You are not assigned as a reviewer for this case.")
-                  );
-                  return;
-                }
+    //         frappe.call({
+    //           method:
+    //             "sahayog.hrms.doctype.case_closure.case_closure.case_history_can_review",
+    //           args: { case_id, reviewer: employee_id },
+    //           callback: function (res) {
+    //             if (!res.message) {
+    //               frappe.msgprint(
+    //                 __("You are not assigned as a reviewer for this case.")
+    //               );
+    //               return;
+    //             }
 
-                let d = new frappe.ui.Dialog({
-                  title: __("Add Review"),
-                  fields: [
-                    {
-                      fieldname: "remarks",
-                      fieldtype: "Small Text",
-                      label: __("Remarks"),
-                      reqd: 1,
-                    },
-                  ],
-                  primary_action_label: __("Submit"),
-                  primary_action(values) {
-                    const remarks = values.remarks;
-                    if (!remarks) {
-                      frappe.msgprint(__("Please enter remarks"));
-                      return;
-                    }
+    //             let d = new frappe.ui.Dialog({
+    //               title: __("Add Review"),
+    //               fields: [
+    //                 {
+    //                   fieldname: "remarks",
+    //                   fieldtype: "Small Text",
+    //                   label: __("Remarks"),
+    //                   reqd: 1,
+    //                 },
+    //               ],
+    //               primary_action_label: __("Submit"),
+    //               primary_action(values) {
+    //                 const remarks = values.remarks;
+    //                 if (!remarks) {
+    //                   frappe.msgprint(__("Please enter remarks"));
+    //                   return;
+    //                 }
 
-                    frappe.call({
-                      method:
-                        "sahayog.hrms.doctype.case_closure.case_closure.case_history_submit_review",
-                      args: {
-                        case_id: case_id,
-                        reviewer: employee_id,
-                        remarks: remarks,
-                      },
-                      freeze: true,
-                      freeze_message: __("Submitting review..."),
-                      callback: function (r) {
-                        if (r.message === true) {
-                          frappe.msgprint(__("Review submitted successfully"));
-                          d.hide();
+    //                 frappe.call({
+    //                   method:
+    //                     "sahayog.hrms.doctype.case_closure.case_closure.case_history_submit_review",
+    //                   args: {
+    //                     case_id: case_id,
+    //                     reviewer: employee_id,
+    //                     remarks: remarks,
+    //                   },
+    //                   freeze: true,
+    //                   freeze_message: __("Submitting review..."),
+    //                   callback: function (r) {
+    //                     if (r.message === true) {
+    //                       frappe.msgprint(__("Review submitted successfully"));
+    //                       d.hide();
 
-                          // ✅ HIDE ADD REVIEW BUTTON AFTER SUBMISSION
-                          report.page.wrapper.find(".btn-add-review").hide();
+    //                       // ✅ HIDE ADD REVIEW BUTTON AFTER SUBMISSION
+    //                       report.page.wrapper.find(".btn-add-review").hide();
 
-                          // ✅ REMOVE BLINKING ACTION REQUIRED MESSAGE
-                          $(".review-hint").remove();
+    //                       // ✅ REMOVE BLINKING ACTION REQUIRED MESSAGE
+    //                       $(".review-hint").remove();
 
-                          report.refresh();
-                        }
-                      },
-                    });
-                  },
-                });
+    //                       report.refresh();
+    //                     }
+    //                   },
+    //                 });
+    //               },
+    //             });
 
-                d.show();
-              },
-            });
-          },
-        });
-      })
-      .addClass("btn-primary btn-add-review")
-      .hide(); // 🔒 hide by default
+    //             d.show();
+    //           },
+    //         });
+    //       },
+    //     });
+    //   })
+    //   .addClass("btn-primary btn-add-review")
+    //   .hide(); // 🔒 hide by default
 
     // =====================================================
     // CLEAR FILTER
@@ -233,7 +233,7 @@ frappe.query_reports["Case History"] = {
             70% { box-shadow: 0 0 0 10px rgba(255,0,0,0); }
             100% { box-shadow: 0 0 0 0 rgba(255,0,0,0); }
           }
-        `
+        `,
         )
         .appendTo("head");
     }
@@ -340,7 +340,10 @@ function toggle_add_review_button(report) {
   }
 
   // ✅ System Manager always allowed
-  if (frappe.user.has_role("System Manager") || frappe.user.has_role("Employee")) {
+  if (
+    frappe.user.has_role("System Manager") ||
+    frappe.user.has_role("Employee")
+  ) {
     btn.show();
     return;
   }
