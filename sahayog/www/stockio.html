@@ -11466,6 +11466,25 @@
             { label: "Description", key: "description" },
           ],
         },
+        "Serial No": {
+          doctype: "Serial No",
+          labelPlural: "serial nos",
+          emptyIcon: "fa-barcode",
+          emptyTitle: "No serial numbers found",
+          emptyMessage: "No serial numbers match the current search.",
+          searchableFields: ["name", "serial_no", "item_code"],
+          columns: [
+            { label: "Serial No", key: "name", width: 2, type: "avatar" },
+            { label: "Item Code", key: "item_code", width: 1.5 },
+            { label: "Status", key: "status", width: 1, type: "badge" },
+          ],
+          detailFields: [
+            { label: "Serial No", key: "name" },
+            { label: "Item Code", key: "item_code" },
+            { label: "Status", key: "status" },
+            { label: "Warehouse", key: "warehouse" },
+          ],
+        },
         "Asset Master": {
           doctype: "Asset",
           createDoctype: "Asset",
