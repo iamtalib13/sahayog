@@ -6382,7 +6382,7 @@
                   [[ activeItem ]] Items
                 </h4>
                 <div
-                  v-if="(detailRecord.items && detailRecord.items.length) || (detailRecord.assets && detailRecord.assets.length)"
+                  v-if="(detailRecord.items && detailRecord.items.length) || (detailRecord.assets && detailRecord.assets.length) || (detailRecord.configuration_table && detailRecord.configuration_table.length) || (detailRecord.entries && detailRecord.entries.length)"
                   class="detail-items-section"
                 >
                   <div
@@ -6432,6 +6432,21 @@
                           >
                             To Employee
                           </th>
+                        </tr>
+                      </thead>
+                      <!-- Serial No Individual Header -->
+                      <thead v-else-if="activeItem === 'Serial No' && serialMode === 'individual'">
+                        <tr>
+                          <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Configuration Type</th>
+                          <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Value</th>
+                        </tr>
+                      </thead>
+                      <!-- Serial No Batch Header -->
+                      <thead v-else-if="activeItem === 'Serial No' && serialMode === 'batch'">
+                        <tr>
+                          <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Serial No</th>
+                          <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Warehouse</th>
+                          <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Batch</th>
                         </tr>
                       </thead>
                       <!-- Standard Header -->
@@ -6537,6 +6552,23 @@
                           >
                             [[ asset.to_employee ]]
                           </td>
+                        </tr>
+                      </tbody>
+
+                      <!-- Serial No Individual Body -->
+                      <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'individual'">
+                        <tr v-for="row in detailRecord.configuration_table" :key="row.name">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_type ]]</td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_value ]]</td>
+                        </tr>
+                      </tbody>
+
+                      <!-- Serial No Batch Body -->
+                      <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'batch'">
+                        <tr v-for="row in detailRecord.entries" :key="row.name">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600; color: #369696;">[[ row.serial_no ]]</td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.warehouse ]]</td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.batch_no || '-' ]]</td>
                         </tr>
                       </tbody>
 
@@ -7423,7 +7455,7 @@
 
           <!-- List Header (Columns) -->
           <div
-            v-else-if="!(itemView === 'card' && activeItem === 'Items')"
+            v-else-if="!(itemView === 'card' && (activeItem === 'Items' || activeItem === 'Serial No'))"
             class="list-view-header"
           >
             <div class="col-checkbox" v-if="currentView.selectable !== false">
@@ -7518,6 +7550,55 @@
                       <span class="qty-value" :class="{ 'is-admin': isAdmin }">
                         <i class="fas fa-cubes"></i> [[ getDisplayQty(row) ]]
                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card View for Serial No -->
+            <div
+              v-else-if="itemView === 'card' && activeItem === 'Serial No'"
+              class="card-grid"
+            >
+              <div
+                v-for="row in filteredRows"
+                :key="row.name"
+                class="item-card"
+                @click="openRecord(row)"
+                style="height: auto;"
+              >
+                <div class="item-card-inner" style="padding: 15px;">
+                  <div class="item-card-content" style="padding: 0;">
+                    <div class="item-card-header" style="margin-bottom: 10px;">
+                      <div class="item-card-header-info">
+                        <span class="item-card-code" style="font-size: 0.75rem; color: #369696; font-weight: 700;">[[ row.item_code ]]</span>
+                        <h3 class="item-card-title" style="font-size: 0.95rem; margin-top: 4px;">
+                          [[ row.name ]]
+                        </h3>
+                      </div>
+                      <span v-if="row.status"
+                        class="status-badge"
+                        :class="getBadgeClass(row, 'status')"
+                        style="font-size: 0.7rem; padding: 2px 8px;"
+                      >
+                        [[ row.status ]]
+                        <span v-if="row.config_count" style="margin-left: 5px; opacity: 0.8;">([[ row.config_count ]])</span>
+                      </span>
+                      <span v-else-if="row.total_qty !== undefined"
+                        class="status-badge"
+                        style="font-size: 0.7rem; padding: 2px 8px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;"
+                      >
+                        Qty: [[ row.total_qty ]]
+                      </span>
+                    </div>
+                    <div v-if="row.warehouse" style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                        <i class="fas fa-warehouse" style="font-size: 0.7rem;"></i>
+                        [[ row.warehouse ]]
+                    </div>
+                    <div v-if="row.voucher_no" style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-file-invoice" style="font-size: 0.7rem;"></i>
+                        [[ row.voucher_no ]]
                     </div>
                   </div>
                 </div>
@@ -7791,9 +7872,13 @@
                 <span>Delete ([[ selectedRows.length ]])</span>
               </button>
               <span class="text-muted"
-                >Showing [[ loadedRows ]] of [[ totalRows ]] [[
-                currentView.labelPlural || activeItem.toLowerCase() ]]</span
+               >Showing [[ loadedRows ]] of [[ totalRows ]] [[
+               currentView.labelPlural || activeItem.toLowerCase() ]]</span
               >
+              <div v-if="activeItem === 'Serial No'" style="display: flex; background: var(--bg-surface); border-radius: 6px; padding: 2px; margin-left: 15px; border: 1px solid var(--border-color);">
+                 <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
+                 <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
+              </div>
               <button
                 v-if="hasMore"
                 class="btn-load-more"
@@ -12499,6 +12584,10 @@
           this.branchStockFilter = "My Stock";
         }
 
+        if (item.label === "Serial No") {
+          this.itemView = "card";
+        }
+
         if (item.doctype) {
           await this.fetchData(item.doctype);
         } else {
@@ -12700,6 +12789,28 @@
             res = await frappe.call({
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: limit,
+                start: start,
+                search_text: this.searchText,
+              },
+            });
+
+            if (res.message) {
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows = this.rows.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
+            }
+          } else if (doctype === "Serial No") {
+            res = await frappe.call({
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_serial_no_list",
               args: {
                 limit: limit,
                 start: start,

@@ -455,6 +455,37 @@ def get_asset_list(limit=20, start=0, search_text=None):
     }
 
 @frappe.whitelist()
+def get_serial_no_list(limit=20, start=0, search_text=None):
+    """
+    Fetch Serial Nos with configuration count
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        conditions.append("(sn.name LIKE %(search)s OR sn.item_code LIKE %(search)s OR sn.serial_no LIKE %(search)s)")
+        values["search"] = f"%{search_text}%"
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    total_count = frappe.db.sql(f"SELECT COUNT(*) FROM `tabSerial No` sn {where_clause}", values)[0][0]
+
+    data = frappe.db.sql(f"""
+        SELECT
+            sn.*,
+            (SELECT COUNT(*) FROM `tabSahayog Serial Configuration` WHERE parent = sn.name) as config_count
+        FROM `tabSerial No` sn
+        {where_clause}
+        ORDER BY sn.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
+
+@frappe.whitelist()
 def get_movement_list(limit=20, start=0, search_text=None):
     """
     Fetch Asset Movements joined with first child item fields
