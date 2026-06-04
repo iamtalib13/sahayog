@@ -2040,11 +2040,19 @@
         </button>
         <button
           class="btn-create"
-          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          v-if="isAdmin && activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
           @click="openNewAssetDesk()"
         >
-          <i :class="isAdmin ? 'fas fa-external-link-alt' : 'fas fa-plus'"></i>
-          <span>[[ isAdmin ? 'New Asset (Desk)' : 'Create' ]]</span>
+          <i class="fas fa-external-link-alt"></i>
+          <span>New Asset (Desk)</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="handleCreate()"
+        >
+          <i class="fas fa-plus"></i>
+          <span>Create</span>
         </button>
       </div>
     </header>
