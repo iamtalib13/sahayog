@@ -246,6 +246,7 @@ override_doctype_class = {
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
+    "Serial and Batch Bundle": "sahayog.override.serial_batch_bundle_naming.CustomSerialAndBatchBundle",
     # "Report": "sahayog.override.report.CustomReport"
 
     "Report": "sahayog.override.report.CustomReport",
