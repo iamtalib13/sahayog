@@ -293,6 +293,7 @@ def send_custom_email(docname, recipients, cc, subject, message):
 
     frappe.sendmail(
         recipients=recipients,
+        sender="dcm@sahayogmultistate.com",
         cc=cc,
         subject=subject,
         content=message,
