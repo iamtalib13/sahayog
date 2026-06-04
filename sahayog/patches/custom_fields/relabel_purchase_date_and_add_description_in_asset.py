@@ -18,5 +18,5 @@ def execute():
             "fieldname": "custom_description",
             "label": "Description",
             "fieldtype": "Small Text",
-            "insert_after": "asset_name"
+            "insert_after": "asset_configuration"
         })
