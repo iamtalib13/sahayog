@@ -128,6 +128,7 @@ def send_suspension_email(docname):
     # Send email instantly
     frappe.sendmail(
         recipients=[final_email],
+        sender="dcm@sahayogmultistate.com",
         subject=subject,
         message=message,
         attachments=attachments,
