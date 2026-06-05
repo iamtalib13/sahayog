@@ -2511,7 +2511,7 @@
                 </div>
 
                 <!-- Posting Date -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
+                <div class="form-group" style="margin-bottom: 12px !important;">
                   <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Posting Date</label>
                   <input
                     type="date"
@@ -2519,6 +2519,31 @@
                     style="padding: 10px 14px !important; font-size: 0.9rem !important;"
                     v-model="inwardForm.posting_date"
                   />
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                  <!-- Invoice Number -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Invoice Number</label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="inwardForm.custom_invoice_number"
+                      placeholder="Enter Invoice No"
+                    />
+                  </div>
+
+                  <!-- Invoice Date -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Invoice Date</label>
+                    <input
+                      type="date"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="inwardForm.custom_invoice_date"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -13404,6 +13429,8 @@
           this.inwardForm = {
             supplier: "",
             supplier_display: "",
+            custom_invoice_number: "",
+            custom_invoice_date: "",
             posting_date: frappe.datetime.now_date(),
             is_past_stock_date: false,
             existing_stock_date: "",
