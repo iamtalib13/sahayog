@@ -5458,6 +5458,20 @@
                   <div class="info-item">
                     <div class="info-icon" style="color: #f59e0b"><i class="fas fa-file-invoice"></i></div>
                     <div class="info-content">
+                      <span class="info-label">Invoice Number</span>
+                      <span class="info-value">[[ detailRecord.custom_invoice_number || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-calendar-day"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Invoice Date</span>
+                      <span class="info-value">[[ detailRecord.custom_invoice_date || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-file-invoice"></i></div>
+                    <div class="info-content">
                       <span class="info-label">PO/WO</span>
                       <span class="info-value">[[ detailRecord.custom_po_wo || '-' ]]</span>
                     </div>
@@ -15311,6 +15325,8 @@
             doctype: "Purchase Receipt",
             company: company,
             supplier: this.inwardForm.supplier,
+            custom_invoice_number: this.inwardForm.custom_invoice_number,
+            custom_invoice_date: this.inwardForm.custom_invoice_date,
             posting_date: this.inwardForm.posting_date,
             set_warehouse: this.inwardForm.set_warehouse,
             custom_po_wo: this.inwardForm.custom_po_wo,
