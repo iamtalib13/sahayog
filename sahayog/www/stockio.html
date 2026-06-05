@@ -13467,6 +13467,7 @@
               item_code: "",
               item_code_display: "",
               uom: "",
+              description: "",
               qty: 1,
               rate: 0,
               warehouse: "",
@@ -15110,7 +15111,7 @@
         item.item_code = itemCode;
         item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
-        item.description = description;
+        item.description = (description || "").trim();
         this.focusedField = null;
       },      addOutwardItem() {
         this.outwardItems.push({
