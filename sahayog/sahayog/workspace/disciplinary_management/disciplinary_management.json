@@ -5,7 +5,7 @@
    "label": "Month-wise Cases"
   }
  ],
- "content": "[{\"id\":\"Jb2f6yK0vU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\">Disciplinary Action Management System</span>\",\"col\":12}},{\"id\":\"JbDgMKcS6x\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Actions</b></span>\",\"col\":12}},{\"id\":\"ylA8xOov3g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Initiate Case\",\"col\":3}},{\"id\":\"JZ6G2RFrSL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Unauthorized Absence Case\",\"col\":3}},{\"id\":\"KJMK-BSKnd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}},{\"id\":\"sNSJce52j7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Case History\",\"col\":3}},{\"id\":\"OIv5KxhC1i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zone Wise Cases\",\"col\":3}},{\"id\":\"ZWU29bjI1A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Month Wise Cases</b></span>\",\"col\":12}},{\"id\":\"vtUJcBFrGI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Month-wise Cases\",\"col\":12}}]",
+ "content": "[{\"id\":\"Jb2f6yK0vU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\">Disciplinary Action Management System</span>\",\"col\":12}},{\"id\":\"JbDgMKcS6x\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Actions</b></span>\",\"col\":12}},{\"id\":\"ylA8xOov3g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Initiate Case\",\"col\":3}},{\"id\":\"JZ6G2RFrSL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Unauthorized Absence Case\",\"col\":3}},{\"id\":\"KJMK-BSKnd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}},{\"id\":\"sNSJce52j7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Case History\",\"col\":3}},{\"id\":\"OIv5KxhC1i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zone Wise Cases\",\"col\":3}},{\"id\":\"4Zoi95InFa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":3}},{\"id\":\"ZWU29bjI1A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Month Wise Cases</b></span>\",\"col\":12}},{\"id\":\"vtUJcBFrGI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Month-wise Cases\",\"col\":12}}]",
  "creation": "2025-09-13 11:17:55.133668",
  "custom_blocks": [],
  "docstatus": 0,
@@ -17,7 +17,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2026-02-20 12:39:35.066791",
+ "modified": "2026-06-05 11:54:20.977416",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -36,6 +36,13 @@
  ],
  "sequence_id": 86.0,
  "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Settings",
+   "link_to": "Sahayog HR Setting",
+   "type": "DocType"
+  },
   {
    "color": "Grey",
    "doc_view": "New",
