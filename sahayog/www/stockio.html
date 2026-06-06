@@ -8380,6 +8380,16 @@
                     font-weight: 700;
                   "
                 >
+                  Serial No
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
                   Target Location <span class="form-required">*</span>
                 </th>
                 <th
@@ -8451,7 +8461,7 @@
                         v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                         :key="opt.name"
                         class="searchable-select-option"
-                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.brand = opt.brand; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
+                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.brand = opt.brand; item.serial_no = opt.serial_no; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
                       >
                         <div style="font-weight: 500">[[ opt.name ]]</div>
                         <div style="font-size: 11px; opacity: 0.8">
@@ -8462,10 +8472,13 @@
                     </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                    [[ item.brand || '-' ]]
+                      [[ item.brand || '-' ]]
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      [[ item.serial_no || '-' ]]
                     </td>
                     <td style="padding: 10px">
-                    <div class="searchable-select-wrapper" style="width: 100%">
+                      <div class="searchable-select-wrapper" style="width: 100%">
                     <input
                       type="text"
                       class="form-input"
