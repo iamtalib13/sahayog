@@ -14596,9 +14596,25 @@
                   callback: (empR) => {
                     if (empR.message) {
                       this.movementForm.emp_zone = empR.message.custom_zone || "";
-                      this.movementForm.emp_state = empR.message.custom_state || "";
                       this.movementForm.emp_location = empR.message.sol_id || "";
                       this.movementForm.emp_division = empR.message.custom_division || "";
+
+                      // Fetch State from Sahayog Branch using sol_id
+                      if (empR.message.sol_id) {
+                        frappe.call({
+                          method: "frappe.client.get_value",
+                          args: {
+                            doctype: "Sahayog Branch",
+                            filters: { name: empR.message.sol_id },
+                            fieldname: "state"
+                          },
+                          callback: (res) => {
+                            if (res.message && res.message.state) {
+                              this.movementForm.emp_state = res.message.state;
+                            }
+                          }
+                        });
+                      }
                     }
                   }
                 });
