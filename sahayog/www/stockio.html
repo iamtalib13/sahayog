@@ -8238,7 +8238,11 @@
   >
     <div class="profile-modal modal-large" style="max-width: 900px">
       <div class="profile-modal-header">
-        <h3>Asset Movement</h3>
+        <h3>Asset Movement 
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
+                [[ 'SMCCSL/' + (movementForm.emp_zone || 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division || 'DIV') + '/[ASSET]/[BRAND]/[SERIAL]' ]]
+            </span>
+        </h3>
         <div class="profile-modal-header-right">
           <button
             class="btn-create-inline"
@@ -14572,13 +14576,35 @@
         if (hasAssets && !hasStock) {
           // If ONLY assets are involved, show the Asset Movement MODAL
           this.showMovementModal = true;
-          this.showDetailView = isFromList ? false : true; // Keep detail view if we were there
+          this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
+
+          // Fetch EMR and Employee details for Asset ID generation
+          frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Employee Material Request", name: row.name },
+            callback: (r) => {
+              if (r.message && r.message.employee) {
+                frappe.call({
+                  method: "frappe.client.get",
+                  args: { doctype: "Employee", name: r.message.employee },
+                  callback: (empR) => {
+                    if (empR.message) {
+                      this.movementForm.emp_zone = empR.message.custom_zone || "";
+                      this.movementForm.emp_state = empR.message.custom_state || "";
+                      this.movementForm.emp_location = empR.message.sol_id || "";
+                      this.movementForm.emp_division = empR.message.custom_division || "";
+                    }
+                  }
+                });
+              }
+            }
+          });
 
           // Pre-populate movement items from the filtered items
           this.movementItems = itemsToProcess
