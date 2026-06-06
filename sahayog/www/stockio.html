@@ -8261,7 +8261,7 @@
         <div
           style="
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             margin-bottom: 24px;
           "
@@ -8284,6 +8284,15 @@
               type="date"
               class="form-input"
               v-model="movementForm.transaction_date"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Invoice Number</label>
+            <input
+              type="text"
+              class="form-input"
+              v-model="movementForm.custom_invoice_number"
+              placeholder="Enter Invoice Number"
             />
           </div>
         </div>
@@ -14593,6 +14602,7 @@
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
+            custom_invoice_number: "",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
