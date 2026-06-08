@@ -14289,6 +14289,7 @@
                 available_for_use_date: frappe.datetime.now_date(),
                 gross_purchase_amount: 123456,
                 booked_fixed_asset: 1,
+                is_existing_asset: 1, // Allow submission without Purchase Invoice
                 naming_series: "AST-",
                 company: "Sahayog Multistate Credit Co-op Society Ltd",
                 asset_owner: "Company",
@@ -14302,9 +14303,18 @@
               });
 
               if (assetRes.message) {
-                item.asset = assetRes.message.name;
-                item.asset_display = assetRes.message.name;
-                console.log(`Auto-created and linked Asset: ${item.asset}`);
+                // Submit the asset to move it out of Draft state (docstatus 1)
+                // This allows it to be used in an Asset Movement
+                const submitRes = await frappe.call({
+                  method: "frappe.client.submit",
+                  args: { doc: assetRes.message },
+                });
+
+                if (submitRes.message) {
+                  item.asset = submitRes.message.name;
+                  item.asset_display = submitRes.message.name;
+                  console.log(`Auto-created and Submitted Asset: ${item.asset}`);
+                }
               }
             }
           }
