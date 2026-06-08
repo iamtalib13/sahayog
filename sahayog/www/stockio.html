@@ -8240,7 +8240,7 @@
       <div class="profile-modal-header">
         <h3>Asset Movement 
             <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
-                [[ 'SMCCSL/' + (movementForm.emp_zone || 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + ((movementItems.length > 0 && movementItems[0].item_name ? movementItems[0].item_name.substring(0,3).toUpperCase() : 'AST')) + '/[BRAND]/[SERIAL]' ]]
+                [[ 'SMCCSL/' + (movementForm.emp_zone || 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + ((movementItems.length > 0 && movementItems[0].item_name ? movementItems[0].item_name.substring(0,3).toUpperCase() : 'AST')) + '/' + (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') + '/' + (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
             </span>
         </h3>
         <div class="profile-modal-header-right">
@@ -8286,14 +8286,31 @@
               v-model="movementForm.transaction_date"
             />
           </div>
-          <div class="form-group">
+          <div class="form-group" style="position: relative;">
             <label class="form-label">Invoice Number</label>
             <input
               type="text"
               class="form-input"
               v-model="movementForm.custom_invoice_number"
-              placeholder="Enter Invoice Number"
+              @focus="focusedField = 'mv_inv_number'"
+              @blur="setTimeout(() => focusedField = null, 200)"
+              placeholder="Search Invoice Number"
             />
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'mv_inv_number'"
+              style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; max-height: 200px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 4px;"
+            >
+              <div
+                v-for="inv in filteredInvoices"
+                :key="inv"
+                class="searchable-select-option"
+                style="padding: 8px; cursor: pointer;"
+                @mousedown="movementForm.custom_invoice_number = inv; focusedField = null;"
+              >
+                [[ inv ]]
+              </div>
+            </div>
           </div>
         </div>
         <div
@@ -8472,10 +8489,56 @@
                     </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                      [[ item.brand || '-' ]]
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="item.brand_display"
+                          @focus="focusedField = 'mv_brand_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Brand"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_brand_' + index"
+                        >
+                          <div
+                            v-for="brand in brands.filter(b => !item.brand_display || b.toLowerCase().includes(item.brand_display.toLowerCase()))"
+                            :key="brand"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.brand = brand; item.brand_display = brand; focusedField = null;"
+                          >
+                            [[ brand ]]
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                      [[ item.serial_no || '-' ]]
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="item.serial_no"
+                          @focus="focusedField = 'mv_serial_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Serial No"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_serial_' + index"
+                        >
+                          <div
+                            v-for="sn in serial_nos.filter(s => !item.serial_no || s.toLowerCase().includes(item.serial_no.toLowerCase()))"
+                            :key="sn"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.serial_no = sn; focusedField = null;"
+                          >
+                            [[ sn ]]
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td style="padding: 10px">
                       <div class="searchable-select-wrapper" style="width: 100%">
@@ -11332,6 +11395,7 @@
       isEditing: false,
       showFilterPopup: false,
       activeFilterKey: null,
+      invoiceNumbers: [],
       filterForm: {
         start_date: "",
         end_date: "",
@@ -12499,6 +12563,12 @@
         return this.divisions.filter((d) => d.toLowerCase().includes(search));
       },
 
+      get filteredInvoices() {
+        const search = (this.movementForm.custom_invoice_number || "").toLowerCase();
+        if (!search) return this.invoiceNumbers;
+        return this.invoiceNumbers.filter((inv) => inv.toLowerCase().includes(search));
+      },
+
       get filteredBrands() {
         const search = (this.createAssetForm.brand_display || "").toLowerCase();
         if (!search) return this.brands;
@@ -13630,6 +13700,9 @@
               target_location_display: "",
               to_employee: "",
               to_employee_display: "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             },
           ];
           return;
@@ -13815,6 +13888,9 @@
             this.states = data.states || [];
             this.hsnCodes = data.hsn_codes || [];
             this.serial_nos = data.serial_nos || [];
+            
+            const invRes = await frappe.call({ method: "sahayog.procurement.api.stock_balance_ledger.get_invoice_numbers" });
+            this.invoiceNumbers = invRes.message || [];
           }
         } catch (e) {
           console.error("Error fetching portal master data:", e);
@@ -14671,6 +14747,9 @@
               target_location_display: row.target_location || "",
               to_employee: row.employee || "",
               to_employee_display: row.employee_name || row.employee || "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             }));
 
           if (this.movementItems.length === 0) {
@@ -14684,8 +14763,11 @@
                 target_location_display: "",
                 to_employee: "",
                 to_employee_display: "",
-              },
-            ];
+                brand: "",
+                brand_display: "",
+                serial_no: "",
+                },
+                ];
           }
           return;
         }
