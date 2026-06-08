@@ -14229,6 +14229,18 @@
       },
 
       async submitMovementFromModal(shouldSubmit = false) {
+        // Custom Console Log (Single Line - Uncombined components)
+        const zone = this.movementForm.emp_zone || 'ZONE';
+        const sol = this.movementForm.emp_location || 'LOC';
+        const state = this.movementForm.emp_state || 'STATE';
+        const division = this.movementForm.emp_division ? this.movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV';
+        const assetCodes = this.movementItems.map(i => i.item_code).filter(c => c).join(", ");
+        const brands = this.movementItems.map(i => i.brand).filter(b => b).join(", ");
+        const serials = this.movementItems.map(i => i.serial_no).filter(s => s).join(", ");
+        const invoiceNo = this.movementForm.custom_invoice_number || "N/A";
+        
+        console.log(`Zone: ${zone} | SOL: ${sol} | State: ${state} | Div: ${division} | Asset Code: ${assetCodes} | Brand: ${brands} | Serial: ${serials} | Invoice: ${invoiceNo}`);
+
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
           frappe.msgprint("Purpose and Transaction Date are required");
           return;
