@@ -166,7 +166,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-21 10:31:18.313498",
+ "modified": "2026-06-08 14:47:59.861034",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Branch Petty Cash Account",
@@ -223,18 +223,14 @@
    "share": 1
   },
   {
-  "email": 0,
-  "export": 0,
-  "print": 0,
-  "read": 1,
-  "report": 0,
-  "role": "HO Petty Cash Auditor",
-  "share": 0
-}
+   "read": 1,
+   "role": "HO Petty Cash Auditor"
+  }
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

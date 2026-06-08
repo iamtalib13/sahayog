@@ -295,7 +295,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-20 12:23:31.031540",
+ "modified": "2026-06-08 14:48:20.251379",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
@@ -363,18 +363,14 @@
    "write": 1
   },
   {
-  "email": 0,
-  "export": 0,
-  "print": 0,
-  "read": 1,
-  "report": 0,
-  "role": "HO Petty Cash Auditor",
-  "share": 0
-}
+   "read": 1,
+   "role": "HO Petty Cash Auditor"
+  }
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
