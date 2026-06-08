@@ -2,6 +2,7 @@ import frappe
 from frappe.model.document import Document
 from frappe import _
 
+
 class ReportPreference(Document):
 
     def autoname(self):
@@ -29,7 +30,8 @@ class ReportPreference(Document):
         Manager's requirement: Only Administrator and System Manager allowed.
         """
         user = frappe.session.user
-        allowed_roles = {"Administrator", "System Manager"}
+        allowed_roles = {"Administrator",
+                         "System Manager", "Permission Manager"}
         user_roles = set(frappe.get_roles(user))
 
         if user != "Administrator" and not allowed_roles.intersection(user_roles):
@@ -68,7 +70,7 @@ def search_user(search_text=None):
     if not search_text:
         return []
 
-    # Hum sirf unhi users ko dhundenge jinka 'full_name' ya 'name' 
+    # Hum sirf unhi users ko dhundenge jinka 'full_name' ya 'name'
     # search text se START hota ho.
     search_query = f"{search_text}%"
 
