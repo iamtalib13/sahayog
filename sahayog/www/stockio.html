@@ -8472,10 +8472,56 @@
                     </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                      [[ item.brand || '-' ]]
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="item.brand_display"
+                          @focus="focusedField = 'mv_brand_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Brand"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_brand_' + index"
+                        >
+                          <div
+                            v-for="brand in brands.filter(b => !item.brand_display || b.toLowerCase().includes(item.brand_display.toLowerCase()))"
+                            :key="brand"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.brand = brand; item.brand_display = brand; focusedField = null;"
+                          >
+                            [[ brand ]]
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                      [[ item.serial_no || '-' ]]
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          v-model="item.serial_no"
+                          @focus="focusedField = 'mv_serial_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Serial No"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_serial_' + index"
+                        >
+                          <div
+                            v-for="sn in serial_nos.filter(s => !item.serial_no || s.toLowerCase().includes(item.serial_no.toLowerCase()))"
+                            :key="sn"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.serial_no = sn; focusedField = null;"
+                          >
+                            [[ sn ]]
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td style="padding: 10px">
                       <div class="searchable-select-wrapper" style="width: 100%">
@@ -13630,6 +13676,9 @@
               target_location_display: "",
               to_employee: "",
               to_employee_display: "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             },
           ];
           return;
@@ -14671,6 +14720,9 @@
               target_location_display: row.target_location || "",
               to_employee: row.employee || "",
               to_employee_display: row.employee_name || row.employee || "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             }));
 
           if (this.movementItems.length === 0) {
@@ -14684,8 +14736,11 @@
                 target_location_display: "",
                 to_employee: "",
                 to_employee_display: "",
-              },
-            ];
+                brand: "",
+                brand_display: "",
+                serial_no: "",
+                },
+                ];
           }
           return;
         }
