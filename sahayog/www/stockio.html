@@ -8286,14 +8286,31 @@
               v-model="movementForm.transaction_date"
             />
           </div>
-          <div class="form-group">
+          <div class="form-group" style="position: relative;">
             <label class="form-label">Invoice Number</label>
             <input
               type="text"
               class="form-input"
               v-model="movementForm.custom_invoice_number"
-              placeholder="Enter Invoice Number"
+              @focus="focusedField = 'mv_inv_number'"
+              @blur="setTimeout(() => focusedField = null, 200)"
+              placeholder="Search Invoice Number"
             />
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'mv_inv_number'"
+              style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; max-height: 200px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 4px;"
+            >
+              <div
+                v-for="inv in filteredInvoices"
+                :key="inv"
+                class="searchable-select-option"
+                style="padding: 8px; cursor: pointer;"
+                @mousedown="movementForm.custom_invoice_number = inv; focusedField = null;"
+              >
+                [[ inv ]]
+              </div>
+            </div>
           </div>
         </div>
         <div
@@ -11378,6 +11395,7 @@
       isEditing: false,
       showFilterPopup: false,
       activeFilterKey: null,
+      invoiceNumbers: [],
       filterForm: {
         start_date: "",
         end_date: "",
@@ -12543,6 +12561,12 @@
         const search = (this.createAssetForm.division_display || "").toLowerCase();
         if (!search) return this.divisions;
         return this.divisions.filter((d) => d.toLowerCase().includes(search));
+      },
+
+      get filteredInvoices() {
+        const search = (this.movementForm.custom_invoice_number || "").toLowerCase();
+        if (!search) return this.invoiceNumbers;
+        return this.invoiceNumbers.filter((inv) => inv.toLowerCase().includes(search));
       },
 
       get filteredBrands() {
@@ -13864,6 +13888,9 @@
             this.states = data.states || [];
             this.hsnCodes = data.hsn_codes || [];
             this.serial_nos = data.serial_nos || [];
+            
+            const invRes = await frappe.call({ method: "sahayog.procurement.api.stock_balance_ledger.get_invoice_numbers" });
+            this.invoiceNumbers = invRes.message || [];
           }
         } catch (e) {
           console.error("Error fetching portal master data:", e);
