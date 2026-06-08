@@ -8238,7 +8238,11 @@
   >
     <div class="profile-modal modal-large" style="max-width: 900px">
       <div class="profile-modal-header">
-        <h3>Asset Movement</h3>
+        <h3>Asset Movement 
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
+                [[ 'SMCCSL/' + (movementForm.emp_zone || 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + ((movementItems.length > 0 && movementItems[0].item_name ? movementItems[0].item_name.substring(0,3).toUpperCase() : 'AST')) + '/[BRAND]/[SERIAL]' ]]
+            </span>
+        </h3>
         <div class="profile-modal-header-right">
           <button
             class="btn-create-inline"
@@ -8257,7 +8261,7 @@
         <div
           style="
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             margin-bottom: 24px;
           "
@@ -8280,6 +8284,15 @@
               type="date"
               class="form-input"
               v-model="movementForm.transaction_date"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Invoice Number</label>
+            <input
+              type="text"
+              class="form-input"
+              v-model="movementForm.custom_invoice_number"
+              placeholder="Enter Invoice Number"
             />
           </div>
         </div>
@@ -8348,6 +8361,26 @@
                   "
                 >
                   Asset <span class="form-required">*</span>
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Brand
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Serial No
                 </th>
                 <th
                   style="
@@ -8428,7 +8461,7 @@
                         v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                         :key="opt.name"
                         class="searchable-select-option"
-                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
+                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.brand = opt.brand; item.serial_no = opt.serial_no; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
                       >
                         <div style="font-weight: 500">[[ opt.name ]]</div>
                         <div style="font-size: 11px; opacity: 0.8">
@@ -8436,10 +8469,16 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td style="padding: 10px">
-                  <div class="searchable-select-wrapper" style="width: 100%">
+                    </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      [[ item.brand || '-' ]]
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      [[ item.serial_no || '-' ]]
+                    </td>
+                    <td style="padding: 10px">
+                      <div class="searchable-select-wrapper" style="width: 100%">
                     <input
                       type="text"
                       class="form-input"
@@ -14572,13 +14611,52 @@
         if (hasAssets && !hasStock) {
           // If ONLY assets are involved, show the Asset Movement MODAL
           this.showMovementModal = true;
-          this.showDetailView = isFromList ? false : true; // Keep detail view if we were there
+          this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
+            custom_invoice_number: "",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
+
+          // Fetch EMR and Employee details for Asset ID generation
+          frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Employee Material Request", name: row.name },
+            callback: (r) => {
+              if (r.message && r.message.employee) {
+                frappe.call({
+                  method: "frappe.client.get",
+                  args: { doctype: "Employee", name: r.message.employee },
+                  callback: (empR) => {
+                    if (empR.message) {
+                      this.movementForm.emp_zone = empR.message.custom_zone || "";
+                      this.movementForm.emp_location = empR.message.sol_id || "";
+                      this.movementForm.emp_division = empR.message.custom_division || "";
+
+                      // Fetch State from Sahayog Branch using sol_id
+                      if (empR.message.sol_id) {
+                        frappe.call({
+                          method: "frappe.client.get_value",
+                          args: {
+                            doctype: "Sahayog Branch",
+                            filters: { name: empR.message.sol_id },
+                            fieldname: "state"
+                          },
+                          callback: (res) => {
+                            if (res.message && res.message.state) {
+                              this.movementForm.emp_state = res.message.state;
+                            }
+                          }
+                        });
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          });
 
           // Pre-populate movement items from the filtered items
           this.movementItems = itemsToProcess
