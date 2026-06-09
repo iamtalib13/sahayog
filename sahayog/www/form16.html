@@ -103,12 +103,14 @@
     <script>
       function downloadAllFiles() {
         const panInput = document.getElementById("pan");
-        const pan = panInput.value.trim();
+        const pan = panInput.value.trim().toUpperCase();
         const message = document.getElementById("message");
+        message.innerHTML = "";
         
-        if (pan.length < 10) {
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        if (!panRegex.test(pan)) {
           message.style.color = "#d9534f";
-          message.innerHTML = "Please enter full 10-digit PAN.";
+          message.innerHTML = "Invalid Format! Standard PAN: ABCDE1234F";
           panInput.style.borderColor = "#d9534f";
           return;
         }
@@ -118,12 +120,14 @@
         const year = "2025-26";
 
         message.style.color = "#0078d4";
-        message.innerHTML = "Processing downloads...";
+        message.innerHTML = "Processing downloads... Please allow pop-ups.";
 
         quarters.forEach((q, index) => {
           setTimeout(() => {
             const fileName = `${pan}_${q}_${year}.pdf`;
             const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
+            
+            // Using the reliable download.aspx pattern as confirmed by user
             const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
 
             window.open(url, "_blank");
@@ -161,7 +165,7 @@
         } else {
           e.target.style.borderColor = "#ccc";
           message.style.color = "#666";
-          message.innerHTML = "Format: ABCDE1234F";
+          message.innerHTML = "Format: ABCDE 1234 F";
         }
       });
 
