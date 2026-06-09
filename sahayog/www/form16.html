@@ -94,13 +94,10 @@
           maxlength="10"
           placeholder="Enter PAN Number"
         />
-        <button onclick="downloadAllFiles()">Download All</button>
+        <button onclick="downloadAllFiles()">Download</button>
       </div>
 
       <div class="message" id="message"></div>
-      <p style="margin-top: 15px; font-size: 12px; color: #888;">
-        Note: Clicking download will attempt to fetch Form 16 for all quarters (Q1-Q4). Please allow multiple downloads in your browser settings.
-      </p>
     </div>
 
     <script>
@@ -121,7 +118,7 @@
         const year = "2025-26";
 
         message.style.color = "#0078d4";
-        message.innerHTML = "Processing downloads for all quarters...";
+        message.innerHTML = "Processing downloads...";
 
         quarters.forEach((q, index) => {
           setTimeout(() => {
@@ -134,7 +131,7 @@
 
             if (index === quarters.length - 1) {
               message.style.color = "#28a745";
-              message.innerHTML = "All download requests sent.";
+              message.innerHTML = "Download requests sent.";
             }
           }, index * 1000); // 1 second delay to prevent browser from blocking multiple popups
         });
