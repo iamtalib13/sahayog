@@ -613,13 +613,17 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
         data = [row for row in data if row.get("warehouse") != user_warehouse]
 
     if search_text:
-
         search_text = search_text.lower()
+        # Fetch all branches for mapping
+        branches = frappe.get_all("Sahayog Branch", fields=["name", "branch"])
+        branch_map = {b.name: b.branch.lower() for b in branches if b.branch}
+
         data = [
             row for row in data 
             if search_text in str(row.get("item_code", "")).lower() or 
                search_text in str(row.get("item_name", "")).lower() or 
-               search_text in str(row.get("warehouse", "")).lower()
+               search_text in str(row.get("warehouse", "")).lower() or
+               (branch_map.get(row.get("warehouse"), "") and search_text in branch_map.get(row.get("warehouse", "")))
         ]
         
     total_count = len(data)

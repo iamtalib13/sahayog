@@ -7837,6 +7837,32 @@
                     >
                       Submit
                     </button>
+                    
+                    <!-- Admin Dual Action Button (PDF & Cancel) -->
+                    <div 
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && isAdmin"
+                      class="dual-action-btn"
+                      style="display: inline-flex; border-radius: 40px; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);"
+                    >
+                      <button
+                        class="btn-create-inline"
+                        style="background: var(--green-600); border-color: var(--green-600); border-radius: 0; padding: 0 15px; margin: 0; border-right: 1px solid rgba(255,255,255,0.2);"
+                        @click.stop="handleProforma(row)"
+                        title="Proforma"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                      <button
+                        class="btn-create-inline"
+                        style="background: #ef4444; border-color: #ef4444; border-radius: 0; padding: 0 15px; margin: 0;"
+                        @click.stop="cancelRowRecord(row)"
+                        title="Cancel"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+
+                    <!-- Standard Proforma Button for Non-Admins -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -7844,7 +7870,7 @@
                         border-color: var(--green-600);
                       "
                       @click.stop="handleProforma(row)"
-                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && !isAdmin"
                     >
                       PROFORMA
                     </button>
@@ -11525,7 +11551,8 @@
           columns: [
             { label: "Item", key: "item_code", width: 2, type: "avatar" },
             { label: "Item Name", key: "item_name", width: 2.5 },
-            { label: "Warehouse", key: "warehouse", width: 1.5 },
+            { label: "SOL ID", key: "warehouse_name", width: 1.5 },
+            { label: "Warehouse", key: "branch_name", width: 1.5 },
             { label: "Stock Balance", key: "stock_balance", width: 1 },
           ],
         },
@@ -12205,6 +12232,7 @@
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
 
         const type = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
+        const designation = this.userDesignation ? String(this.userDesignation).trim().toUpperCase() : "";
 
         return this.sidebar.sections
           .filter((section) => {
@@ -12258,12 +12286,12 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
-                  // EXCEPT: Branch Manager can see Branch Stock
+                  // EXCEPT: Branch Manager, Branch Operation Manager and Cluster Operation Manager can see Branch Stock and Inward
                   filteredItems = filteredItems.filter(
                     (item) =>
                       item.label === "Requests" ||
-                      (item.label === "Branch Stock" &&
-                        this.userDesignation === "BRANCH MANAGER"),
+                      (["Branch Stock", "Inward"].includes(item.label) &&
+                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(designation)),
                   );
                 }
               }
@@ -13066,10 +13094,15 @@
             });
 
             if (res.message) {
-              const data = (res.message.data || []).map((row) => ({
-                ...row,
-                name: row.name || `${row.item_code}-${row.warehouse}`,
-              }));
+              const data = (res.message.data || []).map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
               if (append) {
                 this.rows = this.rows.concat(data);
               } else {
@@ -15061,6 +15094,32 @@
           } catch (e) {
             console.error("Submission error:", e);
             frappe.msgprint(e.message || "Error submitting record");
+          } finally {
+            this.loading = false;
+          }
+        });
+      },
+
+      async cancelRowRecord(row) {
+        if (!row || !row.name) return;
+        const doctype = this.currentView.doctype;
+
+        frappe.confirm(`Are you sure you want to CANCEL ${row.name}? This action cannot be undone.`, async () => {
+          this.loading = true;
+          try {
+            await frappe.call({
+              method: "frappe.client.cancel",
+              args: { doctype, name: row.name },
+            });
+
+            frappe.show_alert({
+              message: `${row.name} cancelled successfully`,
+              indicator: "red",
+            });
+            await this.fetchData(doctype);
+          } catch (e) {
+            console.error("Cancellation error:", e);
+            frappe.msgprint(e.message || "Error cancelling record");
           } finally {
             this.loading = false;
           }
