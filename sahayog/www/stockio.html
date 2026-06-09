@@ -12258,12 +12258,12 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
-                  // EXCEPT: Branch Manager and Branch Operation Manager can see Branch Stock and Inward
+                  // EXCEPT: Branch Manager, Branch Operation Manager and Cluster Operation Manager can see Branch Stock and Inward
                   filteredItems = filteredItems.filter(
                     (item) =>
                       item.label === "Requests" ||
                       (["Branch Stock", "Inward"].includes(item.label) &&
-                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER"].includes(this.userDesignation)),
+                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(this.userDesignation)),
                   );
                 }
               }
