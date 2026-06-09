@@ -94,16 +94,18 @@
           maxlength="10"
           placeholder="Enter PAN Number"
         />
-        <button onclick="downloadPDF()">Download</button>
+        <button onclick="downloadAllFiles()">Download All</button>
       </div>
 
       <div class="message" id="message"></div>
+      <p style="margin-top: 15px; font-size: 12px; color: #888;">
+        Note: Clicking download will attempt to fetch Form 16 for all quarters (Q1-Q4). Please allow multiple downloads in your browser settings.
+      </p>
     </div>
 
     <script>
-      function downloadPDF() {
+      function downloadAllFiles() {
         const pan = document.getElementById("pan").value.trim().toUpperCase();
-
         const message = document.getElementById("message");
         message.innerHTML = "";
 
@@ -114,17 +116,33 @@
           return;
         }
 
-        const fileName = `${pan}_Q2_2025-26.pdf`;
-        const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
+        // We assume files for Q1, Q2, Q3, and Q4 exist for this PAN
+        const quarters = ["Q1", "Q2", "Q3", "Q4"];
+        const year = "2025-26";
 
-        const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
+        message.style.color = "#0078d4";
+        message.innerHTML = "Processing downloads for all quarters...";
 
-        window.open(url, "_blank");
+        quarters.forEach((q, index) => {
+          setTimeout(() => {
+            const fileName = `${pan}_${q}_${year}.pdf`;
+            const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
+            const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
+
+            // Using window.open for each file. SharePoint's download.aspx handles this well.
+            window.open(url, "_blank");
+
+            if (index === quarters.length - 1) {
+              message.style.color = "#28a745";
+              message.innerHTML = "All download requests sent.";
+            }
+          }, index * 1000); // 1 second delay to prevent browser from blocking multiple popups
+        });
       }
 
       document.getElementById("pan").addEventListener("keypress", function (e) {
         if (e.key === "Enter") {
-          downloadPDF();
+          downloadAllFiles();
         }
       });
     </script>
