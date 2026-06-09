@@ -2263,7 +2263,7 @@
                   </div>
 
                   <!-- Send for Purchase Checkbox inside the card -->
-                  <div style="margin-top: 16px;">
+                  <div style="margin-top: 16px;" v-if="isAdmin || wh_dept_map.some(row => row.user_id === frappe.session.user)">
                     <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--text-main); font-size: 0.9rem;">
                       <input 
                         type="checkbox" 
