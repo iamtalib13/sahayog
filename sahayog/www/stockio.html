@@ -11551,7 +11551,8 @@
           columns: [
             { label: "Item", key: "item_code", width: 2, type: "avatar" },
             { label: "Item Name", key: "item_name", width: 2.5 },
-            { label: "Warehouse", key: "warehouse", width: 1.5 },
+            { label: "Branch Name", key: "branch_name", width: 1.5 },
+            { label: "Warehouse Name", key: "warehouse_name", width: 1.5 },
             { label: "Stock Balance", key: "stock_balance", width: 1 },
           ],
         },
@@ -13093,10 +13094,15 @@
             });
 
             if (res.message) {
-              const data = (res.message.data || []).map((row) => ({
-                ...row,
-                name: row.name || `${row.item_code}-${row.warehouse}`,
-              }));
+              const data = (res.message.data || []).map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
               if (append) {
                 this.rows = this.rows.concat(data);
               } else {
