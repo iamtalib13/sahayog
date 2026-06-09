@@ -12205,6 +12205,7 @@
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
 
         const type = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
+        const designation = this.userDesignation ? String(this.userDesignation).trim().toUpperCase() : "";
 
         return this.sidebar.sections
           .filter((section) => {
@@ -12263,7 +12264,7 @@
                     (item) =>
                       item.label === "Requests" ||
                       (["Branch Stock", "Inward"].includes(item.label) &&
-                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(this.userDesignation)),
+                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(designation)),
                   );
                 }
               }
