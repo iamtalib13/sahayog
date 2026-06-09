@@ -97,23 +97,23 @@
         <button onclick="downloadAllFiles()">Download</button>
       </div>
 
-      <div class="message" id="message"></div>
+      <div class="message" id="message" style="color: #666;">Format: ABCDE 1234 F</div>
     </div>
 
     <script>
       function downloadAllFiles() {
-        const pan = document.getElementById("pan").value.trim().toUpperCase();
+        const panInput = document.getElementById("pan");
+        const pan = panInput.value.trim();
         const message = document.getElementById("message");
-        message.innerHTML = "";
-
-        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-
-        if (!panRegex.test(pan)) {
-          message.innerHTML = "Please enter a valid PAN number.";
+        
+        if (pan.length < 10) {
+          message.style.color = "#d9534f";
+          message.innerHTML = "Please enter full 10-digit PAN.";
+          panInput.style.borderColor = "#d9534f";
           return;
         }
 
-        // We assume files for Q1, Q2, Q3, and Q4 exist for this PAN
+        panInput.style.borderColor = "#28a745";
         const quarters = ["Q1", "Q2", "Q3", "Q4"];
         const year = "2025-26";
 
@@ -126,16 +126,44 @@
             const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
             const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
 
-            // Using window.open for each file. SharePoint's download.aspx handles this well.
             window.open(url, "_blank");
 
             if (index === quarters.length - 1) {
               message.style.color = "#28a745";
               message.innerHTML = "Download requests sent.";
             }
-          }, index * 1000); // 1 second delay to prevent browser from blocking multiple popups
+          }, index * 1000);
         });
       }
+
+      // Character-by-Character Strict Validation
+      document.getElementById("pan").addEventListener("input", function (e) {
+        let originalValue = e.target.value.toUpperCase();
+        let cleanValue = "";
+        
+        for (let i = 0; i < originalValue.length && i < 10; i++) {
+          let char = originalValue[i];
+          if (i < 5) {
+            if (/[A-Z]/.test(char)) cleanValue += char;
+          } else if (i < 9) {
+            if (/[0-9]/.test(char)) cleanValue += char;
+          } else {
+            if (/[A-Z]/.test(char)) cleanValue += char;
+          }
+        }
+        
+        e.target.value = cleanValue;
+        
+        const message = document.getElementById("message");
+        if (cleanValue.length === 10) {
+          e.target.style.borderColor = "#28a745";
+          message.innerHTML = "";
+        } else {
+          e.target.style.borderColor = "#ccc";
+          message.style.color = "#666";
+          message.innerHTML = "Format: ABCDE1234F";
+        }
+      });
 
       document.getElementById("pan").addEventListener("keypress", function (e) {
         if (e.key === "Enter") {
