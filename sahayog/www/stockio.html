@@ -7837,6 +7837,32 @@
                     >
                       Submit
                     </button>
+                    
+                    <!-- Admin Dual Action Button (PDF & Cancel) -->
+                    <div 
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && isAdmin"
+                      class="dual-action-btn"
+                      style="display: inline-flex; border-radius: 40px; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);"
+                    >
+                      <button
+                        class="btn-create-inline"
+                        style="background: var(--green-600); border-color: var(--green-600); border-radius: 0; padding: 0 15px; margin: 0; border-right: 1px solid rgba(255,255,255,0.2);"
+                        @click.stop="handleProforma(row)"
+                        title="Proforma"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                      <button
+                        class="btn-create-inline"
+                        style="background: #ef4444; border-color: #ef4444; border-radius: 0; padding: 0 15px; margin: 0;"
+                        @click.stop="cancelRowRecord(row)"
+                        title="Cancel"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+
+                    <!-- Standard Proforma Button for Non-Admins -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -7844,7 +7870,7 @@
                         border-color: var(--green-600);
                       "
                       @click.stop="handleProforma(row)"
-                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && !isAdmin"
                     >
                       PROFORMA
                     </button>
@@ -15062,6 +15088,32 @@
           } catch (e) {
             console.error("Submission error:", e);
             frappe.msgprint(e.message || "Error submitting record");
+          } finally {
+            this.loading = false;
+          }
+        });
+      },
+
+      async cancelRowRecord(row) {
+        if (!row || !row.name) return;
+        const doctype = this.currentView.doctype;
+
+        frappe.confirm(`Are you sure you want to CANCEL ${row.name}? This action cannot be undone.`, async () => {
+          this.loading = true;
+          try {
+            await frappe.call({
+              method: "frappe.client.cancel",
+              args: { doctype, name: row.name },
+            });
+
+            frappe.show_alert({
+              message: `${row.name} cancelled successfully`,
+              indicator: "red",
+            });
+            await this.fetchData(doctype);
+          } catch (e) {
+            console.error("Cancellation error:", e);
+            frappe.msgprint(e.message || "Error cancelling record");
           } finally {
             this.loading = false;
           }
