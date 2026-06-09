@@ -12258,11 +12258,11 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
-                  // EXCEPT: Branch Manager can see Branch Stock
+                  // EXCEPT: Branch Manager can see Branch Stock and Inward
                   filteredItems = filteredItems.filter(
                     (item) =>
                       item.label === "Requests" ||
-                      (item.label === "Branch Stock" &&
+                      (["Branch Stock", "Inward"].includes(item.label) &&
                         this.userDesignation === "BRANCH MANAGER"),
                   );
                 }
