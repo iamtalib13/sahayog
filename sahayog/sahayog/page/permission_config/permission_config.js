@@ -4,7 +4,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
   const user_roles = frappe.user_roles;
 
   // 2. Check if user has at least one authorized role
-  const is_authorized = authorized_roles.some(role => user_roles.includes(role));
+  const is_authorized = authorized_roles.some((role) =>
+    user_roles.includes(role),
+  );
 
   if (!is_authorized) {
     // Show a clean Access Denied message
@@ -30,6 +32,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     parent: wrapper,
     title: "Permission Configuration",
     single_column: true,
+  });
+
+  page.add_inner_button(__("View Report"), () => {
+    frappe.set_route("query-report", "Report Preference Report");
   });
 
   $(wrapper).find(".page-content").css({ padding: "0", maxWidth: "none" });
@@ -819,15 +825,20 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       $delimiters: ["[[", "]]"],
       showTagMenu: false, // Tracks if the floating menu is open
 
-
       prefList: [],
       filteredList: [],
       searchQuery: "",
       selectedPref: null,
-      selectedUsers: [], 
+      selectedUsers: [],
       allOptions: {
-        zone: [], region: [], state: [], district: [], sol_id: [], product: [], source: [],
-        tag: [] // Added tag array
+        zone: [],
+        region: [],
+        state: [],
+        district: [],
+        sol_id: [],
+        product: [],
+        source: [],
+        tag: [], // Added tag array
       },
       saveTimeout: null,
 
@@ -843,7 +854,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
       loadAllPreferences() {
         frappe.call({
-          method: "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
+          method:
+            "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
           callback: (r) => {
             this.prefList = r.message || [];
             this.filteredList = [...this.prefList];
@@ -853,7 +865,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
       loadFieldOptions() {
         frappe.call({
-          method: "sahayog.sahayog.page.permission_config.permission_config.get_field_options",
+          method:
+            "sahayog.sahayog.page.permission_config.permission_config.get_field_options",
           callback: (r) => {
             const opts = r.message || {};
             this.allOptions.zone = opts.zone || [];
@@ -876,7 +889,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           this.filteredList = this.prefList.filter(
             (p) =>
               (p.full_name && p.full_name.toLowerCase().includes(q)) ||
-              (p.user && p.user.toLowerCase().includes(q))
+              (p.user && p.user.toLowerCase().includes(q)),
           );
         }
       },
@@ -903,20 +916,35 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
 
         frappe.call({
-          method: "sahayog.sahayog.page.permission_config.permission_config.get_preference_detail",
+          method:
+            "sahayog.sahayog.page.permission_config.permission_config.get_preference_detail",
           args: { user: item.user },
           callback: (r) => {
             this.selectedPref = r.message || null;
             if (this.selectedPref) {
               // Ensure arrays are valid
-              this.selectedPref.zone = (this.selectedPref.zone || []).filter(v => v);
-              this.selectedPref.region = (this.selectedPref.region || []).filter(v => v);
-              this.selectedPref.state = (this.selectedPref.state || []).filter(v => v);
-              this.selectedPref.district = (this.selectedPref.district || []).filter(v => v);
-              this.selectedPref.sol_id = (this.selectedPref.sol_id || []).filter(v => v);
-              this.selectedPref.product = (this.selectedPref.product || []).filter(v => v);
-              this.selectedPref.source = (this.selectedPref.source || []).filter(v => v);
-              
+              this.selectedPref.zone = (this.selectedPref.zone || []).filter(
+                (v) => v,
+              );
+              this.selectedPref.region = (
+                this.selectedPref.region || []
+              ).filter((v) => v);
+              this.selectedPref.state = (this.selectedPref.state || []).filter(
+                (v) => v,
+              );
+              this.selectedPref.district = (
+                this.selectedPref.district || []
+              ).filter((v) => v);
+              this.selectedPref.sol_id = (
+                this.selectedPref.sol_id || []
+              ).filter((v) => v);
+              this.selectedPref.product = (
+                this.selectedPref.product || []
+              ).filter((v) => v);
+              this.selectedPref.source = (
+                this.selectedPref.source || []
+              ).filter((v) => v);
+
               // Tag is a string, no filtering needed, but ensure it exists
               if (!this.selectedPref.tag) this.selectedPref.tag = "";
             }
@@ -943,93 +971,139 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       //   this.autoSave();
       // },
 
-
       toggle(field, value) {
         if (!this.selectedPref) return;
-        
+
         // VALIDATION: Block Region selection if Zone is empty
-        if (field === 'region') {
-            if (!this.selectedPref.zone || this.selectedPref.zone.length === 0) {
-                frappe.show_alert({
-                    message: __('Please select at least one <strong>Zone</strong> first.'),
-                    indicator: 'orange'
-                }, 3);
-                return;
-            }
+        if (field === "region") {
+          if (!this.selectedPref.zone || this.selectedPref.zone.length === 0) {
+            frappe.show_alert(
+              {
+                message: __(
+                  "Please select at least one <strong>Zone</strong> first.",
+                ),
+                indicator: "orange",
+              },
+              3,
+            );
+            return;
+          }
         }
 
         // TOGGLE LOGIC: Add/Remove value
         const arr = this.selectedPref[field];
         const idx = arr.indexOf(value);
-        
+
         if (idx >= 0) {
-            arr.splice(idx, 1);
+          arr.splice(idx, 1);
         } else {
-            arr.push(value);
+          arr.push(value);
         }
 
         // AUTO-CLEAR: If Zone was emptied, clear Regions
-        if (field === 'zone' && this.selectedPref.zone.length === 0) {
-            if (this.selectedPref.region && this.selectedPref.region.length > 0) {
-                this.selectedPref.region = [];
-                frappe.show_alert({
-                    message: __('Regions cleared because no Zone is selected.'),
-                    indicator: 'blue'
-                }, 3);
-            }
+        if (field === "zone" && this.selectedPref.zone.length === 0) {
+          if (this.selectedPref.region && this.selectedPref.region.length > 0) {
+            this.selectedPref.region = [];
+            frappe.show_alert(
+              {
+                message: __("Regions cleared because no Zone is selected."),
+                indicator: "blue",
+              },
+              3,
+            );
+          }
         }
-        
+
         // Save to DocType
         this.autoSave();
       },
 
       toggleAll(field) {
         if (!this.selectedPref) return;
-        
+
         // Block Region ALL if Zone empty
-        if (field === 'region' && (!this.selectedPref.zone || this.selectedPref.zone.length === 0)) {
-            frappe.show_alert({ message: __('Please select at least one <strong>Zone</strong> first.'), indicator: 'orange' }, 3);
-            return;
+        if (
+          field === "region" &&
+          (!this.selectedPref.zone || this.selectedPref.zone.length === 0)
+        ) {
+          frappe.show_alert(
+            {
+              message: __(
+                "Please select at least one <strong>Zone</strong> first.",
+              ),
+              indicator: "orange",
+            },
+            3,
+          );
+          return;
         }
 
         if (this.isAllSelected(field)) {
-            this.selectedPref[field] = [];
+          this.selectedPref[field] = [];
         } else {
-            this.selectedPref[field] = [...this.allOptions[field]];
+          this.selectedPref[field] = [...this.allOptions[field]];
         }
 
         // AUTO-CLEAR: If Zone ALL was deselected (emptying zones), clear Regions
-        if (field === 'zone' && this.selectedPref.zone.length === 0) {
-            this.selectedPref.region = [];
-            frappe.show_alert({ message: __('Regions cleared.'), indicator: 'blue' }, 2);
+        if (field === "zone" && this.selectedPref.zone.length === 0) {
+          this.selectedPref.region = [];
+          frappe.show_alert(
+            { message: __("Regions cleared."), indicator: "blue" },
+            2,
+          );
         }
-        
+
         this.autoSave();
       },
 
       toggleRole(pill) {
-        if (!this.selectedPref.finacle_roles) this.selectedPref.finacle_roles = [];
+        if (!this.selectedPref.finacle_roles)
+          this.selectedPref.finacle_roles = [];
         const arr = this.selectedPref.finacle_roles;
         const idx = arr.indexOf(pill);
-        
+
         if (idx >= 0) arr.splice(idx, 1);
         else arr.push(pill);
-        
+
         this.autoSave();
       },
 
       isAllRolesSelected() {
-        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance'];
+        const all = [
+          "HR",
+          "JLL",
+          "MIS",
+          "Loan",
+          "Audit",
+          "Finance",
+          "Operation",
+          "TW",
+          "Branch",
+          "Admin",
+          "Vigilance",
+        ];
         const sel = this.selectedPref.finacle_roles || [];
         return sel.length === all.length;
       },
 
       toggleAllRoles() {
-        const all = ['HR', 'JLL', 'MIS', 'Loan', 'Audit', 'Finance', 'Operation', 'TW', 'Branch', 'Admin', 'Vigilance'];
+        const all = [
+          "HR",
+          "JLL",
+          "MIS",
+          "Loan",
+          "Audit",
+          "Finance",
+          "Operation",
+          "TW",
+          "Branch",
+          "Admin",
+          "Vigilance",
+        ];
         if (this.isAllRolesSelected()) {
-            this.selectedPref.finacle_roles = [];
+          this.selectedPref.finacle_roles = [];
         } else {
-            this.selectedPref.finacle_roles = [...all];
+          this.selectedPref.finacle_roles = [...all];
         }
         this.autoSave();
       },
@@ -1041,70 +1115,66 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         return all.length > 0 && sel.length === all.length;
       },
 
-      
-
       removeSolId(val) {
         if (!this.selectedPref || !this.selectedPref.sol_id) return;
-        
+
         // Filter out the clicked SOL ID
-        this.selectedPref.sol_id = this.selectedPref.sol_id.filter(s => s !== val);
-        
+        this.selectedPref.sol_id = this.selectedPref.sol_id.filter(
+          (s) => s !== val,
+        );
+
         // Show a small feedback alert (optional)
-        frappe.show_alert({ message: `Removed ${val}`, indicator: 'orange' }, 2);
-        
+        frappe.show_alert(
+          { message: `Removed ${val}`, indicator: "orange" },
+          2,
+        );
+
         // Sync changes to the Report Preference DocType
         this.autoSave();
       },
 
-
       getTagClass(tag) {
         const map = {
-            'COM': 'badge-green',
-            'ROM': 'badge-blue',
-            'RM':  'badge-orange',
-            'AZM': 'badge-purple',
-            'ZM':  'badge-cyan'
+          COM: "badge-green",
+          ROM: "badge-blue",
+          RM: "badge-orange",
+          AZM: "badge-purple",
+          ZM: "badge-cyan",
         };
-        return map[tag] || 'badge-gray';
+        return map[tag] || "badge-gray";
       },
-
-
 
       toggleTagMenu() {
         this.showTagMenu = !this.showTagMenu;
-        
+
         // Optional: Close menu when clicking anywhere else
         if (this.showTagMenu) {
-            const close = () => {
-                this.showTagMenu = false;
-                window.removeEventListener('click', close);
-            };
-            setTimeout(() => window.addEventListener('click', close), 0);
+          const close = () => {
+            this.showTagMenu = false;
+            window.removeEventListener("click", close);
+          };
+          setTimeout(() => window.addEventListener("click", close), 0);
         }
-    },
-
-
-
-
-
-      setTag(val) {
-          if (!this.selectedPref) return;
-          this.selectedPref.tag = val;
-          this.showTagMenu = false; // Close menu after selection
-          this.autoSave(); // Save to Report Preference DocType
       },
 
+      setTag(val) {
+        if (!this.selectedPref) return;
+        this.selectedPref.tag = val;
+        this.showTagMenu = false; // Close menu after selection
+        this.autoSave(); // Save to Report Preference DocType
+      },
 
       autoSave() {
         clearTimeout(this.saveTimeout);
         this.saveTimeout = setTimeout(() => {
           frappe.call({
-            method: "sahayog.sahayog.page.permission_config.permission_config.save_preference",
+            method:
+              "sahayog.sahayog.page.permission_config.permission_config.save_preference",
             args: { data: this.selectedPref },
             callback: (r) => {
               if (r.message && r.message.success) {
                 frappe.show_alert({ message: "Saved", indicator: "green" }, 2);
-                
+
                 // Refresh list to show updated tags immediately
                 this.loadAllPreferences();
               }
@@ -1114,185 +1184,229 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       },
 
       openSolIdDialog() {
-    if (!this.selectedPref) return;
-    
-    // Initial state: load current selections from the record
-    this.tempSelectedSolIds = [...(this.selectedPref.sol_id || [])];
+        if (!this.selectedPref) return;
 
-    const d = new frappe.ui.Dialog({
-        title: "Select SOL IDs",
-        fields: [
-            { 
-                label: "Search Branch", 
-                fieldname: "search_text", 
-                fieldtype: "Data", 
-                placeholder: "Type branch name or SOL ID...", 
-                reqd: 0 
+        // Initial state: load current selections from the record
+        this.tempSelectedSolIds = [...(this.selectedPref.sol_id || [])];
+
+        const d = new frappe.ui.Dialog({
+          title: "Select SOL IDs",
+          fields: [
+            {
+              label: "Search Branch",
+              fieldname: "search_text",
+              fieldtype: "Data",
+              placeholder: "Type branch name or SOL ID...",
+              reqd: 0,
             },
             { fieldname: "selected_area", fieldtype: "HTML" },
-            { fieldname: "results", fieldtype: "HTML" }
-        ],
-        primary_action_label: "Save",
-        primary_action: () => {
+            { fieldname: "results", fieldtype: "HTML" },
+          ],
+          primary_action_label: "Save",
+          primary_action: () => {
             // Apply temp selections to the real record
             this.selectedPref.sol_id = this.tempSelectedSolIds;
-            this.autoSave(); 
+            this.autoSave();
             d.hide();
-            frappe.show_alert({ message: "SOL IDs updated", indicator: "green" });
-        }
-    });
-
-    const renderSelectedSols = () => {
-        const $area = d.fields_dict.selected_area.$wrapper;
-        if (this.tempSelectedSolIds.length === 0) {
-            $area.html('<div class="selected-users-wrapper"><span class="selected-empty-text">No SOL IDs selected yet</span></div>');
-            return;
-        }
-        
-        let html = '<div class="selected-users-wrapper">';
-        this.tempSelectedSolIds.forEach(sol => {
-            html += `<span class="selected-pill">${sol}<span class="remove-user" data-val="${sol}">&times;</span></span>`;
+            frappe.show_alert({
+              message: "SOL IDs updated",
+              indicator: "green",
+            });
+          },
         });
-        html += '</div>';
-        $area.html(html);
 
-        // Click on pill to remove
-        $area.find('.selected-pill').on('click', (e) => {
-            const val = $(e.currentTarget).find('.remove-user').attr('data-val');
-            this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== val);
+        const renderSelectedSols = () => {
+          const $area = d.fields_dict.selected_area.$wrapper;
+          if (this.tempSelectedSolIds.length === 0) {
+            $area.html(
+              '<div class="selected-users-wrapper"><span class="selected-empty-text">No SOL IDs selected yet</span></div>',
+            );
+            return;
+          }
+
+          let html = '<div class="selected-users-wrapper">';
+          this.tempSelectedSolIds.forEach((sol) => {
+            html += `<span class="selected-pill">${sol}<span class="remove-user" data-val="${sol}">&times;</span></span>`;
+          });
+          html += "</div>";
+          $area.html(html);
+
+          // Click on pill to remove
+          $area.find(".selected-pill").on("click", (e) => {
+            const val = $(e.currentTarget)
+              .find(".remove-user")
+              .attr("data-val");
+            this.tempSelectedSolIds = this.tempSelectedSolIds.filter(
+              (s) => s !== val,
+            );
             renderSelectedSols();
             // Uncheck in result list if visible
-            d.fields_dict.results.$wrapper.find(`.search-result-item[data-sol="${val}"]`).removeClass('selected').find('input').prop('checked', false);
-        });
-    };
+            d.fields_dict.results.$wrapper
+              .find(`.search-result-item[data-sol="${val}"]`)
+              .removeClass("selected")
+              .find("input")
+              .prop("checked", false);
+          });
+        };
 
-    d.fields_dict.search_text.$input.on("input", () => {
-        let value = d.get_value("search_text");
-        if (!value || value.length < 1) { 
-            d.fields_dict.results.$wrapper.html(""); 
-            return; 
-        }
+        d.fields_dict.search_text.$input.on("input", () => {
+          let value = d.get_value("search_text");
+          if (!value || value.length < 1) {
+            d.fields_dict.results.$wrapper.html("");
+            return;
+          }
 
-        // Call a specific search for branches (adjust method path if needed)
-        frappe.call({
-            method: "sahayog.sahayog.page.permission_config.permission_config.search_branch",
+          // Call a specific search for branches (adjust method path if needed)
+          frappe.call({
+            method:
+              "sahayog.sahayog.page.permission_config.permission_config.search_branch",
             args: { search_text: value },
             callback: (r) => {
-                let results = r.message || [];
-                let html = '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
-                
-                if (results.length === 0) {
-                    html += '<div style="padding:10px; color:#57606a; font-size:13px;">No branches found</div>';
-                } else {
-                   // Inside search_branch callback
-results.forEach((branch_doc) => {
-    let isChecked = this.tempSelectedSolIds.includes(branch_doc.name);
-    html += `
-        <div class="search-result-item ${isChecked ? 'selected' : ''}" data-sol="${branch_doc.name}">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events:none;">
+              let results = r.message || [];
+              let html =
+                '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
+
+              if (results.length === 0) {
+                html +=
+                  '<div style="padding:10px; color:#57606a; font-size:13px;">No branches found</div>';
+              } else {
+                // Inside search_branch callback
+                results.forEach((branch_doc) => {
+                  let isChecked = this.tempSelectedSolIds.includes(
+                    branch_doc.name,
+                  );
+                  html += `
+        <div class="search-result-item ${isChecked ? "selected" : ""}" data-sol="${branch_doc.name}">
+            <input type="checkbox" ${isChecked ? "checked" : ""} style="pointer-events:none;">
             <div class="search-result-info">
                 <!-- branch_doc.branch is the descriptive name, branch_doc.name is the SOL ID -->
                 <div class="search-result-name">${branch_doc.branch || branch_doc.name}</div>
                 <div class="search-result-email">SOL ID: ${branch_doc.name}</div>
             </div>
         </div>`;
-});
-
-
-                }
-                html += "</div>";
-
-                const $wrapper = d.fields_dict.results.$wrapper;
-                $wrapper.html(html);
-
-                $wrapper.find('.search-result-item').on('click', (e) => {
-                    const $item = $(e.currentTarget);
-                    const sol = $item.attr('data-sol');
-                    const $checkbox = $item.find('input[type="checkbox"]');
-
-                    if (this.tempSelectedSolIds.includes(sol)) {
-                        this.tempSelectedSolIds = this.tempSelectedSolIds.filter(s => s !== sol);
-                        $item.removeClass('selected');
-                        $checkbox.prop('checked', false);
-                    } else {
-                        this.tempSelectedSolIds.push(sol);
-                        $item.addClass('selected');
-                        $checkbox.prop('checked', true);
-                    }
-                    renderSelectedSols();
                 });
-            }
+              }
+              html += "</div>";
+
+              const $wrapper = d.fields_dict.results.$wrapper;
+              $wrapper.html(html);
+
+              $wrapper.find(".search-result-item").on("click", (e) => {
+                const $item = $(e.currentTarget);
+                const sol = $item.attr("data-sol");
+                const $checkbox = $item.find('input[type="checkbox"]');
+
+                if (this.tempSelectedSolIds.includes(sol)) {
+                  this.tempSelectedSolIds = this.tempSelectedSolIds.filter(
+                    (s) => s !== sol,
+                  );
+                  $item.removeClass("selected");
+                  $checkbox.prop("checked", false);
+                } else {
+                  this.tempSelectedSolIds.push(sol);
+                  $item.addClass("selected");
+                  $checkbox.prop("checked", true);
+                }
+                renderSelectedSols();
+              });
+            },
+          });
         });
-    });
 
-    d.show();
-    renderSelectedSols();
-},
-
+        d.show();
+        renderSelectedSols();
+      },
 
       createNew() {
         // ... (create logic same as before, no changes needed for Tag unless you want to add tag selection in creation dialog too)
         this.selectedUsers = [];
         const d = new frappe.ui.Dialog({
-            title: "Create New Preference",
-            fields: [
-                { label: "Search User", fieldname: "search_text", fieldtype: "Data", placeholder: "Type user name or email...", reqd: 1 },
-                { fieldname: "selected_area", fieldtype: "HTML" },
-                { fieldname: "results", fieldtype: "HTML" }
-            ],
-            primary_action_label: "Create",
-            primary_action: (values) => {
-                if (this.selectedUsers.length === 0) {
-                    frappe.msgprint("Please select at least one user.");
-                    return;
-                }
-                const promises = this.selectedUsers.map(user => {
-                    return frappe.call({
-                        method: "sahayog.sahayog.page.permission_config.permission_config.save_preference",
-                        args: {
-                            data: {
-                                user: user,
-                                tag: "", // Default empty tag
-                                zone: [], region: [], state: [], district: [], sol_id: [], product: [], source: []
-                            }
-                        }
-                    });
-                });
-
-                Promise.all(promises).then(() => {
-                    frappe.show_alert({ message: `Created for ${this.selectedUsers.length} users`, indicator: "green" }, 3);
-                    this.loadAllPreferences();
-                    d.hide();
-                    if (this.selectedUsers.length > 0) {
-                        setTimeout(() => {
-                           const newItem = this.prefList.find(p => p.user === this.selectedUsers[0]);
-                           if (newItem) this.selectPreference(newItem);
-                        }, 500);
-                    }
-                });
+          title: "Create New Preference",
+          fields: [
+            {
+              label: "Search User",
+              fieldname: "search_text",
+              fieldtype: "Data",
+              placeholder: "Type user name or email...",
+              reqd: 1,
+            },
+            { fieldname: "selected_area", fieldtype: "HTML" },
+            { fieldname: "results", fieldtype: "HTML" },
+          ],
+          primary_action_label: "Create",
+          primary_action: (values) => {
+            if (this.selectedUsers.length === 0) {
+              frappe.msgprint("Please select at least one user.");
+              return;
             }
+            const promises = this.selectedUsers.map((user) => {
+              return frappe.call({
+                method:
+                  "sahayog.sahayog.page.permission_config.permission_config.save_preference",
+                args: {
+                  data: {
+                    user: user,
+                    tag: "", // Default empty tag
+                    zone: [],
+                    region: [],
+                    state: [],
+                    district: [],
+                    sol_id: [],
+                    product: [],
+                    source: [],
+                  },
+                },
+              });
+            });
+
+            Promise.all(promises).then(() => {
+              frappe.show_alert(
+                {
+                  message: `Created for ${this.selectedUsers.length} users`,
+                  indicator: "green",
+                },
+                3,
+              );
+              this.loadAllPreferences();
+              d.hide();
+              if (this.selectedUsers.length > 0) {
+                setTimeout(() => {
+                  const newItem = this.prefList.find(
+                    (p) => p.user === this.selectedUsers[0],
+                  );
+                  if (newItem) this.selectPreference(newItem);
+                }, 500);
+              }
+            });
+          },
         });
 
         // ... (rest of search/pill logic same as before)
         const renderSelectedUsers = () => {
           const $area = d.fields_dict.selected_area.$wrapper;
           if (this.selectedUsers.length === 0) {
-            $area.html('<div class="selected-users-wrapper"><span class="selected-empty-text">No users selected yet</span></div>');
+            $area.html(
+              '<div class="selected-users-wrapper"><span class="selected-empty-text">No users selected yet</span></div>',
+            );
             d.get_primary_btn().text("Create");
             return;
           }
           let html = '<div class="selected-users-wrapper">';
-          this.selectedUsers.forEach(user => {
-            const displayName = user.split('@')[0];
+          this.selectedUsers.forEach((user) => {
+            const displayName = user.split("@")[0];
             html += `<span class="selected-pill" data-user="${user}">${displayName}<span class="remove-user" onclick="this.parentElement.click()">&times;</span></span>`;
           });
-          html += '</div>';
+          html += "</div>";
           $area.html(html);
-          $area.find('.selected-pill').on('click', (e) => {
-            const user = $(e.currentTarget).attr('data-user');
-            this.selectedUsers = this.selectedUsers.filter(u => u !== user);
+          $area.find(".selected-pill").on("click", (e) => {
+            const user = $(e.currentTarget).attr("data-user");
+            this.selectedUsers = this.selectedUsers.filter((u) => u !== user);
             renderSelectedUsers();
-            d.fields_dict.results.$wrapper.find(`.search-result-item[data-user="${user}"]`).removeClass('selected').find('input').prop('checked', false);
+            d.fields_dict.results.$wrapper
+              .find(`.search-result-item[data-user="${user}"]`)
+              .removeClass("selected")
+              .find("input")
+              .prop("checked", false);
           });
           d.get_primary_btn().text(`Create (${this.selectedUsers.length})`);
         };
@@ -1301,45 +1415,56 @@ results.forEach((branch_doc) => {
 
         d.fields_dict.search_text.$input.on("input", () => {
           let value = d.get_value("search_text");
-          if (!value || value.length < 1) { d.fields_dict.results.$wrapper.html(""); return; }
+          if (!value || value.length < 1) {
+            d.fields_dict.results.$wrapper.html("");
+            return;
+          }
           frappe.call({
-            method: "sahayog.sahayog.page.permission_config.permission_config.search_user",
+            method:
+              "sahayog.sahayog.page.permission_config.permission_config.search_user",
             args: { search_text: value },
             callback: (r) => {
               let results = r.message || [];
-              let html = '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
-              if (results.length === 0) { html += '<div style="padding:10px; color:#57606a; font-size:13px;">No users found</div>'; } 
-              else {
+              let html =
+                '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
+              if (results.length === 0) {
+                html +=
+                  '<div style="padding:10px; color:#57606a; font-size:13px;">No users found</div>';
+              } else {
                 results.forEach((user) => {
                   let highlightedName = this.highlight(user.name, value);
-                  let highlightedFullName = user.full_name ? this.highlight(user.full_name, value) : "";
+                  let highlightedFullName = user.full_name
+                    ? this.highlight(user.full_name, value)
+                    : "";
                   let isChecked = this.selectedUsers.includes(user.name);
-                  html += `<div class="search-result-item ${isChecked ? 'selected' : ''}" data-user="${user.name}"><input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events:none;"><div class="search-result-info"><div class="search-result-name">${highlightedFullName || highlightedName}</div><div class="search-result-email">${highlightedName}</div></div></div>`;
+                  html += `<div class="search-result-item ${isChecked ? "selected" : ""}" data-user="${user.name}"><input type="checkbox" ${isChecked ? "checked" : ""} style="pointer-events:none;"><div class="search-result-info"><div class="search-result-name">${highlightedFullName || highlightedName}</div><div class="search-result-email">${highlightedName}</div></div></div>`;
                 });
               }
               html += "</div>";
               const $wrapper = d.fields_dict.results.$wrapper;
               $wrapper.html(html);
-              $wrapper.find('.search-result-item').on('click', (e) => {
+              $wrapper.find(".search-result-item").on("click", (e) => {
                 const $item = $(e.currentTarget);
-                const user = $item.attr('data-user');
+                const user = $item.attr("data-user");
                 const $checkbox = $item.find('input[type="checkbox"]');
                 if (this.selectedUsers.includes(user)) {
-                  this.selectedUsers = this.selectedUsers.filter(u => u !== user);
-                  $item.removeClass('selected');
-                  $checkbox.prop('checked', false);
+                  this.selectedUsers = this.selectedUsers.filter(
+                    (u) => u !== user,
+                  );
+                  $item.removeClass("selected");
+                  $checkbox.prop("checked", false);
                 } else {
                   this.selectedUsers.push(user);
-                  $item.addClass('selected');
-                  $checkbox.prop('checked', true);
+                  $item.addClass("selected");
+                  $checkbox.prop("checked", true);
                 }
                 renderSelectedUsers();
               });
-            }
+            },
           });
         });
         d.show();
-      }
+      },
     }).mount("#perm-root");
   });
 };
