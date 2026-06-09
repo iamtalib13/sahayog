@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FORM 16 Downloader</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+
+      .container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 450px;
+        text-align: center;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        color: #333;
+      }
+
+      p {
+        color: #666;
+        margin-bottom: 25px;
+        font-size: 14px;
+      }
+
+      .input-group {
+        display: flex;
+        gap: 10px;
+      }
+
+      input {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        text-transform: uppercase;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #0078d4;
+      }
+
+      button {
+        background: #0078d4;
+        color: white;
+        border: none;
+        padding: 12px 18px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 15px;
+      }
+
+      button:hover {
+        background: #005ea6;
+      }
+
+      .message {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #d9534f;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>FORM 16 Downloader</h2>
+      <p>Enter your PAN Number to open the Form 16 PDF.</p>
+
+      <div class="input-group">
+        <input
+          type="text"
+          id="pan"
+          maxlength="10"
+          placeholder="Enter PAN Number"
+        />
+        <button onclick="downloadPDF()">Download</button>
+      </div>
+
+      <div class="message" id="message"></div>
+    </div>
+
+    <script>
+      function downloadPDF() {
+        const pan = document.getElementById("pan").value.trim().toUpperCase();
+
+        const message = document.getElementById("message");
+        message.innerHTML = "";
+
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+        if (!panRegex.test(pan)) {
+          message.innerHTML = "Please enter a valid PAN number.";
+          return;
+        }
+
+        const fileName = `${pan}_Q2_2025-26.pdf`;
+        const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
+
+        const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
+
+        window.open(url, "_blank");
+      }
+
+      document.getElementById("pan").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          downloadPDF();
+        }
+      });
+    </script>
+  </body>
+</html>
