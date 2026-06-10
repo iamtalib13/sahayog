@@ -962,7 +962,7 @@ def get_portal_master_data():
     if used_serial_nos:
         serial_no_filters = {"name": ["not in", used_serial_nos]}
     
-    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name"])
+    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name", "item_code"])
 
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
@@ -984,7 +984,7 @@ def get_portal_master_data():
         "brands": [b.name for b in frappe.get_all("Brand")],
         "states": [s for s in frappe.get_meta("Asset").get_field("state").options.split("\n") if s],
         "hsn_codes": hsn_codes,
-        "serial_nos": [s.name for s in available_serial_nos],
+        "serial_nos": available_serial_nos,
     }
 
 @frappe.whitelist()

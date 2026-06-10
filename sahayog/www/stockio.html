@@ -8594,20 +8594,20 @@
                           v-if="focusedField === 'mv_serial_' + index"
                         >
                           <div
-                            v-for="sn in serial_nos.filter(s => !item.serial_no || s.toLowerCase().includes(item.serial_no.toLowerCase()))"
-                            :key="sn"
+                            v-for="sn in serial_nos.filter(s => s.item_code === item.item_code && (!item.serial_no || s.name.toLowerCase().includes(item.serial_no.toLowerCase())))"
+                            :key="sn.name"
                             class="searchable-select-option"
                             style="padding: 8px; cursor: pointer;"
-                            @mousedown="item.serial_no = sn; focusedField = null;"
+                            @mousedown="item.serial_no = sn.name; focusedField = null;"
                           >
-                            [[ sn ]]
+                            [[ sn.name ]]
                           </div>
                         </div>
                       </div>
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
-                      <div style="font-weight: 600; color: #369696; text-align: center;">
-                        [[ itemQuantities[item.item_code] || 0 ]]
+                      <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code).length)">
+                        [[ serial_nos.filter(s => s.item_code === item.item_code).length ]]
                       </div>
                     </td>
                     <td style="padding: 10px">
@@ -12631,11 +12631,19 @@
       },
 
       get filteredSerialNos() {
-        const search = (
-          this.createAssetForm.serial_no || ""
-        ).toLowerCase();
-        if (!search) return this.serial_nos;
-        return this.serial_nos.filter((s) => s.toLowerCase().includes(search));
+        const search = (this.createAssetForm.serial_no || "").toLowerCase();
+        const itemCode = this.createAssetForm.item_code;
+        let list = this.serial_nos;
+        
+        // Filter by item_code if available
+        if (itemCode) {
+          list = list.filter(s => s.item_code === itemCode);
+        }
+
+        if (!search) return list.map(s => s.name);
+        return list
+          .filter((s) => s.name.toLowerCase().includes(search))
+          .map(s => s.name);
       },
 
       get filteredZones() {
