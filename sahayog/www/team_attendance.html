@@ -1,4 +1,4 @@
-ha isko <!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1086,22 +1086,19 @@ ha isko <!doctype html>
             <div class="card-head">
               <h3>Staff List &amp; Attendance</h3>
               <div class="filter-tabs">
-                <button class="ftab active" onclick="filterStaff('all', this)">
-                  All
+                <button
+                  class="ftab active"
+                  onclick="switchTab('attendance', this)"
+                >
+                  Attendance
                 </button>
-                <button class="ftab" onclick="filterStaff('present', this)">
-                  Present
-                </button>
-                <button class="ftab" onclick="filterStaff('absent', this)">
-                  Absent
-                </button>
-                <button class="ftab" onclick="filterStaff('pending', this)">
-                  Pending
+                <button class="ftab" onclick="switchTab('leave', this)">
+                  Leave Requests
                 </button>
               </div>
             </div>
             <!-- SELECT ALL ROW -->
-            <div class="select-all-row">
+            <div class="select-all-row" id="attendanceControls">
               <label>
                 <input
                   type="checkbox"
@@ -1310,7 +1307,7 @@ ha isko <!doctype html>
       );
 
       // ── API HELPERS ───────────────────────────────────────
-      async function callAPI(method, params = {}) {
+      async function callAPI(method, params = {}, module = "attendance") {
         const headers = {
           "Content-Type": "application/json",
           Accept: "application/json",
@@ -1326,7 +1323,7 @@ ha isko <!doctype html>
 
         try {
           const response = await fetch(
-            `/api/method/sahayog.api.attendance.${method}`,
+            `/api/method/sahayog.api.${module}.${method}`,
             {
               method: "POST",
               headers: headers,
@@ -1355,6 +1352,84 @@ ha isko <!doctype html>
         }
       }
 
+      // ── TABS LOGIC ──────────────────────────────────────
+      let currentTab = "attendance";
+
+      function switchTab(tab, btn) {
+        currentTab = tab;
+        document
+          .querySelectorAll(".ftab")
+          .forEach((x) => x.classList.remove("active"));
+        btn.classList.add("active");
+
+        const controls = document.getElementById("attendanceControls");
+        const bulkBar = document.getElementById("bulkBar");
+
+        if (tab === "attendance") {
+          controls.style.display = "flex";
+          bulkBar.style.display = "flex";
+          fetchTeamData();
+        } else if (tab === "leave") {
+          controls.style.display = "none";
+          bulkBar.style.display = "none";
+          loadTeamLeaves();
+        }
+      }
+
+      async function loadTeamLeaves() {
+        document.getElementById("teamListLoading").style.display = "flex";
+        const data = await callAPI("get_pending_leaves", {}, "leave");
+        document.getElementById("teamListLoading").style.display = "none";
+
+        const container = document.getElementById("empList");
+        if (!data || data.length === 0) {
+          container.innerHTML =
+            '<div style="padding:20px;text-align:center;color:var(--muted)">No pending leave requests.</div>';
+          return;
+        }
+
+        container.innerHTML = data
+          .map(
+            (l) => `
+          <div class="emp-row">
+            <div class="emp-info">
+              <div class="emp-name">${l.employee}</div>
+              <div class="emp-role">${l.leave_type} - ${l.status}</div>
+              <div style="font-size:11px;color:var(--muted)">
+                ${l.from_date} → ${l.to_date}
+              </div>
+            </div>
+
+            <div class="emp-actions">
+              <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
+              <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
+            </div>
+          </div>
+        `,
+          )
+          .join("");
+      }
+
+      async function approveLeave(id) {
+        await callAPI(
+          "update_leave_status",
+          { leave_id: id, status: "Approved" },
+          "leave",
+        );
+        showToast("Leave Approved");
+        loadTeamLeaves();
+      }
+
+      async function rejectLeave(id) {
+        await callAPI(
+          "update_leave_status",
+          { leave_id: id, status: "Rejected" },
+          "leave",
+        );
+        showToast("Leave Rejected");
+        loadTeamLeaves();
+      }
+
       // ── CORE LOGIC ──────────────────────────────────────
       let dashboardSummary = {
         total: 0,
@@ -1366,7 +1441,11 @@ ha isko <!doctype html>
 
       async function fetchTeamData() {
         document.getElementById("teamListLoading").style.display = "flex";
-        const data = await callAPI("get_team_attendance_data");
+        const data = await callAPI(
+          "get_team_attendance_data",
+          {},
+          "attendance",
+        );
         document.getElementById("teamListLoading").style.display = "none";
 
         if (data && data.team) {
@@ -1384,11 +1463,15 @@ ha isko <!doctype html>
         const btn = event?.target;
         if (btn) btn.disabled = true;
 
-        const res = await callAPI("mark_attendance", {
-          employee: emp_id,
-          status: status,
-          log_type: log_type,
-        });
+        const res = await callAPI(
+          "mark_attendance",
+          {
+            employee: emp_id,
+            status: status,
+            log_type: log_type,
+          },
+          "attendance",
+        );
 
         if (res && res.success) {
           showToast(res.message);
@@ -1399,9 +1482,13 @@ ha isko <!doctype html>
       }
 
       async function loadLeaveBalances(emp_id) {
-        const balances = await callAPI("get_leave_balances", {
-          employee: emp_id,
-        });
+        const balances = await callAPI(
+          "get_leave_balances",
+          {
+            employee: emp_id,
+          },
+          "attendance",
+        );
         if (balances) {
           document.getElementById("leaveBalanceWrap").style.display = "block";
           // Map common leave types
@@ -1433,11 +1520,15 @@ ha isko <!doctype html>
       async function loadCalendarHistory() {
         if (!selectedMemberId) return;
         document.getElementById("calLoading").style.display = "flex";
-        const history = await callAPI("get_employee_calendar", {
-          employee: selectedMemberId,
-          month: calMonth + 1,
-          year: calYear,
-        });
+        const history = await callAPI(
+          "get_employee_calendar",
+          {
+            employee: selectedMemberId,
+            month: calMonth + 1,
+            year: calYear,
+          },
+          "attendance",
+        );
         document.getElementById("calLoading").style.display = "none";
 
         if (history) {
@@ -1499,6 +1590,7 @@ ha isko <!doctype html>
           }
 
           let timeInfo = "";
+          console.log("DEBUG: Employee", s.employee_name, "Check-in raw:", s.check_in);
           if (s.check_in) timeInfo = `In: ${s.check_in}`;
           if (s.check_out) timeInfo += ` Out: ${s.check_out}`;
 
