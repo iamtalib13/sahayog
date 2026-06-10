@@ -1,0 +1,1755 @@
+ha isko <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Team Attendance Manager</title>
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --brand: #2d2060;
+        --brand2: #3b2d8a;
+        --accent: #4dc7b5;
+        --accent2: #f59e0b;
+        --danger: #ef4444;
+        --success: #22c55e;
+        --bg: #f0f2f8;
+        --card: #ffffff;
+        --text: #1e1b4b;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --shadow: 0 2px 16px rgba(45, 32, 96, 0.1);
+        --radius: 14px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* TOP BAR */
+      .topbar {
+        background: var(--brand);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        height: 52px;
+      }
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .logo-box {
+        background: #fff;
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .topbar-title {
+        color: #fff;
+        font-family: "Syne", sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .av {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        border: 2px solid #fff;
+      }
+      .subbar {
+        background: var(--brand2);
+        padding: 0 20px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .subbar span {
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .subbar-badge {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        padding: 3px 12px;
+        color: #fff;
+        font-size: 11px;
+      }
+
+      /* LAYOUT */
+      .layout {
+        display: flex;
+        gap: 0;
+      }
+      .sidenav {
+        width: 56px;
+        background: #fff;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 0;
+        gap: 6px;
+        min-height: calc(100vh - 90px);
+      }
+      .sn-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 4px;
+        cursor: pointer;
+        border-radius: 10px;
+        color: var(--muted);
+        font-size: 9px;
+        gap: 3px;
+        width: 48px;
+        transition: 0.15s;
+      }
+      .sn-item:hover,
+      .sn-item.active {
+        color: var(--brand2);
+        background: #f0eeff;
+      }
+      .sn-item svg {
+        width: 19px;
+        height: 19px;
+      }
+      .content {
+        flex: 1;
+        padding: 18px 20px;
+        overflow-x: hidden;
+      }
+
+      /* SECTION TITLE */
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .section-head h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .badge-count {
+        background: var(--brand2);
+        color: #fff;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* STATS ROW */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .stat-card {
+        background: var(--card);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .stat-val {
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .stat-lbl {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      /* MAIN GRID */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 16px;
+      }
+
+      /* TEAM CARD */
+      .card {
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .card-head {
+        padding: 14px 16px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+      }
+      .card-head h3 {
+        font-family: "Syne", sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .filter-tabs {
+        display: flex;
+        gap: 4px;
+      }
+      .ftab {
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        background: transparent;
+        color: var(--muted);
+        transition: 0.15s;
+        font-family: "DM Sans", sans-serif;
+      }
+      .ftab.active {
+        background: var(--brand2);
+        color: #fff;
+        border-color: var(--brand2);
+      }
+
+      /* EMPLOYEE LIST */
+      .emp-list {
+        padding: 10px 0;
+        max-height: 480px;
+        overflow-y: auto;
+      }
+      .emp-list::-webkit-scrollbar {
+        width: 4px;
+      }
+      .emp-list::-webkit-scrollbar-thumb {
+        background: #ddd;
+        border-radius: 4px;
+      }
+      .emp-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 16px;
+        gap: 12px;
+        transition: 0.15s;
+        cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+      }
+      .emp-row:hover {
+        background: #faf8ff;
+      }
+      .emp-row.selected {
+        background: #f0eeff;
+      }
+      .emp-av {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 15px;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .emp-av img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .emp-av .status-ring {
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+      }
+      .emp-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .emp-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .emp-role {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .emp-time {
+        font-size: 11px;
+        color: var(--muted);
+        text-align: right;
+        white-space: nowrap;
+      }
+      .emp-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .btn-in {
+        background: #dcfce7;
+        color: #16a34a;
+        border: 1.5px solid #16a34a;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.15s;
+        white-space: nowrap;
+      }
+      .btn-in:hover:not(:disabled) {
+        background: #16a34a;
+        color: #fff;
+      }
+      .btn-in:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .btn-out {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1.5px solid #dc2626;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.15s;
+        white-space: nowrap;
+      }
+      .btn-out:hover:not(:disabled) {
+        background: #dc2626;
+        color: #fff;
+      }
+      .btn-out:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .btn-done {
+        background: #f3f4f6;
+        color: #9ca3af;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 11px;
+        cursor: default;
+        white-space: nowrap;
+      }
+      .status-pill {
+        border-radius: 20px;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .pill-present {
+        background: #dcfce7;
+        color: #16a34a;
+      }
+      .pill-absent {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .pill-notmarked {
+        background: #f3f4f6;
+        color: #9ca3af;
+      }
+      .pill-leave {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      /* CALENDAR PANEL */
+      .cal-panel {
+      }
+      .cal-head {
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+      }
+      .cal-head h3 {
+        font-family: "Syne", sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .member-select-wrap {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .member-select-wrap label {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .member-select {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 13px;
+        color: var(--text);
+        background: #fff;
+        outline: none;
+        font-family: "DM Sans", sans-serif;
+        cursor: pointer;
+      }
+      .member-select:focus {
+        border-color: var(--brand2);
+      }
+
+      .cal-grid-wrap {
+        padding: 10px 14px 0;
+      }
+      .cal-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .cal-nav button {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 3px 8px;
+        cursor: pointer;
+        color: var(--text);
+        font-size: 14px;
+      }
+      .cal-nav h4 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--brand2);
+      }
+      .cal-dow {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        text-align: center;
+        margin-bottom: 4px;
+      }
+      .cal-dow span {
+        font-size: 10px;
+        color: var(--muted);
+        font-weight: 600;
+        padding: 2px 0;
+      }
+      .cal-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 2px;
+      }
+      .cal-d {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 12px;
+        cursor: pointer;
+        position: relative;
+        transition: 0.15s;
+      }
+      .cal-d:hover:not(.empty) {
+        background: #f0eeff;
+      }
+      .cal-d.today-d {
+        background: var(--brand2);
+        color: #fff;
+        font-weight: 700;
+      }
+      .cal-d.present-d {
+        background: #dcfce7;
+        color: #16a34a;
+        font-weight: 600;
+      }
+      .cal-d.absent-d {
+        background: #fee2e2;
+        color: #dc2626;
+        font-weight: 600;
+      }
+      .cal-d.woff {
+        color: #d1d5db;
+      }
+      .cal-d.empty {
+        cursor: default;
+      }
+
+      /* Calendar Legend */
+      .cal-legend {
+        display: flex;
+        gap: 10px;
+        padding: 10px 14px;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border);
+        margin-top: 6px;
+      }
+      .cl-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .cl-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      /* SUMMARY */
+      .summary-strip {
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+      }
+      .sum-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .sum-row:last-child {
+        margin-bottom: 0;
+      }
+      .sum-lbl {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .sum-val {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      /* BULK ACTION BAR */
+      .bulk-bar {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 10px 16px;
+        background: #f5f3ff;
+        border-bottom: 2px solid var(--brand2);
+        animation: slideDown 0.2s ease;
+      }
+      .bulk-bar.visible {
+        display: flex;
+      }
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .bulk-count {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--brand2);
+        margin-right: 4px;
+      }
+      .bulk-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        transition: 0.15s;
+      }
+      .bulk-btn:active {
+        transform: scale(0.97);
+      }
+      .bulk-in {
+        background: #16a34a;
+        color: #fff;
+      }
+      .bulk-in:hover {
+        background: #15803d;
+      }
+      .bulk-absent {
+        background: #dc2626;
+        color: #fff;
+      }
+      .bulk-absent:hover {
+        background: #b91c1c;
+      }
+      .bulk-checkout {
+        background: #f59e0b;
+        color: #fff;
+      }
+      .bulk-checkout:hover {
+        background: #d97706;
+      }
+      .bulk-clear {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
+      .bulk-clear:hover {
+        background: #d1d5db;
+      }
+      .bulk-sep {
+        width: 1px;
+        height: 22px;
+        background: var(--border);
+        margin: 0 2px;
+      }
+
+      /* SELECT ALL ROW */
+      .select-all-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 16px;
+        background: #faf8ff;
+        border-bottom: 1px solid var(--border);
+      }
+      .select-all-row label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--brand2);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sel-info {
+        font-size: 11px;
+        color: var(--muted);
+        margin-left: auto;
+      }
+
+      /* CHECKBOX STYLE */
+      .emp-cb {
+        width: 17px;
+        height: 17px;
+        border-radius: 4px;
+        border: 2px solid #d1d5db;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        background: #fff;
+        transition: 0.15s;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .emp-cb:checked {
+        background: var(--brand2);
+        border-color: var(--brand2);
+      }
+      .emp-cb:checked::after {
+        content: "✓";
+        position: absolute;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .emp-cb:hover {
+        border-color: var(--brand2);
+      }
+
+      /* TOAST */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(80px);
+        background: var(--brand);
+        color: #fff;
+        border-radius: 10px;
+        padding: 12px 24px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+        z-index: 999;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* LEAVE BALANCE */
+      .leave-balance-wrap {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: #fafbff;
+      }
+      .lb-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        margin-bottom: 8px;
+      }
+      .lb-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 7px;
+      }
+      .lb-card {
+        border-radius: 9px;
+        padding: 8px 6px 7px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+      .lb-card:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.06);
+      }
+      .lb-card:active {
+        transform: scale(0.97);
+      }
+      .lb-icon {
+        font-size: 15px;
+        margin-bottom: 2px;
+      }
+      .lb-val {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.1;
+      }
+      .lb-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 3px;
+      }
+      .lb-sub {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.65);
+        margin-top: 1px;
+      }
+
+      .lb-cl {
+        background: linear-gradient(135deg, #06b6d4, #0891b2);
+      }
+      .lb-sl {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      }
+      .lb-el {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      }
+
+      /* LOADING OVERLAY */
+      .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        border-radius: var(--radius);
+      }
+      .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid var(--brand2);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* RESPONSIVE */
+      @media (max-width: 900px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TOP BAR -->
+    <nav class="topbar">
+      <div class="topbar-left">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 5px);
+            gap: 3px;
+            cursor: pointer;
+          "
+          onclick="location.reload()"
+        >
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+          <span
+            style="
+              width: 5px;
+              height: 5px;
+              background: #fff;
+              border-radius: 1px;
+              display: block;
+            "
+          ></span>
+        </div>
+        <div class="logo-box">
+          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+            <circle
+              cx="20"
+              cy="16"
+              r="10"
+              stroke="#3b2d8a"
+              stroke-width="3"
+              fill="none"
+            />
+            <path
+              d="M10 30 Q20 22 30 30"
+              stroke="#3b2d8a"
+              stroke-width="3"
+              fill="none"
+              stroke-linecap="round"
+            />
+            <circle cx="20" cy="16" r="4" fill="#4dc7b5" />
+          </svg>
+        </div>
+        <span class="topbar-title">Branch Manager Portal</span>
+      </div>
+      <div class="topbar-right">
+        <svg
+          width="20"
+          height="20"
+          fill="none"
+          stroke="#fff"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <div class="av">BM</div>
+      </div>
+    </nav>
+    <div class="subbar">
+      <span>Team Attendance Management</span>
+      <span class="subbar-badge" id="todayDate"></span>
+    </div>
+
+    <div class="layout">
+      <!-- Sidenav -->
+      <nav class="sidenav">
+        <div class="sn-item active">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Team
+        </div>
+        <div class="sn-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Report
+        </div>
+        <div class="sn-item">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+          Home
+        </div>
+      </nav>
+
+      <div class="content">
+        <!-- Stats Row -->
+        <div class="stats-row" id="statsRow">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #f0eeff">👥</div>
+            <div>
+              <div class="stat-val" id="statTotal">0</div>
+              <div class="stat-lbl">Total Staff</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #dcfce7">✅</div>
+            <div>
+              <div
+                class="stat-val"
+                id="statPresent"
+                style="color: var(--success)"
+              >
+                0
+              </div>
+              <div class="stat-lbl">Present Today</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fee2e2">❌</div>
+            <div>
+              <div
+                class="stat-val"
+                id="statAbsent"
+                style="color: var(--danger)"
+              >
+                0
+              </div>
+              <div class="stat-lbl">Absent Today</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fef3c7">⏳</div>
+            <div>
+              <div
+                class="stat-val"
+                id="statPending"
+                style="color: var(--accent2)"
+              >
+                0
+              </div>
+              <div class="stat-lbl">Not Marked</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+          <!-- Team List -->
+          <div class="card" style="position: relative">
+            <div
+              id="teamListLoading"
+              class="loading-overlay"
+              style="display: none"
+            >
+              <div class="spinner"></div>
+            </div>
+            <div class="card-head">
+              <h3>Staff List &amp; Attendance</h3>
+              <div class="filter-tabs">
+                <button class="ftab active" onclick="filterStaff('all', this)">
+                  All
+                </button>
+                <button class="ftab" onclick="filterStaff('present', this)">
+                  Present
+                </button>
+                <button class="ftab" onclick="filterStaff('absent', this)">
+                  Absent
+                </button>
+                <button class="ftab" onclick="filterStaff('pending', this)">
+                  Pending
+                </button>
+              </div>
+            </div>
+            <!-- SELECT ALL ROW -->
+            <div class="select-all-row">
+              <label>
+                <input
+                  type="checkbox"
+                  class="emp-cb"
+                  id="selectAllCb"
+                  onchange="toggleSelectAll(this)"
+                />
+                Select All
+              </label>
+              <span class="sel-info" id="selInfo">0 of 0 selected</span>
+            </div>
+
+            <!-- BULK ACTION BAR -->
+            <div class="bulk-bar" id="bulkBar">
+              <span class="bulk-count" id="bulkCount">0 selected</span>
+              <div class="bulk-sep"></div>
+              <button class="bulk-btn bulk-in" onclick="bulkAction('present')">
+                All Check In
+              </button>
+              <button
+                class="bulk-btn bulk-absent"
+                onclick="bulkAction('absent')"
+              >
+                Mark All Absent
+              </button>
+              <button
+                class="bulk-btn bulk-checkout"
+                onclick="bulkAction('checkout')"
+              >
+                All Check Out
+              </button>
+              <div class="bulk-sep"></div>
+              <button class="bulk-btn bulk-clear" onclick="clearSelection()">
+                Clear
+              </button>
+            </div>
+
+            <div class="emp-list" id="empList"></div>
+          </div>
+
+          <!-- Calendar Panel -->
+          <div class="card cal-panel" style="position: relative">
+            <div id="calLoading" class="loading-overlay" style="display: none">
+              <div class="spinner"></div>
+            </div>
+            <div class="cal-head">
+              <h3>📅 Attendance Calendar</h3>
+              <span
+                id="calEmpName"
+                style="font-size: 12px; color: var(--muted); font-weight: 500"
+                >Select a member</span
+              >
+            </div>
+            <div class="member-select-wrap">
+              <label>View Calendar For:</label>
+              <select
+                class="member-select"
+                id="memberSelect"
+                onchange="selectMemberFromDropdown()"
+              >
+                <option value="">— Select Staff Member —</option>
+              </select>
+            </div>
+
+            <!-- LEAVE BALANCE -->
+            <div
+              class="leave-balance-wrap"
+              id="leaveBalanceWrap"
+              style="display: none"
+            >
+              <div class="lb-title">Leave Balance</div>
+              <div class="lb-cards">
+                <div class="lb-card lb-sl">
+                  <div class="lb-val" id="lb-sl-bal">0</div>
+                  <div class="lb-label">Sick Leave</div>
+                  <div class="lb-sub" id="lb-sl-sub"></div>
+                </div>
+                <div class="lb-card lb-cl">
+                  <div class="lb-val" id="lb-cl-bal">0</div>
+                  <div class="lb-label">Casual Leave</div>
+                  <div class="lb-sub" id="lb-cl-sub"></div>
+                </div>
+                <div class="lb-card lb-el">
+                  <div class="lb-val" id="lb-el-bal">0</div>
+                  <div class="lb-label">Earned Leave</div>
+                  <div class="lb-sub" id="lb-el-sub"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- EMPTY STATE — shown before selection -->
+            <div
+              id="calEmptyState"
+              style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 40px 20px;
+                gap: 12px;
+                color: var(--muted);
+              "
+            >
+              <svg
+                width="52"
+                height="52"
+                fill="none"
+                stroke="#c4b8f8"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              <div style="font-size: 13px; font-weight: 600; color: #a094c7">
+                Select a staff member
+              </div>
+              <div
+                style="
+                  font-size: 11px;
+                  text-align: center;
+                  line-height: 1.5;
+                  color: #c4b8f8;
+                "
+              >
+                Choose an employee from the<br />dropdown above to view their<br />calendar
+                &amp; leave details
+              </div>
+            </div>
+
+            <!-- CALENDAR DETAIL — hidden until selection -->
+            <div id="calDetail" style="display: none">
+              <div class="cal-grid-wrap">
+                <div class="cal-nav">
+                  <button onclick="changeMonth(-1)">‹</button>
+                  <h4 id="calMonthLabel">Loading...</h4>
+                  <button onclick="changeMonth(1)">›</button>
+                </div>
+                <div class="cal-dow">
+                  <span>S</span><span>M</span><span>T</span><span>W</span
+                  ><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div class="cal-days" id="calDays"></div>
+              </div>
+              <div class="cal-legend">
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #22c55e"></div>
+                  Present
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #ef4444"></div>
+                  Absent
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: var(--brand2)"></div>
+                  Today
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #e5e7eb"></div>
+                  Weekly Off
+                </div>
+              </div>
+              <div class="summary-strip" id="calSummary">
+                <div class="sum-row">
+                  <span class="sum-lbl"
+                    >Select a staff member to view summary</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ── CONFIG & STATE ──────────────────────────────────────
+      const COLORS = [
+        "#6366f1",
+        "#ec4899",
+        "#f59e0b",
+        "#10b981",
+        "#3b82f6",
+        "#8b5cf6",
+        "#ef4444",
+        "#14b8a6",
+      ];
+      let staff = [];
+      let attendanceHistory = {}; // {date: status}
+      let selectedMemberId = null;
+      let currentFilter = "all";
+      let selectedIds = new Set();
+      const now = new Date();
+      let calYear = now.getFullYear();
+      let calMonth = now.getMonth();
+      const todayKey = now.toISOString().split("T")[0];
+
+      document.getElementById("todayDate").textContent = now.toLocaleDateString(
+        "en-IN",
+        { weekday: "short", day: "numeric", month: "long", year: "numeric" },
+      );
+
+      // ── API HELPERS ───────────────────────────────────────
+      async function callAPI(method, params = {}) {
+        const headers = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        };
+
+        // Get CSRF Token from meta tag
+        const csrfToken = document.querySelector(
+          'meta[name="csrf-token"]',
+        )?.content;
+        if (csrfToken) {
+          headers["X-Frappe-CSRF-Token"] = csrfToken;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/method/sahayog.api.attendance.${method}`,
+            {
+              method: "POST",
+              headers: headers,
+              body: JSON.stringify(params),
+              credentials: "include",
+            },
+          );
+
+          if (response.status === 401 || response.status === 403) {
+            showToast("Session expired. Please login again.");
+            return null;
+          }
+
+          const res = await response.json();
+
+          if (res.exc) {
+            console.error(res.exc);
+            showToast("Error occurred");
+            return null;
+          }
+          return res.message;
+        } catch (e) {
+          console.error("API Error:", e);
+          showToast("Network Error");
+          return null;
+        }
+      }
+
+      // ── CORE LOGIC ──────────────────────────────────────
+      let dashboardSummary = {
+        total: 0,
+        present: 0,
+        absent: 0,
+        pending: 0,
+        on_leave: 0,
+      };
+
+      async function fetchTeamData() {
+        document.getElementById("teamListLoading").style.display = "flex";
+        const data = await callAPI("get_team_attendance_data");
+        document.getElementById("teamListLoading").style.display = "none";
+
+        if (data && data.team) {
+          staff = data.team.map((s, idx) => ({
+            ...s,
+            color: COLORS[idx % COLORS.length],
+          }));
+          dashboardSummary = data.summary;
+          renderAll();
+          populateSelect();
+        }
+      }
+
+      async function markAttendance(emp_id, status, log_type = "IN") {
+        const btn = event?.target;
+        if (btn) btn.disabled = true;
+
+        const res = await callAPI("mark_attendance", {
+          employee: emp_id,
+          status: status,
+          log_type: log_type,
+        });
+
+        if (res && res.success) {
+          showToast(res.message);
+          await fetchTeamData(); // Refresh data
+          if (selectedMemberId === emp_id) loadCalendarHistory();
+        }
+        if (btn) btn.disabled = false;
+      }
+
+      async function loadLeaveBalances(emp_id) {
+        const balances = await callAPI("get_leave_balances", {
+          employee: emp_id,
+        });
+        if (balances) {
+          document.getElementById("leaveBalanceWrap").style.display = "block";
+          // Map common leave types
+          const cl = balances.find((b) =>
+            b.leave_type.toLowerCase().includes("casual"),
+          ) || { unused_leaves: 0, total_leaves_allocated: 0 };
+          const sl = balances.find((b) =>
+            b.leave_type.toLowerCase().includes("sick"),
+          ) || { unused_leaves: 0, total_leaves_allocated: 0 };
+          const el = balances.find(
+            (b) =>
+              b.leave_type.toLowerCase().includes("earned") ||
+              b.leave_type.toLowerCase().includes("privilege"),
+          ) || { unused_leaves: 0, total_leaves_allocated: 0 };
+
+          updateLeaveCard("cl", cl);
+          updateLeaveCard("sl", sl);
+          updateLeaveCard("el", el);
+        }
+      }
+
+      function updateLeaveCard(key, data) {
+        document.getElementById(`lb-${key}-bal`).textContent =
+          data.unused_leaves;
+        document.getElementById(`lb-${key}-sub`).textContent =
+          `${data.total_leaves_allocated - data.unused_leaves} used / ${data.total_leaves_allocated} total`;
+      }
+
+      async function loadCalendarHistory() {
+        if (!selectedMemberId) return;
+        document.getElementById("calLoading").style.display = "flex";
+        const history = await callAPI("get_employee_calendar", {
+          employee: selectedMemberId,
+          month: calMonth + 1,
+          year: calYear,
+        });
+        document.getElementById("calLoading").style.display = "none";
+
+        if (history) {
+          attendanceHistory = history;
+          renderCalendar();
+        }
+      }
+
+      // ── UI RENDERING ──────────────────────────────────────
+      function renderStats() {
+        document.getElementById("statTotal").textContent =
+          dashboardSummary.total;
+        document.getElementById("statPresent").textContent =
+          dashboardSummary.present;
+        document.getElementById("statAbsent").textContent =
+          dashboardSummary.absent;
+        document.getElementById("statPending").textContent =
+          dashboardSummary.pending;
+      }
+
+      function renderEmpList() {
+        const list = document.getElementById("empList");
+        list.innerHTML = "";
+        let visibleIds = [];
+
+        staff.forEach((s) => {
+          const status = s.attendance_status;
+          if (currentFilter === "present" && status !== "Present") return;
+          if (currentFilter === "absent" && status !== "Absent") return;
+          if (currentFilter === "pending" && status) return;
+          visibleIds.push(s.name);
+
+          const row = document.createElement("div");
+          const isChecked = selectedIds.has(s.name);
+          row.className =
+            "emp-row" +
+            (selectedMemberId === s.name ? " selected" : "") +
+            (isChecked ? " bulk-selected" : "");
+          if (isChecked) row.style.background = "#ede9fe";
+
+          let pillHtml = "";
+          if (status === "Present")
+            pillHtml = `<span class="status-pill pill-present">✓ Present</span>`;
+          else if (status === "Absent")
+            pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
+          else if (status === "On Leave")
+            pillHtml = `<span class="status-pill pill-leave">🏠 On Leave</span>`;
+          else
+            pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
+
+          let actionsHtml = "";
+          if (!status) {
+            actionsHtml = `<button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ Check In</button>
+                           <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+          } else if (status === "Present" && !s.check_out) {
+            actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Check Out</button>`;
+          } else {
+            actionsHtml = `<button class="btn-done">Done</button>`;
+          }
+
+          let timeInfo = "";
+          if (s.check_in) timeInfo = `In: ${s.check_in}`;
+          if (s.check_out) timeInfo += ` Out: ${s.check_out}`;
+
+          row.innerHTML = `
+            <input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">
+            <div class="emp-av" style="background:${s.color};cursor:pointer;" onclick="selectMember('${s.name}')">
+                ${s.image ? `<img src="${s.image}">` : s.employee_name.charAt(0)}
+                <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
+            </div>
+            <div class="emp-info" style="cursor:pointer;" onclick="selectMember('${s.name}')">
+                <div class="emp-name">${s.employee_name}</div>
+                <div class="emp-role">${s.designation || "Staff"}</div>
+                ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
+            </div>
+            ${pillHtml}
+            <div class="emp-actions">${actionsHtml}</div>
+        `;
+          list.appendChild(row);
+        });
+        updateBulkBar(visibleIds);
+      }
+
+      function selectMember(id) {
+        selectedMemberId = id;
+        const s = staff.find((x) => x.name === id);
+        document.getElementById("calEmpName").textContent = s.employee_name;
+        document.getElementById("memberSelect").value = id;
+        document.getElementById("calEmptyState").style.display = "none";
+        document.getElementById("calDetail").style.display = "block";
+
+        loadLeaveBalances(id);
+        loadCalendarHistory();
+        renderEmpList();
+      }
+
+      function selectMemberFromDropdown() {
+        const val = document.getElementById("memberSelect").value;
+        if (val) selectMember(val);
+      }
+
+      function renderCalendar() {
+        const grid = document.getElementById("calDays");
+        const months = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        document.getElementById("calMonthLabel").textContent =
+          `${months[calMonth]} ${calYear}`;
+        grid.innerHTML = "";
+
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+          const e = document.createElement("div");
+          e.className = "cal-d empty";
+          grid.appendChild(e);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const cell = document.createElement("div");
+          const mm = String(calMonth + 1).padStart(2, "0");
+          const dd = String(d).padStart(2, "0");
+          const key = `${calYear}-${mm}-${dd}`;
+          const dow = new Date(calYear, calMonth, d).getDay();
+          const isWeekend = dow === 0 || dow === 6;
+          const isToday = key === todayKey;
+
+          let cls = "cal-d";
+          const histStatus = attendanceHistory[key];
+
+          if (isToday) cls += " today-d";
+          if (histStatus === "Present") cls += " present-d";
+          else if (histStatus === "Absent") cls += " absent-d";
+          else if (isWeekend) cls += " woff";
+
+          cell.className = cls;
+          cell.textContent = d;
+          cell.title = key;
+          grid.appendChild(cell);
+        }
+        renderCalSummary();
+      }
+
+      function renderCalSummary() {
+        const summary = document.getElementById("calSummary");
+        if (!selectedMemberId) return;
+        const s = staff.find((x) => x.name === selectedMemberId);
+        let present = 0,
+          absent = 0;
+        Object.values(attendanceHistory).forEach((v) => {
+          if (v === "Present") present++;
+          else if (v === "Absent") absent++;
+        });
+        const total = present + absent;
+        const pct = total ? Math.round((present / total) * 100) : 0;
+
+        summary.innerHTML = `
+        <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${s.employee_name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${s.designation || ""}</span></div>
+        <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${present} days</span></div>
+        <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${absent} days</span></div>
+        <div class="sum-row"><span class="sum-lbl">Attendance %</span><span class="sum-val">${pct}%</span></div>
+        <div style="background:#f3f4f6;border-radius:8px;height:6px;margin-top:6px;overflow:hidden;">
+            <div style="background:var(--success);width:${pct}%;height:100%;border-radius:8px;transition:.5s;"></div>
+        </div>
+    `;
+      }
+
+      // ── UTILS ─────────────────────────────────────────────
+      function changeMonth(dir) {
+        calMonth += dir;
+        if (calMonth > 11) {
+          calMonth = 0;
+          calYear++;
+        }
+        if (calMonth < 0) {
+          calMonth = 11;
+          calYear--;
+        }
+        loadCalendarHistory();
+      }
+
+      function filterStaff(f, btn) {
+        currentFilter = f;
+        document
+          .querySelectorAll(".ftab")
+          .forEach((x) => x.classList.remove("active"));
+        btn.classList.add("active");
+        renderEmpList();
+      }
+
+      function populateSelect() {
+        const sel = document.getElementById("memberSelect");
+        const currentVal = sel.value;
+        sel.innerHTML = '<option value="">— Select Staff Member —</option>';
+        staff.forEach((s) => {
+          const opt = document.createElement("option");
+          opt.value = s.name;
+          opt.textContent =
+            s.employee_name + (s.designation ? " (" + s.designation + ")" : "");
+          sel.appendChild(opt);
+        });
+        sel.value = currentVal;
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2800);
+      }
+
+      function renderAll() {
+        renderStats();
+        renderEmpList();
+      }
+
+      // ── BULK SELECTION ────────────────────────────────────
+      function toggleEmpSelect(id, cb) {
+        if (cb.checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+        renderEmpList();
+      }
+
+      function toggleSelectAll(cb) {
+        const visibleIds = getVisibleIds();
+        if (cb.checked) visibleIds.forEach((id) => selectedIds.add(id));
+        else selectedIds.clear();
+        renderEmpList();
+      }
+
+      function clearSelection() {
+        selectedIds.clear();
+        renderEmpList();
+      }
+
+      function getVisibleIds() {
+        return staff
+          .filter((s) => {
+            const status = s.attendance_status;
+            if (currentFilter === "present" && status !== "Present")
+              return false;
+            if (currentFilter === "absent" && status !== "Absent") return false;
+            if (currentFilter === "pending" && status) return false;
+            return true;
+          })
+          .map((s) => s.name);
+      }
+
+      function updateBulkBar(visibleIds) {
+        const bar = document.getElementById("bulkBar");
+        const count = document.getElementById("bulkCount");
+        const selInfo = document.getElementById("selInfo");
+        const selectAllCb = document.getElementById("selectAllCb");
+        const sel = selectedIds.size;
+
+        selInfo.textContent = `${sel} of ${visibleIds.length} selected`;
+        count.textContent = `${sel} selected`;
+
+        if (sel > 0) bar.classList.add("visible");
+        else bar.classList.remove("visible");
+
+        if (sel === 0) {
+          selectAllCb.checked = false;
+          selectAllCb.indeterminate = false;
+        } else if (sel === visibleIds.length) {
+          selectAllCb.checked = true;
+          selectAllCb.indeterminate = false;
+        } else {
+          selectAllCb.checked = false;
+          selectAllCb.indeterminate = true;
+        }
+      }
+
+      async function bulkAction(type) {
+        if (selectedIds.size === 0) return;
+        const bar = document.getElementById("bulkBar");
+        bar.style.opacity = "0.5";
+        bar.style.pointerEvents = "none";
+
+        let status =
+          type === "present" || type === "checkout" ? "Present" : "Absent";
+        let log_type = type === "checkout" ? "OUT" : "IN";
+
+        for (const id of selectedIds) {
+          await callAPI("mark_attendance", {
+            employee: id,
+            status: status,
+            log_type: log_type,
+          });
+        }
+
+        showToast(`Bulk action ${type} completed`);
+        selectedIds.clear();
+        await fetchTeamData();
+        bar.style.opacity = "1";
+        bar.style.pointerEvents = "auto";
+      }
+
+      // ── INIT ──────────────────────────────────────────────
+      fetchTeamData();
+    </script>
+  </body>
+</html>
