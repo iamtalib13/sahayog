@@ -492,6 +492,11 @@
         color: #dc2626;
         font-weight: 600;
       }
+      .cal-d.leave-d {
+        background: #fef3c7;
+        color: #d97706;
+        font-weight: 600;
+      }
       .cal-d.woff {
         color: #d1d5db;
       }
@@ -1212,6 +1217,10 @@
                   Absent
                 </div>
                 <div class="cl-item">
+                  <div class="cl-dot" style="background: #fef3c7"></div>
+                  On Leave
+                </div>
+                <div class="cl-item">
                   <div class="cl-dot" style="background: var(--brand2)"></div>
                   Today
                 </div>
@@ -1648,6 +1657,7 @@
           if (isToday) cls += " today-d";
           if (histStatus === "Present") cls += " present-d";
           else if (histStatus === "Absent") cls += " absent-d";
+          else if (histStatus === "On Leave") cls += " leave-d";
           else if (isWeekend) cls += " woff";
 
           cell.className = cls;
