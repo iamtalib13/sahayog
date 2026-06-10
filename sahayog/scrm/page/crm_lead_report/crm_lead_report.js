@@ -1379,6 +1379,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         // ❗ No block — fallback mode
         this.has_pref = false;
         console.log("No Report Preference → showing own leads only");
+        this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
       }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
@@ -1417,21 +1418,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     // Watch for active_tab changes to load data automatically
 
     formatDisplayText(key, val) {
-      if (!val) return "";
+      if (val == null || val === undefined) return "";
+
+      let sVal = String(val);
 
       // Specific check for Head Office
-      if (val.toLowerCase().replace(/\s/g, "") === "headoffice") {
+      if (sVal.toLowerCase().replace(/\s/g, "") === "headoffice") {
         return "HO";
       }
 
       // Zone aur Region ke liye number nikalne ka logic
       if (key === "zone" || key === "region") {
-        let parts = val.split("-");
+        let parts = sVal.split("-");
         // Agar hyphen hai (Zone-1), to aakhri part lo, warna pura dikhao
-        return parts.length > 1 ? parts[parts.length - 1] : val;
+        return parts.length > 1 ? parts[parts.length - 1] : sVal;
       }
 
-      return val;
+      return sVal;
     },
     toggleDropdown(key) {
       this.active_dropdown = this.active_dropdown === key ? null : key;
@@ -1440,6 +1443,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
     isSelected(key, val) {
+      if (!this.selected || !this.selected[key]) return false;
       // .some use karo taaki == se compare ho sake (Number vs String)
       return this.selected[key].some((item) => item == val);
     },
