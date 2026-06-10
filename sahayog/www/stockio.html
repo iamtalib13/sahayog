@@ -1004,9 +1004,14 @@
     align-items: center;
     gap: 30px;
     padding: 0 40px;
-    height: 40px;
+    height: 44px;
     position: relative;
-    opacity: 0.8;
+    opacity: 0.9;
+    width: 300px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 40px;
+    border: 1px solid var(--border-color);
   }
 
   .anim-node {
@@ -1020,49 +1025,59 @@
 
   .anim-box {
     color: var(--primary-color);
-    animation: boxPop 3s infinite ease-in-out;
+    animation: boxPack 6s infinite;
   }
 
   .anim-truck {
     color: #f59e0b;
-    animation: truckVibrate 0.2s infinite linear;
+    animation: truckDrive 6s infinite;
   }
 
   .anim-track {
-    width: 120px;
+    flex: 1;
     height: 2px;
     background: repeating-linear-gradient(90deg, var(--border-color), var(--border-color) 6px, transparent 6px, transparent 12px);
     position: relative;
-    overflow: hidden;
   }
 
   .anim-package {
     position: absolute;
-    left: -20px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     color: var(--primary-color);
-    font-size: 12px;
-    animation: packageDeliver 3s infinite cubic-bezier(0.45, 0, 0.55, 1);
+    font-size: 14px;
+    opacity: 0;
+    animation: packageMove 6s infinite;
   }
 
-  @keyframes boxPop {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px var(--primary-color)); }
-    50% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--primary-color)); }
+  /* Stage 1: Packing (0s - 1.5s) */
+  @keyframes boxPack {
+    0% { transform: scale(1) rotate(0); }
+    10% { transform: scale(1.2) rotate(-10deg); }
+    20% { transform: scale(0.9) rotate(10deg); }
+    25% { transform: scale(1); }
+    100% { transform: scale(1); }
   }
 
-  @keyframes truckVibrate {
-    0% { transform: translateY(0); }
-    50% { transform: translateY(-1px); }
-    100% { transform: translateY(0); }
+  /* Stage 2: Shipping (1.5s - 3.5s) */
+  @keyframes packageMove {
+    0%, 25% { left: -10%; opacity: 0; transform: translateY(-50%) scale(0.5); }
+    30% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+    55% { left: 100%; opacity: 1; transform: translateY(-50%) scale(1); }
+    60% { left: 105%; opacity: 0; transform: translateY(-50%) scale(0.8); }
+    100% { left: 105%; opacity: 0; }
   }
 
-  @keyframes packageDeliver {
-    0% { left: -10%; opacity: 0; transform: translateY(-50%) scale(0.5) rotate(0deg); }
-    10% { opacity: 1; transform: translateY(-50%) scale(1) rotate(0deg); }
-    80% { opacity: 1; transform: translateY(-50%) scale(1) rotate(0deg); }
-    90% { opacity: 0; transform: translateY(-50%) scale(0.8) rotate(10deg); }
-    100% { left: 110%; opacity: 0; }
+  /* Stage 3: Truck Moving (3.5s - 5.5s) */
+  @keyframes truckDrive {
+    0%, 55% { transform: translateX(0); }
+    58% { transform: translateX(2px) translateY(-1px); }
+    60% { transform: translateX(5px); }
+    75% { transform: translateX(150px); opacity: 1; }
+    80% { transform: translateX(200px); opacity: 0; }
+    90% { transform: translateX(-100px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
   }
 
   .btn-list-action {
