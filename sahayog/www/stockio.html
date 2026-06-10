@@ -14394,6 +14394,7 @@
               const assetRes = await frappe.call({
                 method: "frappe.client.insert",
                 args: { doc: assetDoc },
+                error: () => {}, // Suppress global error message
               });
 
               if (assetRes.message) {
@@ -14402,6 +14403,7 @@
                 const submitRes = await frappe.call({
                   method: "frappe.client.submit",
                   args: { doc: assetRes.message },
+                  error: () => {}, // Suppress global error message
                 });
 
                 if (submitRes.message) {
@@ -14420,7 +14422,7 @@
             return;
           }
 
-          // 2. PROCEED WITH MOVEMENT CREATION (Existing Logic)
+          // 2. PROCEED WITH MOVEMENT CREATION
           // Pre-create missing locations
           const locationsToCreate = validItems.map(i => i.target_location).filter(l => l);
           if (locationsToCreate.length > 0) {
@@ -14431,76 +14433,141 @@
             });
           }
 
-          const doc = {
-            doctype: "Asset Movement",
-            transaction_date: this.movementForm.transaction_date,
-            purpose: this.movementForm.purpose,
-            custom_reference_doctype:
-              this.movementForm.custom_reference_doctype,
-            custom_reference_name: this.movementForm.custom_reference_name,
-            assets: validItems.map((i) => ({
+          // Filter assets that actually need a Movement record (Location must be different)
+          const assetsToMove = validItems.filter(i => {
+              // Find current location
+              const existingAsset = this.assetsList.find(a => a.name === i.asset);
+              // If not in assetsList, it was just created at fullSol
+              const currentLoc = existingAsset ? existingAsset.location : fullSol;
+              return i.target_location && i.target_location !== currentLoc;
+          }).map(i => ({
               asset: i.asset,
               target_location: i.target_location,
               to_employee: i.to_employee,
-            })),
-          };
+          }));
 
-          let res = await frappe.call({
-            method: "frappe.client.insert",
-            args: { doc },
-          });
+          let finalMovementName = null;
 
-          if (res.message) {
-            let finalDoc = res.message;
-            if (shouldSubmit) {
-              const submitRes = await frappe.call({
-                method: "frappe.client.submit",
-                args: { doc: finalDoc },
-              });
-              if (submitRes.message) {
-                finalDoc = submitRes.message;
+          if (assetsToMove.length > 0) {
+            const doc = {
+                doctype: "Asset Movement",
+                transaction_date: this.movementForm.transaction_date,
+                purpose: this.movementForm.purpose,
+                custom_reference_doctype: this.movementForm.custom_reference_doctype,
+                custom_reference_name: this.movementForm.custom_reference_name,
+                assets: assetsToMove,
+            };
 
-                // Update item statuses to 'Dispatch' in EMR if applicable
-                if (
-                  this.movementForm.custom_reference_doctype ===
-                    "Employee Material Request" &&
-                  this.movementForm.custom_reference_name
-                ) {
-                  const itemStatusMap = this.movementItems.reduce((acc, i) => {
-                    if (i.emr_item_name && i.asset) {
-                      acc[i.emr_item_name] = "Dispatch";
-                    }
-                    return acc;
-                  }, {});
-
-                  if (Object.keys(itemStatusMap).length > 0) {
-                    await frappe.call({
-                      method:
-                        "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
-                      args: {
-                        docname: this.movementForm.custom_reference_name,
-                        item_status_map: itemStatusMap,
-                      },
-                    });
-                  }
-                }
-              }
-            }
-
-            frappe.show_alert({
-              message: `Asset Movement "${finalDoc.name}" ${shouldSubmit ? "submitted" : "saved as draft"}`,
-              indicator: "green",
+            let res = await frappe.call({
+                method: "frappe.client.insert",
+                args: { doc },
+                error: () => {}, // Suppress global error message
             });
-            this.showMovementModal = false;
-            // If we are on the Movements page, refresh data
-            if (this.activeItem === "Movements") {
-              await this.fetchData("Asset Movement");
+
+            if (res.message) {
+                let finalDoc = res.message;
+                if (shouldSubmit) {
+                    const submitRes = await frappe.call({
+                        method: "frappe.client.submit",
+                        args: { doc: finalDoc },
+                        error: () => {}, // Suppress global error message
+                    });
+                    if (submitRes.message) finalDoc = submitRes.message;
+                }
+                finalMovementName = finalDoc.name;
             }
           }
+
+          // 3. ALWAYS UPDATE EMR ITEM STATUS
+          if (
+            this.movementForm.custom_reference_doctype === "Employee Material Request" &&
+            this.movementForm.custom_reference_name
+          ) {
+            const itemStatusMap = this.movementItems.reduce((acc, i) => {
+              if (i.emr_item_name && i.asset) {
+                acc[i.emr_item_name] = "Dispatch";
+              }
+              return acc;
+            }, {});
+
+            if (Object.keys(itemStatusMap).length > 0) {
+              await frappe.call({
+                method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                args: {
+                  docname: this.movementForm.custom_reference_name,
+                  item_status_map: itemStatusMap,
+                },
+              });
+            }
+          }
+
+          frappe.show_alert({
+            message: finalMovementName 
+                ? `Asset Movement "${finalMovementName}" created and Request updated` 
+                : "Assets assigned successfully (Request updated)",
+            indicator: "green",
+          });
+
+          this.showMovementModal = false;
+          await this.fetchData(this.currentView.doctype);
+          if (this.activeItem === "Movements") await this.fetchData("Asset Movement");
+          if (this.activeItem === "Requests") await this.fetchData("Employee Material Request");
+
         } catch (e) {
           console.error("Error creating movement:", e);
-          const errorMsg = e.message || e.exc || "Failed to create movement.";
-          frappe.msgprint(errorMsg);
+          
+          // Robustly extract error message from Frappe/jQuery error object
+          let errorString = "";
+          try {
+            errorString = JSON.stringify(e);
+          } catch (err) {
+            errorString = String(e);
+          }
+          
+          if (errorString.includes("Source and Target Location cannot be same")) {
+            // Asset is already at target, but we still need to mark EMR items as Dispatched
+            try {
+              if (
+                this.movementForm.custom_reference_doctype === "Employee Material Request" &&
+                this.movementForm.custom_reference_name
+              ) {
+                const itemStatusMap = this.movementItems.reduce((acc, i) => {
+                  if (i.emr_item_name && i.asset) {
+                    acc[i.emr_item_name] = "Dispatch";
+                  }
+                  return acc;
+                }, {});
+
+                if (Object.keys(itemStatusMap).length > 0) {
+                  await frappe.call({
+                    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                    args: {
+                      docname: this.movementForm.custom_reference_name,
+                      item_status_map: itemStatusMap,
+                    },
+                  });
+                }
+              }
+              frappe.show_alert({
+                message: "Asset assigned successfully (already at target branch)",
+                indicator: "green",
+              });
+              this.showMovementModal = false;
+              if (this.activeItem === "Requests") {
+                await this.fetchData("Employee Material Request");
+              }
+              if (this.activeItem === "Movements") {
+                await this.fetchData("Asset Movement");
+              }
+            } catch (innerErr) {
+              console.error("EMR update error:", innerErr);
+              frappe.msgprint("Assignment complete (same location) but failed to update Request status.");
+            }
+          } else {
+            const rawError = e.message || e.exc || (typeof e === 'string' ? e : "");
+            const errorMsg = rawError || "Failed to create movement.";
+            frappe.msgprint(errorMsg);
+          }
         } finally {
           this.creatingMovement = false;
         }
