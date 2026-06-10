@@ -20,7 +20,7 @@ def get_columns():
         {"label": "State", "fieldname": "state", "fieldtype": "Data", "width": 120},
         {"label": "District", "fieldname": "district", "fieldtype": "Data", "width": 120},
         {"label": "Branch", "fieldname": "branch", "fieldtype": "Data", "width": 120},
-        {"label": "Joining Date", "fieldname": "date_of_joining", "fieldtype": "Date", "width": 120},
+        {"label": "Designation", "fieldname": "designation", "fieldtype": "Data", "width": 120},
         {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 120},
         {"label": "Total Leads", "fieldname": "lead_count", "fieldtype": "Int", "width": 100},
         {"label": "Lead Names", "fieldname": "lead_names", "fieldtype": "Data", "width": 250},
@@ -75,7 +75,7 @@ def get_data(filters=None):
     # ---------------------------
     employees = frappe.db.get_all(
         "Employee",
-        fields=["name as emp_id", "employee_name", "sol_id", "date_of_joining"],
+        fields=["name as emp_id", "employee_name", "sol_id", "date_of_joining", "designation"],
         order_by="sol_id asc"
     )
     # frappe.msgprint(f"<b>Employee Data</b><br><pre>{frappe.as_json(employees)}</pre>")
@@ -159,6 +159,7 @@ def get_data(filters=None):
             "state": state,
             "district": district,
             "branch": branch,
+            "designation": emp_ref.get("designation") if emp_ref else None,
             "date_of_joining": date_of_joining,
             "lead_count": len(info["leads"]),
             "lead_names": ", ".join([l["lead_name"] for l in info["leads"]]),
@@ -191,7 +192,7 @@ def get_data(filters=None):
                 "state": state,
                 "district": district,
                 "branch": branch,
-                "date_of_joining": emp["date_of_joining"],
+                "designation": emp.get("designation"),
                 "lead_count": 0,
                 "lead_names": "",
                 "status": "Non-Active",
