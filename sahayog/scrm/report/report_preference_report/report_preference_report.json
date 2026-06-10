@@ -1,7 +1,8 @@
 {
  "add_total_row": 0,
+ "add_translate_data": 0,
  "columns": [],
- "creation": "2026-06-10 12:00:00.000000",
+ "creation": "2026-06-10 12:00:00",
  "disabled": 0,
  "docstatus": 0,
  "doctype": "Report",
@@ -9,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-06-10 12:00:00.000000",
+ "modified": "2026-06-10 11:36:52.349628",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference Report",
@@ -24,6 +25,10 @@
   },
   {
    "role": "Administrator"
+  },
+  {
+   "role": "Permission Manager"
   }
- ]
+ ],
+ "timeout": 0
 }
