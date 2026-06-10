@@ -1028,6 +1028,17 @@
     100% { box-shadow: 0 0 5px currentColor; }
   }
 
+  @keyframes redGlow {
+    0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); border-color: #ef4444; }
+    50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+    100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); border-color: #ef4444; }
+  }
+
+  .glow-red {
+    animation: redGlow 2s infinite;
+    border-color: #ef4444 !important;
+  }
+
   .status-pill {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -1334,7 +1345,16 @@
               font-size: 12px;
           ">
               <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
-              <span style="font-weight: 600; color: #2980b9;">[[ projectedAssetId.full_id ]]</span>
+              <span style="font-weight: 600; color: #2980b9;">
+                  [[ projectedAssetId.parts.slice(0, -1).join('/') + '/' ]]
+                  <span :style="{ color: createAssetForm.brand ? 'inherit' : '#ef4444' }">
+                      [[ createAssetForm.brand ? createAssetForm.brand.toUpperCase() : '[BRAND]' ]]
+                  </span>
+                  [[ '/' ]]
+                  <span :style="{ color: createAssetForm.serial_no ? 'inherit' : '#ef4444' }">
+                      [[ createAssetForm.serial_no ? createAssetForm.serial_no : '[SERIAL NO]' ]]
+                  </span>
+              </span>
           </div>
           
 <!-- Inventory Flow Display -->
@@ -3389,7 +3409,7 @@
                       type="text"
                       class="form-input searchable-select-input"
                       style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_serial_no' }"
+                      :class="{ focused: focusedField === 'asset_serial_no', 'glow-red': !createAssetForm.serial_no }"
                       v-model="createAssetForm.serial_no"
                       @focus="onFocusSearchable('asset_serial_no')"
                       @blur="onBlurSearchable('asset_serial_no')"
@@ -3497,7 +3517,7 @@
                       type="text"
                       class="form-input searchable-select-input"
                       style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_brand' }"
+                      :class="{ focused: focusedField === 'asset_brand', 'glow-red': !createAssetForm.brand }"
                       v-model="createAssetForm.brand_display"
                       @focus="onFocusSearchable('asset_brand')"
                       @blur="onBlurSearchable('asset_brand')"
@@ -8266,7 +8286,14 @@
       <div class="profile-modal-header">
         <h3>Asset Movement 
             <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
-                [[ 'SMCCSL/' + (movementForm.emp_zone ? (movementForm.emp_zone.match(/\d+/) ? 'Z' + movementForm.emp_zone.match(/\d+/)[0] : movementForm.emp_zone) : 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + (getAssetShortCode(movementItems.length > 0 ? movementItems[0].item_name : null, movementItems.length > 0 ? movementItems[0].item_code : null)) + '/' + (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') + '/' + (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
+                [[ 'SMCCSL/' + (movementForm.emp_zone ? (movementForm.emp_zone.match(/\d+/) ? 'Z' + movementForm.emp_zone.match(/\d+/)[0] : movementForm.emp_zone) : 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + (getAssetShortCode(movementItems.length > 0 ? movementItems[0].item_name : null, movementItems.length > 0 ? movementItems[0].item_code : null)) + '/' ]]
+                <span :style="{ color: (movementItems.length > 0 && movementItems[0].brand) ? 'inherit' : '#ef4444', fontWeight: (movementItems.length > 0 && movementItems[0].brand) ? 'normal' : 'bold' }">
+                    [[ (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') ]]
+                </span>
+                [[ '/' ]]
+                <span :style="{ color: (movementItems.length > 0 && movementItems[0].serial_no) ? 'inherit' : '#ef4444', fontWeight: (movementItems.length > 0 && movementItems[0].serial_no) ? 'normal' : 'bold' }">
+                    [[ (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
+                </span>
             </span>
         </h3>
         <div class="profile-modal-header-right">
@@ -8519,6 +8546,7 @@
                         <input
                           type="text"
                           class="form-input"
+                          :class="{ 'glow-red': !item.brand }"
                           v-model="item.brand_display"
                           @focus="focusedField = 'mv_brand_' + index"
                           @blur="setTimeout(() => focusedField = null, 200)"
@@ -8545,6 +8573,7 @@
                         <input
                           type="text"
                           class="form-input"
+                          :class="{ 'glow-red': !item.serial_no }"
                           v-model="item.serial_no"
                           @focus="focusedField = 'mv_serial_' + index"
                           @blur="setTimeout(() => focusedField = null, 200)"
