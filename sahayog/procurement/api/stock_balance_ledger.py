@@ -936,6 +936,26 @@ def create_warehouse_if_not_exists(branch_id):
     return new_wh.name
 
 @frappe.whitelist()
+def get_serial_nos_by_invoice(invoice_number):
+    if not invoice_number:
+        return []
+    
+    # 1. Get all Purchase Receipts with this invoice number
+    prs = frappe.get_all("Purchase Receipt", filters={"custom_invoice_number": invoice_number, "docstatus": 1}, pluck="name")
+    if not prs:
+        return []
+        
+    # 2. Get all Serial and Batch Bundles linked to these PRs
+    bundles = frappe.get_all("Purchase Receipt Item", filters={"parent": ["in", prs], "serial_and_batch_bundle": ["is", "set"]}, pluck="serial_and_batch_bundle")
+    if not bundles:
+        return []
+        
+    # 3. Get all Serial Nos in these bundles
+    serial_nos = frappe.get_all("Serial and Batch Entry", filters={"parent": ["in", bundles]}, pluck="serial_no")
+    
+    return list(set(serial_nos))
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.
