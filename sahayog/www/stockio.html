@@ -1002,12 +1002,12 @@
   .movement-flow-anim {
     display: flex;
     align-items: center;
-    gap: 30px;
-    padding: 0 40px;
+    gap: 0;
+    padding: 0 24px;
     height: 44px;
     position: relative;
     opacity: 0.9;
-    width: 300px;
+    width: 320px;
     overflow: hidden;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 40px;
@@ -1025,12 +1025,12 @@
 
   .anim-box {
     color: var(--primary-color);
-    animation: boxPack 6s infinite;
+    animation: boxPulse 5s infinite;
   }
 
   .anim-truck {
     color: #f59e0b;
-    animation: truckDrive 6s infinite;
+    animation: truckDrive 5s infinite;
   }
 
   .anim-track {
@@ -1038,6 +1038,7 @@
     height: 2px;
     background: repeating-linear-gradient(90deg, var(--border-color), var(--border-color) 6px, transparent 6px, transparent 12px);
     position: relative;
+    margin: 0 5px;
   }
 
   .anim-package {
@@ -1047,39 +1048,50 @@
     transform: translateY(-50%);
     color: var(--primary-color);
     font-size: 14px;
-    opacity: 0;
-    animation: packageMove 6s infinite;
+    animation: packageProcess 5s infinite linear;
   }
 
-  /* Stage 1: Packing (0s - 1.5s) */
-  @keyframes boxPack {
-    0% { transform: scale(1) rotate(0); }
-    10% { transform: scale(1.2) rotate(-10deg); }
-    20% { transform: scale(0.9) rotate(10deg); }
-    25% { transform: scale(1); }
-    100% { transform: scale(1); }
+  /* Stage 1: Creation (Shake at 0%) */
+  @keyframes boxPulse {
+    0%, 25% { transform: scale(1.1); opacity: 1; }
+    30%, 100% { transform: scale(1); opacity: 0.6; }
   }
 
-  /* Stage 2: Shipping (1.5s - 3.5s) */
-  @keyframes packageMove {
-    0%, 25% { left: -10%; opacity: 0; transform: translateY(-50%) scale(0.5); }
-    30% { opacity: 1; transform: translateY(-50%) scale(1.1); }
-    55% { left: 100%; opacity: 1; transform: translateY(-50%) scale(1); }
-    60% { left: 105%; opacity: 0; transform: translateY(-50%) scale(0.8); }
-    100% { left: 105%; opacity: 0; }
+  @keyframes packageProcess {
+    /* Stage 1: Asset Created (Shake at 0%) */
+    0% { left: 0; opacity: 0; transform: translateY(-50%) scale(0.5); }
+    5% { opacity: 1; transform: translateY(-50%) scale(1); }
+    8%, 12%, 16%, 20% { left: 0; transform: translateY(-50%) translateX(-2px); }
+    10%, 14%, 18%, 22% { left: 0; transform: translateY(-50%) translateX(2px); }
+
+    /* Stage 2: Move to 50% (Normal Speed) */
+    25% { left: 0; }
+    45% { left: 50%; }
+
+    /* Pause briefly at 50% */
+    50% { left: 50%; }
+
+    /* Stage 3: FAST Move to Truck (50% to 100%) */
+    65% { left: 95%; opacity: 1; transform: translateY(-50%) scale(1); }
+
+    /* Touch and Enter truck at 66% */
+    68% { left: 100%; opacity: 0; transform: translateY(-50%) scale(0.8); }
+    100% { opacity: 0; }
   }
 
-  /* Stage 3: Truck Moving (3.5s - 5.5s) */
+  /* Stage 3: Truck Moving - Starts exactly when package touches at 68% */
   @keyframes truckDrive {
-    0%, 55% { transform: translateX(0); }
-    58% { transform: translateX(2px) translateY(-1px); }
-    60% { transform: translateX(5px); }
-    75% { transform: translateX(150px); opacity: 1; }
-    80% { transform: translateX(200px); opacity: 0; }
-    90% { transform: translateX(-100px); opacity: 0; }
+    0%, 67% { transform: translateX(0); }
+    /* Truck reacts immediately at 68% */
+    68% { transform: translateX(2px) scale(1.05); }
+    70% { transform: translateX(5px); }
+    /* Drive away fast */
+    85% { transform: translateX(250px); opacity: 1; }
+    86% { transform: translateX(300px); opacity: 0; }
+    /* Reset */
+    95% { transform: translateX(-100px); opacity: 0; }
     100% { transform: translateX(0); opacity: 1; }
   }
-
   .btn-list-action {
     padding: 6px 12px;
     background: transparent;
