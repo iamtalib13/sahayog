@@ -44,35 +44,49 @@
 
       .input-group {
         display: flex;
-        gap: 10px;
+        flex-direction: column;
+        gap: 15px;
       }
 
       input {
-        flex: 1;
+        width: 100%;
         padding: 12px;
         border: 1px solid #ccc;
         border-radius: 6px;
         font-size: 16px;
         text-transform: uppercase;
+        text-align: center;
       }
 
-      input:focus {
-        outline: none;
-        border-color: #0078d4;
+      .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
 
       button {
         background: #0078d4;
         color: white;
         border: none;
-        padding: 12px 18px;
+        padding: 12px;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 15px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: background 0.2s;
       }
 
       button:hover {
         background: #005ea6;
+      }
+
+      .btn-all {
+        grid-column: span 2;
+        background: #28a745;
+      }
+
+      .btn-all:hover {
+        background: #218838;
       }
 
       .message {
@@ -85,25 +99,43 @@
   <body>
     <div class="container">
       <h2>FORM 16 Downloader</h2>
-      <p>Enter your PAN Number to open the Form 16 PDF.</p>
+      <p>Enter your PAN Number to download Quarters (2025-26).</p>
 
       <div class="input-group">
         <input
           type="text"
           id="pan"
           maxlength="10"
-          placeholder="Enter PAN Number"
+          placeholder="ENTER PAN NUMBER"
         />
-        <button onclick="downloadPDF()">Download</button>
+        
+        <div class="button-grid">
+          <button onclick="handleDownload('Q1')">Q1</button>
+          <button onclick="handleDownload('Q2')">Q2</button>
+          <button onclick="handleDownload('Q3')">Q3</button>
+          <button onclick="handleDownload('Q4')">Q4</button>
+          <button class="btn-all" onclick="downloadAll()">Download All (Q1 - Q4)</button>
+        </div>
       </div>
 
       <div class="message" id="message"></div>
     </div>
 
     <script>
-      function downloadPDF() {
-        const pan = document.getElementById("pan").value.trim().toUpperCase();
+      function getDownloadUrl(pan, quarter) {
+        const fileName = `${pan}_${quarter}_2025-26.pdf`;
+        const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM/${fileName}`;
+        return `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
+      }
 
+      function triggerDownload(url) {
+        // Using a NAMED window ('form16_downloader') ensures all files
+        // download through the SAME single new tab instead of opening many.
+        window.open(url, 'form16_downloader');
+      }
+
+      function handleDownload(quarter) {
+        const pan = document.getElementById("pan").value.trim().toUpperCase();
         const message = document.getElementById("message");
         message.innerHTML = "";
 
@@ -111,20 +143,49 @@
 
         if (!panRegex.test(pan)) {
           message.innerHTML = "Please enter a valid PAN number.";
+          message.style.color = "#d9534f";
           return;
         }
 
-        const fileName = `${pan}_Q2_2025-26.pdf`;
-        const sourceUrl = `/personal/rehan_khan_sahayogmultistate_com/Documents/FORM 16/New folder (2)/${fileName}`;
+        const url = getDownloadUrl(pan, quarter);
+        triggerDownload(url);
+      }
 
-        const url = `https://sahayogmultistate-my.sharepoint.com/personal/rehan_khan_sahayogmultistate_com/_layouts/15/download.aspx?SourceUrl=${encodeURIComponent(sourceUrl)}`;
+      function downloadAll() {
+        const pan = document.getElementById("pan").value.trim().toUpperCase();
+        const message = document.getElementById("message");
+        message.innerHTML = "";
 
-        window.open(url, "_blank");
+        const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+        if (!panRegex.test(pan)) {
+          message.innerHTML = "Please enter a valid PAN number.";
+          message.style.color = "#d9534f";
+          return;
+        }
+
+        const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+        message.innerHTML = "Downloading all quarters in one tab... Please wait.";
+        message.style.color = "#0078d4";
+
+        quarters.forEach((q, index) => {
+          setTimeout(() => {
+            const url = getDownloadUrl(pan, q);
+            triggerDownload(url);
+
+            if (index === quarters.length - 1) {
+              setTimeout(() => {
+                message.innerHTML = "All 4 quarters requested. You may close the extra tab if it stays open.";
+                message.style.color = "#28a745";
+              }, 1500);
+            }
+          }, index * 1500); // 1.5s delay to ensure each download is registered
+        });
       }
 
       document.getElementById("pan").addEventListener("keypress", function (e) {
         if (e.key === "Enter") {
-          downloadPDF();
+          handleDownload('Q2'); 
         }
       });
     </script>
