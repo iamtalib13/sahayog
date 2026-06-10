@@ -1701,7 +1701,7 @@
             </div>        </h1>
       </div>
       <div class="header-right">
-        <div v-if="activeItem === 'Serial No' || activeItem === 'Inward'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
+        <div v-if="activeItem === 'Serial No'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
             <button @click="setSerialMode('batch')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
