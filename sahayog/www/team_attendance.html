@@ -1447,15 +1447,24 @@
           "attendance",
         );
         document.getElementById("teamListLoading").style.display = "none";
+        console.log("DEBUG: Received Data from API:", data);
 
         if (data && data.team) {
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],
           }));
+          console.log("DEBUG: Staff Array:", staff);
           dashboardSummary = data.summary;
-          renderAll();
+          renderAll(data.current_user);
           populateSelect();
+
+          // Auto-select logged-in user if found
+          const self = staff.find(s => s.is_self);
+          console.log("DEBUG: Found Self:", self);
+          if (self) {
+            selectMember(self.name);
+          }
         }
       }
 
@@ -1568,6 +1577,7 @@
             (selectedMemberId === s.name ? " selected" : "") +
             (isChecked ? " bulk-selected" : "");
           if (isChecked) row.style.background = "#ede9fe";
+          if (s.is_self) row.style.background = "#f5f3ff";
 
           let pillHtml = "";
           if (status === "Present")
@@ -1601,7 +1611,7 @@
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
             </div>
             <div class="emp-info" style="cursor:pointer;" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"}</div>
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
@@ -1666,7 +1676,7 @@
           const dd = String(d).padStart(2, "0");
           const key = `${calYear}-${mm}-${dd}`;
           const dow = new Date(calYear, calMonth, d).getDay();
-          const isWeekend = dow === 0 || dow === 6;
+          const isWeekend = dow === 0; // Only Sunday is Weekly Off
           const isToday = key === todayKey;
 
           let cls = "cal-d";
@@ -1753,9 +1763,14 @@
         setTimeout(() => t.classList.remove("show"), 2800);
       }
 
-      function renderAll() {
+      function renderAll(currentUser) {
         renderStats();
         renderEmpList();
+        if (currentUser) {
+          document.querySelector(".topbar-title").textContent = "Sahayog Attendance Portal";
+          const av = document.querySelector(".av");
+          if (av) av.textContent = currentUser.employee_name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+        }
       }
 
       // ── BULK SELECTION ────────────────────────────────────
