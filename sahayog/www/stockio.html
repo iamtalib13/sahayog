@@ -998,6 +998,73 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
   }
 
+  /* Movement Flow Animation Styles */
+  .movement-flow-anim {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    padding: 0 40px;
+    height: 40px;
+    position: relative;
+    opacity: 0.8;
+  }
+
+  .anim-node {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .anim-box {
+    color: var(--primary-color);
+    animation: boxPop 3s infinite ease-in-out;
+  }
+
+  .anim-truck {
+    color: #f59e0b;
+    animation: truckVibrate 0.2s infinite linear;
+  }
+
+  .anim-track {
+    width: 120px;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--border-color), var(--border-color) 6px, transparent 6px, transparent 12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .anim-package {
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+    font-size: 12px;
+    animation: packageDeliver 3s infinite cubic-bezier(0.45, 0, 0.55, 1);
+  }
+
+  @keyframes boxPop {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px var(--primary-color)); }
+    50% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--primary-color)); }
+  }
+
+  @keyframes truckVibrate {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-1px); }
+    100% { transform: translateY(0); }
+  }
+
+  @keyframes packageDeliver {
+    0% { left: -10%; opacity: 0; transform: translateY(-50%) scale(0.5) rotate(0deg); }
+    10% { opacity: 1; transform: translateY(-50%) scale(1) rotate(0deg); }
+    80% { opacity: 1; transform: translateY(-50%) scale(1) rotate(0deg); }
+    90% { opacity: 0; transform: translateY(-50%) scale(0.8) rotate(10deg); }
+    100% { left: 110%; opacity: 0; }
+  }
+
   .btn-list-action {
     padding: 6px 12px;
     background: transparent;
@@ -8282,7 +8349,7 @@
     v-if="showMovementModal"
     @click.self="showMovementModal = false"
   >
-    <div class="profile-modal modal-large" style="max-width: 900px">
+    <div class="profile-modal modal-large" style="width: 1400px; max-width: 95vw;">
       <div class="profile-modal-header">
         <h3>Asset Movement 
             <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
@@ -8296,6 +8363,22 @@
                 </span>
             </span>
         </h3>
+
+        <!-- Interactive Movement Animation -->
+        <div class="movement-flow-anim">
+          <div class="anim-node anim-box">
+            <i class="fas fa-box-open"></i>
+          </div>
+          <div class="anim-track">
+            <div class="anim-package">
+              <i class="fas fa-cube"></i>
+            </div>
+          </div>
+          <div class="anim-node anim-truck">
+            <i class="fas fa-truck-moving"></i>
+          </div>
+        </div>
+
         <div class="profile-modal-header-right">
           <button
             class="btn-create-inline"
