@@ -307,6 +307,156 @@ def get_preference_detail(user):
 
 #     return {"success": True, "name": doc.name}
 
+# new
+# @frappe.whitelist()
+# def save_preference(data):
+#     validate_page_access()
+#     import json
+
+#     if isinstance(data, str):
+#         data = json.loads(data)
+
+#     userid = data.get("user")
+#     if not userid:
+#         frappe.throw("User is required")
+
+#     def normalize_list(value):
+#         if not value:
+#             return []
+#         if isinstance(value, list):
+#             return [v for v in value if v]
+#         return []
+
+#     def zone_to_name(val):
+#         if not val:
+#             return None
+#         z = str(val).strip()
+#         zone_name = f"Zone -{z}" if not z.startswith("Zone") else z
+#         if frappe.db.exists("Zone", zone_name):
+#             return zone_name
+#         if frappe.db.exists("Zone", z):
+#             return z
+#         alt_zone_name = f"Zone - {z}"
+#         if frappe.db.exists("Zone", alt_zone_name):
+#             return alt_zone_name
+#         return None
+
+#     def region_to_name(val):
+#         if not val:
+#             return None
+#         code = str(val).strip()
+#         if code.upper() == "HO":
+#             if frappe.db.exists("Region", "Head Office"):
+#                 return "Head Office"
+#             return None
+
+#         region_name = f"Region-{code}"
+#         if frappe.db.exists("Region", region_name):
+#             return region_name
+
+#         alt_region_name = f"Region - {code}"
+#         if frappe.db.exists("Region", alt_region_name):
+#             return alt_region_name
+
+#         if frappe.db.exists("Region", code):
+#             return code
+
+#         return None
+
+#     prefname = frappe.db.get_value(
+#         "Report Preference", {"user": userid}, "name")
+#     if prefname:
+#         doc = frappe.get_doc("Report Preference", prefname)
+#     else:
+#         doc = frappe.new_doc("Report Preference")
+#         doc.user = userid
+
+#     doc.tag = data.get("tag") or ""
+#     doc.enabled = 1 if data.get("enabled") else 0
+
+#     doc.set("zone", [])
+#     doc.set("region", [])
+#     doc.set("state", [])
+#     doc.set("district", [])
+#     doc.set("sol_id", [])
+#     doc.set("product", [])
+#     doc.set("source", [])
+
+#     for z in normalize_list(data.get("zone")):
+#         zone_name = zone_to_name(z)
+#         if zone_name:
+#             doc.append("zone", {"zone": zone_name})
+
+#     for r in normalize_list(data.get("region")):
+#         region_name = region_to_name(r)
+#         if region_name:
+#             doc.append("region", {"region": region_name})
+
+#     for state in normalize_list(data.get("state")):
+#         doc.append("state", {"state": state})
+
+#     for district in normalize_list(data.get("district")):
+#         doc.append("district", {"district": district})
+
+#     sol_id_values = normalize_list(data.get("sol_id"))
+#     if not sol_id_values:
+#         sol_id_values = normalize_list(data.get("sol_id"))
+
+#     for sol in sol_id_values:
+#         doc.append("sol_id", {"sol_id": sol})
+
+#     for product in normalize_list(data.get("product")):
+#         doc.append("product", {"product": product})
+
+#     for source in normalize_list(data.get("source")):
+#         doc.append("source", {"source": source})
+
+#     frappe.flags.mute_messages = True
+#     if hasattr(frappe.local, "message_log"):
+#         frappe.local.message_log = []
+
+#     doc.save(ignore_permissions=True)
+
+#     selected_pills = normalize_list(data.get("finacleroles"))
+
+#     current_user_roles = set(frappe.get_roles(frappe.session.user))
+#     can_manage_user_roles = (
+#         frappe.session.user == "Administrator"
+#         or "System Manager" in current_user_roles
+#     )
+
+#     if can_manage_user_roles:
+#         userdoc = frappe.get_doc("User", userid)
+#         roles_to_have = [ROLEMAP[p] for p in selected_pills if p in ROLEMAP]
+#         current_roles = [r.role for r in userdoc.roles]
+#         roles_changed = False
+
+#         for role in roles_to_have:
+#             if role not in current_roles:
+#                 userdoc.add_roles(role)
+#                 roles_changed = True
+
+#         for pill, role in ROLEMAP.items():
+#             if pill not in selected_pills and role in current_roles:
+#                 userdoc.remove_roles(role)
+#                 roles_changed = True
+
+#         if roles_changed:
+#             frappe.flags.mute_messages = True
+#             if hasattr(frappe.local, "message_log"):
+#                 frappe.local.message_log = []
+#             userdoc.save(ignore_permissions=True)
+
+#     frappe.flags.mute_messages = False
+#     if hasattr(frappe.local, "message_log"):
+#         frappe.local.message_log = []
+
+#     frappe.db.commit()
+#     return {
+#         "success": True,
+#         "name": doc.name
+#     }
+
 
 @frappe.whitelist()
 def save_preference(data):
@@ -331,20 +481,24 @@ def save_preference(data):
         if not val:
             return None
         z = str(val).strip()
-        zone_name = f"Zone -{z}" if not z.startswith("Zone") else z
+        if z.startswith("Zone"):
+            if frappe.db.exists("Zone", z):
+                return z
+        zone_name = f"Zone -{z}"
         if frappe.db.exists("Zone", zone_name):
             return zone_name
-        if frappe.db.exists("Zone", z):
-            return z
         alt_zone_name = f"Zone - {z}"
         if frappe.db.exists("Zone", alt_zone_name):
             return alt_zone_name
+        if frappe.db.exists("Zone", z):
+            return z
         return None
 
     def region_to_name(val):
         if not val:
             return None
         code = str(val).strip()
+
         if code.upper() == "HO":
             if frappe.db.exists("Region", "Head Office"):
                 return "Head Office"
@@ -427,7 +581,7 @@ def save_preference(data):
 
     if can_manage_user_roles:
         userdoc = frappe.get_doc("User", userid)
-        roles_to_have = [ROLEMAP[p] for p in selected_pills if p in ROLEMAP]
+        roles_to_have = [ROLE_MAP[p] for p in selected_pills if p in ROLE_MAP]
         current_roles = [r.role for r in userdoc.roles]
         roles_changed = False
 
@@ -436,7 +590,7 @@ def save_preference(data):
                 userdoc.add_roles(role)
                 roles_changed = True
 
-        for pill, role in ROLEMAP.items():
+        for pill, role in ROLE_MAP.items():
             if pill not in selected_pills and role in current_roles:
                 userdoc.remove_roles(role)
                 roles_changed = True
