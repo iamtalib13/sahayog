@@ -8460,6 +8460,16 @@
                     font-weight: 700;
                   "
                 >
+                  In-stock
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
                   Target Location <span class="form-required">*</span>
                 </th>
                 <th
@@ -8593,6 +8603,11 @@
                             [[ sn ]]
                           </div>
                         </div>
+                      </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <div style="font-weight: 600; color: #369696; text-align: center;">
+                        [[ itemQuantities[item.item_code] || 0 ]]
                       </div>
                     </td>
                     <td style="padding: 10px">
@@ -12903,7 +12918,7 @@
       },
 
       async fetchItemQuantities() {
-        if (!this.userWarehouse || this.rows.length === 0) return;
+        if (!this.userWarehouse) return;
         try {
           const res = await frappe.call({
             method:
@@ -12912,10 +12927,12 @@
           });
           if (res.message) {
             this.itemQuantities = res.message;
-            this.rows = this.rows.map((row) => ({
-              ...row,
-              branch_qty: this.itemQuantities[row.item_code] || 0,
-            }));
+            if (this.rows && this.rows.length > 0) {
+              this.rows = this.rows.map((row) => ({
+                ...row,
+                branch_qty: this.itemQuantities[row.item_code] || 0,
+              }));
+            }
           }
         } catch (e) {
           console.error("Error fetching item quantities:", e);
@@ -14849,6 +14866,7 @@
         if (hasAssets && !hasStock) {
           // If ONLY assets are involved, show the Asset Movement MODAL
           this.showMovementModal = true;
+          this.fetchItemQuantities();
           this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
