@@ -8266,7 +8266,7 @@
       <div class="profile-modal-header">
         <h3>Asset Movement 
             <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
-                [[ 'SMCCSL/' + (movementForm.emp_zone || 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + ((movementItems.length > 0 && movementItems[0].item_name ? movementItems[0].item_name.substring(0,3).toUpperCase() : 'AST')) + '/' + (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') + '/' + (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
+                [[ 'SMCCSL/' + (movementForm.emp_zone ? (movementForm.emp_zone.match(/\d+/) ? 'Z' + movementForm.emp_zone.match(/\d+/)[0] : movementForm.emp_zone) : 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + ((movementItems.length > 0 && movementItems[0].item_name ? movementItems[0].item_name.substring(0,3).toUpperCase() : 'AST')) + '/' + (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') + '/' + (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
             </span>
         </h3>
         <div class="profile-modal-header-right">
