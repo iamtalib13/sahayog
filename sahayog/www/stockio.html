@@ -7860,7 +7860,7 @@
                     
                     <!-- Admin Dual Action Button (PDF & Cancel) -->
                     <div 
-                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && isAdmin"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && hasWarehouseAccess"
                       class="dual-action-btn"
                       style="display: inline-flex; border-radius: 40px; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);"
                     >
@@ -7882,7 +7882,7 @@
                       </button>
                     </div>
 
-                    <!-- Standard Proforma Button for Non-Admins -->
+                    <!-- Standard Proforma Button for Non-Warehouse Access Users -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -7890,7 +7890,7 @@
                         border-color: var(--green-600);
                       "
                       @click.stop="handleProforma(row)"
-                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && !isAdmin"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && !hasWarehouseAccess"
                     >
                       PROFORMA
                     </button>
