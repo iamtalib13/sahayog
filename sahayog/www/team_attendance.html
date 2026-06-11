@@ -6,7 +6,7 @@
     <title>Team Attendance Manager</title>
     <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght=600;700;800&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -115,28 +115,6 @@
         overflow-x: hidden;
       }
 
-      /* SECTION TITLE */
-      .section-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 14px;
-      }
-      .section-head h2 {
-        font-family: "Syne", sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text);
-      }
-      .badge-count {
-        background: var(--brand2);
-        color: #fff;
-        border-radius: 20px;
-        padding: 3px 10px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-
       /* STATS ROW */
       .stats-row {
         display: grid;
@@ -221,6 +199,25 @@
         border-color: var(--brand2);
       }
 
+      /* SEARCH BAR ENHANCEMENT */
+      .search-box-wrap {
+        padding: 8px 16px;
+        border-bottom: 1px solid var(--border);
+        background: #faf8ff;
+      }
+      .search-input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 12px;
+        outline: none;
+        font-family: "DM Sans", sans-serif;
+      }
+      .search-input:focus {
+        border-color: var(--brand2);
+      }
+
       /* EMPLOYEE LIST */
       .emp-list {
         padding: 10px 0;
@@ -293,12 +290,6 @@
         font-size: 11px;
         color: var(--muted);
       }
-      .emp-time {
-        font-size: 11px;
-        color: var(--muted);
-        text-align: right;
-        white-space: nowrap;
-      }
       .emp-actions {
         display: flex;
         gap: 6px;
@@ -340,9 +331,15 @@
         background: #dc2626;
         color: #fff;
       }
-      .btn-out:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      .btn-done {
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: default;
       }
       .btn-clear {
         background: #f3f4f6;
@@ -353,9 +350,6 @@
         font-size: 11px;
         font-weight: 600;
         cursor: pointer;
-      }
-      .btn-clear:hover {
-        background: #e5e7eb;
       }
       .status-pill {
         border-radius: 20px;
@@ -376,14 +370,8 @@
         background: #f3f4f6;
         color: #9ca3af;
       }
-      .pill-leave {
-        background: #fef3c7;
-        color: #d97706;
-      }
 
       /* CALENDAR PANEL */
-      .cal-panel {
-      }
       .cal-head {
         padding: 12px 14px;
         display: flex;
@@ -418,9 +406,8 @@
         outline: none;
         font-family: "DM Sans", sans-serif;
         cursor: pointer;
-      }
-      .member-select:focus {
-        border-color: var(--brand2);
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
 
       .cal-grid-wrap {
@@ -537,9 +524,6 @@
         align-items: center;
         margin-bottom: 6px;
       }
-      .sum-row:last-child {
-        margin-bottom: 0;
-      }
       .sum-lbl {
         font-size: 12px;
         color: var(--muted);
@@ -559,20 +543,9 @@
         padding: 10px 16px;
         background: #f5f3ff;
         border-bottom: 2px solid var(--brand2);
-        animation: slideDown 0.2s ease;
       }
       .bulk-bar.visible {
         display: flex;
-      }
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-6px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
       }
       .bulk-count {
         font-size: 13px;
@@ -593,36 +566,21 @@
         font-family: "DM Sans", sans-serif;
         transition: 0.15s;
       }
-      .bulk-btn:active {
-        transform: scale(0.97);
-      }
       .bulk-in {
         background: #16a34a;
         color: #fff;
-      }
-      .bulk-in:hover {
-        background: #15803d;
       }
       .bulk-absent {
         background: #dc2626;
         color: #fff;
       }
-      .bulk-absent:hover {
-        background: #b91c1c;
-      }
       .bulk-checkout {
         background: #f59e0b;
         color: #fff;
       }
-      .bulk-checkout:hover {
-        background: #d97706;
-      }
       .bulk-clear {
         background: #e5e7eb;
         color: #6b7280;
-      }
-      .bulk-clear:hover {
-        background: #d1d5db;
       }
       .bulk-sep {
         width: 1px;
@@ -665,12 +623,10 @@
         -webkit-appearance: none;
         cursor: pointer;
         background: #fff;
-        transition: 0.15s;
-        flex-shrink: 0;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
       }
       .emp-cb:checked {
         background: var(--brand2);
@@ -682,9 +638,6 @@
         color: #fff;
         font-size: 11px;
         font-weight: 700;
-      }
-      .emp-cb:hover {
-        border-color: var(--brand2);
       }
 
       /* TOAST */
@@ -732,19 +685,6 @@
         border-radius: 9px;
         padding: 8px 6px 7px;
         text-align: center;
-        cursor: pointer;
-        transition: 0.15s;
-      }
-      .lb-card:hover {
-        transform: translateY(-1px);
-        filter: brightness(1.06);
-      }
-      .lb-card:active {
-        transform: scale(0.97);
-      }
-      .lb-icon {
-        font-size: 15px;
-        margin-bottom: 2px;
       }
       .lb-val {
         font-size: 18px;
@@ -774,7 +714,6 @@
         background: linear-gradient(135deg, #8b5cf6, #7c3aed);
       }
 
-      /* LOADING OVERLAY */
       .loading-overlay {
         position: absolute;
         inset: 0;
@@ -802,7 +741,6 @@
         }
       }
 
-      /* RESPONSIVE */
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
@@ -928,7 +866,7 @@
             <circle cx="20" cy="16" r="4" fill="#4dc7b5" />
           </svg>
         </div>
-        <span class="topbar-title">Branch Manager Portal</span>
+        <span class="topbar-title">Sahayog Attendance Portal</span>
       </div>
       <div class="topbar-right">
         <svg
@@ -1004,7 +942,7 @@
 
         <!-- Main Grid -->
         <div class="main-grid">
-          <!-- Team List -->
+          <!-- Team List Card -->
           <div class="card" style="position: relative">
             <div
               id="teamListLoading"
@@ -1027,6 +965,18 @@
                 </button>
               </div>
             </div>
+
+            <!-- SEARCH ENHANCEMENT ELEMENT -->
+            <div class="search-box-wrap" id="searchBoxWrap">
+              <input
+                type="text"
+                id="staffSearch"
+                class="search-input"
+                placeholder="🔍 Search staff members by name or role..."
+                onkeyup="handleSearch()"
+              />
+            </div>
+
             <!-- SELECT ALL ROW -->
             <div class="select-all-row" id="attendanceControls">
               <label>
@@ -1069,7 +1019,7 @@
             <div class="emp-list" id="empList"></div>
           </div>
 
-          <!-- Calendar Panel -->
+          <!-- Calendar Panel Card -->
           <div class="card cal-panel" style="position: relative">
             <div id="calLoading" class="loading-overlay" style="display: none">
               <div class="spinner"></div>
@@ -1099,9 +1049,22 @@
               id="leaveBalanceWrap"
               style="display: none"
             >
-              <div class="lb-title" style="display:flex; justify-content:space-between; align-items:center;">
-                  <span>Leave Balance</span>
-                  <button class="btn-in" style="padding: 2px 8px; font-size: 10px;" onclick="openLeaveModal()">Apply Leave</button>
+              <div
+                class="lb-title"
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <span>Leave Balance</span>
+                <button
+                  class="btn-in"
+                  style="padding: 2px 8px; font-size: 10px"
+                  onclick="openLeaveModal()"
+                >
+                  Apply Leave
+                </button>
               </div>
               <div class="lb-cards">
                 <div class="lb-card lb-sl">
@@ -1123,35 +1086,76 @@
             </div>
 
             <!-- LEAVE APPLICATION MODAL -->
-            <div id="leaveModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-                <div style="background:#fff; padding:20px; border-radius:var(--radius); width:90%; max-width:400px;">
-                    <h3 style="margin-bottom:15px; font-family:'Syne', sans-serif;">Apply Leave</h3>
-                    <div style="margin-bottom:10px;">
-                        <label>Leave Type</label>
-                        <select id="leaveTypeSel" class="member-select"></select>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-                        <div>
-                            <label>From Date</label>
-                            <input type="date" id="fromDate" class="member-select" />
-                        </div>
-                        <div>
-                            <label>To Date</label>
-                            <input type="date" id="toDate" class="member-select" />
-                        </div>
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label>Reason</label>
-                        <textarea id="leaveReason" class="member-select" rows="3"></textarea>
-                    </div>
-                    <div style="display:flex; gap:10px; justify-content:flex-end;">
-                        <button class="btn-clear" onclick="closeLeaveModal()">Cancel</button>
-                        <button class="btn-in" onclick="submitLeave()">Submit</button>
-                    </div>
+            <div
+              id="leaveModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <div
+                style="
+                  background: #fff;
+                  padding: 20px;
+                  border-radius: var(--radius);
+                  width: 90%;
+                  max-width: 400px;
+                "
+              >
+                <h3
+                  style="
+                    margin-bottom: 15px;
+                    font-family: &quot;Syne&quot;, sans-serif;
+                  "
+                >
+                  Apply Leave
+                </h3>
+                <div style="margin-bottom: 10px">
+                  <label>Leave Type</label>
+                  <select id="leaveTypeSel" class="member-select"></select>
                 </div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                    margin-bottom: 10px;
+                  "
+                >
+                  <div>
+                    <label>From Date</label>
+                    <input type="date" id="fromDate" class="member-select" />
+                  </div>
+                  <div>
+                    <label>To Date</label>
+                    <input type="date" id="toDate" class="member-select" />
+                  </div>
+                </div>
+                <div style="margin-bottom: 15px">
+                  <label>Reason</label>
+                  <textarea
+                    id="leaveReason"
+                    class="member-select"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <div
+                  style="display: flex; gap: 10px; justify-content: flex-end"
+                >
+                  <button class="btn-clear" onclick="closeLeaveModal()">
+                    Cancel
+                  </button>
+                  <button class="btn-in" onclick="submitLeave()">Submit</button>
+                </div>
+              </div>
             </div>
 
-            <!-- EMPTY STATE — shown before selection -->
+            <!-- EMPTY STATE -->
             <div
               id="calEmptyState"
               style="
@@ -1193,7 +1197,7 @@
               </div>
             </div>
 
-            <!-- CALENDAR DETAIL — hidden until selection -->
+            <!-- CALENDAR DETAIL -->
             <div id="calDetail" style="display: none">
               <div class="cal-grid-wrap">
                 <div class="cal-nav">
@@ -1258,9 +1262,10 @@
         "#14b8a6",
       ];
       let staff = [];
-      let attendanceHistory = {}; // {date: status}
+      let attendanceHistory = {};
       let selectedMemberId = null;
       let currentFilter = "all";
+      let searchQuery = "";
       let selectedIds = new Set();
       const now = new Date();
       let calYear = now.getFullYear();
@@ -1269,7 +1274,12 @@
 
       document.getElementById("todayDate").textContent = now.toLocaleDateString(
         "en-IN",
-        { weekday: "short", day: "numeric", month: "long", year: "numeric" },
+        {
+          weekday: "short",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        },
       );
 
       // ── API HELPERS ───────────────────────────────────────
@@ -1278,14 +1288,10 @@
           "Content-Type": "application/json",
           Accept: "application/json",
         };
-
-        // Get CSRF Token from meta tag
         const csrfToken = document.querySelector(
           'meta[name="csrf-token"]',
         )?.content;
-        if (csrfToken) {
-          headers["X-Frappe-CSRF-Token"] = csrfToken;
-        }
+        if (csrfToken) headers["X-Frappe-CSRF-Token"] = csrfToken;
 
         try {
           const response = await fetch(
@@ -1297,14 +1303,11 @@
               credentials: "include",
             },
           );
-
           if (response.status === 401 || response.status === 403) {
             showToast("Session expired. Please login again.");
             return null;
           }
-
           const res = await response.json();
-
           if (res.exc) {
             console.error(res.exc);
             showToast("Error occurred");
@@ -1320,7 +1323,6 @@
 
       // ── TABS LOGIC ──────────────────────────────────────
       let currentTab = "attendance";
-
       function switchTab(tab, btn) {
         currentTab = tab;
         document
@@ -1330,16 +1332,40 @@
 
         const controls = document.getElementById("attendanceControls");
         const bulkBar = document.getElementById("bulkBar");
+        const searchWrap = document.getElementById("searchBoxWrap");
 
         if (tab === "attendance") {
           controls.style.display = "flex";
-          bulkBar.style.display = "flex";
+          searchWrap.style.display = "block";
           fetchTeamData();
         } else if (tab === "leave") {
           controls.style.display = "none";
           bulkBar.style.display = "none";
+          searchWrap.style.display = "none";
           loadTeamLeaves();
         }
+      }
+
+      // ── SEARCH ENHANCEMENT HANDLER ────────────────────────
+      function handleSearch() {
+        searchQuery = document
+          .getElementById("staffSearch")
+          .value.toLowerCase()
+          .trim();
+        renderEmpList();
+      }
+
+      // ── CALENDAR NAVIGATION FIX ────────────────────────────
+      function changeMonth(direction) {
+        calMonth += direction;
+        if (calMonth > 11) {
+          calMonth = 0;
+          calYear++;
+        } else if (calMonth < 0) {
+          calMonth = 11;
+          calYear--;
+        }
+        loadCalendarHistory();
       }
 
       async function loadTeamLeaves() {
@@ -1361,18 +1387,19 @@
             <div class="emp-info">
               <div class="emp-name">${l.employee}</div>
               <div class="emp-role">${l.leave_type} - ${l.status}</div>
-              <div style="font-size:11px;color:var(--muted)">
-                ${l.from_date} → ${l.to_date}
-              </div>
+              <div style="font-size:11px;color:var(--muted)">${l.from_date} → ${l.to_date}</div>
             </div>
-
             <div class="emp-actions">
-              ${l.status === 'Open' ? `
+              ${
+                l.status === "Open"
+                  ? `
                 <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
                 <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
-              ` : `
-                <span class="status-pill ${l.status === 'Approved' ? 'pill-present' : 'pill-absent'}">${l.status}</span>
-              `}
+              `
+                  : `
+                <span class="status-pill ${l.status === "Approved" ? "pill-present" : "pill-absent"}">${l.status}</span>
+              `
+              }
             </div>
           </div>
         `,
@@ -1401,13 +1428,7 @@
       }
 
       // ── CORE LOGIC ──────────────────────────────────────
-      let dashboardSummary = {
-        total: 0,
-        present: 0,
-        absent: 0,
-        pending: 0,
-        on_leave: 0,
-      };
+      let dashboardSummary = { total: 0, present: 0, absent: 0, pending: 0 };
 
       async function fetchTeamData() {
         document.getElementById("teamListLoading").style.display = "flex";
@@ -1417,22 +1438,18 @@
           "attendance",
         );
         document.getElementById("teamListLoading").style.display = "none";
-        console.log("DEBUG: Received Data from API:", data);
 
         if (data && data.team) {
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],
           }));
-          console.log("DEBUG: Staff Array:", staff);
           dashboardSummary = data.summary;
           renderAll(data.current_user);
           populateSelect();
 
-          // Auto-select logged-in user if found
-          const self = staff.find(s => s.is_self);
-          console.log("DEBUG: Found Self:", self);
-          if (self) {
+          const self = staff.find((s) => s.is_self);
+          if (self && !selectedMemberId) {
             selectMember(self.name);
           }
         }
@@ -1444,17 +1461,12 @@
 
         const res = await callAPI(
           "mark_attendance",
-          {
-            employee: emp_id,
-            status: status,
-            log_type: log_type,
-          },
+          { employee: emp_id, status: status, log_type: log_type },
           "attendance",
         );
-
         if (res && res.success) {
           showToast(res.message);
-          await fetchTeamData(); // Refresh data
+          await fetchTeamData();
           if (selectedMemberId === emp_id) loadCalendarHistory();
         }
         if (btn) btn.disabled = false;
@@ -1463,14 +1475,11 @@
       async function loadLeaveBalances(emp_id) {
         const balances = await callAPI(
           "get_leave_balances",
-          {
-            employee: emp_id,
-          },
+          { employee: emp_id },
           "attendance",
         );
         if (balances) {
           document.getElementById("leaveBalanceWrap").style.display = "block";
-          // Map common leave types
           const cl = balances.find((b) =>
             b.leave_type.toLowerCase().includes("casual"),
           ) || { unused_leaves: 0, total_leaves_allocated: 0 };
@@ -1501,11 +1510,7 @@
         document.getElementById("calLoading").style.display = "flex";
         const history = await callAPI(
           "get_employee_calendar",
-          {
-            employee: selectedMemberId,
-            month: calMonth + 1,
-            year: calYear,
-          },
+          { employee: selectedMemberId, month: calMonth + 1, year: calYear },
           "attendance",
         );
         document.getElementById("calLoading").style.display = "none";
@@ -1535,19 +1540,30 @@
 
         staff.forEach((s) => {
           const status = s.attendance_status;
+
+          // Filters combined with Live Search
           if (currentFilter === "present" && status !== "Present") return;
           if (currentFilter === "absent" && status !== "Absent") return;
           if (currentFilter === "pending" && status) return;
-          visibleIds.push(s.name);
 
+          if (
+            searchQuery &&
+            !s.employee_name.toLowerCase().includes(searchQuery) &&
+            !(
+              s.designation && s.designation.toLowerCase().includes(searchQuery)
+            )
+          ) {
+            return;
+          }
+
+          visibleIds.push(s.name);
           const row = document.createElement("div");
           const isChecked = selectedIds.has(s.name);
           row.className =
-            "emp-row" +
-            (selectedMemberId === s.name ? " selected" : "") +
-            (isChecked ? " bulk-selected" : "");
+            "emp-row" + (selectedMemberId === s.name ? " selected" : "");
           if (isChecked) row.style.background = "#ede9fe";
-          if (s.is_self) row.style.background = "#f5f3ff";
+          if (s.is_self && selectedMemberId !== s.name)
+            row.style.background = "#f5f3ff";
 
           let pillHtml = "";
           if (status === "Present")
@@ -1555,41 +1571,41 @@
           else if (status === "Absent")
             pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
           else if (status === "On Leave")
-            pillHtml = ""; // Hide pill as it's shown in actions
+            pillHtml = `<span class="status-pill" style="background:#fef3c7; color:#d97706;">On Leave</span>`;
           else
             pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
           let actionsHtml = "";
           if (status === "On Leave") {
-            actionsHtml = `<button class="btn-done" style="background:#fef3c7; color:#d97706; border-color:#fef3c7;">On Leave</button>`;
+            actionsHtml = `<button class="btn-done">On Leave</button>`;
           } else if (!status) {
-            actionsHtml = `<button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ Check In</button>
-                           <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+            actionsHtml = `
+              <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+              <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
           } else if (status === "Present" && !s.check_out) {
-            actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Check Out</button>`;
+            actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
           } else {
             actionsHtml = `<button class="btn-done">Done</button>`;
           }
 
           let timeInfo = "";
-          console.log("DEBUG: Employee", s.employee_name, "Check-in raw:", s.check_in);
           if (s.check_in) timeInfo = `In: ${s.check_in}`;
-          if (s.check_out) timeInfo += ` Out: ${s.check_out}`;
+          if (s.check_out) timeInfo += ` | Out: ${s.check_out}`;
 
           row.innerHTML = `
             <input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">
-            <div class="emp-av" style="background:${s.color};cursor:pointer;" onclick="selectMember('${s.name}')">
+            <div class="emp-av" style="background:${s.color}; display:flex; align-items:center; justify-content:center;" onclick="selectMember('${s.name}')">
                 ${s.image ? `<img src="${s.image}">` : s.employee_name.charAt(0)}
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
             </div>
-            <div class="emp-info" style="cursor:pointer;" onclick="selectMember('${s.name}')">
+            <div class="emp-info" onclick="selectMember('${s.name}')">
                 <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"}</div>
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
             ${pillHtml}
             <div class="emp-actions">${actionsHtml}</div>
-        `;
+          `;
           list.appendChild(row);
         });
         updateBulkBar(visibleIds);
@@ -1598,6 +1614,7 @@
       function selectMember(id) {
         selectedMemberId = id;
         const s = staff.find((x) => x.name === id);
+        if (!s) return;
         document.getElementById("calEmpName").textContent = s.employee_name;
         document.getElementById("memberSelect").value = id;
         document.getElementById("calEmptyState").style.display = "none";
@@ -1648,7 +1665,7 @@
           const dd = String(d).padStart(2, "0");
           const key = `${calYear}-${mm}-${dd}`;
           const dow = new Date(calYear, calMonth, d).getDay();
-          const isWeekend = dow === 0; // Only Sunday is Weekly Off
+          const isWeekend = dow === 0;
           const isToday = key === todayKey;
 
           let cls = "cal-d";
@@ -1682,14 +1699,14 @@
         const pct = total ? Math.round((present / total) * 100) : 0;
 
         summary.innerHTML = `
-        <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${s.employee_name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${s.designation || ""}</span></div>
-        <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${present} days</span></div>
-        <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${absent} days</span></div>
-        <div class="sum-row"><span class="sum-lbl">Attendance %</span><span class="sum-val">${pct}%</span></div>
-        <div style="background:#f3f4f6;border-radius:8px;height:6px;margin-top:6px;overflow:hidden;">
-            <div style="background:var(--success);width:${pct}%;height:100%;border-radius:8px;transition:.5s;"></div>
-        </div>
-    `;
+          <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${s.employee_name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${s.designation || ""}</span></div>
+          <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${present} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${absent} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Attendance %</span><span class="sum-val">${pct}%</span></div>
+          <div style="background:#f3f4f6;border-radius:8px;height:6px;margin-top:6px;overflow:hidden;">
+              <div style="background:var(--success);width:${pct}%;height:100%;border-radius:8px;transition:.5s;"></div>
+          </div>
+        `;
       }
 
       async function openLeaveModal() {
@@ -1697,13 +1714,16 @@
         const sel = document.getElementById("leaveTypeSel");
         sel.innerHTML = '<option value="">— Select Leave Type —</option>';
         if (leaveTypes) {
-            leaveTypes.forEach(lt => {
-                const opt = document.createElement("option");
-                opt.value = lt.name;
-                opt.textContent = lt.name;
-                sel.appendChild(opt);
-            });
+          leaveTypes.forEach((lt) => {
+            const opt = document.createElement("option");
+            opt.value = lt.name;
+            opt.textContent = lt.name;
+            sel.appendChild(opt);
+          });
         }
+        // Set dynamic date safeguard rules
+        document.getElementById("fromDate").min = todayKey;
+        document.getElementById("toDate").min = todayKey;
         document.getElementById("leaveModal").style.display = "flex";
       }
 
@@ -1719,27 +1739,33 @@
         const reason = document.getElementById("leaveReason").value;
 
         if (!employee || !leave_type || !from_date || !to_date) {
-            showToast("Please fill all required fields");
-            return;
+          showToast("Please fill all required fields");
+          return;
         }
 
-        const res = await callAPI("apply_leave", {
-            employee, leave_type, from_date, to_date, reason
-        }, "leave");
+        if (new Date(to_date) < new Date(from_date)) {
+          showToast("To date cannot be before from date!");
+          return;
+        }
+
+        const res = await callAPI(
+          "apply_leave",
+          {
+            employee,
+            leave_type,
+            from_date,
+            to_date,
+            reason,
+          },
+          "leave",
+        );
 
         if (res && res.success) {
-            showToast(res.message);
-            closeLeaveModal();
+          showToast(res.message);
+          closeLeaveModal();
+        } else {
+          showToast("Error while applying leave");
         }
-      }
-
-      function filterStaff(f, btn) {
-        currentFilter = f;
-        document
-          .querySelectorAll(".ftab")
-          .forEach((x) => x.classList.remove("active"));
-        btn.classList.add("active");
-        renderEmpList();
       }
 
       function populateSelect() {
@@ -1767,9 +1793,16 @@
         renderStats();
         renderEmpList();
         if (currentUser) {
-          document.querySelector(".topbar-title").textContent = "Sahayog Attendance Portal";
+          document.querySelector(".topbar-title").textContent =
+            "Sahayog Attendance Portal";
           const av = document.querySelector(".av");
-          if (av) av.textContent = currentUser.employee_name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+          if (av)
+            av.textContent = currentUser.employee_name
+              .split(" ")
+              .map((n) => n[0])
+              .join("")
+              .toUpperCase()
+              .substring(0, 2);
         }
       }
 
@@ -1800,6 +1833,11 @@
               return false;
             if (currentFilter === "absent" && status !== "Absent") return false;
             if (currentFilter === "pending" && status) return false;
+            if (
+              searchQuery &&
+              !s.employee_name.toLowerCase().includes(searchQuery)
+            )
+              return false;
             return true;
           })
           .map((s) => s.name);
@@ -1830,6 +1868,7 @@
         }
       }
 
+      // Parallel Async Network Processing Fix
       async function bulkAction(type) {
         if (selectedIds.size === 0) return;
         const bar = document.getElementById("bulkBar");
@@ -1840,15 +1879,18 @@
           type === "present" || type === "checkout" ? "Present" : "Absent";
         let log_type = type === "checkout" ? "OUT" : "IN";
 
-        for (const id of selectedIds) {
-          await callAPI("mark_attendance", {
+        // Dispatch requests in parallel instead of waiting inside loop sequential order
+        const promises = Array.from(selectedIds).map((id) =>
+          callAPI("mark_attendance", {
             employee: id,
             status: status,
             log_type: log_type,
-          });
-        }
+          }),
+        );
 
-        showToast(`Bulk action ${type} completed`);
+        await Promise.all(promises);
+
+        showToast(`Bulk action completed successfully.`);
         selectedIds.clear();
         await fetchTeamData();
         bar.style.opacity = "1";

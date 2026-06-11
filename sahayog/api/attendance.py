@@ -11,59 +11,30 @@ def get_team_attendance_data():
     if user == "Guest":
         frappe.throw(_("Please login to access this portal"), frappe.PermissionError)
     
-    # Get current user's employee record
-    current_emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"], as_dict=True)
+    # Get current manager's employee record
+    manager = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"], as_dict=True)
     
-    if not current_emp and user != "Administrator":
-        return {"error": True, "message": "Employee record not found for the current user."}
+    if not manager and user != "Administrator":
+        return {"error": True, "message": "Manager Employee record not found."}
 
-    # If Administrator, fetch all (for testing) or a specific subset
-    # For Branch Manager, fetch ONLY reports_to = current_emp.name
-    # For others, fetch reports_to = current_emp.name OR name = current_emp.name
-    user_roles = frappe.get_roles(user)
-    is_branch_manager = "Branch Manager" in user_roles
+    # Differentiate logic based on roles
+    roles = frappe.get_roles(user)
     
-    # Debug logging
-    frappe.log_error(
-        title="Attendance Portal Debug",
-        message=f"User: {user}, Current Emp Name: {current_emp.name if current_emp else 'None'}, Roles: {user_roles}, Is BM: {is_branch_manager}"
-    )
-
-    if user == "Administrator":
-        team = frappe.get_all("Employee", 
-            fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"],
-            order_by="employee_name",
-            limit=50
-        )
-    elif is_branch_manager:
-        team = frappe.get_all("Employee", 
-            filters={"reports_to": current_emp.name},
-            fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"],
-            order_by="employee_name"
-        )
+    if "Branch Manager" in roles or user == "Administrator":
+        # Branch Managers manage their team
+        filters = {"reports_to": manager.name} if manager else {}
     else:
-        # Check if current_emp exists before filtering
-        if current_emp:
-            # Use separate queries or a simpler filter to avoid potential or_filters issues
-            # Get self
-            self_record = frappe.get_all("Employee", 
-                filters={"name": current_emp.name},
-                fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"]
-            )
-            # Get reports
-            reports = frappe.get_all("Employee", 
-                filters={"reports_to": current_emp.name},
-                fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"]
-            )
-            team = self_record + reports
-        else:
-            team = []
-    
-    frappe.log_error(
-        title="Attendance Portal Debug",
-        message=f"Final Team List for {user}: {[e.name for e in team]}"
+        # Regular employees only manage themselves
+        filters = {"name": manager.name} if manager else {"user_id": user}
+
+    # Fetch team members
+    team = frappe.get_all("Employee", 
+        filters=filters,
+        fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"],
+        order_by="employee_name"
     )
-    
+    # No long log here to avoid length error
+
     today = nowdate()
     
     # Enrich team data with today's attendance/checkins
@@ -73,7 +44,10 @@ def get_team_attendance_data():
     on_leave_count = 0
 
     for emp in team:
-        emp.is_self = (emp.name == current_emp.name) if current_emp else False
+        # Set is_self flag
+        emp.is_self = (emp.name == manager.name) if manager else False
+
+        # Check for Attendance record
         att = frappe.db.get_value("Attendance", 
             {"employee": emp.name, "attendance_date": today}, 
             ["name", "status"], as_dict=True)
@@ -115,8 +89,7 @@ def get_team_attendance_data():
             if on_leave:
                 emp.attendance_status = "On Leave"
 
-        # Log concisely
-        frappe.log_error(f"DEBUG: Emp {emp.name}, Status: {emp.attendance_status}")
+        
 
         # Count stats
         if emp.attendance_status == "Present":
@@ -130,14 +103,14 @@ def get_team_attendance_data():
 
     return {
         "team": team,
-        "current_user": current_emp,
         "summary": {
             "total": len(team),
             "present": present_count,
             "absent": absent_count,
             "pending": pending_count,
             "on_leave": on_leave_count
-        }
+        },
+        "current_user": manager
     }
 
 @frappe.whitelist()
