@@ -9,8 +9,8 @@
  "filters": [],
  "idx": 0,
  "is_standard": "Yes",
- "letter_head": null,
- "modified": "2026-06-10 11:36:52.349628",
+ "letterhead": null,
+ "modified": "2026-06-11 06:18:35.106178",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference Report",
@@ -27,7 +27,7 @@
    "role": "Administrator"
   },
   {
-   "role": "Permission Manager"
+   "role": "Employee"
   }
  ],
  "timeout": 0
