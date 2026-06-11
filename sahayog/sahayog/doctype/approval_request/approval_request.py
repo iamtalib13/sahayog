@@ -186,6 +186,41 @@ def is_valid_approver(docname):
     return {"is_valid": is_valid, "is_last": is_last, "can_delegate": can_delegate, "can_bypass": can_bypass}
 
 
+def send_approval_notification_email(doc, recipient_user_id):
+    """Helper to send the standard approval email to a specific user and their manager"""
+    emp = frappe.db.get_value("Employee", {"user_id": recipient_user_id}, ["employee_name", "company_email", "reports_to"], as_dict=True)
+    
+    recipients = []
+    if emp and emp.company_email:
+        recipients.append({"email": emp.company_email, "name": emp.employee_name})
+    
+    if emp and emp.reports_to:
+        mgr = frappe.db.get_value("Employee", emp.reports_to, ["employee_name", "company_email"], as_dict=True)
+        if mgr and mgr.company_email:
+            recipients.append({"email": mgr.company_email, "name": mgr.employee_name})
+
+    for rec in recipients:
+        try:
+            et = frappe.get_doc("Email Template", "new_group_approval_request")
+            content = et.response_html if (et.get("use_html") and et.get("response_html")) else et.response
+            args = {
+                "doc": doc,
+                "requester": doc.employee_name or doc.owner,
+                "recipient_name": rec["name"],
+                "url": f"http://mysahayog.com/app/approval-request/{doc.name}"
+            }
+            message = frappe.render_template(content, args)
+            subject = frappe.render_template(et.subject, args)
+            frappe.sendmail(recipients=[rec["email"]], subject=subject or f"Approval Request: {doc.title}", message=message, delayed=False)
+        except Exception:
+            frappe.sendmail(
+                recipients=[rec["email"]],
+                subject=f"Approval Request: {doc.title}",
+                message=f"A new approval request '{doc.title}' has been delegated/submitted to you. Please login to Sahayog Portal.",
+                delayed=False
+            )
+
+
 @frappe.whitelist()
 def delegate_approval(docname, delegate_user, remark):
     doc = frappe.get_doc("Approval Request", docname)
@@ -235,6 +270,9 @@ def delegate_approval(docname, delegate_user, remark):
         "document_type": doc.doctype,
         "document_name": doc.name
     }).insert(ignore_permissions=True)
+
+    # Send Email Notification to Delegate and their Manager
+    send_approval_notification_email(doc, delegate_user)
 
     return "Success"
 
