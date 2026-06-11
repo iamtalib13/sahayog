@@ -441,13 +441,23 @@ frappe.ui.form.on('Approval Request', {
 
         for (const row of approvers) {
             let label = frappe.utils.escape_html(row.approver_name || (row.selection_type === 'User' ? row.approver : row.group_email));
-            let sublabel = frappe.utils.escape_html(row.selection_type);
+            
+            let status_html = "";
+            if (row.approver_status === "Approved") {
+                status_html = '<div style="color: #16a34a; font-weight: bold; font-size: 10px; margin-top: 2px;">✓ Approved</div>';
+            } else if (row.approver_status === "Pending") {
+                status_html = '<div style="color: #f59e0b; font-weight: bold; font-size: 10px; margin-top: 2px;">● Pending</div>';
+            } else if (row.approver_status === "Skipped") {
+                status_html = '<div style="color: #64748b; font-weight: bold; font-size: 10px; margin-top: 2px;">⤶ Skipped</div>';
+            }
+
+            let sublabel = `<div>${frappe.utils.escape_html(row.selection_type)}</div>${status_html}`;
             
             if (row.is_bypassed) {
                 label = `<s>${label}</s>`;
                 sublabel = '<span style="color: #f59e0b; font-weight: bold;">Bypassed</span>';
             } else if (row.delegated_to) {
-                sublabel = '<span style="color: #64748b; font-style: italic;">Delegated Task</span>';
+                sublabel = `${sublabel}<div style="color: #64748b; font-style: italic; font-size: 10px;">(Delegated)</div>`;
             }
 
             checkpoints.push({
@@ -460,35 +470,44 @@ frappe.ui.form.on('Approval Request', {
 
             if (row.is_bypassed) continue;
 
-            // If Delegated, show Delegate and their Manager
+            // If Delegated, show Delegate and their Manager (if not already in journey)
             if (row.delegated_to) {
-                let d_info = frappe.user_info(row.delegated_to);
-                let d_name = d_info.fullname || row.delegated_to;
-                if (!d_info.fullname) {
-                    let res = await frappe.db.get_value('User', row.delegated_to, 'full_name');
-                    if (res && res.message) d_name = res.message.full_name;
+                const is_delegate_already_present = checkpoints.some(c => c.user === row.delegated_to);
+                
+                if (!is_delegate_already_present) {
+                    let d_info = frappe.user_info(row.delegated_to);
+                    let d_name = d_info.fullname || row.delegated_to;
+                    if (!d_info.fullname) {
+                        let res = await frappe.db.get_value('User', row.delegated_to, 'full_name');
+                        if (res && res.message) d_name = res.message.full_name;
+                    }
+
+                    checkpoints.push({
+                        label: frappe.utils.escape_html(d_name),
+                        sublabel: '<span style="color: #3b82f6; font-weight: 600;">Delegate</span>',
+                        user: row.delegated_to
+                    });
                 }
 
-                checkpoints.push({
-                    label: frappe.utils.escape_html(d_name),
-                    sublabel: '<span style="color: #3b82f6; font-weight: 600;">Delegate</span>',
-                    user: row.delegated_to
-                });
-
-                // Delegate's Manager
+                // Delegate's Manager (if not already in journey)
                 let d_emp = await frappe.db.get_value('Employee', { user_id: row.delegated_to }, ['reports_to']);
                 if (d_emp && d_emp.message && d_emp.message.reports_to) {
                     let d_mgr = await frappe.db.get_value('Employee', d_emp.message.reports_to, ['employee_name', 'user_id']);
                     if (d_mgr && d_mgr.message) {
-                        checkpoints.push({
-                            label: frappe.utils.escape_html(d_mgr.message.employee_name || d_mgr.message.name),
-                            sublabel: 'Delegate Manager',
-                            user: d_mgr.message.user_id || d_mgr.message.name
-                        });
+                        const mgr_user_id = d_mgr.message.user_id || d_mgr.message.name;
+                        const is_mgr_already_present = checkpoints.some(c => c.user === mgr_user_id);
+                        
+                        if (!is_mgr_already_present) {
+                            checkpoints.push({
+                                label: frappe.utils.escape_html(d_mgr.message.employee_name || d_mgr.message.name),
+                                sublabel: 'Delegate Manager',
+                                user: mgr_user_id
+                            });
+                        }
                     }
                 }
             } else if (row.selection_type === 'User') {
-                // Original Manager
+                // Original Manager (if not already in journey)
                 let approver_emp = await frappe.db.get_value(
                     'Employee',
                     { user_id: row.approver },
@@ -503,11 +522,16 @@ frappe.ui.form.on('Approval Request', {
                     );
 
                     if (manager_emp && manager_emp.message) {
-                        checkpoints.push({
-                            label: frappe.utils.escape_html(manager_emp.message.employee_name || manager_emp.message.name),
-                            sublabel: 'Manager',
-                            user: manager_emp.message.user_id || manager_emp.message.name
-                        });
+                        const mgr_user_id = manager_emp.message.user_id || manager_emp.message.name;
+                        const is_mgr_already_present = checkpoints.some(c => c.user === mgr_user_id);
+                        
+                        if (!is_mgr_already_present) {
+                            checkpoints.push({
+                                label: frappe.utils.escape_html(manager_emp.message.employee_name || manager_emp.message.name),
+                                sublabel: 'Manager',
+                                user: mgr_user_id
+                            });
+                        }
                     }
                 }
             }
