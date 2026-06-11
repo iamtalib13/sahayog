@@ -54,7 +54,7 @@ def custom_asset_autoname(doc, method):
         "Uttarakhand": "UT",
         "West Bengal": "WB"
     }
-    state_code = state_mapping.get(doc.state, "") if doc.state else ""
+    state_code = state_mapping.get(doc.state, (doc.state or "").upper()[:2])
 
     # Prefix 4: Sahayog Branch Name (Complete)
     location_part = (doc.location or "").strip().upper()
@@ -69,7 +69,7 @@ def custom_asset_autoname(doc, method):
     brand_code = (doc.brand or "").strip().upper()
 
     # Construct the base prefix for serial number
-    # Syntax: SMCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
+    # Syntax: SMCCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
     parts = [
         company_prefix,
         zone_code,

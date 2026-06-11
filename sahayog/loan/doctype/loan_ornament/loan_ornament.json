@@ -41,10 +41,9 @@
   {
    "columns": 1,
    "fieldname": "valuation_rate_per_gram",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Valuation Rate",
-   "options": "Gold Rate"
+   "label": "Valuation Rate"
   },
   {
    "default": "0",
@@ -109,7 +108,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-04-09 13:18:27.203017",
+ "modified": "2026-06-06 16:21:35.396879",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Ornament",

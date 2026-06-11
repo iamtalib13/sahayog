@@ -667,7 +667,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
 
                         <div v-for="key in ['sol_id', 'product', 'source'].filter(k => filter_data[k] && filter_data[k].length > 0)" :key="key" class="filter-column">
-                            <span class="filter-label">{{ key.replace('_', ' ') }}</span>
+                            <span class="filter-label">{{ (key || '').replace('_', ' ') }}</span>
                             <div class="custom-dropdown">
                                <div class="dropdown-select">
                                     <input type="text"
@@ -905,7 +905,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                <div class="filter-modal-overlay" v-if="active_popup" @click.self="active_popup = null">
                   <div class="filter-modal-content">
                       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                          <h6 class="text-uppercase m-0" style="font-size:12px; font-weight:bold;">Select {{ active_popup.replace('_',' ') }}</h6>
+                          <h6 class="text-uppercase m-0" style="font-size:12px; font-weight:bold;">Select {{ (active_popup || '').replace('_',' ') }}</h6>
                           
                           <div v-if="active_popup === 'product'" style="display: flex; align-items: center; gap: 6px;">
                               <input type="checkbox" v-model="hide_excluded_products" id="hide_excluded" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
@@ -1379,6 +1379,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         // ❗ No block — fallback mode
         this.has_pref = false;
         console.log("No Report Preference → showing own leads only");
+        this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
       }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
@@ -1417,21 +1418,23 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     // Watch for active_tab changes to load data automatically
 
     formatDisplayText(key, val) {
-      if (!val) return "";
+      if (val == null || val === undefined) return "";
+
+      let sVal = String(val);
 
       // Specific check for Head Office
-      if (val.toLowerCase().replace(/\s/g, "") === "headoffice") {
+      if (sVal.toLowerCase().replace(/\s/g, "") === "headoffice") {
         return "HO";
       }
 
       // Zone aur Region ke liye number nikalne ka logic
       if (key === "zone" || key === "region") {
-        let parts = val.split("-");
+        let parts = sVal.split("-");
         // Agar hyphen hai (Zone-1), to aakhri part lo, warna pura dikhao
-        return parts.length > 1 ? parts[parts.length - 1] : val;
+        return parts.length > 1 ? parts[parts.length - 1] : sVal;
       }
 
-      return val;
+      return sVal;
     },
     toggleDropdown(key) {
       this.active_dropdown = this.active_dropdown === key ? null : key;
@@ -1440,6 +1443,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
     isSelected(key, val) {
+      if (!this.selected || !this.selected[key]) return false;
       // .some use karo taaki == se compare ho sake (Number vs String)
       return this.selected[key].some((item) => item == val);
     },

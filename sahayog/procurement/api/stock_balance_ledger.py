@@ -613,13 +613,17 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
         data = [row for row in data if row.get("warehouse") != user_warehouse]
 
     if search_text:
-
         search_text = search_text.lower()
+        # Fetch all branches for mapping
+        branches = frappe.get_all("Sahayog Branch", fields=["name", "branch"])
+        branch_map = {b.name: b.branch.lower() for b in branches if b.branch}
+
         data = [
             row for row in data 
             if search_text in str(row.get("item_code", "")).lower() or 
                search_text in str(row.get("item_name", "")).lower() or 
-               search_text in str(row.get("warehouse", "")).lower()
+               search_text in str(row.get("warehouse", "")).lower() or
+               (branch_map.get(row.get("warehouse"), "") and search_text in branch_map.get(row.get("warehouse", "")))
         ]
         
     total_count = len(data)
@@ -733,6 +737,28 @@ def create_material_issue(items, warehouse):
 
 @frappe.whitelist()
 def get_user_inventory_type():
+    """
+    Fetch the inventory_type for the current user from Sahayog Settings (wh_dept_map table).
+    This bypasses the need for full permission to the Sahayog Settings DocType.
+    """
+    user = frappe.session.user
+    
+    # Get the child table entries from Sahayog Settings
+    # Using frappe.get_doc("Sahayog Settings") directly as it's a Single DocType
+    try:
+        settings = frappe.get_doc("Sahayog Settings")
+        for row in settings.wh_dept_map:
+            if row.user_id == user:
+                return row.inventory_type
+    except Exception as e:
+        frappe.log_error(f"Error in get_user_inventory_type: {str(e)}")
+    
+    return None
+
+@frappe.whitelist()
+def get_invoice_numbers():
+    return [r.custom_invoice_number for r in frappe.get_all('Purchase Receipt', filters={'docstatus': 1, 'custom_invoice_number': ['is', 'set']}, fields=['custom_invoice_number'], distinct=True)]
+
     """
     Fetch the inventory_type for the current user from Sahayog Settings (wh_dept_map table).
     This bypasses the need for full permission to the Sahayog Settings DocType.
@@ -910,6 +936,26 @@ def create_warehouse_if_not_exists(branch_id):
     return new_wh.name
 
 @frappe.whitelist()
+def get_serial_nos_by_invoice(invoice_number):
+    if not invoice_number:
+        return []
+    
+    # 1. Get all Purchase Receipts with this invoice number
+    prs = frappe.get_all("Purchase Receipt", filters={"custom_invoice_number": invoice_number, "docstatus": 1}, pluck="name")
+    if not prs:
+        return []
+        
+    # 2. Get all Serial and Batch Bundles linked to these PRs
+    bundles = frappe.get_all("Purchase Receipt Item", filters={"parent": ["in", prs], "serial_and_batch_bundle": ["is", "set"]}, pluck="serial_and_batch_bundle")
+    if not bundles:
+        return []
+        
+    # 3. Get all Serial Nos in these bundles
+    serial_nos = frappe.get_all("Serial and Batch Entry", filters={"parent": ["in", bundles]}, pluck="serial_no")
+    
+    return list(set(serial_nos))
+
+@frappe.whitelist()
 def get_portal_master_data():
     """
     Unified API to fetch all master data for the portal in one request.
@@ -936,7 +982,7 @@ def get_portal_master_data():
     if used_serial_nos:
         serial_no_filters = {"name": ["not in", used_serial_nos]}
     
-    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name"])
+    available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name", "item_code"])
 
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
@@ -947,7 +993,7 @@ def get_portal_master_data():
         "purchase_receipt_names": [r.name for r in frappe.get_all("Purchase Receipt", order_by="creation desc", limit=500)],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
         "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "custom_item_department", "description"], filters={"disabled": 0}),
-        "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian"], filters={"docstatus": 1}),
+        "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian", "brand", "serial_no"], filters={"docstatus": 1}),
         "item_groups": [g.name for g in frappe.get_all("Item Group")],
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
         "uoms": [u.name for u in frappe.get_all("UOM")],
@@ -958,7 +1004,7 @@ def get_portal_master_data():
         "brands": [b.name for b in frappe.get_all("Brand")],
         "states": [s for s in frappe.get_meta("Asset").get_field("state").options.split("\n") if s],
         "hsn_codes": hsn_codes,
-        "serial_nos": [s.name for s in available_serial_nos],
+        "serial_nos": available_serial_nos,
     }
 
 @frappe.whitelist()

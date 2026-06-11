@@ -998,6 +998,100 @@
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
   }
 
+  /* Movement Flow Animation Styles */
+  .movement-flow-anim {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 24px;
+    height: 44px;
+    position: relative;
+    opacity: 0.9;
+    width: 320px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 40px;
+    border: 1px solid var(--border-color);
+  }
+
+  .anim-node {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .anim-box {
+    color: var(--primary-color);
+    animation: boxPulse 5s infinite;
+  }
+
+  .anim-truck {
+    color: #f59e0b;
+    animation: truckDrive 5s infinite;
+  }
+
+  .anim-track {
+    flex: 1;
+    height: 2px;
+    background: repeating-linear-gradient(90deg, var(--border-color), var(--border-color) 6px, transparent 6px, transparent 12px);
+    position: relative;
+    margin: 0 5px;
+  }
+
+  .anim-package {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary-color);
+    font-size: 14px;
+    animation: packageProcess 5s infinite linear;
+  }
+
+  /* Stage 1: Creation (Shake at 0%) */
+  @keyframes boxPulse {
+    0%, 25% { transform: scale(1.1); opacity: 1; }
+    30%, 100% { transform: scale(1); opacity: 0.6; }
+  }
+
+  @keyframes packageProcess {
+    /* Stage 1: Asset Created (Shake at 0%) */
+    0% { left: 0; opacity: 0; transform: translateY(-50%) scale(0.5); }
+    5% { opacity: 1; transform: translateY(-50%) scale(1); }
+    8%, 12%, 16%, 20% { left: 0; transform: translateY(-50%) translateX(-2px); }
+    10%, 14%, 18%, 22% { left: 0; transform: translateY(-50%) translateX(2px); }
+
+    /* Stage 2: Move to 50% (Normal Speed) */
+    25% { left: 0; }
+    45% { left: 50%; }
+
+    /* Pause briefly at 50% */
+    50% { left: 50%; }
+
+    /* Stage 3: FAST Move to Truck (50% to 100%) */
+    65% { left: 95%; opacity: 1; transform: translateY(-50%) scale(1); }
+
+    /* Touch and Enter truck at 66% */
+    68% { left: 100%; opacity: 0; transform: translateY(-50%) scale(0.8); }
+    100% { opacity: 0; }
+  }
+
+  /* Stage 3: Truck Moving - Starts exactly when package touches at 68% */
+  @keyframes truckDrive {
+    0%, 67% { transform: translateX(0); }
+    /* Truck reacts immediately at 68% */
+    68% { transform: translateX(2px) scale(1.05); }
+    70% { transform: translateX(5px); }
+    /* Drive away fast */
+    85% { transform: translateX(250px); opacity: 1; }
+    86% { transform: translateX(300px); opacity: 0; }
+    /* Reset */
+    95% { transform: translateX(-100px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
   .btn-list-action {
     padding: 6px 12px;
     background: transparent;
@@ -1026,6 +1120,17 @@
     0% { box-shadow: 0 0 5px currentColor; }
     50% { box-shadow: 0 0 15px currentColor; }
     100% { box-shadow: 0 0 5px currentColor; }
+  }
+
+  @keyframes redGlow {
+    0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); border-color: #ef4444; }
+    50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); border-color: #ef4444; }
+    100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); border-color: #ef4444; }
+  }
+
+  .glow-red {
+    animation: redGlow 2s infinite;
+    border-color: #ef4444 !important;
   }
 
   .status-pill {
@@ -1334,7 +1439,16 @@
               font-size: 12px;
           ">
               <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
-              <span style="font-weight: 600; color: #2980b9;">[[ projectedAssetId.full_id ]]</span>
+              <span style="font-weight: 600; color: #2980b9;">
+                  [[ projectedAssetId.parts.slice(0, -1).join('/') + '/' ]]
+                  <span :style="{ color: createAssetForm.brand ? 'inherit' : '#ef4444' }">
+                      [[ createAssetForm.brand ? createAssetForm.brand.toUpperCase() : '[BRAND]' ]]
+                  </span>
+                  [[ '/' ]]
+                  <span :style="{ color: createAssetForm.serial_no ? 'inherit' : '#ef4444' }">
+                      [[ createAssetForm.serial_no ? createAssetForm.serial_no : '[SERIAL NO]' ]]
+                  </span>
+              </span>
           </div>
           
 <!-- Inventory Flow Display -->
@@ -1681,7 +1795,7 @@
             </div>        </h1>
       </div>
       <div class="header-right">
-        <div v-if="activeItem === 'Serial No' || activeItem === 'Inward'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
+        <div v-if="activeItem === 'Serial No'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
             <button @click="setSerialMode('batch')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
@@ -2263,7 +2377,7 @@
                   </div>
 
                   <!-- Send for Purchase Checkbox inside the card -->
-                  <div style="margin-top: 16px;">
+                  <div style="margin-top: 16px;" v-if="isAdmin || wh_dept_map.some(row => row.user_id === frappe.session.user)">
                     <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--text-main); font-size: 0.9rem;">
                       <input 
                         type="checkbox" 
@@ -2511,7 +2625,7 @@
                 </div>
 
                 <!-- Posting Date -->
-                <div class="form-group" style="margin-bottom: 0 !important;">
+                <div class="form-group" style="margin-bottom: 12px !important;">
                   <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Posting Date</label>
                   <input
                     type="date"
@@ -2519,6 +2633,31 @@
                     style="padding: 10px 14px !important; font-size: 0.9rem !important;"
                     v-model="inwardForm.posting_date"
                   />
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                  <!-- Invoice Number -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Invoice Number</label>
+                    <input
+                      type="text"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="inwardForm.custom_invoice_number"
+                      placeholder="Enter Invoice No"
+                    />
+                  </div>
+
+                  <!-- Invoice Date -->
+                  <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Invoice Date</label>
+                    <input
+                      type="date"
+                      class="form-input"
+                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                      v-model="inwardForm.custom_invoice_date"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2652,18 +2791,36 @@
                         </div>
                       </td>
                       <td style="padding: 10px 16px;">
+                        <textarea
+                          v-if="item.item_code"
+                          class="form-input"
+                          style="
+                            width: 100%;
+                            min-width: 250px;
+                            min-height: 44px;
+                            font-size: 0.85rem;
+                            line-height: 1.4;
+                            padding: 8px 12px;
+                            resize: vertical;
+                            background: rgba(var(--primary-rgb), 0.02);
+                          "
+                          v-model="item.description"
+                          placeholder="Item Description"
+                        ></textarea>
                         <div
+                          v-else
                           style="
                             width: 100%;
                             min-width: 250px;
                             min-height: 40px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
                             font-size: 0.85rem;
                             color: var(--text-muted);
-                            line-height: 1.4;
-                            white-space: pre-wrap;
-                            word-break: break-word;
+                            opacity: 0.5;
                           "
-                        >[[ (item.description || '-').trim() ]]</div>
+                        >-</div>
                       </td>
                       <td style="padding: 10px 16px;" v-if="item.custom_item_department && item.custom_item_department.toUpperCase() === 'IT'">
                         <div style="display: flex; gap: 4px; align-items: center;">
@@ -3346,7 +3503,7 @@
                       type="text"
                       class="form-input searchable-select-input"
                       style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_serial_no' }"
+                      :class="{ focused: focusedField === 'asset_serial_no', 'glow-red': !createAssetForm.serial_no }"
                       v-model="createAssetForm.serial_no"
                       @focus="onFocusSearchable('asset_serial_no')"
                       @blur="onBlurSearchable('asset_serial_no')"
@@ -3454,7 +3611,7 @@
                       type="text"
                       class="form-input searchable-select-input"
                       style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_brand' }"
+                      :class="{ focused: focusedField === 'asset_brand', 'glow-red': !createAssetForm.brand }"
                       v-model="createAssetForm.brand_display"
                       @focus="onFocusSearchable('asset_brand')"
                       @blur="onBlurSearchable('asset_brand')"
@@ -5433,6 +5590,20 @@
                   <div class="info-item">
                     <div class="info-icon" style="color: #f59e0b"><i class="fas fa-file-invoice"></i></div>
                     <div class="info-content">
+                      <span class="info-label">Invoice Number</span>
+                      <span class="info-value">[[ detailRecord.custom_invoice_number || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-calendar-day"></i></div>
+                    <div class="info-content">
+                      <span class="info-label">Invoice Date</span>
+                      <span class="info-value">[[ detailRecord.custom_invoice_date || '-' ]]</span>
+                    </div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #f59e0b"><i class="fas fa-file-invoice"></i></div>
+                    <div class="info-content">
                       <span class="info-label">PO/WO</span>
                       <span class="info-value">[[ detailRecord.custom_po_wo || '-' ]]</span>
                     </div>
@@ -5460,6 +5631,7 @@
                         <tr>
                           <th style="width: 50px; text-align: center">#</th>
                           <th>Item</th>
+                          <th>Description</th>
                           <th v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">Serial Bundle</th>
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
@@ -5476,9 +5648,13 @@
                               </div>
                               <div style="display: flex; flex-direction: column">
                                 <span style="font-weight: 700; font-size: 13px; color: #f59e0b;">[[ item.item_code ]]</span>
-                                <span style="font-size: 11px; color: var(--text-muted);">[[ item.item_name || 'Stock Item' ]]</span>
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">[[ item.item_name || 'Stock Item' ]]</span>
                               </div>
                             </div>
+                          </td>
+                          <td style="padding: 10px 16px;">
+                             <div v-if="item.description" style="font-size: 11px; color: var(--text-muted); line-height: 1.4; max-width: 250px; white-space: pre-wrap;">[[ item.description ]]</div>
+                             <span v-else style="color: var(--text-muted); opacity: 0.5">-</span>
                           </td>
                           <td v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">
                              <div v-if="item.serial_and_batch_bundle" style="display: flex; align-items: center; gap: 6px;">
@@ -7775,6 +7951,32 @@
                     >
                       Submit
                     </button>
+                    
+                    <!-- Admin Dual Action Button (PDF & Cancel) -->
+                    <div 
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && hasWarehouseAccess"
+                      class="dual-action-btn"
+                      style="display: inline-flex; border-radius: 40px; overflow: hidden; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);"
+                    >
+                      <button
+                        class="btn-create-inline"
+                        style="background: var(--green-600); border-color: var(--green-600); border-radius: 0; padding: 8px 19px; margin: 0; border-right: 1px solid rgba(255,255,255,0.2); min-width: auto; height: auto;"
+                        @click.stop="handleProforma(row)"
+                        title="Proforma"
+                      >
+                        <i class="fas fa-file-pdf"></i>
+                      </button>
+                      <button
+                        class="btn-create-inline"
+                        style="background: linear-gradient(135deg, #f87171, #dc2626) !important; border: none !important; color: #ffffff !important; border-radius: 0; padding: 8px 19px; margin: 0; min-width: auto; height: auto; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;"
+                        @click.stop="cancelRowRecord(row)"
+                        title="Cancel"
+                      >
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+
+                    <!-- Standard Proforma Button for Non-Warehouse Access Users -->
                     <button
                       class="btn-create-inline"
                       style="
@@ -7782,7 +7984,7 @@
                         border-color: var(--green-600);
                       "
                       @click.stop="handleProforma(row)"
-                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0"
+                      v-if="activeItem === 'Inward' && row.status !== 'Draft' && row.docstatus !== 0 && !hasWarehouseAccess"
                     >
                       PROFORMA
                     </button>
@@ -8174,9 +8376,36 @@
     v-if="showMovementModal"
     @click.self="showMovementModal = false"
   >
-    <div class="profile-modal modal-large" style="max-width: 900px">
+    <div class="profile-modal modal-large" style="width: 1400px; max-width: 95vw;">
       <div class="profile-modal-header">
-        <h3>Asset Movement</h3>
+        <h3>Asset Movement 
+            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 4px;">
+                [[ 'SMCCSL/' + (movementForm.emp_zone ? (movementForm.emp_zone.match(/\d+/) ? 'Z' + movementForm.emp_zone.match(/\d+/)[0] : movementForm.emp_zone) : 'ZONE') + '/' + (movementForm.emp_state || 'STATE') + '/' + (movementForm.emp_location || 'LOC') + '/' + (movementForm.emp_division ? movementForm.emp_division.substring(0,3).toUpperCase() : 'DIV') + '/' + (getAssetShortCode(movementItems.length > 0 ? movementItems[0].item_name : null, movementItems.length > 0 ? movementItems[0].item_code : null)) + '/' ]]
+                <span :style="{ color: (movementItems.length > 0 && movementItems[0].brand) ? 'inherit' : '#ef4444', fontWeight: (movementItems.length > 0 && movementItems[0].brand) ? 'normal' : 'bold' }">
+                    [[ (movementItems.length > 0 && movementItems[0].brand ? movementItems[0].brand.substring(0,3).toUpperCase() : 'BRD') ]]
+                </span>
+                [[ '/' ]]
+                <span :style="{ color: (movementItems.length > 0 && movementItems[0].serial_no) ? 'inherit' : '#ef4444', fontWeight: (movementItems.length > 0 && movementItems[0].serial_no) ? 'normal' : 'bold' }">
+                    [[ (movementItems.length > 0 && movementItems[0].serial_no ? movementItems[0].serial_no : 'SERIAL') ]]
+                </span>
+            </span>
+        </h3>
+
+        <!-- Interactive Movement Animation -->
+        <div class="movement-flow-anim">
+          <div class="anim-node anim-box">
+            <i class="fas fa-box-open"></i>
+          </div>
+          <div class="anim-track">
+            <div class="anim-package">
+              <i class="fas fa-cube"></i>
+            </div>
+          </div>
+          <div class="anim-node anim-truck">
+            <i class="fas fa-truck-moving"></i>
+          </div>
+        </div>
+
         <div class="profile-modal-header-right">
           <button
             class="btn-create-inline"
@@ -8195,7 +8424,7 @@
         <div
           style="
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             margin-bottom: 24px;
           "
@@ -8219,6 +8448,32 @@
               class="form-input"
               v-model="movementForm.transaction_date"
             />
+          </div>
+          <div class="form-group" style="position: relative;">
+            <label class="form-label">Invoice Number</label>
+            <input
+              type="text"
+              class="form-input"
+              v-model="movementForm.custom_invoice_number"
+              @focus="focusedField = 'mv_inv_number'"
+              @blur="setTimeout(() => focusedField = null, 200)"
+              placeholder="Search Invoice Number"
+            />
+            <div
+              class="searchable-select-dropdown"
+              v-if="focusedField === 'mv_inv_number'"
+              style="position: absolute; top: 100%; left: 0; right: 0; z-index: 10; max-height: 200px; overflow-y: auto; background: white; border: 1px solid var(--border-color); border-radius: 4px;"
+            >
+              <div
+                v-for="inv in filteredInvoices"
+                :key="inv"
+                class="searchable-select-option"
+                style="padding: 8px; cursor: pointer;"
+                @mousedown="movementForm.custom_invoice_number = inv; focusedField = null; onInvoiceChange();"
+              >
+                [[ inv ]]
+              </div>
+            </div>
           </div>
         </div>
         <div
@@ -8295,6 +8550,36 @@
                     font-weight: 700;
                   "
                 >
+                  Brand
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Serial No
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  In-stock
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
                   Target Location <span class="form-required">*</span>
                 </th>
                 <th
@@ -8332,7 +8617,7 @@
                       color: var(--text-main);
                     "
                   >
-                    [[ item.item_code ]]
+                    [[ item.item_name ]]
                   </div>
                   <div
                     style="
@@ -8345,7 +8630,7 @@
                     "
                     :title="item.item_name"
                   >
-                    [[ item.item_name ]]
+                    [[ item.item_code ]]
                   </div>
                 </td>
                 <td style="padding: 10px">
@@ -8366,7 +8651,7 @@
                         v-for="opt in assetsList.filter(a => (!item.item_code || a.item_code === item.item_code) && (!item.asset_display || a.name.toLowerCase().includes(item.asset_display.toLowerCase()) || (a.asset_name && a.asset_name.toLowerCase().includes(item.asset_display.toLowerCase()))))"
                         :key="opt.name"
                         class="searchable-select-option"
-                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
+                        @mousedown="item.asset = opt.name; item.asset_display = opt.asset_name ? opt.name + ' - ' + opt.asset_name : opt.name; item.brand = opt.brand; item.serial_no = opt.serial_no; item.item_code = opt.item_code; item.item_name = opt.item_name; focusedField = null;"
                       >
                         <div style="font-weight: 500">[[ opt.name ]]</div>
                         <div style="font-size: 11px; opacity: 0.8">
@@ -8374,10 +8659,69 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td style="padding: 10px">
-                  <div class="searchable-select-wrapper" style="width: 100%">
+                    </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          :class="{ 'glow-red': !item.brand }"
+                          v-model="item.brand_display"
+                          @focus="focusedField = 'mv_brand_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Brand"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_brand_' + index"
+                        >
+                          <div
+                            v-for="brand in brands.filter(b => !item.brand_display || b.toLowerCase().includes(item.brand_display.toLowerCase()))"
+                            :key="brand"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.brand = brand; item.brand_display = brand; focusedField = null;"
+                          >
+                            [[ brand ]]
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <div class="searchable-select-wrapper" style="width: 120px;">
+                        <input
+                          type="text"
+                          class="form-input"
+                          :class="{ 'glow-red': !item.serial_no }"
+                          v-model="item.serial_no"
+                          @focus="focusedField = 'mv_serial_' + index"
+                          @blur="setTimeout(() => focusedField = null, 200)"
+                          placeholder="Search Serial No"
+                        />
+                        <div
+                          class="searchable-select-dropdown"
+                          v-if="focusedField === 'mv_serial_' + index"
+                        >
+                          <div
+                            v-for="sn in serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name)) && (!item.serial_no || s.name.toLowerCase().includes(item.serial_no.toLowerCase())))"
+                            :key="sn.name"
+                            class="searchable-select-option"
+                            style="padding: 8px; cursor: pointer;"
+                            @mousedown="item.serial_no = sn.name; focusedField = null;"
+                          >
+                            [[ sn.name ]]
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length)">
+                        [[ serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length ]]
+                      </div>
+                    </td>
+                    <td style="padding: 10px">
+                      <div class="searchable-select-wrapper" style="width: 100%">
                     <input
                       type="text"
                       class="form-input"
@@ -11231,6 +11575,7 @@
       isEditing: false,
       showFilterPopup: false,
       activeFilterKey: null,
+      invoiceNumbers: [],
       filterForm: {
         start_date: "",
         end_date: "",
@@ -11360,7 +11705,8 @@
           columns: [
             { label: "Item", key: "item_code", width: 2, type: "avatar" },
             { label: "Item Name", key: "item_name", width: 2.5 },
-            { label: "Warehouse", key: "warehouse", width: 1.5 },
+            { label: "SOL ID", key: "warehouse_name", width: 1.5 },
+            { label: "Warehouse", key: "branch_name", width: 1.5 },
             { label: "Stock Balance", key: "stock_balance", width: 1 },
           ],
         },
@@ -11961,6 +12307,25 @@
       brands: [],
       states: [],
       serial_nos: [],
+      invoice_serial_nos: [],
+
+      async onInvoiceChange() {
+        const inv = this.movementForm.custom_invoice_number;
+        if (!inv) {
+          this.invoice_serial_nos = [];
+          return;
+        }
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_serial_nos_by_invoice",
+            args: { invoice_number: inv }
+          });
+          this.invoice_serial_nos = res.message || [];
+        } catch (e) {
+          console.error("Error fetching serial nos for invoice:", e);
+          this.invoice_serial_nos = [];
+        }
+      },
 
       inwardForm: {
         supplier: "",
@@ -12040,6 +12405,7 @@
           ["8554", "3130"].includes(this.userEmployeeId) || this.isAdmin;
 
         const type = this.userInventoryType ? String(this.userInventoryType).trim().toLowerCase() : "";
+        const designation = this.userDesignation ? String(this.userDesignation).trim().toUpperCase() : "";
 
         return this.sidebar.sections
           .filter((section) => {
@@ -12093,12 +12459,12 @@
                   );
                 } else if (!type) {
                   // If No Match, only show Requests
-                  // EXCEPT: Branch Manager can see Branch Stock
+                  // EXCEPT: Branch Manager, Branch Operation Manager and Cluster Operation Manager can see Branch Stock and Inward
                   filteredItems = filteredItems.filter(
                     (item) =>
                       item.label === "Requests" ||
-                      (item.label === "Branch Stock" &&
-                        this.userDesignation === "BRANCH MANAGER"),
+                      (["Branch Stock", "Inward"].includes(item.label) &&
+                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(designation)),
                   );
                 }
               }
@@ -12143,6 +12509,21 @@
           d.toLowerCase().includes(search),
         );
       },
+      getAssetShortCode(name, code, fallback = 'AST') {
+        let targetName = name;
+        if (!targetName && code) {
+          const item = this.itemsList.find(i => i.name === code || i.item_code === code);
+          if (item) targetName = item.item_name;
+        }
+        if (!targetName) return fallback;
+        let cleanName = targetName.trim();
+        let nameParts = cleanName.split(/\s+/);
+        if (nameParts.length >= 3) {
+          return (nameParts[0][0] + nameParts[1][0] + nameParts[2][0]).toUpperCase();
+        }
+        return cleanName.replace(/\s+/g, '').substring(0, 3).toUpperCase();
+      },
+
       get projectedAssetId() {
         let parts = ['SMCCSL'];
 
@@ -12183,8 +12564,8 @@
         parts.push(this.createAssetForm.division ? this.createAssetForm.division.toUpperCase() : '[DIVISION]');
 
         // Asset Code (Item)
-        let asset_code = (this.createAssetForm.item_name || this.createAssetForm.item_code || '').substring(0, 3).toUpperCase();
-        parts.push(asset_code || '[ASSET]');
+        let asset_code = this.getAssetShortCode(this.createAssetForm.item_name, this.createAssetForm.item_code, '[ASSET]');
+        parts.push(asset_code);
 
         // Brand
         let brand_name = (this.createAssetForm.brand || '').toUpperCase();
@@ -12379,11 +12760,19 @@
       },
 
       get filteredSerialNos() {
-        const search = (
-          this.createAssetForm.serial_no || ""
-        ).toLowerCase();
-        if (!search) return this.serial_nos;
-        return this.serial_nos.filter((s) => s.toLowerCase().includes(search));
+        const search = (this.createAssetForm.serial_no || "").toLowerCase();
+        const itemCode = this.createAssetForm.item_code;
+        let list = this.serial_nos;
+        
+        // Filter by item_code if available
+        if (itemCode) {
+          list = list.filter(s => s.item_code === itemCode);
+        }
+
+        if (!search) return list.map(s => s.name);
+        return list
+          .filter((s) => s.name.toLowerCase().includes(search))
+          .map(s => s.name);
       },
 
       get filteredZones() {
@@ -12396,6 +12785,12 @@
         const search = (this.createAssetForm.division_display || "").toLowerCase();
         if (!search) return this.divisions;
         return this.divisions.filter((d) => d.toLowerCase().includes(search));
+      },
+
+      get filteredInvoices() {
+        const search = (this.movementForm.custom_invoice_number || "").toLowerCase();
+        if (!search) return this.invoiceNumbers;
+        return this.invoiceNumbers.filter((inv) => inv.toLowerCase().includes(search));
       },
 
       get filteredBrands() {
@@ -12660,7 +13055,7 @@
       },
 
       async fetchItemQuantities() {
-        if (!this.userWarehouse || this.rows.length === 0) return;
+        if (!this.userWarehouse) return;
         try {
           const res = await frappe.call({
             method:
@@ -12669,10 +13064,12 @@
           });
           if (res.message) {
             this.itemQuantities = res.message;
-            this.rows = this.rows.map((row) => ({
-              ...row,
-              branch_qty: this.itemQuantities[row.item_code] || 0,
-            }));
+            if (this.rows && this.rows.length > 0) {
+              this.rows = this.rows.map((row) => ({
+                ...row,
+                branch_qty: this.itemQuantities[row.item_code] || 0,
+              }));
+            }
           }
         } catch (e) {
           console.error("Error fetching item quantities:", e);
@@ -12895,10 +13292,15 @@
             });
 
             if (res.message) {
-              const data = (res.message.data || []).map((row) => ({
-                ...row,
-                name: row.name || `${row.item_code}-${row.warehouse}`,
-              }));
+              const data = (res.message.data || []).map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
               if (append) {
                 this.rows = this.rows.concat(data);
               } else {
@@ -13404,6 +13806,8 @@
           this.inwardForm = {
             supplier: "",
             supplier_display: "",
+            custom_invoice_number: "",
+            custom_invoice_date: "",
             posting_date: frappe.datetime.now_date(),
             is_past_stock_date: false,
             existing_stock_date: "",
@@ -13418,6 +13822,7 @@
               item_code: "",
               item_code_display: "",
               uom: "",
+              description: "",
               qty: 1,
               rate: 0,
               warehouse: "",
@@ -13526,6 +13931,9 @@
               target_location_display: "",
               to_employee: "",
               to_employee_display: "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             },
           ];
           return;
@@ -13711,6 +14119,9 @@
             this.states = data.states || [];
             this.hsnCodes = data.hsn_codes || [];
             this.serial_nos = data.serial_nos || [];
+            
+            const invRes = await frappe.call({ method: "sahayog.procurement.api.stock_balance_ledger.get_invoice_numbers" });
+            this.invoiceNumbers = invRes.message || [];
           }
         } catch (e) {
           console.error("Error fetching portal master data:", e);
@@ -14048,20 +14459,107 @@
         }
       },
 
+      matchStateOption(inputState) {
+        if (!inputState) return "";
+        const states = [
+          "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar",
+          "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Goa",
+          "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka",
+          "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur",
+          "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan",
+          "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+        ];
+        const match = states.find(s => s.toLowerCase() === inputState.toLowerCase());
+        return match || inputState;
+      },
+
       async submitMovementFromModal(shouldSubmit = false) {
+        // Full original values for Data (Creation)
+        const fullZone = this.movementForm.emp_zone;
+        const fullSol = this.movementForm.emp_location;
+        const fullState = this.matchStateOption(this.movementForm.emp_state); // Normalize State
+        const fullDivision = this.movementForm.emp_division;
+
+        // Custom Console Log (Single Line - Uncombined components for display)
+        const logZone = fullZone || 'ZONE';
+        const logSol = fullSol || 'LOC';
+        const logState = fullState || 'STATE';
+        const logDivision = fullDivision ? fullDivision.substring(0,3).toUpperCase() : 'DIV';
+        const assetCodes = this.movementItems.map(i => i.item_code).filter(c => c).join(", ");
+        const brands = this.movementItems.map(i => i.brand).filter(b => b).join(", ");
+        const serials = this.movementItems.map(i => i.serial_no).filter(s => s).join(", ");
+        const invoiceNo = this.movementForm.custom_invoice_number || "N/A";
+        
+        console.log(`Zone: ${logZone} | SOL: ${logSol} | State: ${logState} | Div: ${logDivision} | Asset Code: ${assetCodes} | Brand: ${brands} | Serial: ${serials} | Invoice: ${invoiceNo}`);
+
         if (!this.movementForm.purpose || !this.movementForm.transaction_date) {
           frappe.msgprint("Purpose and Transaction Date are required");
           return;
         }
 
-        const validItems = this.movementItems.filter((i) => i.asset);
-        if (validItems.length === 0) {
-          frappe.msgprint("At least one asset must be selected");
-          return;
-        }
-
+        // 1. AUTOMATED ASSET CREATION
         this.creatingMovement = true;
         try {
+          for (let item of this.movementItems) {
+            // If asset is NOT linked, create it
+            if (!item.asset && item.item_code) {
+              const assetDoc = {
+                doctype: "Asset",
+                asset_name: item.item_name || item.item_code,
+                item_code: item.item_code,
+                location: fullSol, // Use original SOL ID
+                custodian: item.to_employee,
+                zone: fullZone,     // Use original Zone
+                state: fullState,   // Use normalized State
+                division: fullDivision, // Use original Division
+                brand: item.brand,
+                serial_no: item.serial_no,
+                custom_invoice_number: this.movementForm.custom_invoice_number || invoiceNo,
+                custom_emr: this.movementForm.custom_reference_name,
+                purchase_date: frappe.datetime.now_date(),
+                available_for_use_date: frappe.datetime.now_date(),
+                gross_purchase_amount: 123456,
+                booked_fixed_asset: 1,
+                is_existing_asset: 1, // Allow submission without Purchase Invoice
+                naming_series: "AST-",
+                company: "Sahayog Multistate Credit Co-op Society Ltd",
+                asset_owner: "Company",
+                asset_owner_company: "Sahayog Multistate Credit Co-op Society Ltd",
+              };
+
+              console.log("Creating Asset automatically with full values:", assetDoc);
+              const assetRes = await frappe.call({
+                method: "frappe.client.insert",
+                args: { doc: assetDoc },
+                error: () => {}, // Suppress global error message
+              });
+
+              if (assetRes.message) {
+                // Submit the asset to move it out of Draft state (docstatus 1)
+                // This allows it to be used in an Asset Movement
+                const submitRes = await frappe.call({
+                  method: "frappe.client.submit",
+                  args: { doc: assetRes.message },
+                  error: () => {}, // Suppress global error message
+                });
+
+                if (submitRes.message) {
+                  item.asset = submitRes.message.name;
+                  item.asset_display = submitRes.message.name;
+                  console.log(`Auto-created and Submitted Asset: ${item.asset}`);
+                }
+              }
+            }
+          }
+
+          const validItems = this.movementItems.filter((i) => i.asset);
+          if (validItems.length === 0) {
+            frappe.msgprint("At least one asset must be selected or created");
+            this.creatingMovement = false;
+            return;
+          }
+
+          // 2. PROCEED WITH MOVEMENT CREATION
           // Pre-create missing locations
           const locationsToCreate = validItems.map(i => i.target_location).filter(l => l);
           if (locationsToCreate.length > 0) {
@@ -14072,76 +14570,141 @@
             });
           }
 
-          const doc = {
-            doctype: "Asset Movement",
-            transaction_date: this.movementForm.transaction_date,
-            purpose: this.movementForm.purpose,
-            custom_reference_doctype:
-              this.movementForm.custom_reference_doctype,
-            custom_reference_name: this.movementForm.custom_reference_name,
-            assets: validItems.map((i) => ({
+          // Filter assets that actually need a Movement record (Location must be different)
+          const assetsToMove = validItems.filter(i => {
+              // Find current location
+              const existingAsset = this.assetsList.find(a => a.name === i.asset);
+              // If not in assetsList, it was just created at fullSol
+              const currentLoc = existingAsset ? existingAsset.location : fullSol;
+              return i.target_location && i.target_location !== currentLoc;
+          }).map(i => ({
               asset: i.asset,
               target_location: i.target_location,
               to_employee: i.to_employee,
-            })),
-          };
+          }));
 
-          let res = await frappe.call({
-            method: "frappe.client.insert",
-            args: { doc },
-          });
+          let finalMovementName = null;
 
-          if (res.message) {
-            let finalDoc = res.message;
-            if (shouldSubmit) {
-              const submitRes = await frappe.call({
-                method: "frappe.client.submit",
-                args: { doc: finalDoc },
-              });
-              if (submitRes.message) {
-                finalDoc = submitRes.message;
+          if (assetsToMove.length > 0) {
+            const doc = {
+                doctype: "Asset Movement",
+                transaction_date: this.movementForm.transaction_date,
+                purpose: this.movementForm.purpose,
+                custom_reference_doctype: this.movementForm.custom_reference_doctype,
+                custom_reference_name: this.movementForm.custom_reference_name,
+                assets: assetsToMove,
+            };
 
-                // Update item statuses to 'Dispatch' in EMR if applicable
-                if (
-                  this.movementForm.custom_reference_doctype ===
-                    "Employee Material Request" &&
-                  this.movementForm.custom_reference_name
-                ) {
-                  const itemStatusMap = this.movementItems.reduce((acc, i) => {
-                    if (i.emr_item_name && i.asset) {
-                      acc[i.emr_item_name] = "Dispatch";
-                    }
-                    return acc;
-                  }, {});
-
-                  if (Object.keys(itemStatusMap).length > 0) {
-                    await frappe.call({
-                      method:
-                        "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
-                      args: {
-                        docname: this.movementForm.custom_reference_name,
-                        item_status_map: itemStatusMap,
-                      },
-                    });
-                  }
-                }
-              }
-            }
-
-            frappe.show_alert({
-              message: `Asset Movement "${finalDoc.name}" ${shouldSubmit ? "submitted" : "saved as draft"}`,
-              indicator: "green",
+            let res = await frappe.call({
+                method: "frappe.client.insert",
+                args: { doc },
+                error: () => {}, // Suppress global error message
             });
-            this.showMovementModal = false;
-            // If we are on the Movements page, refresh data
-            if (this.activeItem === "Movements") {
-              await this.fetchData("Asset Movement");
+
+            if (res.message) {
+                let finalDoc = res.message;
+                if (shouldSubmit) {
+                    const submitRes = await frappe.call({
+                        method: "frappe.client.submit",
+                        args: { doc: finalDoc },
+                        error: () => {}, // Suppress global error message
+                    });
+                    if (submitRes.message) finalDoc = submitRes.message;
+                }
+                finalMovementName = finalDoc.name;
             }
           }
+
+          // 3. ALWAYS UPDATE EMR ITEM STATUS
+          if (
+            this.movementForm.custom_reference_doctype === "Employee Material Request" &&
+            this.movementForm.custom_reference_name
+          ) {
+            const itemStatusMap = this.movementItems.reduce((acc, i) => {
+              if (i.emr_item_name && i.asset) {
+                acc[i.emr_item_name] = "Dispatch";
+              }
+              return acc;
+            }, {});
+
+            if (Object.keys(itemStatusMap).length > 0) {
+              await frappe.call({
+                method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                args: {
+                  docname: this.movementForm.custom_reference_name,
+                  item_status_map: itemStatusMap,
+                },
+              });
+            }
+          }
+
+          frappe.show_alert({
+            message: finalMovementName 
+                ? `Asset Movement "${finalMovementName}" created and Request updated` 
+                : "Assets assigned successfully (Request updated)",
+            indicator: "green",
+          });
+
+          this.showMovementModal = false;
+          await this.fetchData(this.currentView.doctype);
+          if (this.activeItem === "Movements") await this.fetchData("Asset Movement");
+          if (this.activeItem === "Requests") await this.fetchData("Employee Material Request");
+
         } catch (e) {
           console.error("Error creating movement:", e);
-          const errorMsg = e.message || e.exc || "Failed to create movement.";
-          frappe.msgprint(errorMsg);
+          
+          // Robustly extract error message from Frappe/jQuery error object
+          let errorString = "";
+          try {
+            errorString = JSON.stringify(e);
+          } catch (err) {
+            errorString = String(e);
+          }
+          
+          if (errorString.includes("Source and Target Location cannot be same")) {
+            // Asset is already at target, but we still need to mark EMR items as Dispatched
+            try {
+              if (
+                this.movementForm.custom_reference_doctype === "Employee Material Request" &&
+                this.movementForm.custom_reference_name
+              ) {
+                const itemStatusMap = this.movementItems.reduce((acc, i) => {
+                  if (i.emr_item_name && i.asset) {
+                    acc[i.emr_item_name] = "Dispatch";
+                  }
+                  return acc;
+                }, {});
+
+                if (Object.keys(itemStatusMap).length > 0) {
+                  await frappe.call({
+                    method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_emr_item_status",
+                    args: {
+                      docname: this.movementForm.custom_reference_name,
+                      item_status_map: itemStatusMap,
+                    },
+                  });
+                }
+              }
+              frappe.show_alert({
+                message: "Asset assigned successfully (already at target branch)",
+                indicator: "green",
+              });
+              this.showMovementModal = false;
+              if (this.activeItem === "Requests") {
+                await this.fetchData("Employee Material Request");
+              }
+              if (this.activeItem === "Movements") {
+                await this.fetchData("Asset Movement");
+              }
+            } catch (innerErr) {
+              console.error("EMR update error:", innerErr);
+              frappe.msgprint("Assignment complete (same location) but failed to update Request status.");
+            }
+          } else {
+            const rawError = e.message || e.exc || (typeof e === 'string' ? e : "");
+            const errorMsg = rawError || "Failed to create movement.";
+            frappe.msgprint(errorMsg);
+          }
         } finally {
           this.creatingMovement = false;
         }
@@ -14507,13 +15070,53 @@
         if (hasAssets && !hasStock) {
           // If ONLY assets are involved, show the Asset Movement MODAL
           this.showMovementModal = true;
-          this.showDetailView = isFromList ? false : true; // Keep detail view if we were there
+          this.fetchItemQuantities();
+          this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
+            custom_invoice_number: "",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
+
+          // Fetch EMR and Employee details for Asset ID generation
+          frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Employee Material Request", name: row.name },
+            callback: (r) => {
+              if (r.message && r.message.employee) {
+                frappe.call({
+                  method: "frappe.client.get",
+                  args: { doctype: "Employee", name: r.message.employee },
+                  callback: (empR) => {
+                    if (empR.message) {
+                      this.movementForm.emp_zone = empR.message.custom_zone || "";
+                      this.movementForm.emp_location = empR.message.sol_id || "";
+                      this.movementForm.emp_division = empR.message.custom_division || "";
+
+                      // Fetch State from Sahayog Branch using sol_id
+                      if (empR.message.sol_id) {
+                        frappe.call({
+                          method: "frappe.client.get_value",
+                          args: {
+                            doctype: "Sahayog Branch",
+                            filters: { name: empR.message.sol_id },
+                            fieldname: "state"
+                          },
+                          callback: (res) => {
+                            if (res.message && res.message.state) {
+                              this.movementForm.emp_state = res.message.state;
+                            }
+                          }
+                        });
+                      }
+                    }
+                  }
+                });
+              }
+            }
+          });
 
           // Pre-populate movement items from the filtered items
           this.movementItems = itemsToProcess
@@ -14528,6 +15131,9 @@
               target_location_display: row.target_location || "",
               to_employee: row.employee || "",
               to_employee_display: row.employee_name || row.employee || "",
+              brand: "",
+              brand_display: "",
+              serial_no: "",
             }));
 
           if (this.movementItems.length === 0) {
@@ -14541,8 +15147,11 @@
                 target_location_display: "",
                 to_employee: "",
                 to_employee_display: "",
-              },
-            ];
+                brand: "",
+                brand_display: "",
+                serial_no: "",
+                },
+                ];
           }
           return;
         }
@@ -14751,6 +15360,32 @@
           } catch (e) {
             console.error("Submission error:", e);
             frappe.msgprint(e.message || "Error submitting record");
+          } finally {
+            this.loading = false;
+          }
+        });
+      },
+
+      async cancelRowRecord(row) {
+        if (!row || !row.name) return;
+        const doctype = this.currentView.doctype;
+
+        frappe.confirm(`Are you sure you want to CANCEL ${row.name}? This action cannot be undone.`, async () => {
+          this.loading = true;
+          try {
+            await frappe.call({
+              method: "frappe.client.cancel",
+              args: { doctype, name: row.name },
+            });
+
+            frappe.show_alert({
+              message: `${row.name} cancelled successfully`,
+              indicator: "red",
+            });
+            await this.fetchData(doctype);
+          } catch (e) {
+            console.error("Cancellation error:", e);
+            frappe.msgprint(e.message || "Error cancelling record");
           } finally {
             this.loading = false;
           }
@@ -15061,7 +15696,7 @@
         item.item_code = itemCode;
         item.item_name = itemName;
         item.item_code_display = itemName + " (" + itemCode + ")";
-        item.description = description;
+        item.description = (description || "").trim();
         this.focusedField = null;
       },      addOutwardItem() {
         this.outwardItems.push({
@@ -15284,6 +15919,8 @@
             doctype: "Purchase Receipt",
             company: company,
             supplier: this.inwardForm.supplier,
+            custom_invoice_number: this.inwardForm.custom_invoice_number,
+            custom_invoice_date: this.inwardForm.custom_invoice_date,
             posting_date: this.inwardForm.posting_date,
             set_warehouse: this.inwardForm.set_warehouse,
             custom_po_wo: this.inwardForm.custom_po_wo,
@@ -15294,6 +15931,7 @@
               .filter((i) => i.item_code)
               .map((i) => ({
                 item_code: i.item_code,
+                description: i.description,
                 qty: i.qty || 1,
                 uom: i.uom,
                 warehouse: i.warehouse || this.inwardForm.set_warehouse,
