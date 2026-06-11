@@ -138,32 +138,49 @@ def is_valid_approver(docname):
                 if can_delegate or can_bypass:
                     break
 
-            # Bypass logic: Check if current user is in the LAST active row
+            # --- Improved is_last logic ---
+            # A user is "Last" ONLY if they are associated with the last row 
+            # AND NOT associated with any earlier active rows.
+            
             last_row = active_rows[-1]
             user_in_last_row = False
-            if last_row.selection_type == "User" and (last_row.approver == current_user or last_row.delegated_to == current_user):
-                user_in_last_row = True
-            elif last_row.selection_type == "Group":
-                if last_row.delegated_to == current_user:
-                    user_in_last_row = True
-                else:
-                    user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
-                    if user_emp and frappe.db.exists("Employee Group Table", {"parent": last_row.group_email, "employee": user_emp}):
-                        user_in_last_row = True
-            
-            # Also check if user is the manager of the last row's approver (Managers are considered "in the last row" for bypass restriction)
-            if not user_in_last_row and last_row.selection_type == "User":
-                emp = frappe.db.get_value("Employee", {"user_id": last_row.approver}, "reports_to")
-                if emp:
-                    mgr = frappe.db.get_value("Employee", emp, "user_id")
-                    if mgr == current_user: user_in_last_row = True
-                if not user_in_last_row and last_row.delegated_to:
-                    d_emp = frappe.db.get_value("Employee", {"user_id": last_row.delegated_to}, "reports_to")
-                    if d_emp:
-                        d_mgr = frappe.db.get_value("Employee", d_emp, "user_id")
-                        if d_mgr == current_user: user_in_last_row = True
+            user_in_earlier_row = False
 
-            if user_in_last_row:
+            for i, row in enumerate(active_rows):
+                is_in_this_row = False
+                # Check direct participation
+                if row.selection_type == "User" and (row.approver == current_user or row.delegated_to == current_user):
+                    is_in_this_row = True
+                elif row.selection_type == "Group":
+                    if row.delegated_to == current_user:
+                        is_in_this_row = True
+                    else:
+                        user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
+                        if user_emp and frappe.db.exists("Employee Group Table", {"parent": row.group_email, "employee": user_emp}):
+                            is_in_this_row = True
+                
+                # Check manager participation
+                if not is_in_this_row and row.selection_type == "User":
+                    emp_reports_to = frappe.db.get_value("Employee", {"user_id": row.approver}, "reports_to")
+                    if emp_reports_to:
+                        mgr = frappe.db.get_value("Employee", emp_reports_to, "user_id")
+                        if mgr == current_user: is_in_this_row = True
+                    
+                    if not is_in_this_row and row.delegated_to:
+                        d_emp_reports_to = frappe.db.get_value("Employee", {"user_id": row.delegated_to}, "reports_to")
+                        if d_emp_reports_to:
+                            d_mgr = frappe.db.get_value("Employee", d_emp_reports_to, "user_id")
+                            if d_mgr == current_user: is_in_this_row = True
+
+                # Categorize the user's participation
+                if is_in_this_row:
+                    if i == len(active_rows) - 1:
+                        user_in_last_row = True
+                    else:
+                        user_in_earlier_row = True
+
+            # If they are in an earlier row, they aren't "Last" yet (even if they are also in the last row)
+            if user_in_last_row and not user_in_earlier_row:
                 is_last = True
 
     return {"is_valid": is_valid, "is_last": is_last, "can_delegate": can_delegate, "can_bypass": can_bypass}
@@ -233,7 +250,7 @@ def bypass_approval(docname, remark):
     # Find active rows to bypass
     bypassed_any = False
     for d in doc.approvers:
-        if d.is_bypassed: continue
+        if d.is_bypassed or d.approver_status == "Approved": continue
         
         is_direct = (d.selection_type == "User" and (d.approver == current_user or d.delegated_to == current_user))
         is_group_member = False
@@ -246,7 +263,7 @@ def bypass_approval(docname, remark):
             d.is_bypassed = 1
             d.approver_status = "Skipped"
             bypassed_any = True
-            # In bypass, we don't break because one user might bypass their multiple roles/groups
+            break # Only bypass the FIRST available level
     
     if not bypassed_any:
         frappe.throw("You are not authorized to bypass this request.")
@@ -254,6 +271,15 @@ def bypass_approval(docname, remark):
     frappe.flags.in_approval_action = True
     try:
         doc.add_comment("Comment", f"Approval level bypassed by {current_user}. Remark: {remark}")
+        
+        # Check if any non-bypassed, non-approved rows are left
+        active_remaining = [d for d in doc.approvers if not d.is_bypassed and d.approver_status != "Approved"]
+        if not active_remaining:
+            # Auto-approve if no levels left
+            doc.approval_status = "Approved"
+            doc.acted_by = current_user
+            doc.approver_remark = f"Auto-approved (all levels cleared/bypassed). Remark: {remark}"
+
         doc.save(ignore_permissions=True)
     finally:
         frappe.flags.in_approval_action = False
