@@ -344,15 +344,18 @@
         opacity: 0.6;
         cursor: not-allowed;
       }
-      .btn-done {
+      .btn-clear {
         background: #f3f4f6;
-        color: #9ca3af;
-        border: 1.5px solid #e5e7eb;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
         border-radius: 20px;
         padding: 5px 12px;
         font-size: 11px;
-        cursor: default;
-        white-space: nowrap;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .btn-clear:hover {
+        background: #e5e7eb;
       }
       .status-pill {
         border-radius: 20px;
@@ -487,6 +490,11 @@
       .cal-d.absent-d {
         background: #fee2e2;
         color: #dc2626;
+        font-weight: 600;
+      }
+      .cal-d.leave-d {
+        background: #fef3c7;
+        color: #d97706;
         font-weight: 600;
       }
       .cal-d.woff {
@@ -1091,7 +1099,10 @@
               id="leaveBalanceWrap"
               style="display: none"
             >
-              <div class="lb-title">Leave Balance</div>
+              <div class="lb-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>Leave Balance</span>
+                  <button class="btn-in" style="padding: 2px 8px; font-size: 10px;" onclick="openLeaveModal()">Apply Leave</button>
+              </div>
               <div class="lb-cards">
                 <div class="lb-card lb-sl">
                   <div class="lb-val" id="lb-sl-bal">0</div>
@@ -1109,6 +1120,35 @@
                   <div class="lb-sub" id="lb-el-sub"></div>
                 </div>
               </div>
+            </div>
+
+            <!-- LEAVE APPLICATION MODAL -->
+            <div id="leaveModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+                <div style="background:#fff; padding:20px; border-radius:var(--radius); width:90%; max-width:400px;">
+                    <h3 style="margin-bottom:15px; font-family:'Syne', sans-serif;">Apply Leave</h3>
+                    <div style="margin-bottom:10px;">
+                        <label>Leave Type</label>
+                        <select id="leaveTypeSel" class="member-select"></select>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <label>From Date</label>
+                            <input type="date" id="fromDate" class="member-select" />
+                        </div>
+                        <div>
+                            <label>To Date</label>
+                            <input type="date" id="toDate" class="member-select" />
+                        </div>
+                    </div>
+                    <div style="margin-bottom:15px;">
+                        <label>Reason</label>
+                        <textarea id="leaveReason" class="member-select" rows="3"></textarea>
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <button class="btn-clear" onclick="closeLeaveModal()">Cancel</button>
+                        <button class="btn-in" onclick="submitLeave()">Submit</button>
+                    </div>
+                </div>
             </div>
 
             <!-- EMPTY STATE — shown before selection -->
@@ -1175,6 +1215,10 @@
                 <div class="cl-item">
                   <div class="cl-dot" style="background: #ef4444"></div>
                   Absent
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #fef3c7"></div>
+                  On Leave
                 </div>
                 <div class="cl-item">
                   <div class="cl-dot" style="background: var(--brand2)"></div>
@@ -1323,8 +1367,12 @@
             </div>
 
             <div class="emp-actions">
-              <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
-              <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
+              ${l.status === 'Open' ? `
+                <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
+                <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
+              ` : `
+                <span class="status-pill ${l.status === 'Approved' ? 'pill-present' : 'pill-absent'}">${l.status}</span>
+              `}
             </div>
           </div>
         `,
@@ -1507,12 +1555,14 @@
           else if (status === "Absent")
             pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
           else if (status === "On Leave")
-            pillHtml = `<span class="status-pill pill-leave">🏠 On Leave</span>`;
+            pillHtml = ""; // Hide pill as it's shown in actions
           else
             pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
           let actionsHtml = "";
-          if (!status) {
+          if (status === "On Leave") {
+            actionsHtml = `<button class="btn-done" style="background:#fef3c7; color:#d97706; border-color:#fef3c7;">On Leave</button>`;
+          } else if (!status) {
             actionsHtml = `<button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ Check In</button>
                            <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
           } else if (status === "Present" && !s.check_out) {
@@ -1607,6 +1657,7 @@
           if (isToday) cls += " today-d";
           if (histStatus === "Present") cls += " present-d";
           else if (histStatus === "Absent") cls += " absent-d";
+          else if (histStatus === "On Leave") cls += " leave-d";
           else if (isWeekend) cls += " woff";
 
           cell.className = cls;
@@ -1641,18 +1692,45 @@
     `;
       }
 
-      // ── UTILS ─────────────────────────────────────────────
-      function changeMonth(dir) {
-        calMonth += dir;
-        if (calMonth > 11) {
-          calMonth = 0;
-          calYear++;
+      async function openLeaveModal() {
+        const leaveTypes = await callAPI("get_leave_types", {}, "leave");
+        const sel = document.getElementById("leaveTypeSel");
+        sel.innerHTML = '<option value="">— Select Leave Type —</option>';
+        if (leaveTypes) {
+            leaveTypes.forEach(lt => {
+                const opt = document.createElement("option");
+                opt.value = lt.name;
+                opt.textContent = lt.name;
+                sel.appendChild(opt);
+            });
         }
-        if (calMonth < 0) {
-          calMonth = 11;
-          calYear--;
+        document.getElementById("leaveModal").style.display = "flex";
+      }
+
+      function closeLeaveModal() {
+        document.getElementById("leaveModal").style.display = "none";
+      }
+
+      async function submitLeave() {
+        const employee = selectedMemberId;
+        const leave_type = document.getElementById("leaveTypeSel").value;
+        const from_date = document.getElementById("fromDate").value;
+        const to_date = document.getElementById("toDate").value;
+        const reason = document.getElementById("leaveReason").value;
+
+        if (!employee || !leave_type || !from_date || !to_date) {
+            showToast("Please fill all required fields");
+            return;
         }
-        loadCalendarHistory();
+
+        const res = await callAPI("apply_leave", {
+            employee, leave_type, from_date, to_date, reason
+        }, "leave");
+
+        if (res && res.success) {
+            showToast(res.message);
+            closeLeaveModal();
+        }
       }
 
       function filterStaff(f, btn) {

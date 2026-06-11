@@ -3,6 +3,10 @@ from frappe import _
 from frappe.utils import getdate
 
 @frappe.whitelist(allow_guest=False)
+def get_leave_types():
+    return frappe.get_all("Leave Type", fields=["name"])
+
+@frappe.whitelist(allow_guest=False)
 def apply_leave(employee, leave_type, from_date, to_date, reason=None):
     if not employee or not leave_type:
         frappe.throw(_("Employee and Leave Type are required"))
