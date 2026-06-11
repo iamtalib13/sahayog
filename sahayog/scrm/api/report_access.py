@@ -489,11 +489,11 @@ def get_employee_performance_data(from_date, to_date):
     employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
 
     employee_stats = {}
-
+    DEBUG_USER = "8258@sahayog.com"
     for l in leads:
         frappe.log_error(
-                "EMP PERF PREF DEBUG",
-                f"""
+                 title=f"EMP PERF PREF DEBUG - {user}",
+            message=f"""
             User: {user}
             Zones Pref: {zones_pref}
             Regions Pref: {regions_pref}
@@ -514,10 +514,11 @@ def get_employee_performance_data(from_date, to_date):
         # Branch/Zone check karein pehle
         curr_sol = str(l.sol_id) if l.sol_id else ""
         if sol_ids_pref and curr_sol not in sol_ids_pref:
-            frappe.log_error(
-                "EMP PERF SOL SKIP",
-                f"Lead {l.name} skipped. Lead SOL={curr_sol}, Allowed={sol_ids_pref}"
-            )
+            if user == DEBUG_USER:
+                frappe.log_error(
+                    title=f"EMP PERF SOL SKIP - {user}",
+                    message=f"Lead {l.name} skipped. Lead SOL={curr_sol}, Allowed={sol_ids_pref}"
+                )
             continue
         branch = branch_map.get(curr_sol)
         
@@ -538,25 +539,26 @@ def get_employee_performance_data(from_date, to_date):
             region_match = not regions_pref or (emp_region in allowed_regions)
             
             if not zone_match or not region_match:
-                frappe.log_error(
-                    "EMP PERF BRANCH CHECK",
-                    f"""
-                Lead: {l.name}
-                Lead SOL: {curr_sol}
+                if user == DEBUG_USER:
+                    frappe.log_error(
+                        title=f"EMP PERF BRANCH CHECK - {user}",
+                        message=f"""
+                        Lead: {l.name}
+                        Lead SOL: {curr_sol}
 
-                Branch Zone: {branch.zone}
-                Branch Region: {branch.region}
+                        Branch Zone: {branch.zone}
+                        Branch Region: {branch.region}
 
-                Normalized Zone: {emp_zone}
-                Normalized Region: {emp_region}
+                        Normalized Zone: {emp_zone}
+                        Normalized Region: {emp_region}
 
-                Zones Pref: {zones_pref}
-                Regions Pref: {regions_pref}
+                        Zones Pref: {zones_pref}
+                        Regions Pref: {regions_pref}
 
-                Zone Match: {zone_match}
-                Region Match: {region_match}
-                """
-                )
+                        Zone Match: {zone_match}
+                        Region Match: {region_match}
+                        """
+                    )
                 continue
 
         key = emp.employee_number
@@ -595,10 +597,20 @@ def get_employee_performance_data(from_date, to_date):
         if l.status == "Not Interested":
             employee_stats[key]["total_not_interested"] += 1
             employee_stats[key]["not_interested_amount"] += lead_amt
+    if user == DEBUG_USER:
         frappe.log_error(
-            "EMP PERF FINAL COUNT",
-            f"Employees Returned: {len(employee_stats)}"
-        )  
+            title=f"EMP PERF FINAL COUNT - {user}",
+            message=f"""
+            User: {user}
+            Employees Returned: {len(employee_stats)}
+            Employee IDs: {list(employee_stats.keys())}
+            """
+        )
+    if user == DEBUG_USER:
+        frappe.log_error(
+            title=f"EMP PERF RETURN DATA - {user}",
+            message=str(list(employee_stats.values())[:10])
+        )
     return list(employee_stats.values())
 
 @frappe.whitelist()
