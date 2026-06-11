@@ -204,6 +204,7 @@ def delegate_approval(docname, delegate_user, remark):
     frappe.flags.in_approval_action = True
     try:
         target_row.delegated_to = delegate_user
+        target_row.approver_status = "Skipped"
         doc.add_comment("Comment", f"Approval delegated to {delegate_user} by {current_user}. Remark: {remark}")
         doc.save(ignore_permissions=True)
     finally:
@@ -243,6 +244,7 @@ def bypass_approval(docname, remark):
         
         if is_direct or is_group_member or current_user == "Administrator":
             d.is_bypassed = 1
+            d.approver_status = "Skipped"
             bypassed_any = True
             # In bypass, we don't break because one user might bypass their multiple roles/groups
     
@@ -283,6 +285,11 @@ def submit_for_approval(docname):
         doc.approval_status = "Pending Approval"
         doc.acted_by = None
         doc.approver_remark = None
+
+        for d in doc.approvers:
+            if not d.is_bypassed:
+                d.approver_status = "Pending"
+
         doc.save(ignore_permissions=True)
 
         approvers_to_notify = get_all_valid_approvers(doc)
@@ -387,6 +394,28 @@ def process_approval(docname, action, remark):
         doc.approval_status = action
         doc.acted_by = user
         doc.approver_remark = remark
+
+        if action == "Approved":
+            for d in doc.approvers:
+                if d.is_bypassed: continue
+                
+                is_direct = (d.selection_type == "User" and (d.approver == user or d.delegated_to == user))
+                is_group_member = False
+                if d.selection_type == "Group" and d.group_email:
+                    user_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+                    if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
+                        is_group_member = True
+                
+                is_manager = False
+                if d.selection_type == "User" and d.approver:
+                    reports_to = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
+                    if reports_to:
+                        mgr_user = frappe.db.get_value("Employee", reports_to, "user_id")
+                        if mgr_user == user: is_manager = True
+                
+                if is_direct or is_group_member or is_manager or user == "Administrator":
+                    d.approver_status = "Approved"
+
         doc.save(ignore_permissions=True)
 
         doc.add_comment(
