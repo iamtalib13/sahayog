@@ -441,13 +441,23 @@ frappe.ui.form.on('Approval Request', {
 
         for (const row of approvers) {
             let label = frappe.utils.escape_html(row.approver_name || (row.selection_type === 'User' ? row.approver : row.group_email));
-            let sublabel = frappe.utils.escape_html(row.selection_type);
+            
+            let status_html = "";
+            if (row.approver_status === "Approved") {
+                status_html = '<div style="color: #16a34a; font-weight: bold; font-size: 10px; margin-top: 2px;">✓ Approved</div>';
+            } else if (row.approver_status === "Pending") {
+                status_html = '<div style="color: #f59e0b; font-weight: bold; font-size: 10px; margin-top: 2px;">● Pending</div>';
+            } else if (row.approver_status === "Skipped") {
+                status_html = '<div style="color: #64748b; font-weight: bold; font-size: 10px; margin-top: 2px;">⤶ Skipped</div>';
+            }
+
+            let sublabel = `<div>${frappe.utils.escape_html(row.selection_type)}</div>${status_html}`;
             
             if (row.is_bypassed) {
                 label = `<s>${label}</s>`;
                 sublabel = '<span style="color: #f59e0b; font-weight: bold;">Bypassed</span>';
             } else if (row.delegated_to) {
-                sublabel = '<span style="color: #64748b; font-style: italic;">Delegated Task</span>';
+                sublabel = `${sublabel}<div style="color: #64748b; font-style: italic; font-size: 10px;">(Delegated)</div>`;
             }
 
             checkpoints.push({
