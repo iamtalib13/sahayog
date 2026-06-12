@@ -936,6 +936,25 @@ def create_warehouse_if_not_exists(branch_id):
     return new_wh.name
 
 @frappe.whitelist()
+def get_item_rates_from_invoice(invoice_number):
+    if not invoice_number:
+        return {}
+    
+    # Get all PRs with this invoice
+    prs = frappe.get_all("Purchase Receipt", filters={"custom_invoice_number": invoice_number, "docstatus": 1}, pluck="name")
+    if not prs:
+        return {}
+        
+    # Get rates from items
+    items = frappe.get_all("Purchase Receipt Item", 
+                           filters={"parent": ["in", prs]}, 
+                           fields=["item_code", "net_rate"])
+    
+    # Map item_code to rate (taking the last found rate if multiple PRs)
+    rates = {i.item_code: i.net_rate for i in items}
+    return rates
+
+@frappe.whitelist()
 def get_serial_nos_by_invoice(invoice_number):
     if not invoice_number:
         return []

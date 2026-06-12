@@ -8617,6 +8617,16 @@
                     font-weight: 700;
                   "
                 >
+                  Amount
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
                   Target Location <span class="form-required">*</span>
                 </th>
                 <th
@@ -8756,6 +8766,15 @@
                       <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length)">
                         [[ serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length ]]
                       </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <input
+                        type="number"
+                        class="form-input"
+                        style="width: 100px; padding: 5px;"
+                        v-model="item.amount"
+                        placeholder="Amount"
+                      />
                     </td>
                     <td style="padding: 10px">
                       <div class="searchable-select-wrapper" style="width: 100%">
@@ -12353,13 +12372,28 @@
           return;
         }
         try {
+          // Fetch Serial Nos
           const res = await frappe.call({
             method: "sahayog.procurement.api.stock_balance_ledger.get_serial_nos_by_invoice",
             args: { invoice_number: inv }
           });
           this.invoice_serial_nos = res.message || [];
+
+          // Fetch Item Rates
+          const rateRes = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_item_rates_from_invoice",
+            args: { invoice_number: inv }
+          });
+          const rates = rateRes.message || {};
+          
+          // Update amount for items
+          this.movementItems = this.movementItems.map(item => ({
+            ...item,
+            amount: rates[item.item_code] || item.amount || 0
+          }));
+
         } catch (e) {
-          console.error("Error fetching serial nos for invoice:", e);
+          console.error("Error fetching invoice data:", e);
           this.invoice_serial_nos = [];
         }
       },
@@ -14556,7 +14590,7 @@
                 custom_emr: this.movementForm.custom_reference_name,
                 purchase_date: this.movementForm.custom_invoice_date || frappe.datetime.now_date(),
                 available_for_use_date: frappe.datetime.now_date(),
-                gross_purchase_amount: 123456,
+                gross_purchase_amount: item.amount || 0,
                 booked_fixed_asset: 1,
                 is_existing_asset: 1, // Allow submission without Purchase Invoice
                 naming_series: "AST-",
