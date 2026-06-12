@@ -484,8 +484,8 @@
         font-weight: 600;
       }
       .cal-d.half-d {
-        background: #fef3c7;
-        color: #d97706;
+        background: #e0e7ff;
+        color: #4338ca;
         font-weight: 600;
       }
       .cal-d.leave-d {
@@ -811,6 +811,184 @@
         text-align: right;
       }
 
+      /* DASHBOARD DRAWER */
+      .dashboard-drawer {
+        position: fixed;
+        right: -420px;
+        top: 0;
+        width: 420px;
+        max-width: 100%;
+        height: 100%;
+        background: #fff;
+        z-index: 9999;
+        transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y: auto;
+        box-shadow: -10px 0 30px rgba(45, 32, 96, 0.15);
+        display: flex;
+        flex-direction: column;
+      }
+      .dashboard-drawer.open {
+        right: 0;
+      }
+      .drawer-header {
+        padding: 20px;
+        background: var(--brand);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .drawer-header button {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: #fff;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+      }
+      .drawer-header button:hover {
+        background: rgba(255,255,255,0.2);
+      }
+      .drawer-content {
+        padding: 20px;
+        flex: 1;
+      }
+      .drawer-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(29, 21, 63, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 9998;
+        opacity: 0;
+        transition: 0.3s;
+      }
+      .drawer-overlay.show {
+        display: block;
+        opacity: 1;
+      }
+
+      /* DASHBOARD DRAWER REDESIGN */
+      .dash-section {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .dash-section:last-child {
+        border-bottom: none;
+      }
+      .dash-sec-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      .dash-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+      .dash-lbl {
+        color: var(--muted);
+      }
+      .dash-val {
+        font-weight: 700;
+        color: var(--brand);
+      }
+      
+      .emp-header-card {
+        text-align: center;
+        padding: 10px 0 20px;
+        border-bottom: 1.5px dashed var(--border);
+        margin-bottom: 20px;
+      }
+      .emp-h-name {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--brand);
+        font-family: "Syne", sans-serif;
+      }
+      .emp-h-sub {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        margin-top: 4px;
+        font-weight: 600;
+      }
+
+      .stat-pill-box {
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .corr-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .corr-item {
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        background: #f1f5f9;
+      }
+      .corr-val {
+        font-size: 16px;
+        font-weight: 700;
+        display: block;
+      }
+      .corr-lbl {
+        font-size: 9px;
+        color: var(--muted);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .manager-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #faf8ff;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid #e0e7ff;
+      }
+      .m-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--brand2);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .m-info h5 {
+        font-size: 13px;
+        margin: 0;
+        color: var(--brand);
+      }
+      .m-info p {
+        font-size: 10px;
+        margin: 2px 0 0;
+        color: var(--muted);
+      }
+
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
@@ -825,97 +1003,9 @@
     <!-- TOP BAR -->
     <nav class="topbar">
       <div class="topbar-left">
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(3, 5px);
-            gap: 3px;
-            cursor: pointer;
-          "
-          onclick="location.reload()"
-        >
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-          <span
-            style="
-              width: 5px;
-              height: 5px;
-              background: #fff;
-              border-radius: 1px;
-              display: block;
-            "
-          ></span>
-        </div>
+        <button class="menu-btn" id="dashboardMenuBtn" onclick="openDashboardDrawer()">
+          ☰
+        </button>
         <div class="logo-box">
           <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
             <circle
@@ -1389,11 +1479,11 @@
                   Absent
                 </div>
                 <div class="cl-item">
-                  <div class="cl-dot" style="background: #fef3c7"></div>
+                  <div class="cl-dot" style="background: #4338ca"></div>
                   Half Day
                 </div>
                 <div class="cl-item">
-                  <div class="cl-dot" style="background: #fef3c7"></div>
+                  <div class="cl-dot" style="background: #f59e0b"></div>
                   On Leave
                 </div>
                 <div class="cl-item">
@@ -1428,6 +1518,20 @@
     <!-- Employee Tooltip -->
     <div class="emp-tooltip" id="empTooltip"></div>
 
+    <!-- Dashboard Drawer -->
+    <div class="dashboard-drawer" id="dashboardDrawer">
+      <div class="drawer-header">
+        <span>Attendance Insights</span>
+        <button onclick="closeDashboardDrawer()">✕</button>
+      </div>
+      <div class="drawer-content" id="dashboardContent">
+        <div style="text-align: center; color: var(--muted); padding: 40px 0;">
+          Select a member to view insights
+        </div>
+      </div>
+    </div>
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDashboardDrawer()"></div>
+
     <script>
       // ── CONFIG & STATE ──────────────────────────────────────
       const COLORS = [
@@ -1441,6 +1545,147 @@
         "#14b8a6",
       ];
       let staff = [];
+
+      // ── DASHBOARD DRAWER LOGIC ─────────────────────────────
+      function openDashboardDrawer() {
+        document.getElementById("dashboardDrawer").classList.add("open");
+        document.getElementById("drawerOverlay").classList.add("show");
+        if (selectedMemberId) {
+          loadAttendanceDashboard(selectedMemberId);
+        }
+      }
+
+      function closeDashboardDrawer() {
+        document.getElementById("dashboardDrawer").classList.remove("open");
+        document.getElementById("drawerOverlay").classList.remove("show");
+      }
+
+      async function loadAttendanceDashboard(emp_id) {
+        const content = document.getElementById("dashboardContent");
+        
+        if (document.getElementById("dashboardDrawer").classList.contains("open")) {
+            content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:10px;font-size:12px;color:var(--muted);">Fetching insights...</p></div>';
+        }
+
+        const data = await callAPI("get_attendance_dashboard", {
+            employee: emp_id,
+            from_date: `${calYear}-${String(calMonth + 1).padStart(2, "0")}-01`,
+            to_date: `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${new Date(calYear, calMonth + 1, 0).getDate()}`
+        }, "attendance");
+
+        if (data) {
+            const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+            
+            // Correction Requests Section (only if total > 0)
+            let correctionHtml = "";
+            if (data.corrections.total > 0) {
+                correctionHtml = `
+                <div class="dash-section">
+                    <div class="dash-sec-title">Correction Requests</div>
+                    <div class="corr-grid">
+                        <div class="corr-item" style="background:#fff7ed; border:1px solid #fed7aa;">
+                            <span class="corr-val" style="color:#c2410c">${data.corrections.pending}</span>
+                            <span class="corr-lbl">Pending</span>
+                        </div>
+                        <div class="corr-item" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                            <span class="corr-val" style="color:#15803d">${data.corrections.approved}</span>
+                            <span class="corr-lbl">Approved</span>
+                        </div>
+                        <div class="corr-item" style="background:#fef2f2; border:1px solid #fecaca;">
+                            <span class="corr-val" style="color:#b91c1c">${data.corrections.rejected}</span>
+                            <span class="corr-lbl">Rejected</span>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            // Missing Dates Toggle logic
+            let missingDatesHtml = "";
+            if (data.monthly_summary.missing > 0) {
+                missingDatesHtml = `
+                    <div id="missingDatesList" style="display:none; margin-top:10px; padding:10px; background:#fff1f2; border-radius:8px; border:1px solid #fecaca;">
+                        <div style="font-size:10px; color:#b91c1c; font-weight:700; margin-bottom:5px; text-transform:uppercase;">Unmarked Working Days:</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                            ${data.monthly_summary.missing_dates.map(d => `<span style="font-size:10px; background:#fff; padding:2px 6px; border-radius:4px; color:#e11d48; border:1px solid #fda4af;">${d}</span>`).join("")}
+                        </div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div class="emp-header-card">
+                    <div class="emp-h-name">${data.employee_info.name}</div>
+                    <div class="emp-h-sub">${data.employee_info.designation}</div>
+                    <div class="emp-h-sub" style="font-size:10px; color:var(--brand2);">${data.employee_info.branch || ""}</div>
+                </div>
+
+                <div class="dash-section">
+                    <div class="dash-sec-title">Attendance Statistics</div>
+                    <div class="stat-pill-box">
+                        <div class="dash-row">
+                            <span class="dash-lbl">Attendance Marked Days</span>
+                            <span class="dash-val">${data.statistics.marked_days}</span>
+                        </div>
+                        <div class="dash-row">
+                            <span class="dash-lbl">Present Days</span>
+                            <span class="dash-val" style="color:var(--success)">${data.statistics.present_days}</span>
+                        </div>
+                        <div class="dash-row">
+                            <span class="dash-lbl">Absent Days</span>
+                            <span class="dash-val" style="color:var(--danger)">${data.statistics.absent_days}</span>
+                        </div>
+                        <div class="dash-row">
+                            <span class="dash-lbl">Leave Days</span>
+                            <span class="dash-val" style="color:#f59e0b">${data.statistics.leave_days}</span>
+                        </div>
+                        <div class="dash-row" style="margin-top:8px; padding-top:8px; border-top:1px solid #e2e8f0;">
+                            <span class="dash-lbl" style="font-weight:700;">Attendance %</span>
+                            <span class="dash-val" style="font-size:16px;">${data.statistics.attendance_percentage}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-section">
+                    <div class="dash-sec-title">Working Summary (${monthName})</div>
+                    <div class="dash-row">
+                        <span class="dash-lbl">Working Days</span>
+                        <span class="dash-val">${data.monthly_summary.total_working}</span>
+                    </div>
+                    <div class="dash-row">
+                        <span class="dash-lbl">Attendance Marked</span>
+                        <span class="dash-val">${data.monthly_summary.marked}</span>
+                    </div>
+                    <div class="dash-row" style="cursor:pointer;" onclick="toggleMissingDates()">
+                        <span class="dash-lbl">Missing Days <span style="font-size:10px; color:#e11d48;">(View)</span></span>
+                        <span class="dash-val" style="color:var(--danger)">${data.monthly_summary.missing}</span>
+                    </div>
+                    ${missingDatesHtml}
+                </div>
+
+                ${correctionHtml}
+
+                <div class="dash-section">
+                    <div class="dash-sec-title">Reporting To</div>
+                    <div class="manager-card">
+                        <div class="m-icon">${data.reporting_to.name.charAt(0)}</div>
+                        <div class="m-info">
+                            <h5 style="font-weight:700;">${data.reporting_to.name}</h5>
+                            <p style="color:#94a3b8;">${data.reporting_to.designation || ""}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // Update Calendar Summary with accurate API data
+            renderCalSummaryFromData(data.statistics, data.employee_info);
+        }
+      }
+
+      function toggleMissingDates() {
+          const list = document.getElementById("missingDatesList");
+          if (list) {
+              list.style.display = list.style.display === "none" ? "block" : "none";
+          }
+      }
 
       // Tooltip Handlers
       function showEmpTooltip(e, empId) {
@@ -1643,6 +1888,7 @@
           calYear--;
         }
         loadCalendarHistory();
+        if (selectedMemberId) loadAttendanceDashboard(selectedMemberId);
       }
 
       async function loadTeamLeaves() {
@@ -1907,6 +2153,7 @@
 
         loadLeaveBalances(id);
         loadCalendarHistory();
+        loadAttendanceDashboard(id);
         renderEmpList();
       }
 
@@ -1976,7 +2223,6 @@
 
           grid.appendChild(cell);
         }
-        renderCalSummary();
       }
 
       function openCorrectionModal(date, currentStatus) {
@@ -2019,27 +2265,17 @@
         }
       }
 
-      function renderCalSummary() {
+      function renderCalSummaryFromData(stats, empInfo) {
         const summary = document.getElementById("calSummary");
         if (!selectedMemberId) return;
-        const s = staff.find((x) => x.name === selectedMemberId);
-        let present = 0,
-          absent = 0,
-          halfday = 0;
-        Object.values(attendanceHistory).forEach((v) => {
-          if (v === "Present") present++;
-          else if (v === "Absent") absent++;
-          else if (v === "Half Day") halfday++;
-        });
-        const total = present + absent + (halfday * 0.5);
-        const total_days = present + absent + halfday;
-        const pct = total_days ? Math.round((total / total_days) * 100) : 0;
+        const pct = stats.attendance_percentage;
 
         summary.innerHTML = `
-          <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${s.employee_name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${s.designation || ""}</span></div>
-          <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${present} days</span></div>
-          <div class="sum-row"><span class="sum-lbl">Half Day (Month)</span><span class="sum-val" style="color:#d97706">${halfday} days</span></div>
-          <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${absent} days</span></div>
+          <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${empInfo.name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${empInfo.designation || ""}</span></div>
+          <div class="sum-row"><span class="sum-lbl">Working Days</span><span class="sum-val">${stats.working_days} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${stats.present_days} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${stats.absent_days} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">On Leave (Month)</span><span class="sum-val" style="color:#f59e0b">${stats.leave_days} days</span></div>
           <div class="sum-row"><span class="sum-lbl">Attendance %</span><span class="sum-val">${pct}%</span></div>
           <div style="background:#f3f4f6;border-radius:8px;height:6px;margin-top:6px;overflow:hidden;">
               <div style="background:var(--success);width:${pct}%;height:100%;border-radius:8px;transition:.5s;"></div>
