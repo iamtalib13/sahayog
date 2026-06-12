@@ -2186,43 +2186,49 @@
                   <i class="fas fa-user-circle"></i> Request from
                 </h4>
                 
-                <!-- Employee Field -->
-                <div class="form-group" style="margin-bottom: 12px !important;">
-                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Employee <span class="form-required">*</span></label>
-                  <div class="searchable-select-wrapper">
-                    <input
-                      type="text"
-                      class="form-input searchable-select-input"
-                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
-                      :class="{ focused: focusedField === 'employee' }"
-                      v-model="emrForm.employee_display"
-                      @focus="onFocusSearchable('employee')"
-                      @blur="onBlurSearchable('employee')"
-                      placeholder="Search Employee"
-                    />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
-                      <div
-                        v-for="emp in filteredEmployees"
-                        :key="emp.name"
-                        class="searchable-select-option"
-                        style="padding: 8px 12px; font-size: 0.9rem;"
-                        @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
-                      >
-                        [[ emp.name ]] - [[ emp.employee_name ]]
+                <!-- Employee and Request From Row -->
+                <div 
+                  style="display: grid; gap: 12px; margin-bottom: 12px;" 
+                  :style="{ gridTemplateColumns: (isAdmin || wh_dept_map.some(row => row.user_id === frappe.session.user)) ? '1fr' : '1fr 1fr' }"
+                >
+                  <!-- Employee Field -->
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Employee <span class="form-required">*</span></label>
+                    <div class="searchable-select-wrapper">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                        :class="{ focused: focusedField === 'employee' }"
+                        v-model="emrForm.employee_display"
+                        @focus="onFocusSearchable('employee')"
+                        @blur="onBlurSearchable('employee')"
+                        placeholder="Search Employee"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
+                        <div
+                          v-for="emp in filteredEmployees"
+                          :key="emp.name"
+                          class="searchable-select-option"
+                          style="padding: 8px 12px; font-size: 0.9rem;"
+                          @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
+                        >
+                          [[ emp.name ]] - [[ emp.employee_name ]]
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Request From Field -->
-                <div class="form-group" style="margin-bottom: 12px !important;">
-                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request From</label>
-                  <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_from">
-                    <option value="">Select Request From</option>
-                    <option value="Employee">Employee</option>
-                    <option value="Branch">Branch</option>
-                    <option value="Store">Store</option>
-                  </select>
+                  <!-- Request From Field -->
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request From</label>
+                    <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_from">
+                      <option value="">Select Request From</option>
+                      <option value="Employee">Employee</option>
+                      <option value="Branch">Branch</option>
+                      <option value="Store">Store</option>
+                    </select>
+                  </div>
                 </div>
 
                 <!-- Row for Warehouse and Location -->
