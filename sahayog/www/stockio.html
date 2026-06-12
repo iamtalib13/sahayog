@@ -5010,7 +5010,7 @@
                     <div style="display: flex; align-items: center; gap: 16px">
                       <!-- Action Buttons for Requests -->
                       <div 
-                        v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && activeItem === 'Requests'"
+                        v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0 || detailRecord.status === 'Approved') && activeItem === 'Requests'"
                         style="display: flex; gap: 8px;"
                       >
                         <button
@@ -5041,6 +5041,17 @@
                           </button>
                           <button
                             class="btn-create-inline btn-reject"
+                            @click="handleWorkflowAction('Reject')"
+                          >
+                            <i class="fas fa-times"></i> Reject
+                          </button>
+                        </template>
+
+                        <!-- Reject Button for Approved Requests -->
+                        <template v-if="!isEditing && detailRecord.status === 'Approved'">
+                          <button
+                            class="btn-create-inline btn-reject"
+                            style="background: #ef4444; border-color: #ef4444; color: white;"
                             @click="handleWorkflowAction('Reject')"
                           >
                             <i class="fas fa-times"></i> Reject
