@@ -16,6 +16,7 @@
   "request_date",
   "required_by_date",
   "request_type",
+  "request_from",
   "column_break_fkib",
   "department",
   "status",
@@ -253,12 +254,18 @@
   {
    "fieldname": "column_break_fkib",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "request_from",
+   "fieldtype": "Select",
+   "label": "Request From",
+   "options": "\nEmployee\nBranch\nStore"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-22 11:22:16.529498",
+ "modified": "2026-06-12 12:59:25.413985",
  "modified_by": "Administrator",
  "module": "Procurement",
  "name": "Employee Material Request",

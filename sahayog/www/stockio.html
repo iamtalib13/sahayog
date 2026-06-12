@@ -2186,31 +2186,48 @@
                   <i class="fas fa-user-circle"></i> Request from
                 </h4>
                 
-                <!-- Employee Field -->
-                <div class="form-group" style="margin-bottom: 12px !important;">
-                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Employee <span class="form-required">*</span></label>
-                  <div class="searchable-select-wrapper">
-                    <input
-                      type="text"
-                      class="form-input searchable-select-input"
-                      style="padding: 10px 14px !important; font-size: 0.9rem !important;"
-                      :class="{ focused: focusedField === 'employee' }"
-                      v-model="emrForm.employee_display"
-                      @focus="onFocusSearchable('employee')"
-                      @blur="onBlurSearchable('employee')"
-                      placeholder="Search Employee"
-                    />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
-                      <div
-                        v-for="emp in filteredEmployees"
-                        :key="emp.name"
-                        class="searchable-select-option"
-                        style="padding: 8px 12px; font-size: 0.9rem;"
-                        @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
-                      >
-                        [[ emp.name ]] - [[ emp.employee_name ]]
+                <!-- Employee and Request From Row -->
+                <div 
+                  style="display: grid; gap: 12px; margin-bottom: 12px;" 
+                  :style="{ gridTemplateColumns: (isAdmin || wh_dept_map.some(row => row.user_id === frappe.session.user)) ? '1fr' : '1fr 1fr' }"
+                >
+                  <!-- Employee Field -->
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Employee <span class="form-required">*</span></label>
+                    <div class="searchable-select-wrapper">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 10px 14px !important; font-size: 0.9rem !important;"
+                        :class="{ focused: focusedField === 'employee' }"
+                        v-model="emrForm.employee_display"
+                        @focus="onFocusSearchable('employee')"
+                        @blur="onBlurSearchable('employee')"
+                        placeholder="Search Employee"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'employee'">
+                        <div
+                          v-for="emp in filteredEmployees"
+                          :key="emp.name"
+                          class="searchable-select-option"
+                          style="padding: 8px 12px; font-size: 0.9rem;"
+                          @mousedown="selectEMROption('employee', emp.name, emp.employee_name)"
+                        >
+                          [[ emp.name ]] - [[ emp.employee_name ]]
+                        </div>
                       </div>
                     </div>
+                  </div>
+
+                  <!-- Request From Field -->
+                  <div class="form-group" style="margin-bottom: 0 !important;">
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request From</label>
+                    <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_from">
+                      <option value="">Select Request From</option>
+                      <option value="Employee">Employee</option>
+                      <option value="Branch">Branch</option>
+                      <option value="Store">Store</option>
+                    </select>
                   </div>
                 </div>
 
@@ -4249,7 +4266,7 @@
                   class="detail-grid"
                   style="
                     display: grid;
-                    grid-template-columns: repeat(3, 1fr);
+                    grid-template-columns: repeat(4, 1fr);
                     gap: 20px;
                   "
                 >
@@ -4949,6 +4966,17 @@
                       >
                     </div>
                   </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #369696">
+                      <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="info-content">
+                      <span class="info-label">Request From</span>
+                      <span class="info-value"
+                        >[[ detailRecord.request_from || '-' ]]</span
+                      >
+                    </div>
+                  </div>
                   <button
                     class="toolbar-btn"
                     @click="showEMRMoreDetails = !showEMRMoreDetails"
@@ -4982,7 +5010,7 @@
                     <div style="display: flex; align-items: center; gap: 16px">
                       <!-- Action Buttons for Requests -->
                       <div 
-                        v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0) && activeItem === 'Requests'"
+                        v-if="showDetailView && detailRecord && (detailRecord.docstatus === 0 || detailRecord.status === 'Approved') && activeItem === 'Requests'"
                         style="display: flex; gap: 8px;"
                       >
                         <button
@@ -5013,6 +5041,17 @@
                           </button>
                           <button
                             class="btn-create-inline btn-reject"
+                            @click="handleWorkflowAction('Reject')"
+                          >
+                            <i class="fas fa-times"></i> Reject
+                          </button>
+                        </template>
+
+                        <!-- Reject Button for Approved Requests -->
+                        <template v-if="!isEditing && detailRecord.status === 'Approved'">
+                          <button
+                            class="btn-create-inline btn-reject"
+                            style="background: #ef4444; border-color: #ef4444; color: white;"
                             @click="handleWorkflowAction('Reject')"
                           >
                             <i class="fas fa-times"></i> Reject
@@ -8425,7 +8464,7 @@
         <div
           style="
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 24px;
           "
@@ -8436,7 +8475,7 @@
             >
             <select class="form-input" v-model="movementForm.purpose">
               <option value="Transfer">Transfer</option>
-              <option value="Issue">Issue</option>
+              <option value="Issue">New/Issue</option>
               <option value="Receipt">Receipt</option>
             </select>
           </div>
@@ -8475,6 +8514,14 @@
                 [[ inv ]]
               </div>
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Invoice Date</label>
+            <input
+              type="date"
+              class="form-input"
+              v-model="movementForm.custom_invoice_date"
+            />
           </div>
         </div>
         <div
@@ -8572,6 +8619,16 @@
                   "
                 >
                   In-stock
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Amount
                 </th>
                 <th
                   style="
@@ -8709,7 +8766,7 @@
                             :key="sn.name"
                             class="searchable-select-option"
                             style="padding: 8px; cursor: pointer;"
-                            @mousedown="item.serial_no = sn.name; focusedField = null;"
+                            @mousedown="item.serial_no = sn.name; focusedField = null; onSerialChange(item);"
                           >
                             [[ sn.name ]]
                           </div>
@@ -8720,6 +8777,15 @@
                       <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length)">
                         [[ serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length ]]
                       </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <input
+                        type="number"
+                        class="form-input"
+                        style="width: 100px; padding: 5px;"
+                        v-model="item.amount"
+                        placeholder="Amount"
+                      />
                     </td>
                     <td style="padding: 10px">
                       <div class="searchable-select-wrapper" style="width: 100%">
@@ -12310,6 +12376,22 @@
       serial_nos: [],
       invoice_serial_nos: [],
 
+      async onSerialChange(item) {
+        if (!item.serial_no) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_invoice_by_serial_no",
+            args: { serial_no: item.serial_no }
+          });
+          if (res.message) {
+            this.movementForm.custom_invoice_number = res.message;
+            await this.onInvoiceChange();
+          }
+        } catch (e) {
+          console.error("Error fetching invoice for serial:", e);
+        }
+      },
+
       async onInvoiceChange() {
         const inv = this.movementForm.custom_invoice_number;
         if (!inv) {
@@ -12317,13 +12399,28 @@
           return;
         }
         try {
+          // Fetch Serial Nos
           const res = await frappe.call({
             method: "sahayog.procurement.api.stock_balance_ledger.get_serial_nos_by_invoice",
             args: { invoice_number: inv }
           });
           this.invoice_serial_nos = res.message || [];
+
+          // Fetch Item Rates
+          const rateRes = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_item_rates_from_invoice",
+            args: { invoice_number: inv }
+          });
+          const rates = rateRes.message || {};
+          
+          // Update amount for items
+          this.movementItems = this.movementItems.map(item => ({
+            ...item,
+            amount: rates[item.item_code] || item.amount || 0
+          }));
+
         } catch (e) {
-          console.error("Error fetching serial nos for invoice:", e);
+          console.error("Error fetching invoice data:", e);
           this.invoice_serial_nos = [];
         }
       },
@@ -13760,6 +13857,7 @@
           this.emrForm = {
             employee: "",
             employee_display: "",
+            request_from: "Employee",
             source_warehouse: "",
             source_warehouse_display: "",
             target_warehouse: "",
@@ -14517,9 +14615,9 @@
                 serial_no: item.serial_no,
                 custom_invoice_number: this.movementForm.custom_invoice_number || invoiceNo,
                 custom_emr: this.movementForm.custom_reference_name,
-                purchase_date: frappe.datetime.now_date(),
+                purchase_date: this.movementForm.custom_invoice_date || frappe.datetime.now_date(),
                 available_for_use_date: frappe.datetime.now_date(),
-                gross_purchase_amount: 123456,
+                gross_purchase_amount: item.amount || 0,
                 booked_fixed_asset: 1,
                 is_existing_asset: 1, // Allow submission without Purchase Invoice
                 naming_series: "AST-",
@@ -14591,6 +14689,7 @@
                 doctype: "Asset Movement",
                 transaction_date: this.movementForm.transaction_date,
                 purpose: this.movementForm.purpose,
+                custom_invoice_date: this.movementForm.custom_invoice_date,
                 custom_reference_doctype: this.movementForm.custom_reference_doctype,
                 custom_reference_name: this.movementForm.custom_reference_name,
                 assets: assetsToMove,
@@ -15075,8 +15174,9 @@
           this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
-            purpose: "Transfer",
+            purpose: "Issue",
             custom_invoice_number: "",
+            custom_invoice_date: "",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
@@ -15799,6 +15899,7 @@
             naming_series: "EMR-.YYYY.-",
             requested_by: frappe.session.user,
             employee: this.emrForm.employee,
+            request_from: this.emrForm.request_from,
             source_warehouse: this.emrForm.source_warehouse,
             target_warehouse:
               this.emrForm.target_warehouse &&
