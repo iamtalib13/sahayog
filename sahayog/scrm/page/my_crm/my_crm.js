@@ -3531,9 +3531,13 @@ createLead() {
             }
           },
         },
+        { fieldname: "column_break_1", fieldtype: "Column Break" },
         { fieldname: "scheduled_time", fieldtype: "Datetime", label: "Scheduled Time", reqd: 1 },
+        { fieldname: "section_break_details", fieldtype: "Section Break", label: "Customer Details" },
         { fieldname: "customer_name", fieldtype: "Data", label: "Customer Name", reqd: 1, read_only: 1 },
+        { fieldname: "column_break_2", fieldtype: "Column Break" },
         { fieldname: "customer_phone_number", fieldtype: "Data", label: "Phone", read_only: 1 },
+        { fieldname: "section_break_status", fieldtype: "Section Break" },
         {
           fieldname: "status",
           fieldtype: "Select",
@@ -3580,6 +3584,7 @@ createLead() {
       },
     });
     dialog.show();
+    dialog.$wrapper.find(".modal-dialog").css({ "max-width": "700px", width: "90%" });
 }
 
   exportData() {
