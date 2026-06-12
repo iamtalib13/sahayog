@@ -2214,6 +2214,17 @@
                   </div>
                 </div>
 
+                <!-- Request From Field -->
+                <div class="form-group" style="margin-bottom: 12px !important;">
+                  <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">Request From</label>
+                  <select class="form-input" style="padding: 10px 14px !important; font-size: 0.9rem !important;" v-model="emrForm.request_from">
+                    <option value="">Select Request From</option>
+                    <option value="Employee">Employee</option>
+                    <option value="Branch">Branch</option>
+                    <option value="Store">Store</option>
+                  </select>
+                </div>
+
                 <!-- Row for Warehouse and Location -->
                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
@@ -13760,6 +13771,7 @@
           this.emrForm = {
             employee: "",
             employee_display: "",
+            request_from: "",
             source_warehouse: "",
             source_warehouse_display: "",
             target_warehouse: "",
@@ -15799,6 +15811,7 @@
             naming_series: "EMR-.YYYY.-",
             requested_by: frappe.session.user,
             employee: this.emrForm.employee,
+            request_from: this.emrForm.request_from,
             source_warehouse: this.emrForm.source_warehouse,
             target_warehouse:
               this.emrForm.target_warehouse &&
