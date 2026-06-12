@@ -3362,6 +3362,21 @@ createLead() {
     sourceField.get_query = function() { return { filters: { "custom_active": 1 } }; };
 
     dialog.show();
+    
+    // 🛡️ Phone Number Input Validation (Numeric only & Max 10 digits)
+    const $mobileInput = dialog.get_field("mobile_no").$input;
+    $mobileInput.on("input", function() {
+        let val = $(this).val();
+        // Remove non-numeric characters
+        val = val.replace(/\D/g, "");
+        // Limit to 10 digits
+        if (val.length > 10) {
+            val = val.slice(0, 10);
+        }
+        $(this).val(val);
+        dialog.set_value("mobile_no", val);
+    });
+
     const appt = dialog.get_field("scheduled_time").$wrapper.hide();
     appt.find("input").attr("placeholder", "DD/MM/YYYY, HH:MM:SS");
     renderProductTable();
