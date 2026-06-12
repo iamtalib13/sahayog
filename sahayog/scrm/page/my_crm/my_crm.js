@@ -1798,33 +1798,44 @@ async getEmployeeByUser(userId) {
           });
         };
 
-        d.$wrapper.off("click", "#btn-create-appt-final").on("click", "#btn-create-appt-final", async () => {
+        d.$wrapper.off("click", "#btn-create-appt-final").on("click", "#btn-create-appt-final", async (e) => {
+          const $btn = $(e.currentTarget);
+          if ($btn.prop('disabled')) return;
+          
           const time = d.$wrapper.find("#new_appt_t_edit").val();
           if (!time) return frappe.msgprint("Please select date & time");
 
-          await frappe.call({
-            method: "frappe.client.insert",
-            args: {
-              doc: {
-                doctype: "Appointment",
-                party: name,
-                appointment_with: "Lead",
-                scheduled_time: time,
-                status: "Open",
-                customer_name: d.$wrapper.find("#f_name_edit").val() || doc.first_name,
-                customer_email: doc.email_id || `${name}@lead.local`,
-                contact_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
+          $btn.prop('disabled', true);
+
+          try {
+            await frappe.call({
+              method: "frappe.client.insert",
+              args: {
+                doc: {
+                  doctype: "Appointment",
+                  party: name,
+                  appointment_with: "Lead",
+                  scheduled_time: time,
+                  status: "Open",
+                  customer_name: d.$wrapper.find("#f_name_edit").val() || doc.first_name,
+                  customer_email: doc.email_id || `${name}@lead.local`,
+                  contact_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
+                },
               },
-            },
-            callback: (r) => {
-              if (!r.exc) {
-                frappe.show_alert("Appointment Created Successfully");
-                appointmentsData.unshift(r.message);
-                loadHistory();
-                d.$wrapper.find("#new_appt_t_edit").val("");
-              }
-            },
-          });
+              callback: (r) => {
+                if (!r.exc) {
+                  frappe.show_alert("Appointment Created Successfully");
+                  appointmentsData.unshift(r.message);
+                  loadHistory();
+                  d.$wrapper.find("#new_appt_t_edit").val("");
+                }
+              },
+            });
+          } catch (error) {
+            console.error(error);
+          } finally {
+            $btn.prop('disabled', false);
+          }
         });
         loadHistory();
       };
@@ -3201,18 +3212,26 @@ createLead() {
       ],
       primary_action_label: "Create Lead",
       primary_action: async (values) => {
+        const btn = dialog.get_primary_btn();
+        btn.prop('disabled', true);
+
         if (!validateIndianPhone(values.mobile_no)) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
+          btn.prop('disabled', false);
           return;
         }
         if (productsData.length === 0) {
           frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+          btn.prop('disabled', false);
           return;
         }
 
         // Final Validation on Save
         const isStillDuplicate = await checkDuplicateWarning(true);
-        if (isStillDuplicate) return;
+        if (isStillDuplicate) {
+          btn.prop('disabled', false);
+          return;
+        }
 
         try {
           const leadDoc = {
@@ -3240,6 +3259,7 @@ createLead() {
         } catch (error) {
           console.error(error);
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
+          btn.prop('disabled', false);
         }
       },
     });
@@ -3509,8 +3529,12 @@ createLead() {
       ],
       primary_action_label: "Create",
       primary_action: async (values) => {
+        const btn = dialog.get_primary_btn();
+        btn.prop('disabled', true);
         try {
-          if (!values.party) { frappe.throw("Lead is required"); }
+          if (!values.party) { 
+            frappe.throw("Lead is required"); 
+          }
 
           await frappe.call({
             method: "frappe.client.insert",
@@ -3536,6 +3560,7 @@ createLead() {
           this.refresh();
         } catch (error) {
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
+          btn.prop('disabled', false);
         }
       },
     });
