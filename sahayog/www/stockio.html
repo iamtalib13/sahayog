@@ -8464,7 +8464,7 @@
             >
             <select class="form-input" v-model="movementForm.purpose">
               <option value="Transfer">Transfer</option>
-              <option value="Issue">Issue</option>
+              <option value="Issue">New/Issue</option>
               <option value="Receipt">Receipt</option>
             </select>
           </div>
@@ -15163,7 +15163,7 @@
           this.showDetailView = isFromList ? false : true; 
           this.movementForm = {
             transaction_date: frappe.datetime.now_date(),
-            purpose: "Transfer",
+            purpose: "Issue",
             custom_invoice_number: "",
             custom_invoice_date: "",
             custom_reference_doctype: "Employee Material Request",
