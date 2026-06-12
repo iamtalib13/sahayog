@@ -359,3 +359,115 @@ def get_leave_balances(employee):
         alloc.unused_leaves = alloc.total_leaves_allocated - total_used
         
     return allocations
+
+@frappe.whitelist()
+def get_attendance_dashboard(employee, from_date=None, to_date=None):
+    """Fetch attendance summary for dashboard."""
+    from frappe.utils import get_first_day, get_last_day, today
+    
+    if not from_date:
+        from_date = get_first_day(today())
+    if not to_date:
+        to_date = get_last_day(today())
+        
+    # Role-based validation
+    user = frappe.session.user
+    if user != "Administrator":
+        roles = frappe.get_roles(user)
+        if "HR Manager" not in roles and "HR User" not in roles:
+            manager_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+            if employee != manager_emp:
+                # Check if it's a subordinate
+                is_subordinate = frappe.db.exists("Employee", {"name": employee, "reports_to": manager_emp})
+                if not is_subordinate:
+                    frappe.throw(_("You are not authorized to view this employee's dashboard"), frappe.PermissionError)
+
+    filters = {
+        "employee": employee,
+        "attendance_date": ["between", [from_date, to_date]],
+        "docstatus": 1
+    }
+    
+    attendances = frappe.get_all("Attendance", filters=filters, fields=["status"])
+    
+    present_days = len([a for a in attendances if a.status in ["Present", "Work From Home"]])
+    absent_days = len([a for a in attendances if a.status == "Absent"])
+    leave_days = len([a for a in attendances if a.status == "On Leave"])
+    half_days = len([a for a in attendances if a.status == "Half Day"])
+    
+    attendance_marked = len(attendances)
+    
+    # Calculate Monthly Summary & Find Missing Dates
+    from frappe.utils import getdate, add_days, formatdate
+    curr = getdate(from_date)
+    end = getdate(to_date)
+    today_dt = getdate(today())
+    if end > today_dt:
+        end = today_dt
+        
+    marked_dates = set([str(a.attendance_date) for a in frappe.get_all("Attendance", filters={"employee": employee, "attendance_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}, fields=["attendance_date"])])
+    
+    working_days_count = 0
+    missing_dates = []
+    
+    temp_curr = curr
+    while temp_curr <= end:
+        if temp_curr.weekday() != 6: # Exclude Sundays
+            working_days_count += 1
+            date_str = str(temp_curr)
+            if date_str not in marked_dates:
+                missing_dates.append(formatdate(temp_curr, "dd-MMM"))
+        temp_curr = add_days(temp_curr, 1)
+
+    missing_days = len(missing_dates)
+
+    # Correction Requests
+    corrections = frappe.get_all("Attendance Correction", filters={
+        "employee": employee,
+        "attendance_date": ["between", [from_date, to_date]]
+    }, fields=["status"])
+    
+    corr_stats = {
+        "pending": len([c for c in corrections if c.status == "Pending"]),
+        "approved": len([c for c in corrections if c.status == "Approved"]),
+        "rejected": len([c for c in corrections if c.status == "Rejected"]),
+        "total": len(corrections)
+    }
+
+    # Employee & Manager Info
+    emp_info = frappe.db.get_value("Employee", employee, ["employee_name", "designation", "branch", "reports_to"], as_dict=True)
+    reporting_to = {"name": _("Not Set"), "designation": ""}
+    if emp_info.reports_to:
+        rep_data = frappe.db.get_value("Employee", emp_info.reports_to, ["employee_name", "designation"], as_dict=True)
+        if rep_data:
+            reporting_to = {"name": rep_data.employee_name, "designation": rep_data.designation}
+
+    attendance_percentage = 0
+    if working_days_count > 0:
+        # HR Reporting Logic: (Present + HalfDay*0.5) / Expected Working Days
+        effective_present = present_days + (half_days * 0.5)
+        attendance_percentage = round((effective_present / working_days_count) * 100, 2)
+        
+    return {
+        "employee_info": {
+            "name": emp_info.employee_name,
+            "designation": emp_info.designation,
+            "branch": emp_info.branch
+        },
+        "statistics": {
+            "marked_days": attendance_marked,
+            "present_days": present_days,
+            "absent_days": absent_days,
+            "leave_days": leave_days,
+            "half_days": half_days,
+            "attendance_percentage": attendance_percentage,
+        },
+        "monthly_summary": {
+            "total_working": working_days_count,
+            "marked": attendance_marked,
+            "missing": missing_days,
+            "missing_dates": missing_dates
+        },
+        "corrections": corr_stats,
+        "reporting_to": reporting_to
+    }
