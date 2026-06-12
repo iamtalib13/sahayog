@@ -4966,6 +4966,17 @@
                       >
                     </div>
                   </div>
+                  <div class="info-item">
+                    <div class="info-icon" style="color: #369696">
+                      <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="info-content">
+                      <span class="info-label">Request From</span>
+                      <span class="info-value"
+                        >[[ detailRecord.request_from || '-' ]]</span
+                      >
+                    </div>
+                  </div>
                   <button
                     class="toolbar-btn"
                     @click="showEMRMoreDetails = !showEMRMoreDetails"
@@ -13777,7 +13788,7 @@
           this.emrForm = {
             employee: "",
             employee_display: "",
-            request_from: "",
+            request_from: "Employee",
             source_warehouse: "",
             source_warehouse_display: "",
             target_warehouse: "",
