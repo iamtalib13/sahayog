@@ -1035,8 +1035,9 @@
 
   .anim-track {
     flex: 1;
-    height: 2px;
-    background: repeating-linear-gradient(90deg, var(--border-color), var(--border-color) 6px, transparent 6px, transparent 12px);
+    height: 2.5px;
+    /* Use a darker color that works well in both light and dark modes */
+    background: repeating-linear-gradient(90deg, #64748b, #64748b 6px, transparent 6px, transparent 12px);
     position: relative;
     margin: 0 5px;
   }
@@ -9599,8 +9600,8 @@
     align-items: center;
     justify-content: center;
     background: rgba(248, 250, 252, 0.42);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
     transition:
       opacity 0.35s ease,
       visibility 0.35s ease;
@@ -9671,8 +9672,8 @@
 
   [data-theme="dark"] .stockio-loading-overlay {
     background: rgba(2, 6, 23, 0.46);
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
   }
 
   [data-theme="dark"] .stockio-loading-text {
