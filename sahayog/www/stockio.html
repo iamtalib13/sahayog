@@ -4266,7 +4266,7 @@
                   class="detail-grid"
                   style="
                     display: grid;
-                    grid-template-columns: repeat(3, 1fr);
+                    grid-template-columns: repeat(4, 1fr);
                     gap: 20px;
                   "
                 >
@@ -8453,7 +8453,7 @@
         <div
           style="
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 24px;
           "
@@ -8503,6 +8503,14 @@
                 [[ inv ]]
               </div>
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Invoice Date</label>
+            <input
+              type="date"
+              class="form-input"
+              v-model="movementForm.custom_invoice_date"
+            />
           </div>
         </div>
         <div
@@ -14546,7 +14554,7 @@
                 serial_no: item.serial_no,
                 custom_invoice_number: this.movementForm.custom_invoice_number || invoiceNo,
                 custom_emr: this.movementForm.custom_reference_name,
-                purchase_date: frappe.datetime.now_date(),
+                purchase_date: this.movementForm.custom_invoice_date || frappe.datetime.now_date(),
                 available_for_use_date: frappe.datetime.now_date(),
                 gross_purchase_amount: 123456,
                 booked_fixed_asset: 1,
@@ -14620,6 +14628,7 @@
                 doctype: "Asset Movement",
                 transaction_date: this.movementForm.transaction_date,
                 purpose: this.movementForm.purpose,
+                custom_invoice_date: this.movementForm.custom_invoice_date,
                 custom_reference_doctype: this.movementForm.custom_reference_doctype,
                 custom_reference_name: this.movementForm.custom_reference_name,
                 assets: assetsToMove,
@@ -15106,6 +15115,7 @@
             transaction_date: frappe.datetime.now_date(),
             purpose: "Transfer",
             custom_invoice_number: "",
+            custom_invoice_date: "",
             custom_reference_doctype: "Employee Material Request",
             custom_reference_name: row.name,
           };
