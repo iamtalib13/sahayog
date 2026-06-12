@@ -13870,6 +13870,24 @@
             reporting_person_display: "",
             custom_send_for_purchase: 0,
           };
+          
+          // Auto-select employee if not Admin/Warehouse manager
+          if (!this.isAdmin && !this.wh_dept_map.some(row => row.user_id === frappe.session.user)) {
+             frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                    doctype: "Employee",
+                    filters: { user_id: frappe.session.user },
+                    fieldname: ["name", "employee_name"]
+                },
+                callback: (r) => {
+                    if (r.message) {
+                        this.emrForm.employee = r.message.name;
+                        this.emrForm.employee_display = `${r.message.name} (${r.message.employee_name})`;
+                    }
+                }
+             });
+          }
           this.emrItems = [
             { item_code: "", item_code_display: "", description: "", uom: "", quantity: 1 },
           ];
