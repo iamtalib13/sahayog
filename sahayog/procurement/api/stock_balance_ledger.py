@@ -936,6 +936,26 @@ def create_warehouse_if_not_exists(branch_id):
     return new_wh.name
 
 @frappe.whitelist()
+def get_invoice_by_serial_no(serial_no):
+    if not serial_no:
+        return ""
+    
+    # 1. Get the bundle that contains this serial no
+    bundle = frappe.db.get_value("Serial and Batch Entry", {"serial_no": serial_no}, "parent")
+    if not bundle:
+        return ""
+        
+    # 2. Get the Purchase Receipt linked to this bundle
+    pr_name = frappe.db.get_value("Purchase Receipt Item", {"serial_and_batch_bundle": bundle}, "parent")
+    if not pr_name:
+        return ""
+        
+    # 3. Get the invoice number from the PR
+    invoice_number = frappe.db.get_value("Purchase Receipt", pr_name, "custom_invoice_number")
+    
+    return invoice_number or ""
+
+@frappe.whitelist()
 def get_item_rates_from_invoice(invoice_number):
     if not invoice_number:
         return {}

@@ -8755,7 +8755,7 @@
                             :key="sn.name"
                             class="searchable-select-option"
                             style="padding: 8px; cursor: pointer;"
-                            @mousedown="item.serial_no = sn.name; focusedField = null;"
+                            @mousedown="item.serial_no = sn.name; focusedField = null; onSerialChange(item);"
                           >
                             [[ sn.name ]]
                           </div>
@@ -12364,6 +12364,22 @@
       states: [],
       serial_nos: [],
       invoice_serial_nos: [],
+
+      async onSerialChange(item) {
+        if (!item.serial_no) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_invoice_by_serial_no",
+            args: { serial_no: item.serial_no }
+          });
+          if (res.message) {
+            this.movementForm.custom_invoice_number = res.message;
+            await this.onInvoiceChange();
+          }
+        } catch (e) {
+          console.error("Error fetching invoice for serial:", e);
+        }
+      },
 
       async onInvoiceChange() {
         const inv = this.movementForm.custom_invoice_number;
