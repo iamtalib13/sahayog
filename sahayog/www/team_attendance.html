@@ -493,6 +493,12 @@
         color: #d97706;
         font-weight: 600;
       }
+      .cal-d.pending-corr-d {
+        background: #fffbeb;
+        border: 1px dashed #d97706;
+        color: #d97706;
+        font-weight: 600;
+      }
       .cal-d.woff {
         color: #d1d5db;
       }
@@ -1040,6 +1046,9 @@
                 <button class="ftab" onclick="switchTab('leave', this)">
                   Leave Requests
                 </button>
+                <button class="ftab" id="tabCorrApproval" onclick="switchTab('corrections', this)">
+                  Correction Approvals
+                </button>
               </div>
             </div>
 
@@ -1239,6 +1248,81 @@
               </div>
             </div>
 
+            <!-- ATTENDANCE CORRECTION MODAL -->
+            <div
+              id="correctionModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <div
+                style="
+                  background: #fff;
+                  padding: 20px;
+                  border-radius: var(--radius);
+                  width: 90%;
+                  max-width: 400px;
+                "
+              >
+                <h3
+                  style="
+                    margin-bottom: 15px;
+                    font-family: &quot;Syne&quot;, sans-serif;
+                  "
+                >
+                  Correction Request
+                </h3>
+                <div style="margin-bottom: 12px; background: #f8fafc; padding: 10px; border-radius: 8px;">
+                  <div style="font-size: 11px; color: var(--muted);">Employee</div>
+                  <div id="corrEmpName" style="font-size: 13px; font-weight: 700;">-</div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                    <div>
+                      <div style="font-size: 11px; color: var(--muted);">Date</div>
+                      <div id="corrDate" style="font-size: 12px; font-weight: 600;">-</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 11px; color: var(--muted);">Current Status</div>
+                      <div id="corrCurrentStatus" style="font-size: 12px; font-weight: 600;">-</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-bottom: 12px">
+                  <label style="font-size: 11px; font-weight: 600; color: var(--muted);">Requested Status</label>
+                  <select id="corrRequestedStatus" class="member-select">
+                    <option value="Present">Present</option>
+                    <option value="Absent">Absent</option>
+                    <option value="Half Day">Half Day</option>
+                    <option value="Work From Home">Work From Home</option>
+                  </select>
+                </div>
+                
+                <div style="margin-bottom: 15px">
+                  <label style="font-size: 11px; font-weight: 600; color: var(--muted);">Reason for Correction</label>
+                  <textarea
+                    id="corrReason"
+                    class="member-select"
+                    rows="3"
+                    placeholder="E.g. Forgot to mark attendance, marked wrong status by mistake..."
+                  ></textarea>
+                </div>
+                <div
+                  style="display: flex; gap: 10px; justify-content: flex-end"
+                >
+                  <button class="btn-clear" onclick="closeCorrectionModal()">
+                    Cancel
+                  </button>
+                  <button class="btn-in" onclick="submitCorrection()">Submit Request</button>
+                </div>
+              </div>
+            </div>
+
             <!-- EMPTY STATE -->
             <div
               id="calEmptyState"
@@ -1319,6 +1403,10 @@
                 <div class="cl-item">
                   <div class="cl-dot" style="background: #e5e7eb"></div>
                   Weekly Off
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #fffbeb; border: 1px dashed #d97706;"></div>
+                  Pending Correction
                 </div>
               </div>
               <div class="summary-strip" id="calSummary">
@@ -1479,6 +1567,59 @@
           bulkBar.style.display = "none";
           searchWrap.style.display = "none";
           loadTeamLeaves();
+        } else if (tab === "corrections") {
+          controls.style.display = "none";
+          bulkBar.style.display = "none";
+          searchWrap.style.display = "none";
+          loadCorrectionRequests();
+        }
+      }
+
+      async function loadCorrectionRequests() {
+        document.getElementById("teamListLoading").style.display = "flex";
+        const data = await callAPI("get_pending_attendance_corrections", {}, "attendance");
+        document.getElementById("teamListLoading").style.display = "none";
+
+        const container = document.getElementById("empList");
+        if (!data || data.length === 0) {
+          container.innerHTML =
+            '<div style="padding:20px;text-align:center;color:var(--muted)">No pending correction requests.</div>';
+          return;
+        }
+
+        container.innerHTML = data
+          .map(
+            (c) => `
+          <div class="emp-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+              <div class="emp-info">
+                <div class="emp-name">${c.employee_name}</div>
+                <div class="emp-role">${new Date(c.attendance_date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short' })} | ${c.current_status} → <span style="color:var(--brand2); font-weight:700;">${c.requested_status}</span></div>
+              </div>
+              <div class="emp-actions">
+                <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
+                <button class="btn-out" onclick="updateCorrectionStatus('${c.name}', 'Rejected')">Reject</button>
+              </div>
+            </div>
+            <div style="font-size: 11px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; width: 100%; color: var(--muted);">
+              <strong>Reason:</strong> ${c.reason}
+            </div>
+          </div>
+        `,
+          )
+          .join("");
+      }
+
+      async function updateCorrectionStatus(id, action) {
+        const res = await callAPI("approve_attendance_correction", {
+          request_id: id,
+          action: action
+        }, "attendance");
+        
+        if (res && res.success) {
+          showToast(`Request ${action}`);
+          loadCorrectionRequests();
+          fetchTeamData(); // Refresh calendar if needed
         }
       }
 
@@ -1820,14 +1961,62 @@
           else if (histStatus === "Absent") cls += " absent-d";
           else if (histStatus === "Half Day") cls += " half-d";
           else if (histStatus === "On Leave") cls += " leave-d";
+          else if (histStatus && histStatus.includes("Pending Correction")) cls += " pending-corr-d";
           else if (isWeekend) cls += " woff";
 
           cell.className = cls;
           cell.textContent = d;
-          cell.title = key;
+          cell.title = histStatus || key;
+
+          // Add click handler for past/today dates
+          if (new Date(key) <= new Date(todayKey)) {
+             cell.onclick = () => openCorrectionModal(key, histStatus || "Not Marked");
+             cell.style.cursor = "pointer";
+          }
+
           grid.appendChild(cell);
         }
         renderCalSummary();
+      }
+
+      function openCorrectionModal(date, currentStatus) {
+        const s = staff.find(x => x.name === selectedMemberId);
+        if(!s) return;
+        
+        document.getElementById("corrEmpName").textContent = s.employee_name;
+        document.getElementById("corrDate").textContent = new Date(date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById("corrDate").dataset.raw = date;
+        document.getElementById("corrCurrentStatus").textContent = currentStatus;
+        document.getElementById("corrReason").value = "";
+        document.getElementById("correctionModal").style.display = "flex";
+      }
+
+      function closeCorrectionModal() {
+        document.getElementById("correctionModal").style.display = "none";
+      }
+
+      async function submitCorrection() {
+        const employee = selectedMemberId;
+        const date = document.getElementById("corrDate").dataset.raw;
+        const requested_status = document.getElementById("corrRequestedStatus").value;
+        const reason = document.getElementById("corrReason").value;
+
+        if (!reason) {
+          showToast("Please provide a reason");
+          return;
+        }
+
+        const res = await callAPI("request_attendance_correction", {
+          employee,
+          attendance_date: date,
+          requested_status,
+          reason
+        }, "attendance");
+
+        if (res && res.success) {
+          showToast(res.message);
+          closeCorrectionModal();
+        }
       }
 
       function renderCalSummary() {
