@@ -1581,6 +1581,7 @@ async getEmployeeByUser(userId) {
             fieldname: "tab_navigation",
             fieldtype: "HTML",
             options: `
+                        <div id="dialog-error-banner" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 6px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 13px;"></div>
                         <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
                             <div class="tab-link active" id="tab-lead-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Lead & Products</div>
                             <div class="tab-link" id="tab-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #6b7280;">Appointments</div>
@@ -1596,12 +1597,19 @@ async getEmployeeByUser(userId) {
         ],
         primary_action_label: __("Update Lead"),
         primary_action: async (values) => {
+    const showError = (msg) => {
+        const banner = d.$wrapper.find("#dialog-error-banner");
+        banner.html(`<strong>⚠️ Error:</strong> ${msg}`).show();
+        d.$wrapper.find(".modal-body").scrollTop(0);
+        setTimeout(() => banner.fadeOut(), 5000);
+    };
+
     const input_status = d.$wrapper.find("#status_edit").val();
     const input_mobile = d.$wrapper.find("#m_no_edit").val();
 
     // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
-        return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
+        return showError(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
 
     const final_values = {
@@ -1616,11 +1624,7 @@ async getEmployeeByUser(userId) {
         const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
         
         if (!appointmentsData.length && !has_new_appt) {
-            frappe.msgprint({
-                title: __('Action Required'),
-                indicator: 'orange',
-                message: __('Please schedule an appointment to set status as <b>Follow Up</b>.')
-            });
+            showError(__('Please schedule an appointment to set status as <b>Follow Up</b>.'));
             d.$wrapper.find("#tab-appt-btn").trigger("click");
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
             $apptInput.css("border", "2px solid #ff5858");
