@@ -667,7 +667,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
 
                         <div v-for="key in ['sol_id', 'product', 'source'].filter(k => filter_data[k] && filter_data[k].length > 0)" :key="key" class="filter-column">
-                            <span class="filter-label">{{ key.replace('_', ' ') }}</span>
+                            <span class="filter-label">{{ (key || '').replace('_', ' ') }}</span>
                             <div class="custom-dropdown">
                                <div class="dropdown-select">
                                     <input type="text"
@@ -905,7 +905,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                <div class="filter-modal-overlay" v-if="active_popup" @click.self="active_popup = null">
                   <div class="filter-modal-content">
                       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                          <h6 class="text-uppercase m-0" style="font-size:12px; font-weight:bold;">Select {{ active_popup.replace('_',' ') }}</h6>
+                          <h6 class="text-uppercase m-0" style="font-size:12px; font-weight:bold;">Select {{ (active_popup || '').replace('_',' ') }}</h6>
                           
                           <div v-if="active_popup === 'product'" style="display: flex; align-items: center; gap: 6px;">
                               <input type="checkbox" v-model="hide_excluded_products" id="hide_excluded" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
