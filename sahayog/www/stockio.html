@@ -2200,8 +2200,9 @@
                         class="form-input searchable-select-input"
                         style="padding: 10px 14px !important; font-size: 0.9rem !important;"
                         :class="{ focused: focusedField === 'employee' }"
+                        :disabled="isEmployeeReadOnly"
                         v-model="emrForm.employee_display"
-                        @focus="onFocusSearchable('employee')"
+                        @focus="!isEmployeeReadOnly && onFocusSearchable('employee')"
                         @blur="onBlurSearchable('employee')"
                         placeholder="Search Employee"
                       />
@@ -12294,6 +12295,7 @@
       detailRecord: null,
       detailFields: [],
       creatingEMR: false,
+      isEmployeeReadOnly: false,
       creatingInward: false,
       creatingOutward: false,
       creatingAsset: false,
@@ -13854,6 +13856,7 @@
           this.showEMRCreateView = true;
           this.showEMRMoreDetails = false;
           this.showDetailView = false;
+          this.isEmployeeReadOnly = false;
           this.emrForm = {
             employee: "",
             employee_display: "",
@@ -13870,6 +13873,25 @@
             reporting_person_display: "",
             custom_send_for_purchase: 0,
           };
+          
+          // Auto-select employee if not Admin/Warehouse manager
+          if (!this.isAdmin && !this.wh_dept_map.some(row => row.user_id === frappe.session.user)) {
+             this.isEmployeeReadOnly = true;
+             frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                    doctype: "Employee",
+                    filters: { user_id: frappe.session.user },
+                    fieldname: ["name", "employee_name"]
+                },
+                callback: (r) => {
+                    if (r.message) {
+                        this.emrForm.employee = r.message.name;
+                        this.emrForm.employee_display = `${r.message.name} (${r.message.employee_name})`;
+                    }
+                }
+             });
+          }
           this.emrItems = [
             { item_code: "", item_code_display: "", description: "", uom: "", quantity: 1 },
           ];
