@@ -144,3 +144,19 @@ def check_duplicate(mobile_no, products):
             return {"duplicate": True, "product": p['product']}
             
     return {"duplicate": False}
+
+
+@frappe.whitelist()
+def check_duplicate_appointment(party, scheduled_time):
+    """
+    Checks if an appointment already exists for the given lead at the same time.
+    """
+    exists = frappe.db.exists("Appointment", {
+        "party": party,
+        "scheduled_time": scheduled_time,
+        "status": ["!=", "Cancelled"]
+    })
+    
+    if exists:
+        return {"duplicate": True}
+    return {"duplicate": False}
