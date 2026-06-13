@@ -1223,7 +1223,7 @@ async getEmployeeByUser(userId) {
         if (this.state.section === "lead") {
           this.editLead(name);
         } else {
-          frappe.set_route("Form", "Appointment", name);
+          this.editAppointment(name);
         }
       });
   }
@@ -1581,6 +1581,7 @@ async getEmployeeByUser(userId) {
             fieldname: "tab_navigation",
             fieldtype: "HTML",
             options: `
+                        <div id="dialog-error-banner" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 6px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 13px;"></div>
                         <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
                             <div class="tab-link active" id="tab-lead-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Lead & Products</div>
                             <div class="tab-link" id="tab-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #6b7280;">Appointments</div>
@@ -1596,12 +1597,21 @@ async getEmployeeByUser(userId) {
         ],
         primary_action_label: __("Update Lead"),
         primary_action: async (values) => {
+    const showError = (msg) => {
+        const banner = d.$wrapper.find("#dialog-error-banner");
+        banner.html(`<strong>⚠️ Error:</strong> ${msg}`).show();
+        d.$wrapper.find(".modal-body").scrollTop(0);
+        setTimeout(() => banner.fadeOut(), 5000);
+    };
+
     const input_status = d.$wrapper.find("#status_edit").val();
     const input_mobile = d.$wrapper.find("#m_no_edit").val();
+    const input_appt_time = d.$wrapper.find("#new_appt_t_edit").val();
+    const btn = d.get_primary_btn();
 
     // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
-        return frappe.msgprint(__("Please enter a valid 10-digit mobile number starting with 6-9."));
+        return showError(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
 
     const final_values = {
@@ -1613,14 +1623,8 @@ async getEmployeeByUser(userId) {
 
     // ✅ AUTO TAB SWITCH LOGIC
     if (input_status === "Follow Up") {
-        const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
-        
-        if (!appointmentsData.length && !has_new_appt) {
-            frappe.msgprint({
-                title: __('Action Required'),
-                indicator: 'orange',
-                message: __('Please schedule an appointment to set status as <b>Follow Up</b>.')
-            });
+        if (!appointmentsData.length && !input_appt_time) {
+            showError(__('Please schedule an appointment to set status as <b>Follow Up</b>.'));
             d.$wrapper.find("#tab-appt-btn").trigger("click");
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
             $apptInput.css("border", "2px solid #ff5858");
@@ -1629,25 +1633,63 @@ async getEmployeeByUser(userId) {
         }
     }
 
-    // Call save logic
-    frappe.call({
-        method: "frappe.client.set_value",
-        args: {
-            doctype: "Lead",
-            name: name,
-            fieldname: {
-                ...final_values,
-                custom_product_table: productsData,
-            },
-        },
-        callback: (r) => {
-            if (!r.exc) {
-                frappe.show_alert({ message: __("Lead Updated"), indicator: "green" });
-                d.hide();
-                me.fetchData();
+    btn.prop('disabled', true);
+
+    try {
+        // 🛡️ Optional: Create Appointment if time is provided
+        if (input_appt_time) {
+            const dupRes = await frappe.call({
+                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
+                args: { party: name, scheduled_time: input_appt_time }
+            });
+
+            if (dupRes.message && dupRes.message.duplicate) {
+                showError(__("An appointment already exists for this Lead at the selected time."));
+                btn.prop('disabled', false);
+                return;
             }
-        },
-    });
+
+            await frappe.call({
+                method: "frappe.client.insert",
+                args: {
+                    doc: {
+                        doctype: "Appointment",
+                        party: name,
+                        appointment_with: "Lead",
+                        scheduled_time: input_appt_time,
+                        status: "Open",
+                        customer_name: final_values.first_name,
+                        customer_phone_number: final_values.mobile_no,
+                        customer_email: doc.email_id || `${name}@lead.local`,
+                        customer_details: d.$wrapper.find("#new_appt_rem_edit").val(),
+                    }
+                }
+            });
+        }
+
+        // Call save logic for Lead
+        await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+                doctype: "Lead",
+                name: name,
+                fieldname: {
+                    ...final_values,
+                    custom_product_table: productsData,
+                },
+            },
+            callback: (r) => {
+                if (!r.exc) {
+                    frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
+                    d.hide();
+                    me.fetchData();
+                }
+            },
+        });
+    } catch (e) {
+        console.error(e);
+        btn.prop('disabled', false);
+    }
 },
       });
 
@@ -1767,9 +1809,11 @@ async getEmployeeByUser(userId) {
                 <div id="appointment-content-section" style="display:none;">
                     <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
                         <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
-                        <div style="display:flex; flex-wrap: wrap; gap:10px; margin-bottom:20px;">
-                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px; max-width:250px;">
-                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
+                        <div style="display:flex; flex-direction: column; gap:10px; margin-bottom:20px;">
+                            <div style="display:flex; flex-wrap: wrap; gap:10px;">
+                                <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px;">
+                            </div>
+                            <textarea id="new_appt_rem_edit" class="form-control" rows="2" placeholder="Appointment remarks..." style="resize:none; font-size: 13px;"></textarea>
                         </div>
                         <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
                         <div style="overflow-x: auto;">
@@ -1793,50 +1837,10 @@ async getEmployeeByUser(userId) {
             $(`<tr>
                         <td style="vertical-align:middle;">${frappe.datetime.global_date_format(app.scheduled_time)} ${frappe.datetime.get_time(app.scheduled_time)}</td>
                         <td style="vertical-align:middle;"><span class="label label-${app.status === "Open" ? "orange" : "green"}">${app.status}</span></td>
-                        <td style="text-align:center;"><button class="btn btn-xs btn-default" onclick="frappe.set_route('Form', 'Appointment', '${app.name}')">View</button></td>
+                        <td style="text-align:center;"><button class="btn btn-xs btn-default" onclick="frappe.crm_app.editAppointment('${app.name}')">View</button></td>
                     </tr>`).appendTo(tbody);
           });
         };
-
-        d.$wrapper.off("click", "#btn-create-appt-final").on("click", "#btn-create-appt-final", async (e) => {
-          const $btn = $(e.currentTarget);
-          if ($btn.prop('disabled')) return;
-          
-          const time = d.$wrapper.find("#new_appt_t_edit").val();
-          if (!time) return frappe.msgprint("Please select date & time");
-
-          $btn.prop('disabled', true);
-
-          try {
-            await frappe.call({
-              method: "frappe.client.insert",
-              args: {
-                doc: {
-                  doctype: "Appointment",
-                  party: name,
-                  appointment_with: "Lead",
-                  scheduled_time: time,
-                  status: "Open",
-                  customer_name: d.$wrapper.find("#f_name_edit").val() || doc.first_name,
-                  customer_email: doc.email_id || `${name}@lead.local`,
-                  contact_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
-                },
-              },
-              callback: (r) => {
-                if (!r.exc) {
-                  frappe.show_alert("Appointment Created Successfully");
-                  appointmentsData.unshift(r.message);
-                  loadHistory();
-                  d.$wrapper.find("#new_appt_t_edit").val("");
-                }
-              },
-            });
-          } catch (error) {
-            console.error(error);
-          } finally {
-            $btn.prop('disabled', false);
-          }
-        });
         loadHistory();
       };
 
@@ -1862,6 +1866,122 @@ async getEmployeeByUser(userId) {
       renderLeadTab();
       renderApptTab();
       setupTabs();
+    });
+}
+
+async editAppointment(name) {
+    const me = this;
+    frappe.model.with_doc("Appointment", name, async function () {
+        const doc = frappe.get_doc("Appointment", name);
+        if (!doc) return;
+
+        const d = new frappe.ui.Dialog({
+            title: `Update Appointment: ${name}`,
+            fields: [
+                {
+                    fieldname: "tab_navigation",
+                    fieldtype: "HTML",
+                    options: `
+                        <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
+                            <div class="tab-link active" id="tab-appt-details-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Appointment Details</div>
+                        </div>
+                    `,
+                },
+                { fieldname: "details_wrapper", fieldtype: "HTML" },
+            ],
+            primary_action_label: __("Update Appointment"),
+            primary_action: async (values) => {
+                const btn = d.get_primary_btn();
+                btn.prop('disabled', true);
+
+                const final_values = {
+                    scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
+                    status: d.$wrapper.find("#appt_status_edit").val(),
+                    customer_details: d.$wrapper.find("#appt_remarks_edit").val(),
+                };
+
+                try {
+                    await frappe.call({
+                        method: "frappe.client.set_value",
+                        args: {
+                            doctype: "Appointment",
+                            name: name,
+                            fieldname: final_values,
+                        },
+                        freeze: true,
+                        freeze_message: "Updating..."
+                    });
+                    frappe.show_alert({ message: __("Appointment Updated"), indicator: "green" });
+                    d.hide();
+                    me.fetchData();
+                } catch (e) {
+                    console.error(e);
+                    btn.prop('disabled', false);
+                }
+            },
+        });
+
+        const renderDetailsTab = () => {
+            const wrapper = d.get_field("details_wrapper").$wrapper;
+            const scheduled_time = doc.scheduled_time ? doc.scheduled_time.replace(" ", "T").substring(0, 16) : "";
+            
+            wrapper.html(`
+                <div id="appt-details-section">
+                    <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc; margin-bottom: 15px;">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label">Customer Name</label>
+                                    <input type="text" class="form-control" value="${doc.customer_name || ""}" readonly style="background:#f8fafc;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Lead (ID)</label>
+                                    <input type="text" class="form-control" value="${doc.party || ""}" readonly style="background:#f8fafc;">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label">Mobile Number</label>
+                                    <input type="text" class="form-control" value="${doc.customer_phone_number || ""}" readonly style="background:#f8fafc;">
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label">Email Address</label>
+                                    <input type="text" class="form-control" value="${doc.customer_email || ""}" readonly style="background:#f8fafc;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fff;">
+                        <h6 style="font-weight:600; margin-bottom:15px; color: #006264;">Schedule & Status</h6>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label">Scheduled Date & Time</label>
+                                    <input type="datetime-local" id="appt_time_edit" class="form-control" value="${scheduled_time}">
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label">Status</label>
+                                    <select id="appt_status_edit" class="form-control">
+                                        ${["Open", "Closed"].map((s) => `<option value="${s}" ${doc.status === s ? "selected" : ""}>${s}</option>`).join("")}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:10px;">
+                            <label class="control-label">Remarks / Notes</label>
+                            <textarea id="appt_remarks_edit" class="form-control" rows="3" style="resize:none;">${doc.customer_details || ""}</textarea>
+                        </div>
+                    </div>
+                </div>
+            `);
+        };
+
+        d.show();
+        d.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
+        renderDetailsTab();
     });
 }
   // 🔹 extracted helper (Petite-Vue friendly & reusable)
@@ -1906,7 +2026,7 @@ renderWhatsAppCard(item) {
       name = item.customer_name || "Unnamed";
       avatar = name.charAt(0).toUpperCase();
       const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-      message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
+      message = `📅 ${scheduledTime} ${item.customer_phone_number ? `• 📱 ${item.customer_phone_number}` : ""}`;
       statusClass = (item.status || "open").toLowerCase();
       statusText = item.status || "Open";
     }
@@ -1965,7 +2085,7 @@ renderWhatsAppCard(item) {
         if (this.state.section === "lead") {
             this.editLead(item.name);
         } else {
-            frappe.set_route("Form", "Appointment", item.name);
+            this.editAppointment(item.name);
         }
     });
 
@@ -3500,55 +3620,46 @@ createLead() {
   // }
 
   createAppointment() {
-    const dialog = new frappe.ui.Dialog({
+    const me = this;
+    const d = new frappe.ui.Dialog({
       title: "Create New Appointment",
       fields: [
         {
-          fieldname: "party",
-          fieldtype: "Link",
-          label: "Lead",
-          options: "Lead",
-          reqd: 1,
-          get_query: () => {
-            return { filters: { lead_owner: this.currentUser } };
-          },
-          onchange: async () => {
-            const lead = dialog.get_value("party");
-            if (!lead) return;
-
-            const r = await frappe.db.get_value("Lead", lead, [
-              "first_name",
-              "last_name",
-              "mobile_no",
-              "email_id",
-            ]);
-
-            if (r.message) {
-              const full_name = (r.message.first_name || "") + " " + (r.message.last_name || "");
-              dialog.set_value("customer_name", full_name.trim());
-              dialog.set_value("customer_phone_number", r.message.mobile_no || "");
-              dialog.set_value("customer_email", r.message.email_id || `${lead}@lead.local`);
-            }
-          },
+          fieldname: "tab_navigation",
+          fieldtype: "HTML",
+          options: `
+              <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
+                  <div class="tab-link active" id="tab-create-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Appointment Details</div>
+              </div>
+          `,
         },
-        { fieldname: "scheduled_time", fieldtype: "Datetime", label: "Scheduled Time", reqd: 1 },
-        { fieldname: "customer_name", fieldtype: "Data", label: "Customer Name", reqd: 1, read_only: 1 },
-        { fieldname: "customer_phone_number", fieldtype: "Data", label: "Phone", read_only: 1 },
-        {
-          fieldname: "status",
-          fieldtype: "Select",
-          label: "Status",
-          options: "Open\nClosed",
-          default: "Open",
-        },
+        { fieldname: "create_wrapper", fieldtype: "HTML" },
       ],
-      primary_action_label: "Create",
+      primary_action_label: "Create Appointment",
       primary_action: async (values) => {
-        const btn = dialog.get_primary_btn();
+        const btn = d.get_primary_btn();
+        const party = d.$wrapper.find("#create_appt_lead").val();
+        const time = d.$wrapper.find("#create_appt_time").val();
+
+        if (!party) return frappe.msgprint("Please select a Lead");
+        if (!time) return frappe.msgprint("Please select Date & Time");
+
         btn.prop('disabled', true);
         try {
-          if (!values.party) { 
-            frappe.throw("Lead is required"); 
+          // 🛡️ Duplicate Appointment Check
+          const dupRes = await frappe.call({
+            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
+            args: { party: party, scheduled_time: time }
+          });
+
+          if (dupRes.message && dupRes.message.duplicate) {
+            frappe.msgprint({
+              title: __("Duplicate Appointment"),
+              indicator: "red",
+              message: __("An appointment already exists for this Lead at the selected time.")
+            });
+            btn.prop('disabled', false);
+            return;
           }
 
           await frappe.call({
@@ -3557,12 +3668,13 @@ createLead() {
               doc: {
                 doctype: "Appointment",
                 appointment_with: "Lead",
-                party: values.party,
-                scheduled_time: values.scheduled_time,
-                status: values.status,
-                customer_name: values.customer_name,
-                contact_number: values.customer_phone_number,
-                customer_email: values.customer_email,
+                party: party,
+                scheduled_time: time,
+                status: d.$wrapper.find("#create_appt_status").val(),
+                customer_name: d.$wrapper.find("#create_appt_name").val(),
+                customer_phone_number: d.$wrapper.find("#create_appt_phone").val(),
+                customer_email: d.$wrapper.find("#create_appt_email").val(),
+                customer_details: d.$wrapper.find("#create_appt_remarks").val(),
               },
             },
             freeze: true,
@@ -3570,7 +3682,7 @@ createLead() {
           });
 
           frappe.show_alert({ message: "✅ Appointment created", indicator: "green" }, 3);
-          dialog.hide();
+          d.hide();
           this.invalidateCache("appointment");
           this.refresh();
         } catch (error) {
@@ -3579,7 +3691,104 @@ createLead() {
         }
       },
     });
-    dialog.show();
+
+    const renderCreateTab = () => {
+      const wrapper = d.get_field("create_wrapper").$wrapper;
+      wrapper.html(`
+          <div id="appt-create-section">
+              <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc; margin-bottom: 15px;">
+                  <h6 style="font-weight:600; margin-bottom:15px; color: #006264;">Lead Information</h6>
+                  <div class="row">
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Select Lead</label>
+                              <div id="lead_link_edit_container"></div>
+                          </div>
+                      </div>
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Full Name</label>
+                              <input type="text" id="create_appt_name" class="form-control" readonly style="background:#f8fafc;">
+                          </div>
+                      </div>
+                  </div>
+                  <div class="row" style="margin-top:10px;">
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Mobile Number</label>
+                              <input type="text" id="create_appt_phone" class="form-control" readonly style="background:#f8fafc;">
+                          </div>
+                      </div>
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Email Address</label>
+                              <input type="text" id="create_appt_email" class="form-control" readonly style="background:#f8fafc;">
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fff;">
+                  <h6 style="font-weight:600; margin-bottom:15px; color: #006264;">Schedule & Status</h6>
+                  <div class="row">
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Scheduled Date & Time</label>
+                              <input type="datetime-local" id="create_appt_time" class="form-control">
+                          </div>
+                      </div>
+                      <div class="col-sm-6">
+                          <div class="form-group">
+                              <label class="control-label">Status</label>
+                              <select id="create_appt_status" class="form-control">
+                                  <option value="Open">Open</option>
+                                  <option value="Closed">Closed</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="form-group" style="margin-top:10px;">
+                      <label class="control-label">Remarks / Notes</label>
+                      <textarea id="create_appt_remarks" class="form-control" rows="3" style="resize:none;" placeholder="Enter any specific requirements..."></textarea>
+                  </div>
+              </div>
+          </div>
+      `);
+
+      // Manual input field value storage
+      wrapper.append('<input type="hidden" id="create_appt_lead">');
+
+      frappe.ui.form.make_control({
+        df: {
+          fieldtype: "Link",
+          options: "Lead",
+          fieldname: "party",
+          get_query: () => ({ filters: { lead_owner: me.currentUser } }),
+          onchange: async function() {
+            const lead = this.get_value();
+            d.$wrapper.find("#create_appt_lead").val(lead);
+            if (!lead) {
+              d.$wrapper.find("#create_appt_name, #create_appt_phone, #create_appt_email").val("");
+              return;
+            }
+
+            const r = await frappe.db.get_value("Lead", lead, ["first_name", "last_name", "mobile_no", "email_id"]);
+            if (r.message) {
+              const full_name = (r.message.first_name || "") + " " + (r.message.last_name || "");
+              d.$wrapper.find("#create_appt_name").val(full_name.trim());
+              d.$wrapper.find("#create_appt_phone").val(r.message.mobile_no || "");
+              d.$wrapper.find("#create_appt_email").val(r.message.email_id || `${lead}@lead.local`);
+            }
+          }
+        },
+        parent: d.$wrapper.find("#lead_link_edit_container"),
+        render_input: true,
+      });
+    };
+
+    d.show();
+    d.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
+    renderCreateTab();
 }
 
   exportData() {

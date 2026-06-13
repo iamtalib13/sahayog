@@ -382,14 +382,82 @@ function customizeButtons(frm) {
 // Add "Create Appointment" button
 function addAppointmentButton(frm) {
   frm.add_custom_button("Create Appointment", () => {
-    frappe.new_doc("Appointment", {
-      customer_name: frm.doc.first_name,
-      customer_phone_number: frm.doc.mobile_no || frm.doc.phone || "",
-      customer_email: frm.doc.email_id || "",
-      appointment_with: "Lead",
-      party: frm.doc.name,
-      status: "Open",
+    let dialog = new frappe.ui.Dialog({
+      title: __("Create New Appointment"),
+      fields: [
+        {
+          fieldname: "scheduled_time",
+          fieldtype: "Datetime",
+          label: __("Scheduled Time"),
+          reqd: 1,
+        },
+        {
+          fieldname: "status",
+          fieldtype: "Select",
+          label: __("Status"),
+          options: "Open\nClosed",
+          default: "Open",
+        },
+        {
+          fieldname: "customer_name",
+          fieldtype: "Data",
+          label: __("Customer Name"),
+          default: frm.doc.first_name,
+          read_only: 1,
+        },
+        {
+          fieldname: "customer_phone_number",
+          fieldtype: "Data",
+          label: __("Phone"),
+          default: frm.doc.mobile_no || frm.doc.phone || "",
+          read_only: 1,
+        },
+        {
+          fieldname: "customer_email",
+          fieldtype: "Data",
+          label: __("Email"),
+          default: frm.doc.email_id || "",
+          read_only: 1,
+        },
+        {
+          fieldname: "customer_details",
+          fieldtype: "Small Text",
+          label: __("Remarks / Notes"),
+        },
+      ],
+      primary_action_label: __("Create"),
+      primary_action(values) {
+        frappe.call({
+          method: "frappe.client.insert",
+          args: {
+            doc: {
+              doctype: "Appointment",
+              appointment_with: "Lead",
+              party: frm.doc.name,
+              scheduled_time: values.scheduled_time,
+              status: values.status,
+              customer_name: values.customer_name,
+              customer_phone_number: values.customer_phone_number,
+              customer_email: values.customer_email,
+              customer_details: values.customer_details,
+            },
+          },
+          freeze: true,
+          freeze_message: __("Creating Appointment..."),
+          callback(r) {
+            if (!r.exc) {
+              frappe.show_alert({
+                message: __("Appointment created successfully"),
+                indicator: "green",
+              });
+              dialog.hide();
+              frm.reload_doc();
+            }
+          },
+        });
+      },
     });
+    dialog.show();
   });
 }
 
