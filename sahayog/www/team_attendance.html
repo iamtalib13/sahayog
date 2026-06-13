@@ -1704,6 +1704,23 @@
                 </div>`;
             }
 
+            // Leave Balance Section
+            let balanceHtml = "";
+            if (data.leave_balances && data.leave_balances.length > 0) {
+                balanceHtml = `
+                <div class="dash-section">
+                    <div class="dash-sec-title">Leave Balance</div>
+                    <div class="stat-pill-box" style="padding: 10px;">
+                        ${data.leave_balances.map(b => `
+                            <div class="dash-row" style="margin-bottom: 6px;">
+                                <span class="dash-lbl" style="font-size: 12px;">${b.leave_type}</span>
+                                <span class="dash-val" style="font-size: 12px; color: var(--brand2);">${b.unused_leaves} Left</span>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>`;
+            }
+
             // Leave Requests Section
             let leaveHtml = "";
             const totalLeaves = (data.leaves?.pending_count || 0) + (data.leaves?.approved_count || 0) + (data.leaves?.rejected_count || 0);
@@ -1800,6 +1817,7 @@
                     ${missingDatesHtml}
                 </div>
 
+                ${balanceHtml}
                 ${leaveHtml}
                 ${correctionHtml}
 
