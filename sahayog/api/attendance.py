@@ -422,16 +422,19 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
     missing_days = len(missing_dates)
 
     # Correction Requests
-    corrections = frappe.get_all("Attendance Correction", filters={
+    corrections_data = frappe.get_all("Attendance Correction", filters={
         "employee": employee,
         "attendance_date": ["between", [from_date, to_date]]
-    }, fields=["status"])
+    }, fields=["name", "attendance_date", "current_status", "requested_status", "reason", "status"])
     
     corr_stats = {
-        "pending": len([c for c in corrections if c.status == "Pending"]),
-        "approved": len([c for c in corrections if c.status == "Approved"]),
-        "rejected": len([c for c in corrections if c.status == "Rejected"]),
-        "total": len(corrections)
+        "pending_count": len([c for c in corrections_data if c.status == "Pending"]),
+        "approved_count": len([c for c in corrections_data if c.status == "Approved"]),
+        "rejected_count": len([c for c in corrections_data if c.status == "Rejected"]),
+        "pending": [c for c in corrections_data if c.status == "Pending"],
+        "approved": [c for c in corrections_data if c.status == "Approved"],
+        "rejected": [c for c in corrections_data if c.status == "Rejected"],
+        "total": len(corrections_data)
     }
 
     # Leave Requests
