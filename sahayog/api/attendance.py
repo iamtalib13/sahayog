@@ -422,16 +422,34 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
     missing_days = len(missing_dates)
 
     # Correction Requests
-    corrections = frappe.get_all("Attendance Correction", filters={
+    corrections_data = frappe.get_all("Attendance Correction", filters={
         "employee": employee,
         "attendance_date": ["between", [from_date, to_date]]
-    }, fields=["status"])
+    }, fields=["name", "attendance_date", "current_status", "requested_status", "reason", "status"])
     
     corr_stats = {
-        "pending": len([c for c in corrections if c.status == "Pending"]),
-        "approved": len([c for c in corrections if c.status == "Approved"]),
-        "rejected": len([c for c in corrections if c.status == "Rejected"]),
-        "total": len(corrections)
+        "pending_count": len([c for c in corrections_data if c.status == "Pending"]),
+        "approved_count": len([c for c in corrections_data if c.status == "Approved"]),
+        "rejected_count": len([c for c in corrections_data if c.status == "Rejected"]),
+        "pending": [c for c in corrections_data if c.status == "Pending"],
+        "approved": [c for c in corrections_data if c.status == "Approved"],
+        "rejected": [c for c in corrections_data if c.status == "Rejected"],
+        "total": len(corrections_data)
+    }
+
+    # Leave Requests
+    leaves_data = frappe.get_all("Leave Application", filters={
+        "employee": employee,
+        "from_date": ["between", [from_date, to_date]]
+    }, fields=["name", "leave_type", "from_date", "to_date", "status", "total_leave_days", "description"])
+    
+    leave_stats = {
+        "pending_count": len([l for l in leaves_data if l.status == "Open"]),
+        "approved_count": len([l for l in leaves_data if l.status == "Approved"]),
+        "rejected_count": len([l for l in leaves_data if l.status == "Rejected"]),
+        "pending": [l for l in leaves_data if l.status == "Open"],
+        "approved": [l for l in leaves_data if l.status == "Approved"],
+        "rejected": [l for l in leaves_data if l.status == "Rejected"]
     }
 
     # Employee & Manager Info
@@ -469,5 +487,6 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
             "missing_dates": missing_dates
         },
         "corrections": corr_stats,
+        "leaves": leave_stats,
         "reporting_to": reporting_to
     }
