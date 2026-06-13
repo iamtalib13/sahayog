@@ -434,6 +434,21 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
         "total": len(corrections)
     }
 
+    # Leave Requests
+    leaves_data = frappe.get_all("Leave Application", filters={
+        "employee": employee,
+        "from_date": ["between", [from_date, to_date]]
+    }, fields=["name", "leave_type", "from_date", "to_date", "status", "total_leave_days", "description"])
+    
+    leave_stats = {
+        "pending_count": len([l for l in leaves_data if l.status == "Open"]),
+        "approved_count": len([l for l in leaves_data if l.status == "Approved"]),
+        "rejected_count": len([l for l in leaves_data if l.status == "Rejected"]),
+        "pending": [l for l in leaves_data if l.status == "Open"],
+        "approved": [l for l in leaves_data if l.status == "Approved"],
+        "rejected": [l for l in leaves_data if l.status == "Rejected"]
+    }
+
     # Employee & Manager Info
     emp_info = frappe.db.get_value("Employee", employee, ["employee_name", "designation", "branch", "reports_to"], as_dict=True)
     reporting_to = {"name": _("Not Set"), "designation": ""}
@@ -469,5 +484,6 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
             "missing_dates": missing_dates
         },
         "corrections": corr_stats,
+        "leaves": leave_stats,
         "reporting_to": reporting_to
     }
