@@ -989,6 +989,21 @@
         color: var(--muted);
       }
 
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
@@ -1413,6 +1428,45 @@
               </div>
             </div>
 
+            <!-- LEAVE HISTORY MODAL -->
+            <div
+              id="leaveHistoryModal"
+              onclick="closeLeaveHistoryModal()"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 20000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(2px);
+              "
+            >
+              <div
+                onclick="event.stopPropagation()"
+                style="
+                  background: #fff;
+                  padding: 24px;
+                  border-radius: 20px;
+                  width: 90%;
+                  max-width: 480px;
+                  max-height: 85vh;
+                  display: flex;
+                  flex-direction: column;
+                  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+                "
+              >
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1.5px solid #f1f5f9;">
+                  <h3 id="leaveHistoryTitle" style="font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--brand); margin: 0;">Leave History</h3>
+                  <button onclick="closeLeaveHistoryModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted);">✕</button>
+                </div>
+                <div id="leaveHistoryList" style="overflow-y: auto; flex: 1; padding-right: 4px;" class="custom-scroll">
+                   <!-- Content injected here -->
+                </div>
+              </div>
+            </div>
+
             <!-- EMPTY STATE -->
             <div
               id="calEmptyState"
@@ -1560,9 +1614,10 @@
         document.getElementById("drawerOverlay").classList.remove("show");
       }
 
+      let currentDashboardLeaves = {};
       async function loadAttendanceDashboard(emp_id) {
         const content = document.getElementById("dashboardContent");
-        
+
         if (document.getElementById("dashboardDrawer").classList.contains("open")) {
             content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:10px;font-size:12px;color:var(--muted);">Fetching insights...</p></div>';
         }
@@ -1574,9 +1629,10 @@
         }, "attendance");
 
         if (data) {
+            currentDashboardLeaves = data.leaves || { pending: [], approved: [], rejected: [] };
             const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
-            
-            // Correction Requests Section (only if total > 0)
+
+            // Correction Requests Section
             let correctionHtml = "";
             if (data.corrections.total > 0) {
                 correctionHtml = `
@@ -1599,7 +1655,40 @@
                 </div>`;
             }
 
-            // Missing Dates Toggle logic
+            // Leave Requests Section
+            let leaveHtml = "";
+            const totalLeaves = (data.leaves?.pending_count || 0) + (data.leaves?.approved_count || 0) + (data.leaves?.rejected_count || 0);
+
+            if (totalLeaves > 0) {
+                leaveHtml = `
+                <div class="dash-section">
+                    <div class="dash-sec-title">Leave Requests</div>
+                    <div class="corr-grid">
+                        <div class="corr-item" onclick="showLeaveHistory('pending')" style="background:#fff7ed; border:1px solid #fed7aa; cursor:pointer;">
+                            <span class="corr-val" style="color:#c2410c">${data.leaves.pending_count}</span>
+                            <span class="corr-lbl">Pending</span>
+                        </div>
+                        <div class="corr-item" onclick="showLeaveHistory('approved')" style="background:#f0fdf4; border:1px solid #bbf7d0; cursor:pointer;">
+                            <span class="corr-val" style="color:#15803d">${data.leaves.approved_count}</span>
+                            <span class="corr-lbl">Approved</span>
+                        </div>
+                        <div class="corr-item" onclick="showLeaveHistory('rejected')" style="background:#fef2f2; border:1px solid #fecaca; cursor:pointer;">
+                            <span class="corr-val" style="color:#b91c1c">${data.leaves.rejected_count}</span>
+                            <span class="corr-lbl">Rejected</span>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                leaveHtml = `
+                <div class="dash-section">
+                    <div class="dash-sec-title">Leave Requests</div>
+                    <div style="padding:15px; text-align:center; background:#f8fafc; border-radius:12px; font-size:11px; color:var(--muted); border:1px dashed #e2e8f0;">
+                        No leave requests found for ${monthName}
+                    </div>
+                </div>`;
+            }
+
+            // ... (Missing dates logic stays same)
             let missingDatesHtml = "";
             if (data.monthly_summary.missing > 0) {
                 missingDatesHtml = `
@@ -1662,6 +1751,7 @@
                     ${missingDatesHtml}
                 </div>
 
+                ${leaveHtml}
                 ${correctionHtml}
 
                 <div class="dash-section">
@@ -1675,9 +1765,53 @@
                     </div>
                 </div>
             `;
-            // Update Calendar Summary with accurate API data
             renderCalSummaryFromData(data.statistics, data.employee_info);
         }
+      }
+
+      function showLeaveHistory(category) {
+          const list = currentDashboardLeaves[category] || [];
+          const container = document.getElementById("leaveHistoryList");
+          const title = document.getElementById("leaveHistoryTitle");
+
+          let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
+          title.textContent = `${displayTitle} Leave Requests (${list.length})`;
+
+          if (list.length === 0) {
+              container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
+          } else {
+              container.innerHTML = list.map(l => {
+                  const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+                  const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+                  const isSameDate = l.from_date === l.to_date;
+
+                  return `
+                    <div style="padding: 14px; background: #fff; margin-bottom: 12px; border-radius: 12px; border: 1.5px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                            <div style="font-weight:800; font-size:14px; color: var(--brand);">${l.leave_type}</div>
+                            <div style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:${category === 'approved' ? '#dcfce7' : (category === 'rejected' ? '#fee2e2' : '#fff7ed')}; color:${category === 'approved' ? '#16a34a' : (category === 'rejected' ? '#dc2626' : '#c2410c')};">
+                                ${l.total_leave_days} Day${l.total_leave_days > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); font-weight:600; margin-bottom:10px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            ${fromDate} ${!isSameDate ? `→ ${toDate}` : ''}
+                        </div>
+                        <div style="font-size:11px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:8px; color:#475569; border: 1px solid #f1f5f9;">
+                            <strong style="color:var(--muted); font-size:10px; text-transform:uppercase;">Reason:</strong><br/>
+                            ${l.description || 'No reason provided'}
+                        </div>
+                    </div>
+                  `;
+              }).join('');
+          }
+
+          const modal = document.getElementById("leaveHistoryModal");
+          modal.style.display = "flex";
+      }
+
+      function closeLeaveHistoryModal() {
+          document.getElementById("leaveHistoryModal").style.display = "none";
       }
 
       function toggleMissingDates() {
@@ -1893,11 +2027,13 @@
 
       async function loadTeamLeaves() {
         document.getElementById("teamListLoading").style.display = "flex";
-        const data = await callAPI("get_pending_leaves", {}, "leave");
+        const res = await callAPI("get_pending_leaves", {}, "leave");
         document.getElementById("teamListLoading").style.display = "none";
 
         const container = document.getElementById("empList");
-        if (!data || data.length === 0) {
+        const data = res?.pending || [];
+        
+        if (data.length === 0) {
           container.innerHTML =
             '<div style="padding:20px;text-align:center;color:var(--muted)">No pending leave requests.</div>';
           return;
@@ -1905,27 +2041,54 @@
 
         container.innerHTML = data
           .map(
-            (l) => `
-          <div class="emp-row">
-            <div class="emp-info">
-              <div class="emp-name">${l.employee}</div>
-              <div class="emp-role">${l.leave_type} - ${l.status}</div>
-              <div style="font-size:11px;color:var(--muted)">${l.from_date} → ${l.to_date}</div>
-            </div>
-            <div class="emp-actions">
-              ${
-                l.status === "Open"
-                  ? `
-                <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
-                <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
-              `
-                  : `
-                <span class="status-pill ${l.status === "Approved" ? "pill-present" : "pill-absent"}">${l.status}</span>
-              `
-              }
-            </div>
-          </div>
-        `,
+            (l) => {
+              const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
+              const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
+              
+              return `
+                <div class="emp-row">
+                  <div class="emp-info">
+                    <div class="emp-name">${l.employee_name || ''} (${l.employee})</div>
+                    <div class="emp-role">${l.leave_type}</div>
+                    <div style="font-size:11px;color:var(--muted)">${fromDate} → ${toDate}</div>
+                  </div>
+                  <div class="emp-actions">
+                    <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
+                    <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
+                  </div>
+                </div>
+              `;
+            }
+          )
+          .join("");
+        
+        // Render history in dashboard
+        renderLeaveHistory(res?.history || []);
+      }
+
+      function renderLeaveHistory(history) {
+        const container = document.getElementById("leaveHistoryContainer"); // Assume this element exists in dashboard
+        if (!container) return;
+
+        container.innerHTML = history
+          .map(
+            (l) => {
+              const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
+              const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
+              
+              return `
+                <div class="emp-row">
+                  <div class="emp-info">
+                    <div class="emp-name">${l.employee_name || ''} (${l.employee})</div>
+                    <div class="emp-role">${l.leave_type}</div>
+                    <div style="font-size:11px;color:var(--muted)">${fromDate} → ${toDate}</div>
+                  </div>
+                  <div class="emp-actions">
+                    <span class="status-pill ${l.status === "Approved" ? "pill-present" : "pill-absent"}">${l.status}</span>
+                  </div>
+                </div>
+              `;
+            }
           )
           .join("");
       }
