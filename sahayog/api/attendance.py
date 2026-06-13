@@ -4,7 +4,7 @@ from frappe.utils import nowdate, nowtime, getdate, add_days
 
 @frappe.whitelist(allow_guest=False)
 def get_team_attendance_data():
-    """Fetch all employees reporting to the logged-in user and their today's attendance status."""
+    """Fetch all employees reporting to the logged-in user and their today's attendance status in bulk."""
     user = frappe.session.user
     
     # Ensure only logged in users can access
@@ -37,8 +37,50 @@ def get_team_attendance_data():
         ],
         order_by="employee_name"
     )
+    
+    if not team:
+        return {"team": [], "summary": {"total": 0, "present": 0, "absent": 0, "half_day": 0, "pending": 0, "on_leave": 0}, "current_user": manager}
 
-    # Fetch supervisor names to show names instead of IDs
+    emp_names = [emp.name for emp in team]
+    today = nowdate()
+    
+    # 1. Bulk Fetch Attendance
+    attendances = frappe.get_all("Attendance",
+        filters={"employee": ["in", emp_names], "attendance_date": today},
+        fields=["employee", "status"]
+    )
+    attendance_map = {att.employee: att.status for att in attendances}
+    
+    # 2. Bulk Fetch Check-ins
+    checkins = frappe.get_all("Employee Checkin",
+        filters={"employee": ["in", emp_names], "time": ["between", [today + " 00:00:00", today + " 23:59:59"]]},
+        fields=["employee", "time", "log_type"],
+        order_by="time asc"
+    )
+    # Map to first IN and last OUT
+    checkin_map = {}
+    for c in checkins:
+        if c.employee not in checkin_map:
+            checkin_map[c.employee] = {"in": None, "out": None}
+            
+        if c.log_type == "IN" and not checkin_map[c.employee]["in"]:
+            checkin_map[c.employee]["in"] = frappe.utils.format_time(c.time, "HH:mm")
+        elif c.log_type == "OUT":
+            checkin_map[c.employee]["out"] = frappe.utils.format_time(c.time, "HH:mm")
+
+    # 3. Bulk Fetch Approved Leaves
+    leaves = frappe.get_all("Leave Application",
+        filters={
+            "employee": ["in", emp_names],
+            "status": "Approved",
+            "from_date": ["<=", today],
+            "to_date": [">=", today]
+        },
+        fields=["employee"]
+    )
+    on_leave_emps = set(l.employee for l in leaves)
+
+    # 4. Fetch supervisor names
     supervisor_ids = list(set([emp.reports_to for emp in team if emp.reports_to]))
     supervisor_map = {}
     if supervisor_ids:
@@ -46,76 +88,34 @@ def get_team_attendance_data():
             filters={"name": ["in", supervisor_ids]}, 
             fields=["name", "employee_name"])
         supervisor_map = {s.name: s.employee_name for s in supervisors}
-
-    today = nowdate()
     
-    # Enrich team data with today's attendance/checkins
-    present_count = 0
-    absent_count = 0
-    half_day_count = 0
-    pending_count = 0
-    on_leave_count = 0
+    # Process
+    present_count = absent_count = half_day_count = pending_count = on_leave_count = 0
 
     for emp in team:
-        # Set supervisor name
-        emp.reports_to_name = supervisor_map.get(emp.reports_to) if emp.reports_to else None
-
-        # Set is_self flag
+        emp.reports_to_name = supervisor_map.get(emp.reports_to)
         emp.is_self = (emp.name == manager.name) if manager else False
-
-        # Check for Attendance record
-        att = frappe.db.get_value("Attendance", 
-            {"employee": emp.name, "attendance_date": today}, 
-            ["name", "status"], as_dict=True)
         
-        emp.attendance_status = att.status if att else None
+        # Determine Status
+        status = attendance_map.get(emp.name)
+        c_logs = checkin_map.get(emp.name)
         
-        # Check for Check-in logs
-        checkins = frappe.get_all("Employee Checkin",
-            filters={"employee": emp.name, "time": ["between", [today + " 00:00:00", today + " 23:59:59"]]},
-            fields=["time", "log_type"],
-            order_by="time asc"
-        )
+        emp.check_in = c_logs["in"] if c_logs else None
+        emp.check_out = c_logs["out"] if c_logs else None
         
-        emp.check_in = None
-        emp.check_out = None
+        if not status and c_logs and c_logs["in"]:
+            status = "Present"
         
-        if checkins:
-            in_logs = [c.time for c in checkins if c.log_type == "IN"]
-            out_logs = [c.time for c in checkins if c.log_type == "OUT"]
+        if not status and emp.name in on_leave_emps:
+            status = "On Leave"
             
-            if in_logs:
-                # Use format_time with HH:mm to ensure HH:MM without seconds
-                emp.check_in = frappe.utils.format_time(in_logs[0], "HH:mm")
-                
-                # IF check-in exists but no Attendance record, consider them "Present" logically for UI
-                if not emp.attendance_status:
-                    emp.attendance_status = "Present"
-            if out_logs:
-                emp.check_out = frappe.utils.format_time(out_logs[-1], "HH:mm")
-
-        # Fetch Leave status if not present/absent
-        if not emp.attendance_status:
-            on_leave = frappe.db.exists("Leave Application", {
-                "employee": emp.name,
-                "status": "Approved",
-                "from_date": ["<=", today],
-                "to_date": [">=", today]
-            })
-            if on_leave:
-                emp.attendance_status = "On Leave"
-
-        # Count stats
-        if emp.attendance_status == "Present":
-            present_count += 1
-        elif emp.attendance_status == "Absent":
-            absent_count += 1
-        elif emp.attendance_status == "Half Day":
-            half_day_count += 1
-        elif emp.attendance_status == "On Leave":
-            on_leave_count += 1
-        else:
-            pending_count += 1
+        emp.attendance_status = status
+        
+        if status == "Present": present_count += 1
+        elif status == "Absent": absent_count += 1
+        elif status == "Half Day": half_day_count += 1
+        elif status == "On Leave": on_leave_count += 1
+        else: pending_count += 1
 
     return {
         "team": team,

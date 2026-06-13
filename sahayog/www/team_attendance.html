@@ -2027,21 +2027,29 @@
         let status = "Present";
         if (type === "absent") status = "Absent";
         else if (type === "halfday") status = "Half Day";
-
         let log_type = type === "checkout" ? "OUT" : "IN";
 
-        // Dispatch requests in parallel instead of waiting inside loop sequential order
-        const promises = Array.from(selectedIds).map((id) =>
-          callAPI("mark_attendance", {
-            employee: id,
-            status: status,
-            log_type: log_type,
-          }),
-        );
+        const employeeIds = Array.from(selectedIds);
+        const batchSize = 50;
+        let processed = 0;
 
-        await Promise.all(promises);
+        showToast(`Processing ${employeeIds.length} records...`);
 
-        showToast(`Bulk action completed successfully.`);
+        for (let i = 0; i < employeeIds.length; i += batchSize) {
+          const batch = employeeIds.slice(i, i + batchSize);
+          const promises = batch.map((id) =>
+            callAPI("mark_attendance", {
+              employee: id,
+              status: status,
+              log_type: log_type,
+            })
+          );
+          await Promise.all(promises);
+          processed += batch.length;
+          console.log(`Processed ${processed} / ${employeeIds.length}`);
+        }
+
+        showToast(`Bulk action completed successfully for ${employeeIds.length} records.`);
         selectedIds.clear();
         await fetchTeamData();
         bar.style.opacity = "1";
