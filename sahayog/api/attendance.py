@@ -184,6 +184,100 @@ def mark_attendance(employee, status, log_type=None):
         return {"success": True, "message": f"Marked as {status}"}
 
 @frappe.whitelist()
+def request_attendance_correction(employee, attendance_date, requested_status, reason):
+    """Create an Attendance Correction request from the portal."""
+    if not employee or not attendance_date or not requested_status or not reason:
+        frappe.throw(_("All fields are required"))
+
+    # Check if a pending request already exists for this date and employee
+    existing = frappe.db.exists("Attendance Correction", {
+        "employee": employee,
+        "attendance_date": attendance_date,
+        "status": ["in", ["Draft", "Pending"]]
+    })
+    if existing:
+        frappe.throw(_("A correction request for this date is already pending."))
+
+    # Get current status
+    current_status = frappe.db.get_value("Attendance", {
+        "employee": employee,
+        "attendance_date": attendance_date
+    }, "status")
+
+    if not current_status:
+        # Check if it was On Leave
+        leave = frappe.get_all("Leave Application", filters={
+            "employee": employee,
+            "status": "Approved",
+            "from_date": ["<=", attendance_date],
+            "to_date": [">=", attendance_date]
+        })
+        if leave:
+            current_status = "On Leave"
+
+    doc = frappe.get_doc({
+        "doctype": "Attendance Correction",
+        "employee": employee,
+        "attendance_date": attendance_date,
+        "current_status": current_status or "Not Marked",
+        "requested_status": requested_status,
+        "reason": reason,
+        "requested_by": frappe.session.user,
+        "status": "Pending"
+    })
+    doc.insert(ignore_permissions=True)
+    
+    return {"success": True, "message": _("Correction request submitted for approval")}
+
+@frappe.whitelist()
+def get_pending_attendance_corrections():
+    """Fetch pending attendance correction requests for the manager's team or all for HR/Admin."""
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    
+    manager = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    
+    filters = {"status": "Pending"}
+    
+    # If not Admin or HR, only show requests for employees reporting to this manager
+    if "System Manager" not in roles and "Administrator" not in roles:
+        if manager:
+            # Get subordinates
+            subordinates = frappe.get_all("Employee", filters={"reports_to": manager}, fields=["name"])
+            sub_names = [s.name for s in subordinates]
+            filters["employee"] = ["in", sub_names]
+        else:
+            return []
+
+    corrections = frappe.get_all("Attendance Correction",
+        filters=filters,
+        fields=["name", "employee", "employee_name", "attendance_date", "current_status", "requested_status", "reason", "requested_by"],
+        order_by="creation desc"
+    )
+    
+    return corrections
+
+@frappe.whitelist()
+def approve_attendance_correction(request_id, action="Approved"):
+    """Approve or Reject an attendance correction request from the portal."""
+    if not request_id:
+        frappe.throw(_("Request ID is required"))
+        
+    doc = frappe.get_doc("Attendance Correction", request_id)
+    
+    if doc.status != "Pending":
+        frappe.throw(_("This request is already {0}").format(doc.status))
+        
+    doc.status = action
+    doc.approved_by = frappe.session.user
+    doc.approval_date = frappe.utils.now_datetime()
+    doc.save(ignore_permissions=True)
+    
+    # apply_correction is called inside on_update of the DocType
+    
+    return {"success": True, "message": _("Request {0} successfully").format(action)}
+
+@frappe.whitelist()
 def get_employee_calendar(employee, month, year):
     """Fetch attendance and leave history for a specific employee and month."""
     from calendar import monthrange
@@ -213,6 +307,22 @@ def get_employee_calendar(employee, month, year):
     
     # Format for easy frontend mapping
     history = {str(att.attendance_date): att.status for att in attendances}
+    
+    # Add pending correction requests
+    corrections = frappe.get_all("Attendance Correction",
+        filters={
+            "employee": employee,
+            "attendance_date": ["between", [first_day, last_day]],
+            "status": "Pending"
+        },
+        fields=["attendance_date"]
+    )
+    for corr in corrections:
+        date_str = str(corr.attendance_date)
+        if date_str not in history:
+            history[date_str] = "Pending Correction"
+        else:
+            history[date_str] = f"{history[date_str]} (Correction Pending)"
     
     # Add leave days
     for leave in leaves:
