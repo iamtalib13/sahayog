@@ -1767,9 +1767,12 @@ async getEmployeeByUser(userId) {
                 <div id="appointment-content-section" style="display:none;">
                     <div style="padding: 15px; border: 1px solid #d1d8dd; border-radius: 8px; background: #fcfcfc;">
                         <h6 style="font-weight:600; margin-bottom:12px;">Schedule New Appointment</h6>
-                        <div style="display:flex; flex-wrap: wrap; gap:10px; margin-bottom:20px;">
-                            <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px; max-width:250px;">
-                            <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
+                        <div style="display:flex; flex-direction: column; gap:10px; margin-bottom:20px;">
+                            <div style="display:flex; flex-wrap: wrap; gap:10px;">
+                                <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px;">
+                                <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
+                            </div>
+                            <textarea id="new_appt_rem_edit" class="form-control" rows="2" placeholder="Appointment remarks..." style="resize:none; font-size: 13px;"></textarea>
                         </div>
                         <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
                         <div style="overflow-x: auto;">
@@ -1819,7 +1822,8 @@ async getEmployeeByUser(userId) {
                   status: "Open",
                   customer_name: d.$wrapper.find("#f_name_edit").val() || doc.first_name,
                   customer_email: doc.email_id || `${name}@lead.local`,
-                  contact_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
+                  customer_phone_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
+                  customer_details: d.$wrapper.find("#new_appt_rem_edit").val(),
                 },
               },
               callback: (r) => {
@@ -1828,6 +1832,7 @@ async getEmployeeByUser(userId) {
                   appointmentsData.unshift(r.message);
                   loadHistory();
                   d.$wrapper.find("#new_appt_t_edit").val("");
+                  d.$wrapper.find("#new_appt_rem_edit").val("");
                 }
               },
             });
@@ -1893,7 +1898,7 @@ async editAppointment(name) {
                 const final_values = {
                     scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
                     status: d.$wrapper.find("#appt_status_edit").val(),
-                    remarks: d.$wrapper.find("#appt_remarks_edit").val(),
+                    customer_details: d.$wrapper.find("#appt_remarks_edit").val(),
                 };
 
                 try {
@@ -1938,7 +1943,7 @@ async editAppointment(name) {
                             <div class="col-sm-6">
                                 <div class="form-group">
                                     <label class="control-label">Mobile Number</label>
-                                    <input type="text" class="form-control" value="${doc.contact_number || ""}" readonly style="background:#f8fafc;">
+                                    <input type="text" class="form-control" value="${doc.customer_phone_number || ""}" readonly style="background:#f8fafc;">
                                 </div>
                                 <div class="form-group">
                                     <label class="control-label">Email Address</label>
@@ -1968,7 +1973,7 @@ async editAppointment(name) {
                         </div>
                         <div class="form-group" style="margin-top:10px;">
                             <label class="control-label">Remarks / Notes</label>
-                            <textarea id="appt_remarks_edit" class="form-control" rows="3" style="resize:none;">${doc.remarks || ""}</textarea>
+                            <textarea id="appt_remarks_edit" class="form-control" rows="3" style="resize:none;">${doc.customer_details || ""}</textarea>
                         </div>
                     </div>
                 </div>
@@ -2022,7 +2027,7 @@ renderWhatsAppCard(item) {
       name = item.customer_name || "Unnamed";
       avatar = name.charAt(0).toUpperCase();
       const scheduledTime = frappe.datetime.str_to_user(item.scheduled_time);
-      message = `📅 ${scheduledTime} ${item.mobile_no ? `• 📱 ${item.mobile_no}` : ""}`;
+      message = `📅 ${scheduledTime} ${item.customer_phone_number ? `• 📱 ${item.customer_phone_number}` : ""}`;
       statusClass = (item.status || "open").toLowerCase();
       statusText = item.status || "Open";
     }
@@ -3652,9 +3657,9 @@ createLead() {
                 scheduled_time: time,
                 status: d.$wrapper.find("#create_appt_status").val(),
                 customer_name: d.$wrapper.find("#create_appt_name").val(),
-                contact_number: d.$wrapper.find("#create_appt_phone").val(),
+                customer_phone_number: d.$wrapper.find("#create_appt_phone").val(),
                 customer_email: d.$wrapper.find("#create_appt_email").val(),
-                remarks: d.$wrapper.find("#create_appt_remarks").val(),
+                customer_details: d.$wrapper.find("#create_appt_remarks").val(),
               },
             },
             freeze: true,

@@ -104,7 +104,7 @@ def _get_appointment_data(limit, offset, search_term):
     
     appointments = frappe.get_list(
         "Appointment",
-        fields=["name", "customer_name", "customer_phone_number", "scheduled_time", "status", "party", "modified"],
+        fields=["name", "customer_name", "customer_phone_number", "customer_email", "customer_details", "scheduled_time", "status", "party", "modified"],
         filters=filters,
         or_filters=or_filters,
         order_by="modified desc, name desc",
