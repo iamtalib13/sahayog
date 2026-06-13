@@ -1606,6 +1606,8 @@ async getEmployeeByUser(userId) {
 
     const input_status = d.$wrapper.find("#status_edit").val();
     const input_mobile = d.$wrapper.find("#m_no_edit").val();
+    const input_appt_time = d.$wrapper.find("#new_appt_t_edit").val();
+    const btn = d.get_primary_btn();
 
     // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
@@ -1621,9 +1623,7 @@ async getEmployeeByUser(userId) {
 
     // ✅ AUTO TAB SWITCH LOGIC
     if (input_status === "Follow Up") {
-        const has_new_appt = d.$wrapper.find("#new_appt_t_edit").val();
-        
-        if (!appointmentsData.length && !has_new_appt) {
+        if (!appointmentsData.length && !input_appt_time) {
             showError(__('Please schedule an appointment to set status as <b>Follow Up</b>.'));
             d.$wrapper.find("#tab-appt-btn").trigger("click");
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
@@ -1633,25 +1633,63 @@ async getEmployeeByUser(userId) {
         }
     }
 
-    // Call save logic
-    frappe.call({
-        method: "frappe.client.set_value",
-        args: {
-            doctype: "Lead",
-            name: name,
-            fieldname: {
-                ...final_values,
-                custom_product_table: productsData,
-            },
-        },
-        callback: (r) => {
-            if (!r.exc) {
-                frappe.show_alert({ message: __("Lead Updated"), indicator: "green" });
-                d.hide();
-                me.fetchData();
+    btn.prop('disabled', true);
+
+    try {
+        // 🛡️ Optional: Create Appointment if time is provided
+        if (input_appt_time) {
+            const dupRes = await frappe.call({
+                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
+                args: { party: name, scheduled_time: input_appt_time }
+            });
+
+            if (dupRes.message && dupRes.message.duplicate) {
+                showError(__("An appointment already exists for this Lead at the selected time."));
+                btn.prop('disabled', false);
+                return;
             }
-        },
-    });
+
+            await frappe.call({
+                method: "frappe.client.insert",
+                args: {
+                    doc: {
+                        doctype: "Appointment",
+                        party: name,
+                        appointment_with: "Lead",
+                        scheduled_time: input_appt_time,
+                        status: "Open",
+                        customer_name: final_values.first_name,
+                        customer_phone_number: final_values.mobile_no,
+                        customer_email: doc.email_id || `${name}@lead.local`,
+                        customer_details: d.$wrapper.find("#new_appt_rem_edit").val(),
+                    }
+                }
+            });
+        }
+
+        // Call save logic for Lead
+        await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+                doctype: "Lead",
+                name: name,
+                fieldname: {
+                    ...final_values,
+                    custom_product_table: productsData,
+                },
+            },
+            callback: (r) => {
+                if (!r.exc) {
+                    frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
+                    d.hide();
+                    me.fetchData();
+                }
+            },
+        });
+    } catch (e) {
+        console.error(e);
+        btn.prop('disabled', false);
+    }
 },
       });
 
@@ -1774,7 +1812,6 @@ async getEmployeeByUser(userId) {
                         <div style="display:flex; flex-direction: column; gap:10px; margin-bottom:20px;">
                             <div style="display:flex; flex-wrap: wrap; gap:10px;">
                                 <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px;">
-                                <button class="btn btn-primary btn-sm" id="btn-create-appt-final" style="background:#006264; height: 34px;">Schedule</button>
                             </div>
                             <textarea id="new_appt_rem_edit" class="form-control" rows="2" placeholder="Appointment remarks..." style="resize:none; font-size: 13px;"></textarea>
                         </div>
@@ -1804,64 +1841,6 @@ async getEmployeeByUser(userId) {
                     </tr>`).appendTo(tbody);
           });
         };
-
-        d.$wrapper.off("click", "#btn-create-appt-final").on("click", "#btn-create-appt-final", async (e) => {
-          const $btn = $(e.currentTarget);
-          if ($btn.prop('disabled')) return;
-          
-          const time = d.$wrapper.find("#new_appt_t_edit").val();
-          if (!time) return frappe.msgprint("Please select date & time");
-
-          $btn.prop('disabled', true);
-
-          try {
-            // 🛡️ Duplicate Appointment Check
-            const dupRes = await frappe.call({
-              method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
-              args: { party: name, scheduled_time: time }
-            });
-
-            if (dupRes.message && dupRes.message.duplicate) {
-              frappe.msgprint({
-                title: __("Duplicate Appointment"),
-                indicator: "red",
-                message: __("An appointment already exists for this Lead at the selected time.")
-              });
-              $btn.prop('disabled', false);
-              return;
-            }
-
-            await frappe.call({
-              method: "frappe.client.insert",
-              args: {
-                doc: {
-                  doctype: "Appointment",
-                  party: name,
-                  appointment_with: "Lead",
-                  scheduled_time: time,
-                  status: "Open",
-                  customer_name: d.$wrapper.find("#f_name_edit").val() || doc.first_name,
-                  customer_email: doc.email_id || `${name}@lead.local`,
-                  customer_phone_number: d.$wrapper.find("#m_no_edit").val() || doc.mobile_no,
-                  customer_details: d.$wrapper.find("#new_appt_rem_edit").val(),
-                },
-              },
-              callback: (r) => {
-                if (!r.exc) {
-                  frappe.show_alert("Appointment Created Successfully");
-                  appointmentsData.unshift(r.message);
-                  loadHistory();
-                  d.$wrapper.find("#new_appt_t_edit").val("");
-                  d.$wrapper.find("#new_appt_rem_edit").val("");
-                }
-              },
-            });
-          } catch (error) {
-            console.error(error);
-          } finally {
-            $btn.prop('disabled', false);
-          }
-        });
         loadHistory();
       };
 
