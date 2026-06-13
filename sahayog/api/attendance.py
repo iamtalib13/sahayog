@@ -488,5 +488,6 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
         },
         "corrections": corr_stats,
         "leaves": leave_stats,
+        "leave_balances": get_leave_balances(employee),
         "reporting_to": reporting_to
     }
