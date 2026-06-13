@@ -445,173 +445,197 @@ def notify_user(user, message):
     notification_doc.update({"for_user": user, "subject": "Lead Export Ready", "email_content": message, "type": "Alert", "document_type": "Lead"})
     notification_doc.insert(ignore_permissions=True)
     frappe.db.commit()
-    
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date):
-    user = frappe.session.user
-    from_date, to_date = validate_date_range(from_date, to_date)
+    try:
+        user = frappe.session.user
+        from_date, to_date = validate_date_range(from_date, to_date)
 
-    # --- Step 1: User ki Report Preference fetch karein ---
-    has_pref = False
-    zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
-    if user != "Administrator":
-        pref_res = get_user_report_preference_record(user)
-        if pref_res:
-            has_pref = True
-            p = pref_res[0]
-            zones_pref = {norm(x) for x in p.get("zone", [])}
-            regions_pref = {norm(x) for x in p.get("region", [])}
-            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+        # --- Step 1: User ki Report Preference fetch karein ---
+        has_pref = False
+        zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
 
-    # Leads fetch karein
-    leads = frappe.get_all(
-        "Lead",
-        filters=[
-            ["creation", ">=", f"{from_date} 00:00:00"],
-            ["creation", "<=", f"{to_date} 23:59:59"]
-        ],
-        fields=["lead_owner", "sol_id", "status", "name"]
-    )
+        if user != "Administrator":
+            pref_res = get_user_report_preference_record(user)
+            if pref_res:
+                has_pref = True
+                p = pref_res[0]
+                zones_pref = {norm(x) for x in p.get("zone", [])}
+                regions_pref = {norm(x) for x in p.get("region", [])}
+                sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
-    if not leads: return []
-    # Amount Mapping: Sabhi leads ke product amounts fetch karein
-    lead_names = [l.name for l in leads]
-    product_data = frappe.get_all("Lead Product", 
-        filters={"parent": ["in", lead_names]}, 
-        fields=["parent", "product_amount"])
-    
-    amt_map = {}
-    for p in product_data:
-        amt_map[p.parent] = amt_map.get(p.parent, 0) + (p.product_amount or 0)
+        leads = frappe.get_all(
+            "Lead",
+            filters=[
+                ["creation", ">=", f"{from_date} 00:00:00"],
+                ["creation", "<=", f"{to_date} 23:59:59"]
+            ],
+            fields=["lead_owner", "sol_id", "status", "name"]
+        )
 
-    sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
-    branch_map = get_branch_map(list(sol_ids))
-    employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
+        if not leads:
+            return []
 
-    employee_stats = {}
-    DEBUG_USER = "8258@sahayog.com"
-    for l in leads:
-        frappe.log_error(
-                 title=f"EMP PERF PREF DEBUG - {user}",
-            message=f"""
-            User: {user}
-            Zones Pref: {zones_pref}
-            Regions Pref: {regions_pref}
-            SOL Pref: {sol_ids_pref}
-            Lead: {l.name}
-            Lead SOL: {l.sol_id}
-            Lead Owner: {l.lead_owner}
-            """
-            )
-        # 🔥 fallback
-        if user != "Administrator" and not has_pref:
-            if l.lead_owner != user:
-                continue
+        lead_names = [l.name for l in leads]
 
-        emp = employee_map.get(l.lead_owner)
-        if not emp: continue
-        
-        # Branch/Zone check karein pehle
-        curr_sol = str(l.sol_id) if l.sol_id else ""
-        if sol_ids_pref and curr_sol not in sol_ids_pref:
+        product_data = frappe.get_all(
+            "Lead Product",
+            filters={"parent": ["in", lead_names]},
+            fields=["parent", "product_amount"]
+        )
+
+        amt_map = {}
+        for p in product_data:
+            amt_map[p.parent] = amt_map.get(p.parent, 0) + (p.product_amount or 0)
+
+        sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
+        branch_map = get_branch_map(list(sol_ids))
+
+        employee_map = get_employee_map(
+            list({l.lead_owner for l in leads if l.lead_owner})
+        )
+
+        employee_stats = {}
+
+        DEBUG_USER = "8258@sahayog.com"
+
+        for l in leads:
+
             if user == DEBUG_USER:
                 frappe.log_error(
-                    title=f"EMP PERF SOL SKIP - {user}",
-                    message=f"Lead {l.name} skipped. Lead SOL={curr_sol}, Allowed={sol_ids_pref}"
-                )
-            continue
-        branch = branch_map.get(curr_sol)
-        
-        # PREFERENCE FILTERING: Sirf wahi employees dikhao jo allowed zone/region mein hain
-            # Is line ko update karein (Inside the loop of get_employee_performance_data):
-        if branch:
-            emp_zone = norm(branch.zone)
-            emp_region = norm(branch.region)
-            
-            zone_match = not zones_pref or (emp_zone in zones_pref)
-            
-            # Check for Region with Alias Map
-            allowed_regions = set(regions_pref)
-            for r in list(regions_pref):
-                if r in REGION_ALIAS_MAP:
-                    allowed_regions |= REGION_ALIAS_MAP[r]
-                    
-            region_match = not regions_pref or (emp_region in allowed_regions)
-            
-            if not zone_match or not region_match:
-                if user == DEBUG_USER:
-                    frappe.log_error(
-                        title=f"EMP PERF BRANCH CHECK - {user}",
-                        message=f"""
-                        Lead: {l.name}
-                        Lead SOL: {curr_sol}
-
-                        Branch Zone: {branch.zone}
-                        Branch Region: {branch.region}
-
-                        Normalized Zone: {emp_zone}
-                        Normalized Region: {emp_region}
-
+                    title=f"EMP PERF PREF DEBUG - {user}",
+                    message=f"""
+                        User: {user}
                         Zones Pref: {zones_pref}
                         Regions Pref: {regions_pref}
-
-                        Zone Match: {zone_match}
-                        Region Match: {region_match}
+                        SOL Pref: {sol_ids_pref}
+                        Lead: {l.name}
+                        Lead SOL: {l.sol_id}
+                        Lead Owner: {l.lead_owner}
                         """
+                )
+
+            if user != "Administrator" and not has_pref:
+                if l.lead_owner != user:
+                    continue
+
+            emp = employee_map.get(l.lead_owner)
+
+            if not emp:
+                continue
+
+            curr_sol = str(l.sol_id) if l.sol_id else ""
+
+            if sol_ids_pref and curr_sol not in sol_ids_pref:
+                if user == DEBUG_USER:
+                    frappe.log_error(
+                        title=f"EMP PERF SOL SKIP - {user}",
+                        message=f"Lead {l.name} skipped. Lead SOL={curr_sol}, Allowed={sol_ids_pref}"
                     )
                 continue
 
-        key = emp.employee_number
-        if key not in employee_stats:
-            employee_stats[key] = {
-                "employee_id": emp.employee_number,
-                "employee_name": emp.employee_name,
-                "designation": emp.designation or "-",
-                "sol_id": curr_sol,
-                "branch": branch.branch if branch else "-",
-                "region": branch.region if branch else "-",
-                "zone": branch.zone if branch else "-",
-                "total_leads": 0,
-                "total_leads_amount": 0,
-                "total_converted": 0,
-                "converted_amount": 0,
-                "total_followups": 0 ,
-                "followup_amount": 0,
-                "total_not_interested": 0,
-                "not_interested_amount": 0,
-                
-                
-            }
+            branch = branch_map.get(curr_sol)
 
-        lead_amt = amt_map.get(l.name, 0)
+            if branch:
+                emp_zone = norm(branch.zone)
+                emp_region = norm(branch.region)
 
-        employee_stats[key]["total_leads"] += 1
-        employee_stats[key]["total_leads_amount"] += lead_amt   # ✅ ADD THIS
+                zone_match = not zones_pref or (emp_zone in zones_pref)
 
-        if l.status == "Converted":
-            employee_stats[key]["total_converted"] += 1
-            employee_stats[key]["converted_amount"] += amt_map.get(l.name, 0)
-        if l.status == "Follow Up":
-            employee_stats[key]["total_followups"] += 1
-            employee_stats[key]["followup_amount"] += lead_amt
-        if l.status == "Not Interested":
-            employee_stats[key]["total_not_interested"] += 1
-            employee_stats[key]["not_interested_amount"] += lead_amt
-    if user == DEBUG_USER:
+                allowed_regions = set(regions_pref)
+
+                for r in list(regions_pref):
+                    if r in REGION_ALIAS_MAP:
+                        allowed_regions |= REGION_ALIAS_MAP[r]
+
+                region_match = not regions_pref or (emp_region in allowed_regions)
+
+                if not zone_match or not region_match:
+
+                    if user == DEBUG_USER:
+                        frappe.log_error(
+                            title=f"EMP PERF BRANCH CHECK - {user}",
+                            message=f"""
+                                Lead: {l.name}
+                                Lead SOL: {curr_sol}
+
+                                Branch Zone: {branch.zone}
+                                Branch Region: {branch.region}
+
+                                Normalized Zone: {emp_zone}
+                                Normalized Region: {emp_region}
+
+                                Zones Pref: {zones_pref}
+                                Regions Pref: {regions_pref}
+
+                                Zone Match: {zone_match}
+                                Region Match: {region_match}
+                                """
+                        )
+
+                    continue
+
+            key = emp.employee_number
+
+            if key not in employee_stats:
+                employee_stats[key] = {
+                    "employee_id": emp.employee_number,
+                    "employee_name": emp.employee_name,
+                    "designation": emp.designation or "-",
+                    "sol_id": curr_sol,
+                    "branch": branch.branch if branch else "-",
+                    "region": branch.region if branch else "-",
+                    "zone": branch.zone if branch else "-",
+                    "total_leads": 0,
+                    "total_leads_amount": 0,
+                    "total_converted": 0,
+                    "converted_amount": 0,
+                    "total_followups": 0,
+                    "followup_amount": 0,
+                    "total_not_interested": 0,
+                    "not_interested_amount": 0,
+                }
+
+            lead_amt = amt_map.get(l.name, 0)
+
+            employee_stats[key]["total_leads"] += 1
+            employee_stats[key]["total_leads_amount"] += lead_amt
+
+            if l.status == "Converted":
+                employee_stats[key]["total_converted"] += 1
+                employee_stats[key]["converted_amount"] += lead_amt
+
+            if l.status == "Follow Up":
+                employee_stats[key]["total_followups"] += 1
+                employee_stats[key]["followup_amount"] += lead_amt
+
+            if l.status == "Not Interested":
+                employee_stats[key]["total_not_interested"] += 1
+                employee_stats[key]["not_interested_amount"] += lead_amt
+
+        if user == DEBUG_USER:
+            frappe.log_error(
+                title=f"EMP PERF FINAL COUNT - {user}",
+                message=f"""
+                    User: {user}
+                    Employees Returned: {len(employee_stats)}
+                    Employee IDs: {list(employee_stats.keys())}
+                    """
+            )
+
+            frappe.log_error(
+                title=f"EMP PERF RETURN DATA - {user}",
+                message=str(list(employee_stats.values())[:10])
+            )
+
+        return list(employee_stats.values())
+
+    except Exception:
         frappe.log_error(
-            title=f"EMP PERF FINAL COUNT - {user}",
-            message=f"""
-            User: {user}
-            Employees Returned: {len(employee_stats)}
-            Employee IDs: {list(employee_stats.keys())}
-            """
+            title=f"EMP PERF CRASH - {frappe.session.user}",
+            message=frappe.get_traceback()
         )
-    if user == DEBUG_USER:
-        frappe.log_error(
-            title=f"EMP PERF RETURN DATA - {user}",
-            message=str(list(employee_stats.values())[:10])
-        )
-    return list(employee_stats.values())
+        raise
 
 @frappe.whitelist()
 def get_all_products_sources():
