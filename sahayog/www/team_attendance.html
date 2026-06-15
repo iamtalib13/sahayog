@@ -842,7 +842,7 @@
         font-size: 18px;
       }
       .drawer-header button {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
         border: none;
         color: #fff;
         width: 32px;
@@ -855,7 +855,7 @@
         transition: 0.2s;
       }
       .drawer-header button:hover {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.2);
       }
       .drawer-content {
         padding: 20px;
@@ -907,7 +907,7 @@
         font-weight: 700;
         color: var(--brand);
       }
-      
+
       .emp-header-card {
         text-align: center;
         padding: 10px 0 20px;
@@ -1018,7 +1018,11 @@
     <!-- TOP BAR -->
     <nav class="topbar">
       <div class="topbar-left">
-        <button class="menu-btn" id="dashboardMenuBtn" onclick="openDashboardDrawer()">
+        <button
+          class="menu-btn"
+          id="dashboardMenuBtn"
+          onclick="openDashboardDrawer()"
+        >
           ☰
         </button>
         <div class="logo-box">
@@ -1103,11 +1107,7 @@
           <div class="stat-card">
             <div class="stat-icon" style="background: #fef3c7">🕒</div>
             <div>
-              <div
-                class="stat-val"
-                id="statHalfDay"
-                style="color: #d97706"
-              >
+              <div class="stat-val" id="statHalfDay" style="color: #d97706">
                 0
               </div>
               <div class="stat-lbl">Half Day</div>
@@ -1151,7 +1151,11 @@
                 <button class="ftab" onclick="switchTab('leave', this)">
                   Leave Requests
                 </button>
-                <button class="ftab" id="tabCorrApproval" onclick="switchTab('corrections', this)">
+                <button
+                  class="ftab"
+                  id="tabCorrApproval"
+                  onclick="switchTab('corrections', this)"
+                >
                   Correction Approvals
                 </button>
               </div>
@@ -1191,7 +1195,7 @@
               </button>
               <button
                 class="bulk-btn"
-                style="background:#fff7ed;color:#c2410c;"
+                style="background: #fff7ed; color: #c2410c"
                 onclick="bulkAction('halfday')"
               >
                 All ½ Day
@@ -1222,14 +1226,32 @@
             <div id="calLoading" class="loading-overlay" style="display: none">
               <div class="spinner"></div>
             </div>
-            <div class="cal-head">
+            
+            <!-- CHANGED: Is cal-head div ke andar button add kiya hai aur flexbox alignment di hai -->
+            <div class="cal-head" style="display: flex; justify-content: space-between; align-items: center;">
               <h3>📅 Attendance Calendar</h3>
-              <span
-                id="calEmpName"
-                style="font-size: 12px; color: var(--muted); font-weight: 500"
-                >Select a member</span
+              
+              <!-- Apply Leave Button yahan top par aa gaya -->
+              <button
+                class="btn-in"
+                style="
+                  padding: 6px 14px;
+                  font-size: 11px;
+                  font-weight: 600;
+                  background: var(--brand2);
+                  color: #fff;
+                  border: none;
+                  border-radius: var(--radius, 6px);
+                  cursor: pointer;
+                  box-shadow: 0 4px 12px rgba(59, 45, 138, 0.15);
+                  transition: all 0.2s ease;
+                "
+                onclick="openLeaveModal()"
               >
+                Apply Leave
+              </button>
             </div>
+
             <div class="member-select-wrap">
               <label>View Calendar For:</label>
               <select
@@ -1241,28 +1263,22 @@
               </select>
             </div>
 
-            <!-- LEAVE BALANCE -->
             <div
               class="leave-balance-wrap"
               id="leaveBalanceWrap"
               style="display: none"
             >
-              <div
-                class="lb-title"
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                "
-              >
-                <span>Leave Balance</span>
-                <button
-                  class="btn-in"
-                  style="padding: 2px 8px; font-size: 10px"
-                  onclick="openLeaveModal()"
+              <div class="lb-title" style="margin-bottom: 12px">
+                <span
+                  style="
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #64748b;
+                  "
+                  >Leave Balance</span
                 >
-                  Apply Leave
-                </button>
               </div>
               <div class="lb-cards">
                 <div class="lb-card lb-sl">
@@ -1383,23 +1399,64 @@
                 >
                   Correction Request
                 </h3>
-                <div style="margin-bottom: 12px; background: #f8fafc; padding: 10px; border-radius: 8px;">
-                  <div style="font-size: 11px; color: var(--muted);">Employee</div>
-                  <div id="corrEmpName" style="font-size: 13px; font-weight: 700;">-</div>
-                  <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                <div
+                  style="
+                    margin-bottom: 12px;
+                    background: #f8fafc;
+                    padding: 10px;
+                    border-radius: 8px;
+                  "
+                >
+                  <div style="font-size: 11px; color: var(--muted)">
+                    Employee
+                  </div>
+                  <div
+                    id="corrEmpName"
+                    style="font-size: 13px; font-weight: 700"
+                  >
+                    -
+                  </div>
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      margin-top: 8px;
+                    "
+                  >
                     <div>
-                      <div style="font-size: 11px; color: var(--muted);">Date</div>
-                      <div id="corrDate" style="font-size: 12px; font-weight: 600;">-</div>
+                      <div style="font-size: 11px; color: var(--muted)">
+                        Date
+                      </div>
+                      <div
+                        id="corrDate"
+                        style="font-size: 12px; font-weight: 600"
+                      >
+                        -
+                      </div>
                     </div>
                     <div>
-                      <div style="font-size: 11px; color: var(--muted);">Current Status</div>
-                      <div id="corrCurrentStatus" style="font-size: 12px; font-weight: 600;">-</div>
+                      <div style="font-size: 11px; color: var(--muted)">
+                        Current Status
+                      </div>
+                      <div
+                        id="corrCurrentStatus"
+                        style="font-size: 12px; font-weight: 600"
+                      >
+                        -
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div style="margin-bottom: 12px">
-                  <label style="font-size: 11px; font-weight: 600; color: var(--muted);">Requested Status</label>
+                  <label
+                    style="
+                      font-size: 11px;
+                      font-weight: 600;
+                      color: var(--muted);
+                    "
+                    >Requested Status</label
+                  >
                   <select id="corrRequestedStatus" class="member-select">
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
@@ -1407,9 +1464,16 @@
                     <option value="Work From Home">Work From Home</option>
                   </select>
                 </div>
-                
+
                 <div style="margin-bottom: 15px">
-                  <label style="font-size: 11px; font-weight: 600; color: var(--muted);">Reason for Correction</label>
+                  <label
+                    style="
+                      font-size: 11px;
+                      font-weight: 600;
+                      color: var(--muted);
+                    "
+                    >Reason for Correction</label
+                  >
                   <textarea
                     id="corrReason"
                     class="member-select"
@@ -1423,7 +1487,9 @@
                   <button class="btn-clear" onclick="closeCorrectionModal()">
                     Cancel
                   </button>
-                  <button class="btn-in" onclick="submitCorrection()">Submit Request</button>
+                  <button class="btn-in" onclick="submitCorrection()">
+                    Submit Request
+                  </button>
                 </div>
               </div>
             </div>
@@ -1454,15 +1520,56 @@
                   max-height: 85vh;
                   display: flex;
                   flex-direction: column;
-                  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+                  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
                 "
               >
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1.5px solid #f1f5f9;">
-                  <h3 id="leaveHistoryTitle" style="font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--brand); margin: 0;">Leave History</h3>
-                  <button onclick="closeLeaveHistoryModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted);">✕</button>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 12px;
+                    border-bottom: 1.5px solid #f1f5f9;
+                  "
+                >
+                  <h3
+                    id="leaveHistoryTitle"
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: var(--brand);
+                      margin: 0;
+                    "
+                  >
+                    Leave History
+                  </h3>
+                  <button
+                    onclick="closeLeaveHistoryModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      font-size: 16px;
+                      cursor: pointer;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div id="leaveHistoryList" style="overflow-y: auto; flex: 1; padding-right: 4px;" class="custom-scroll">
-                   <!-- Content injected here -->
+                <div
+                  id="leaveHistoryList"
+                  style="overflow-y: auto; flex: 1; padding-right: 4px"
+                  class="custom-scroll"
+                >
+                  <!-- Content injected here -->
                 </div>
               </div>
             </div>
@@ -1493,15 +1600,56 @@
                   max-height: 85vh;
                   display: flex;
                   flex-direction: column;
-                  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+                  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
                 "
               >
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1.5px solid #f1f5f9;">
-                  <h3 id="correctionHistoryTitle" style="font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--brand); margin: 0;">Correction History</h3>
-                  <button onclick="closeCorrectionHistoryModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted);">✕</button>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 12px;
+                    border-bottom: 1.5px solid #f1f5f9;
+                  "
+                >
+                  <h3
+                    id="correctionHistoryTitle"
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-size: 18px;
+                      font-weight: 800;
+                      color: var(--brand);
+                      margin: 0;
+                    "
+                  >
+                    Correction History
+                  </h3>
+                  <button
+                    onclick="closeCorrectionHistoryModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      font-size: 16px;
+                      cursor: pointer;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div id="correctionHistoryList" style="overflow-y: auto; flex: 1; padding-right: 4px;" class="custom-scroll">
-                   <!-- Content injected here -->
+                <div
+                  id="correctionHistoryList"
+                  style="overflow-y: auto; flex: 1; padding-right: 4px"
+                  class="custom-scroll"
+                >
+                  <!-- Content injected here -->
                 </div>
               </div>
             </div>
@@ -1588,7 +1736,10 @@
                   Weekly Off
                 </div>
                 <div class="cl-item">
-                  <div class="cl-dot" style="background: #fffbeb; border: 1px dashed #d97706;"></div>
+                  <div
+                    class="cl-dot"
+                    style="background: #fffbeb; border: 1px dashed #d97706"
+                  ></div>
                   Pending Correction
                 </div>
               </div>
@@ -1618,12 +1769,16 @@
         <button onclick="closeDashboardDrawer()">✕</button>
       </div>
       <div class="drawer-content" id="dashboardContent">
-        <div style="text-align: center; color: var(--muted); padding: 40px 0;">
+        <div style="text-align: center; color: var(--muted); padding: 40px 0">
           Select a member to view insights
         </div>
       </div>
     </div>
-    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDashboardDrawer()"></div>
+    <div
+      class="drawer-overlay"
+      id="drawerOverlay"
+      onclick="closeDashboardDrawer()"
+    ></div>
 
     <script>
       // ── CONFIG & STATE ──────────────────────────────────────
@@ -1658,25 +1813,43 @@
       async function loadAttendanceDashboard(emp_id) {
         const content = document.getElementById("dashboardContent");
 
-        if (document.getElementById("dashboardDrawer").classList.contains("open")) {
-            content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:10px;font-size:12px;color:var(--muted);">Fetching insights...</p></div>';
+        if (
+          document.getElementById("dashboardDrawer").classList.contains("open")
+        ) {
+          content.innerHTML =
+            '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div><p style="margin-top:10px;font-size:12px;color:var(--muted);">Fetching insights...</p></div>';
         }
 
-        const data = await callAPI("get_attendance_dashboard", {
+        const data = await callAPI(
+          "get_attendance_dashboard",
+          {
             employee: emp_id,
             from_date: `${calYear}-${String(calMonth + 1).padStart(2, "0")}-01`,
-            to_date: `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${new Date(calYear, calMonth + 1, 0).getDate()}`
-        }, "attendance");
+            to_date: `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${new Date(calYear, calMonth + 1, 0).getDate()}`,
+          },
+          "attendance",
+        );
 
         if (data) {
-            currentDashboardLeaves = data.leaves || { pending: [], approved: [], rejected: [] };
-            currentDashboardCorrections = data.corrections || { pending: [], approved: [], rejected: [] };
-            const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
+          currentDashboardLeaves = data.leaves || {
+            pending: [],
+            approved: [],
+            rejected: [],
+          };
+          currentDashboardCorrections = data.corrections || {
+            pending: [],
+            approved: [],
+            rejected: [],
+          };
+          const monthName = new Date(calYear, calMonth).toLocaleString(
+            "default",
+            { month: "long", year: "numeric" },
+          );
 
-            // Correction Requests Section
-            let correctionHtml = "";
-            if (data.corrections && data.corrections.total > 0) {
-                correctionHtml = `
+          // Correction Requests Section
+          let correctionHtml = "";
+          if (data.corrections && data.corrections.total > 0) {
+            correctionHtml = `
                 <div class="dash-section">
                     <div class="dash-sec-title">Correction Requests</div>
                     <div class="corr-grid">
@@ -1694,39 +1867,46 @@
                         </div>
                     </div>
                 </div>`;
-            } else {
-                correctionHtml = `
+          } else {
+            correctionHtml = `
                 <div class="dash-section">
                     <div class="dash-sec-title">Correction Requests</div>
                     <div style="padding:15px; text-align:center; background:#f8fafc; border-radius:12px; font-size:11px; color:var(--muted); border:1px dashed #e2e8f0;">
                         No correction requests found for ${monthName}
                     </div>
                 </div>`;
-            }
+          }
 
-            // Leave Balance Section
-            let balanceHtml = "";
-            if (data.leave_balances && data.leave_balances.length > 0) {
-                balanceHtml = `
+          // Leave Balance Section
+          let balanceHtml = "";
+          if (data.leave_balances && data.leave_balances.length > 0) {
+            balanceHtml = `
                 <div class="dash-section">
                     <div class="dash-sec-title">Leave Balance</div>
                     <div class="stat-pill-box" style="padding: 10px;">
-                        ${data.leave_balances.map(b => `
+                        ${data.leave_balances
+                          .map(
+                            (b) => `
                             <div class="dash-row" style="margin-bottom: 6px;">
                                 <span class="dash-lbl" style="font-size: 12px;">${b.leave_type}</span>
                                 <span class="dash-val" style="font-size: 12px; color: var(--brand2);">${b.unused_leaves} Left</span>
                             </div>
-                        `).join("")}
+                        `,
+                          )
+                          .join("")}
                     </div>
                 </div>`;
-            }
+          }
 
-            // Leave Requests Section
-            let leaveHtml = "";
-            const totalLeaves = (data.leaves?.pending_count || 0) + (data.leaves?.approved_count || 0) + (data.leaves?.rejected_count || 0);
+          // Leave Requests Section
+          let leaveHtml = "";
+          const totalLeaves =
+            (data.leaves?.pending_count || 0) +
+            (data.leaves?.approved_count || 0) +
+            (data.leaves?.rejected_count || 0);
 
-            if (totalLeaves > 0) {
-                leaveHtml = `
+          if (totalLeaves > 0) {
+            leaveHtml = `
                 <div class="dash-section">
                     <div class="dash-sec-title">Leave Requests</div>
                     <div class="corr-grid">
@@ -1744,30 +1924,30 @@
                         </div>
                     </div>
                 </div>`;
-            } else {
-                leaveHtml = `
+          } else {
+            leaveHtml = `
                 <div class="dash-section">
                     <div class="dash-sec-title">Leave Requests</div>
                     <div style="padding:15px; text-align:center; background:#f8fafc; border-radius:12px; font-size:11px; color:var(--muted); border:1px dashed #e2e8f0;">
                         No leave requests found for ${monthName}
                     </div>
                 </div>`;
-            }
+          }
 
-            // ... (Missing dates logic stays same)
-            let missingDatesHtml = "";
-            if (data.monthly_summary.missing > 0) {
-                missingDatesHtml = `
+          // ... (Missing dates logic stays same)
+          let missingDatesHtml = "";
+          if (data.monthly_summary.missing > 0) {
+            missingDatesHtml = `
                     <div id="missingDatesList" style="display:none; margin-top:10px; padding:10px; background:#fff1f2; border-radius:8px; border:1px solid #fecaca;">
                         <div style="font-size:10px; color:#b91c1c; font-weight:700; margin-bottom:5px; text-transform:uppercase;">Unmarked Working Days:</div>
                         <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                            ${data.monthly_summary.missing_dates.map(d => `<span style="font-size:10px; background:#fff; padding:2px 6px; border-radius:4px; color:#e11d48; border:1px solid #fda4af;">${d}</span>`).join("")}
+                            ${data.monthly_summary.missing_dates.map((d) => `<span style="font-size:10px; background:#fff; padding:2px 6px; border-radius:4px; color:#e11d48; border:1px solid #fda4af;">${d}</span>`).join("")}
                         </div>
                     </div>
                 `;
-            }
+          }
 
-            content.innerHTML = `
+          content.innerHTML = `
                 <div class="emp-header-card">
                     <div class="emp-h-name">${data.employee_info.name}</div>
                     <div class="emp-h-sub">${data.employee_info.designation}</div>
@@ -1832,74 +2012,87 @@
                     </div>
                 </div>
             `;
-            renderCalSummaryFromData(data.statistics, data.employee_info);
+          renderCalSummaryFromData(data.statistics, data.employee_info);
         }
       }
 
       function showLeaveHistory(category) {
-          const list = currentDashboardLeaves[category] || [];
-          const container = document.getElementById("leaveHistoryList");
-          const title = document.getElementById("leaveHistoryTitle");
+        const list = currentDashboardLeaves[category] || [];
+        const container = document.getElementById("leaveHistoryList");
+        const title = document.getElementById("leaveHistoryTitle");
 
-          let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
-          title.textContent = `${displayTitle} Leave Requests (${list.length})`;
+        let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
+        title.textContent = `${displayTitle} Leave Requests (${list.length})`;
 
-          if (list.length === 0) {
-              container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
-          } else {
-              container.innerHTML = list.map(l => {
-                  const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-                  const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-                  const isSameDate = l.from_date === l.to_date;
+        if (list.length === 0) {
+          container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
+        } else {
+          container.innerHTML = list
+            .map((l) => {
+              const fromDate = new Date(l.from_date).toLocaleDateString(
+                "en-GB",
+                { day: "2-digit", month: "short", year: "numeric" },
+              );
+              const toDate = new Date(l.to_date).toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
+              const isSameDate = l.from_date === l.to_date;
 
-                  return `
+              return `
                     <div style="padding: 14px; background: #fff; margin-bottom: 12px; border-radius: 12px; border: 1.5px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                             <div style="font-weight:800; font-size:14px; color: var(--brand);">${l.leave_type}</div>
-                            <div style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:${category === 'approved' ? '#dcfce7' : (category === 'rejected' ? '#fee2e2' : '#fff7ed')}; color:${category === 'approved' ? '#16a34a' : (category === 'rejected' ? '#dc2626' : '#c2410c')};">
-                                ${l.total_leave_days} Day${l.total_leave_days > 1 ? 's' : ''}
+                            <div style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:${category === "approved" ? "#dcfce7" : category === "rejected" ? "#fee2e2" : "#fff7ed"}; color:${category === "approved" ? "#16a34a" : category === "rejected" ? "#dc2626" : "#c2410c"};">
+                                ${l.total_leave_days} Day${l.total_leave_days > 1 ? "s" : ""}
                             </div>
                         </div>
                         <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text); font-weight:600; margin-bottom:10px;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                            ${fromDate} ${!isSameDate ? `→ ${toDate}` : ''}
+                            ${fromDate} ${!isSameDate ? `→ ${toDate}` : ""}
                         </div>
                         <div style="font-size:11px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:8px; color:#475569; border: 1px solid #f1f5f9;">
                             <strong style="color:var(--muted); font-size:10px; text-transform:uppercase;">Reason:</strong><br/>
-                            ${l.description || 'No reason provided'}
+                            ${l.description || "No reason provided"}
                         </div>
                     </div>
                   `;
-              }).join('');
-          }
+            })
+            .join("");
+        }
 
-          const modal = document.getElementById("leaveHistoryModal");
-          modal.style.display = "flex";
+        const modal = document.getElementById("leaveHistoryModal");
+        modal.style.display = "flex";
       }
 
       function closeLeaveHistoryModal() {
-          document.getElementById("leaveHistoryModal").style.display = "none";
+        document.getElementById("leaveHistoryModal").style.display = "none";
       }
 
       function showCorrectionHistory(category) {
-          const list = currentDashboardCorrections[category] || [];
-          const container = document.getElementById("correctionHistoryList");
-          const title = document.getElementById("correctionHistoryTitle");
-          
-          let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
-          title.textContent = `${displayTitle} Correction Requests (${list.length})`;
-          
-          if (list.length === 0) {
-              container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
-          } else {
-              container.innerHTML = list.map(c => {
-                  const attDate = new Date(c.attendance_date).toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-                  
-                  return `
+        const list = currentDashboardCorrections[category] || [];
+        const container = document.getElementById("correctionHistoryList");
+        const title = document.getElementById("correctionHistoryTitle");
+
+        let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
+        title.textContent = `${displayTitle} Correction Requests (${list.length})`;
+
+        if (list.length === 0) {
+          container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
+        } else {
+          container.innerHTML = list
+            .map((c) => {
+              const attDate = new Date(c.attendance_date).toLocaleDateString(
+                "en-GB",
+                { day: "2-digit", month: "short", year: "numeric" },
+              );
+
+              return `
                     <div style="padding: 14px; background: #fff; margin-bottom: 12px; border-radius: 12px; border: 1.5px solid #f1f5f9; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                             <div style="font-weight:800; font-size:14px; color: var(--brand);">${attDate}</div>
-                            <div style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:${category === 'approved' ? '#dcfce7' : (category === 'rejected' ? '#fee2e2' : '#fff7ed')}; color:${category === 'approved' ? '#16a34a' : (category === 'rejected' ? '#dc2626' : '#c2410c')};">
+                            <div style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:12px; background:${category === "approved" ? "#dcfce7" : category === "rejected" ? "#fee2e2" : "#fff7ed"}; color:${category === "approved" ? "#16a34a" : category === "rejected" ? "#dc2626" : "#c2410c"};">
                                 ${c.status}
                             </div>
                         </div>
@@ -1910,26 +2103,28 @@
                         </div>
                         <div style="font-size:11px; line-height:1.5; background:#f8fafc; padding:10px; border-radius:8px; color:#475569; border: 1px solid #f1f5f9;">
                             <strong style="color:var(--muted); font-size:10px; text-transform:uppercase;">Reason:</strong><br/>
-                            ${c.reason || 'No reason provided'}
+                            ${c.reason || "No reason provided"}
                         </div>
                     </div>
                   `;
-              }).join('');
-          }
-          
-          const modal = document.getElementById("correctionHistoryModal");
-          modal.style.display = "flex";
+            })
+            .join("");
+        }
+
+        const modal = document.getElementById("correctionHistoryModal");
+        modal.style.display = "flex";
       }
 
       function closeCorrectionHistoryModal() {
-          document.getElementById("correctionHistoryModal").style.display = "none";
+        document.getElementById("correctionHistoryModal").style.display =
+          "none";
       }
 
       function toggleMissingDates() {
-          const list = document.getElementById("missingDatesList");
-          if (list) {
-              list.style.display = list.style.display === "none" ? "block" : "none";
-          }
+        const list = document.getElementById("missingDatesList");
+        if (list) {
+          list.style.display = list.style.display === "none" ? "block" : "none";
+        }
       }
 
       // Tooltip Handlers
@@ -2067,7 +2262,11 @@
 
       async function loadCorrectionRequests() {
         document.getElementById("teamListLoading").style.display = "flex";
-        const data = await callAPI("get_pending_attendance_corrections", {}, "attendance");
+        const data = await callAPI(
+          "get_pending_attendance_corrections",
+          {},
+          "attendance",
+        );
         document.getElementById("teamListLoading").style.display = "none";
 
         const container = document.getElementById("empList");
@@ -2084,7 +2283,7 @@
             <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
               <div class="emp-info">
                 <div class="emp-name">${c.employee_name}</div>
-                <div class="emp-role">${new Date(c.attendance_date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short' })} | ${c.current_status} → <span style="color:var(--brand2); font-weight:700;">${c.requested_status}</span></div>
+                <div class="emp-role">${new Date(c.attendance_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} | ${c.current_status} → <span style="color:var(--brand2); font-weight:700;">${c.requested_status}</span></div>
               </div>
               <div class="emp-actions">
                 <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
@@ -2101,11 +2300,15 @@
       }
 
       async function updateCorrectionStatus(id, action) {
-        const res = await callAPI("approve_attendance_correction", {
-          request_id: id,
-          action: action
-        }, "attendance");
-        
+        const res = await callAPI(
+          "approve_attendance_correction",
+          {
+            request_id: id,
+            action: action,
+          },
+          "attendance",
+        );
+
         if (res && res.success) {
           showToast(`Request ${action}`);
           loadCorrectionRequests();
@@ -2143,7 +2346,7 @@
 
         const container = document.getElementById("empList");
         const data = res?.pending || [];
-        
+
         if (data.length === 0) {
           container.innerHTML =
             '<div style="padding:20px;text-align:center;color:var(--muted)">No pending leave requests.</div>';
@@ -2151,15 +2354,26 @@
         }
 
         container.innerHTML = data
-          .map(
-            (l) => {
-              const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
-              const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
-              
-              return `
+          .map((l) => {
+            const fromDate = new Date(l.from_date)
+              .toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })
+              .replace(/\//g, "-");
+            const toDate = new Date(l.to_date)
+              .toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })
+              .replace(/\//g, "-");
+
+            return `
                 <div class="emp-row">
                   <div class="emp-info">
-                    <div class="emp-name">${l.employee_name || ''} (${l.employee})</div>
+                    <div class="emp-name">${l.employee_name || ""} (${l.employee})</div>
                     <div class="emp-role">${l.leave_type}</div>
                     <div style="font-size:11px;color:var(--muted)">${fromDate} → ${toDate}</div>
                   </div>
@@ -2169,10 +2383,9 @@
                   </div>
                 </div>
               `;
-            }
-          )
+          })
           .join("");
-        
+
         // Render history in dashboard
         renderLeaveHistory(res?.history || []);
       }
@@ -2182,15 +2395,26 @@
         if (!container) return;
 
         container.innerHTML = history
-          .map(
-            (l) => {
-              const fromDate = new Date(l.from_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
-              const toDate = new Date(l.to_date).toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit', year:'2-digit'}).replace(/\//g, '-');
-              
-              return `
+          .map((l) => {
+            const fromDate = new Date(l.from_date)
+              .toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })
+              .replace(/\//g, "-");
+            const toDate = new Date(l.to_date)
+              .toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })
+              .replace(/\//g, "-");
+
+            return `
                 <div class="emp-row">
                   <div class="emp-info">
-                    <div class="emp-name">${l.employee_name || ''} (${l.employee})</div>
+                    <div class="emp-name">${l.employee_name || ""} (${l.employee})</div>
                     <div class="emp-role">${l.leave_type}</div>
                     <div style="font-size:11px;color:var(--muted)">${fromDate} → ${toDate}</div>
                   </div>
@@ -2199,8 +2423,7 @@
                   </div>
                 </div>
               `;
-            }
-          )
+          })
           .join("");
       }
 
@@ -2408,7 +2631,7 @@
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
             <div class="emp-actions">
-                ${!status ? actionsHtml : (status === "Present" && !s.check_out ? actionsHtml : pillHtml)}
+                ${!status ? actionsHtml : status === "Present" && !s.check_out ? actionsHtml : pillHtml}
             </div>
           `;
           list.appendChild(row);
@@ -2420,7 +2643,6 @@
         selectedMemberId = id;
         const s = staff.find((x) => x.name === id);
         if (!s) return;
-        document.getElementById("calEmpName").textContent = s.employee_name;
         document.getElementById("memberSelect").value = id;
         document.getElementById("calEmptyState").style.display = "none";
         document.getElementById("calDetail").style.display = "block";
@@ -2482,7 +2704,8 @@
           else if (histStatus === "Absent") cls += " absent-d";
           else if (histStatus === "Half Day") cls += " half-d";
           else if (histStatus === "On Leave") cls += " leave-d";
-          else if (histStatus && histStatus.includes("Pending Correction")) cls += " pending-corr-d";
+          else if (histStatus && histStatus.includes("Pending Correction"))
+            cls += " pending-corr-d";
           else if (isWeekend) cls += " woff";
 
           cell.className = cls;
@@ -2491,8 +2714,9 @@
 
           // Add click handler for past/today dates
           if (new Date(key) <= new Date(todayKey)) {
-             cell.onclick = () => openCorrectionModal(key, histStatus || "Not Marked");
-             cell.style.cursor = "pointer";
+            cell.onclick = () =>
+              openCorrectionModal(key, histStatus || "Not Marked");
+            cell.style.cursor = "pointer";
           }
 
           grid.appendChild(cell);
@@ -2500,13 +2724,20 @@
       }
 
       function openCorrectionModal(date, currentStatus) {
-        const s = staff.find(x => x.name === selectedMemberId);
-        if(!s) return;
-        
+        const s = staff.find((x) => x.name === selectedMemberId);
+        if (!s) return;
+
         document.getElementById("corrEmpName").textContent = s.employee_name;
-        document.getElementById("corrDate").textContent = new Date(date).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById("corrDate").textContent = new Date(
+          date,
+        ).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
         document.getElementById("corrDate").dataset.raw = date;
-        document.getElementById("corrCurrentStatus").textContent = currentStatus;
+        document.getElementById("corrCurrentStatus").textContent =
+          currentStatus;
         document.getElementById("corrReason").value = "";
         document.getElementById("correctionModal").style.display = "flex";
       }
@@ -2518,7 +2749,9 @@
       async function submitCorrection() {
         const employee = selectedMemberId;
         const date = document.getElementById("corrDate").dataset.raw;
-        const requested_status = document.getElementById("corrRequestedStatus").value;
+        const requested_status = document.getElementById(
+          "corrRequestedStatus",
+        ).value;
         const reason = document.getElementById("corrReason").value;
 
         if (!reason) {
@@ -2526,12 +2759,16 @@
           return;
         }
 
-        const res = await callAPI("request_attendance_correction", {
-          employee,
-          attendance_date: date,
-          requested_status,
-          reason
-        }, "attendance");
+        const res = await callAPI(
+          "request_attendance_correction",
+          {
+            employee,
+            attendance_date: date,
+            requested_status,
+            reason,
+          },
+          "attendance",
+        );
 
         if (res && res.success) {
           showToast(res.message);
@@ -2741,14 +2978,16 @@
               employee: id,
               status: status,
               log_type: log_type,
-            })
+            }),
           );
           await Promise.all(promises);
           processed += batch.length;
           console.log(`Processed ${processed} / ${employeeIds.length}`);
         }
 
-        showToast(`Bulk action completed successfully for ${employeeIds.length} records.`);
+        showToast(
+          `Bulk action completed successfully for ${employeeIds.length} records.`,
+        );
         selectedIds.clear();
         await fetchTeamData();
         bar.style.opacity = "1";
