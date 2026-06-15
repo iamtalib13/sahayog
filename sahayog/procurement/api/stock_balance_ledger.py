@@ -1057,12 +1057,20 @@ def skip_approval_stage(docname, stage):
     if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
     
-    update_fields = {
-        "reporting_person_status": "Skip",
-        "ho_officer_status": "Skip",
-        "status": "Approved",
-        "docstatus": 1
-    }
+    update_fields = {}
+    
+    if stage == "Reporting":
+        update_fields["reporting_person_status"] = "Skip"
+        update_fields["status"] = "Pending HO Approval"
+    elif stage == "HO Approval":
+        update_fields["ho_officer_status"] = "Skip"
+        update_fields["status"] = "Approved"
+        update_fields["docstatus"] = 1
+    elif stage == "Both":
+        update_fields["reporting_person_status"] = "Skip"
+        update_fields["ho_officer_status"] = "Skip"
+        update_fields["status"] = "Approved"
+        update_fields["docstatus"] = 1
     
     # Use db.set_value to bypass workflow and validation rules
     frappe.db.set_value("Employee Material Request", docname, update_fields)
