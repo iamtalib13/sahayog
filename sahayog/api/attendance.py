@@ -220,14 +220,25 @@ def get_hr_dashboard_data():
 
     # 4. Branch-wise Distribution & Attendance % per Branch
     branch_data = frappe.db.sql("""
-        SELECT e.branch, count(e.name) as total,
-               (SELECT count(*) FROM `tabAttendance` a WHERE a.branch = e.branch AND a.attendance_date = %s AND a.status IN ('Present', 'Work From Home')) as present
-        FROM `tabEmployee` e
-        WHERE e.status = 'Active'
-        GROUP BY e.branch
-    """, (today), as_dict=True)
+        SELECT branch, count(*) as total 
+        FROM `tabEmployee` 
+        WHERE status = 'Active' 
+        GROUP BY branch
+    """, as_dict=True)
     
+    attendance_by_branch = frappe.db.sql("""
+        SELECT e.branch, count(*) as count
+        FROM `tabAttendance` a
+        JOIN `tabEmployee` e ON a.employee = e.name
+        WHERE a.attendance_date = %s 
+          AND a.status IN ('Present', 'Work From Home')
+          AND a.docstatus < 2
+        GROUP BY e.branch
+    """, (today,), as_dict=True)
+    
+    att_map = {b.branch: b.count for b in attendance_by_branch if b.branch}
     for b in branch_data:
+        b.present = att_map.get(b.branch, 0)
         b.att_pc = round((b.present / b.total * 100), 2) if b.total > 0 else 0
 
     return {
