@@ -12,7 +12,7 @@ def get_team_attendance_data():
         frappe.throw(_("Please login to access this portal"), frappe.PermissionError)
     
     # Get current manager's employee record
-    manager = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name"], as_dict=True)
+    manager = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name", "sahayog_branch", "sol_id"], as_dict=True)
     
     if not manager and user != "Administrator":
         return {"error": True, "message": "Manager Employee record not found."}
@@ -24,8 +24,13 @@ def get_team_attendance_data():
         # HR/Admin gets everything except themselves
         filters = {"status": "Active", "user_id": ["!=", user]}
     elif "Branch Manager" in roles:
-        # Branch Managers manage their team
-        filters = {"reports_to": manager.name, "status": "Active"} if manager else {"status": "Active"}
+        # Branch Managers manage all active staff in their branch (using sahayog_branch/sol_id)
+        branch_id = manager.sahayog_branch or manager.sol_id
+        if branch_id:
+            filters = {"sahayog_branch": branch_id, "status": "Active", "user_id": ["!=", user]}
+        else:
+            # Fallback to reports_to if branch not set (for safety)
+            filters = {"reports_to": manager.name, "status": "Active", "user_id": ["!=", user]}
     else:
         # Regular employees only manage themselves
         filters = {"name": manager.name} if manager else {"user_id": user}
@@ -34,7 +39,7 @@ def get_team_attendance_data():
     team = frappe.get_all("Employee", 
         filters=filters,
         fields=[
-            "name", "employee_name", "designation", "branch", "status", 
+            "name", "employee_name", "designation", "branch", "sahayog_branch", "sol_id", "status", 
             "gender", "image", "department", "date_of_joining", 
             "reports_to", "cell_number", "company_email"
         ],
@@ -211,29 +216,29 @@ def get_hr_dashboard_data():
 
     # By Branch
     leave_summary["by_branch"] = frappe.db.sql("""
-        SELECT e.branch, count(l.name) as count 
+        SELECT e.sahayog_branch as branch, count(l.name) as count 
         FROM `tabLeave Application` l
         JOIN `tabEmployee` e ON l.employee = e.name
         WHERE l.from_date >= %s AND l.to_date <= %s
-        GROUP BY e.branch
+        GROUP BY e.sahayog_branch
     """, (first_day, last_day), as_dict=True)
 
     # 4. Branch-wise Distribution & Attendance % per Branch
     branch_data = frappe.db.sql("""
-        SELECT branch, count(*) as total 
+        SELECT sahayog_branch as branch, count(*) as total 
         FROM `tabEmployee` 
         WHERE status = 'Active' 
-        GROUP BY branch
+        GROUP BY sahayog_branch
     """, as_dict=True)
     
     attendance_by_branch = frappe.db.sql("""
-        SELECT e.branch, count(*) as count
+        SELECT e.sahayog_branch as branch, count(*) as count
         FROM `tabAttendance` a
         JOIN `tabEmployee` e ON a.employee = e.name
         WHERE a.attendance_date = %s 
           AND a.status IN ('Present', 'Work From Home')
           AND a.docstatus < 2
-        GROUP BY e.branch
+        GROUP BY e.sahayog_branch
     """, (today,), as_dict=True)
     
     att_map = {b.branch: b.count for b in attendance_by_branch if b.branch}
@@ -357,22 +362,30 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
 
 @frappe.whitelist()
 def get_pending_attendance_corrections():
-    """Fetch pending attendance correction requests for the manager's team or all for HR/Admin."""
+    """Fetch pending attendance correction requests for the manager's branch or all for HR/Admin."""
     user = frappe.session.user
     roles = frappe.get_roles(user)
     
-    manager = frappe.db.get_value("Employee", {"user_id": user}, "name")
+    # Get current manager's branch info
+    emp_data = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, ["name", "sahayog_branch", "sol_id"], as_dict=True)
     
     filters = {"status": "Pending"}
     
-    # If not Admin or HR, only show requests for employees reporting to this manager
-    if "System Manager" not in roles and "Administrator" not in roles:
-        if manager:
-            # Get subordinates
-            subordinates = frappe.get_all("Employee", filters={"reports_to": manager}, fields=["name"])
-            sub_names = [s.name for s in subordinates]
-            filters["employee"] = ["in", sub_names]
+    # If not Admin or HR, filter by branch staff
+    if "HR Manager" not in roles and "HR User" not in roles and "Administrator" not in roles:
+        if "Branch Manager" in roles and emp_data:
+            branch_id = emp_data.sahayog_branch or emp_data.sol_id
+            if branch_id:
+                # Get all employees in the branch
+                branch_staff = frappe.get_all("Employee", filters={"sahayog_branch": branch_id}, fields=["name"])
+                staff_names = [s.name for s in branch_staff]
+                filters["employee"] = ["in", staff_names]
+            else:
+                # Fallback to direct reports if branch is missing
+                subordinates = frappe.get_all("Employee", filters={"reports_to": emp_data.name}, fields=["name"])
+                filters["employee"] = ["in", [s.name for s in subordinates]]
         else:
+            # Regular employee should not see this (or only their own if needed, but this API is for managers)
             return []
 
     corrections = frappe.get_all("Attendance Correction",
