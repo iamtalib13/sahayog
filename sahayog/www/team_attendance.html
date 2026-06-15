@@ -1063,9 +1063,79 @@
       </div>
     </nav>
     <div class="subbar">
-      <span>Team Attendance Management</span>
+      <span id="subbarTitle">Team Attendance Management</span>
       <span class="subbar-badge" id="todayDate"></span>
     </div>
+
+    <!-- NEW GLOBAL NAVIGATION TABS -->
+    <div
+      id="globalNav"
+      style="
+        background: #fff;
+        border-bottom: 1px solid var(--border);
+        padding: 0 20px;
+        display: flex;
+        gap: 20px;
+        height: 48px;
+        align-items: stretch;
+      "
+    >
+      <button
+        class="nav-tab active"
+        id="tabAttendance"
+        onclick="switchTab('attendance', this)"
+      >
+        Attendance
+      </button>
+      <button
+        class="nav-tab"
+        id="tabHRDashboard"
+        style="display: none"
+        onclick="switchTab('hr_dashboard', this)"
+      >
+        HR Dashboard
+      </button>
+      <button
+        class="nav-tab"
+        id="tabLeaveRequests"
+        style="display: none"
+        onclick="switchTab('leave', this)"
+      >
+        Leave Approvals
+      </button>
+      <button
+        class="nav-tab"
+        id="tabCorrApproval"
+        style="display: none"
+        onclick="switchTab('corrections', this)"
+      >
+        Correction Approvals
+      </button>
+    </div>
+
+    <style>
+      .nav-tab {
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 0 4px;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .nav-tab.active {
+        color: var(--brand2);
+        border-bottom-color: var(--brand2);
+      }
+      .nav-tab:hover:not(.active) {
+        color: var(--brand);
+      }
+    </style>
 
     <div class="layout">
       <div class="content">
@@ -1139,93 +1209,80 @@
             >
               <div class="spinner"></div>
             </div>
-            <div class="card-head">
-              <h3>Staff List &amp; Attendance</h3>
-              <div class="filter-tabs">
-                <button
-                  class="ftab active"
-                  onclick="switchTab('attendance', this)"
-                >
-                  Attendance
-                </button>
-                <button
-                  class="ftab"
-                  onclick="switchTab('hr_dashboard', this)"
-                  id="tabHRDashboard"
-                  style="display: none"
-                >
-                  HR Insights
-                </button>
-                <button
-                  class="ftab"
-                  onclick="switchTab('leave', this)"
-                  id="tabLeaveRequests"
-                  style="display: none"
-                >
-                  Leave Requests
-                </button>
-                <button
-                  class="ftab"
-                  id="tabCorrApproval"
-                  onclick="switchTab('corrections', this)"
-                  style="display: none"
-                >
-                  Correction Approvals
-                </button>
-              </div>
+            <div class="card-head" style="border-bottom: none">
+              <h3>Staff List &amp; Directory</h3>
             </div>
 
-            <!-- HR GLOBAL STATS (Hidden by default) -->
-            <div id="hrStatsRow" style="display: none; padding: 16px; background: #f8fafc; border-bottom: 1px solid var(--border); grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                <div class="stat-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
-                    <div>
-                        <div class="stat-val" id="hrStatTotal">0</div>
-                        <div class="stat-lbl">Active Staff</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
-                    <div>
-                        <div class="stat-val" id="hrStatPresent" style="color:var(--success)">0</div>
-                        <div class="stat-lbl">Present Today</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
-                    <div>
-                        <div class="stat-val" id="hrStatNew" style="color:var(--brand2)">0</div>
-                        <div class="stat-lbl">New Joinees</div>
-                    </div>
-                </div>
-                <div class="stat-card" style="box-shadow: none; border: 1px solid #e2e8f0;">
-                    <div>
-                        <div class="stat-val" id="hrStatPending" style="color:var(--danger)">0</div>
-                        <div class="stat-lbl">Pending Tasks</div>
-                    </div>
-                </div>
+            <!-- HR ADVANCED FILTER BAR -->
+            <div
+              id="hrAdvancedFilters"
+              style="
+                display: none;
+                padding: 10px 16px;
+                background: #fafbff;
+                border-bottom: 1px solid var(--border);
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+              <select
+                id="f_branch"
+                class="ftab"
+                style="height: 34px; min-width: 140px"
+                onchange="applyAllFilters()"
+              >
+                <option value="">All Branches</option>
+              </select>
+              <select
+                id="f_dept"
+                class="ftab"
+                style="height: 34px; min-width: 140px"
+                onchange="applyAllFilters()"
+              >
+                <option value="">All Departments</option>
+              </select>
+              <select
+                id="f_desig"
+                class="ftab"
+                style="height: 34px; min-width: 140px"
+                onchange="applyAllFilters()"
+              >
+                <option value="">All Designations</option>
+              </select>
+              <select
+                id="f_status"
+                class="ftab"
+                style="height: 34px; min-width: 140px"
+                onchange="applyAllFilters()"
+              >
+                <option value="">All Statuses</option>
+                <option value="Present">Present</option>
+                <option value="Absent">Absent</option>
+                <option value="Half Day">Half Day</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Not Marked">Not Marked</option>
+              </select>
             </div>
 
-            <!-- SEARCH & BRANCH FILTER -->
-            <div class="search-box-wrap" id="searchBoxWrap" style="display: flex; gap: 10px;">
+            <!-- SEARCH ENHANCEMENT ELEMENT -->
+            <div
+              class="search-box-wrap"
+              id="searchBoxWrap"
+              style="display: flex; gap: 10px"
+            >
               <input
                 type="text"
                 id="staffSearch"
                 class="search-input"
-                style="flex: 1;"
-                placeholder="🔍 Search staff members..."
+                style="flex: 1"
+                placeholder="🔍 Search staff members by name or ID..."
                 onkeyup="handleSearch()"
               />
-              <select id="branchFilter" class="ftab" style="height: 32px; border-radius: 8px; display: none;" onchange="handleBranchFilter()">
-                  <option value="">All Branches</option>
-              </select>
             </div>
 
             <!-- HR DASHBOARD CONTENT (Hidden by default) -->
-            <div id="hrDashboardContent" style="display: none; padding: 16px;">
-                <div class="dash-section">
-                    <div class="dash-sec-title">Branch-wise Attendance Summary</div>
-                    <div id="branchSummaryTable" style="margin-top: 10px;">
-                        <!-- Table will be injected here -->
-                    </div>
-                </div>
+            <div id="hrDashboardContent" style="display: none; padding: 16px">
+              <!-- HR metrics will be injected here via loadHRDashboard -->
             </div>
 
             <!-- SELECT ALL ROW -->
@@ -1282,14 +1339,22 @@
             <div id="calLoading" class="loading-overlay" style="display: none">
               <div class="spinner"></div>
             </div>
-            
+
             <!-- CHANGED: Is cal-head div ke andar button add kiya hai aur flexbox alignment di hai -->
-            <div class="cal-head" style="display: flex; justify-content: space-between; align-items: center;">
+            <div
+              class="cal-head"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
               <h3>📅 Attendance Calendar</h3>
-              
+
               <!-- Apply Leave Button yahan top par aa gaya -->
               <button
                 class="btn-in"
+                id="btnApplyLeave"
                 style="
                   padding: 6px 14px;
                   font-size: 11px;
@@ -1853,7 +1918,11 @@
 
       // ── ROLE CHECK HELPERS ────────────────────────────────
       function isHR() {
-        return userRoles.includes("HR Manager") || userRoles.includes("HR User") || userRoles.includes("Administrator");
+        return (
+          userRoles.includes("HR Manager") ||
+          userRoles.includes("HR User") ||
+          userRoles.includes("Administrator")
+        );
       }
       function isBranchManager() {
         return userRoles.includes("Branch Manager");
@@ -2297,7 +2366,9 @@
       let currentTab = "attendance";
       function switchTab(tab, btn) {
         if (
-          (tab === "leave" || tab === "corrections" || tab === "hr_dashboard") &&
+          (tab === "leave" ||
+            tab === "corrections" ||
+            tab === "hr_dashboard") &&
           !isHR()
         ) {
           showToast("You are not authorized to access this tab.");
@@ -2305,44 +2376,47 @@
         }
 
         currentTab = tab;
+        // Clear active state from all possible tab types
         document
-          .querySelectorAll(".ftab")
+          .querySelectorAll(".ftab, .nav-tab")
           .forEach((x) => x.classList.remove("active"));
-        btn.classList.add("active");
+        if (btn) btn.classList.add("active");
 
         const controls = document.getElementById("attendanceControls");
         const bulkBar = document.getElementById("bulkBar");
         const searchWrap = document.getElementById("searchBoxWrap");
-        const hrStats = document.getElementById("hrStatsRow");
+        const hrFilters = document.getElementById("hrAdvancedFilters");
         const hrDash = document.getElementById("hrDashboardContent");
         const empList = document.getElementById("empList");
+        const statsRow = document.getElementById("statsRow");
 
-        // Reset visibility
-        hrStats.style.display = "none";
-        hrDash.style.display = "none";
-        empList.style.display = "block";
+        // Global Resets
+        if (hrFilters) hrFilters.style.display = "none";
+        if (hrDash) hrDash.style.display = "none";
+        if (empList) empList.style.display = "block";
+        if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
 
         if (tab === "attendance") {
-          controls.style.display = "flex";
-          searchWrap.style.display = "flex";
+          if (controls) controls.style.display = isHR() ? "none" : "flex";
+          if (searchWrap) searchWrap.style.display = "flex";
+          if (hrFilters && isHR()) hrFilters.style.display = "flex";
           fetchTeamData();
         } else if (tab === "hr_dashboard") {
-          controls.style.display = "none";
-          bulkBar.classList.remove("visible");
-          searchWrap.style.display = "none";
-          hrStats.style.display = "grid";
-          hrDash.style.display = "block";
-          empList.style.display = "none";
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          if (empList) empList.style.display = "none";
           loadHRDashboard();
         } else if (tab === "leave") {
-          controls.style.display = "none";
-          bulkBar.classList.remove("visible");
-          searchWrap.style.display = "none";
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
           loadTeamLeaves();
         } else if (tab === "corrections") {
-          controls.style.display = "none";
-          bulkBar.classList.remove("visible");
-          searchWrap.style.display = "none";
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
           loadCorrectionRequests();
         }
       }
@@ -2564,85 +2638,141 @@
         }
       }
 
+      let isFirstLoad = true;
       function updateTabVisibility() {
+        const attendanceTab = document.getElementById("tabAttendance");
         const leaveTab = document.getElementById("tabLeaveRequests");
         const corrTab = document.getElementById("tabCorrApproval");
         const hrTab = document.getElementById("tabHRDashboard");
-        const branchFilter = document.getElementById("branchFilter");
-        
+        const hrFilters = document.getElementById("hrAdvancedFilters");
+        const bulkBar = document.getElementById("bulkBar");
+        const subbarTitle = document.getElementById("subbarTitle");
+        const btnApplyLeave = document.getElementById("btnApplyLeave");
+
         if (isHR()) {
+          if (subbarTitle) subbarTitle.textContent = "HR Dashboard";
+          if (attendanceTab) attendanceTab.textContent = "Employee Directory";
+          if (btnApplyLeave) btnApplyLeave.style.display = "none";
           if (leaveTab) {
-              leaveTab.style.display = "inline-block";
-              leaveTab.textContent = "Leave Approvals";
+            leaveTab.style.display = "flex";
+            leaveTab.textContent = "Leave Approvals";
           }
           if (corrTab) {
-              corrTab.style.display = "inline-block";
-              corrTab.textContent = "Correction Approvals";
+            corrTab.style.display = "flex";
+            corrTab.textContent = "Correction Approvals";
           }
-          if (hrTab) hrTab.style.display = "inline-block";
-          if (branchFilter) branchFilter.style.display = "inline-block";
-          
-          // Populate branches if not done
-          populateBranchFilter();
+          if (hrTab) hrTab.style.display = "flex";
+          if (bulkBar)
+            bulkBar.style.setProperty("display", "none", "important");
+
+          // Set HR Dashboard as default on first load
+          if (isFirstLoad) {
+            isFirstLoad = false;
+            switchTab("hr_dashboard", hrTab);
+          }
+          populateAllFilters();
         } else {
+          isFirstLoad = false;
+          if (subbarTitle)
+            subbarTitle.textContent = "Team Attendance Management";
+          if (attendanceTab) attendanceTab.textContent = "Attendance";
+          if (btnApplyLeave) btnApplyLeave.style.display = "inline-block";
           if (leaveTab) leaveTab.style.display = "none";
           if (corrTab) corrTab.style.display = "none";
           if (hrTab) hrTab.style.display = "none";
-          if (branchFilter) branchFilter.style.display = "none";
+          if (hrFilters) hrFilters.style.display = "none";
         }
       }
 
-      function populateBranchFilter() {
-          const filter = document.getElementById("branchFilter");
-          if (filter.options.length > 1) return;
-          
-          const branches = [...new Set(staff.map(s => s.branch).filter(Boolean))].sort();
-          branches.forEach(b => {
-              const opt = document.createElement("option");
-              opt.value = b;
-              opt.textContent = b;
-              filter.appendChild(opt);
-          });
+      function populateAllFilters() {
+        const bSel = document.getElementById("f_branch");
+        const dSel = document.getElementById("f_dept");
+        const dsSel = document.getElementById("f_desig");
+
+        if (bSel.options.length > 1) return;
+
+        const branches = [
+          ...new Set(staff.map((s) => s.branch).filter(Boolean)),
+        ].sort();
+        const depts = [
+          ...new Set(staff.map((s) => s.department).filter(Boolean)),
+        ].sort();
+        const desigs = [
+          ...new Set(staff.map((s) => s.designation).filter(Boolean)),
+        ].sort();
+
+        branches.forEach((x) => bSel.add(new Option(x, x)));
+        depts.forEach((x) => dSel.add(new Option(x, x)));
+        desigs.forEach((x) => dsSel.add(new Option(x, x)));
       }
 
-      let branchFilterVal = "";
-      function handleBranchFilter() {
-          branchFilterVal = document.getElementById("branchFilter").value;
-          renderEmpList();
+      let f_vals = { branch: "", dept: "", desig: "", status: "" };
+      function applyAllFilters() {
+        f_vals.branch = document.getElementById("f_branch").value;
+        f_vals.dept = document.getElementById("f_dept").value;
+        f_vals.desig = document.getElementById("f_desig").value;
+        f_vals.status = document.getElementById("f_status").value;
+        renderEmpList();
       }
 
       async function loadHRDashboard() {
-          const data = await callAPI("get_hr_dashboard_data", {}, "attendance");
-          if (!data) return;
+        const data = await callAPI("get_hr_dashboard_data", {}, "attendance");
+        if (!data) return;
 
-          // Update Top Cards
-          document.getElementById("hrStatTotal").textContent = data.headcount || 0;
-          document.getElementById("hrStatPresent").textContent = `${data.attendance.percentage}%` || "0%";
-          document.getElementById("hrStatNew").textContent = data.lifecycle.new_joinees || 0;
-          document.getElementById("hrStatPending").textContent = (data.pending_requests.leaves + data.pending_requests.corrections) || 0;
+        const dashContent = document.getElementById("hrDashboardContent");
 
-          const dashContent = document.getElementById("hrDashboardContent");
-          
-          let html = `
-            <!-- 1. Attendance & Lifecycle Metrics -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                <div class="dash-section" style="background:#fff; padding:15px; border-radius:12px; border:1px solid #f1f5f9;">
-                    <div class="dash-sec-title">Today's Attendance Summary</div>
+        let html = `
+            <!-- 1. Global Metrics (6 Cards) -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px;">
+                <div class="stat-card" style="border: 1px solid #e0e7ff; background: #fff;">
+                    <div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">👥</div>
+                    <div><div class="stat-val">${data.headcount}</div><div class="stat-lbl">Total Staff</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #dcfce7; background: #fff;">
+                    <div class="stat-icon" style="background: #dcfce7; color: #15803d;">✅</div>
+                    <div><div class="stat-val" style="color:#15803d;">${data.attendance.summary.Present}</div><div class="stat-lbl">Present Today</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #fee2e2; background: #fff;">
+                    <div class="stat-icon" style="background: #fee2e2; color: #b91c1c;">❌</div>
+                    <div><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">Absent Today</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #fef3c7; background: #fff;">
+                    <div class="stat-icon" style="background: #fef3c7; color: #d97706;">🏖️</div>
+                    <div><div class="stat-val" style="color:#d97706;">${data.attendance.summary["On Leave"]}</div><div class="stat-lbl">On Leave Today</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #fdf4ff; background: #fff;">
+                    <div class="stat-icon" style="background: #fdf4ff; color: #a21caf;">📩</div>
+                    <div><div class="stat-val" style="color:#a21caf;">${data.pending_requests.leaves}</div><div class="stat-lbl">Pending Leaves</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #f8fafc; background: #fff;">
+                    <div class="stat-icon" style="background: #f8fafc; color: #64748b;">⏳</div>
+                    <div><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">Not Marked</div></div>
+                </div>
+            </div>
+
+            <!-- 2. Attendance & Lifecycle Metrics -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
+                    <div class="dash-sec-title">Today's Attendance Status</div>
                     <div class="stat-pill-box">
-                        ${Object.entries(data.attendance.summary).map(([status, count]) => `
+                        ${Object.entries(data.attendance.summary)
+                          .map(
+                            ([status, count]) => `
                             <div class="dash-row">
                                 <span class="dash-lbl">${status}</span>
-                                <span class="dash-val" style="color:${status === "Present" ? "var(--success)" : (status === "Absent" ? "var(--danger)" : "var(--brand2)")}">${count}</span>
+                                <span class="dash-val" style="color:${status === "Present" ? "var(--success)" : status === "Absent" ? "var(--danger)" : "var(--brand2)"}">${count}</span>
                             </div>
-                        `).join("")}
-                        <div class="dash-row" style="margin-top:8px; padding-top:8px; border-top:1.5px dashed #f1f5f9;">
+                        `,
+                          )
+                          .join("")}
+                        <div class="dash-row" style="margin-top:10px; padding-top:10px; border-top:1.5px dashed #f1f5f9;">
                             <span class="dash-lbl" style="font-weight:700;">Global Attendance %</span>
-                            <span class="dash-val" style="font-size:18px;">${data.attendance.percentage}%</span>
+                            <span class="dash-val" style="font-size:20px; color:var(--brand2);">${data.attendance.percentage}%</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="dash-section" style="background:#fff; padding:15px; border-radius:12px; border:1px solid #f1f5f9;">
+                <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
                     <div class="dash-sec-title">Employee Lifecycle (Monthly)</div>
                     <div class="stat-pill-box">
                         <div class="dash-row"><span class="dash-lbl">New Joinees</span><span class="dash-val" style="color:var(--success)">+${data.lifecycle.new_joinees}</span></div>
@@ -2653,72 +2783,85 @@
                 </div>
             </div>
 
-            <!-- 2. Leave Summary -->
-            <div class="dash-section" style="background:#fff; padding:15px; border-radius:12px; border:1px solid #f1f5f9; margin-bottom: 20px;">
+            <!-- 3. Leave Summary -->
+            <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; margin-bottom: 24px; box-shadow: var(--shadow);">
                 <div class="dash-sec-title">Leave Analytics (Monthly)</div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
-                    <div style="background:#f0fdf4; padding:10px; border-radius:10px; text-align:center; border:1px solid #bbf7d0;">
-                        <span style="display:block; font-size:18px; font-weight:800; color:#15803d;">${data.leaves.Approved}</span>
-                        <span style="font-size:10px; font-weight:700; color:#166534; text-transform:uppercase;">Approved</span>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px;">
+                    <div style="background:#f0fdf4; padding:12px; border-radius:12px; text-align:center; border:1px solid #bbf7d0;">
+                        <span style="display:block; font-size:20px; font-weight:800; color:#15803d;">${data.leaves.Approved}</span>
+                        <span style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase;">Approved</span>
                     </div>
-                    <div style="background:#fff7ed; padding:10px; border-radius:10px; text-align:center; border:1px solid #fed7aa;">
-                        <span style="display:block; font-size:18px; font-weight:800; color:#c2410c;">${data.leaves.Open}</span>
-                        <span style="font-size:10px; font-weight:700; color:#9a3412; text-transform:uppercase;">Pending</span>
+                    <div style="background:#fff7ed; padding:12px; border-radius:12px; text-align:center; border:1px solid #fed7aa;">
+                        <span style="display:block; font-size:20px; font-weight:800; color:#c2410c;">${data.leaves.Open}</span>
+                        <span style="font-size:11px; font-weight:700; color:#9a3412; text-transform:uppercase;">Pending</span>
                     </div>
-                    <div style="background:#fef2f2; padding:10px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
-                        <span style="display:block; font-size:18px; font-weight:800; color:#b91c1c;">${data.leaves.Rejected}</span>
-                        <span style="font-size:10px; font-weight:700; color:#991b1b; text-transform:uppercase;">Rejected</span>
+                    <div style="background:#fef2f2; padding:12px; border-radius:12px; text-align:center; border:1px solid #fecaca;">
+                        <span style="display:block; font-size:20px; font-weight:800; color:#b91c1c;">${data.leaves.Rejected}</span>
+                        <span style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase;">Rejected</span>
                     </div>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                     <div>
-                        <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:8px; text-transform:uppercase;">By Leave Type</div>
-                        ${data.leaves.by_type.map(lt => `
-                            <div class="dash-row" style="font-size:12px; margin-bottom:4px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">By Leave Type</div>
+                        ${data.leaves.by_type
+                          .map(
+                            (lt) => `
+                            <div class="dash-row" style="font-size:13px; margin-bottom:6px;">
                                 <span class="dash-lbl">${lt.leave_type}</span>
-                                <span class="dash-val">${lt.count}</span>
+                                <span class="dash-val" style="font-weight:600;">${lt.count}</span>
                             </div>
-                        `).join("")}
+                        `,
+                          )
+                          .join("")}
                     </div>
                     <div>
-                        <div style="font-size:11px; font-weight:700; color:var(--muted); margin-bottom:8px; text-transform:uppercase;">By Branch</div>
-                        ${data.leaves.by_branch.slice(0, 5).map(lb => `
-                            <div class="dash-row" style="font-size:12px; margin-bottom:4px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">By Branch (Top 5)</div>
+                        ${data.leaves.by_branch
+                          .slice(0, 5)
+                          .map(
+                            (lb) => `
+                            <div class="dash-row" style="font-size:13px; margin-bottom:6px;">
                                 <span class="dash-lbl">${lb.branch || "Not Set"}</span>
-                                <span class="dash-val">${lb.count}</span>
+                                <span class="dash-val" style="font-weight:600;">${lb.count}</span>
                             </div>
-                        `).join("")}
+                        `,
+                          )
+                          .join("")}
                     </div>
                 </div>
             </div>
 
-            <!-- 3. Branch-wise Detailed Table -->
-            <div class="dash-section" style="background:#fff; padding:15px; border-radius:12px; border:1px solid #f1f5f9;">
+            <!-- 4. Branch-wise Detailed Table -->
+            <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
                 <div class="dash-sec-title">Branch-wise Performance Today</div>
-                <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+                <table style="width:100%; border-collapse: collapse; font-size: 14px;">
                     <thead>
-                        <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted);">
-                            <th style="padding: 10px 0;">Branch Name</th>
-                            <th style="padding: 10px 0; text-align: center;">Total Staff</th>
-                            <th style="padding: 10px 0; text-align: center;">Present</th>
-                            <th style="padding: 10px 0; text-align: center;">Att. %</th>
+                        <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted); font-size:12px; text-transform:uppercase;">
+                            <th style="padding: 12px 0;">Branch Name</th>
+                            <th style="padding: 12px 0; text-align: center;">Total Staff</th>
+                            <th style="padding: 12px 0; text-align: center;">Present</th>
+                            <th style="padding: 12px 0; text-align: center;">Att. %</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.branch_wise.map(b => `
+                        ${data.branch_wise
+                          .map(
+                            (b) => `
                             <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 12px 0; font-weight: 600; color: var(--brand);">${b.branch || "Not Set"}</td>
-                                <td style="padding: 12px 0; text-align: center;">${b.total}</td>
-                                <td style="padding: 12px 0; text-align: center; color:var(--success)">${b.present}</td>
-                                <td style="padding: 12px 0; text-align: center; font-weight:700;">${b.att_pc}%</td>
+                                <td style="padding: 14px 0; font-weight: 600; color: var(--brand);">${b.branch || "Not Set"}</td>
+                                <td style="padding: 14px 0; text-align: center;">${b.total}</td>
+                                <td style="padding: 14px 0; text-align: center; color:var(--success); font-weight:600;">${b.present}</td>
+                                <td style="padding: 14px 0; text-align: center;"><span style="background:#f5f3ff; color:var(--brand2); padding:4px 8px; border-radius:6px; font-weight:700; font-size:12px;">${b.att_pc}%</span></td>
                             </tr>
-                        `).join("")}
+                        `,
+                          )
+                          .join("")}
                     </tbody>
                 </table>
             </div>
           `;
-          dashContent.innerHTML = html;
+        dashContent.innerHTML = html;
       }
 
       async function markAttendance(emp_id, status, log_type = "IN") {
@@ -2807,15 +2950,18 @@
         let visibleIds = [];
 
         staff.forEach((s) => {
-          const status = s.attendance_status;
+          const status = s.attendance_status || "Not Marked";
 
-          // Branch Filter
-          if (branchFilterVal && s.branch !== branchFilterVal) return;
+          // Enterprise Filters
+          if (f_vals.branch && s.branch !== f_vals.branch) return;
+          if (f_vals.dept && s.department !== f_vals.dept) return;
+          if (f_vals.desig && s.designation !== f_vals.desig) return;
+          if (f_vals.status && status !== f_vals.status) return;
 
           // Filters combined with Live Search
           if (currentFilter === "present" && status !== "Present") return;
           if (currentFilter === "absent" && status !== "Absent") return;
-          if (currentFilter === "pending" && status) return;
+          if (currentFilter === "pending" && status === "Present") return; // If status exists, it's not pending for marking
 
           if (
             searchQuery &&
@@ -2853,7 +2999,9 @@
             pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
           let actionsHtml = "";
-          if (status === "On Leave" || status === "Half Day") {
+          if (isHR()) {
+            actionsHtml = ""; // Read-only for HR
+          } else if (status === "On Leave" || status === "Half Day") {
             actionsHtml = ""; // Will use pillHtml instead
           } else if (!status) {
             actionsHtml = `
