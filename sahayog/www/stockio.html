@@ -7615,6 +7615,42 @@
               <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>[[ assetStatusFilter === 'Available' ? 'Asset Availability for Assignment' : 'Assigned Asset Board' ]]</h3>
                 <div style="display: flex; gap: 8px;">
+                    <!-- Group By Toggle (Assigned Only) -->
+                    <div v-if="assetStatusFilter === 'Assigned'" class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Item' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Item'; fetchAssetAvailability()"
+                        >
+                            Item
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'SOL/Branch' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'SOL/Branch'; fetchAssetAvailability()"
+                        >
+                            SOL/Branch
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Zone' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Zone'; fetchAssetAvailability()"
+                        >
+                            Zone
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Region' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Region'; fetchAssetAvailability()"
+                        >
+                            Region
+                        </button>
+                    </div>
+
                     <div class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
                         <button 
                             class="btn-create-inline" 
@@ -12520,21 +12556,23 @@
       assetAvailability: [],
       assetViewMode: 'cards',
       assetStatusFilter: 'Available',
+      assetGroupBy: 'Item',
 
       async fetchAssetAvailability() {
         try {
-          // 1. Fetch all active assets (to know used serials)
+          // 1. Fetch all active assets (to know used serials and for Assigned board)
           const assetsRes = await frappe.call({
             method: "frappe.client.get_list",
             args: {
               doctype: "Asset",
               filters: { docstatus: 1, status: ["!=", "Scrapped"] },
-              fields: ["serial_no", "item_code"]
+              fields: ["serial_no", "item_code", "location", "zone"]
             }
           });
-          const usedSerials = (assetsRes.message || []).map(a => a.serial_no).filter(sn => sn);
+          const allAssets = assetsRes.message || [];
+          const usedSerials = allAssets.map(a => a.serial_no).filter(sn => sn);
           
-          // 2. Fetch all Serial Numbers
+          // 2. Fetch all Serial Numbers (for Available board)
           const serialsRes = await frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -12558,37 +12596,71 @@
           });
           const fixedAssetItems = itemsRes.message || [];
           console.log("Fixed Asset Items Data:", fixedAssetItems);
+
+          // 5. Fetch Branches for grouping (only if Assigned and grouped by location/zone/region)
+          let branches = [];
+          if (this.assetStatusFilter === 'Assigned' && this.assetGroupBy !== 'Item') {
+             const branchRes = await frappe.call({
+               method: "frappe.client.get_list",
+               args: {
+                 doctype: "Sahayog Branch",
+                 fields: ["name", "branch", "zone", "region"]
+               }
+             });
+             branches = branchRes.message || [];
+          }
           
-          // 5. Aggregate by item based on filter
+          // 6. Aggregate based on filter and grouping
           const summaryMap = {};
           
           if (this.assetStatusFilter === 'Available') {
             availableSerials.forEach(sn => {
                 const item = fixedAssetItems.find(i => i.name === sn.item_code);
                 if (item) {
-                    if (!summaryMap[sn.item_code]) {
-                        summaryMap[sn.item_code] = { 
+                    const key = sn.item_code;
+                    if (!summaryMap[key]) {
+                        summaryMap[key] = { 
                             item_code: sn.item_code, 
                             item_name: item.item_name || sn.item_code, 
                             count: 0 
                         };
                     }
-                    summaryMap[sn.item_code].count++;
+                    summaryMap[key].count++;
                 }
             });
           } else {
             // Assigned
-            (assetsRes.message || []).forEach(asset => {
+            allAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 if (item) {
-                    if (!summaryMap[asset.item_code]) {
-                        summaryMap[asset.item_code] = {
-                            item_code: asset.item_code,
-                            item_name: item.item_name || asset.item_code,
+                    let key = "";
+                    let label = "";
+                    
+                    if (this.assetGroupBy === 'Item') {
+                        key = asset.item_code;
+                        label = item.item_name || asset.item_code;
+                    } else if (this.assetGroupBy === 'SOL/Branch') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.location;
+                        label = branch ? `${branch.branch} (${branch.name})` : asset.location;
+                    } else if (this.assetGroupBy === 'Zone') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.zone || (branch ? branch.zone : "Unknown Zone");
+                        label = key;
+                    } else if (this.assetGroupBy === 'Region') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = branch ? branch.region : "Unknown Region";
+                        label = key;
+                    }
+
+                    if (!summaryMap[key]) {
+                        summaryMap[key] = {
+                            item_code: key,
+                            item_name: label,
                             count: 0
                         };
                     }
-                    summaryMap[asset.item_code].count++;
+                    summaryMap[key].count++;
                 }
             });
           }
