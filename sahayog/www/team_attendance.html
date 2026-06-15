@@ -2275,7 +2275,7 @@
           </div>
           <div class="tooltip-row"><span class="t-lbl">Designation</span><span class="t-val">${s.designation || "-"}</span></div>
           <div class="tooltip-row"><span class="t-lbl">Department</span><span class="t-val">${s.department || "-"}</span></div>
-          <div class="tooltip-row"><span class="t-lbl">Branch</span><span class="t-val">${s.branch || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Branch</span><span class="t-val">${s.sahayog_branch || "-"}</span></div>
           <div class="tooltip-row"><span class="t-lbl">Joining Date</span><span class="t-val">${s.date_of_joining ? new Date(s.date_of_joining).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</span></div>
           <div class="tooltip-row"><span class="t-lbl">Reporting To</span><span class="t-val">${s.reports_to_name || "-"}</span></div>
           <div class="tooltip-row"><span class="t-lbl">Mobile</span><span class="t-val">${s.cell_number || "-"}</span></div>
@@ -2692,7 +2692,7 @@
         if (bSel.options.length > 1) return;
 
         const branches = [
-          ...new Set(staff.map((s) => s.branch).filter(Boolean)),
+          ...new Set(staff.map((s) => s.sahayog_branch).filter(Boolean)),
         ].sort();
         const depts = [
           ...new Set(staff.map((s) => s.department).filter(Boolean)),
@@ -2953,7 +2953,7 @@
           const status = s.attendance_status || "Not Marked";
 
           // Enterprise Filters
-          if (f_vals.branch && s.branch !== f_vals.branch) return;
+          if (f_vals.branch && s.sahayog_branch !== f_vals.branch) return;
           if (f_vals.dept && s.department !== f_vals.dept) return;
           if (f_vals.desig && s.designation !== f_vals.desig) return;
           if (f_vals.status && status !== f_vals.status) return;
@@ -3024,7 +3024,7 @@
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
                 <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""}</div>
-                <div class="emp-role">${s.designation || "Staff"} ${s.branch ? `• <span style="color:var(--brand2)">${s.branch}</span>` : ""}</div>
+                <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
