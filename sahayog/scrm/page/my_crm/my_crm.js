@@ -1621,6 +1621,12 @@ async getEmployeeByUser(userId) {
         source: d.$wrapper.find("#source_edit").val(), 
     };
 
+    // 🛡️ Validate Product Amounts (Must be > 0)
+    const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
+    if (invalidProducts.length > 0) {
+        return showError(__("Please enter a valid amount (greater than 0) for all products."));
+    }
+
     // ✅ AUTO TAB SWITCH LOGIC
     if (input_status === "Follow Up") {
         if (!appointmentsData.length && !input_appt_time) {
@@ -3345,6 +3351,18 @@ createLead() {
         }
         if (productsData.length === 0) {
           frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+          btn.prop('disabled', false);
+          return;
+        }
+
+        // 🛡️ Validate Product Amounts (Must be > 0)
+        const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
+        if (invalidProducts.length > 0) {
+          frappe.msgprint({ 
+            title: "Invalid Amount", 
+            indicator: "red", 
+            message: "Please enter a valid amount (greater than 0) for all products." 
+          });
           btn.prop('disabled', false);
           return;
         }
