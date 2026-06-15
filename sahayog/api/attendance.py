@@ -20,9 +20,12 @@ def get_team_attendance_data():
     # Differentiate logic based on roles
     roles = frappe.get_roles(user)
     
-    if "Branch Manager" in roles or user == "Administrator":
+    if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
+        # HR/Admin gets everything
+        filters = {"status": "Active"}
+    elif "Branch Manager" in roles:
         # Branch Managers manage their team
-        filters = {"reports_to": manager.name} if manager else {}
+        filters = {"reports_to": manager.name, "status": "Active"} if manager else {"status": "Active"}
     else:
         # Regular employees only manage themselves
         filters = {"name": manager.name} if manager else {"user_id": user}
@@ -127,7 +130,119 @@ def get_team_attendance_data():
             "pending": pending_count,
             "on_leave": on_leave_count
         },
-        "current_user": manager
+        "current_user": manager,
+        "roles": roles
+    }
+
+@frappe.whitelist()
+def get_hr_dashboard_data():
+    """Fetch global metrics for HR Dashboard (Module 7)."""
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    
+    if "HR Manager" not in roles and "HR User" not in roles and user != "Administrator":
+        frappe.throw(_("Not authorized to view HR Dashboard"), frappe.PermissionError)
+        
+    today = nowdate()
+    from frappe.utils import get_first_day, get_last_day, getdate
+    first_day = get_first_day(today)
+    last_day = get_last_day(today)
+    
+    # 1. Headcount & Lifecycle
+    headcount = frappe.db.count("Employee", {"status": "Active"})
+    
+    lifecycle = {
+        "new_joinees": frappe.db.count("Employee", {"date_of_joining": ["between", [first_day, last_day]]}),
+        "resigned": frappe.db.count("Employee", {"status": ["in", ["Left", "Resigned"]], "relieving_date": ["between", [first_day, last_day]]}),
+        "retired": frappe.db.count("Employee", {"status": "Retired"}),
+        "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation"}) # Common employment_type usage
+    }
+
+    # 2. Detailed Attendance Summary Today
+    att_raw = frappe.db.sql("""
+        SELECT status, count(*) as count 
+        FROM `tabAttendance` 
+        WHERE attendance_date = %s 
+        GROUP BY status
+    """, (today), as_dict=True)
+    
+    attendance_summary = {
+        "Present": 0, "Absent": 0, "Half Day": 0, "On Leave": 0, "Work From Home": 0
+    }
+    for a in att_raw:
+        if a.status in attendance_summary:
+            attendance_summary[a.status] = a.count
+            
+    total_marked = sum(attendance_summary.values())
+    not_marked = max(0, headcount - total_marked)
+    attendance_summary["Not Marked"] = not_marked
+    
+    # Global Attendance %
+    working_days_count = frappe.db.count("Employee", {"status": "Active"})
+    eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
+    att_percentage = round((eff_present / working_days_count * 100), 2) if working_days_count > 0 else 0
+
+    # 3. Leave Summary
+    # Status Counts
+    leave_statuses = frappe.db.sql("""
+        SELECT status, count(*) as count 
+        FROM `tabLeave Application` 
+        WHERE from_date >= %s AND to_date <= %s
+        GROUP BY status
+    """, (first_day, last_day), as_dict=True)
+    
+    leave_summary = {
+        "Approved": 0, "Open": 0, "Rejected": 0,
+        "by_type": [],
+        "by_branch": []
+    }
+    for ls in leave_statuses:
+        if ls.status == "Approved": leave_summary["Approved"] = ls.count
+        elif ls.status == "Open": leave_summary["Open"] = ls.count
+        elif ls.status == "Rejected": leave_summary["Rejected"] = ls.count
+
+    # By Type
+    leave_summary["by_type"] = frappe.db.sql("""
+        SELECT leave_type, count(*) as count 
+        FROM `tabLeave Application` 
+        WHERE from_date >= %s AND to_date <= %s
+        GROUP BY leave_type
+    """, (first_day, last_day), as_dict=True)
+
+    # By Branch
+    leave_summary["by_branch"] = frappe.db.sql("""
+        SELECT e.branch, count(l.name) as count 
+        FROM `tabLeave Application` l
+        JOIN `tabEmployee` e ON l.employee = e.name
+        WHERE l.from_date >= %s AND l.to_date <= %s
+        GROUP BY e.branch
+    """, (first_day, last_day), as_dict=True)
+
+    # 4. Branch-wise Distribution & Attendance % per Branch
+    branch_data = frappe.db.sql("""
+        SELECT e.branch, count(e.name) as total,
+               (SELECT count(*) FROM `tabAttendance` a WHERE a.branch = e.branch AND a.attendance_date = %s AND a.status IN ('Present', 'Work From Home')) as present
+        FROM `tabEmployee` e
+        WHERE e.status = 'Active'
+        GROUP BY e.branch
+    """, (today), as_dict=True)
+    
+    for b in branch_data:
+        b.att_pc = round((b.present / b.total * 100), 2) if b.total > 0 else 0
+
+    return {
+        "headcount": headcount,
+        "lifecycle": lifecycle,
+        "attendance": {
+            "summary": attendance_summary,
+            "percentage": att_percentage
+        },
+        "leaves": leave_summary,
+        "branch_wise": branch_data,
+        "pending_requests": {
+            "leaves": leave_summary["Open"],
+            "corrections": frappe.db.count("Attendance Correction", {"status": "Pending"})
+        }
     }
 
 @frappe.whitelist()
