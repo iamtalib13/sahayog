@@ -5053,7 +5053,7 @@
                           <button
                             class="btn-create-inline btn-reject"
                             style="background: #ef4444; border-color: #ef4444; color: white;"
-                            @click="handleWorkflowAction('Reject')"
+                            @click="rejectRequestDirectly(detailRecord)"
                           >
                             <i class="fas fa-times"></i> Reject
                           </button>
@@ -8331,13 +8331,20 @@
           </button>
         </div>
 
-        <div style="border-top: 1px solid var(--border-color); padding-top: 24px;">
+        <div style="border-top: 1px solid var(--border-color); padding-top: 24px; display: flex; gap: 10px;">
           <button 
             class="btn-create" 
-            style="width: 100%; background: #ef4444; border-color: #ef4444;"
+            style="flex: 1; background: #369696; border-color: #369696;"
             @click="handleSkip()"
           >
             <i class="fas fa-forward"></i> Skip This Stage
+          </button>
+          <button 
+            class="btn-create" 
+            style="flex: 1; background: #e11d48; border-color: #e11d48;"
+            @click="handleSkipBoth()"
+          >
+            <i class="fas fa-fast-forward"></i> Skip both Stages
           </button>
         </div>
       </div>
@@ -13239,6 +13246,29 @@
         }
       },
 
+      async handleSkipBoth() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.skip_approval_stage",
+            args: {
+              docname: this.detailRecord.name,
+              stage: "Both"
+            }
+          });
+          
+          frappe.show_alert({ message: "Both stages skipped successfully", indicator: "green" });
+          this.showSkipModal = false;
+          await this.openRecord(this.detailRecord);
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Failed to skip both stages");
+        } finally {
+          this.loading = false;
+        }
+      },
+
       async fetchData(doctype = "Item", append = false) {
         if (this.loading && append) return; // Prevent concurrent appends
 
@@ -15152,9 +15182,31 @@
           frappe.msgprint(e.message || "Error updating workflow status");
         } finally {
           this.loading = false;
-        }
-      },
-      formatCurrency(value) {
+          }
+          },
+
+          async rejectRequestDirectly(row) {
+          this.loading = true;
+          try {
+          await frappe.call({
+            method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.workflow_action_update_status",
+            args: {
+              docname: row.name,
+              action: "Reject",
+              remark: "",
+            },
+          });
+          frappe.show_alert({ message: "Request Rejected", indicator: "green" });
+          await this.fetchData("Employee Material Request");
+          } catch (e) {
+          console.error("Reject error:", e);
+          frappe.msgprint("Error rejecting request");
+          } finally {
+          this.loading = false;
+          }
+          },
+
+          formatCurrency(value) {
         const amount = Number(value || 0);
         return new Intl.NumberFormat("en-IN", {
           style: "currency",

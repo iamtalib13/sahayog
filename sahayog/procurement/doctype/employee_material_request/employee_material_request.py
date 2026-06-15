@@ -233,8 +233,9 @@ def workflow_action_update_status(docname, action, remark=None):
     # Permission checks
     can_approve_rp = (doc.status == "Pending Reporting Person" and (frappe.session.user == doc.reporting_person or is_admin))
     can_approve_ho = (doc.status == "Pending HO Approval" and (frappe.session.user == doc.head_office_officer or "Head Office Officer" in frappe.get_roles() or is_admin))
+    can_reject_approved = (action_lower == "reject" and doc.status == "Approved" and (frappe.session.user == doc.head_office_officer or "Head Office Officer" in frappe.get_roles() or is_admin))
     
-    if not (can_approve_rp or can_approve_ho):
+    if not (can_approve_rp or can_approve_ho or can_reject_approved):
         frappe.throw(_("Not authorized to perform this action at the current stage."))
 
     # Map generic 'action' to actual Workflow Action labels if necessary
@@ -251,6 +252,10 @@ def workflow_action_update_status(docname, action, remark=None):
         if action_lower == "approve": doc.db_set("ho_officer_status", "Approved")
         elif action_lower == "reject": doc.db_set("ho_officer_status", "Rejected")
         else: doc.db_set("ho_officer_status", "Skip")
+    
+    elif can_reject_approved:
+        # Just apply workflow, no need to update status fields for approval roles
+        pass
 
     # Apply Workflow Action
     # This will handle status updates, docstatus changes, and validations defined in the Workflow
