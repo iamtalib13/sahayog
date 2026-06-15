@@ -1621,6 +1621,12 @@ async getEmployeeByUser(userId) {
         source: d.$wrapper.find("#source_edit").val(), 
     };
 
+    // 🛡️ Validate Product Amounts (Must be > 0)
+    const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
+    if (invalidProducts.length > 0) {
+        return showError(__("Please enter a valid amount (greater than 0) for all products."));
+    }
+
     // ✅ AUTO TAB SWITCH LOGIC
     if (input_status === "Follow Up") {
         if (!appointmentsData.length && !input_appt_time) {
@@ -1759,7 +1765,7 @@ async getEmployeeByUser(userId) {
                         <td style="text-align:center; vertical-align:middle;">${idx + 1}</td>
                         <td style="padding:8px;"><div class="link-wrap-${idx}"></div></td>
                         <td style="padding:8px; vertical-align:middle;"><input type="text" class="form-control input-sm p-name" value="${row.product_name || ""}" readonly style="background:#f8fafc; border:none;"></td>
-                        <td style="padding:8px; vertical-align:middle;"><input type="number" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
+                        <td style="padding:8px; vertical-align:middle;"><input type="number" min="0" class="form-control input-sm p-amt" value="${row.product_amount || 0}" style="text-align:right;"></td>
                         <td class="text-center" style="vertical-align:middle;"><button class="btn btn-xs btn-danger del-p">Remove</button></td>
                     </tr>`).appendTo(tbody);
 
@@ -1788,7 +1794,10 @@ async getEmployeeByUser(userId) {
               .set_value(row.product);
 
             tr.find(".p-amt").on("input", function () {
-              productsData[idx].product_amount = parseFloat($(this).val()) || 0;
+              let val = parseFloat($(this).val()) || 0;
+              if (val < 0) val = 0;
+              $(this).val(val);
+              productsData[idx].product_amount = val;
             });
           });
         };
@@ -3346,6 +3355,18 @@ createLead() {
           return;
         }
 
+        // 🛡️ Validate Product Amounts (Must be > 0)
+        const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
+        if (invalidProducts.length > 0) {
+          frappe.msgprint({ 
+            title: "Invalid Amount", 
+            indicator: "red", 
+            message: "Please enter a valid amount (greater than 0) for all products." 
+          });
+          btn.prop('disabled', false);
+          return;
+        }
+
         // Final Validation on Save
         const isStillDuplicate = await checkDuplicateWarning(true);
         if (isStillDuplicate) {
@@ -3441,7 +3462,7 @@ createLead() {
         productsData.forEach((row, index) => {
           const tr = $(`<tr>
                     <td><div class="product-link-wrapper-${index}"></div></td>
-                    <td><input type="number" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
+                    <td><input type="number" min="0" class="lead-product-input product-amount" data-index="${index}" value="${row.product_amount || ""}"></td>
                     <td style="text-align:center"><button class="lead-product-del-btn" data-index="${index}">🗑</button></td>
                 </tr>`).appendTo(tbody);
           const productField = frappe.ui.form.make_control({
@@ -3460,7 +3481,10 @@ createLead() {
           });
           if (row.product) productField.set_value(row.product);
           tr.find(".product-amount").on("change", function () {
-            productsData[index].product_amount = parseFloat($(this).val()) || 0;
+            let val = parseFloat($(this).val()) || 0;
+            if (val < 0) val = 0;
+            $(this).val(val);
+            productsData[index].product_amount = val;
             checkDuplicateWarning(); // Real-time check
           });
           tr.find(".lead-product-del-btn").on("click", function () {
