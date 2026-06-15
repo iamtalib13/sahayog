@@ -7612,15 +7612,33 @@
             <div
               class="analytics-chart-container mt-4"
             >
-              <div class="chart-header">
+              <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Asset Availability for Assignment</h3>
+                <div class="view-toggle" style="display: flex; gap: 4px; background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm);">
+                    <button class="btn-create-inline" :style="{ background: assetViewMode === 'cards' ? 'var(--primary-color)' : 'transparent', color: assetViewMode === 'cards' ? 'white' : 'var(--text-muted)' }" @click="assetViewMode = 'cards'">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="btn-create-inline" :style="{ background: assetViewMode === 'list' ? 'var(--primary-color)' : 'transparent', color: assetViewMode === 'list' ? 'white' : 'var(--text-muted)' }" @click="assetViewMode = 'list'">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
               </div>
-              <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+              
+              <!-- Card View -->
+              <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
                 <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" style="padding: 16px; flex-direction: column; align-items: flex-start;">
                     <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
                     <div class="card-value" style="font-size: 1.5rem; color: #369696;">[[ item.available_count ]]</div>
                     <div class="card-label" style="font-size: 0.8rem;">Available for Assignment</div>
                 </div>
+              </div>
+
+              <!-- List View -->
+              <div v-else class="rows-list" style="margin-top: 16px;">
+                 <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color);">
+                     <div style="font-weight: 600;">[[ item.item_name ]]</div>
+                     <div style="font-weight: 700; color: #369696;">[[ item.available_count ]] Available</div>
+                 </div>
               </div>
             </div>
 
@@ -12483,6 +12501,7 @@
         cancelled: 0,
       },
       assetAvailability: [],
+      assetViewMode: 'cards',
 
       async fetchAssetAvailability() {
         try {
