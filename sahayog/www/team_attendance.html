@@ -1127,6 +1127,8 @@
         transition: 0.2s;
         display: flex;
         align-items: center;
+        flex-shrink: 0;
+        white-space: nowrap;
       }
       .nav-tab.active {
         color: var(--brand2);
@@ -1134,6 +1136,19 @@
       }
       .nav-tab:hover:not(.active) {
         color: var(--brand);
+      }
+      #globalNav {
+          overflow-x: auto;
+          white-space: nowrap;
+          flex-wrap: nowrap;
+      }
+      .hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+      .hr-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+      @media (max-width: 768px) {
+          #globalNav { gap: 0; padding: 0 10px; }
+          .nav-tab { font-size: 12px; padding: 0 12px; }
+          .hr-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+          .hr-section-grid { grid-template-columns: 1fr !important; }
       }
     </style>
 
