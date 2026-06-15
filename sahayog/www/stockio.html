@@ -5053,7 +5053,7 @@
                           <button
                             class="btn-create-inline btn-reject"
                             style="background: #ef4444; border-color: #ef4444; color: white;"
-                            @click="handleWorkflowAction('Reject')"
+                            @click="rejectRequestDirectly(detailRecord)"
                           >
                             <i class="fas fa-times"></i> Reject
                           </button>
@@ -15152,9 +15152,31 @@
           frappe.msgprint(e.message || "Error updating workflow status");
         } finally {
           this.loading = false;
-        }
-      },
-      formatCurrency(value) {
+          }
+          },
+
+          async rejectRequestDirectly(row) {
+          this.loading = true;
+          try {
+          await frappe.call({
+            method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.workflow_action_update_status",
+            args: {
+              docname: row.name,
+              action: "Reject",
+              remark: "",
+            },
+          });
+          frappe.show_alert({ message: "Request Rejected", indicator: "green" });
+          await this.fetchData("Employee Material Request");
+          } catch (e) {
+          console.error("Reject error:", e);
+          frappe.msgprint("Error rejecting request");
+          } finally {
+          this.loading = false;
+          }
+          },
+
+          formatCurrency(value) {
         const amount = Number(value || 0);
         return new Intl.NumberFormat("en-IN", {
           style: "currency",
