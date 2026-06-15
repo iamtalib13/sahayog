@@ -7608,6 +7608,93 @@
               </div>
             </div>
 
+            <!-- Asset Availability Board -->
+            <div
+              class="analytics-chart-container mt-4"
+            >
+              <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>[[ assetStatusFilter === 'Available' ? 'Asset Availability for Assignment' : 'Assigned Asset Board' ]]</h3>
+                <div style="display: flex; gap: 8px;">
+                    <!-- Group By Toggle (Assigned Only) -->
+                    <div v-if="assetStatusFilter === 'Assigned'" class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Item' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Item'; fetchAssetAvailability()"
+                        >
+                            Item
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'SOL/Branch' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'SOL/Branch'; fetchAssetAvailability()"
+                        >
+                            SOL/Branch
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Zone' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Zone'; fetchAssetAvailability()"
+                        >
+                            Zone
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Region' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Region'; fetchAssetAvailability()"
+                        >
+                            Region
+                        </button>
+                    </div>
+
+                    <div class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetStatusFilter === 'Available' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetStatusFilter = 'Available'; fetchAssetAvailability()"
+                        >
+                            Available
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetStatusFilter === 'Assigned' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetStatusFilter = 'Assigned'; fetchAssetAvailability()"
+                        >
+                            Assigned
+                        </button>
+                    </div>
+                    <div class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm);">
+                        <button class="btn-create-inline" style="background: transparent; color: var(--text-main);" @click="assetViewMode = (assetViewMode === 'cards' ? 'list' : 'cards')">
+                            <i class="fas" :class="assetViewMode === 'cards' ? 'fa-list' : 'fa-th-large'"></i>
+                        </button>
+                    </div>
+                </div>
+              </div>
+              
+              <!-- Card View -->
+              <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+                <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" style="padding: 16px; flex-direction: column; align-items: flex-start;">
+                    <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
+                    <div class="card-value" style="font-size: 1.5rem; color: #369696;">[[ item.count ]]</div>
+                    <div class="card-label" style="font-size: 0.8rem;">[[ assetStatusFilter ]] Asset</div>
+                </div>
+              </div>
+
+              <!-- List View -->
+              <div v-else class="rows-list" style="margin-top: 16px;">
+                 <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color);">
+                     <div style="font-weight: 600;">[[ item.item_name ]]</div>
+                     <div style="font-weight: 700; color: #369696;">[[ item.count ]] [[ assetStatusFilter ]]</div>
+                 </div>
+              </div>
+            </div>
+
             <!-- Custom Chart Section -->
             <div
               class="analytics-chart-container mt-4"
@@ -12466,6 +12553,123 @@
         rejected: 0,
         cancelled: 0,
       },
+      assetAvailability: [],
+      assetViewMode: 'cards',
+      assetStatusFilter: 'Available',
+      assetGroupBy: 'Item',
+
+      async fetchAssetAvailability() {
+        try {
+          // 1. Fetch all active assets (to know used serials and for Assigned board)
+          const assetsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Asset",
+              filters: { docstatus: 1, status: ["!=", "Scrapped"] },
+              fields: ["serial_no", "item_code", "location", "zone"]
+            }
+          });
+          const allAssets = assetsRes.message || [];
+          const usedSerials = allAssets.map(a => a.serial_no).filter(sn => sn);
+          
+          // 2. Fetch all Serial Numbers (for Available board)
+          const serialsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              fields: ["name", "item_code"]
+            }
+          });
+          const allSerials = serialsRes.message || [];
+          
+          // 3. Filter available serials (not used)
+          const availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name));
+          
+          // 4. Fetch Items (to check is_fixed_asset)
+          const itemsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Item",
+              filters: { disabled: 0, is_fixed_asset: 1 },
+              fields: ["name", "item_name", "item_group", "stock_uom", "custom_item_department"]
+            }
+          });
+          const fixedAssetItems = itemsRes.message || [];
+          console.log("Fixed Asset Items Data:", fixedAssetItems);
+
+          // 5. Fetch Branches for grouping (only if Assigned and grouped by location/zone/region)
+          let branches = [];
+          if (this.assetStatusFilter === 'Assigned' && this.assetGroupBy !== 'Item') {
+             const branchRes = await frappe.call({
+               method: "frappe.client.get_list",
+               args: {
+                 doctype: "Sahayog Branch",
+                 fields: ["name", "branch", "zone", "region"]
+               }
+             });
+             branches = branchRes.message || [];
+          }
+          
+          // 6. Aggregate based on filter and grouping
+          const summaryMap = {};
+          
+          if (this.assetStatusFilter === 'Available') {
+            availableSerials.forEach(sn => {
+                const item = fixedAssetItems.find(i => i.name === sn.item_code);
+                if (item) {
+                    const key = sn.item_code;
+                    if (!summaryMap[key]) {
+                        summaryMap[key] = { 
+                            item_code: sn.item_code, 
+                            item_name: item.item_name || sn.item_code, 
+                            count: 0 
+                        };
+                    }
+                    summaryMap[key].count++;
+                }
+            });
+          } else {
+            // Assigned
+            allAssets.forEach(asset => {
+                const item = fixedAssetItems.find(i => i.name === asset.item_code);
+                if (item) {
+                    let key = "";
+                    let label = "";
+                    
+                    if (this.assetGroupBy === 'Item') {
+                        key = asset.item_code;
+                        label = item.item_name || asset.item_code;
+                    } else if (this.assetGroupBy === 'SOL/Branch') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.location;
+                        label = branch ? `${branch.branch} (${branch.name})` : asset.location;
+                    } else if (this.assetGroupBy === 'Zone') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.zone || (branch ? branch.zone : "Unknown Zone");
+                        label = key;
+                    } else if (this.assetGroupBy === 'Region') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = branch ? branch.region : "Unknown Region";
+                        label = key;
+                    }
+
+                    if (!summaryMap[key]) {
+                        summaryMap[key] = {
+                            item_code: key,
+                            item_name: label,
+                            count: 0
+                        };
+                    }
+                    summaryMap[key].count++;
+                }
+            });
+          }
+          
+          this.assetAvailability = Object.values(summaryMap);
+        } catch (e) {
+          console.error("Error fetching asset availability:", e);
+        }
+      },
 
       get getChartBars() {
         const stats = this.requestStats;
@@ -12921,6 +13125,7 @@
         activeItem() {
           if (this.activeItem === "Dashboard") {
             this.fetchRequestStats();
+            this.fetchAssetAvailability();
           }
           if (this.activeItem !== "Items") {
             this.itemView = "list";
@@ -13088,6 +13293,7 @@
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
+          await this.fetchAssetAvailability();
         }
 
         if (item.label === "Branch Stock") {
