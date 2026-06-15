@@ -7614,12 +7614,9 @@
             >
               <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Asset Availability for Assignment</h3>
-                <div class="view-toggle" style="display: flex; gap: 4px; background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm);">
-                    <button class="btn-create-inline" :style="{ background: assetViewMode === 'cards' ? 'var(--primary-color)' : 'transparent', color: assetViewMode === 'cards' ? 'white' : 'var(--text-muted)' }" @click="assetViewMode = 'cards'">
-                        <i class="fas fa-th-large"></i>
-                    </button>
-                    <button class="btn-create-inline" :style="{ background: assetViewMode === 'list' ? 'var(--primary-color)' : 'transparent', color: assetViewMode === 'list' ? 'white' : 'var(--text-muted)' }" @click="assetViewMode = 'list'">
-                        <i class="fas fa-list"></i>
+                <div class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm);">
+                    <button class="btn-create-inline" style="background: transparent; color: var(--text-main);" @click="assetViewMode = (assetViewMode === 'cards' ? 'list' : 'cards')">
+                        <i class="fas" :class="assetViewMode === 'cards' ? 'fa-list' : 'fa-th-large'"></i>
                     </button>
                 </div>
               </div>
