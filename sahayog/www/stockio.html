@@ -12532,10 +12532,11 @@
             args: {
               doctype: "Item",
               filters: { disabled: 0, is_fixed_asset: 1 },
-              fields: ["name", "item_name"]
+              fields: ["name", "item_name", "item_group", "stock_uom", "custom_item_department"]
             }
           });
           const fixedAssetItems = itemsRes.message || [];
+          console.log("Fixed Asset Items Data:", fixedAssetItems);
           
           // 5. Aggregate by item
           const summaryMap = {};
@@ -13180,6 +13181,7 @@
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
+          await this.fetchAssetAvailability();
         }
 
         if (item.label === "Branch Stock") {
