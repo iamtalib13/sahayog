@@ -21,8 +21,8 @@ def get_team_attendance_data():
     roles = frappe.get_roles(user)
     
     if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
-        # HR/Admin gets everything
-        filters = {"status": "Active"}
+        # HR/Admin gets everything except themselves
+        filters = {"status": "Active", "user_id": ["!=", user]}
     elif "Branch Manager" in roles:
         # Branch Managers manage their team
         filters = {"reports_to": manager.name, "status": "Active"} if manager else {"status": "Active"}
