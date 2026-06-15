@@ -7608,6 +7608,22 @@
               </div>
             </div>
 
+            <!-- Asset Availability Board -->
+            <div
+              class="analytics-chart-container mt-4"
+            >
+              <div class="chart-header">
+                <h3>Asset Availability for Assignment</h3>
+              </div>
+              <div class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+                <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" style="padding: 16px; flex-direction: column; align-items: flex-start;">
+                    <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
+                    <div class="card-value" style="font-size: 1.5rem; color: #369696;">[[ item.available_count ]]</div>
+                    <div class="card-label" style="font-size: 0.8rem;">Available for Assignment</div>
+                </div>
+              </div>
+            </div>
+
             <!-- Custom Chart Section -->
             <div
               class="analytics-chart-container mt-4"
@@ -12466,6 +12482,65 @@
         rejected: 0,
         cancelled: 0,
       },
+      assetAvailability: [],
+
+      async fetchAssetAvailability() {
+        try {
+          // 1. Fetch all active assets (to know used serials)
+          const assetsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Asset",
+              filters: { docstatus: 1, status: ["!=", "Scrapped"] },
+              fields: ["serial_no", "item_code"]
+            }
+          });
+          const usedSerials = (assetsRes.message || []).map(a => a.serial_no).filter(sn => sn);
+          
+          // 2. Fetch all Serial Numbers
+          const serialsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              fields: ["name", "item_code"]
+            }
+          });
+          const allSerials = serialsRes.message || [];
+          
+          // 3. Filter available serials (not used)
+          const availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name));
+          
+          // 4. Fetch Items (to check is_fixed_asset)
+          const itemsRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Item",
+              filters: { disabled: 0, is_fixed_asset: 1 },
+              fields: ["name", "item_name"]
+            }
+          });
+          const fixedAssetItems = itemsRes.message || [];
+          
+          // 5. Aggregate by item
+          const summaryMap = {};
+          availableSerials.forEach(sn => {
+             if (fixedAssetItems.find(i => i.name === sn.item_code)) {
+                if (!summaryMap[sn.item_code]) {
+                    summaryMap[sn.item_code] = { 
+                        item_code: sn.item_code, 
+                        item_name: fixedAssetItems.find(i => i.name === sn.item_code).item_name || sn.item_code, 
+                        available_count: 0 
+                    };
+                }
+                summaryMap[sn.item_code].available_count++;
+             }
+          });
+          
+          this.assetAvailability = Object.values(summaryMap);
+        } catch (e) {
+          console.error("Error fetching asset availability:", e);
+        }
+      },
 
       get getChartBars() {
         const stats = this.requestStats;
@@ -12921,6 +12996,7 @@
         activeItem() {
           if (this.activeItem === "Dashboard") {
             this.fetchRequestStats();
+            this.fetchAssetAvailability();
           }
           if (this.activeItem !== "Items") {
             this.itemView = "list";
