@@ -52,7 +52,7 @@ def create_support_staff(data):
         "department": data.get("department"),
         "designation": data.get("designation"),
         "branch": data.get("branch"),
-        "sahayog_branch": data.get("sahayog_branch"),
+        "sahayog_branch": data.get("branch"),
         "reports_to": data.get("reports_to"),
         "cell_number": data.get("mobile_number"),
         "personal_email": data.get("personal_email"),
@@ -93,6 +93,10 @@ def get_designations():
 @frappe.whitelist()
 def get_departments():
     return frappe.get_all("Department", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_sahayog_branches():
+    return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
 
 @frappe.whitelist()
 def get_logged_in_employee():

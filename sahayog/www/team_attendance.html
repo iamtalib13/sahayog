@@ -1510,8 +1510,7 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Sahayog Branch *</label><input type="text" name="sahayog_branch" class="member-select" required></div>
-                      <div><label>Branch (ERPNext) *</label><input type="text" name="branch" class="member-select" required></div>
+                      <div><label>Branch *</label><select name="branch" id="new_emp_branch" class="member-select" required><option value="">Select Branch</option></select></div>
                       <div><label>Zone *</label><input type="text" name="zone" class="member-select" required></div>
                       <div><label>Region *</label><input type="text" name="region" class="member-select" required></div>
                       <div><label>District *</label><input type="text" name="district_name" class="member-select" required></div>
@@ -2394,6 +2393,7 @@
       async function populateEmployeeFormOptions() {
         const desigSel = document.getElementById("new_emp_designation");
         const deptSel = document.getElementById("new_emp_department");
+        const branchSel = document.getElementById("new_emp_branch");
 
         // Only fetch if not already populated
         if (desigSel.options.length <= 1) {
@@ -2416,6 +2416,18 @@
               opt.value = d.name;
               opt.textContent = d.name;
               deptSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (branchSel.options.length <= 1) {
+          const branches = await callAPI("get_sahayog_branches", {}, "employee");
+          if (branches) {
+            branches.forEach(b => {
+              const opt = document.createElement("option");
+              opt.value = b.name;
+              opt.textContent = b.name;
+              branchSel.appendChild(opt);
             });
           }
         }
