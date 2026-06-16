@@ -1497,11 +1497,11 @@
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
                       <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required></div>
                       <div><label>Date of Confirmation</label><input type="date" name="scheduled_confirmation_date" class="member-select"></div>
-                      <div><label>Employment Type *</label><input type="text" name="employment_type" class="member-select" required placeholder="e.g. Full-time"></div>
+                      <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
                       <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
                       <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
                       <div><label>Reporting Manager Code *</label><input type="text" name="reports_to" class="member-select" required></div>
-                      <div><label>Shift *</label><input type="text" name="shift" class="member-select" required></div>
+                      <div><label>Shift *</label><select name="shift" id="new_emp_shift" class="member-select" required><option value="">Select Shift</option></select></div>
                       <div><label>Business Unit</label><input type="text" name="business_unit" class="member-select"></div>
                     </div>
                   </div>
@@ -1513,7 +1513,7 @@
                       <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required></div>
                       <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required></div>
                       <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required></div>
-                      <div><label>Division *</label><input type="text" name="division" class="member-select" required></div>
+                      <div><label>Division *</label><select name="division" id="new_emp_division" class="member-select" required><option value="">Select Division</option></select></div>
                       <div><label>State Name *</label><input type="text" name="state_name" id="new_emp_state" class="member-select" required></div>
                     </div>
                   </div>
@@ -2393,6 +2393,9 @@
         const desigSel = document.getElementById("new_emp_designation");
         const deptSel = document.getElementById("new_emp_department");
         const branchSel = document.getElementById("new_emp_branch");
+        const divSel = document.getElementById("new_emp_division");
+        const shiftSel = document.getElementById("new_emp_shift");
+        const empTypeSel = document.getElementById("new_emp_employment_type");
 
         // Only fetch if not already populated
         if (desigSel.options.length <= 1) {
@@ -2415,6 +2418,42 @@
               opt.value = d.name;
               opt.textContent = d.name;
               deptSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (divSel && divSel.options.length <= 1) {
+          const divisions = await callAPI("get_divisions", {}, "employee");
+          if (divisions) {
+            divisions.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              divSel.appendChild(opt);
+            });
+          }
+        }
+        
+        if (shiftSel && shiftSel.options.length <= 1) {
+          const shifts = await callAPI("get_shifts", {}, "employee");
+          if (shifts) {
+            shifts.forEach(s => {
+              const opt = document.createElement("option");
+              opt.value = s.name;
+              opt.textContent = s.name;
+              shiftSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (empTypeSel && empTypeSel.options.length <= 1) {
+          const types = await callAPI("get_employment_types", {}, "employee");
+          if (types) {
+            types.forEach(t => {
+              const opt = document.createElement("option");
+              opt.value = t.name;
+              opt.textContent = t.name;
+              empTypeSel.appendChild(opt);
             });
           }
         }
@@ -2645,6 +2684,7 @@
 
         // Calendar Visibility Logic for HR
         if (isHR()) {
+            if (btnCreateEmployee) btnCreateEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -2912,7 +2952,8 @@
           if (subbarTitle) subbarTitle.textContent = "HR Dashboard";
           if (attendanceTab) attendanceTab.textContent = "Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
-          if (btnCreateEmployee) btnCreateEmployee.style.display = "inline-block";
+          // Button will be managed inside switchTab based on tab context
+          if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "Leave Approvals";
