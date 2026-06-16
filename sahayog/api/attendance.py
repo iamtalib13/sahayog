@@ -514,11 +514,23 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
     if user != "Administrator":
         roles = frappe.get_roles(user)
         if "HR Manager" not in roles and "HR User" not in roles:
-            manager_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+            manager_data = frappe.db.get_value("Employee", {"user_id": user}, ["name", "sahayog_branch", "sol_id"], as_dict=True)
+            manager_emp = manager_data.name if manager_data else None
+            
             if employee != manager_emp:
-                # Check if it's a subordinate
+                # 1. Check if it's a direct subordinate
                 is_subordinate = frappe.db.exists("Employee", {"name": employee, "reports_to": manager_emp})
-                if not is_subordinate:
+                
+                # 2. Check if Branch Manager can see branch staff
+                is_branch_staff = False
+                if "Branch Manager" in roles and manager_data:
+                    branch_id = manager_data.sahayog_branch or manager_data.sol_id
+                    if branch_id:
+                        emp_branch_data = frappe.db.get_value("Employee", employee, ["sahayog_branch", "sol_id"], as_dict=True)
+                        if emp_branch_data and (emp_branch_data.sahayog_branch == branch_id or emp_branch_data.sol_id == branch_id):
+                            is_branch_staff = True
+
+                if not is_subordinate and not is_branch_staff:
                     frappe.throw(_("You are not authorized to view this employee's dashboard"), frappe.PermissionError)
 
     filters = {
