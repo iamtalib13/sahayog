@@ -22,12 +22,12 @@ def create_support_staff(data):
     if not data.get("employee_number"):
         frappe.throw(_("Employee Code is mandatory"))
     
-    if frappe.db.exists("Employee", data.get("employee_number")):
+    if frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
         frappe.throw(_("Employee Code {0} already exists").format(data.get("employee_number")))
 
     # Date Validations
-    doj = getdate(data.get("date_of_joining"))
-    doc = getdate(data.get("scheduled_confirmation_date"))
+    doj = getdate(data.get("date_of_joining")) if data.get("date_of_joining") else None
+    doc = getdate(data.get("scheduled_confirmation_date")) if data.get("scheduled_confirmation_date") else None
     if doj and doc and date_diff(doc, doj) < 0:
         frappe.throw(_("Date of Confirmation cannot be earlier than Date of Joining"))
 
@@ -78,7 +78,7 @@ def create_support_staff(data):
         "ctc": data.get("monthly_gross_salary")
     })
 
-    new_emp.insert(ignore_permissions=True)
+    new_emp.insert(ignore_permissions=True, ignore_links=True)
     
     return {
         "success": True,
@@ -93,6 +93,18 @@ def get_designations():
 @frappe.whitelist()
 def get_departments():
     return frappe.get_all("Department", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_divisions():
+    return frappe.get_all("Division", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_shifts():
+    return frappe.get_all("Shift Type", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_employment_types():
+    return frappe.get_all("Employment Type", fields=["name"], order_by="name")
 
 @frappe.whitelist()
 def get_sahayog_branches():
