@@ -2359,20 +2359,45 @@
               credentials: "include",
             },
           );
-          if (response.status === 401 || response.status === 403) {
+
+          if (response.status === 401) {
             showToast("Session expired. Please login again.");
             return null;
           }
-          const res = await response.json();
+
+          let res;
+          try {
+            res = await response.json();
+          } catch (e) {
+            if (response.status === 403) {
+              showToast("Permission Denied: Access Restricted.");
+            } else {
+              showToast("Server Error: Unable to process request.");
+            }
+            return null;
+          }
+
+          if (response.status === 403) {
+            let msg = "Permission Denied";
+            if (res._server_messages) {
+              try {
+                const msgs = JSON.parse(res._server_messages);
+                msg = JSON.parse(msgs[0]).message;
+              } catch (err) {}
+            }
+            showToast(msg);
+            return null;
+          }
+
           if (res.exc) {
             console.error(res.exc);
-            showToast("Error occurred");
+            showToast("Request failed. Please try again.");
             return null;
           }
           return res.message;
         } catch (e) {
           console.error("API Error:", e);
-          showToast("Network Error");
+          showToast("Network Error: Please check your connection.");
           return null;
         }
       }
@@ -2404,12 +2429,25 @@
         const hrDash = document.getElementById("hrDashboardContent");
         const empList = document.getElementById("empList");
         const statsRow = document.getElementById("statsRow");
+        const calPanel = document.querySelector(".cal-panel");
+        const mainGrid = document.querySelector(".main-grid");
 
         // Global Resets
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
         if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
+
+        // Calendar Visibility Logic for HR
+        if (isHR()) {
+            if (tab === "attendance") {
+                if (calPanel) calPanel.style.display = "block";
+                if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+            } else {
+                if (calPanel) calPanel.style.display = "none";
+                if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
+            }
+        }
 
         if (tab === "attendance") {
           if (controls) controls.style.display = isHR() ? "none" : "flex";
@@ -3016,15 +3054,22 @@
           let actionsHtml = "";
           if (isHR()) {
             actionsHtml = ""; // Read-only for HR
-          } else if (status === "On Leave" || status === "Half Day") {
-            actionsHtml = ""; // Will use pillHtml instead
-          } else if (!status) {
-            actionsHtml = `
-              <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
-              <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
-              <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
-          } else if (status === "Present" && !s.check_out) {
-            actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+          } else {
+            // Logic for Branch Manager (manage others) or Employee (manage self)
+            const canManage = isBranchManager() || s.is_self;
+
+            if (canManage) {
+              if (status === "On Leave" || status === "Half Day") {
+                actionsHtml = ""; // Show status pill only
+              } else if (!status || status === "Not Marked") {
+                actionsHtml = `
+                  <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+                  <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
+                  <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+              } else if (status === "Present" && !s.check_out) {
+                actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+              }
+            }
           }
 
           let timeInfo = "";
@@ -3044,7 +3089,7 @@
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
             <div class="emp-actions">
-                ${!status ? actionsHtml : status === "Present" && !s.check_out ? actionsHtml : pillHtml}
+                ${actionsHtml ? actionsHtml : pillHtml}
             </div>
           `;
           list.appendChild(row);
