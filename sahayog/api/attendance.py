@@ -11,26 +11,31 @@ def get_team_attendance_data():
     if user == "Guest":
         frappe.throw(_("Please login to access this portal"), frappe.PermissionError)
     
-    # Get current manager's employee record
-    manager = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name", "sahayog_branch", "sol_id"], as_dict=True)
+    # Get current user's employee record and roles
+    roles = frappe.get_roles(user)
+    manager = frappe.db.get_value("Employee", {"user_id": user}, ["name", "employee_name", "sahayog_branch", "sol_id", "custom_is_support_staff"], as_dict=True)
     
+    # Access Control: Only HR, Branch Manager, Admin, or Support Staff can access
+    is_authorized_manager = any(r in roles for r in ["HR Manager", "HR User", "Branch Manager", "Administrator"])
+    is_support_staff = manager.custom_is_support_staff if manager else False
+    
+    if not (is_authorized_manager or is_support_staff):
+        frappe.throw(_("Access denied. This portal is only for support staff and authorized managers."), frappe.PermissionError)
+
     if not manager and user != "Administrator":
         return {"error": True, "message": "Manager Employee record not found."}
 
-    # Differentiate logic based on roles
-    roles = frappe.get_roles(user)
-    
     if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
         # HR/Admin gets everything except themselves
-        filters = {"status": "Active", "user_id": ["!=", user]}
+        filters = {"status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
     elif "Branch Manager" in roles:
         # Branch Managers manage all active staff in their branch (using sahayog_branch/sol_id)
         branch_id = manager.sahayog_branch or manager.sol_id
         if branch_id:
-            filters = {"sahayog_branch": branch_id, "status": "Active", "user_id": ["!=", user]}
+            filters = {"sahayog_branch": branch_id, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
         else:
             # Fallback to reports_to if branch not set (for safety)
-            filters = {"reports_to": manager.name, "status": "Active", "user_id": ["!=", user]}
+            filters = {"reports_to": manager.name, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
     else:
         # Regular employees only manage themselves
         filters = {"name": manager.name} if manager else {"user_id": user}
@@ -154,21 +159,23 @@ def get_hr_dashboard_data():
     last_day = get_last_day(today)
     
     # 1. Headcount & Lifecycle
-    headcount = frappe.db.count("Employee", {"status": "Active"})
+    headcount = frappe.db.count("Employee", {"status": "Active", "custom_is_support_staff": 1})
     
     lifecycle = {
-        "new_joinees": frappe.db.count("Employee", {"date_of_joining": ["between", [first_day, last_day]]}),
-        "resigned": frappe.db.count("Employee", {"status": ["in", ["Left", "Resigned"]], "relieving_date": ["between", [first_day, last_day]]}),
-        "retired": frappe.db.count("Employee", {"status": "Retired"}),
-        "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation"}) # Common employment_type usage
+        "new_joinees": frappe.db.count("Employee", {"date_of_joining": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
+        "resigned": frappe.db.count("Employee", {"status": ["in", ["Left", "Resigned"]], "relieving_date": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
+        "retired": frappe.db.count("Employee", {"status": "Retired", "custom_is_support_staff": 1}),
+        "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation", "custom_is_support_staff": 1}) # Common employment_type usage
     }
 
     # 2. Detailed Attendance Summary Today
     att_raw = frappe.db.sql("""
-        SELECT status, count(*) as count 
-        FROM `tabAttendance` 
-        WHERE attendance_date = %s 
-        GROUP BY status
+        SELECT a.status, count(*) as count 
+        FROM `tabAttendance` a
+        JOIN `tabEmployee` e ON a.employee = e.name
+        WHERE a.attendance_date = %s 
+          AND e.custom_is_support_staff = 1
+        GROUP BY a.status
     """, (today), as_dict=True)
     
     attendance_summary = {
@@ -183,17 +190,19 @@ def get_hr_dashboard_data():
     attendance_summary["Not Marked"] = not_marked
     
     # Global Attendance %
-    working_days_count = frappe.db.count("Employee", {"status": "Active"})
+    working_days_count = headcount
     eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
     att_percentage = round((eff_present / working_days_count * 100), 2) if working_days_count > 0 else 0
 
     # 3. Leave Summary
     # Status Counts
     leave_statuses = frappe.db.sql("""
-        SELECT status, count(*) as count 
-        FROM `tabLeave Application` 
-        WHERE from_date >= %s AND to_date <= %s
-        GROUP BY status
+        SELECT l.status, count(*) as count 
+        FROM `tabLeave Application` l
+        JOIN `tabEmployee` e ON l.employee = e.name
+        WHERE l.from_date >= %s AND l.to_date <= %s
+          AND e.custom_is_support_staff = 1
+        GROUP BY l.status
     """, (first_day, last_day), as_dict=True)
     
     leave_summary = {
@@ -208,10 +217,12 @@ def get_hr_dashboard_data():
 
     # By Type
     leave_summary["by_type"] = frappe.db.sql("""
-        SELECT leave_type, count(*) as count 
-        FROM `tabLeave Application` 
-        WHERE from_date >= %s AND to_date <= %s
-        GROUP BY leave_type
+        SELECT l.leave_type, count(*) as count 
+        FROM `tabLeave Application` l
+        JOIN `tabEmployee` e ON l.employee = e.name
+        WHERE l.from_date >= %s AND l.to_date <= %s
+          AND e.custom_is_support_staff = 1
+        GROUP BY l.leave_type
     """, (first_day, last_day), as_dict=True)
 
     # By Branch
@@ -220,6 +231,7 @@ def get_hr_dashboard_data():
         FROM `tabLeave Application` l
         JOIN `tabEmployee` e ON l.employee = e.name
         WHERE l.from_date >= %s AND l.to_date <= %s
+          AND e.custom_is_support_staff = 1
         GROUP BY e.sahayog_branch
     """, (first_day, last_day), as_dict=True)
 
@@ -227,7 +239,7 @@ def get_hr_dashboard_data():
     branch_data = frappe.db.sql("""
         SELECT sahayog_branch as branch, count(*) as total 
         FROM `tabEmployee` 
-        WHERE status = 'Active' 
+        WHERE status = 'Active' AND custom_is_support_staff = 1
         GROUP BY sahayog_branch
     """, as_dict=True)
     
@@ -238,6 +250,7 @@ def get_hr_dashboard_data():
         WHERE a.attendance_date = %s 
           AND a.status IN ('Present', 'Work From Home')
           AND a.docstatus < 2
+          AND e.custom_is_support_staff = 1
         GROUP BY e.sahayog_branch
     """, (today,), as_dict=True)
     
@@ -371,18 +384,23 @@ def get_pending_attendance_corrections():
     
     filters = {"status": "Pending"}
     
+    # If Admin or HR, filter by support staff
+    if "HR Manager" in roles or "HR User" in roles or "Administrator" in roles:
+        support_staff = frappe.get_all("Employee", filters={"custom_is_support_staff": 1}, fields=["name"])
+        filters["employee"] = ["in", [s.name for s in support_staff]]
+
     # If not Admin or HR, filter by branch staff
     if "HR Manager" not in roles and "HR User" not in roles and "Administrator" not in roles:
         if "Branch Manager" in roles and emp_data:
             branch_id = emp_data.sahayog_branch or emp_data.sol_id
             if branch_id:
                 # Get all employees in the branch
-                branch_staff = frappe.get_all("Employee", filters={"sahayog_branch": branch_id}, fields=["name"])
+                branch_staff = frappe.get_all("Employee", filters={"sahayog_branch": branch_id, "custom_is_support_staff": 1}, fields=["name"])
                 staff_names = [s.name for s in branch_staff]
                 filters["employee"] = ["in", staff_names]
             else:
                 # Fallback to direct reports if branch is missing
-                subordinates = frappe.get_all("Employee", filters={"reports_to": emp_data.name}, fields=["name"])
+                subordinates = frappe.get_all("Employee", filters={"reports_to": emp_data.name, "custom_is_support_staff": 1}, fields=["name"])
                 filters["employee"] = ["in", [s.name for s in subordinates]]
         else:
             # Regular employee should not see this (or only their own if needed, but this API is for managers)
