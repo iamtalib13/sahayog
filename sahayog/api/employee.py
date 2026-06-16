@@ -99,6 +99,11 @@ def get_sahayog_branches():
     return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
 
 @frappe.whitelist()
+def get_branch_details(branch):
+    if not branch: return {}
+    return frappe.db.get_value("Sahayog Branch", branch, ["zone", "region", "district", "state", "sol_id"], as_dict=True)
+
+@frappe.whitelist()
 def get_logged_in_employee():
     if frappe.session.user == "Administrator":
         return {

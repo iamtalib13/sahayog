@@ -1506,16 +1506,15 @@
                     </div>
                   </div>
 
-                  <!-- Section 3: Organization Hierarchy -->
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Branch *</label><select name="branch" id="new_emp_branch" class="member-select" required><option value="">Select Branch</option></select></div>
-                      <div><label>Zone *</label><input type="text" name="zone" class="member-select" required></div>
-                      <div><label>Region *</label><input type="text" name="region" class="member-select" required></div>
-                      <div><label>District *</label><input type="text" name="district_name" class="member-select" required></div>
+                      <div><label>Branch *</label><select name="branch" id="new_emp_branch" class="member-select" onchange="handleBranchChange(this.value)" required><option value="">Select Branch</option></select></div>
+                      <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required></div>
+                      <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required></div>
+                      <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required></div>
                       <div><label>Division *</label><input type="text" name="division" class="member-select" required></div>
-                      <div><label>State Name *</label><input type="text" name="state_name" class="member-select" required></div>
+                      <div><label>State Name *</label><input type="text" name="state_name" id="new_emp_state" class="member-select" required></div>
                     </div>
                   </div>
 
@@ -2458,6 +2457,18 @@
           showToast(res.message);
           closeCreateEmployeeModal();
           fetchTeamData(); // Refresh list to show new employee
+        }
+      }
+
+      async function handleBranchChange(branch) {
+        if (!branch) return;
+        
+        const details = await callAPI("get_branch_details", { branch: branch }, "employee");
+        if (details) {
+          if (details.zone) document.getElementById("new_emp_zone").value = details.zone;
+          if (details.region) document.getElementById("new_emp_region").value = details.region;
+          if (details.district) document.getElementById("new_emp_district").value = details.district;
+          if (details.state) document.getElementById("new_emp_state").value = details.state;
         }
       }
 
