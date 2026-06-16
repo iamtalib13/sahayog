@@ -58,10 +58,29 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None):
 
 @frappe.whitelist(allow_guest=False)
 def get_pending_leaves():
-    manager = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-    if not manager: return {"pending": [], "history": []}
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    emp_data = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, ["name", "sahayog_branch", "sol_id"], as_dict=True)
+    
+    # Base filters for all employees in scope
+    employee_filters = {}
 
-    employees = frappe.get_all("Employee", filters={"reports_to": manager}, pluck="name")
+    if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
+        # HR/Admin gets all active staff
+        employee_filters = {"status": "Active"}
+    elif "Branch Manager" in roles and emp_data:
+        branch_id = emp_data.sahayog_branch or emp_data.sol_id
+        if branch_id:
+            employee_filters = {"sahayog_branch": branch_id, "status": "Active"}
+        else:
+            employee_filters = {"reports_to": emp_data.name, "status": "Active"}
+    elif emp_data:
+        employee_filters = {"reports_to": emp_data.name, "status": "Active"}
+    else:
+        return {"pending": [], "history": []}
+
+    employees = frappe.get_all("Employee", filters=employee_filters, pluck="name")
+    if not employees: return {"pending": [], "history": []}
     
     # Fetch all applications
     leaves = frappe.get_all("Leave Application",
