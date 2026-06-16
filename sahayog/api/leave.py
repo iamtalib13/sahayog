@@ -60,22 +60,29 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None):
 def get_pending_leaves():
     user = frappe.session.user
     roles = frappe.get_roles(user)
-    emp_data = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, ["name", "sahayog_branch", "sol_id"], as_dict=True)
+    emp_data = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, ["name", "sahayog_branch", "sol_id", "custom_is_support_staff"], as_dict=True)
     
+    # Access Control: Only HR, Branch Manager, Admin, or Support Staff can access
+    is_authorized_manager = any(r in roles for r in ["HR Manager", "HR User", "Branch Manager", "Administrator"])
+    is_support_staff = emp_data.custom_is_support_staff if emp_data else False
+    
+    if not (is_authorized_manager or is_support_staff):
+        frappe.throw(_("Access denied. This portal is only for support staff and authorized managers."), frappe.PermissionError)
+
     # Base filters for all employees in scope
     employee_filters = {}
 
     if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
         # HR/Admin gets all active staff
-        employee_filters = {"status": "Active"}
+        employee_filters = {"status": "Active", "custom_is_support_staff": 1}
     elif "Branch Manager" in roles and emp_data:
         branch_id = emp_data.sahayog_branch or emp_data.sol_id
         if branch_id:
-            employee_filters = {"sahayog_branch": branch_id, "status": "Active"}
+            employee_filters = {"sahayog_branch": branch_id, "status": "Active", "custom_is_support_staff": 1}
         else:
-            employee_filters = {"reports_to": emp_data.name, "status": "Active"}
+            employee_filters = {"reports_to": emp_data.name, "status": "Active", "custom_is_support_staff": 1}
     elif emp_data:
-        employee_filters = {"reports_to": emp_data.name, "status": "Active"}
+        employee_filters = {"reports_to": emp_data.name, "status": "Active", "custom_is_support_staff": 1}
     else:
         return {"pending": [], "history": []}
 
