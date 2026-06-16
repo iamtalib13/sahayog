@@ -102,6 +102,13 @@ def _ensure_admin():
                      frappe.PermissionError)
 
 
+def _ensure_admin_and_ho_manager():
+    user_roles = frappe.get_roles()
+    if not set(["HO Petty Cash Manager"]).intersection(user_roles) and frappe.session.user != "Administrator":
+        frappe.throw(
+            _("Only HO Petty Cash Manager or Approver can approve."), frappe.PermissionError)
+
+
 @frappe.whitelist()
 def start_bulk_finacle_balance_sync():
     _ensure_admin()
@@ -261,7 +268,8 @@ def sync_all_branches():
 @frappe.whitelist()
 def fetch_finacle_balance(branch=None, from_bulk=False):
     if not from_bulk:
-        _ensure_admin()
+        # _ensure_admin()
+        _ensure_admin_and_ho_manager()
 
     if not branch:
         if from_bulk:
