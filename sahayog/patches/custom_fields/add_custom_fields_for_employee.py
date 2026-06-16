@@ -85,6 +85,13 @@ def execute():
                 "default": 0
             
             },
+            {
+                "fieldname": "custom_is_support_staff",
+                "fieldtype": "Check",
+                "insert_after": "pip_status",
+                "label": "Is Support Staff",
+                "default": 0
+            },
         ]
     }
 
