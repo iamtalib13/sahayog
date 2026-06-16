@@ -87,6 +87,14 @@ def create_support_staff(data):
     }
 
 @frappe.whitelist()
+def get_designations():
+    return frappe.get_all("Designation", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_departments():
+    return frappe.get_all("Department", fields=["name"], order_by="name")
+
+@frappe.whitelist()
 def get_logged_in_employee():
     if frappe.session.user == "Administrator":
         return {

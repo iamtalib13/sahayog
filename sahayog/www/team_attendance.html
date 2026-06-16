@@ -1498,8 +1498,8 @@
                       <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required></div>
                       <div><label>Date of Confirmation</label><input type="date" name="scheduled_confirmation_date" class="member-select"></div>
                       <div><label>Employment Type *</label><input type="text" name="employment_type" class="member-select" required placeholder="e.g. Full-time"></div>
-                      <div><label>Designation *</label><input type="text" name="designation" class="member-select" required></div>
-                      <div><label>Department *</label><input type="text" name="department" class="member-select" required></div>
+                      <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
+                      <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
                       <div><label>Reporting Manager Code *</label><input type="text" name="reports_to" class="member-select" required></div>
                       <div><label>Shift *</label><input type="text" name="shift" class="member-select" required></div>
                       <div><label>Business Unit</label><input type="text" name="business_unit" class="member-select"></div>
@@ -2388,6 +2388,37 @@
 
       function openCreateEmployeeModal() {
         document.getElementById("createEmployeeModal").style.display = "flex";
+        populateEmployeeFormOptions();
+      }
+
+      async function populateEmployeeFormOptions() {
+        const desigSel = document.getElementById("new_emp_designation");
+        const deptSel = document.getElementById("new_emp_department");
+
+        // Only fetch if not already populated
+        if (desigSel.options.length <= 1) {
+          const designations = await callAPI("get_designations", {}, "employee");
+          if (designations) {
+            designations.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              desigSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (deptSel.options.length <= 1) {
+          const departments = await callAPI("get_departments", {}, "employee");
+          if (departments) {
+            departments.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              deptSel.appendChild(opt);
+            });
+          }
+        }
       }
 
       function closeCreateEmployeeModal() {
