@@ -328,13 +328,14 @@ class MyCRM {
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: ${isMobile ? "10px 16px" : "14px 20px"};
+          padding: ${isMobile ? "5px 16px" : "8px 20px"};
           border-bottom: 1px solid #e5e7eb;
           gap: ${isMobile ? "8px" : "16px"};
+          position: relative;
         }
 
         .mycrm-tab {
-          padding: ${isMobile ? "6px 14px" : "8px 18px"};
+          padding: ${isMobile ? "4px 12px" : "6px 16px"};
           text-align: center;
           color: #6b7280;
           font-size: ${isMobile ? "13px" : "14px"};
@@ -719,6 +720,10 @@ class MyCRM {
       <div class="mycrm-root mycrm-container" v-scope="mycrmVue">
         
         <div class="mycrm-tabs">
+          <button class="mycrm-home-btn" id="mycrm-home-link" style="position: absolute; right: 15px; background: none; border: none; cursor: pointer; color: var(--mycrm-green-dark); padding: 8px; font-size: 18px; display: flex; align-items: center;">
+            <i class="fa fa-home"></i>
+          </button>
+          
           <button class="mycrm-tab ${
             this.state.section === "lead" ? "active" : ""
           }" data-section="lead">
@@ -833,6 +838,11 @@ class MyCRM {
   }
 
   attachEventListeners() {
+    console.log("🏠 Home Button Event Listener Attached");
+    $("#mycrm-home-link").on("click", () => {
+      frappe.set_route("sahayog-home");
+    });
+
     $(".mycrm-tab").on("click", (e) => {
       const section = $(e.currentTarget).data("section");
       this.switchSection(section);
