@@ -13893,7 +13893,17 @@
         if (!val) return;
         // Strip any HTML if present
         const cleanVal = String(val).replace(/<[^>]*>/g, '').trim();
-        this.searchText = cleanVal;
+        
+        if (!this.searchText) {
+            this.searchText = cleanVal;
+        } else {
+            // Split current search text into terms to check for duplicates
+            const currentTerms = this.searchText.toLowerCase().split(/\s+/);
+            if (!currentTerms.includes(cleanVal.toLowerCase())) {
+                this.searchText = (this.searchText.trim() + " " + cleanVal);
+            }
+        }
+        
         this.fetchData(this.currentView.doctype);
       },
 
