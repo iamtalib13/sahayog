@@ -1101,6 +1101,7 @@ def get_stock_history(item_code, warehouse):
             se.posting_time,
             sed.actual_qty,
             sed.qty,
+            sed.t_warehouse,
             se.stock_entry_type
         FROM `tabStock Entry` se
         JOIN `tabStock Entry Detail` sed ON se.name = sed.parent

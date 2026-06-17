@@ -4163,7 +4163,7 @@
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
                         <span>[[ entry.posting_date ]]</span>
-                        <span>Qty Change: [[ entry.actual_qty ]]</span>
+                        <span>Qty Change: [[ entry.t_warehouse ? entry.actual_qty : entry.qty ]]</span>
                     </div>
                 </div>
             </div>
