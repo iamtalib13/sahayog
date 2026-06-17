@@ -27,7 +27,7 @@ def create_support_staff(data):
 
     # Date Validations
     doj = getdate(data.get("date_of_joining")) if data.get("date_of_joining") else None
-    doc = getdate(data.get("scheduled_confirmation_date")) if data.get("scheduled_confirmation_date") else None
+    doc = getdate(data.get("final_confirmation_date")) if data.get("final_confirmation_date") else None
     if doj and doc and date_diff(doc, doj) < 0:
         frappe.throw(_("Date of Confirmation cannot be earlier than Date of Joining"))
 
@@ -46,13 +46,14 @@ def create_support_staff(data):
         "gender": data.get("gender"),
         "date_of_birth": data.get("date_of_birth"),
         "date_of_joining": data.get("date_of_joining"),
-        "scheduled_confirmation_date": data.get("scheduled_confirmation_date"),
+        "final_confirmation_date": data.get("final_confirmation_date"),
         "status": "Active",
         "company": data.get("company") or frappe.defaults.get_global_default("company"),
         "department": data.get("department"),
         "designation": data.get("designation"),
         "branch": data.get("branch"),
-        "sahayog_branch": data.get("branch"),
+        "sahayog_branch": data.get("sol_id"),
+        "sol_id": data.get("sol_id"),
         "reports_to": data.get("reports_to"),
         "cell_number": data.get("mobile_number"),
         "personal_email": data.get("personal_email"),
@@ -103,17 +104,34 @@ def get_shifts():
     return frappe.get_all("Shift Type", fields=["name"], order_by="name")
 
 @frappe.whitelist()
+def get_sahayog_branches():
+    return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
+
+@frappe.whitelist()
 def get_employment_types():
     return frappe.get_all("Employment Type", fields=["name"], order_by="name")
 
 @frappe.whitelist()
-def get_sahayog_branches():
-    return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
+def get_all_sol_ids():
+    return frappe.get_all("Sahayog Branch", fields=["sol_id"], order_by="sol_id", filters={"sol_id": ["is", "set"]})
 
 @frappe.whitelist()
 def get_branch_details(branch):
     if not branch: return {}
     return frappe.db.get_value("Sahayog Branch", branch, ["zone", "region", "district", "state", "sol_id"], as_dict=True)
+
+@frappe.whitelist()
+def get_branch_details_by_sol_id(sol_id):
+    if not sol_id: return {}
+    # Since SOL ID is the name of the 'Sahayog Branch' document:
+    branch_doc = frappe.get_doc("Sahayog Branch", sol_id)
+    return {
+        "branch": branch_doc.branch,
+        "zone": branch_doc.zone,
+        "region": branch_doc.region,
+        "district": branch_doc.district,
+        "state": branch_doc.state
+    }
 
 @frappe.whitelist()
 def get_logged_in_employee():
