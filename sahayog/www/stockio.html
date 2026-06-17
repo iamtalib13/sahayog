@@ -8232,6 +8232,19 @@
                 class="btn-create-inline"
                 style="
                   margin-left: auto;
+                  background: #6366f1;
+                  border-color: #6366f1;
+                  margin-right: 8px;
+                "
+                @click="handleStockHistory(selectedRows)"
+              >
+                <i class="fas fa-history"></i>
+                <span>Stock History</span>
+              </button>
+              <button
+                v-if="activeItem === 'Branch Stock' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
                   background: #369696;
                   border-color: #369696;
                 "
