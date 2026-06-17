@@ -70,6 +70,8 @@ def create_support_staff(data):
         
         # Custom Fields
         "custom_is_support_staff": 1,
+        "custom_pan_number": data.get("pan_number"),
+        "custom_aadhar_number": data.get("aadhaar_card_number"),
         "custom_zone": data.get("zone"),
         "custom_region": data.get("region"),
         "custom_district": data.get("district_name"),
