@@ -569,7 +569,7 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None):
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None, item_code=None, warehouse_filter=None):
     """
     API to fetch Branch Stock data (reusing report logic)
     """
@@ -589,8 +589,13 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
     sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     filters = {}
-    if warehouse:
+    if warehouse_filter:
+        filters["warehouse"] = warehouse_filter
+    elif warehouse:
         filters["warehouse"] = warehouse
+    
+    if item_code:
+        filters["item_code"] = item_code
 
     _, data = execute(filters)
 

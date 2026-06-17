@@ -2102,6 +2102,51 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="activeItem === 'Branch Stock'">
+                  <div class="filter-options-grid">
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">Item:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.item_code_display" 
+                        @focus="activeFilterKey = 'item_code'"
+                        placeholder="Search Item"
+                      />
+                      <div v-if="activeFilterKey === 'item_code'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="i in filteredFilterItems" 
+                          :key="i.name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.item_code = i.name; filterForm.item_code_display = i.item_name; activeFilterKey = null; applyFilters()"
+                        >
+                          [[ i.item_name ]] ([[ i.name ]])
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="filter-dropdown-container">
+                      <label class="filter-date-label">Warehouse:</label>
+                      <input 
+                        type="text" 
+                        class="filter-date-input" 
+                        v-model="filterForm.warehouse_display" 
+                        @focus="activeFilterKey = 'warehouse'"
+                        placeholder="Search Warehouse"
+                      />
+                      <div v-if="activeFilterKey === 'warehouse'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div 
+                          v-for="b in filteredFilterBranches" 
+                          :key="b.name"
+                          class="filter-sub-option"
+                          @mousedown="filterForm.warehouse = b.name; filterForm.warehouse_display = b.branch; activeFilterKey = null; applyFilters()"
+                        >
+                          [[ b.branch ]] ([[ b.sol_id ]])
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
                 <template v-else>
                   <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
                 </template>
@@ -11809,7 +11854,11 @@
         supplier_display: "",
         from_warehouse: "",        from_warehouse_display: "",
         to_warehouse: "",
-        to_warehouse_display: ""
+        to_warehouse_display: "",
+        item_code: "",
+        item_code_display: "",
+        warehouse: "",
+        warehouse_display: ""
       },
       showDispatchHistory: false,
       dispatchHistory: [],
@@ -13044,6 +13093,8 @@
           q = (this.filterForm.from_warehouse_display || "").toLowerCase();
         } else if (this.activeFilterKey === "to_warehouse") {
           q = (this.filterForm.to_warehouse_display || "").toLowerCase();
+        } else if (this.activeFilterKey === "warehouse") {
+          q = (this.filterForm.warehouse_display || "").toLowerCase();
         }
         if (!q) return this.sahayog_branches;
         return this.sahayog_branches.filter(
@@ -13053,8 +13104,16 @@
             (b.name || "").toLowerCase().includes(q),
             );
             },
-      get filteredFilterRequests() {
-        const q = (this.filterForm.request_display || "").toLowerCase();
+            get filteredFilterItems() {
+            const q = (this.filterForm.item_code_display || "").toLowerCase();
+            if (!q) return this.itemsList;
+            return this.itemsList.filter(
+              (i) =>
+                (i.name || "").toLowerCase().includes(q) ||
+                (i.item_name || "").toLowerCase().includes(q)
+            );
+            },
+            get filteredFilterRequests() {        const q = (this.filterForm.request_display || "").toLowerCase();
         if (!q) return this.emr_names;
         return this.emr_names.filter((name) =>
           (name || "").toLowerCase().includes(q),
@@ -13705,6 +13764,8 @@
                 start: start,
                 search_text: this.searchText,
                 filter_type: this.branchStockFilter,
+                item_code: this.filterForm.item_code,
+                warehouse_filter: this.filterForm.warehouse,
               },
             });
 
@@ -15231,7 +15292,11 @@
           from_warehouse: "",
           from_warehouse_display: "",
           to_warehouse: "",
-          to_warehouse_display: ""
+          to_warehouse_display: "",
+          item_code: "",
+          item_code_display: "",
+          warehouse: "",
+          warehouse_display: ""
         };
         this.activeFilterKey = null;
         await this.fetchData(this.currentView.doctype);
