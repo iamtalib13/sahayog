@@ -1224,8 +1224,16 @@
             >
               <div class="spinner"></div>
             </div>
-            <div class="card-head" style="border-bottom: none">
+            <div class="card-head" style="border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
               <h3>Staff List &amp; Directory</h3>
+              <button 
+                id="btnCreateEmployee" 
+                class="btn-in" 
+                style="display: none; padding: 6px 14px; background: var(--brand2); color: #fff; border: none; font-size: 11px; font-weight: 700;"
+                onclick="openCreateEmployeeModal()"
+              >
+                + Create Employee
+              </button>
             </div>
 
             <!-- HR ADVANCED FILTER BAR -->
@@ -1432,6 +1440,115 @@
                   <div class="lb-label">Earned Leave</div>
                   <div class="lb-sub" id="lb-el-sub"></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- EMPLOYEE CREATION MODAL -->
+            <div
+              id="createEmployeeModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 5000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+              "
+            >
+              <div
+                class="custom-scroll"
+                style="
+                  background: #fff;
+                  padding: 30px;
+                  border-radius: 20px;
+                  width: 95%;
+                  max-width: 850px;
+                  max-height: 90vh;
+                  overflow-y: auto;
+                  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                "
+              >
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px; border-bottom:2px solid #f1f5f9; padding-bottom:15px;">
+                  <h3 style="font-family: 'Syne', sans-serif; font-weight:800; color:var(--brand); margin:0;">Create Support Staff</h3>
+                  <button onclick="closeCreateEmployeeModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+
+                <form id="createEmployeeForm" onsubmit="event.preventDefault(); submitCreateEmployee();">
+                  <!-- Section 1: Basic Details -->
+                  <div style="margin-bottom:25px;">
+                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Basic Information</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div><label>Employee Code *</label><input type="text" name="employee_number" class="member-select" required></div>
+                      <div><label>First Name *</label><input type="text" name="first_name" class="member-select" required></div>
+                      <div><label>Middle Name</label><input type="text" name="middle_name" class="member-select"></div>
+                      <div><label>Last Name *</label><input type="text" name="last_name" class="member-select" required></div>
+                      <div><label>Gender *</label><select name="gender" class="member-select" required><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" class="member-select" required></div>
+                      <div><label>Marital Status</label><select name="marital_status" class="member-select"><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>
+                      <div><label>Blood Group</label><input type="text" name="blood_group" class="member-select" placeholder="e.g. O+"></div>
+                    </div>
+                  </div>
+
+                  <!-- Section 2: Professional Details -->
+                  <div style="margin-bottom:25px;">
+                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required></div>
+                      <div><label>Date of Confirmation</label><input type="date" name="scheduled_confirmation_date" class="member-select"></div>
+                      <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
+                      <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
+                      <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
+                      <div><label>Reporting Manager Code *</label><input type="text" name="reports_to" class="member-select" required></div>
+                      <div><label>Shift *</label><select name="shift" id="new_emp_shift" class="member-select" required><option value="">Select Shift</option></select></div>
+                      <div><label>Business Unit</label><input type="text" name="business_unit" class="member-select"></div>
+                    </div>
+                  </div>
+
+                  <div style="margin-bottom:25px;">
+                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div><label>Branch *</label><select name="branch" id="new_emp_branch" class="member-select" onchange="handleBranchChange(this.value)" required><option value="">Select Branch</option></select></div>
+                      <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required></div>
+                      <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required></div>
+                      <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required></div>
+                      <div><label>Division *</label><select name="division" id="new_emp_division" class="member-select" required><option value="">Select Division</option></select></div>
+                      <div><label>State Name *</label><input type="text" name="state_name" id="new_emp_state" class="member-select" required></div>
+                    </div>
+                  </div>
+
+                  <!-- Section 4: Contact & Identity -->
+                  <div style="margin-bottom:25px;">
+                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Contact & Identity</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div><label>Mobile Number *</label><input type="text" name="mobile_number" class="member-select" required></div>
+                      <div><label>Personal Email</label><input type="email" name="personal_email" class="member-select"></div>
+                      <div><label>PAN Number *</label><input type="text" name="pan_number" class="member-select" required></div>
+                      <div><label>Aadhaar Number *</label><input type="text" name="aadhaar_card_number" class="member-select" required></div>
+                      <div><label>UHID Number</label><input type="text" name="uhid_number" class="member-select"></div>
+                    </div>
+                    <div style="margin-top:15px;">
+                      <label>Permanent Address *</label>
+                      <textarea name="permanent_address" class="member-select" rows="2" required></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Section 5: Banking & Salary -->
+                  <div style="margin-bottom:30px;">
+                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Banking & Salary</h4>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
+                      <div><label>Bank Name *</label><input type="text" name="bank_name" class="member-select" required></div>
+                      <div><label>Bank Account Number *</label><input type="text" name="bank_account_number" class="member-select" required></div>
+                      <div><label>Monthly Gross Salary *</label><input type="number" name="monthly_gross_salary" class="member-select" required></div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; gap: 15px; justify-content: flex-end; border-top:2px solid #f1f5f9; padding-top:20px;">
+                    <button type="button" class="btn-clear" onclick="closeCreateEmployeeModal()" style="padding:10px 25px;">Cancel</button>
+                    <button type="submit" id="btnSubmitEmployee" class="btn-in" style="padding:10px 40px; font-weight:700;">Create Employee</button>
+                  </div>
+                </form>
               </div>
             </div>
 
@@ -2267,6 +2384,133 @@
           "none";
       }
 
+      function openCreateEmployeeModal() {
+        document.getElementById("createEmployeeModal").style.display = "flex";
+        populateEmployeeFormOptions();
+      }
+
+      async function populateEmployeeFormOptions() {
+        const desigSel = document.getElementById("new_emp_designation");
+        const deptSel = document.getElementById("new_emp_department");
+        const branchSel = document.getElementById("new_emp_branch");
+        const divSel = document.getElementById("new_emp_division");
+        const shiftSel = document.getElementById("new_emp_shift");
+        const empTypeSel = document.getElementById("new_emp_employment_type");
+
+        // Only fetch if not already populated
+        if (desigSel.options.length <= 1) {
+          const designations = await callAPI("get_designations", {}, "employee");
+          if (designations) {
+            designations.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              desigSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (deptSel.options.length <= 1) {
+          const departments = await callAPI("get_departments", {}, "employee");
+          if (departments) {
+            departments.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              deptSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (divSel && divSel.options.length <= 1) {
+          const divisions = await callAPI("get_divisions", {}, "employee");
+          if (divisions) {
+            divisions.forEach(d => {
+              const opt = document.createElement("option");
+              opt.value = d.name;
+              opt.textContent = d.name;
+              divSel.appendChild(opt);
+            });
+          }
+        }
+        
+        if (shiftSel && shiftSel.options.length <= 1) {
+          const shifts = await callAPI("get_shifts", {}, "employee");
+          if (shifts) {
+            shifts.forEach(s => {
+              const opt = document.createElement("option");
+              opt.value = s.name;
+              opt.textContent = s.name;
+              shiftSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (empTypeSel && empTypeSel.options.length <= 1) {
+          const types = await callAPI("get_employment_types", {}, "employee");
+          if (types) {
+            types.forEach(t => {
+              const opt = document.createElement("option");
+              opt.value = t.name;
+              opt.textContent = t.name;
+              empTypeSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (branchSel.options.length <= 1) {
+          const branches = await callAPI("get_sahayog_branches", {}, "employee");
+          if (branches) {
+            branches.forEach(b => {
+              const opt = document.createElement("option");
+              opt.value = b.name;
+              opt.textContent = b.name;
+              branchSel.appendChild(opt);
+            });
+          }
+        }
+      }
+
+      function closeCreateEmployeeModal() {
+        document.getElementById("createEmployeeModal").style.display = "none";
+        document.getElementById("createEmployeeForm").reset();
+      }
+
+      async function submitCreateEmployee() {
+        const form = document.getElementById("createEmployeeForm");
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => (data[key] = value));
+
+        const btn = document.getElementById("btnSubmitEmployee");
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Creating...";
+
+        const res = await callAPI("create_support_staff", { data: data }, "employee");
+
+        btn.disabled = false;
+        btn.textContent = originalText;
+
+        if (res && res.success) {
+          showToast(res.message);
+          closeCreateEmployeeModal();
+          fetchTeamData(); // Refresh list to show new employee
+        }
+      }
+
+      async function handleBranchChange(branch) {
+        if (!branch) return;
+        
+        const details = await callAPI("get_branch_details", { branch: branch }, "employee");
+        if (details) {
+          if (details.zone) document.getElementById("new_emp_zone").value = details.zone;
+          if (details.region) document.getElementById("new_emp_region").value = details.region;
+          if (details.district) document.getElementById("new_emp_district").value = details.district;
+          if (details.state) document.getElementById("new_emp_state").value = details.state;
+        }
+      }
+
       function toggleMissingDates() {
         const list = document.getElementById("missingDatesList");
         if (list) {
@@ -2440,6 +2684,7 @@
 
         // Calendar Visibility Logic for HR
         if (isHR()) {
+            if (btnCreateEmployee) btnCreateEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -2701,11 +2946,14 @@
         const bulkBar = document.getElementById("bulkBar");
         const subbarTitle = document.getElementById("subbarTitle");
         const btnApplyLeave = document.getElementById("btnApplyLeave");
+        const btnCreateEmployee = document.getElementById("btnCreateEmployee");
 
         if (isHR()) {
           if (subbarTitle) subbarTitle.textContent = "HR Dashboard";
           if (attendanceTab) attendanceTab.textContent = "Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          // Button will be managed inside switchTab based on tab context
+          if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "Leave Approvals";
