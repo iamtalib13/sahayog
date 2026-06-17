@@ -7683,6 +7683,34 @@
               <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>[[ assetStatusFilter === 'Available' ? 'Asset Availability for Assignment' : 'Assigned Asset Board' ]]</h3>
                 <div style="display: flex; gap: 8px;">
+                    <!-- Group By Toggle (Available) -->
+                    <div v-if="assetStatusFilter === 'Available'" class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Item' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Item'; fetchAssetAvailability()"
+                        >
+                            Item
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'SOL/Branch' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'SOL/Branch'; fetchAssetAvailability()"
+                        >
+                            SOL/Branch
+                        </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;"
+                            :style="assetGroupBy === 'Zone' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetGroupBy = 'Zone'; fetchAssetAvailability()"
+                        >
+                            Zone
+                        </button>
+                    </div>
+
                     <!-- Group By Toggle (Assigned Only) -->
                     <div v-if="assetStatusFilter === 'Assigned'" class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
                         <button 
