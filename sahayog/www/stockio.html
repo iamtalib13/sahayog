@@ -4159,10 +4159,11 @@
                 <div v-for="entry in stockHistoryItems" :key="entry.name" style="padding: 10px; border-bottom: 1px solid var(--border-color);">
                     <div style="display: flex; justify-content: space-between;">
                         <span style="font-weight: 600;">[[ entry.stock_entry_type ]]</span>
-                        <span>[[ entry.posting_date ]]</span>
+                        <span>[[ entry.name ]]</span>
                     </div>
-                    <div style="margin-top: 5px;">
-                        Qty Change: [[ entry.actual_qty ]]
+                    <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.85rem; color: var(--text-muted);">
+                        <span>[[ entry.posting_date ]]</span>
+                        <span>Qty Change: [[ entry.actual_qty ]]</span>
                     </div>
                 </div>
             </div>
