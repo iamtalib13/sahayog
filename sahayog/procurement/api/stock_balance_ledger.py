@@ -1106,7 +1106,8 @@ def get_stock_history(item_code, warehouse):
         FROM `tabStock Entry` se
         JOIN `tabStock Entry Detail` sed ON se.name = sed.parent
         WHERE sed.item_code = %(item_code)s 
-          AND (sed.t_warehouse = %(warehouse)s OR sed.s_warehouse = %(warehouse)s)
+          AND sed.s_warehouse = %(warehouse)s
+          AND sed.t_warehouse IS NULL
           AND se.posting_date >= %(three_months_ago)s
           AND se.docstatus = 1
         ORDER BY se.posting_date DESC, se.posting_time DESC
