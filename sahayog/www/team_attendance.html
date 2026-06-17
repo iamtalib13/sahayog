@@ -368,6 +368,12 @@
       }
       .pill-halfday {
         background: #fef3c7;
+        color: #b45309;
+      }
+      .pill-leave {
+        background: #fef3c7;
+        color: #d97706;
+      }
         color: #d97706;
       }
       .pill-notmarked {
@@ -3305,7 +3311,7 @@
           else if (status === "Half Day")
             pillHtml = `<span class="status-pill pill-halfday">🕒 Half Day</span>`;
           else if (status === "On Leave")
-            pillHtml = `<span class="status-pill" style="background:#fef3c7; color:#d97706;">On Leave</span>`;
+            pillHtml = `<span class="status-pill pill-leave">On Leave</span>`;
           else
             pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
