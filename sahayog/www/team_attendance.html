@@ -1496,7 +1496,7 @@
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
                       <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required></div>
-                      <div><label>Date of Confirmation</label><input type="date" name="scheduled_confirmation_date" class="member-select"></div>
+                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" class="member-select"></div>
                       <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
                       <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
                       <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
@@ -1509,7 +1509,8 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Branch *</label><select name="branch" id="new_emp_branch" class="member-select" onchange="handleBranchChange(this.value)" required><option value="">Select Branch</option></select></div>
+                      <div><label>Branch Code (SOL ID) *</label><select name="sol_id" id="new_emp_sol_id" class="member-select" onchange="handleBranchCodeChange(this.value)" required><option value="">Select Branch Code</option></select></div>
+                      <div><label>Branch Name *</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" required readonly></div>
                       <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required></div>
                       <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required></div>
                       <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required></div>
@@ -2392,7 +2393,7 @@
       async function populateEmployeeFormOptions() {
         const desigSel = document.getElementById("new_emp_designation");
         const deptSel = document.getElementById("new_emp_department");
-        const branchSel = document.getElementById("new_emp_branch");
+        const solIdSel = document.getElementById("new_emp_sol_id");
         const divSel = document.getElementById("new_emp_division");
         const shiftSel = document.getElementById("new_emp_shift");
         const empTypeSel = document.getElementById("new_emp_employment_type");
@@ -2458,14 +2459,14 @@
           }
         }
 
-        if (branchSel.options.length <= 1) {
+        if (solIdSel && solIdSel.options.length <= 1) {
           const branches = await callAPI("get_sahayog_branches", {}, "employee");
           if (branches) {
             branches.forEach(b => {
               const opt = document.createElement("option");
               opt.value = b.name;
               opt.textContent = b.name;
-              branchSel.appendChild(opt);
+              solIdSel.appendChild(opt);
             });
           }
         }
@@ -2482,10 +2483,17 @@
         const data = {};
         formData.forEach((value, key) => (data[key] = value));
 
+        // Since 'branch_name' input is readonly, we need to pass the selected SOL ID (from branchSel) and Branch Name (from branchNameInput) to the API.
+        // Currently 'formData' takes all fields. 'sol_id' is the name of the Link, and 'branch' is the Branch Name.
+        // This is exactly what we want.
         const btn = document.getElementById("btnSubmitEmployee");
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Creating...";
+
+        // Ensure we pass the correct Branch Name and SOL ID
+        data.branch = document.getElementById("new_emp_branch_name").value;
+        data.sol_id = document.getElementById("new_emp_sol_id").value;
 
         const res = await callAPI("create_support_staff", { data: data }, "employee");
 
@@ -2499,11 +2507,13 @@
         }
       }
 
-      async function handleBranchChange(branch) {
-        if (!branch) return;
-        
-        const details = await callAPI("get_branch_details", { branch: branch }, "employee");
+      async function handleBranchCodeChange(sol_id) {
+        if (!sol_id) return;
+
+        // Fetch branch details based on sol_id
+        const details = await callAPI("get_branch_details_by_sol_id", { sol_id: sol_id }, "employee");
         if (details) {
+          if (details.branch) document.getElementById("new_emp_branch_name").value = details.branch;
           if (details.zone) document.getElementById("new_emp_zone").value = details.zone;
           if (details.region) document.getElementById("new_emp_region").value = details.region;
           if (details.district) document.getElementById("new_emp_district").value = details.district;
