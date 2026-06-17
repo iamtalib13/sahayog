@@ -374,8 +374,6 @@
         background: #fef3c7;
         color: #d97706;
       }
-        color: #d97706;
-      }
       .pill-notmarked {
         background: #f3f4f6;
         color: #9ca3af;
@@ -3340,8 +3338,12 @@
           if (s.check_in) timeInfo = `In: ${s.check_in}`;
           if (s.check_out) timeInfo += ` | Out: ${s.check_out}`;
 
+          const checkboxHtml = isBranchManager()
+            ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
+            : "";
+
           row.innerHTML = `
-            <input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">
+            ${checkboxHtml}
             <div class="emp-av" style="background:${s.color}; display:flex; align-items:center; justify-content:center;" onclick="selectMember('${s.name}')">
                 ${s.image ? `<img src="${s.image}">` : s.employee_name.charAt(0)}
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
@@ -3599,6 +3601,19 @@
       function renderAll(currentUser) {
         renderStats();
         renderEmpList();
+
+        const attendanceControls = document.getElementById("attendanceControls");
+        const searchBoxWrap = document.getElementById("searchBoxWrap");
+        const isMgr = isBranchManager();
+        const isHrUser = isHR();
+        
+        if (attendanceControls) {
+          attendanceControls.style.display = isMgr ? "flex" : "none";
+        }
+        if (searchBoxWrap) {
+          searchBoxWrap.style.display = (isMgr || isHrUser) ? "flex" : "none";
+        }
+
         if (currentUser) {
           document.querySelector(".topbar-title").textContent =
             "Sahayog Attendance Portal";
