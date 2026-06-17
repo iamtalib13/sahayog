@@ -194,6 +194,22 @@ def get_hr_dashboard_data():
     eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
     att_percentage = round((eff_present / working_days_count * 100), 2) if working_days_count > 0 else 0
 
+    # Employees who haven't marked attendance today
+    marked_employees = frappe.get_all("Attendance", 
+        filters={"attendance_date": today, "docstatus": ["<", 2]}, 
+        pluck="employee"
+    )
+    
+    not_marked_employees = frappe.get_all("Employee",
+        filters={
+            "name": ["not in", marked_employees],
+            "status": "Active",
+            "custom_is_support_staff": 1
+        },
+        fields=["name", "employee_name", "sahayog_branch", "designation"],
+        limit=15
+    )
+
     # 3. Leave Summary
     # Status Counts
     leave_statuses = frappe.db.sql("""
@@ -268,6 +284,7 @@ def get_hr_dashboard_data():
         },
         "leaves": leave_summary,
         "branch_wise": branch_data,
+        "not_marked_list": not_marked_employees,
         "pending_requests": {
             "leaves": leave_summary["Open"],
             "corrections": frappe.db.count("Attendance Correction", {"status": "Pending"})
