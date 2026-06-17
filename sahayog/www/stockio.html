@@ -4929,7 +4929,7 @@
                     <div class="info-content">
                       <span class="info-label">Receiver</span>
                       <span class="info-value"
-                        >[[ detailRecord.target_warehouse || '-' ]]</span
+                        >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
                       >
                     </div>
                   </div>
@@ -4941,7 +4941,7 @@
                     <div class="info-content">
                       <span class="info-label">Provider</span>
                       <span class="info-value"
-                        >[[ detailRecord.source_warehouse || '-' ]]</span
+                        >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
                       >
                     </div>
                   </div>
@@ -5618,7 +5618,7 @@
                     <div class="info-icon" style="color: #f59e0b"><i class="fas fa-warehouse"></i></div>
                     <div class="info-content">
                       <span class="info-label">Warehouse</span>
-                      <span class="info-value">[[ detailRecord.set_warehouse || '-' ]]</span>
+                      <span class="info-value">[[ getFieldValue(detailRecord, 'set_warehouse') ]]</span>
                     </div>
                   </div>
                   <div class="info-item">
@@ -16670,7 +16670,7 @@
         let value = row[key];
 
         // 🔥 Special handling for warehouse ID to branch name
-        if (key === "target_warehouse" || key === "source_warehouse") {
+        if (["target_warehouse", "source_warehouse", "set_warehouse", "from_warehouse", "to_warehouse", "warehouse"].includes(key)) {
           const val = value;
           if (val) {
             const match = String(val).match(/\b\d{4}\b/);
