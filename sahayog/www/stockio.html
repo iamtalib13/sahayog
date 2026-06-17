@@ -12736,7 +12736,7 @@
             method: "frappe.client.get_list",
             args: {
               doctype: "Serial No",
-              fields: ["name", "item_code"]
+              fields: ["name", "item_code", "warehouse"]
             }
           });
           const allSerials = serialsRes.message || [];
@@ -12756,9 +12756,9 @@
           const fixedAssetItems = itemsRes.message || [];
           console.log("Fixed Asset Items Data:", fixedAssetItems);
 
-          // 5. Fetch Branches for grouping (only if Assigned and grouped by location/zone/region)
+          // 5. Fetch Branches for grouping (if grouped by location/zone/region)
           let branches = [];
-          if (this.assetStatusFilter === 'Assigned' && this.assetGroupBy !== 'Item') {
+          if (this.assetGroupBy !== 'Item') {
              const branchRes = await frappe.call({
                method: "frappe.client.get_list",
                args: {
@@ -12776,11 +12776,56 @@
             availableSerials.forEach(sn => {
                 const item = fixedAssetItems.find(i => i.name === sn.item_code);
                 if (item) {
-                    const key = sn.item_code;
+                    let key = "";
+                    let label = "";
+
+                    if (this.assetGroupBy === 'Item') {
+                        key = sn.item_code;
+                        label = item.item_name || sn.item_code;
+                    } else if (this.assetGroupBy === 'SOL/Branch') {
+                        // Try to extract 4-digit SOL ID from warehouse string
+                        const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
+                        const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
+                        
+                        // Find branch by name (SOL ID) or branch field
+                        const branch = branches.find(b => 
+                            (b.name && b.name === solId) || 
+                            (b.branch && b.branch === sn.warehouse) ||
+                            (b.name && b.name === sn.warehouse)
+                        );
+                        
+                        key = solId || "Unknown";
+                        label = branch ? `${branch.branch} (${branch.name})` : (sn.warehouse || "Unknown");
+                    } else if (this.assetGroupBy === 'Zone') {
+                        const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
+                        const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
+                        
+                        const branch = branches.find(b => 
+                            (b.name && b.name === solId) || 
+                            (b.branch && b.branch === sn.warehouse) ||
+                            (b.name && b.name === sn.warehouse)
+                        );
+                        
+                        key = branch ? branch.zone : "Unknown Zone";
+                        label = key;
+                    } else if (this.assetGroupBy === 'Region') {
+                        const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
+                        const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
+                        
+                        const branch = branches.find(b => 
+                            (b.name && b.name === solId) || 
+                            (b.branch && b.branch === sn.warehouse) ||
+                            (b.name && b.name === sn.warehouse)
+                        );
+                        
+                        key = branch ? branch.region : "Unknown Region";
+                        label = key;
+                    }
+
                     if (!summaryMap[key]) {
                         summaryMap[key] = { 
-                            item_code: sn.item_code, 
-                            item_name: item.item_name || sn.item_code, 
+                            item_code: key, 
+                            item_name: label, 
                             count: 0 
                         };
                     }
