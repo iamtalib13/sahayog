@@ -2166,6 +2166,14 @@
           ></i>
         </button>
         <!-- Edit button removed from top header -->
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Asset Master' || activeItem === 'Movements')"
+          style="background: #3b82f6; border-color: #3b82f6"
+        >
+          <i class="fas fa-edit"></i>
+          <span>Edit</span>
+        </button>
         <!-- Cancel button removed from top header -->
         <button
           class="btn-create"
