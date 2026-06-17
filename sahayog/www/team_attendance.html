@@ -1117,6 +1117,54 @@
       </button>
     </div>
 
+    <!-- APPROVAL SUB-TABS -->
+    <div
+      id="approvalSubTabs"
+      style="
+        display: none;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 20px;
+        gap: 10px;
+      "
+    >
+      <button
+        class="ftab active"
+        id="subTabPending"
+        onclick="switchSubTab('pending')"
+      >
+        Pending Requests
+      </button>
+      <button
+        class="ftab"
+        id="subTabHistory"
+        onclick="switchSubTab('history')"
+      >
+        Approval History
+      </button>
+
+      <!-- History Search & Filter (visible only in history sub-tab) -->
+      <div id="historySearchWrap" style="display: none; margin-left: auto; flex: 1; max-width: 450px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input 
+            type="month" 
+            id="historyMonth" 
+            class="search-input" 
+            onchange="renderApprovals()"
+            style="width: 140px; height: 32px; border-radius: 6px;"
+          >
+          <input 
+            type="text" 
+            id="historySearch" 
+            class="search-input" 
+            placeholder="🔍 Name or ID..." 
+            onkeyup="renderApprovals()"
+            style="flex: 1; height: 32px; border-radius: 6px;"
+          >
+        </div>
+      </div>
+    </div>
+
     <style>
       .nav-tab {
         background: none;
@@ -2662,6 +2710,9 @@
 
       // ── TABS LOGIC ──────────────────────────────────────
       let currentTab = "attendance";
+      let currentSubTab = "pending";
+      let approvalData = { leave: { pending: [], history: [] }, corrections: { pending: [], history: [] } };
+
       function switchTab(tab, btn) {
         if (
           (tab === "leave" ||
@@ -2674,6 +2725,12 @@
         }
 
         currentTab = tab;
+        currentSubTab = "pending"; // Reset sub-tab when switching main tabs
+        
+        // Update sub-tab active state
+        document.getElementById("subTabPending").classList.add("active");
+        document.getElementById("subTabHistory").classList.remove("active");
+
         // Clear active state from all possible tab types
         document
           .querySelectorAll(".ftab, .nav-tab")
@@ -2689,12 +2746,14 @@
         const statsRow = document.getElementById("statsRow");
         const calPanel = document.querySelector(".cal-panel");
         const mainGrid = document.querySelector(".main-grid");
+        const subTabs = document.getElementById("approvalSubTabs");
 
         // Global Resets
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
         if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
+        if (subTabs) subTabs.style.display = "none";
 
         // Calendar Visibility Logic for HR
         if (isHR()) {
@@ -2720,17 +2779,39 @@
           if (hrDash) hrDash.style.display = "block";
           if (empList) empList.style.display = "none";
           loadHRDashboard();
-        } else if (tab === "leave") {
+        } else if (tab === "leave" || tab === "corrections") {
           if (controls) controls.style.display = "none";
           if (bulkBar) bulkBar.classList.remove("visible");
           if (searchWrap) searchWrap.style.display = "none";
-          loadTeamLeaves();
-        } else if (tab === "corrections") {
-          if (controls) controls.style.display = "none";
-          if (bulkBar) bulkBar.classList.remove("visible");
-          if (searchWrap) searchWrap.style.display = "none";
-          loadCorrectionRequests();
+          if (subTabs) subTabs.style.display = "flex";
+          
+          // Set default month for history filter (YYYY-MM)
+          const monthInput = document.getElementById("historyMonth");
+          if (monthInput && !monthInput.value) {
+            monthInput.value = new Date().toISOString().substring(0, 7);
+          }
+
+          if (tab === "leave") loadTeamLeaves();
+          else loadCorrectionRequests();
         }
+      }
+
+      function switchSubTab(subTab) {
+        currentSubTab = subTab;
+        document.getElementById("subTabPending").classList.toggle("active", subTab === "pending");
+        document.getElementById("subTabHistory").classList.toggle("active", subTab === "history");
+        
+        // Show/Hide history search
+        const hSearch = document.getElementById("historySearchWrap");
+        if (hSearch) hSearch.style.display = subTab === "history" ? "block" : "none";
+        if (subTab === "pending") document.getElementById("historySearch").value = "";
+
+        renderApprovals();
+      }
+
+      function renderApprovals() {
+        if (currentTab === "leave") renderLeaveRequests();
+        else if (currentTab === "corrections") renderCorrectionRequests();
       }
 
       async function loadCorrectionRequests() {
@@ -2742,33 +2823,69 @@
         );
         document.getElementById("teamListLoading").style.display = "none";
 
+        if (data) {
+          approvalData.corrections = {
+            pending: data.pending || [],
+            history: data.history || [],
+          };
+          renderCorrectionRequests();
+        }
+      }
+
+      function renderCorrectionRequests() {
         const container = document.getElementById("empList");
-        if (!data || data.length === 0) {
-          container.innerHTML =
-            '<div style="padding:20px;text-align:center;color:var(--muted)">No pending correction requests.</div>';
+        let data = approvalData.corrections[currentSubTab] || [];
+
+        // Apply Search & Month Filter for history
+        if (currentSubTab === "history") {
+          const q = document.getElementById("historySearch").value.toLowerCase();
+          const month = document.getElementById("historyMonth").value; // YYYY-MM
+          
+          if (q) {
+            data = data.filter(c => 
+              c.employee_name.toLowerCase().includes(q) || 
+              c.employee.toLowerCase().includes(q)
+            );
+          }
+          if (month) {
+            data = data.filter(c => c.attendance_date && c.attendance_date.startsWith(month));
+          }
+        }
+
+        if (data.length === 0) {
+          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} correction requests found.</div>`;
           return;
         }
 
         container.innerHTML = data
-          .map(
-            (c) => `
-          <div class="emp-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-              <div class="emp-info">
-                <div class="emp-name">${c.employee_name}</div>
-                <div class="emp-role">${new Date(c.attendance_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} | ${c.current_status} → <span style="color:var(--brand2); font-weight:700;">${c.requested_status}</span></div>
+          .map((c) => {
+            let actionsHtml = "";
+            if (c.status === "Pending") {
+              actionsHtml = `
+                <div class="emp-actions">
+                  <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
+                  <button class="btn-out" onclick="updateCorrectionStatus('${c.name}', 'Rejected')">Reject</button>
+                </div>`;
+            } else {
+              const statusClass = c.status === "Approved" ? "pill-present" : "pill-absent";
+              actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
+            }
+
+            return `
+              <div class="emp-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                  <div class="emp-info">
+                    <div class="emp-name">${c.employee_name} (${c.employee})</div>
+                    <div class="emp-role">${new Date(c.attendance_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} | ${c.current_status} → <span style="color:var(--brand2); font-weight:700;">${c.requested_status}</span></div>
+                  </div>
+                  ${actionsHtml}
+                </div>
+                <div style="font-size: 11px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; width: 100%; color: var(--muted);">
+                  <strong>Reason:</strong> ${c.reason}
+                </div>
               </div>
-              <div class="emp-actions">
-                <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
-                <button class="btn-out" onclick="updateCorrectionStatus('${c.name}', 'Rejected')">Reject</button>
-              </div>
-            </div>
-            <div style="font-size: 11px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; width: 100%; color: var(--muted);">
-              <strong>Reason:</strong> ${c.reason}
-            </div>
-          </div>
-        `,
-          )
+            `;
+          })
           .join("");
       }
 
@@ -2817,12 +2934,37 @@
         const res = await callAPI("get_pending_leaves", {}, "leave");
         document.getElementById("teamListLoading").style.display = "none";
 
+        if (res) {
+          approvalData.leave = {
+            pending: res.pending || [],
+            history: res.history || [],
+          };
+          renderLeaveRequests();
+        }
+      }
+
+      function renderLeaveRequests() {
         const container = document.getElementById("empList");
-        const data = res?.pending || [];
+        let data = approvalData.leave[currentSubTab] || [];
+
+        // Apply Search & Month Filter for history
+        if (currentSubTab === "history") {
+          const q = document.getElementById("historySearch").value.toLowerCase();
+          const month = document.getElementById("historyMonth").value; // YYYY-MM
+          
+          if (q) {
+            data = data.filter(l => 
+              l.employee_name.toLowerCase().includes(q) || 
+              l.employee.toLowerCase().includes(q)
+            );
+          }
+          if (month) {
+            data = data.filter(l => l.from_date && l.from_date.startsWith(month));
+          }
+        }
 
         if (data.length === 0) {
-          container.innerHTML =
-            '<div style="padding:20px;text-align:center;color:var(--muted)">No pending leave requests.</div>';
+          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} leave requests found.</div>`;
           return;
         }
 
@@ -2843,6 +2985,18 @@
               })
               .replace(/\//g, "-");
 
+            let actionsHtml = "";
+            if (l.status === "Open") {
+              actionsHtml = `
+                <div class="emp-actions">
+                  <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
+                  <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
+                </div>`;
+            } else {
+              const statusClass = l.status === "Approved" ? "pill-present" : "pill-absent";
+              actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
+            }
+
             return `
                 <div class="emp-row">
                   <div class="emp-info">
@@ -2850,17 +3004,11 @@
                     <div class="emp-role">${l.leave_type}</div>
                     <div style="font-size:11px;color:var(--muted)">${fromDate} → ${toDate}</div>
                   </div>
-                  <div class="emp-actions">
-                    <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
-                    <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
-                  </div>
+                  ${actionsHtml}
                 </div>
               `;
           })
           .join("");
-
-        // Render history in dashboard
-        renderLeaveHistory(res?.history || []);
       }
 
       function renderLeaveHistory(history) {
