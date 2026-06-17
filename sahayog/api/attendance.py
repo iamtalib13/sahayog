@@ -145,7 +145,7 @@ def get_team_attendance_data():
     }
 
 @frappe.whitelist()
-def get_hr_dashboard_data():
+def get_hr_dashboard_data(month=None):
     """Fetch global metrics for HR Dashboard (Module 7)."""
     user = frappe.session.user
     roles = frappe.get_roles(user)
@@ -153,10 +153,15 @@ def get_hr_dashboard_data():
     if "HR Manager" not in roles and "HR User" not in roles and user != "Administrator":
         frappe.throw(_("Not authorized to view HR Dashboard"), frappe.PermissionError)
         
+    from frappe.utils import get_first_day, get_last_day, getdate, nowdate
+    
     today = nowdate()
-    from frappe.utils import get_first_day, get_last_day, getdate
-    first_day = get_first_day(today)
-    last_day = get_last_day(today)
+    if not month:
+        month = today[:7] # YYYY-MM
+    
+    first_day = get_first_day(month + "-01")
+    last_day = get_last_day(first_day)
+    is_current_month = (month == today[:7])
     
     # 1. Headcount & Lifecycle
     headcount = frappe.db.count("Employee", {"status": "Active", "custom_is_support_staff": 1})
@@ -165,37 +170,98 @@ def get_hr_dashboard_data():
         "new_joinees": frappe.db.count("Employee", {"date_of_joining": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
         "resigned": frappe.db.count("Employee", {"status": ["in", ["Left", "Resigned"]], "relieving_date": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
         "retired": frappe.db.count("Employee", {"status": "Retired", "custom_is_support_staff": 1}),
-        "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation", "custom_is_support_staff": 1}) # Common employment_type usage
+        "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation", "custom_is_support_staff": 1})
     }
 
-    # 2. Detailed Attendance Summary Today
-    att_raw = frappe.db.sql("""
-        SELECT a.status, count(*) as count 
-        FROM `tabAttendance` a
-        JOIN `tabEmployee` e ON a.employee = e.name
-        WHERE a.attendance_date = %s 
-          AND e.custom_is_support_staff = 1
-        GROUP BY a.status
-    """, (today), as_dict=True)
-    
+    # 2. Detailed Attendance Summary
     attendance_summary = {
         "Present": 0, "Absent": 0, "Half Day": 0, "On Leave": 0, "Work From Home": 0
     }
-    for a in att_raw:
-        if a.status in attendance_summary:
-            attendance_summary[a.status] = a.count
-            
-    total_marked = sum(attendance_summary.values())
-    not_marked = max(0, headcount - total_marked)
-    attendance_summary["Not Marked"] = not_marked
     
-    # Global Attendance %
-    working_days_count = headcount
-    eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
-    att_percentage = round((eff_present / working_days_count * 100), 2) if working_days_count > 0 else 0
+    if is_current_month:
+        # Today's Snapshot
+        att_raw = frappe.db.sql("""
+            SELECT a.status, count(*) as count 
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date = %s 
+              AND e.custom_is_support_staff = 1
+            GROUP BY a.status
+        """, (today), as_dict=True)
+        
+        for a in att_raw:
+            if a.status in attendance_summary:
+                attendance_summary[a.status] = a.count
+                
+        total_marked = sum(attendance_summary.values())
+        not_marked = max(0, headcount - total_marked)
+        attendance_summary["Not Marked"] = not_marked
+        
+        eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
+        att_percentage = round((eff_present / headcount * 100), 2) if headcount > 0 else 0
+
+        # Actionable: Not marked today
+        marked_employees = frappe.get_all("Attendance", 
+            filters={"attendance_date": today, "docstatus": ["<", 2]}, 
+            pluck="employee"
+        )
+        alert_list = frappe.get_all("Employee",
+            filters={"name": ["not in", marked_employees], "status": "Active", "custom_is_support_staff": 1},
+            fields=["name", "employee_name", "sahayog_branch", "designation"],
+            limit=15
+        )
+        alert_title = "🚨 Attendance Not Marked Today"
+        working_days = 1
+    else:
+        # Monthly Averages
+        working_days = frappe.db.sql("""
+            SELECT count(distinct attendance_date) 
+            FROM `tabAttendance` 
+            WHERE attendance_date BETWEEN %s AND %s
+        """, (first_day, last_day))[0][0] or 1
+        
+        att_raw = frappe.db.sql("""
+            SELECT a.status, count(*) as total_count 
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date BETWEEN %s AND %s 
+              AND e.custom_is_support_staff = 1
+            GROUP BY a.status
+        """, (first_day, last_day), as_dict=True)
+        
+        for a in att_raw:
+            if a.status in attendance_summary:
+                attendance_summary[a.status] = round(a.total_count / working_days, 1)
+        
+        attendance_summary["Not Marked"] = "N/A" # Hard to calculate monthly avg not marked without complex logic
+        
+        total_eff_present = frappe.db.sql("""
+            SELECT SUM(CASE WHEN a.status IN ('Present', 'Work From Home') THEN 1 WHEN a.status = 'Half Day' THEN 0.5 ELSE 0 END)
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date BETWEEN %s AND %s AND e.custom_is_support_staff = 1
+        """, (first_day, last_day))[0][0] or 0
+        
+        total_possible = headcount * working_days
+        att_percentage = round((total_eff_present / total_possible * 100), 2) if total_possible > 0 else 0
+        
+        # Actionable: Frequent Absentees (More than 2 absents)
+        alert_list = frappe.db.sql("""
+            SELECT e.name, e.employee_name, e.sahayog_branch, e.designation, COUNT(a.name) as absent_count
+            FROM `tabEmployee` e
+            JOIN `tabAttendance` a ON e.name = a.employee 
+            WHERE e.custom_is_support_staff = 1 
+              AND e.status = 'Active' 
+              AND a.attendance_date BETWEEN %s AND %s 
+              AND a.status = 'Absent'
+            GROUP BY e.name
+            HAVING absent_count > 2
+            ORDER BY absent_count DESC
+            LIMIT 15
+        """, (first_day, last_day), as_dict=True)
+        alert_title = "📉 Frequent Absentees (Month)"
 
     # 3. Leave Summary
-    # Status Counts
     leave_statuses = frappe.db.sql("""
         SELECT l.status, count(*) as count 
         FROM `tabLeave Application` l
@@ -207,15 +273,13 @@ def get_hr_dashboard_data():
     
     leave_summary = {
         "Approved": 0, "Open": 0, "Rejected": 0,
-        "by_type": [],
-        "by_branch": []
+        "by_type": [], "by_branch": []
     }
     for ls in leave_statuses:
         if ls.status == "Approved": leave_summary["Approved"] = ls.count
         elif ls.status == "Open": leave_summary["Open"] = ls.count
         elif ls.status == "Rejected": leave_summary["Rejected"] = ls.count
 
-    # By Type
     leave_summary["by_type"] = frappe.db.sql("""
         SELECT l.leave_type, count(*) as count 
         FROM `tabLeave Application` l
@@ -225,7 +289,6 @@ def get_hr_dashboard_data():
         GROUP BY l.leave_type
     """, (first_day, last_day), as_dict=True)
 
-    # By Branch
     leave_summary["by_branch"] = frappe.db.sql("""
         SELECT e.sahayog_branch as branch, count(l.name) as count 
         FROM `tabLeave Application` l
@@ -235,7 +298,7 @@ def get_hr_dashboard_data():
         GROUP BY e.sahayog_branch
     """, (first_day, last_day), as_dict=True)
 
-    # 4. Branch-wise Distribution & Attendance % per Branch
+    # 4. Branch-wise Performance
     branch_data = frappe.db.sql("""
         SELECT sahayog_branch as branch, count(*) as total 
         FROM `tabEmployee` 
@@ -243,23 +306,39 @@ def get_hr_dashboard_data():
         GROUP BY sahayog_branch
     """, as_dict=True)
     
-    attendance_by_branch = frappe.db.sql("""
-        SELECT e.sahayog_branch as branch, count(*) as count
-        FROM `tabAttendance` a
-        JOIN `tabEmployee` e ON a.employee = e.name
-        WHERE a.attendance_date = %s 
-          AND a.status IN ('Present', 'Work From Home')
-          AND a.docstatus < 2
-          AND e.custom_is_support_staff = 1
-        GROUP BY e.sahayog_branch
-    """, (today,), as_dict=True)
-    
-    att_map = {b.branch: b.count for b in attendance_by_branch if b.branch}
-    for b in branch_data:
-        b.present = att_map.get(b.branch, 0)
-        b.att_pc = round((b.present / b.total * 100), 2) if b.total > 0 else 0
+    if is_current_month:
+        attendance_by_branch = frappe.db.sql("""
+            SELECT e.sahayog_branch as branch, count(*) as count
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date = %s 
+              AND a.status IN ('Present', 'Work From Home')
+              AND a.docstatus < 2
+              AND e.custom_is_support_staff = 1
+            GROUP BY e.sahayog_branch
+        """, (today,), as_dict=True)
+        att_map = {b.branch: b.count for b in attendance_by_branch if b.branch}
+        for b in branch_data:
+            b.present = att_map.get(b.branch, 0)
+            b.att_pc = round((b.present / b.total * 100), 2) if b.total > 0 else 0
+    else:
+        branch_att = frappe.db.sql("""
+            SELECT e.sahayog_branch as branch, 
+                   SUM(CASE WHEN a.status IN ('Present', 'Work From Home') THEN 1 WHEN a.status = 'Half Day' THEN 0.5 ELSE 0 END) as total_present
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date BETWEEN %s AND %s AND e.custom_is_support_staff = 1
+            GROUP BY e.sahayog_branch
+        """, (first_day, last_day), as_dict=True)
+        att_map = {b.branch: b.total_present for b in branch_att if b.branch}
+        for b in branch_data:
+            possible = b.total * working_days
+            b.present = round(att_map.get(b.branch, 0) / working_days, 1)
+            b.att_pc = round((att_map.get(b.branch, 0) / possible * 100), 2) if possible > 0 else 0
 
     return {
+        "month": month,
+        "is_current_month": is_current_month,
         "headcount": headcount,
         "lifecycle": lifecycle,
         "attendance": {
@@ -268,6 +347,8 @@ def get_hr_dashboard_data():
         },
         "leaves": leave_summary,
         "branch_wise": branch_data,
+        "alert_list": alert_list,
+        "alert_title": alert_title,
         "pending_requests": {
             "leaves": leave_summary["Open"],
             "corrections": frappe.db.count("Attendance Correction", {"status": "Pending"})

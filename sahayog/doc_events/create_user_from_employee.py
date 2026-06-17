@@ -34,7 +34,7 @@ def create_user(doc, method):
         for r in roles_to_assign:
             user_doc.append("roles", {"role": r})
 
-        user_doc.insert()
+        user_doc.insert(ignore_permissions=True)
 
         # Link User to Employee
         doc.user_id = user_doc.name
