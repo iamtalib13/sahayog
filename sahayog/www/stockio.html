@@ -4138,8 +4138,37 @@
       <!-- Split View Wrapper -->
       <div
         v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
-        :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
+        :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView || showStockHistoryView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
+        <!-- Stock History Side View -->
+        <div
+          v-if="showStockHistoryView && activeItem === 'Branch Stock'"
+          class="detail-view-container"
+          style="flex: 0 0 450px; max-width: 450px; padding: 0 0 24px 0"
+        >
+          <div class="detail-card" style="padding: 24px">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h4 class="section-subtitle" style="margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--text-main);">
+                Stock History (3 Months)
+              </h4>
+              <button @click="showStockHistoryView = false" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.25rem; cursor: pointer; padding: 4px;">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div style="max-height: 500px; overflow-y: auto;">
+                <div v-for="entry in stockHistoryItems" :key="entry.name" style="padding: 10px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-weight: 600;">[[ entry.stock_entry_type ]]</span>
+                        <span>[[ entry.posting_date ]]</span>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        Qty Change: [[ entry.actual_qty ]]
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Branch Stock Side View -->
         <div
           v-if="showBranchStockUseView && activeItem === 'Branch Stock'"
@@ -12284,6 +12313,32 @@
       },
 
       showBranchStockUseView: false,
+      showStockHistoryView: false,
+      stockHistoryItems: [],
+
+      async handleStockHistory(selectedRows) {
+        if (selectedRows.length === 0) return;
+        const rowName = selectedRows[0];
+        const row = this.rows.find(r => r.name === rowName);
+        if (!row) return;
+
+        this.showStockHistoryView = true;
+        this.stockHistoryItems = [];
+        
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_stock_history",
+            args: {
+              item_code: row.item_code,
+              warehouse: row.warehouse_name
+            }
+          });
+          this.stockHistoryItems = res.message || [];
+        } catch (e) {
+          frappe.msgprint("Error fetching stock history.");
+        }
+      },
+
       useForm: {
         items: [],
         loading: false,
