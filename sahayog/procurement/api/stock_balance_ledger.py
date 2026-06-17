@@ -1084,3 +1084,37 @@ def skip_approval_stage(docname, stage):
     frappe.db.commit()
     
     return {"status": "success"}
+
+@frappe.whitelist()
+def get_stock_history(item_code, warehouse):
+    """
+    Fetch stock entries for an item in a specific warehouse for the last 3 months.
+    """
+    from datetime import datetime, timedelta
+
+    three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d %H:%M:%S')
+    
+    stock_entries = frappe.db.sql("""
+        SELECT 
+            se.name, 
+            se.posting_date, 
+            se.posting_time,
+            sed.actual_qty,
+            sed.qty,
+            sed.t_warehouse,
+            se.stock_entry_type
+        FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` sed ON se.name = sed.parent
+        WHERE sed.item_code = %(item_code)s 
+          AND sed.s_warehouse = %(warehouse)s
+          AND sed.t_warehouse IS NULL
+          AND se.posting_date >= %(three_months_ago)s
+          AND se.docstatus = 1
+        ORDER BY se.posting_date DESC, se.posting_time DESC
+    """, {
+        "item_code": item_code,
+        "warehouse": warehouse,
+        "three_months_ago": three_months_ago
+    }, as_dict=True)
+    
+    return stock_entries
