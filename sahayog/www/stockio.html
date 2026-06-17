@@ -1137,6 +1137,12 @@
   .status-pill {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  .clickable-filter:hover {
+    color: var(--primary-color) !important;
+    background: rgba(var(--primary-rgb), 0.05);
+    text-decoration: underline;
+  }
 </style>
 
 <div id="stockio-loading-overlay" class="stockio-loading-overlay">
@@ -7979,8 +7985,11 @@
                     textAlign: col.type === 'avatar' ? 'left' : 'center',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: col.type === 'avatar' ? 'flex-start' : 'center'
+                    justifyContent: col.type === 'avatar' ? 'flex-start' : 'center',
+                    cursor: activeItem === 'Branch Stock' ? 'pointer' : 'default'
                   }"
+                  :class="{ 'clickable-filter': activeItem === 'Branch Stock' }"
+                  @click.stop="activeItem === 'Branch Stock' ? applyQuickFilter(row[col.key]) : null"
                 >
                   <div v-if="col.type === 'avatar'" class="row-primary">
                     <div class="item-avatar">
@@ -7989,7 +7998,8 @@
                     <span
                       class="truncate record-link"
                       :class="{ 'is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin) }"
-                      @click.stop="isRecordLinkColumn(col) && openRecord(row)"
+                      @click.stop="activeItem === 'Branch Stock' ? null : (isRecordLinkColumn(col) && openRecord(row))"
+                      :style="activeItem === 'Branch Stock' ? 'pointer-events: none;' : ''"
                       >[[ getFieldValue(row, col.key) ]]</span
                     >
                   </div>
@@ -7997,6 +8007,7 @@
                     v-else-if="col.type === 'badge'"
                     class="status-badge"
                     :class="getBadgeClass(row, col.key, col.getValue ? col.getValue(row) : null)"
+                    :style="activeItem === 'Branch Stock' ? 'pointer-events: none;' : ''"
                   >
                     [[ col.getValue ? col.getValue(row) : getBadgeText(row,
                     col.key) ]]
@@ -8207,7 +8218,8 @@
                       'record-link is-clickable': isRecordLinkColumn(col) && !(activeItem === 'Asset Master' && !isAdmin),
                       'line-clamp-2': col.key === 'description' 
                     }"
-                    @click.stop="isRecordLinkColumn(col) && openRecord(row)"
+                    @click.stop="activeItem === 'Branch Stock' ? null : (isRecordLinkColumn(col) && openRecord(row))"
+                    :style="activeItem === 'Branch Stock' ? 'pointer-events: none;' : ''"
                   >
                     [[ getFieldValue(row, col.key) ]]
                   </span>
@@ -13688,7 +13700,7 @@
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
               args: {
-                warehouse: this.userInventoryType ? null : this.userWarehouse,
+                warehouse: (this.userInventoryType || this.searchText) ? null : this.userWarehouse,
                 limit: limit,
                 start: start,
                 search_text: this.searchText,
@@ -13875,6 +13887,14 @@
         this.searchTimeout = setTimeout(() => {
           this.fetchData(this.currentView.doctype);
         }, 500);
+      },
+
+      applyQuickFilter(val) {
+        if (!val) return;
+        // Strip any HTML if present
+        const cleanVal = String(val).replace(/<[^>]*>/g, '').trim();
+        this.searchText = cleanVal;
+        this.fetchData(this.currentView.doctype);
       },
 
       get filteredRows() {
