@@ -375,15 +375,15 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
 
 @frappe.whitelist()
 def get_pending_attendance_corrections():
-    """Fetch pending attendance correction requests for the manager's branch or all for HR/Admin."""
+    """Fetch pending and historical attendance correction requests for the manager's branch or all for HR/Admin."""
     user = frappe.session.user
     roles = frappe.get_roles(user)
-    
+
     # Get current manager's branch info
     emp_data = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, ["name", "sahayog_branch", "sol_id"], as_dict=True)
-    
-    filters = {"status": "Pending"}
-    
+
+    filters = {}
+
     # If Admin or HR, filter by support staff
     if "HR Manager" in roles or "HR User" in roles or "Administrator" in roles:
         support_staff = frappe.get_all("Employee", filters={"custom_is_support_staff": 1}, fields=["name"])
@@ -403,16 +403,18 @@ def get_pending_attendance_corrections():
                 subordinates = frappe.get_all("Employee", filters={"reports_to": emp_data.name, "custom_is_support_staff": 1}, fields=["name"])
                 filters["employee"] = ["in", [s.name for s in subordinates]]
         else:
-            # Regular employee should not see this (or only their own if needed, but this API is for managers)
-            return []
+            return {"pending": [], "history": []}
 
     corrections = frappe.get_all("Attendance Correction",
         filters=filters,
-        fields=["name", "employee", "employee_name", "attendance_date", "current_status", "requested_status", "reason", "requested_by"],
+        fields=["name", "employee", "employee_name", "attendance_date", "current_status", "requested_status", "reason", "requested_by", "status", "creation"],
         order_by="creation desc"
     )
-    
-    return corrections
+
+    pending = [c for c in corrections if c.status == "Pending"]
+    history = [c for c in corrections if c.status != "Pending"]
+
+    return {"pending": pending, "history": history}
 
 @frappe.whitelist()
 def approve_attendance_correction(request_id, action="Approved"):
