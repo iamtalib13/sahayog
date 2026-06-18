@@ -5768,14 +5768,32 @@
                   <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
                     <h4 class="section-subtitle" style="margin: 0">Receipt Items</h4>
                     <div style="display: flex; gap: 8px; align-items: center;">
-                      <button 
-                        v-if="detailRecord.docstatus === 0 && !isEditing" 
-                        class="btn-create-inline" 
-                        style="padding: 4px 12px; font-size: 11px;"
-                        @click="isEditing = true"
-                      >
-                        Edit
-                      </button>
+                      <div v-if="detailRecord.docstatus === 0">
+                        <button 
+                          v-if="!isEditing" 
+                          class="btn-create-inline" 
+                          style="padding: 4px 12px; font-size: 11px;"
+                          @click="isEditing = true"
+                        >
+                          Edit
+                        </button>
+                        <div v-else style="display: flex; gap: 8px;">
+                          <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; font-size: 11px; background: #369696; border-color: #369696;"
+                            @click="saveRequest()"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; font-size: 11px; background: #64748b; border-color: #64748b;"
+                            @click="isEditing = false"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
                       <span class="badge active" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); border-radius: 20px">[[ detailRecord.items ? detailRecord.items.length : 0 ]] Items</span>
                     </div>
                   </div>
