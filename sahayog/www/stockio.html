@@ -1746,7 +1746,7 @@
             <!-- Step 2: Reporting -->
             <div class="inline-flow-step" style="position: relative; padding-right: 24px;">
               <div 
-                v-if="detailRecord.status === 'Pending Reporting Person' && (isAdmin || detailRecord.owner === frappe.session.user)"
+                v-if="detailRecord.status === 'Pending Reporting Person' && (isAdmin || detailRecord.owner === frappe.session.user || wh_dept_map.some(m => m.user_id === frappe.session.user))"
                 style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                 class="hover-primary"
                 title="Skip Approval"
@@ -1777,7 +1777,7 @@
             <!-- Step 3: HO Approval -->
             <div class="inline-flow-step" v-if="detailRecord.reporting_person_status !== 'Rejected'" style="position: relative; padding-right: 24px;">
               <div 
-                v-if="detailRecord.status === 'Pending HO Approval' && (isAdmin || detailRecord.owner === frappe.session.user)"
+                v-if="detailRecord.status === 'Pending HO Approval' && (isAdmin || detailRecord.owner === frappe.session.user || wh_dept_map.some(m => m.user_id === frappe.session.user))"
                 style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                 class="hover-primary"
                 title="Skip Approval"
