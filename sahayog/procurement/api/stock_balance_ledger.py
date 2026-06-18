@@ -1088,7 +1088,7 @@ def skip_approval_stage(docname, stage):
         
         # Update child table items
         for item in doc.items:
-            item.approved_qty = item.quantity
+            item.approved_quantity = item.quantity
             item.status = "Approved"
         doc.save(ignore_permissions=True)
     
