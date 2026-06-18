@@ -569,7 +569,7 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None):
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None, item_code=None, warehouse_filter=None):
     """
     API to fetch Branch Stock data (reusing report logic)
     """
@@ -589,8 +589,13 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
     sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     filters = {}
-    if warehouse:
+    if warehouse_filter:
+        filters["warehouse"] = warehouse_filter
+    elif warehouse:
         filters["warehouse"] = warehouse
+    
+    if item_code:
+        filters["item_code"] = item_code
 
     _, data = execute(filters)
 
@@ -613,18 +618,27 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
         data = [row for row in data if row.get("warehouse") != user_warehouse]
 
     if search_text:
-        search_text = search_text.lower()
+        terms = search_text.lower().split()
         # Fetch all branches for mapping
         branches = frappe.get_all("Sahayog Branch", fields=["name", "branch"])
         branch_map = {b.name: b.branch.lower() for b in branches if b.branch}
 
-        data = [
-            row for row in data 
-            if search_text in str(row.get("item_code", "")).lower() or 
-               search_text in str(row.get("item_name", "")).lower() or 
-               search_text in str(row.get("warehouse", "")).lower() or
-               (branch_map.get(row.get("warehouse"), "") and search_text in branch_map.get(row.get("warehouse", "")))
-        ]
+        filtered_data = []
+        for row in data:
+            match_all = True
+            for term in terms:
+                found_term = (
+                    term in str(row.get("item_code", "")).lower() or 
+                    term in str(row.get("item_name", "")).lower() or 
+                    term in str(row.get("warehouse", "")).lower() or
+                    (branch_map.get(row.get("warehouse"), "") and term in branch_map.get(row.get("warehouse", "")))
+                )
+                if not found_term:
+                    match_all = False
+                    break
+            if match_all:
+                filtered_data.append(row)
+        data = filtered_data
         
     total_count = len(data)
     
