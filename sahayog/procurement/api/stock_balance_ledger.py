@@ -1085,6 +1085,12 @@ def skip_approval_stage(docname, stage):
         update_fields["ho_officer_status"] = "Skip"
         update_fields["status"] = "Approved"
         update_fields["docstatus"] = 1
+        
+        # Update child table items
+        for item in doc.items:
+            item.approved_qty = item.quantity
+            item.status = "Approved"
+        doc.save(ignore_permissions=True)
     
     # Use db.set_value to bypass workflow and validation rules
     frappe.db.set_value("Employee Material Request", docname, update_fields)
