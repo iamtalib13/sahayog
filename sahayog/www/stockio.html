@@ -5808,6 +5808,7 @@
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
                           <th style="text-align: right">Amount</th>
+                          <th v-if="isEditing" style="text-align: center">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -5840,6 +5841,11 @@
                           <td style="text-align: right; font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</td>
                           <td style="text-align: right;" v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></td>
                           <td style="text-align: right; font-weight: 700; color: var(--text-main);" v-html="frappe.format(item.amount, {fieldtype: 'Currency'})"></td>
+                          <td v-if="isEditing" style="text-align: center">
+                            <button class="btn-create-inline" style="background: #ef4444 !important; color: white !important; border: none; padding: 4px 8px;" @click="detailRecord.items.splice(idx, 1)">
+                              <i class="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
