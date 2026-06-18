@@ -1068,7 +1068,10 @@ def skip_approval_stage(docname, stage):
     """
     doc = frappe.get_doc("Employee Material Request", docname)
     
-    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user:
+    # Check if user is in wh_dept_map
+    is_warehouse_user = frappe.db.exists("Default Warehouse", {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": frappe.session.user})
+    
+    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user and not is_warehouse_user:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
     
     update_fields = {}
