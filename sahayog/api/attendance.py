@@ -52,6 +52,7 @@ def get_team_attendance_data():
     # Enrich team data with today's attendance/checkins
     present_count = 0
     absent_count = 0
+    half_day_count = 0
     pending_count = 0
     on_leave_count = 0
 
@@ -104,13 +105,13 @@ def get_team_attendance_data():
             if on_leave:
                 emp.attendance_status = "On Leave"
 
-        
-
         # Count stats
         if emp.attendance_status == "Present":
             present_count += 1
         elif emp.attendance_status == "Absent":
             absent_count += 1
+        elif emp.attendance_status == "Half Day":
+            half_day_count += 1
         elif emp.attendance_status == "On Leave":
             on_leave_count += 1
         else:
@@ -122,6 +123,7 @@ def get_team_attendance_data():
             "total": len(team),
             "present": present_count,
             "absent": absent_count,
+            "half_day": half_day_count,
             "pending": pending_count,
             "on_leave": on_leave_count
         },
@@ -132,7 +134,7 @@ def get_team_attendance_data():
 def mark_attendance(employee, status, log_type=None):
     """
     Mark attendance or checkin for an employee.
-    status: 'Present', 'Absent'
+    status: 'Present', 'Absent', 'Half Day'
     log_type: 'IN', 'OUT' (used when status is Present)
     """
     if not employee or not status:
@@ -165,7 +167,7 @@ def mark_attendance(employee, status, log_type=None):
             
         return {"success": True, "message": "Check In and Marked Present"}
 
-    elif status == "Absent":
+    elif status in ["Absent", "Half Day"]:
         # Create Attendance record
         if frappe.db.exists("Attendance", {"employee": employee, "attendance_date": today}):
             frappe.throw(_("Attendance already marked for today"))
@@ -174,12 +176,12 @@ def mark_attendance(employee, status, log_type=None):
             "doctype": "Attendance",
             "employee": employee,
             "attendance_date": today,
-            "status": "Absent",
+            "status": status,
             "company": frappe.db.get_value("Employee", employee, "company")
         })
         att.insert(ignore_permissions=True)
         att.submit()
-        return {"success": True, "message": "Marked as Absent"}
+        return {"success": True, "message": f"Marked as {status}"}
 
 @frappe.whitelist()
 def get_employee_calendar(employee, month, year):

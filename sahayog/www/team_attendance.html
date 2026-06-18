@@ -118,7 +118,7 @@
       /* STATS ROW */
       .stats-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
         gap: 12px;
         margin-bottom: 18px;
       }
@@ -366,6 +366,10 @@
         background: #fee2e2;
         color: #dc2626;
       }
+      .pill-halfday {
+        background: #fef3c7;
+        color: #d97706;
+      }
       .pill-notmarked {
         background: #f3f4f6;
         color: #9ca3af;
@@ -477,6 +481,11 @@
       .cal-d.absent-d {
         background: #fee2e2;
         color: #dc2626;
+        font-weight: 600;
+      }
+      .cal-d.half-d {
+        background: #fef3c7;
+        color: #d97706;
         font-weight: 600;
       }
       .cal-d.leave-d {
@@ -981,6 +990,19 @@
             </div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon" style="background: #fef3c7">🕒</div>
+            <div>
+              <div
+                class="stat-val"
+                id="statHalfDay"
+                style="color: #d97706"
+              >
+                0
+              </div>
+              <div class="stat-lbl">Half Day</div>
+            </div>
+          </div>
+          <div class="stat-card">
             <div class="stat-icon" style="background: #fef3c7">⏳</div>
             <div>
               <div
@@ -1052,6 +1074,13 @@
               <div class="bulk-sep"></div>
               <button class="bulk-btn bulk-in" onclick="bulkAction('present')">
                 All Check In
+              </button>
+              <button
+                class="bulk-btn"
+                style="background:#fff7ed;color:#c2410c;"
+                onclick="bulkAction('halfday')"
+              >
+                All ½ Day
               </button>
               <button
                 class="bulk-btn bulk-absent"
@@ -1274,6 +1303,10 @@
                 <div class="cl-item">
                   <div class="cl-dot" style="background: #ef4444"></div>
                   Absent
+                </div>
+                <div class="cl-item">
+                  <div class="cl-dot" style="background: #fef3c7"></div>
+                  Half Day
                 </div>
                 <div class="cl-item">
                   <div class="cl-dot" style="background: #fef3c7"></div>
@@ -1632,6 +1665,8 @@
           dashboardSummary.present;
         document.getElementById("statAbsent").textContent =
           dashboardSummary.absent;
+        document.getElementById("statHalfDay").textContent =
+          dashboardSummary.half_day || 0;
         document.getElementById("statPending").textContent =
           dashboardSummary.pending;
       }
@@ -1677,22 +1712,23 @@
             pillHtml = `<span class="status-pill pill-present">✓ Present</span>`;
           else if (status === "Absent")
             pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
+          else if (status === "Half Day")
+            pillHtml = `<span class="status-pill pill-halfday">🕒 Half Day</span>`;
           else if (status === "On Leave")
             pillHtml = `<span class="status-pill" style="background:#fef3c7; color:#d97706;">On Leave</span>`;
           else
             pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
           let actionsHtml = "";
-          if (status === "On Leave") {
-            actionsHtml = `<button class="btn-done">On Leave</button>`;
+          if (status === "On Leave" || status === "Half Day") {
+            actionsHtml = ""; // Will use pillHtml instead
           } else if (!status) {
             actionsHtml = `
               <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+              <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
               <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
           } else if (status === "Present" && !s.check_out) {
             actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
-          } else {
-            actionsHtml = `<button class="btn-done">Done</button>`;
           }
 
           let timeInfo = "";
@@ -1710,8 +1746,9 @@
                 <div class="emp-role">${s.designation || "Staff"}</div>
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
             </div>
-            ${pillHtml}
-            <div class="emp-actions">${actionsHtml}</div>
+            <div class="emp-actions">
+                ${!status ? actionsHtml : (status === "Present" && !s.check_out ? actionsHtml : pillHtml)}
+            </div>
           `;
           list.appendChild(row);
         });
@@ -1781,6 +1818,7 @@
           if (isToday) cls += " today-d";
           if (histStatus === "Present") cls += " present-d";
           else if (histStatus === "Absent") cls += " absent-d";
+          else if (histStatus === "Half Day") cls += " half-d";
           else if (histStatus === "On Leave") cls += " leave-d";
           else if (isWeekend) cls += " woff";
 
@@ -1797,17 +1835,21 @@
         if (!selectedMemberId) return;
         const s = staff.find((x) => x.name === selectedMemberId);
         let present = 0,
-          absent = 0;
+          absent = 0,
+          halfday = 0;
         Object.values(attendanceHistory).forEach((v) => {
           if (v === "Present") present++;
           else if (v === "Absent") absent++;
+          else if (v === "Half Day") halfday++;
         });
-        const total = present + absent;
-        const pct = total ? Math.round((present / total) * 100) : 0;
+        const total = present + absent + (halfday * 0.5);
+        const total_days = present + absent + halfday;
+        const pct = total_days ? Math.round((total / total_days) * 100) : 0;
 
         summary.innerHTML = `
           <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${s.employee_name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${s.designation || ""}</span></div>
           <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${present} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Half Day (Month)</span><span class="sum-val" style="color:#d97706">${halfday} days</span></div>
           <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${absent} days</span></div>
           <div class="sum-row"><span class="sum-lbl">Attendance %</span><span class="sum-val">${pct}%</span></div>
           <div style="background:#f3f4f6;border-radius:8px;height:6px;margin-top:6px;overflow:hidden;">
@@ -1982,8 +2024,10 @@
         bar.style.opacity = "0.5";
         bar.style.pointerEvents = "none";
 
-        let status =
-          type === "present" || type === "checkout" ? "Present" : "Absent";
+        let status = "Present";
+        if (type === "absent") status = "Absent";
+        else if (type === "halfday") status = "Half Day";
+
         let log_type = type === "checkout" ? "OUT" : "IN";
 
         // Dispatch requests in parallel instead of waiting inside loop sequential order
