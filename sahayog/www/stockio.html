@@ -1746,7 +1746,7 @@
             <!-- Step 2: Reporting -->
             <div class="inline-flow-step" style="position: relative; padding-right: 24px;">
               <div 
-                v-if="detailRecord.status === 'Pending Reporting Person' && (isAdmin || detailRecord.owner === frappe.session.user)"
+                v-if="detailRecord.status === 'Pending Reporting Person' && (isAdmin || detailRecord.owner === frappe.session.user || wh_dept_map.some(m => m.user_id === frappe.session.user))"
                 style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                 class="hover-primary"
                 title="Skip Approval"
@@ -1777,7 +1777,7 @@
             <!-- Step 3: HO Approval -->
             <div class="inline-flow-step" v-if="detailRecord.reporting_person_status !== 'Rejected'" style="position: relative; padding-right: 24px;">
               <div 
-                v-if="detailRecord.status === 'Pending HO Approval' && (isAdmin || detailRecord.owner === frappe.session.user)"
+                v-if="detailRecord.status === 'Pending HO Approval' && (isAdmin || detailRecord.owner === frappe.session.user || wh_dept_map.some(m => m.user_id === frappe.session.user))"
                 style="position: absolute; top: 10px; right: 10px; font-size: 14px; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                 class="hover-primary"
                 title="Skip Approval"
@@ -2168,7 +2168,7 @@
         <!-- Edit button removed from top header -->
         <button
           class="btn-create"
-          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Inward' || activeItem === 'Asset Master' || activeItem === 'Movements')"
+          v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Asset Master' || activeItem === 'Movements')"
           style="background: #3b82f6; border-color: #3b82f6"
         >
           <i class="fas fa-edit"></i>
@@ -5767,7 +5767,35 @@
                 <div class="flow-card" style="padding: 0; overflow: hidden">
                   <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
                     <h4 class="section-subtitle" style="margin: 0">Receipt Items</h4>
-                    <span class="badge active" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); border-radius: 20px">[[ detailRecord.items ? detailRecord.items.length : 0 ]] Items</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                      <div v-if="detailRecord.docstatus === 0">
+                        <button 
+                          v-if="!isEditing" 
+                          class="btn-create-inline" 
+                          style="padding: 4px 12px; font-size: 11px;"
+                          @click="isEditing = true"
+                        >
+                          Edit
+                        </button>
+                        <div v-else style="display: flex; gap: 8px;">
+                          <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; font-size: 11px; background: #369696; border-color: #369696;"
+                            @click="saveRequest()"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; font-size: 11px; background: #ef4444 !important; border-color: #ef4444 !important; color: white !important;"
+                            @click="isEditing = false"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                      <span class="badge active" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); border-radius: 20px">[[ detailRecord.items ? detailRecord.items.length : 0 ]] Items</span>
+                    </div>
                   </div>
                   <div class="table-responsive">
                     <table class="items-table" style="width: 100%">
@@ -5780,6 +5808,7 @@
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
                           <th style="text-align: right">Amount</th>
+                          <th v-if="isEditing" style="text-align: center">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -5809,9 +5838,22 @@
                              </div>
                              <span v-else style="color: var(--text-muted); font-size: 11px; opacity: 0.5">-</span>
                           </td>
-                          <td style="text-align: right; font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</td>
-                          <td style="text-align: right;" v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></td>
-                          <td style="text-align: right; font-weight: 700; color: var(--text-main);" v-html="frappe.format(item.amount, {fieldtype: 'Currency'})"></td>
+                          <td style="text-align: right">
+                            <input v-if="isEditing" type="number" v-model.number="item.qty" style="width: 60px; text-align: right; padding: 2px 4px;">
+                            <span v-else style="font-weight: 700;">[[ item.qty ]] [[ item.uom ]]</span>
+                          </td>
+                          <td style="text-align: right">
+                            <input v-if="isEditing" type="number" v-model.number="item.rate" style="width: 80px; text-align: right; padding: 2px 4px;">
+                            <span v-else v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></span>
+                          </td>
+                          <td style="text-align: right; font-weight: 700; color: var(--text-main);">
+                            INR [[ (item.qty * item.rate).toFixed(2) ]]
+                          </td>
+                          <td v-if="isEditing" style="text-align: center">
+                            <button class="btn-create-inline" style="background: #ef4444 !important; color: white !important; border: none; padding: 4px 8px;" @click="detailRecord.items.splice(idx, 1)">
+                              <i class="fas fa-trash-alt"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
