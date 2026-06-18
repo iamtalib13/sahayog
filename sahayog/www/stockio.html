@@ -12725,9 +12725,20 @@
       assetStatusFilter: 'Available',
       assetGroupBy: 'Item',
 
+      async getSerialWarehouseMap() {
+        try {
+            const res = await frappe.call({
+                method: "sahayog.api.asset_utils.get_serial_warehouse_map"
+            });
+            return res.message || {};
+        } catch (e) {
+            console.error("Error fetching serial warehouse map:", e);
+            return {};
+        }
+      },
+
       async fetchAssetAvailability() {
         try {
-          // 1. Fetch all active assets (to know used serials and for Assigned board)
           const assetsRes = await frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -12739,20 +12750,22 @@
           const allAssets = assetsRes.message || [];
           const usedSerials = allAssets.map(a => a.serial_no).filter(sn => sn);
           
-          // 2. Fetch all Serial Numbers (for Available board)
           const serialsRes = await frappe.call({
             method: "frappe.client.get_list",
             args: {
               doctype: "Serial No",
-              fields: ["name", "item_code", "warehouse"]
+              fields: ["name", "item_code"]
             }
           });
           const allSerials = serialsRes.message || [];
           
-          // 3. Filter available serials (not used)
-          const availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name));
+          const warehouseMap = await this.getSerialWarehouseMap();
           
-          // 4. Fetch Items (to check is_fixed_asset)
+          const availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name)).map(sn => ({
+              ...sn,
+              warehouse: warehouseMap[sn.name]
+          }));
+          
           const itemsRes = await frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -12762,9 +12775,7 @@
             }
           });
           const fixedAssetItems = itemsRes.message || [];
-          console.log("Fixed Asset Items Data:", fixedAssetItems);
 
-          // 5. Fetch Branches for grouping (if grouped by location/zone/region)
           let branches = [];
           if (this.assetGroupBy !== 'Item') {
              const branchRes = await frappe.call({
@@ -12777,7 +12788,6 @@
              branches = branchRes.message || [];
           }
           
-          // 6. Aggregate based on filter and grouping
           const summaryMap = {};
           
           if (this.assetStatusFilter === 'Available') {
@@ -12791,11 +12801,9 @@
                         key = sn.item_code;
                         label = item.item_name || sn.item_code;
                     } else if (this.assetGroupBy === 'SOL/Branch') {
-                        // Try to extract 4-digit SOL ID from warehouse string
                         const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
                         const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
                         
-                        // Find branch by name (SOL ID) or branch field
                         const branch = branches.find(b => 
                             (b.name && b.name === solId) || 
                             (b.branch && b.branch === sn.warehouse) ||
@@ -12841,7 +12849,6 @@
                 }
             });
           } else {
-            // Assigned
             allAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 if (item) {
