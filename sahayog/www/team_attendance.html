@@ -741,6 +741,61 @@
         }
       }
 
+      /* TOOLTIP */
+      .emp-tooltip {
+        position: fixed;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(45, 32, 96, 0.2);
+        padding: 14px;
+        z-index: 9999;
+        width: 250px;
+        display: none;
+        pointer-events: none;
+        border: 1px solid #eee;
+        transition: opacity 0.2s;
+      }
+      .tooltip-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 8px;
+      }
+      .tooltip-header img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .tooltip-header-info h4 {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--brand);
+        margin: 0;
+      }
+      .tooltip-header-info p {
+        font-size: 10px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .tooltip-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 11px;
+      }
+      .t-lbl {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .t-val {
+        color: var(--text);
+        font-weight: 600;
+        text-align: right;
+      }
+
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
@@ -1249,6 +1304,9 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Employee Tooltip -->
+    <div class="emp-tooltip" id="empTooltip"></div>
+
     <script>
       // ── CONFIG & STATE ──────────────────────────────────────
       const COLORS = [
@@ -1262,6 +1320,51 @@
         "#14b8a6",
       ];
       let staff = [];
+
+      // Tooltip Handlers
+      function showEmpTooltip(e, empId) {
+        const s = staff.find((x) => x.name === empId);
+        if (!s) return;
+
+        const tooltip = document.getElementById("empTooltip");
+        tooltip.innerHTML = `
+          <div class="tooltip-header">
+            ${s.image ? `<img src="${s.image}">` : `<div style="width:36px;height:36px;border-radius:50%;background:${s.color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">${s.employee_name.charAt(0)}</div>`}
+            <div class="tooltip-header-info">
+              <h4>${s.employee_name}</h4>
+              <p>${s.name}</p>
+            </div>
+          </div>
+          <div class="tooltip-row"><span class="t-lbl">Designation</span><span class="t-val">${s.designation || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Department</span><span class="t-val">${s.department || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Branch</span><span class="t-val">${s.branch || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Joining Date</span><span class="t-val">${s.date_of_joining ? new Date(s.date_of_joining).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Reporting To</span><span class="t-val">${s.reports_to_name || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Mobile</span><span class="t-val">${s.cell_number || "-"}</span></div>
+          <div class="tooltip-row"><span class="t-lbl">Email</span><span class="t-val" style="font-size:9px; word-break: break-all;">${s.company_email || "-"}</span></div>
+        `;
+
+        tooltip.style.display = "block";
+        updateTooltipPos(e);
+      }
+
+      function updateTooltipPos(e) {
+        const tooltip = document.getElementById("empTooltip");
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+
+        // Prevent overflow
+        if (x + 250 > window.innerWidth) x = e.clientX - 265;
+        if (y + 300 > window.innerHeight) y = e.clientY - 315;
+
+        tooltip.style.left = x + "px";
+        tooltip.style.top = y + "px";
+      }
+
+      function hideEmpTooltip() {
+        document.getElementById("empTooltip").style.display = "none";
+      }
+
       let attendanceHistory = {};
       let selectedMemberId = null;
       let currentFilter = "all";
@@ -1564,6 +1667,10 @@
           if (isChecked) row.style.background = "#ede9fe";
           if (s.is_self && selectedMemberId !== s.name)
             row.style.background = "#f5f3ff";
+
+          row.onmouseenter = (e) => showEmpTooltip(e, s.name);
+          row.onmousemove = (e) => updateTooltipPos(e);
+          row.onmouseleave = () => hideEmpTooltip();
 
           let pillHtml = "";
           if (status === "Present")

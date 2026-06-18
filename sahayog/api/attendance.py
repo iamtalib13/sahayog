@@ -30,10 +30,22 @@ def get_team_attendance_data():
     # Fetch team members
     team = frappe.get_all("Employee", 
         filters=filters,
-        fields=["name", "employee_name", "designation", "branch", "status", "gender", "image"],
+        fields=[
+            "name", "employee_name", "designation", "branch", "status", 
+            "gender", "image", "department", "date_of_joining", 
+            "reports_to", "cell_number", "company_email"
+        ],
         order_by="employee_name"
     )
-    # No long log here to avoid length error
+
+    # Fetch supervisor names to show names instead of IDs
+    supervisor_ids = list(set([emp.reports_to for emp in team if emp.reports_to]))
+    supervisor_map = {}
+    if supervisor_ids:
+        supervisors = frappe.get_all("Employee", 
+            filters={"name": ["in", supervisor_ids]}, 
+            fields=["name", "employee_name"])
+        supervisor_map = {s.name: s.employee_name for s in supervisors}
 
     today = nowdate()
     
@@ -44,6 +56,9 @@ def get_team_attendance_data():
     on_leave_count = 0
 
     for emp in team:
+        # Set supervisor name
+        emp.reports_to_name = supervisor_map.get(emp.reports_to) if emp.reports_to else None
+
         # Set is_self flag
         emp.is_self = (emp.name == manager.name) if manager else False
 
