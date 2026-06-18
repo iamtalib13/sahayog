@@ -12728,7 +12728,7 @@
       async getSerialWarehouseMap() {
         try {
             const res = await frappe.call({
-                method: "sahayog.api.asset_utils.get_serial_warehouse_map"
+                method: "sahayog.procurement.api.asset_utils.get_serial_warehouse_map"
             });
             return res.message || {};
         } catch (e) {
