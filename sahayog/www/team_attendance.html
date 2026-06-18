@@ -3722,7 +3722,8 @@
 
         summary.innerHTML = `
           <div class="sum-row"><span class="sum-lbl" style="font-weight:600;color:var(--text);">${empInfo.name}</span><span class="sum-val" style="font-size:11px;color:var(--muted);">${empInfo.designation || ""}</span></div>
-          <div class="sum-row"><span class="sum-lbl">Working Days</span><span class="sum-val">${stats.working_days} days</span></div>
+          <div class="sum-row"><span class="sum-lbl">Working Days</span><span class="sum-val">${stats.marked_days} days</span></div>
+
           <div class="sum-row"><span class="sum-lbl">Present (Month)</span><span class="sum-val" style="color:var(--success)">${stats.present_days} days</span></div>
           <div class="sum-row"><span class="sum-lbl">Absent (Month)</span><span class="sum-val" style="color:var(--danger)">${stats.absent_days} days</span></div>
           <div class="sum-row"><span class="sum-lbl">On Leave (Month)</span><span class="sum-val" style="color:#f59e0b">${stats.leave_days} days</span></div>
