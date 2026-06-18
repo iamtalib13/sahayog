@@ -1,9 +1,12 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
+from frappe.utils import getdate, add_days
 
-
-import frappe
+def set_confirmation_date(doc, method):
+    """Automatically set final_confirmation_date to 90 days after date_of_joining if empty."""
+    if doc.date_of_joining and not doc.final_confirmation_date:
+        doc.final_confirmation_date = add_days(doc.date_of_joining, 90)
 
 def emp_enable_disable(doc, method):
     status = doc.status

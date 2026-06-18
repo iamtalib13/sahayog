@@ -43,5 +43,27 @@ def sync_district_state():
             doc.name = district        # required for naming series = field: district
             doc.insert(ignore_permissions=True)
 
-    frappe.db.commit()
-    return "District + State Sync Complete"
+
+@frappe.whitelist()
+def auto_approve_attendance_corrections():
+    """Auto-approve all pending attendance correction requests."""
+    pending_corrections = frappe.get_all(
+        "Attendance Correction",
+        filters={"status": "Pending"},
+        fields=["name"]
+    )
+    
+    for correction in pending_corrections:
+        try:
+            doc = frappe.get_doc("Attendance Correction", correction.name)
+            doc.status = "Approved"
+            doc.approved_by = "Administrator"
+            doc.approval_date = frappe.utils.now_datetime()
+            # Calling save() will trigger the on_update method in AttendanceCorrection,
+            # which in turn calls apply_correction()
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(f"Failed to auto-approve Attendance Correction {correction.name}: {str(e)}", "Auto-Approval Error")
+    
+    return f"Processed {len(pending_corrections)} attendance correction requests."

@@ -263,6 +263,7 @@ doc_events = {
         ],
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
+            "sahayog.doc_events.employee.set_confirmation_date",
         ],
         # "before_save": [
         #      "sahayog.doc_events.employee.emp_enable_disable",
@@ -408,10 +409,10 @@ scheduler_events = {
     #     # These tasks would be triggered every scheduler tick (default: every 60s)
     #     "sahayog.tasks.all"
     # ],
-    # "hourly": [
-    #     # Runs once every hour
-    #     "sahayog.tasks.hourly"
-    # ],
+    "hourly": [
+        "sahayog.tasks.auto_approve_attendance_corrections"
+    ],
+
     # "weekly": [
     #     # Runs once every week (Sunday midnight)
     #     "sahayog.tasks.weekly"
