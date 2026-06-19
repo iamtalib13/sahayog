@@ -12031,6 +12031,13 @@
             { label: "Warehouse", key: "warehouse", width: 2 },
             { label: "Inventory Type", key: "inventory_type", width: 2 },
             {
+              label: "Default",
+              key: "dfault",
+              width: 1,
+              type: "badge",
+              getValue: (row) => (row.dfault ? "Yes" : "No"),
+            },
+            {
               label: "Action",
               key: "delete_access",
               width: 0.5,
@@ -17041,6 +17048,7 @@
           return status === 1 ? "active" : "disabled";
         }
         if (key === "disabled") return row.disabled ? "disabled" : "active";
+        if (key === "dfault") return (value === "Yes") ? "active" : "disabled";
 
         const val = value || this.getFieldValue(row, key);
         const normalized = String(val || "").toLowerCase();

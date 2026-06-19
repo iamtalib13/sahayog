@@ -804,7 +804,7 @@ def get_wh_dept_map():
         return frappe.get_all(
             "Default Warehouse",
             filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
-            fields=["user_id", "warehouse", "inventory_type", "name"]
+            fields=["user_id", "warehouse", "inventory_type", "dfault", "name"]
         )
     except Exception as e:
         frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
