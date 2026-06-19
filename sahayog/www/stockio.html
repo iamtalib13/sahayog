@@ -14415,6 +14415,7 @@
                     if (r.message) {
                         this.emrForm.employee = r.message.name;
                         this.emrForm.employee_display = `${r.message.name} (${r.message.employee_name})`;
+                        this.onEmployeeChange();
                     }
                 }
              });
