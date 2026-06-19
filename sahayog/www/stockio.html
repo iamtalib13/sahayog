@@ -4160,9 +4160,12 @@
               </div>
             </div>
 
-            <div class="form-row" style="margin-top: 20px">
+            <div
+              class="form-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px"
+            >
               <!-- Inventory Type -->
-              <div class="form-group" style="width: 50%">
+              <div class="form-group">
                 <label class="form-label"
                   >Inventory Type <span class="form-required">*</span></label
                 >
@@ -4172,6 +4175,17 @@
                   <option value="IT">IT</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              <!-- Default Checkbox -->
+              <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 12px; gap: 8px;">
+                <input 
+                  type="checkbox" 
+                  id="accessDefaultCheckbox"
+                  v-model="accessForm.dfault"
+                  style="width: 20px; height: 20px; accent-color: #369696; cursor: pointer;"
+                />
+                <label for="accessDefaultCheckbox" class="form-label" style="margin-bottom: 0; cursor: pointer; text-transform: none;">Default</label>
               </div>
             </div>
 
@@ -12629,6 +12643,7 @@
         user_id: "",
         warehouse: "",
         inventory_type: "",
+        dfault: false,
       },
       confirmModal: {
         show: false,
@@ -14629,6 +14644,7 @@
             user_id: "",
             warehouse: "",
             inventory_type: "",
+            dfault: false,
           };
           return;
         }
@@ -14659,11 +14675,13 @@
                 user_id: this.accessForm.user_id,
                 warehouse: this.accessForm.warehouse,
                 inventory_type: this.accessForm.inventory_type,
+                dfault: this.accessForm.dfault ? 1 : 0,
               }
             : {
                 user_id: this.accessForm.user_id,
                 warehouse: this.accessForm.warehouse,
                 inventory_type: this.accessForm.inventory_type,
+                dfault: this.accessForm.dfault ? 1 : 0,
               };
 
           const res = await frappe.call({
@@ -14691,6 +14709,7 @@
           user_id: row.user_id,
           warehouse: row.warehouse,
           inventory_type: row.inventory_type,
+          dfault: !!row.dfault,
         };
         this.showAccessCreateView = true;
         this.showDetailView = false;
