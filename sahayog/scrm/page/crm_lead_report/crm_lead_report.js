@@ -996,9 +996,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     transfer_loading: false,
     visible_branches: [],
+    disabled_branches: [],
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
+    },
+    toggleBranchCapsule(sol_id) {
+      const idx = this.disabled_branches.indexOf(sol_id);
+
+      if (idx > -1) {
+        this.disabled_branches.splice(idx, 1);
+      } else {
+        this.disabled_branches.push(sol_id);
+      }
+
+      this.fetchEmployeePerformance();
     },
 
     exportCSV() {
@@ -1487,6 +1499,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return `${displayText} +${count - 1} more`;
     },
 
+    getActiveSolIds() {
+      return this.selected.sol_id.filter(
+        sol => !this.disabled_branches.includes(String(sol))
+      );
+    },
     async fetchEmployeePerformance() {
       this.employee_report_loading = true;
       this.employee_error_message = null;
@@ -1499,6 +1516,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           args: {
             from_date: this.employee_from_date,
             to_date: this.employee_to_date,
+            sol_ids: JSON.stringify(this.getActiveSolIds())
           },
         });
         this.employee_performance_data = res.message || [];
@@ -1678,18 +1696,32 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       const branchBadges = visible
         .map((b) => {
           const displayLabel = `${b.sol_id}${b.branch ? " - " + b.branch : ""}`;
+          const isDisabled = this.disabled_branches.includes(String(b.sol_id));
+
+          const capsuleStyle = isDisabled
+            ? `
+                background:#f1f5f9;
+                border:1px solid #cbd5e1;
+                color:#94a3b8;
+                opacity:.8;
+            `
+            : `
+                background:#f0f9ff;
+                border:1px solid #bae6fd;
+                color:#0369a1;
+            `;
 
           return `
                 <span
+                    class="crm-branch-pill"
+                    data-sol="${b.sol_id}"
                     style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        padding: 4px 12px;
-                        border-radius: 14px;
-                        background: #f0f9ff;
-                        border: 1px solid #bae6fd;
-                        color: #0369a1;
+                        ${capsuleStyle}
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        padding:4px 12px;
+                        border-radius:14px;
                         font-size: 11px;
                         font-weight: 600;
                         white-space: nowrap;
@@ -1697,6 +1729,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         overflow: hidden;
                         text-overflow: ellipsis;
                         line-height: 1;
+                        cursor:pointer;
                     "
                     title="${displayLabel}"
                 >
@@ -1732,7 +1765,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             `
           : "";
 
-      // ADJUSTED: margin-top and vertical-align to align exactly with the center line of the main title text
       $(".page-title").after(`
         <div
             id="crm-branch-capsules"
@@ -1751,42 +1783,45 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         </div>
     `);
 
-      // Mouse hover handlers
-      $("#show-all-branches")
-        .on("mouseenter", function () {
-          $(this).css({ background: "#e2e8f0" });
-        })
-        .on("mouseleave", function () {
-          $(this).css({ background: "#f8fafc" });
-        });
+      // Add click handler for visible capsules
+      $(".crm-branch-pill").on("click", (e) => {
+        const solId = $(e.currentTarget).data("sol");
+        this.toggleBranchCapsule(String(solId));
+      });
 
-      // Dialog box trigger
+      // Dialog box trigger for 'More'
       $("#show-all-branches").on("click", () => {
         const html = this.visible_branches
-          .map(
-            (b) => `
+          .map((b) => {
+              const isDisabled = this.disabled_branches.includes(String(b.sol_id));
+              return `
                 <div
+                    class="branch-toggle-item"
+                    data-sol="${b.sol_id}"
                     style="
                         padding: 10px 12px;
                         border-bottom: 1px solid #f1f5f9;
                         display: flex;
                         justify-content: space-between;
                         align-items: center;
+                        cursor: pointer;
+                        background: ${isDisabled ? '#f8fafc' : '#ffffff'};
                     "
                 >
-                    <span style="font-weight: 600; color: #0369a1; min-width: 90px;">
+                    <span style="font-weight: 600; color: ${isDisabled ? '#94a3b8' : '#0369a1'}; min-width: 90px;">
                         ${b.sol_id}
                     </span>
-                    <span style="flex: 1; color: #334155; padding-left: 12px;">
+                    <span style="flex: 1; color: ${isDisabled ? '#94a3b8' : '#334155'}; padding-left: 12px;">
                         ${b.branch || "-"}
                     </span>
+                    <i class="fa ${isDisabled ? 'fa-toggle-off' : 'fa-toggle-on'}" style="color: ${isDisabled ? '#cbd5e1' : '#05a15d'}; font-size: 16px;"></i>
                 </div>
-            `,
-          )
+            `;
+          })
           .join("");
 
         const d = new frappe.ui.Dialog({
-          title: `Visible Branches (${count})`,
+          title: `Manage Branches (${count})`,
           size: "large",
           fields: [{ fieldtype: "HTML", fieldname: "branches" }],
         });
@@ -1796,6 +1831,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 ${html}
             </div>
         `);
+
+        // Attach toggle event in dialog
+        d.fields_dict.branches.$wrapper.find(".branch-toggle-item").on("click", (e) => {
+            const solId = $(e.currentTarget).data("sol");
+            this.toggleBranchCapsule(String(solId));
+            // Re-render dialog content
+            d.hide();
+        });
 
         d.show();
       });
