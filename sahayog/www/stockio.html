@@ -8378,6 +8378,17 @@
                >Showing [[ loadedRows ]] of [[ totalRows ]] [[
                currentView.labelPlural || activeItem.toLowerCase() ]]</span
               >
+              <div v-if="activeItem === 'Access'" style="display: inline-flex; align-items: center; gap: 8px; margin-left: 20px;">
+                <input 
+                  type="checkbox" 
+                  id="restrictInwardCheckbox"
+                  v-model="restrictInward"
+                  @change="toggleRestrictInward"
+                  :disabled="!isAdmin"
+                  style="width: 16px; height: 16px; accent-color: #369696; cursor: pointer;"
+                />
+                <label for="restrictInwardCheckbox" style="font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--text-main);">Restrict Inward</label>
+              </div>
               <div v-if="activeItem === 'Serial No'" style="display: flex; background: var(--bg-surface); border-radius: 6px; padding: 2px; margin-left: 15px; border: 1px solid var(--border-color);">
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
@@ -11938,6 +11949,7 @@
         warehouse: "",
         warehouse_display: ""
       },
+      restrictInward: false,
       showDispatchHistory: false,
       dispatchHistory: [],
       serialAndBatchBundles: [],
@@ -13417,10 +13429,24 @@
           this.isFullscreen = !!document.fullscreenElement;
         });
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
-        // Check if user is admin
         this.isAdmin =
           frappe.session.user === "Administrator" ||
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
+        try {
+          const settings = await frappe.call({
+            method: 'frappe.client.get_value',
+            args: {
+              doctype: 'Sahayog Settings',
+              filters: {},
+              fieldname: 'restrict_inward'
+            }
+          });
+          if (settings.message) {
+            this.restrictInward = !!settings.message.restrict_inward;
+          }
+        } catch (e) {
+          console.error("Failed to fetch restrict_inward:", e);
+        }
         // Fetch user's full name from User doctype
         try {
           this.fetchSerialAndBatchBundles();
@@ -17138,6 +17164,26 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+      },
+      async toggleRestrictInward() {
+        try {
+          await frappe.call({
+            method: 'frappe.client.set_value',
+            args: {
+              doctype: 'Sahayog Settings',
+              name: 'Sahayog Settings',
+              fieldname: 'restrict_inward',
+              value: this.restrictInward ? 1 : 0
+            }
+          });
+          frappe.show_alert({
+            message: `Restrict Inward ${this.restrictInward ? 'enabled' : 'disabled'}`,
+            indicator: 'green'
+          });
+        } catch (e) {
+          console.error("Failed to update restrict_inward:", e);
+          frappe.msgprint("Error updating Restrict Inward setting");
+        }
       },
       handleMenuClick(item) {
         this.showUserMenu = false;
