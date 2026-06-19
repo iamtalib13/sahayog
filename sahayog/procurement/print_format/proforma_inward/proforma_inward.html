@@ -61,6 +61,16 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            flex: 1;
+        }
+        .items-table tr {
+            height: 35px;
+        }
+        .items-table tbody tr:last-child {
+            height: auto;
+        }
+        .items-table tfoot tr {
+            height: 45px;
         }
         .items-table th {
             background-color: #f8f9fa;
@@ -164,6 +174,8 @@
             <p style="font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 3px solid #006363;">{{ doc.remarks }}</p>
         </div>
         {% endif %}
+
+
 
         <div class="footer">
             <p>Generated on {{ frappe.utils.format_datetime(frappe.utils.now_datetime()) }}</p>
