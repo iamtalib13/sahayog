@@ -446,10 +446,13 @@ def notify_user(user, message):
     notification_doc.insert(ignore_permissions=True)
     frappe.db.commit()
 @frappe.whitelist()
-def get_employee_performance_data(from_date, to_date):
+def get_employee_performance_data(from_date, to_date, sol_ids=None):
     try:
         user = frappe.session.user
         from_date, to_date = validate_date_range(from_date, to_date)
+        
+        # Parse sol_ids filter
+        active_sol_ids = frappe.parse_json(sol_ids) if sol_ids else None
 
         # --- Step 1: User ki Report Preference fetch karein ---
         has_pref = False
@@ -463,6 +466,14 @@ def get_employee_performance_data(from_date, to_date):
                 zones_pref = {norm(x) for x in p.get("zone", [])}
                 regions_pref = {norm(x) for x in p.get("region", [])}
                 sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+
+        # Apply active_sol_ids filter if provided
+        if active_sol_ids:
+            if sol_ids_pref:
+                # Intersect with existing preference
+                sol_ids_pref = sol_ids_pref.intersection({str(x) for x in active_sol_ids})
+            else:
+                sol_ids_pref = {str(x) for x in active_sol_ids}
 
         leads = frappe.get_all(
             "Lead",
@@ -883,3 +894,58 @@ def get_employee_lead_count(employee):
         "count": count,
         "employee_name": emp_name
     }
+
+@frappe.whitelist()
+def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
+    user = frappe.session.user
+    
+    # Parse inputs
+    zones_list = frappe.parse_json(zones) if zones else []
+    regions_list = frappe.parse_json(regions) if regions else []
+    sol_ids_list = frappe.parse_json(sol_ids) if sol_ids else []
+    
+    # Standardize types to lists
+    if isinstance(zones_list, str): zones_list = [zones_list]
+    if isinstance(regions_list, str): regions_list = [regions_list]
+    if isinstance(sol_ids_list, str): sol_ids_list = [sol_ids_list]
+    
+    filters = []
+    if zones_list:
+        filters.append(["zone", "in", zones_list])
+    if regions_list:
+        filters.append(["region", "in", regions_list])
+        
+    branches = []
+    if filters:
+        branches = frappe.get_all(
+            "Sahayog Branch",
+            filters=filters,
+            fields=["sol_id", "branch", "region", "zone"],
+            order_by="sol_id asc"
+        )
+        
+    # If there are specific sol_ids assigned/selected, we merge them
+    if sol_ids_list:
+        specific_branches = frappe.get_all(
+            "Sahayog Branch",
+            filters={"sol_id": ["in", sol_ids_list]},
+            fields=["sol_id", "branch", "region", "zone"],
+            order_by="sol_id asc"
+        )
+        existing_sols = {b.sol_id for b in branches}
+        for sb in specific_branches:
+            if sb.sol_id not in existing_sols:
+                branches.append(sb)
+                
+    # Fallback: If no branches matched yet (e.g. no zone/region/sol_id selected, or user has no preference)
+    if not branches and user != "Administrator":
+        # Get employee's sol_id
+        emp_sol = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+        if emp_sol:
+            branches = frappe.get_all(
+                "Sahayog Branch",
+                filters={"sol_id": emp_sol},
+                fields=["sol_id", "branch", "region", "zone"]
+            )
+            
+    return branches

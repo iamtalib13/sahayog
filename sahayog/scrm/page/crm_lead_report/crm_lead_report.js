@@ -995,9 +995,22 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       source_employee: "",
     },
     transfer_loading: false,
+    visible_branches: [],
+    disabled_branches: [],
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
+    },
+    toggleBranchCapsule(sol_id) {
+      const idx = this.disabled_branches.indexOf(sol_id);
+
+      if (idx > -1) {
+        this.disabled_branches.splice(idx, 1);
+      } else {
+        this.disabled_branches.push(sol_id);
+      }
+
+      this.fetchEmployeePerformance();
     },
 
     exportCSV() {
@@ -1204,7 +1217,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       this.employee_from_date = this.month_start;
       this.employee_to_date = this.month_end;
-      console.log(this.employee_from_date, this.employee_to_date);
+      // console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
     },
     onDateChange() {
@@ -1368,7 +1381,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             this.filter_data.source = r.message.sources || [];
 
             // Debug ke liye console check karein ki data aaya ya nahi
-            console.log("Products Loaded:", this.filter_data.product);
+            // console.log("Products Loaded:", this.filter_data.product);
           }
         },
       });
@@ -1378,15 +1391,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (!pref) {
         // ❗ No block — fallback mode
         this.has_pref = false;
-        console.log("No Report Preference → showing own leads only");
-        this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
+        // console.log("No Report Preference → showing own leads only");
+        this.selected = {
+          zone: [],
+          region: [],
+          sol_id: [],
+          product: [],
+          source: [],
+        };
       }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
         this.filter_data.region = pref.region || [];
         this.filter_data.sol_id = pref.sol_id || [];
 
-        console.log(this.filter_data);
+        // console.log(this.filter_data);
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
@@ -1404,7 +1423,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.employee_from_date = today; // ✅ today
       this.employee_to_date = today; // ✅ today
 
-      console.log(this.employee_from_date, this.employee_to_date);
+      // console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
 
       // init() function ke andar ka event listener aise update karein:
@@ -1413,6 +1432,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.show_export_menu = false;
         // active_popup ko null mat kijiye yahan, warna modal bhi band ho jayega
       });
+      await this.fetchVisibleBranches();
     },
 
     // Watch for active_tab changes to load data automatically
@@ -1455,6 +1475,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       } else {
         this.selected[key].push(val);
       }
+      this.fetchVisibleBranches();
     },
     getDisplayText(key) {
       let selectedItems = this.selected[key] || [];
@@ -1478,6 +1499,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return `${displayText} +${count - 1} more`;
     },
 
+    getActiveSolIds() {
+      return this.selected.sol_id.filter(
+        sol => !this.disabled_branches.includes(String(sol))
+      );
+    },
     async fetchEmployeePerformance() {
       this.employee_report_loading = true;
       this.employee_error_message = null;
@@ -1490,6 +1516,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           args: {
             from_date: this.employee_from_date,
             to_date: this.employee_to_date,
+            sol_ids: JSON.stringify(this.getActiveSolIds())
           },
         });
         this.employee_performance_data = res.message || [];
@@ -1583,7 +1610,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       let timer = setInterval(async () => {
         attempts++;
-        
+
         if (attempts > maxAttempts) {
           clearInterval(timer);
           this.loading = false;
@@ -1645,6 +1672,176 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           );
         }
       }, 5000);
+    },
+    async fetchVisibleBranches() {
+      let res = await frappe.call({
+        method: "sahayog.scrm.api.report_access.get_branches_by_filters",
+        args: {
+          zones: JSON.stringify(this.selected.zone),
+          regions: JSON.stringify(this.selected.region),
+          sol_ids: JSON.stringify(this.selected.sol_id),
+        },
+      });
+      this.visible_branches = res.message || [];
+      this.updateCapsuleUI();
+    },
+    updateCapsuleUI() {
+      $("#crm-branch-capsules").remove();
+
+      const count = this.visible_branches?.length || 0;
+      if (!count) return;
+
+      const visible = this.visible_branches.slice(0, 6);
+
+      const branchBadges = visible
+        .map((b) => {
+          const displayLabel = `${b.sol_id}${b.branch ? " - " + b.branch : ""}`;
+          const isDisabled = this.disabled_branches.includes(String(b.sol_id));
+
+          const capsuleStyle = isDisabled
+            ? `
+                background:#f1f5f9;
+                border:1px solid #cbd5e1;
+                color:#94a3b8;
+                opacity:.8;
+            `
+            : `
+                background:#f0f9ff;
+                border:1px solid #bae6fd;
+                color:#0369a1;
+            `;
+
+          return `
+                <span
+                    class="crm-branch-pill"
+                    data-sol="${b.sol_id}"
+                    style="
+                        ${capsuleStyle}
+                        display:inline-flex;
+                        align-items:center;
+                        justify-content:center;
+                        padding:4px 12px;
+                        border-radius:14px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        white-space: nowrap;
+                        max-width: 180px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        line-height: 1;
+                        cursor:pointer;
+                    "
+                    title="${displayLabel}"
+                >
+                    ${displayLabel}
+                </span>
+            `;
+        })
+        .join("");
+
+      const moreBadge =
+        count > 6
+          ? `
+                <span
+                    id="show-all-branches"
+                    style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 4px 12px;
+                        border-radius: 14px;
+                        background: #f8fafc;
+                        border: 1px solid #d1d5db;
+                        color: #475569;
+                        font-size: 11px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all .2s ease;
+                        line-height: 1;
+                    "
+                >
+                    +${count - 6} More
+                </span>
+            `
+          : "";
+
+      $(".page-title").after(`
+        <div
+            id="crm-branch-capsules"
+            style="
+                display: inline-flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-left: 16px;
+                margin-top: 5px; 
+                vertical-align: middle;
+            "
+        >
+            ${branchBadges}
+            ${moreBadge}
+        </div>
+    `);
+
+      // Add click handler for visible capsules
+      $(".crm-branch-pill").on("click", (e) => {
+        const solId = $(e.currentTarget).data("sol");
+        this.toggleBranchCapsule(String(solId));
+      });
+
+      // Dialog box trigger for 'More'
+      $("#show-all-branches").on("click", () => {
+        const html = this.visible_branches
+          .map((b) => {
+              const isDisabled = this.disabled_branches.includes(String(b.sol_id));
+              return `
+                <div
+                    class="branch-toggle-item"
+                    data-sol="${b.sol_id}"
+                    style="
+                        padding: 10px 12px;
+                        border-bottom: 1px solid #f1f5f9;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        cursor: pointer;
+                        background: ${isDisabled ? '#f8fafc' : '#ffffff'};
+                    "
+                >
+                    <span style="font-weight: 600; color: ${isDisabled ? '#94a3b8' : '#0369a1'}; min-width: 90px;">
+                        ${b.sol_id}
+                    </span>
+                    <span style="flex: 1; color: ${isDisabled ? '#94a3b8' : '#334155'}; padding-left: 12px;">
+                        ${b.branch || "-"}
+                    </span>
+                    <i class="fa ${isDisabled ? 'fa-toggle-off' : 'fa-toggle-on'}" style="color: ${isDisabled ? '#cbd5e1' : '#05a15d'}; font-size: 16px;"></i>
+                </div>
+            `;
+          })
+          .join("");
+
+        const d = new frappe.ui.Dialog({
+          title: `Manage Branches (${count})`,
+          size: "large",
+          fields: [{ fieldtype: "HTML", fieldname: "branches" }],
+        });
+
+        d.fields_dict.branches.$wrapper.html(`
+            <div style="max-height: 450px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;">
+                ${html}
+            </div>
+        `);
+
+        // Attach toggle event in dialog
+        d.fields_dict.branches.$wrapper.find(".branch-toggle-item").on("click", (e) => {
+            const solId = $(e.currentTarget).data("sol");
+            this.toggleBranchCapsule(String(solId));
+            // Re-render dialog content
+            d.hide();
+        });
+
+        d.show();
+      });
     },
   }).mount("#crm-app");
 };
