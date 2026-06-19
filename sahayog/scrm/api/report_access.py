@@ -446,10 +446,13 @@ def notify_user(user, message):
     notification_doc.insert(ignore_permissions=True)
     frappe.db.commit()
 @frappe.whitelist()
-def get_employee_performance_data(from_date, to_date):
+def get_employee_performance_data(from_date, to_date, sol_ids=None):
     try:
         user = frappe.session.user
         from_date, to_date = validate_date_range(from_date, to_date)
+        
+        # Parse sol_ids filter
+        active_sol_ids = frappe.parse_json(sol_ids) if sol_ids else None
 
         # --- Step 1: User ki Report Preference fetch karein ---
         has_pref = False
@@ -463,6 +466,14 @@ def get_employee_performance_data(from_date, to_date):
                 zones_pref = {norm(x) for x in p.get("zone", [])}
                 regions_pref = {norm(x) for x in p.get("region", [])}
                 sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+
+        # Apply active_sol_ids filter if provided
+        if active_sol_ids:
+            if sol_ids_pref:
+                # Intersect with existing preference
+                sol_ids_pref = sol_ids_pref.intersection({str(x) for x in active_sol_ids})
+            else:
+                sol_ids_pref = {str(x) for x in active_sol_ids}
 
         leads = frappe.get_all(
             "Lead",
