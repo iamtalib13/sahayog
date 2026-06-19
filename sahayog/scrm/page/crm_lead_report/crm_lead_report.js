@@ -1217,7 +1217,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       this.employee_from_date = this.month_start;
       this.employee_to_date = this.month_end;
-      console.log(this.employee_from_date, this.employee_to_date);
+      // console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
     },
     onDateChange() {
@@ -1381,7 +1381,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             this.filter_data.source = r.message.sources || [];
 
             // Debug ke liye console check karein ki data aaya ya nahi
-            console.log("Products Loaded:", this.filter_data.product);
+            // console.log("Products Loaded:", this.filter_data.product);
           }
         },
       });
@@ -1391,7 +1391,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (!pref) {
         // ❗ No block — fallback mode
         this.has_pref = false;
-        console.log("No Report Preference → showing own leads only");
+        // console.log("No Report Preference → showing own leads only");
         this.selected = {
           zone: [],
           region: [],
@@ -1405,7 +1405,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.filter_data.region = pref.region || [];
         this.filter_data.sol_id = pref.sol_id || [];
 
-        console.log(this.filter_data);
+        // console.log(this.filter_data);
         this.selected = {
           zone: [...this.filter_data.zone],
           region: [...this.filter_data.region],
@@ -1423,7 +1423,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.employee_from_date = today; // ✅ today
       this.employee_to_date = today; // ✅ today
 
-      console.log(this.employee_from_date, this.employee_to_date);
+      // console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
 
       // init() function ke andar ka event listener aise update karein:
