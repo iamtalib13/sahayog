@@ -17077,13 +17077,20 @@
           this.detailRecord.name
         ) {
           try {
+            const isAsset = this.detailRecord.items && this.detailRecord.items.some(i => i.item_category === 'Asset');
             const res = await frappe.call({
               method: "frappe.client.get_list",
               args: {
-                doctype: "Stock Entry",
-                filters: { custom_material_request: this.detailRecord.name },
-                fields: ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],              },
-            });            this.dispatchHistory = res.message || [];
+                doctype: isAsset ? "Asset" : "Stock Entry",
+                filters: isAsset 
+                  ? { custom_emr: this.detailRecord.name }
+                  : { custom_material_request: this.detailRecord.name },
+                fields: isAsset 
+                  ? ["name", "owner", "creation", "modified_by", "modified", "docstatus"]
+                  : ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],
+              },
+            });
+            this.dispatchHistory = res.message || [];
           } catch (e) {
             console.error("Error fetching dispatch history:", e);
           }
