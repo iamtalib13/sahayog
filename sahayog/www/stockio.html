@@ -16716,6 +16716,7 @@
         if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
+        this.showDispatchHistory = false;
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -16778,6 +16779,7 @@
       closeDetailView() {
         this.showDetailView = false;
         this.isEditing = false;
+        this.showDispatchHistory = false;
         // Update URL to remove record ID
         window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
         
