@@ -995,6 +995,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       source_employee: "",
     },
     transfer_loading: false,
+    visible_branches: [],
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
@@ -1379,7 +1380,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         // ❗ No block — fallback mode
         this.has_pref = false;
         console.log("No Report Preference → showing own leads only");
-        this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
+        this.selected = {
+          zone: [],
+          region: [],
+          sol_id: [],
+          product: [],
+          source: [],
+        };
       }
       if (pref) {
         this.filter_data.zone = pref.zone || [];
@@ -1413,6 +1420,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.show_export_menu = false;
         // active_popup ko null mat kijiye yahan, warna modal bhi band ho jayega
       });
+      await this.fetchVisibleBranches();
     },
 
     // Watch for active_tab changes to load data automatically
@@ -1455,6 +1463,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       } else {
         this.selected[key].push(val);
       }
+      this.fetchVisibleBranches();
     },
     getDisplayText(key) {
       let selectedItems = this.selected[key] || [];
@@ -1583,7 +1592,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       let timer = setInterval(async () => {
         attempts++;
-        
+
         if (attempts > maxAttempts) {
           clearInterval(timer);
           this.loading = false;
@@ -1645,6 +1654,151 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           );
         }
       }, 5000);
+    },
+    async fetchVisibleBranches() {
+      let res = await frappe.call({
+        method: "sahayog.scrm.api.report_access.get_branches_by_filters",
+        args: {
+          zones: JSON.stringify(this.selected.zone),
+          regions: JSON.stringify(this.selected.region),
+          sol_ids: JSON.stringify(this.selected.sol_id),
+        },
+      });
+      this.visible_branches = res.message || [];
+      this.updateCapsuleUI();
+    },
+    updateCapsuleUI() {
+      $("#crm-branch-capsules").remove();
+
+      const count = this.visible_branches?.length || 0;
+      if (!count) return;
+
+      const visible = this.visible_branches.slice(0, 6);
+
+      const branchBadges = visible
+        .map((b) => {
+          const displayLabel = `${b.sol_id}${b.branch ? " - " + b.branch : ""}`;
+
+          return `
+                <span
+                    style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 4px 12px;
+                        border-radius: 14px;
+                        background: #f0f9ff;
+                        border: 1px solid #bae6fd;
+                        color: #0369a1;
+                        font-size: 11px;
+                        font-weight: 600;
+                        white-space: nowrap;
+                        max-width: 180px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        line-height: 1;
+                    "
+                    title="${displayLabel}"
+                >
+                    ${displayLabel}
+                </span>
+            `;
+        })
+        .join("");
+
+      const moreBadge =
+        count > 6
+          ? `
+                <span
+                    id="show-all-branches"
+                    style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 4px 12px;
+                        border-radius: 14px;
+                        background: #f8fafc;
+                        border: 1px solid #d1d5db;
+                        color: #475569;
+                        font-size: 11px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all .2s ease;
+                        line-height: 1;
+                    "
+                >
+                    +${count - 6} More
+                </span>
+            `
+          : "";
+
+      // ADJUSTED: margin-top and vertical-align to align exactly with the center line of the main title text
+      $(".page-title").after(`
+        <div
+            id="crm-branch-capsules"
+            style="
+                display: inline-flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-left: 16px;
+                margin-top: 5px; 
+                vertical-align: middle;
+            "
+        >
+            ${branchBadges}
+            ${moreBadge}
+        </div>
+    `);
+
+      // Mouse hover handlers
+      $("#show-all-branches")
+        .on("mouseenter", function () {
+          $(this).css({ background: "#e2e8f0" });
+        })
+        .on("mouseleave", function () {
+          $(this).css({ background: "#f8fafc" });
+        });
+
+      // Dialog box trigger
+      $("#show-all-branches").on("click", () => {
+        const html = this.visible_branches
+          .map(
+            (b) => `
+                <div
+                    style="
+                        padding: 10px 12px;
+                        border-bottom: 1px solid #f1f5f9;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    "
+                >
+                    <span style="font-weight: 600; color: #0369a1; min-width: 90px;">
+                        ${b.sol_id}
+                    </span>
+                    <span style="flex: 1; color: #334155; padding-left: 12px;">
+                        ${b.branch || "-"}
+                    </span>
+                </div>
+            `,
+          )
+          .join("");
+
+        const d = new frappe.ui.Dialog({
+          title: `Visible Branches (${count})`,
+          size: "large",
+          fields: [{ fieldtype: "HTML", fieldname: "branches" }],
+        });
+
+        d.fields_dict.branches.$wrapper.html(`
+            <div style="max-height: 450px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff;">
+                ${html}
+            </div>
+        `);
+
+        d.show();
+      });
     },
   }).mount("#crm-app");
 };
