@@ -97,21 +97,7 @@
 
 <script>
   (function () {
-    let t = 5,
-      i = setInterval(() => {
-        document.getElementById("mshTimer").textContent = --t;
-        if (t <= 0) {
-          clearInterval(i);
-          location.href = "/app";
-        }
-      }, 1000);
-    document.getElementById("mshBtn").onclick = function (e) {
-      e.preventDefault();
-      clearInterval(i);
-      this.textContent = "Opening...";
-      this.className += " msh-loading";
-      setTimeout(() => (location.href = "/app"), 300);
-    };
+    location.href = "/app/sahayog-home";
   })();
 </script>
 {% endblock %}
