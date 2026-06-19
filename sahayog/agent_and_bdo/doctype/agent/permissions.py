@@ -14,7 +14,23 @@ def get_agents_sol_wise(user=None):
     ):
         return ""
 
-    # ✅ Step 2: Get employee info linked with the user
+    conditions = []
+
+    # ✅ Step 2: Get additional sol_ids from Report Preference
+    additional_sol_ids = []
+    if frappe.db.exists("Report Preference", {"user": user, "enabled": 1}):
+        additional_sol_ids = frappe.get_all(
+            "Sol Items",
+            filters={"parent": user, "parenttype": "Report Preference"},
+            pluck="sol_id"
+        )
+        additional_sol_ids = [sol for sol in additional_sol_ids if sol]
+
+    if additional_sol_ids:
+        formatted_sols = ", ".join(f"'{sol}'" for sol in additional_sol_ids)
+        conditions.append(f"`tabAgent`.branch_code IN ({formatted_sols})")
+
+    # ✅ Step 3: Get employee info linked with the user
     employee = frappe.db.get_value(
         "Employee",
         {"user_id": user},
@@ -22,48 +38,42 @@ def get_agents_sol_wise(user=None):
         as_dict=True,
     )
 
-    # If employee not found or SOL ID missing → no access
-    if not employee or not employee.sol_id:
-        return "1=0"
+    if employee and employee.sol_id:
+        # ✅ Step 4: Define designations that can see entire branch data
+        full_branch_access_designations = [
+            "BRANCH MANAGER",
+            "Asst. Branch Manager",
+            "Branch Operation Manager"
+        ]
 
-    conditions = []
+        # ✅ Step 5: If user’s designation is in full access list
+        if employee.designation in full_branch_access_designations:
+            branch_condition = f"`tabAgent`.branch_code = '{employee.sol_id}'"
+            conditions.append(f"({branch_condition})")
 
-    # ✅ Step 3: Define designations that can see entire branch data
-    full_branch_access_designations = [
-        "BRANCH MANAGER",
-        "Asst. Branch Manager",
-        "Branch Operation Manager"
-    ]
-
-    # ✅ Step 4: If user’s designation is in full access list
-    if employee.designation in full_branch_access_designations:
-        branch_condition = f"`tabAgent`.branch_code = '{employee.sol_id}'"
-        conditions.append(f"({branch_condition})")
-
-    else:
-        # ✅ Step 5: Normal employee logic
-
-        # Unallocated records of the same branch
-        branch_unallocated = (
-            f"`tabAgent`.branch_code = '{employee.sol_id}' "
-            f"AND IFNULL(`tabAgent`.status, '') IN ('', 'Unallocated')"
-        )
-        conditions.append(f"({branch_unallocated})")
-
-        # Allocated records specifically assigned to the employee
-        if employee.employee_number:
-            employee_allocated = (
+        else:
+            # ✅ Step 6: Normal employee logic
+            # Unallocated records of the same branch
+            branch_unallocated = (
                 f"`tabAgent`.branch_code = '{employee.sol_id}' "
-                f"AND `tabAgent`.employee = '{employee.employee_number}' "
-                f"AND `tabAgent`.status = 'Allocated'"
+                f"AND IFNULL(`tabAgent`.status, '') IN ('', 'Unallocated')"
             )
-            conditions.append(f"({employee_allocated})")
+            conditions.append(f"({branch_unallocated})")
 
-    # ✅ Step 6: Records where user is approver or requester
+            # Allocated records specifically assigned to the employee
+            if employee.employee_number:
+                employee_allocated = (
+                    f"`tabAgent`.branch_code = '{employee.sol_id}' "
+                    f"AND `tabAgent`.employee = '{employee.employee_number}' "
+                    f"AND `tabAgent`.status = 'Allocated'"
+                )
+                conditions.append(f"({employee_allocated})")
+
+    # ✅ Step 7: Records where user is approver or requester
     user_approver = f"`tabAgent`.approved_by = '{user}'"
     user_requester = f"`tabAgent`.requested_by = '{user}'"
     conditions.append(f"({user_approver})")
     conditions.append(f"({user_requester})")
 
-    # ✅ Step 7: Return final OR-based condition
+    # ✅ Step 8: Return final OR-based condition
     return " OR ".join(conditions) if conditions else "1=0"
