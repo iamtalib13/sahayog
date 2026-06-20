@@ -3187,13 +3187,28 @@
         });
       }
 
-      async function loadHRDashboard() {
-        const data = await callAPI("get_hr_dashboard_data", {}, "attendance");
+      async function loadHRDashboard(month) {
+        const data = await callAPI("get_hr_dashboard_data", { month: month }, "attendance");
         if (!data) return;
 
         const dashContent = document.getElementById("hrDashboardContent");
+        const isCurrent = data.is_current_month;
+        const timeLabel = isCurrent ? "Today" : "Monthly Avg.";
 
         let html = `
+            <!-- Month Selector -->
+            <div style="background:#fff; padding:12px 18px; border-radius:14px; border:1px solid #f1f5f9; margin-bottom: 18px; display:flex; align-items:center; gap:12px; box-shadow: var(--shadow);">
+                <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">View Report For:</span>
+                <input 
+                    type="month" 
+                    id="dashMonth" 
+                    value="${data.month}" 
+                    onchange="loadHRDashboard(this.value)"
+                    style="border:1.5px solid var(--border); border-radius:8px; padding:6px 12px; font-size:13px; font-family:inherit; outline:none; cursor:pointer;"
+                >
+                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical Analysis Mode</span>' : ''}
+            </div>
+
             <!-- 1. Global Metrics (6 Cards) -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px;">
                 <div class="stat-card" style="border: 1px solid #e0e7ff; background: #fff; position: relative;">
@@ -3202,11 +3217,11 @@
                 </div>
                 <div class="stat-card" style="border: 1px solid #dcfce7; background: #fff;">
                     <div class="stat-icon" style="background: #dcfce7; color: #15803d;">✅</div>
-                    <div><div class="stat-val" style="color:#15803d;">${data.attendance.summary.Present}</div><div class="stat-lbl">Present Today</div></div>
+                    <div><div class="stat-val" style="color:#15803d;">${data.attendance.summary.Present}</div><div class="stat-lbl">${timeLabel} Present</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fee2e2; background: #fff;">
                     <div class="stat-icon" style="background: #fee2e2; color: #b91c1c;">❌</div>
-                    <div><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">Absent Today</div></div>
+                    <div><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">${timeLabel} Absent</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fdf4ff; background: #fff; cursor: pointer;" onclick="switchTab('leave', document.getElementById('tabLeaveRequests'))">
                     <div class="stat-icon" style="background: #fdf4ff; color: #a21caf;">📩</div>
@@ -3224,14 +3239,14 @@
                 </div>
                 <div class="stat-card" style="border: 1px solid #f8fafc; background: #fff;">
                     <div class="stat-icon" style="background: #f8fafc; color: #64748b;">⏳</div>
-                    <div><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">Not Marked</div></div>
+                    <div><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">${timeLabel} Pending</div></div>
                 </div>
             </div>
 
             <!-- 2. Attendance & Lifecycle Metrics -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
                 <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
-                    <div class="dash-sec-title">Today's Attendance Status</div>
+                    <div class="dash-sec-title">${isCurrent ? "Today's" : "Monthly Avg."} Attendance Status</div>
                     <div class="stat-pill-box">
                         ${Object.entries(data.attendance.summary)
                           .map(
@@ -3244,7 +3259,7 @@
                           )
                           .join("")}
                         <div class="dash-row" style="margin-top:10px; padding-top:10px; border-top:1.5px dashed #f1f5f9;">
-                            <span class="dash-lbl" style="font-weight:700;">Global Attendance %</span>
+                            <span class="dash-lbl" style="font-weight:700;">${isCurrent ? 'Global' : 'Monthly Avg'} Attendance %</span>
                             <span class="dash-val" style="font-size:20px; color:var(--brand2);">${data.attendance.percentage}%</span>
                         </div>
                         <div style="background:#f1f5f9; height:8px; border-radius:10px; margin-top:8px; overflow:hidden;">
@@ -3278,7 +3293,7 @@
 
             <!-- 3. Leave Summary -->
             <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; margin-bottom: 24px; box-shadow: var(--shadow);">
-                <div class="dash-sec-title">Leave Analytics (Monthly)</div>
+                <div class="dash-sec-title">Leave Analytics (${data.month})</div>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px;">
                     <div style="background:#f0fdf4; padding:12px; border-radius:12px; text-align:center; border:1px solid #bbf7d0;">
                         <span style="display:block; font-size:20px; font-weight:800; color:#15803d;">${data.leaves.Approved}</span>
@@ -3293,7 +3308,7 @@
                         <span style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase;">Rejected</span>
                     </div>
                 </div>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                     <div>
                         <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">By Leave Type</div>
@@ -3325,23 +3340,26 @@
                 </div>
             </div>
 
-            <!-- 4. Missing Attendance (Actionable) -->
+            <!-- 4. Actionable List (Alerts) -->
             <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #fee2e2; margin-bottom: 24px; box-shadow: var(--shadow);">
-                <div class="dash-sec-title" style="color:#b91c1c;">🚨 Attendance Not Marked (Top 15)</div>
+                <div class="dash-sec-title" style="color:#b91c1c;">${data.alert_title}</div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                    ${data.not_marked_list && data.not_marked_list.length > 0 ? data.not_marked_list.map(emp => `
-                        <div style="background:#fef2f2; padding:10px; border-radius:10px; border:1px solid #fee2e2;">
-                            <div style="font-size:12px; font-weight:700; color:#b91c1c;">${emp.employee_name}</div>
-                            <div style="font-size:10px; color:#991b1b;">${emp.designation || 'Staff'} • ${emp.sahayog_branch || 'No Branch'}</div>
+                    ${data.alert_list && data.alert_list.length > 0 ? data.alert_list.map(emp => `
+                        <div style="background:#fef2f2; padding:10px; border-radius:10px; border:1px solid #fee2e2; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-size:12px; font-weight:700; color:#b91c1c;">${emp.employee_name}</div>
+                                <div style="font-size:10px; color:#991b1b;">${emp.designation || 'Staff'} • ${emp.sahayog_branch || 'No Branch'}</div>
+                            </div>
+                            ${!isCurrent ? `<div style="background:#b91c1c; color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">${emp.absent_count} Abs</div>` : ''}
                         </div>
-                    `).join('') : '<div style="grid-column: 1/-1; text-align:center; padding:10px; color:var(--success); font-weight:600;">Excellent! Everyone has marked attendance.</div>'}
+                    `).join('') : `<div style="grid-column: 1/-1; text-align:center; padding:10px; color:var(--success); font-weight:600;">${isCurrent ? 'Everyone has marked attendance.' : 'No frequent absentees found.'}</div>`}
                 </div>
             </div>
 
             <!-- 5. Branch-wise Detailed Table -->
             <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <div class="dash-sec-title" style="margin:0;">Branch-wise Performance Today</div>
+                    <div class="dash-sec-title" style="margin:0;">Branch-wise Performance (${isCurrent ? 'Today' : 'Monthly Avg.'})</div>
                     <input 
                       type="text" 
                       id="branchTableSearch" 
@@ -3355,7 +3373,7 @@
                         <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted); font-size:12px; text-transform:uppercase;">
                             <th style="padding: 12px 0;">Branch Name</th>
                             <th style="padding: 12px 0; text-align: center;">Total Staff</th>
-                            <th style="padding: 12px 0; text-align: center;">Present</th>
+                            <th style="padding: 12px 0; text-align: center;">${isCurrent ? 'Present' : 'Avg. Pres.'}</th>
                             <th style="padding: 12px 0; text-align: center;">Att. %</th>
                         </tr>
                     </thead>
@@ -3375,7 +3393,7 @@
                     </tbody>
                 </table>
             </div>
-          `;
+        `;
         dashContent.innerHTML = html;
       }
 
