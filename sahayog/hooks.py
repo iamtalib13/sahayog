@@ -394,6 +394,11 @@ scheduler_events = {
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
+        # Run daily at 2:00 AM — Sync Sahayog Branches from Finacle
+        "0 2 * * *": [
+            "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
+        ],
+
         # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
         "0 23 * * *": [
             "sahayog.sahayog.api.eod.check_and_notify_inactive_teams"

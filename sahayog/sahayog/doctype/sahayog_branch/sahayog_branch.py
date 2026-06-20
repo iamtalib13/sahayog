@@ -98,6 +98,7 @@ class SahayogBranch(Document):
         return value
 
 # MOVE THIS FUNCTION OUTSIDE THE CLASS:
+@frappe.whitelist()
 def auto_create_sahayog_branches_from_finacle():
     """
     Bulk create/update Sahayog Branches from Finacle.
@@ -191,26 +192,16 @@ def auto_create_sahayog_branches_from_finacle():
         )
 
         if existing_branch:
-            doc = frappe.get_doc("Sahayog Branch", existing_branch[0].name)
-            updated_flag = False
-
-            if doc.zone != zone:
-                doc.zone = zone
-                updated_flag = True
-            if doc.region != region:
-                doc.region = region
-                updated_flag = True
-
-            if updated_flag:
-                try:
-                    doc.save(ignore_permissions=True)
-                    frappe.db.commit()
-                    updated += 1
-                except Exception:
-                    skipped += 1
-                    frappe.log_error(frappe.get_traceback(), "Auto Update Sahayog Branch Failed")
-            else:
-                existed += 1
+            try:
+                doc = frappe.get_doc("Sahayog Branch", existing_branch[0].name)
+                for field, value in doc_data.items():
+                    doc.set(field, value)
+                doc.save(ignore_permissions=True)
+                frappe.db.commit()
+                updated += 1
+            except Exception:
+                skipped += 1
+                frappe.log_error(frappe.get_traceback(), "Auto Update Sahayog Branch Failed")
 
         else:
             try:
@@ -257,8 +248,7 @@ def auto_create_sahayog_branches_from_finacle():
     return {
         "inserted": created,
         "updated": updated,
-        "skipped_missing_detail": skipped,
-        "already_exists_no_change": existed,
+        "skipped": skipped,
         "warehouses_created": warehouses_created,
         "locations_created": locations_created,
         "read_from_source": len(data)
