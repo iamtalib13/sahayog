@@ -5,6 +5,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     single_column: true,
   });
 
+  // Add wrapper class to scope custom styles
+  $(wrapper).addClass("crm-lead-report-page");
+
   const $container = $(page.body).empty();
 
   // Custom set_intro implementation for this page
@@ -27,6 +30,31 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     .prop("type", "text/css")
     .html(
       `
+        .crm-lead-report-page .page-title {
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-bottom: 0 !important;
+            margin-right: 16px !important;
+            float: none !important;
+            width: auto !important;
+            flex: none !important;
+        }
+        .crm-lead-report-page .title-area,
+        .crm-lead-report-page .page-head {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+        }
+        .crm-lead-report-page #crm-branch-capsules {
+            display: inline-flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+            vertical-align: middle !important;
+            margin: 0 !important;
+            float: none !important;
+        }
         #crm-app { padding: 10px; background-color: transparent; }
         .ui-section-card { margin-bottom: 8px; border: 1px solid #d1d8dd; }
        .section-header { 
@@ -1011,6 +1039,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
 
       this.fetchEmployeePerformance();
+      this.updateCapsuleUI();
     },
 
     exportCSV() {
@@ -1697,18 +1726,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .map((b) => {
           const displayLabel = `${b.sol_id}${b.branch ? " - " + b.branch : ""}`;
           const isDisabled = this.disabled_branches.includes(String(b.sol_id));
+          const dotColor = isDisabled ? "#ef4444" : "#22c55e";
 
           const capsuleStyle = isDisabled
             ? `
-                background:#f1f5f9;
-                border:1px solid #cbd5e1;
-                color:#94a3b8;
-                opacity:.8;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                color: #991b1b;
+                opacity: 0.85;
             `
             : `
-                background:#f0f9ff;
-                border:1px solid #bae6fd;
-                color:#0369a1;
+                background: #e8fdf0;
+                border: 1px solid #a6efc0;
+                color: #15803d;
             `;
 
           return `
@@ -1717,11 +1747,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     data-sol="${b.sol_id}"
                     style="
                         ${capsuleStyle}
-                        display:inline-flex;
-                        align-items:center;
-                        justify-content:center;
-                        padding:4px 12px;
-                        border-radius:14px;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 4px 10px;
+                        border-radius: 12px;
                         font-size: 11px;
                         font-weight: 600;
                         white-space: nowrap;
@@ -1729,10 +1759,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         overflow: hidden;
                         text-overflow: ellipsis;
                         line-height: 1;
-                        cursor:pointer;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
                     "
                     title="${displayLabel}"
                 >
+                    <span style="
+                        display: inline-block;
+                        width: 6px;
+                        height: 6px;
+                        border-radius: 50%;
+                        background: ${dotColor};
+                        margin-right: 6px;
+                        flex-shrink: 0;
+                    "></span>
                     ${displayLabel}
                 </span>
             `;
@@ -1748,10 +1788,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         display: inline-flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 4px 12px;
-                        border-radius: 14px;
-                        background: #f8fafc;
-                        border: 1px solid #d1d5db;
+                        padding: 4px 10px;
+                        border-radius: 12px;
+                        background: #f1f5f9;
+                        border: 1px solid #cbd5e1;
                         color: #475569;
                         font-size: 11px;
                         font-weight: 600;
@@ -1765,23 +1805,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             `
           : "";
 
-      $(".page-title").after(`
-        <div
-            id="crm-branch-capsules"
-            style="
-                display: inline-flex;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 6px;
-                margin-left: 16px;
-                margin-top: 5px; 
-                vertical-align: middle;
-            "
-        >
+      const $title = $(wrapper).find(".page-title");
+      $title.after(`
+        <div id="crm-branch-capsules">
             ${branchBadges}
             ${moreBadge}
         </div>
-    `);
+      `);
 
       // Add click handler for visible capsules
       $(".crm-branch-pill").on("click", (e) => {
