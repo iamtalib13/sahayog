@@ -2157,6 +2157,14 @@
         </button>
         <button
           class="btn-view-toggle"
+          v-if="activeItem === 'Branch Stock' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="downloadCSV()"
+          title="Download CSV"
+        >
+          <i class="fas fa-download"></i>
+        </button>
+        <button
+          class="btn-view-toggle"
           v-if="activeItem === 'Items' && !showDetailView && !showEMRCreateView"
           @click="toggleItemView()"
           :title="itemView === 'list' ? 'Switch to Card View' : 'Switch to List View'"
@@ -4152,9 +4160,12 @@
               </div>
             </div>
 
-            <div class="form-row" style="margin-top: 20px">
+            <div
+              class="form-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px"
+            >
               <!-- Inventory Type -->
-              <div class="form-group" style="width: 50%">
+              <div class="form-group">
                 <label class="form-label"
                   >Inventory Type <span class="form-required">*</span></label
                 >
@@ -4164,6 +4175,17 @@
                   <option value="IT">IT</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              <!-- Default Checkbox -->
+              <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 12px; gap: 8px;">
+                <input 
+                  type="checkbox" 
+                  id="accessDefaultCheckbox"
+                  v-model="accessForm.dfault"
+                  style="width: 20px; height: 20px; accent-color: #369696; cursor: pointer;"
+                />
+                <label for="accessDefaultCheckbox" class="form-label" style="margin-bottom: 0; cursor: pointer; text-transform: none;">Default</label>
               </div>
             </div>
 
@@ -5081,16 +5103,7 @@
                       />
                     </div>
                   </div>
-                  <button
-                    class="toolbar-btn"
-                    @click="showEMRMoreDetails = !showEMRMoreDetails"
-                    title="More Info"
-                  >
-                    <i
-                      class="fas"
-                      :class="showEMRMoreDetails ? 'fa-chevron-up' : 'fa-chevron-down'"
-                    ></i>
-                  </button>
+
                 </div>
               </div>
 
@@ -8379,6 +8392,17 @@
                >Showing [[ loadedRows ]] of [[ totalRows ]] [[
                currentView.labelPlural || activeItem.toLowerCase() ]]</span
               >
+              <div v-if="activeItem === 'Access'" style="display: inline-flex; align-items: center; gap: 8px; margin-left: 20px;">
+                <input 
+                  type="checkbox" 
+                  id="restrictInwardCheckbox"
+                  v-model="restrictInward"
+                  @change="toggleRestrictInward"
+                  :disabled="!isAdmin"
+                  style="width: 16px; height: 16px; accent-color: #369696; cursor: pointer;"
+                />
+                <label for="restrictInwardCheckbox" style="font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--text-main);">Restrict Inward</label>
+              </div>
               <div v-if="activeItem === 'Serial No'" style="display: flex; background: var(--bg-surface); border-radius: 6px; padding: 2px; margin-left: 15px; border: 1px solid var(--border-color);">
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
@@ -11864,7 +11888,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 50px;
+    gap: 40px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
   .info-item {
@@ -11939,6 +11963,7 @@
         warehouse: "",
         warehouse_display: ""
       },
+      restrictInward: false,
       showDispatchHistory: false,
       dispatchHistory: [],
       serialAndBatchBundles: [],
@@ -12031,6 +12056,13 @@
             { label: "User ID", key: "user_id", width: 2 },
             { label: "Warehouse", key: "warehouse", width: 2 },
             { label: "Inventory Type", key: "inventory_type", width: 2 },
+            {
+              label: "Default",
+              key: "dfault",
+              width: 1,
+              type: "badge",
+              getValue: (row) => (row.dfault ? "Yes" : "No"),
+            },
             {
               label: "Action",
               key: "delete_access",
@@ -12611,6 +12643,7 @@
         user_id: "",
         warehouse: "",
         inventory_type: "",
+        dfault: false,
       },
       confirmModal: {
         show: false,
@@ -13411,10 +13444,24 @@
           this.isFullscreen = !!document.fullscreenElement;
         });
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
-        // Check if user is admin
         this.isAdmin =
           frappe.session.user === "Administrator" ||
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
+        try {
+          const settings = await frappe.call({
+            method: 'frappe.client.get_value',
+            args: {
+              doctype: 'Sahayog Settings',
+              filters: {},
+              fieldname: 'restrict_inward'
+            }
+          });
+          if (settings.message) {
+            this.restrictInward = !!settings.message.restrict_inward;
+          }
+        } catch (e) {
+          console.error("Failed to fetch restrict_inward:", e);
+        }
         // Fetch user's full name from User doctype
         try {
           this.fetchSerialAndBatchBundles();
@@ -14597,6 +14644,7 @@
             user_id: "",
             warehouse: "",
             inventory_type: "",
+            dfault: false,
           };
           return;
         }
@@ -14627,11 +14675,13 @@
                 user_id: this.accessForm.user_id,
                 warehouse: this.accessForm.warehouse,
                 inventory_type: this.accessForm.inventory_type,
+                dfault: this.accessForm.dfault ? 1 : 0,
               }
             : {
                 user_id: this.accessForm.user_id,
                 warehouse: this.accessForm.warehouse,
                 inventory_type: this.accessForm.inventory_type,
+                dfault: this.accessForm.dfault ? 1 : 0,
               };
 
           const res = await frappe.call({
@@ -14659,6 +14709,7 @@
           user_id: row.user_id,
           warehouse: row.warehouse,
           inventory_type: row.inventory_type,
+          dfault: !!row.dfault,
         };
         this.showAccessCreateView = true;
         this.showDetailView = false;
@@ -16725,6 +16776,7 @@
         if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
+        this.showDispatchHistory = false;
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -16787,6 +16839,7 @@
       closeDetailView() {
         this.showDetailView = false;
         this.isEditing = false;
+        this.showDispatchHistory = false;
         // Update URL to remove record ID
         window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
         
@@ -17040,6 +17093,7 @@
           return status === 1 ? "active" : "disabled";
         }
         if (key === "disabled") return row.disabled ? "disabled" : "active";
+        if (key === "dfault") return (value === "Yes") ? "active" : "disabled";
 
         const val = value || this.getFieldValue(row, key);
         const normalized = String(val || "").toLowerCase();
@@ -17086,16 +17140,68 @@
           this.detailRecord.name
         ) {
           try {
+            const isAsset = this.detailRecord.items && this.detailRecord.items.some(i => i.item_category === 'Asset');
             const res = await frappe.call({
               method: "frappe.client.get_list",
               args: {
-                doctype: "Stock Entry",
-                filters: { custom_material_request: this.detailRecord.name },
-                fields: ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],              },
-            });            this.dispatchHistory = res.message || [];
+                doctype: isAsset ? "Asset" : "Stock Entry",
+                filters: isAsset 
+                  ? { custom_emr: this.detailRecord.name }
+                  : { custom_material_request: this.detailRecord.name },
+                fields: isAsset 
+                  ? ["name", "owner", "creation", "modified_by", "modified", "docstatus"]
+                  : ["name", "posting_date", "owner", "creation", "modified_by", "modified", "docstatus"],
+              },
+            });
+            this.dispatchHistory = res.message || [];
           } catch (e) {
             console.error("Error fetching dispatch history:", e);
           }
+        }
+      },
+      downloadCSV() {
+        if (!this.filteredRows || this.filteredRows.length === 0) {
+          frappe.msgprint("No data available to download");
+          return;
+        }
+        const headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
+        const keys = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+        let csvContent = "";
+        csvContent += headers.join(",") + "\r\n";
+        this.filteredRows.forEach(row => {
+          const rowData = keys.map(key => {
+            const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
+            return '"' + val.replace(/"/g, '""') + '"';
+          });
+          csvContent += rowData.join(",") + "\r\n";
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+      async toggleRestrictInward() {
+        try {
+          await frappe.call({
+            method: 'frappe.client.set_value',
+            args: {
+              doctype: 'Sahayog Settings',
+              name: 'Sahayog Settings',
+              fieldname: 'restrict_inward',
+              value: this.restrictInward ? 1 : 0
+            }
+          });
+          frappe.show_alert({
+            message: `Restrict Inward ${this.restrictInward ? 'enabled' : 'disabled'}`,
+            indicator: 'green'
+          });
+        } catch (e) {
+          console.error("Failed to update restrict_inward:", e);
+          frappe.msgprint("Error updating Restrict Inward setting");
         }
       },
       handleMenuClick(item) {

@@ -804,14 +804,14 @@ def get_wh_dept_map():
         return frappe.get_all(
             "Default Warehouse",
             filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
-            fields=["user_id", "warehouse", "inventory_type", "name"]
+            fields=["user_id", "warehouse", "inventory_type", "dfault", "name"]
         )
     except Exception as e:
         frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
         return []
 
 @frappe.whitelist()
-def add_wh_dept_entry(user_id, warehouse, inventory_type):
+def add_wh_dept_entry(user_id, warehouse, inventory_type, dfault=0):
     """
     Add a new entry to the wh_dept_map child table in Sahayog Settings.
     """
@@ -823,7 +823,8 @@ def add_wh_dept_entry(user_id, warehouse, inventory_type):
         settings.append("wh_dept_map", {
             "user_id": user_id,
             "warehouse": warehouse,
-            "inventory_type": inventory_type
+            "inventory_type": inventory_type,
+            "dfault": dfault
         })
         settings.save(ignore_permissions=True)
         return {"status": "success", "message": "Entry added successfully"}
@@ -832,7 +833,7 @@ def add_wh_dept_entry(user_id, warehouse, inventory_type):
         frappe.throw(str(e))
 
 @frappe.whitelist()
-def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
+def update_wh_dept_entry(name, user_id, warehouse, inventory_type, dfault=0):
     """
     Update an existing entry in the wh_dept_map child table.
     """
@@ -847,6 +848,7 @@ def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
                 row.user_id = user_id
                 row.warehouse = warehouse
                 row.inventory_type = inventory_type
+                row.dfault = dfault
                 found = True
                 break
         
