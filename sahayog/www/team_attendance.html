@@ -1547,8 +1547,8 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required></div>
-                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" class="member-select"></div>
+                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
+                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
                       <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
                       <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
                       <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
@@ -3947,6 +3947,18 @@
       }
 
       // ── INIT ──────────────────────────────────────────────
+      function calculateConfirmationDate(doj) {
+        if (!doj) return;
+        const date = new Date(doj);
+        date.setDate(date.getDate() + 90);
+        
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        
+        document.querySelector('input[name="final_confirmation_date"]').value = `${yyyy}-${mm}-${dd}`;
+      }
+
       fetchTeamData();
     </script>
   </body>
