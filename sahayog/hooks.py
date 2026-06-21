@@ -409,10 +409,10 @@ scheduler_events = {
     #     # These tasks would be triggered every scheduler tick (default: every 60s)
     #     "sahayog.tasks.all"
     # ],
-    # "hourly": [
-    #     # Runs once every hour
-    #     "sahayog.tasks.hourly"
-    # ],
+    "hourly": [
+        "sahayog.tasks.auto_approve_attendance_corrections"
+    ],
+
     # "weekly": [
     #     # Runs once every week (Sunday midnight)
     #     "sahayog.tasks.weekly"
