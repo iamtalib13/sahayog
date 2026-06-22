@@ -1,6 +1,51 @@
 import frappe
-from frappe import _
+from frappe import _, cint
 from frappe.utils import getdate, date_diff
+
+
+@frappe.whitelist()
+def get_next_support_staff_id():
+    """Predict the next available 'P' series ID by checking existing employees."""
+    # Find the maximum number used in P-series from employee_number field
+    # We look for both 'P.00001' and 'P1' patterns
+    query = """
+        SELECT employee_number 
+        FROM `tabEmployee` 
+        WHERE employee_number LIKE 'P%' 
+        ORDER BY LENGTH(employee_number) DESC, employee_number DESC 
+        LIMIT 50
+    """
+    existing_p_numbers = frappe.db.sql(query, as_dict=True)
+    
+    max_num = 0
+    for row in existing_p_numbers:
+        emp_num = row.get("employee_number")
+        if not emp_num: continue
+        
+        # Strip 'P.' or 'P' and try to get the number
+        num_str = ""
+        if emp_num.startswith("P."):
+            num_str = emp_num[2:]
+        elif emp_num.startswith("P"):
+            num_str = emp_num[1:]
+            
+        try:
+            val = cint(num_str)
+            if val > max_num:
+                max_num = val
+        except:
+            continue
+            
+    # Also check tabSeries for P. as a fallback/safety
+    series_val = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name='P.'")
+    series_current = series_val[0][0] if series_val else 0
+    
+    if cint(series_current) > max_num:
+        max_num = cint(series_current)
+
+    next_id = max_num + 1
+    return f"P{next_id}"
+
 
 @frappe.whitelist()
 def create_support_staff(data):
@@ -19,12 +64,9 @@ def create_support_staff(data):
         data = json.loads(data)
 
     # Validations
-    if not data.get("employee_number"):
-        frappe.throw(_("Employee Code is mandatory"))
-    
-    if frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
+    if data.get("employee_number") and frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
         frappe.throw(_("Employee Code {0} already exists").format(data.get("employee_number")))
-
+    
     # Date Validations
     doj = getdate(data.get("date_of_joining")) if data.get("date_of_joining") else None
     doc = getdate(data.get("final_confirmation_date")) if data.get("final_confirmation_date") else None
@@ -34,6 +76,18 @@ def create_support_staff(data):
     # Reporting Manager Validation
     if data.get("reports_to") and not frappe.db.exists("Employee", data.get("reports_to")):
         frappe.throw(_("Reporting Manager {0} does not exist").format(data.get("reports_to")))
+
+    # Ensure series is synchronized before auto-naming
+    if data.get("custom_is_support_staff"):
+        next_suggested = get_next_support_staff_id()
+        current_val = cint(next_suggested[1:]) - 1
+        
+        # Update Series to prevent make_autoname from colliding
+        existing_series = frappe.db.sql("SELECT name FROM `tabSeries` WHERE name='P.'")
+        if existing_series:
+            frappe.db.sql("UPDATE `tabSeries` SET current=%s WHERE name='P.'", (current_val,))
+        else:
+            frappe.db.sql("INSERT INTO `tabSeries` (name, current) VALUES ('P.', %s)", (current_val,))
 
     # Prepare Employee Doc
     # Map incoming data to standard Frappe/HRMS fields

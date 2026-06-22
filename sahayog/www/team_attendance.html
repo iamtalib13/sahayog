@@ -1532,12 +1532,13 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Basic Information</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Employee Code *</label><input type="text" name="employee_number" class="member-select" required></div>
+                      <div><label>Employee Code</label><input type="text" name="employee_number" id="new_emp_code" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;" placeholder="Fetching ID..."></div>
+
                       <div><label>First Name *</label><input type="text" name="first_name" class="member-select" required></div>
                       <div><label>Middle Name</label><input type="text" name="middle_name" class="member-select"></div>
                       <div><label>Last Name *</label><input type="text" name="last_name" class="member-select" required></div>
                       <div><label>Gender *</label><select name="gender" class="member-select" required><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
-                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" class="member-select" required></div>
+                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" id="new_emp_dob" class="member-select" required></div>
                       <div><label>Marital Status</label><select name="marital_status" class="member-select"><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>
                       <div><label>Blood Group</label><input type="text" name="blood_group" class="member-select" placeholder="e.g. O+"></div>
                     </div>
@@ -1547,8 +1548,8 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
-                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
+                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" id="new_emp_doj" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
+                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" id="new_emp_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
                       <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
                       <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
                       <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
@@ -2446,8 +2447,16 @@
         const divSel = document.getElementById("new_emp_division");
         const shiftSel = document.getElementById("new_emp_shift");
         const empTypeSel = document.getElementById("new_emp_employment_type");
+        const empCodeInp = document.getElementById("new_emp_code");
+
+        // Fetch next P-series ID
+        const nextId = await callAPI("get_next_support_staff_id", {}, "employee");
+        if (nextId && empCodeInp) {
+          empCodeInp.value = nextId;
+        }
 
         // Only fetch if not already populated
+
         if (desigSel.options.length <= 1) {
           const designations = await callAPI("get_designations", {}, "employee");
           if (designations) {
@@ -2529,6 +2538,24 @@
       async function submitCreateEmployee() {
         const form = document.getElementById("createEmployeeForm");
         const formData = new FormData(form);
+        const dob = document.getElementById("new_emp_dob").value;
+        const doj = document.getElementById("new_emp_doj").value;
+
+        if (dob && doj) {
+          const birthDate = new Date(dob);
+          const joiningDate = new Date(doj);
+          let ageAtJoining = joiningDate.getFullYear() - birthDate.getFullYear();
+          const m = joiningDate.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && joiningDate.getDate() < birthDate.getDate())) {
+            ageAtJoining--;
+          }
+
+          if (ageAtJoining < 18) {
+            frappe.msgprint(__("Date of Joining must be at least 18 years after Date of Birth"));
+            return;
+          }
+        }
+
         const data = {};
         formData.forEach((value, key) => (data[key] = value));
 
@@ -3957,7 +3984,7 @@
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
         
-        document.querySelector('input[name="final_confirmation_date"]').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById("new_emp_confirmation_date").value = `${yyyy}-${mm}-${dd}`;
       }
 
       fetchTeamData();

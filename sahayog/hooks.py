@@ -257,6 +257,7 @@ override_doctype_class = {
 # Hook on document methods and events
 doc_events = {
     "Employee": {
+        "autoname": "sahayog.override.employee_naming.set_name_by_naming_series_override",
         "after_insert": [
             "sahayog.doc_events.create_user_from_employee.create_user",
             # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
@@ -442,7 +443,6 @@ scheduler_events = {
 
 
 override_whitelisted_methods = {
-    "frappe.model.naming.set_name_by_naming_series": "sahayog.override.employee_naming.set_name_by_naming_series_override",
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
     "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
