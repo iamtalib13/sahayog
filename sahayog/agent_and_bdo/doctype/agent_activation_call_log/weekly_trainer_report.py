@@ -297,7 +297,7 @@ def send_weekly_trainer_report():
             "sstrainingmanager.rongp@sahayogmultistate.com",
             "Jitendra.pachlongia@sahayogmultistate.com",
             "samresh.c@sahayogmultistate.com",
-            "talib.s@sahayogmultistate.com"
+            "talib.s@sahayogmultistate.com",
             "frappeone59@gmail.com",
             # "frappeone59@gmail.com",
             # "iamfaijankq@gmail.com",
