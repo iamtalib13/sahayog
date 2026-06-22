@@ -1,6 +1,3 @@
-// Copyright (c) 2025, Developer Team and contributors
-// For license information, please see license.txt
-
 frappe.query_reports["Agent Exit Summary Report"] = {
   filters: [
     {
@@ -19,18 +16,7 @@ frappe.query_reports["Agent Exit Summary Report"] = {
       fieldname: "trainer",
       label: "Trainer",
       fieldtype: "Link",
-      options: "Employee",
-    },
-    {
-      fieldname: "branch",
-      label: "Branch",
-      fieldtype: "Link",
-      options: "Branch",
-    },
-    {
-      fieldname: "district",
-      label: "District",
-      fieldtype: "Data",
+      options: "User",
     },
   ],
 };
