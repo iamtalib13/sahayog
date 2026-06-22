@@ -83,11 +83,9 @@ def execute(filters=None):
         ag.creation_date AS date_of_joining,
         acl.connected_status,
         acl.reply_type,
-         CASE
+        CASE
             WHEN IFNULL(acl.exited, 0) = 1
                 THEN 'Exited'
-            WHEN IFNULL(acl.want_to_exit, 0) = 1
-                THEN 'Want to Exit'
             WHEN IFNULL(acl.wants_to_stay, 0) = 1
                 AND IFNULL(acl.amount, 0) <> 0
                 THEN 'Activated'
@@ -95,7 +93,6 @@ def execute(filters=None):
                 AND IFNULL(acl.amount, 0) = 0
                 THEN 'Want to Stay'
             WHEN IFNULL(acl.wants_to_stay, 0) = 0
-                AND IFNULL(acl.want_to_exit, 0) = 0
                 AND IFNULL(acl.exited, 0) = 0
                 THEN 'Pending'
             ELSE ''
