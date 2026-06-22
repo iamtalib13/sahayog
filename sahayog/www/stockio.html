@@ -2433,7 +2433,7 @@
                           :key="opt.id"
                           class="searchable-select-option"
                           style="padding: 8px 12px; font-size: 0.9rem;"
-                          @mousedown="emrForm.source_warehouse = opt.warehouse || opt.id; emrForm.source_warehouse_display = opt.display_text; focusedField = null"
+                          @mousedown="let v = opt.warehouse || opt.id; emrForm.source_warehouse = (opt.display_text.toUpperCase().includes('HEAD OFFICE') || v === '1000' || v.toUpperCase().includes('HEAD OFFICE')) ? '1000' : v; emrForm.source_warehouse_display = opt.display_text; focusedField = null"
                         >
                           <span v-if="opt.is_matched">
                             [[ opt.branch_label ]] <span style="color: #10b981; font-weight: 700;">([[ opt.warehouse ]])</span>
@@ -15435,6 +15435,9 @@
         this.focusedField = null;
       },
       selectEMROption(field, value, display) {
+        if (field === "source_warehouse" && (String(value).toUpperCase().includes("HEAD OFFICE") || String(display).toUpperCase().includes("HEAD OFFICE") || String(value) === "1000")) {
+          value = "1000";
+        }
         this.emrForm[field] = value;
         if (field === "source_warehouse" || field === "target_warehouse") {
           this.emrForm[field + "_display"] = this.getBranchDisplayText(value);
@@ -16491,7 +16494,11 @@
 
           // Check both source and target
           if (this.emrForm.source_warehouse) {
-            this.emrForm.source_warehouse = await ensureWarehouseExists(this.emrForm.source_warehouse);
+            if (String(this.emrForm.source_warehouse).toUpperCase().includes("HEAD OFFICE") || String(this.emrForm.source_warehouse_display || "").toUpperCase().includes("HEAD OFFICE") || this.emrForm.source_warehouse === "1000") {
+              this.emrForm.source_warehouse = "1000";
+            } else {
+              this.emrForm.source_warehouse = await ensureWarehouseExists(this.emrForm.source_warehouse);
+            }
           }
           if (this.emrForm.target_warehouse) {
             this.emrForm.target_warehouse = await ensureWarehouseExists(this.emrForm.target_warehouse);
