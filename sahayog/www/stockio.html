@@ -1807,7 +1807,7 @@
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
         <button
-          v-if="activeItem === 'Serial No'"
+          v-if="activeItem === 'Serial No' && showDetailView"
           class="btn-view-toggle"
           title="Edit"
           style="margin-right: 15px;"
