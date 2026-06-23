@@ -578,26 +578,23 @@ def get_employee_calendar(employee, month, year):
 @frappe.whitelist(allow_guest=False)
 def get_leave_balances(employee):
     """Fetch leave balances for the given employee."""
-    # Assuming standard HRMS/ERPNext leave balance logic
     allocations = frappe.get_all("Leave Allocation",
         filters={"employee": employee, "docstatus": 1},
-        fields=["leave_type", "total_leaves_allocated", "unused_leaves"]
+        fields=["leave_type", "total_leaves_allocated", "unused_leaves", "carry_forwarded_leaves_count"]
     )
-    
-    # Ab current year ke liye approve ki gayi leaves calculate karein
+
     for alloc in allocations:
         total_used = frappe.db.sql("""
-            SELECT SUM(total_leave_days) 
-            FROM `tabLeave Application` 
-            WHERE employee = %s 
-              AND leave_type = %s 
-              AND status = 'Approved' 
+            SELECT SUM(total_leave_days)
+            FROM `tabLeave Application`
+            WHERE employee = %s
+              AND leave_type = %s
+              AND status = 'Approved'
               AND docstatus = 1
         """, (employee, alloc.leave_type))[0][0] or 0
-        
-        # Real balance = Allocated - Used
+
         alloc.unused_leaves = alloc.total_leaves_allocated - total_used
-        
+
     return allocations
 
 @frappe.whitelist()
