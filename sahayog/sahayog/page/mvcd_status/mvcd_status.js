@@ -378,10 +378,10 @@ h4 {
       const label = batch.replace(/EOD/i, "batch-");
       const allowedSols = batchData[batch] || [];
       const mvcdCount = currentMVCDData.filter((row) =>
-        allowedSols.includes(String(row.sol_id))
+        allowedSols.includes(String(row.sol_id)),
       ).length;
       const pendingTransCount = currentTransData.filter((row) =>
-        allowedSols.includes(String(row.dth_init_sol_id))
+        allowedSols.includes(String(row.dth_init_sol_id)),
       ).length;
       const isClear = mvcdCount === 0 && pendingTransCount === 0;
 
@@ -441,12 +441,16 @@ h4 {
       );
 
       // Combine pending SOL IDs from MVCD and pending transactions
-        const pendingSolsMvcd = currentMVCDData.map((row) => String(row.sol_id));
-        const pendingTransSols = currentTransData.map((row) => String(row.dth_init_sol_id));
-        const combinedPending = [...new Set([...pendingSolsMvcd, ...pendingTransSols])];
-        $badge.on("click", () => {
-          showClearedSolsModal(label.toUpperCase(), allowedSols, combinedPending);
-        });
+      const pendingSolsMvcd = currentMVCDData.map((row) => String(row.sol_id));
+      const pendingTransSols = currentTransData.map((row) =>
+        String(row.dth_init_sol_id),
+      );
+      const combinedPending = [
+        ...new Set([...pendingSolsMvcd, ...pendingTransSols]),
+      ];
+      $badge.on("click", () => {
+        showClearedSolsModal(label.toUpperCase(), allowedSols, combinedPending);
+      });
 
       $container.append($badge);
     });
@@ -456,12 +460,12 @@ h4 {
     const html = allSols
       .map((sol) => {
         const isPending = pendingSols.includes(sol);
-        const color = isPending ? "#ef4444" : "#10b981"; // Solid red / green per SOL
-        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600; color: white;">${sol}</li>`;
+        const color = isPending ? "#f3a6a6" : "#95f5b6"; // Solid red / green per SOL
+        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600; color: black;">${sol}</li>`;
       })
       .join("");
 
-    const modalBg = pendingSols.length > 0 ? "#ef4444" : "#10b981";
+    const modalBg = pendingSols.length > 0 ? "#fecaca" : "#bbf7d0";
 
     const dialog = new frappe.ui.Dialog({
       title: `Batch Audit: ${batchName}`,
