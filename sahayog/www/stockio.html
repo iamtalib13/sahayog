@@ -17029,10 +17029,13 @@
                 this.detailRecord.custodian_display = this.getEmployeeName(this.detailRecord.custodian);
               }
 
-              // Automatically preload linked Serial No Details if activeItem is Asset Master
+              // Note: Uncomment the block below if you want the linked Serial No Detail card 
+              // to automatically pre-open/pre-load when opening an Asset Master record.
+              /*
               if (this.activeItem === "Asset Master" && this.detailRecord.serial_no) {
                 this.loadLinkedSerialRecord(this.detailRecord.serial_no, false);
               }
+              */
 
               this.fetchComments(row.name);
             } else {
