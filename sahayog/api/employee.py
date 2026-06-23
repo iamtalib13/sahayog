@@ -66,6 +66,12 @@ def create_support_staff(data):
     # Validations
     if data.get("employee_number") and frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
         frappe.throw(_("Employee Code {0} already exists").format(data.get("employee_number")))
+
+    if data.get("pan_number") and frappe.db.exists("Employee", {"custom_pan_number": data.get("pan_number")}):
+        frappe.throw(_("PAN Number {0} is already registered with another employee").format(data.get("pan_number")))
+
+    if data.get("aadhaar_card_number") and frappe.db.exists("Employee", {"custom_aadhar_number": data.get("aadhaar_card_number")}):
+        frappe.throw(_("Aadhaar Number is already registered with another employee"))
     
     # Date Validations
     doj = getdate(data.get("date_of_joining")) if data.get("date_of_joining") else None
