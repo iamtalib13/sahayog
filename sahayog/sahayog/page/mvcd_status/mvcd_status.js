@@ -380,7 +380,10 @@ h4 {
       const mvcdCount = currentMVCDData.filter((row) =>
         allowedSols.includes(String(row.sol_id)),
       ).length;
-      const isClear = mvcdCount === 0;
+      const pendingTransCount = currentTransData.filter((row) =>
+        allowedSols.includes(String(row.dth_init_sol_id)),
+      ).length;
+      const isClear = mvcdCount === 0 && pendingTransCount === 0;
 
       // "Liquid Glass" Theme Colors
       const glassBg = isClear
@@ -437,9 +440,16 @@ h4 {
         },
       );
 
+      // Combine pending SOL IDs from MVCD and pending transactions
+      const pendingSolsMvcd = currentMVCDData.map((row) => String(row.sol_id));
+      const pendingTransSols = currentTransData.map((row) =>
+        String(row.dth_init_sol_id),
+      );
+      const combinedPending = [
+        ...new Set([...pendingSolsMvcd, ...pendingTransSols]),
+      ];
       $badge.on("click", () => {
-        const pendingSols = currentMVCDData.map((row) => String(row.sol_id));
-        showClearedSolsModal(label.toUpperCase(), allowedSols, pendingSols);
+        showClearedSolsModal(label.toUpperCase(), allowedSols, combinedPending);
       });
 
       $container.append($badge);
@@ -450,10 +460,12 @@ h4 {
     const html = allSols
       .map((sol) => {
         const isPending = pendingSols.includes(sol);
-        const color = isPending ? "#fecaca" : "#bbf7d0"; // Light red / Light green
-        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600;">${sol}</li>`;
+        const color = isPending ? "#f3a6a6" : "#95f5b6"; // Solid red / green per SOL
+        return `<li style="padding: 8px; margin: 2px; border-radius: 4px; background: ${color}; display: inline-block; width: calc(25% - 8px); text-align: center; font-size: 0.8rem; font-weight: 600; color: black;">${sol}</li>`;
       })
       .join("");
+
+    const modalBg = pendingSols.length > 0 ? "#fecaca" : "#bbf7d0";
 
     const dialog = new frappe.ui.Dialog({
       title: `Batch Audit: ${batchName}`,
@@ -461,7 +473,7 @@ h4 {
         {
           fieldname: "sol_list",
           fieldtype: "HTML",
-          options: `<ul style="list-style: none; padding: 0;">${html}</ul>`,
+          options: `<ul style="list-style: none; padding: 0; background: ${modalBg}; border-radius: 4px; padding: 5px;">${html}</ul>`,
         },
       ],
     });
