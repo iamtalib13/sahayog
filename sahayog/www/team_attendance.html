@@ -2606,7 +2606,7 @@
           }
 
           if (ageAtJoining < 18) {
-            frappe.msgprint(__("Date of Joining must be at least 18 years after Date of Birth"));
+            showToast("Date of Joining must be at least 18 years after Date of Birth");
             return;
           }
         }
@@ -2747,11 +2747,12 @@
 
           if (response.status === 417) {
             try {
-              const msgs = JSON.parse(res._server_messages || "[]");
+              const errBody = await response.json();
+              const msgs = JSON.parse(errBody._server_messages || "[]");
               const msg = JSON.parse(msgs[0]).message;
               showToast(msg);
             } catch (e) {
-              showToast(res.exc_type === "ValidationError" ? "Validation Error" : "Request failed.");
+              showToast("Validation Error. Please check your inputs.");
             }
             return null;
           }
@@ -3553,10 +3554,11 @@
       }
 
       function updateLeaveCard(key, data) {
-        document.getElementById(`lb-${key}-bal`).textContent =
-          data.unused_leaves;
+        document.getElementById(`lb-${key}-bal`).textContent = data.unused_leaves;
+        const opening = data.carry_forwarded_leaves_count || 0;
+        const used = data.total_leaves_allocated - data.unused_leaves;
         document.getElementById(`lb-${key}-sub`).textContent =
-          `${data.total_leaves_allocated - data.unused_leaves} used / ${data.total_leaves_allocated} total`;
+          `Opening: ${opening} | Used: ${used} / ${data.total_leaves_allocated}`;
       }
 
       async function loadCalendarHistory() {
