@@ -14,6 +14,7 @@
   "inventory_tab",
   "wh_dept_map",
   "restrict_inward",
+  "notification",
   "agent_setting_tab",
   "agent_automation_days",
   "create_agents",
@@ -135,13 +136,19 @@
    "fieldname": "restrict_inward",
    "fieldtype": "Check",
    "label": "Restrict Inward"
+  },
+  {
+   "default": "0",
+   "fieldname": "notification",
+   "fieldtype": "Check",
+   "label": "Notification"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-03 12:44:38.983394",
+ "modified": "2026-06-24 02:41:15.158120",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
