@@ -1817,12 +1817,11 @@
         </button>
         <button
           v-if="activeItem === 'Serial No' && showDetailView && isEditing"
-          class="btn-view-toggle"
-          title="Save"
-          style="margin-right: 15px; color: #2ecc71;"
+          class="btn-create-inline"
+          style="margin-right: 15px; padding: 6px 16px !important; font-size: 0.85rem !important;"
           @click="isEditing = false"
         >
-          <i class="fas fa-save"></i>
+          Save
         </button>
         <button
           v-if="activeItem === 'Serial No' && showDetailView && isEditing"
@@ -6797,6 +6796,7 @@
                     v-if="activeItem === 'Serial No' && isEditing"
                     class="btn-create-inline"
                     style="padding: 4px 8px !important; font-size: 0.75rem !important;"
+                    @click="addSerialConfigRow()"
                   >
                     <i class="fas fa-plus"></i> Add
                   </button>
@@ -6859,6 +6859,7 @@
                         <tr>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Configuration Type</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Value</th>
+                          <th v-if="isEditing" style="padding: 10px 12px !important; font-size: 0.75rem !important; text-align: center; width: 50px;">Action</th>
                         </tr>
                       </thead>
                       <!-- Serial No Batch Header -->
@@ -6867,6 +6868,7 @@
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Serial No</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Warehouse</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Batch</th>
+                          <th v-if="isEditing" style="padding: 10px 12px !important; font-size: 0.75rem !important; text-align: center; width: 50px;">Action</th>
                         </tr>
                       </thead>
                       <!-- Standard Header -->
@@ -6977,18 +6979,53 @@
 
                       <!-- Serial No Individual Body -->
                       <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'individual'">
-                        <tr v-for="row in detailRecord.configuration_table" :key="row.name">
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_type ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_value ]]</td>
+                        <tr v-for="(row, idx) in detailRecord.configuration_table" :key="row.name || idx">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <select v-if="isEditing" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.config_type">
+                              <option v-for="opt in configTypes" :value="opt">[[ opt ]]</option>
+                            </select>
+                            <span v-else>[[ row.config_type ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.config_value" />
+                            <span v-else>[[ row.config_value ]]</span>
+                          </td>
+                          <td v-if="isEditing" style="padding: 10px 12px !important; text-align: center; width: 50px;">
+                            <button
+                              class="btn-create-inline"
+                              style="padding: 4px 8px !important; font-size: 0.75rem !important; background: #ef4444 !important; border-color: #ef4444 !important;"
+                              @click="detailRecord.configuration_table.splice(idx, 1)"
+                            >
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
 
                       <!-- Serial No Batch Body -->
                       <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'batch'">
-                        <tr v-for="row in detailRecord.entries" :key="row.name">
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600; color: #369696;">[[ row.serial_no ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.warehouse ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.batch_no || '-' ]]</td>
+                        <tr v-for="(row, idx) in detailRecord.entries" :key="row.name || idx">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600; color: #369696;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.serial_no" />
+                            <span v-else>[[ row.serial_no ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.warehouse" />
+                            <span v-else>[[ row.warehouse ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.batch_no" />
+                            <span v-else>[[ row.batch_no || '-' ]]</span>
+                          </td>
+                          <td v-if="isEditing" style="padding: 10px 12px !important; text-align: center; width: 50px;">
+                            <button
+                              class="btn-create-inline"
+                              style="padding: 4px 8px !important; font-size: 0.75rem !important; background: #ef4444 !important; border-color: #ef4444 !important;"
+                              @click="detailRecord.entries.splice(idx, 1)"
+                            >
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
 
@@ -11975,6 +12012,11 @@
       $delimiters: ["[[", "]]"],
       dashboardDisplayMode: "cards",
       isEditing: false,
+      configTypes: [
+        "MAC Address", "Model Number", "Office Key", "Windows Key", 
+        "Operating System", "Processor", "RAM", "Serial Number", 
+        "Storage", "Vendor", "Warranty start date", "Warranty end date", "Make"
+      ],
       showFilterPopup: false,
       activeFilterKey: null,
       invoiceNumbers: [],
@@ -13567,6 +13609,18 @@
         }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
+
+        // Fetch Sahayog Serial Configuration config_type options
+        try {
+          frappe.model.with_doctype("Sahayog Serial Configuration", () => {
+            const configField = frappe.meta.get_docfield("Sahayog Serial Configuration", "config_type");
+            if (configField && configField.options) {
+              this.configTypes = configField.options.split('\n').filter(Boolean);
+            }
+          });
+        } catch (e) {
+          console.warn("Failed to fetch Sahayog Serial Configuration metadata:", e);
+        }
 
         // Reset create views
         this.showEMRCreateView = false;
@@ -16878,6 +16932,28 @@
           .replace(/[^a-z0-9]+/g, "-")
           .replace(/^-+|-+$/g, "");
         window.location.href = `/app/${slug}/${encodeURIComponent(docname)}`;
+      },
+
+      addSerialConfigRow() {
+        if (!this.detailRecord) return;
+        if (this.serialMode === 'individual') {
+          if (!this.detailRecord.configuration_table) {
+            this.detailRecord.configuration_table = [];
+          }
+          this.detailRecord.configuration_table.push({
+            config_type: this.configTypes[0] || "",
+            config_value: ""
+          });
+        } else if (this.serialMode === 'batch') {
+          if (!this.detailRecord.entries) {
+            this.detailRecord.entries = [];
+          }
+          this.detailRecord.entries.push({
+            serial_no: "",
+            warehouse: "",
+            batch_no: ""
+          });
+        }
       },
 
       closeDetailView() {
