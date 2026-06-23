@@ -74,6 +74,7 @@ doctype_list_js = {
     "Shareholder": "public/js/shareholder_list.js",
     "Share Transfer": "public/js/share_transfer_list.js",
     "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
+    "Lead": "public/js/lead_list.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = ["/assets/sahayog/js/assignmate.js",
@@ -231,6 +232,7 @@ permission_query_conditions = {
 # }
 
 has_permission = {
+    "Lead": "sahayog.permissions.has_lead_permission",
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.has_transaction_permission",
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",

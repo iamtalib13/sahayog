@@ -1,5 +1,43 @@
 import frappe
 
+def has_lead_permission(doc, ptype, user):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+
+    if "Administrator" in user_roles or "Sales Manager" in user_roles or "System Manager" in user_roles:
+        return True
+
+    if "Branch Manager" in user_roles:
+        if ptype == "create":
+            return True
+
+        if not doc:
+            return None
+
+        if not doc.get("sol_id"):
+            return None
+
+        user_sol_ids = get_user_sol_ids(user)
+        if str(doc.sol_id) in [str(s) for s in user_sol_ids]:
+            return True
+
+        if doc.owner == user:
+            return True
+
+        return False
+
+    return None
+
+
+def get_user_sol_ids(user):
+    rp = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    if not rp:
+        return []
+    return frappe.get_all("Sol Items", filters={"parent": rp}, pluck="sol_id")
+
+
 def get_lead_permission(user, doctype=None):
     if not user:
         user = frappe.session.user
