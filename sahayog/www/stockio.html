@@ -6084,7 +6084,7 @@
                         <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
                         <div class="info-content">
                           <span class="info-label">Location</span>
-                          <span class="info-value">[[ detailRecord.location || '-' ]]</span>
+                          <span class="info-value">[[ getBranchNameFromLocation(detailRecord.location) ]]</span>
                         </div>
                       </div>
 
@@ -17481,6 +17481,13 @@
           (e) => e.user_id === id || e.name === id,
         );
         return emp ? emp.employee_name : id;
+      },
+      getBranchNameFromLocation(location) {
+        if (!location || location === "-") return "-";
+        const branch = (this.sahayog_branches || []).find(
+          (b) => b.name === location || b.branch === location
+        );
+        return branch ? branch.branch : location;
       },
       getBadgeText(row, key) {
         if (key === "docstatus") {
