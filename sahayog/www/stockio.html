@@ -1807,6 +1807,14 @@
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
         <button
+          v-if="activeItem === 'Serial No'"
+          class="btn-view-toggle"
+          title="Edit"
+          style="margin-right: 15px;"
+        >
+          <i class="fas fa-edit"></i>
+        </button>
+        <button
           class="btn-view-toggle"
           onclick="window.location.href = '/app/sahayog-home'"
           title="Home"
@@ -13971,23 +13979,23 @@
             res = await frappe.call({
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_wh_dept_map",
+              args: {
+                limit: limit,
+                start: start,
+                search_text: this.searchText,
+              },
             });
             console.log("Access data response:", res);
             if (res.message) {
-              let data = res.message;
-              if (this.searchText) {
-                const search = this.searchText.toLowerCase();
-                data = data.filter(
-                  (row) =>
-                    (row.user_id || "").toLowerCase().includes(search) ||
-                    (row.warehouse || "").toLowerCase().includes(search) ||
-                    (row.inventory_type || "").toLowerCase().includes(search),
-                );
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
               }
-              this.rows = data;
-              this.loadedRows = data.length;
-              this.totalRows = data.length;
-              this.hasMore = false;
+              this.loadedRows = this.rows.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           } else {
             let filters = [];

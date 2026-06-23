@@ -792,7 +792,7 @@ def get_invoice_numbers():
     return None
 
 @frappe.whitelist()
-def get_wh_dept_map():
+def get_wh_dept_map(limit=None, start=None, search_text=None):
     """
     Fetch the wh_dept_map child table from Sahayog Settings.
     """
@@ -801,14 +801,46 @@ def get_wh_dept_map():
         
     try:
         # Fetching directly from the child table doctype bypassing Sahayog Settings permissions
-        return frappe.get_all(
+        data = frappe.get_all(
             "Default Warehouse",
             filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
             fields=["user_id", "warehouse", "inventory_type", "dfault", "name"]
         )
+        
+        # Apply search_text filtering
+        if search_text:
+            terms = search_text.lower().split()
+            filtered_data = []
+            for row in data:
+                match_all = True
+                for term in terms:
+                    found_term = (
+                        term in str(row.get("user_id", "")).lower() or 
+                        term in str(row.get("warehouse", "")).lower() or 
+                        term in str(row.get("inventory_type", "")).lower()
+                    )
+                    if not found_term:
+                        match_all = False
+                        break
+                if match_all:
+                    filtered_data.append(row)
+            data = filtered_data
+            
+        total_count = len(data)
+        
+        # Apply pagination if limit/start are provided
+        if limit is not None and start is not None:
+            start = int(start)
+            limit = int(limit)
+            data = data[start:start+limit]
+            
+        return {
+            "data": data,
+            "total": total_count
+        }
     except Exception as e:
         frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
-        return []
+        return {"data": [], "total": 0}
 
 @frappe.whitelist()
 def add_wh_dept_entry(user_id, warehouse, inventory_type, dfault=0):
