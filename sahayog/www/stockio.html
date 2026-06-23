@@ -1819,7 +1819,7 @@
           v-if="activeItem === 'Serial No' && showDetailView && isEditing"
           class="btn-create-inline"
           style="margin-right: 15px; padding: 6px 16px !important; font-size: 0.85rem !important;"
-          @click="isEditing = false"
+          @click="saveSerialRecord()"
         >
           Save
         </button>
@@ -1828,7 +1828,7 @@
           class="btn-view-toggle"
           title="Cancel"
           style="margin-right: 15px; color: #e74c3c;"
-          @click="isEditing = false"
+          @click="cancelSerialEdit()"
         >
           <i class="fas fa-times"></i>
         </button>
@@ -6982,7 +6982,8 @@
                         <tr v-for="(row, idx) in detailRecord.configuration_table" :key="row.name || idx">
                           <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
                             <select v-if="isEditing" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.config_type">
-                              <option v-for="opt in configTypes" :value="opt">[[ opt ]]</option>
+                              <option value="" disabled>Select Type</option>
+                              <option v-for="opt in configTypes.filter(opt => !detailRecord.configuration_table.some((r, i) => i !== idx && r.config_type === opt))" :value="opt">[[ opt ]]</option>
                             </select>
                             <span v-else>[[ row.config_type ]]</span>
                           </td>
@@ -16941,7 +16942,7 @@
             this.detailRecord.configuration_table = [];
           }
           this.detailRecord.configuration_table.push({
-            config_type: this.configTypes[0] || "",
+            config_type: "",
             config_value: ""
           });
         } else if (this.serialMode === 'batch') {
@@ -16953,6 +16954,65 @@
             warehouse: "",
             batch_no: ""
           });
+        }
+      },
+
+      async saveSerialRecord() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          if (this.detailRecord.configuration_table) {
+            this.detailRecord.configuration_table = this.detailRecord.configuration_table.filter(r => r.config_type);
+          }
+          if (this.detailRecord.entries) {
+            this.detailRecord.entries = this.detailRecord.entries.filter(r => r.serial_no);
+          }
+
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.detailRecord,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isEditing = false;
+            frappe.show_alert({
+              message: "Serial No updated successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save Serial No error:", e);
+          frappe.show_alert({
+            message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async cancelSerialEdit() {
+        this.isEditing = false;
+        if (!this.detailRecord || !this.detailRecord.name) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get",
+            args: {
+              doctype: this.currentView.doctype,
+              name: this.detailRecord.name,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+          }
+        } catch (e) {
+          console.error("Error reverting Serial No edits:", e);
+        } finally {
+          this.loading = false;
         }
       },
 
