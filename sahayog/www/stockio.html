@@ -8490,7 +8490,7 @@
                     <!-- Asset Master Buttons -->
                     <button
                       class="btn-create-inline"
-                      style="background: #369696; border-color: #369696"
+                      style="background: #369696 !important; border-color: #369696 !important; color: #ffffff !important;"
                       @click.stop="submitRowRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus === 0"
                     >
@@ -8498,7 +8498,7 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      style="background: #369696; border-color: #369696"
+                      style="background: #369696 !important; border-color: #369696 !important; color: #ffffff !important;"
                       @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
@@ -17424,10 +17424,13 @@
 
         let value = row[key];
 
-        // 🔥 Special handling for warehouse ID to branch name
-        if (["target_warehouse", "source_warehouse", "set_warehouse", "from_warehouse", "to_warehouse", "warehouse"].includes(key)) {
+        // 🔥 Special handling for warehouse ID or location to branch name
+        if (["target_warehouse", "source_warehouse", "set_warehouse", "from_warehouse", "to_warehouse", "warehouse", "location"].includes(key)) {
           const val = value;
           if (val) {
+            const directBranch = this.sahayog_branches.find((b) => b.name === String(val) || b.branch === String(val));
+            if (directBranch) return directBranch.branch;
+
             const match = String(val).match(/\b\d{4}\b/);
             if (match) {
               const solId = match[0];
