@@ -1115,6 +1115,14 @@
       >
         Correction Approvals
       </button>
+      <button
+        class="nav-tab"
+        id="tabReports"
+        style="display: none"
+        onclick="switchTab('reports', this)"
+      >
+        Reports
+      </button>
     </div>
 
     <!-- APPROVAL SUB-TABS -->
@@ -2112,7 +2120,10 @@
     <div class="dashboard-drawer" id="dashboardDrawer">
       <div class="drawer-header">
         <span>Attendance Insights</span>
-        <button onclick="closeDashboardDrawer()">✕</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="drawerEditBtn" style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;" onclick="toggleEmployeeEditMode()">✏️ Edit</button>
+          <button onclick="closeDashboardDrawer()">✕</button>
+        </div>
       </div>
       <div class="drawer-content" id="dashboardContent">
         <div style="text-align: center; color: var(--muted); padding: 40px 0">
@@ -2155,6 +2166,8 @@
       function openDashboardDrawer() {
         document.getElementById("dashboardDrawer").classList.add("open");
         document.getElementById("drawerOverlay").classList.add("show");
+        document.getElementById("drawerEditBtn").style.display = "none";
+        document.querySelector(".drawer-header span").textContent = "Attendance Insights";
         if (selectedMemberId) {
           loadAttendanceDashboard(selectedMemberId);
         }
@@ -2881,6 +2894,13 @@
 
           if (tab === "leave") loadTeamLeaves();
           else loadCorrectionRequests();
+        } else if (tab === "reports") {
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (empList) empList.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          renderReportsTab();
         }
       }
 
@@ -3215,6 +3235,8 @@
             corrTab.textContent = "Correction Approvals";
           }
           if (hrTab) hrTab.style.display = "flex";
+          const reportsTab = document.getElementById("tabReports");
+          if (reportsTab) reportsTab.style.display = "flex";
           if (bulkBar)
             bulkBar.style.setProperty("display", "none", "important");
 
@@ -3623,7 +3645,7 @@
 
           let actionsHtml = "";
           if (isHR()) {
-            actionsHtml = ""; // Read-only for HR
+            actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
           } else {
             // Logic for Branch Manager (manage others) or Employee (manage self)
             const canManage = isBranchManager() || s.is_self;
@@ -4051,6 +4073,158 @@
         const dd = String(date.getDate()).padStart(2, '0');
         
         document.getElementById("new_emp_confirmation_date").value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      let _currentProfileEmployee = null;
+      let _currentProfileData = null;
+
+      async function openEmployeeProfile(empId) {
+        _currentProfileEmployee = empId;
+        const drawer = document.getElementById("dashboardDrawer");
+        const content = document.getElementById("dashboardContent");
+        document.querySelector(".drawer-header span").textContent = "Employee Profile";
+        document.getElementById("drawerEditBtn").style.display = "inline-block";
+        content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        drawer.classList.add("open");
+        document.getElementById("drawerOverlay").classList.add("show");
+
+        const e = await callAPI("get_employee_profile", { employee: empId }, "employee");
+        if (!e) return;
+        _currentProfileData = e;
+        renderEmployeeProfileView(e);
+      }
+
+      function renderEmployeeProfileView(e) {
+        const fmt = d => d ? new Date(d).toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"}) : "—";
+        const val = v => v || "—";
+        const row = (label, value) => value && value !== "—" ? `
+          <div class="dash-row"><span class="dash-lbl">${label}</span>
+          <span class="dash-val" style="text-align:right;max-width:60%;word-break:break-word;">${value}</span></div>` : "";
+
+        document.getElementById("dashboardContent").innerHTML = `
+          <div class="emp-header-card">
+            <div style="width:56px;height:56px;border-radius:50%;background:var(--brand2);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">${e.employee_name.charAt(0)}</div>
+            <div class="emp-h-name">${e.employee_name}</div>
+            <div class="emp-h-sub">${val(e.designation)} ${e.department ? "· " + e.department : ""}</div>
+            <div style="margin-top:6px;"><span style="background:${e.status==='Active'?'#dcfce7':'#fee2e2'};color:${e.status==='Active'?'#16a34a':'#dc2626'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${val(e.status)}</span></div>
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
+            ${row("Employee Code", e.name)} ${row("Gender", e.gender)} ${row("Date of Birth", fmt(e.date_of_birth))} ${row("Marital Status", e.marital_status)} ${row("Blood Group", e.blood_group)}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
+            ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)}
+            ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", e.custom_zone)} ${row("Region", e.custom_region)} ${row("District", e.custom_district)}
+            ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
+            ${e.status==="Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
+            ${e.status==="Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
+            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("Permanent Address", e.permanent_address)}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Banking</div>
+            ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
+          </div>
+          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}</div>` : ""}
+        `;
+      }
+
+      function toggleEmployeeEditMode() {
+        const e = _currentProfileData;
+        if (!e) return;
+        const isHRMgr = userRoles.includes("HR Manager") || userRoles.includes("Administrator");
+        const inp = (name, value, type="text") => `<input name="${name}" value="${value||""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+
+        document.getElementById("drawerEditBtn").style.display = "none";
+        document.getElementById("dashboardContent").innerHTML = `
+          <div class="emp-header-card" style="margin-bottom:16px;">
+            <div class="emp-h-name">${e.employee_name}</div>
+            <div class="emp-h-sub">${e.name}</div>
+          </div>
+          <form id="empEditForm" onsubmit="event.preventDefault(); saveEmployeeProfile();">
+            <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Mobile</label>${inp("cell_number", e.cell_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address||""}</textarea></div>
+              </div>
+            </div>
+            <div class="dash-section"><div class="dash-sec-title">Employment</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
+              </div>
+            </div>
+            <div class="dash-section"><div class="dash-sec-title">Banking</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Bank Name</label>${inp("bank_name", e.bank_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
+              </div>
+            </div>
+            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+              <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
+            </div>` : ""}
+            <div style="display:flex;gap:10px;padding-top:10px;">
+              <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
+              <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
+            </div>
+          </form>
+        `;
+      }
+
+      async function saveEmployeeProfile() {
+        const form = document.getElementById("empEditForm");
+        const fd = new FormData(form);
+        const data = {};
+        fd.forEach((v, k) => data[k] = v);
+
+        const btn = document.getElementById("btnSaveProfile");
+        btn.disabled = true; btn.textContent = "Saving...";
+
+        const res = await callAPI("update_employee_profile", { employee: _currentProfileEmployee, data }, "employee");
+        btn.disabled = false; btn.textContent = "Save Changes";
+
+        if (res && res.success) {
+          showToast(res.message);
+          const updated = await callAPI("get_employee_profile", { employee: _currentProfileEmployee }, "employee");
+          if (updated) { _currentProfileData = updated; renderEmployeeProfileView(updated); }
+          document.getElementById("drawerEditBtn").style.display = "inline-block";
+        }
+      }
+
+      function renderReportsTab() {
+        const reports = [
+          { name: "SS Employee Master Report", desc: "Active & inactive support staff with all master data", icon: "👥" },
+          { name: "SS Monthly Attendance Report", desc: "Month-wise attendance summary per employee", icon: "📅" },
+          { name: "SS Branch-wise Attendance Report", desc: "Branch-level attendance statistics for a month", icon: "🏢" },
+          { name: "SS Leave Balance Report", desc: "Current leave balance (CL, SL, EL) per employee", icon: "🌿" },
+          { name: "SS Salary Register", desc: "Monthly gross salary register for active support staff", icon: "💰" },
+        ];
+
+        document.getElementById("hrDashboardContent").innerHTML = `
+          <div style="padding:4px 0 20px;">
+            <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin-bottom:6px;">MIS Reports</h3>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">Support Staff Reports — Click to open in Frappe Report view with filters & Excel download.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;">
+              ${reports.map(r => `
+                <a href="/app/query-report/${encodeURIComponent(r.name)}" target="_blank" style="text-decoration:none;">
+                  <div style="background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:18px; display:flex; gap:14px; align-items:flex-start; box-shadow:var(--shadow); transition:0.15s; cursor:pointer;"
+                    onmouseover="this.style.borderColor='var(--brand2)'" onmouseout="this.style.borderColor='var(--border)'">
+                    <div style="font-size:28px; line-height:1;">${r.icon}</div>
+                    <div>
+                      <div style="font-size:13px; font-weight:700; color:var(--brand); margin-bottom:4px;">${r.name}</div>
+                      <div style="font-size:11px; color:var(--muted); line-height:1.5;">${r.desc}</div>
+                    </div>
+                  </div>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        `;
       }
 
       async function openExitEmployeeModal() {

@@ -1,0 +1,11 @@
+{
+ "add_total_row": 1,
+ "doctype": "Report",
+ "is_standard": "Yes",
+ "module": "HRMS",
+ "name": "SS Salary Register",
+ "ref_doctype": "Employee",
+ "report_name": "SS Salary Register",
+ "report_type": "Script Report",
+ "roles": [{"role": "HR Manager"}, {"role": "HR User"}, {"role": "System Manager"}]
+}
