@@ -465,7 +465,7 @@ h4 {
       })
       .join("");
 
-    const modalBg = pendingSols.length > 0 ? "#fecaca" : "#bbf7d0";
+    const modalBg = pendingSols.length > 0 ? "#ffffff" : "#bbf7d0";
 
     const dialog = new frappe.ui.Dialog({
       title: `Batch Audit: ${batchName}`,
