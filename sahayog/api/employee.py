@@ -144,6 +144,44 @@ def create_support_staff(data):
     }
 
 @frappe.whitelist()
+def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving):
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if not frappe.db.exists("Employee", employee):
+        frappe.throw(_("Employee {0} not found").format(employee))
+
+    dor = getdate(resignation_letter_date)
+    dreliev = getdate(relieving_date)
+    doj = getdate(frappe.db.get_value("Employee", employee, "date_of_joining"))
+
+    if doj and dor < doj:
+        frappe.throw(_("Resignation date cannot be before Date of Joining"))
+    if dreliev < dor:
+        frappe.throw(_("Relieving date cannot be before Resignation date"))
+
+    frappe.db.set_value("Employee", employee, {
+        "resignation_letter_date": dor,
+        "relieving_date": dreliev,
+        "reason_for_leaving": reason_for_leaving,
+        "status": "Left"
+    })
+
+    return {"success": True, "message": _("Employee {0} has been marked as exited").format(employee)}
+
+
+@frappe.whitelist()
+def get_active_support_staff():
+    return frappe.get_all(
+        "Employee",
+        filters={"custom_is_support_staff": 1, "status": "Active"},
+        fields=["name", "employee_name", "designation", "branch"],
+        order_by="employee_name"
+    )
+
+
+@frappe.whitelist()
 def get_designations():
     return frappe.get_all("Designation", fields=["name"], order_by="name")
 
