@@ -8490,7 +8490,6 @@
                     <!-- Asset Master Buttons -->
                     <button
                       class="btn-create-inline"
-                      style="background: #369696 !important; border-color: #369696 !important; color: #ffffff !important;"
                       @click.stop="submitRowRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus === 0"
                     >
@@ -8498,7 +8497,6 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      style="background: #369696 !important; border-color: #369696 !important; color: #ffffff !important;"
                       @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
@@ -10878,6 +10876,17 @@
     align-items: center;
     width: 100%;
     gap: 8px;
+  }
+
+  .row-action .btn-create-inline {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+    min-width: 80px !important;
+    height: 30px !important;
+    box-shadow: none !important;
+    text-transform: uppercase;
+    font-weight: 700;
   }
 
   .status-badge {
