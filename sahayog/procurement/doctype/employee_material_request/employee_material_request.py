@@ -185,6 +185,94 @@ class EmployeeMaterialRequest(Document):
         except Exception as e:
             frappe.log_error(f"Failed to send email to {employee_email}: {str(e)}", "EMR Notification Email Error")
 
+    def send_dispatch_notification_to_employee(self, transitioned_items):
+        # 1. Check Sahayog Settings notification checkbox
+        notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
+        if not notification_enabled:
+            return
+
+        # 2. Get Employee's company email
+        employee_email = None
+        if self.employee:
+            employee_email = frappe.db.get_value("Employee", self.employee, "company_email")
+
+        if not employee_email:
+            frappe.log_error(f"Could not find company email for employee: {self.employee}", "EMR Notification Email Error")
+            return
+
+        # 3. Construct URL
+        site_url = frappe.utils.get_url()
+        redirect_url = f"{site_url}/stockio#/requests/{self.name}"
+
+        # 4. Build Table Rows of transitioned items
+        rows_html = ""
+        for item in transitioned_items:
+            rows_html += f"""
+            <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_code}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_name or '-'}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_category or '-'}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; text-align: center;">{item.quantity or 0}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; text-align: center;">{item.approved_quantity or 0}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; font-weight: bold; color: #3182ce;">{item.status}</td>
+            </tr>
+            """
+
+        # 5. Build HTML message
+        subject = f"Dispatched: Material Request {self.name}"
+        
+        message = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #3182ce; padding: 20px; text-align: center; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Material Request Items Dispatched</h2>
+            </div>
+            
+            <div style="padding: 24px; background-color: #ffffff;">
+                <p>Hello,</p>
+                <p>All items in your Material Request <strong>{self.name}</strong> have been successfully dispatched.</p>
+                
+                <h3 style="color: #4a5568; margin-top: 25px; border-bottom: 2px solid #3182ce; padding-bottom: 6px;">Dispatched Items Details</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: left; border: 1px solid #edf2f7;">
+                    <thead>
+                        <tr style="background-color: #f7fafc;">
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Item Code</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Item Name</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Category</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase; text-align: center;">Req Qty</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase; text-align: center;">App Qty</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_html}
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+                    <a href="{redirect_url}" style="background-color: #3182ce; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(49, 130, 206, 0.2);">
+                        View Request in StockIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                This is an automated notification from Sahayog System.
+            </div>
+        </div>
+        """
+
+        # Send email using frappe.sendmail
+        try:
+            frappe.sendmail(
+                recipients=[employee_email],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send dispatch email to {employee_email}: {str(e)}", "EMR Notification Email Error")
+
     def send_ho_officer_email(self):
         # 1. Check Sahayog Settings notification checkbox
         notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
@@ -613,19 +701,41 @@ def update_emr_item_status(docname, item_status_map):
     if isinstance(item_status_map, str):
         item_status_map = frappe.parse_json(item_status_map)
         
-    for row_name, data in item_status_map.items():
-        if isinstance(data, dict):
-            status = data.get("status")
-            dispatch_detail = data.get("dispatch_detail")
-            if status:
-                frappe.db.set_value("Material Request Items", row_name, "status", status)
-            if dispatch_detail:
-                frappe.db.set_value("Material Request Items", row_name, "dispatch_detail", dispatch_detail)
-        else:
-            # Fallback for simple status string update
-            frappe.db.set_value("Material Request Items", row_name, "status", data)
-            
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    # Track which items are changing from 'Approved' to 'Dispatch'
+    transitioned_items = []
+    
+    for item in doc.items:
+        row_data = item_status_map.get(item.name)
+        if row_data:
+            new_status = row_data.get("status") if isinstance(row_data, dict) else row_data
+            # If transitioning from Approved to Dispatch
+            if item.status == "Approved" and new_status == "Dispatch":
+                transitioned_items.append(item)
+                
+            # Perform update on the memory object so we can check the final state of all items
+            if isinstance(row_data, dict):
+                status = row_data.get("status")
+                dispatch_detail = row_data.get("dispatch_detail")
+                if status:
+                    item.status = status
+                if dispatch_detail:
+                    item.dispatch_detail = dispatch_detail
+            else:
+                item.status = row_data
+
+    # Save the document changes using doc.save() so standard hooks/validation/update run and DB is updated
+    doc.save()
     frappe.db.commit()
+
+    # Now check if ALL items in the child table have the status 'Dispatch'
+    all_dispatched = all(item.status == "Dispatch" for item in doc.items)
+    
+    # If all items are Dispatched and we had items transitioning to Dispatch in this call
+    if all_dispatched and transitioned_items:
+        doc.send_dispatch_notification_to_employee(transitioned_items)
+
     return {"success": True}
 
 # Whitelisted API Methods
