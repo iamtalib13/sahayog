@@ -414,8 +414,17 @@
         </div>
 
         <!-- Pending Actions Button (Right Aligned) -->
-        <div class="pending-actions-wrapper" id="pending-actions-container" style="display: none; margin-bottom: 0;">
-          <a href="/app/pending-request" class="pending-actions-btn" id="pending-actions-link" style="padding: 0.6rem 1.5rem; max-width: none;">
+        <div
+          class="pending-actions-wrapper"
+          id="pending-actions-container"
+          style="display: none; margin-bottom: 0"
+        >
+          <a
+            href="/app/pending-request"
+            class="pending-actions-btn"
+            id="pending-actions-link"
+            style="padding: 0.6rem 1.5rem; max-width: none"
+          >
             <span>Pending Actions</span>
             <span class="count-val" id="global-pending-count">0</span>
             <i class="fas fa-arrow-right"></i>
@@ -438,7 +447,12 @@
               <span class="icon-label">Tickets</span>
             </a>
             <!-- StockIO -->
-            <a class="icon-item stockio-icon" href="/stockio" role="link" tabindex="0">
+            <a
+              class="icon-item stockio-icon"
+              href="/stockio"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-amber-100 text-amber-700">
                 <span class="fas fa-cubes"></span>
               </div>
@@ -565,13 +579,18 @@
               <span class="icon-label">Tasks</span>
             </a> -->
 
-             <!-- Taskflow -->
-            <a class="icon-item" href="https://mysahayog.com/taskflow" role="link" tabindex="0">
+            <!-- Taskflow -->
+            <a
+              class="icon-item"
+              href="https://mysahayog.com/taskflow"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
                 <i class="fa fa-tasks"></i>
               </div>
               <span class="icon-label">Taskflow</span>
-            </a> 
+            </a>
 
             <!-- User Unlock -->
             <a
@@ -802,40 +821,65 @@
               <span class="icon-label">Petty Cash Management</span>
             </a>
 
-             <!-- CIF Tracker -->
-            <a class="icon-item" href="https://mysahayog.com/cif_tracker" role="link" tabindex="0">
+            <!-- CIF Tracker -->
+            <a
+              class="icon-item"
+              href="https://mysahayog.com/cif_tracker"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
                 <i class="fa fa-rocket"></i>
               </div>
               <span class="icon-label">CIF Tracker</span>
-            </a> 
+            </a>
 
             <!-- DAMS -->
-            <a class="icon-item" href="/app/disciplinary-management" role="link" tabindex="0">
+            <a
+              class="icon-item"
+              href="/app/disciplinary-management"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
                 <i class="fa-solid fa-building-user"></i>
               </div>
               <span class="icon-label">DAMS</span>
-            </a> 
-
+            </a>
 
             <!-- RPT To Excel Converter -->
-            <a class="icon-item" href="/report_converter" role="link" tabindex="0">
+            <a
+              class="icon-item"
+              href="/report_converter"
+              role="link"
+              tabindex="0"
+            >
               <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
                 <i class="fa fa-sync"></i>
               </div>
               <span class="icon-label">RPT Excel Converter</span>
-            </a> 
+            </a>
 
-             <!-- Form16 Downloader -->
+            <!-- Form16 Downloader -->
             <a class="icon-item" href="/form16" role="link" tabindex="0">
               <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
                 <i class="fa-solid fa-file-arrow-down fa-2x"></i>
               </div>
               <span class="icon-label">Form16 Downloader</span>
-            </a> 
+            </a>
 
-
+            <!-- Attendance Portal -->
+            <a
+              class="icon-item"
+              href="/team_attendance"
+              role="link"
+              tabindex="0"
+            >
+              <div class="icon-circle bg-purple-100 text-purple-700">
+                <i class="fas fa-fingerprint"></i>
+              </div>
+              <span class="icon-label">Attendance Portal</span>
+            </a>
           </div>
         </section>
       </main>
@@ -919,24 +963,29 @@
         const stockIcon = document.querySelector(".stockio-icon");
         if (!stockIcon) return;
 
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
+        const csrfToken = document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
+
         // Use Frappe REST API to count filtered records
         const filters = JSON.stringify([
           ["docstatus", "=", 0],
-          ["status", "in", ["Pending Reporting Person", "Pending HO Approval"]]
+          ["status", "in", ["Pending Reporting Person", "Pending HO Approval"]],
         ]);
-        
-        // Note: For 'or_filters', it's safer to use a custom API. 
+
+        // Note: For 'or_filters', it's safer to use a custom API.
         // If the custom API is failing, try a simple fetch to a known working endpoint.
         try {
-          const res = await fetch(`/api/resource/Employee Material Request?filters=${encodeURIComponent(filters)}&fields=["name"]`, {
-            method: "GET",
-            headers: {
-              "X-Frappe-CSRF-Token": csrfToken,
-              "Content-Type": "application/json"
-            }
-          });
+          const res = await fetch(
+            `/api/resource/Employee Material Request?filters=${encodeURIComponent(filters)}&fields=["name"]`,
+            {
+              method: "GET",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+            },
+          );
           const data = await res.json();
           const count = data.data ? data.data.length : 0;
 
@@ -957,17 +1006,20 @@
         const container = document.getElementById("pending-actions-container");
         const btnLink = document.getElementById("pending-actions-link");
         const countSpan = document.getElementById("global-pending-count");
-        
+
         try {
-          const res = await fetch("/api/method/sahayog.sahayog.page.pending_request.pending_request.get_pending_requests_count");
-          
+          const res = await fetch(
+            "/api/method/sahayog.sahayog.page.pending_request.pending_request.get_pending_requests_count",
+          );
+
           if (!res.ok) {
             console.error("API Response not OK:", res.status, res.statusText);
             return;
           }
 
           const data = await res.json();
-          const count = (data && data.hasOwnProperty('message')) ? data.message : 0;
+          const count =
+            data && data.hasOwnProperty("message") ? data.message : 0;
 
           countSpan.textContent = count;
           container.style.display = "block"; // Always show
@@ -977,7 +1029,6 @@
           } else {
             btnLink.classList.remove("has-pending"); // Becomes Green
           }
-          
         } catch (error) {
           console.error("Critical error in fetchGlobalPendingCount:", error);
         }
