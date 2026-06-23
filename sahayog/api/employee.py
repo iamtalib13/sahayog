@@ -172,6 +172,65 @@ def process_employee_exit(employee, resignation_letter_date, relieving_date, rea
 
 
 @frappe.whitelist()
+def update_employee_profile(employee, data):
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if isinstance(data, str):
+        import json
+        data = json.loads(data)
+
+    allowed_fields = [
+        "cell_number", "personal_email", "permanent_address",
+        "designation", "department", "branch", "reports_to",
+        "bank_name", "bank_ac_no", "blood_group", "marital_status",
+        "employment_type", "custom_pan_number", "custom_aadhar_number",
+    ]
+    # salary only for HR Manager / Admin
+    if any(r in roles for r in ["HR Manager", "Administrator"]):
+        allowed_fields.append("ctc")
+
+    update = {k: data[k] for k in allowed_fields if k in data}
+    if not update:
+        frappe.throw(_("No valid fields to update"))
+
+    frappe.db.set_value("Employee", employee, update)
+    return {"success": True, "message": _("Employee {0} updated successfully").format(employee)}
+
+
+@frappe.whitelist()
+def get_employee_profile(employee):
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    e = frappe.db.get_value("Employee", employee, [
+        "name", "employee_name", "gender", "date_of_birth", "date_of_joining",
+        "final_confirmation_date", "status", "relieving_date", "resignation_letter_date",
+        "designation", "department", "employment_type", "branch", "sahayog_branch",
+        "custom_zone", "custom_region", "custom_district",
+        "cell_number", "personal_email", "permanent_address",
+        "custom_pan_number", "custom_aadhar_number",
+        "bank_name", "bank_ac_no", "reports_to",
+        "marital_status", "blood_group", "ctc"
+    ], as_dict=True)
+
+    if not e:
+        frappe.throw(_("Employee not found"))
+
+    # fetch reporting manager name
+    if e.get("reports_to"):
+        e["reports_to_name"] = frappe.db.get_value("Employee", e.reports_to, "employee_name") or e.reports_to
+
+    # hide salary from HR User (only HR Manager sees it)
+    if "HR Manager" not in roles and "Administrator" not in roles:
+        e["ctc"] = None
+
+    return e
+
+
+@frappe.whitelist()
 def get_active_support_staff():
     return frappe.get_all(
         "Employee",
