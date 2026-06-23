@@ -13819,6 +13819,8 @@
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
         this.isEditing = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -16995,6 +16997,8 @@
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         this.showDispatchHistory = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -17023,6 +17027,11 @@
               // Initialize custodian_display for Asset Master
               if (this.activeItem === "Asset Master" && this.detailRecord.custodian) {
                 this.detailRecord.custodian_display = this.getEmployeeName(this.detailRecord.custodian);
+              }
+
+              // Automatically preload linked Serial No Details if activeItem is Asset Master
+              if (this.activeItem === "Asset Master" && this.detailRecord.serial_no) {
+                this.loadLinkedSerialRecord(this.detailRecord.serial_no, false);
               }
 
               this.fetchComments(row.name);
@@ -17232,6 +17241,8 @@
         this.showDetailView = false;
         this.isEditing = false;
         this.showDispatchHistory = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
         // Update URL to remove record ID
         window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
         
