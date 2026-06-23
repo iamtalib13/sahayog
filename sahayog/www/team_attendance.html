@@ -1115,6 +1115,14 @@
       >
         Correction Approvals
       </button>
+      <button
+        class="nav-tab"
+        id="tabReports"
+        style="display: none"
+        onclick="switchTab('reports', this)"
+      >
+        Reports
+      </button>
     </div>
 
     <!-- APPROVAL SUB-TABS -->
@@ -2881,6 +2889,13 @@
 
           if (tab === "leave") loadTeamLeaves();
           else loadCorrectionRequests();
+        } else if (tab === "reports") {
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (empList) empList.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          renderReportsTab();
         }
       }
 
@@ -3215,6 +3230,8 @@
             corrTab.textContent = "Correction Approvals";
           }
           if (hrTab) hrTab.style.display = "flex";
+          const reportsTab = document.getElementById("tabReports");
+          if (reportsTab) reportsTab.style.display = "flex";
           if (bulkBar)
             bulkBar.style.setProperty("display", "none", "important");
 
@@ -4051,6 +4068,37 @@
         const dd = String(date.getDate()).padStart(2, '0');
         
         document.getElementById("new_emp_confirmation_date").value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      function renderReportsTab() {
+        const reports = [
+          { name: "SS Employee Master Report", desc: "Active & inactive support staff with all master data", icon: "👥" },
+          { name: "SS Monthly Attendance Report", desc: "Month-wise attendance summary per employee", icon: "📅" },
+          { name: "SS Branch-wise Attendance Report", desc: "Branch-level attendance statistics for a month", icon: "🏢" },
+          { name: "SS Leave Balance Report", desc: "Current leave balance (CL, SL, EL) per employee", icon: "🌿" },
+          { name: "SS Salary Register", desc: "Monthly gross salary register for active support staff", icon: "💰" },
+        ];
+
+        document.getElementById("hrDashboardContent").innerHTML = `
+          <div style="padding:4px 0 20px;">
+            <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin-bottom:6px;">MIS Reports</h3>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">Support Staff Reports — Click to open in Frappe Report view with filters & Excel download.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;">
+              ${reports.map(r => `
+                <a href="/app/query-report/${encodeURIComponent(r.name)}" target="_blank" style="text-decoration:none;">
+                  <div style="background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:18px; display:flex; gap:14px; align-items:flex-start; box-shadow:var(--shadow); transition:0.15s; cursor:pointer;"
+                    onmouseover="this.style.borderColor='var(--brand2)'" onmouseout="this.style.borderColor='var(--border)'">
+                    <div style="font-size:28px; line-height:1;">${r.icon}</div>
+                    <div>
+                      <div style="font-size:13px; font-weight:700; color:var(--brand); margin-bottom:4px;">${r.name}</div>
+                      <div style="font-size:11px; color:var(--muted); line-height:1.5;">${r.desc}</div>
+                    </div>
+                  </div>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        `;
       }
 
       async function openExitEmployeeModal() {
