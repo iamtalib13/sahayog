@@ -15,6 +15,7 @@
   "wh_dept_map",
   "restrict_inward",
   "notification",
+  "branch_access",
   "agent_setting_tab",
   "agent_automation_days",
   "create_agents",
@@ -142,13 +143,18 @@
    "fieldname": "notification",
    "fieldtype": "Check",
    "label": "Notification"
+  },
+  {
+   "fieldname": "branch_access",
+   "fieldtype": "Small Text",
+   "label": "Branch Access"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-24 02:41:15.158120",
+ "modified": "2026-06-24 16:19:39.206825",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
