@@ -5048,88 +5048,98 @@
 
               <!-- DIV 3: Info Strip -->
               <div class="request-div3">
-                <div class="info-strip">
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-id-badge"></i>
+                <div class="info-strip" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 40px; flex-wrap: wrap; width: 100%;">
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-id-badge"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Employee</span>
+                        <span class="info-value">
+                          [[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]
+                        </span>
+                      </div>                  </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-map-pin"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Receiver</span>
+                        <span class="info-value"
+                          >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
+                        >
+                      </div>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Employee</span>
-                      <span class="info-value">
-                        [[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]
-                      </span>
-                    </div>                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-map-pin"></i>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-warehouse"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Provider</span>
+                        <span class="info-value"
+                          >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
+                        >
+                      </div>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Receiver</span>
-                      <span class="info-value"
-                        >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
-                      >
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-building"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Department</span>
+                        <span class="info-value"
+                          >[[ detailRecord.department || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-calendar-day"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Required By</span>
+                        <span class="info-value"
+                          >[[ detailRecord.required_by_date || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-info-circle"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Request From</span>
+                        <span class="info-value"
+                          >[[ detailRecord.request_from || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item" v-if="activeItem === 'Requests'">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-shopping-cart"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">To Purchase</span>
+                        <input 
+                          type="checkbox" 
+                          :checked="detailRecord.show_to_purchase" 
+                          disabled
+                          style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
+                        />
+                      </div>
+                    </div>
+                    <div class="info-item" v-if="activeItem === 'Requests'" style="cursor: pointer;" @click="showInfoNotAdded = !showInfoNotAdded">
+                      <div class="info-icon" style="color: #369696">
+                        <i :class="showInfoNotAdded ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-warehouse"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Provider</span>
-                      <span class="info-value"
-                        >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
-                      >
-                    </div>
+                  <div v-if="showInfoNotAdded && activeItem === 'Requests'" style="border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted); font-size: 0.9rem;">
+                    the info not yet added,
                   </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-building"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Department</span>
-                      <span class="info-value"
-                        >[[ detailRecord.department || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-calendar-day"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Required By</span>
-                      <span class="info-value"
-                        >[[ detailRecord.required_by_date || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-info-circle"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Request From</span>
-                      <span class="info-value"
-                        >[[ detailRecord.request_from || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item" v-if="activeItem === 'Requests'">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">To Purchase</span>
-                      <input 
-                        type="checkbox" 
-                        :checked="detailRecord.show_to_purchase" 
-                        disabled
-                        style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
-                      />
-                    </div>
-                  </div>
-
                 </div>
               </div>
 
@@ -12667,6 +12677,7 @@
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
       showProfileModal: false,
+      showInfoNotAdded: false,
       profileData: null,
       showCreateItemModal: false,
       showItemCreateView: false,
