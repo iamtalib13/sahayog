@@ -12678,6 +12678,7 @@
       showUserMenu: false,
       showProfileModal: false,
       showInfoNotAdded: false,
+      branchAccessDesignations: ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"],
       profileData: null,
       showCreateItemModal: false,
       showItemCreateView: false,
@@ -13288,7 +13289,7 @@
                     (item) =>
                       item.label === "Requests" ||
                       (["Branch Stock", "Inward"].includes(item.label) &&
-                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(designation)),
+                        this.branchAccessDesignations.includes(designation)),
                   );
                 }
               }
@@ -13672,14 +13673,20 @@
             args: {
               doctype: 'Sahayog Settings',
               filters: {},
-              fieldname: 'restrict_inward'
+              fieldname: ['restrict_inward', 'branch_access']
             }
           });
           if (settings.message) {
             this.restrictInward = !!settings.message.restrict_inward;
+            if (settings.message.branch_access) {
+              this.branchAccessDesignations = settings.message.branch_access
+                .split(",")
+                .map(d => d.trim().toUpperCase())
+                .filter(Boolean);
+            }
           }
         } catch (e) {
-          console.error("Failed to fetch restrict_inward:", e);
+          console.error("Failed to fetch restrict_inward and branch_access:", e);
         }
         // Fetch user's full name from User doctype
         try {
