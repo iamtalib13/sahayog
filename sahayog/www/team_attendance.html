@@ -1303,6 +1303,14 @@
                 >
                   Exit Employee
                 </button>
+                <button
+                  id="btnImportEmployees"
+                  class="btn-clear"
+                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700;"
+                  onclick="openImportModal()"
+                >
+                  ⬆ Import
+                </button>
               </div>
             </div>
 
@@ -1618,6 +1626,33 @@
                     <button type="submit" id="btnSubmitEmployee" class="btn-in" style="padding:10px 40px; font-weight:700;">Create Employee</button>
                   </div>
                 </form>
+              </div>
+            </div>
+
+            <!-- IMPORT EMPLOYEES MODAL -->
+            <div id="importEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
+                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:var(--brand); margin:0;">Import Employees</h3>
+                  <button onclick="closeImportModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+
+                <!-- Step 1: Download Template -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 1 — Download Sample Template</div>
+                  <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Fill in employee data using this CSV template. Do not change column headers.</div>
+                  <button onclick="downloadImportTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:var(--brand2); border:none;">⬇ Download Template</button>
+                </div>
+
+                <!-- Step 2: Upload CSV -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
+                  <input type="file" id="importCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
+                  <button onclick="submitImport()" id="btnSubmitImport" class="btn-in" style="width:100%; padding:10px; font-weight:700;">Import Employees</button>
+                </div>
+
+                <!-- Results -->
+                <div id="importResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
               </div>
             </div>
 
@@ -2860,6 +2895,8 @@
             if (btnCreateEmployee) btnCreateEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
             const btnExitEmployee = document.getElementById("btnExitEmployee");
             if (btnExitEmployee) btnExitEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
+            const btnImportEmployees = document.getElementById("btnImportEmployees");
+            if (btnImportEmployees) btnImportEmployees.style.display = (tab === 'attendance') ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -3227,6 +3264,8 @@
           if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           const btnExitEmployee = document.getElementById("btnExitEmployee");
           if (btnExitEmployee) btnExitEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          const btnImportEmployees = document.getElementById("btnImportEmployees");
+          if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "Leave Approvals";
@@ -4227,6 +4266,69 @@
             </div>
           </div>
         `;
+      }
+
+      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
+
+      function openImportModal() {
+        document.getElementById("importResults").style.display = "none";
+        document.getElementById("importCsvFile").value = "";
+        document.getElementById("importEmployeesModal").style.display = "flex";
+      }
+
+      function closeImportModal() {
+        document.getElementById("importEmployeesModal").style.display = "none";
+      }
+
+      function downloadImportTemplate() {
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
+        const csv = [IMPORT_COLUMNS.join(","), sampleRow.join(",")].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "employee_import_template.csv";
+        a.click();
+      }
+
+      async function submitImport() {
+        const file = document.getElementById("importCsvFile").files[0];
+        if (!file) { showToast("Please select a CSV file"); return; }
+
+        const btn = document.getElementById("btnSubmitImport");
+        btn.disabled = true; btn.textContent = "Importing...";
+
+        const text = await file.text();
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        const rows = lines.slice(1).filter(l => l.trim()).map(line => {
+          const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = vals[i] || "");
+          obj["custom_is_support_staff"] = 1;
+          return obj;
+        });
+
+        if (rows.length === 0) { showToast("No data rows found in CSV"); btn.disabled = false; btn.textContent = "Import Employees"; return; }
+
+        const res = await callAPI("bulk_import_employees", { rows }, "employee");
+        btn.disabled = false; btn.textContent = "Import Employees";
+
+        if (!res) return;
+
+        const resultsDiv = document.getElementById("importResults");
+        resultsDiv.style.display = "block";
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
+          ✅ Created: <span style="color:var(--success)">${res.created}</span> &nbsp; ❌ Failed: <span style="color:var(--danger)">${res.failed}</span>
+        </div>`;
+        if (res.errors.length > 0) {
+          html += res.errors.map(e => `
+            <div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
+              <b>Row ${e.row} — ${e.name}:</b> ${e.error}
+            </div>`).join("");
+        }
+        resultsDiv.innerHTML = html;
+        if (res.created > 0) fetchTeamData();
       }
 
       async function openExitEmployeeModal() {
