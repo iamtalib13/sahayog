@@ -5137,8 +5137,25 @@
                     </div>
                   </div>
 
-                  <div v-if="showInfoNotAdded && activeItem === 'Requests'" style="border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted); font-size: 0.9rem;">
-                    [[ getEmployeeDept(detailRecord.employee) ]]
+                  <div v-if="showInfoNotAdded && activeItem === 'Requests'" style="border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.designation">
+                      DESIGNATION : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).designation).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.department">
+                      DEPARTMENT : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).department).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.branch">
+                      BRANCH : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).branch).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.cell_number">
+                      CELL NUMBER : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).cell_number).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.company_email">
+                      COMPANY EMAIL : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).company_email).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.custom_division">
+                      CUSTOM DIVISION : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).custom_division).toUpperCase() ]]</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -17518,6 +17535,12 @@
           (e) => e.user_id === id || e.name === id,
         );
         return emp ? emp.department : "-";
+      },
+      getEmployeeDetails(id) {
+        if (!id || id === "-") return null;
+        return this.employees.find(
+          (e) => e.user_id === id || e.name === id,
+        );
       },
       getBranchNameFromLocation(location) {
         if (!location || location === "-") return "-";

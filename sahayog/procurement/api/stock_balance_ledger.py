@@ -1072,7 +1072,7 @@ def get_portal_master_data():
     available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name", "item_code"])
 
     return {
-        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number", "department"]),
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number", "designation", "department", "branch", "cell_number", "company_email", "custom_division"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
         "wh_dept_map": frappe.get_all("Default Warehouse", filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"}, fields=["inventory_type", "warehouse", "dfault", "user_id"]),
