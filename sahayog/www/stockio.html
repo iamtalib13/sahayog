@@ -5138,7 +5138,7 @@
                   </div>
 
                   <div v-if="showInfoNotAdded && activeItem === 'Requests'" style="border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted); font-size: 0.9rem;">
-                    the info not yet added,
+                    [[ getEmployeeDept(detailRecord.employee) ]]
                   </div>
                 </div>
               </div>
@@ -17511,6 +17511,13 @@
           (e) => e.user_id === id || e.name === id,
         );
         return emp ? emp.employee_name : id;
+      },
+      getEmployeeDept(id) {
+        if (!id || id === "-") return "-";
+        const emp = this.employees.find(
+          (e) => e.user_id === id || e.name === id,
+        );
+        return emp ? emp.department : "-";
       },
       getBranchNameFromLocation(location) {
         if (!location || location === "-") return "-";
