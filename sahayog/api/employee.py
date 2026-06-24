@@ -47,6 +47,22 @@ def get_next_support_staff_id():
     return f"P{next_id}"
 
 
+def _parse_date(val):
+    """Convert dd-mm-yyyy or dd/mm/yyyy to yyyy-mm-dd for MySQL."""
+    if not val:
+        return None
+    val = str(val).strip()
+    # Already in correct format
+    if len(val) == 10 and val[4] in ('-', '/') and val[7] in ('-', '/'):
+        return val.replace('/', '-')
+    # dd-mm-yyyy or dd/mm/yyyy
+    for sep in ('-', '/'):
+        parts = val.split(sep)
+        if len(parts) == 3 and len(parts[2]) == 4:
+            return f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+    return val
+
+
 @frappe.whitelist()
 def create_support_staff(data):
     """
@@ -83,18 +99,6 @@ def create_support_staff(data):
     if data.get("reports_to") and not frappe.db.exists("Employee", data.get("reports_to")):
         frappe.throw(_("Reporting Manager {0} does not exist").format(data.get("reports_to")))
 
-    # Ensure series is synchronized before auto-naming
-    if data.get("custom_is_support_staff"):
-        next_suggested = get_next_support_staff_id()
-        current_val = cint(next_suggested[1:]) - 1
-        
-        # Update Series to prevent make_autoname from colliding
-        existing_series = frappe.db.sql("SELECT name FROM `tabSeries` WHERE name='P.'")
-        if existing_series:
-            frappe.db.sql("UPDATE `tabSeries` SET current=%s WHERE name='P.'", (current_val,))
-        else:
-            frappe.db.sql("INSERT INTO `tabSeries` (name, current) VALUES ('P.', %s)", (current_val,))
-
     # Prepare Employee Doc
     # Map incoming data to standard Frappe/HRMS fields
     new_emp = frappe.get_doc({
@@ -104,9 +108,9 @@ def create_support_staff(data):
         "middle_name": data.get("middle_name"),
         "last_name": data.get("last_name"),
         "gender": data.get("gender"),
-        "date_of_birth": data.get("date_of_birth"),
-        "date_of_joining": data.get("date_of_joining"),
-        "final_confirmation_date": data.get("final_confirmation_date"),
+        "date_of_birth": _parse_date(data.get("date_of_birth")),
+        "date_of_joining": _parse_date(data.get("date_of_joining")),
+        "final_confirmation_date": _parse_date(data.get("final_confirmation_date")),
         "status": "Active",
         "company": data.get("company") or frappe.defaults.get_global_default("company"),
         "department": data.get("department"),
@@ -132,22 +136,60 @@ def create_support_staff(data):
         "custom_is_support_staff": 1,
         "custom_pan_number": data.get("pan_number"),
         "custom_aadhar_number": data.get("aadhaar_card_number"),
-        "custom_zone": data.get("zone"),
-        "custom_region": data.get("region"),
-        "custom_district": data.get("district_name"),
-        "custom_division": data.get("division"),
-        
-        # Salary (Hidden from regular users, handled via DocType permissions usually)
-        "ctc": data.get("monthly_gross_salary")
     })
 
-    new_emp.insert(ignore_permissions=True, ignore_links=True)
+    new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
+
+    # Set optional custom fields via raw SQL to bypass meta validation
+    col_map = {
+        "ctc": data.get("monthly_gross_salary"),
+    }
+    # Auto-fetch zone/region/district from Sahayog Branch if sol_id provided
+    if data.get("sol_id") and frappe.db.exists("Sahayog Branch", data.get("sol_id")):
+        branch_doc = frappe.db.get_value("Sahayog Branch", data.get("sol_id"),
+            ["zone", "region", "district"], as_dict=True)
+        col_map["custom_zone"] = branch_doc.get("zone")
+        col_map["custom_region"] = branch_doc.get("region")
+        col_map["custom_district"] = branch_doc.get("district")
+    else:
+        col_map["custom_zone"] = data.get("zone")
+        col_map["custom_region"] = data.get("region")
+        col_map["custom_district"] = data.get("district_name")
+
+    existing_cols = [r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")]
+    for col, val in col_map.items():
+        if val and col in existing_cols:
+            frappe.db.sql(f"UPDATE `tabEmployee` SET `{col}`=%s WHERE name=%s", (val, new_emp.name))
     
     return {
         "success": True,
         "message": _("Employee {0} created successfully").format(new_emp.name),
         "employee": new_emp.name
     }
+
+@frappe.whitelist()
+def bulk_import_employees(rows):
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if isinstance(rows, str):
+        import json
+        rows = json.loads(rows)
+
+    results = {"created": 0, "failed": 0, "errors": []}
+
+    for i, row in enumerate(rows, start=2):  # start=2 because row 1 is header
+        try:
+            # Reuse existing create logic
+            create_support_staff(row)
+            results["created"] += 1
+        except Exception as e:
+            results["failed"] += 1
+            results["errors"].append({"row": i, "name": row.get("first_name", "") + " " + row.get("last_name", ""), "error": str(e)})
+
+    return results
+
 
 @frappe.whitelist()
 def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving):
