@@ -748,6 +748,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                             <div style="display:flex; gap:8px;">
                                 <button class="btn-toggle-analytics"
+                                        @click="goToLeadList">
+                                    <i class="fa fa-list>" style="margin-right:5px;"></i>Lead List
+                                </button>
+                                <button class="btn-toggle-analytics"
                                         @click="show_analytics = !show_analytics">
                                     <i :class="['fa', show_analytics ? 'fa-eye-slash' : 'fa-eye']"
                                       style="margin-right:5px;"></i>
@@ -1294,6 +1298,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         ? { label: "Good", class: "badge-pastel-green" }
         : { label: "Bad", class: "badge-pastel-red" };
     },
+    goToLeadList() {
+      frappe.set_route("list", "Lead");
+    },
     openLeadTransferDialog() {
       let lead_count = 0;
       let target_emp_name = "";
@@ -1530,7 +1537,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     getActiveSolIds() {
       return this.selected.sol_id.filter(
-        sol => !this.disabled_branches.includes(String(sol))
+        (sol) => !this.disabled_branches.includes(String(sol)),
       );
     },
     async fetchEmployeePerformance() {
@@ -1545,7 +1552,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           args: {
             from_date: this.employee_from_date,
             to_date: this.employee_to_date,
-            sol_ids: JSON.stringify(this.getActiveSolIds())
+            sol_ids: JSON.stringify(this.getActiveSolIds()),
           },
         });
         this.employee_performance_data = res.message || [];
@@ -1823,8 +1830,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       $("#show-all-branches").on("click", () => {
         const html = this.visible_branches
           .map((b) => {
-              const isDisabled = this.disabled_branches.includes(String(b.sol_id));
-              return `
+            const isDisabled = this.disabled_branches.includes(
+              String(b.sol_id),
+            );
+            return `
                 <div
                     class="branch-toggle-item"
                     data-sol="${b.sol_id}"
@@ -1835,16 +1844,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         justify-content: space-between;
                         align-items: center;
                         cursor: pointer;
-                        background: ${isDisabled ? '#f8fafc' : '#ffffff'};
+                        background: ${isDisabled ? "#f8fafc" : "#ffffff"};
                     "
                 >
-                    <span style="font-weight: 600; color: ${isDisabled ? '#94a3b8' : '#0369a1'}; min-width: 90px;">
+                    <span style="font-weight: 600; color: ${isDisabled ? "#94a3b8" : "#0369a1"}; min-width: 90px;">
                         ${b.sol_id}
                     </span>
-                    <span style="flex: 1; color: ${isDisabled ? '#94a3b8' : '#334155'}; padding-left: 12px;">
+                    <span style="flex: 1; color: ${isDisabled ? "#94a3b8" : "#334155"}; padding-left: 12px;">
                         ${b.branch || "-"}
                     </span>
-                    <i class="fa ${isDisabled ? 'fa-toggle-off' : 'fa-toggle-on'}" style="color: ${isDisabled ? '#cbd5e1' : '#05a15d'}; font-size: 16px;"></i>
+                    <i class="fa ${isDisabled ? "fa-toggle-off" : "fa-toggle-on"}" style="color: ${isDisabled ? "#cbd5e1" : "#05a15d"}; font-size: 16px;"></i>
                 </div>
             `;
           })
@@ -1863,12 +1872,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         `);
 
         // Attach toggle event in dialog
-        d.fields_dict.branches.$wrapper.find(".branch-toggle-item").on("click", (e) => {
+        d.fields_dict.branches.$wrapper
+          .find(".branch-toggle-item")
+          .on("click", (e) => {
             const solId = $(e.currentTarget).data("sol");
             this.toggleBranchCapsule(String(solId));
             // Re-render dialog content
             d.hide();
-        });
+          });
 
         d.show();
       });
