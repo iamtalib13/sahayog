@@ -1426,7 +1426,7 @@
           class="page-title"
           v-if="!showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView"
         >
-          [[ activeItem === 'Movements' ? 'Asset Movement' : activeItem ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
+          [[ activeItem === 'Movements' ? 'Asset Movement' : (activeItem === 'Serial No' && serialMode === 'batch' ? 'Batch ' + activeItem : activeItem) ]] [[ activeItem === 'Branch Stock' ? (branchStockFilter === 'Other Stock' ? '(Other)' : (userWarehouse ? '(' + userWarehouse + ')' : '')) : '' ]]
         </h1>
         <h1
           class="page-title"
@@ -1700,7 +1700,7 @@
 </style>
         </h1>
         <h1 class="page-title" v-else>
-          [[ activeItem ]]
+          [[ activeItem === 'Serial No' && serialMode === 'batch' ? 'Batch ' + activeItem : activeItem ]]
           <span class="detail-id-badge" v-if="detailRecord"
             >[[ detailRecord.name ]]</span
           >
@@ -1802,10 +1802,36 @@
             </div>        </h1>
       </div>
       <div class="header-right">
-        <div v-if="activeItem === 'Serial No'" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
+        <div v-if="activeItem === 'Serial No' && !showDetailView" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
             <button @click="setSerialMode('batch')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
         </div>
+        <button
+          v-if="activeItem === 'Serial No' && showDetailView && !isEditing"
+          class="btn-view-toggle"
+          title="Edit"
+          style="margin-right: 15px;"
+          @click="isEditing = true"
+        >
+          <i class="fas fa-edit"></i>
+        </button>
+        <button
+          v-if="activeItem === 'Serial No' && showDetailView && isEditing"
+          class="btn-create-inline"
+          style="margin-right: 15px; padding: 6px 16px !important; font-size: 0.85rem !important;"
+          @click="saveSerialRecord()"
+        >
+          Save
+        </button>
+        <button
+          v-if="activeItem === 'Serial No' && showDetailView && isEditing"
+          class="btn-view-toggle"
+          title="Cancel"
+          style="margin-right: 15px; color: #e74c3c;"
+          @click="cancelSerialEdit()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
         <button
           class="btn-view-toggle"
           onclick="window.location.href = '/app/sahayog-home'"
@@ -5022,88 +5048,115 @@
 
               <!-- DIV 3: Info Strip -->
               <div class="request-div3">
-                <div class="info-strip">
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-id-badge"></i>
+                <div class="info-strip" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 40px; flex-wrap: wrap; width: 100%;">
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-id-badge"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Employee</span>
+                        <span class="info-value">
+                          [[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]
+                        </span>
+                      </div>                  </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-map-pin"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Receiver</span>
+                        <span class="info-value"
+                          >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
+                        >
+                      </div>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Employee</span>
-                      <span class="info-value">
-                        [[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]
-                      </span>
-                    </div>                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-map-pin"></i>
+
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-warehouse"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Provider</span>
+                        <span class="info-value"
+                          >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
+                        >
+                      </div>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Receiver</span>
-                      <span class="info-value"
-                        >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
-                      >
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-building"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Department</span>
+                        <span class="info-value"
+                          >[[ detailRecord.department || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-calendar-day"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Required By</span>
+                        <span class="info-value"
+                          >[[ detailRecord.required_by_date || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-info-circle"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">Request From</span>
+                        <span class="info-value"
+                          >[[ detailRecord.request_from || '-' ]]</span
+                        >
+                      </div>
+                    </div>
+                    <div class="info-item" v-if="activeItem === 'Requests'">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-shopping-cart"></i>
+                      </div>
+                      <div class="info-content">
+                        <span class="info-label">To Purchase</span>
+                        <input 
+                          type="checkbox" 
+                          :checked="detailRecord.show_to_purchase" 
+                          disabled
+                          style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
+                        />
+                      </div>
+                    </div>
+                    <div class="info-item" v-if="activeItem === 'Requests'" style="cursor: pointer;" @click="showInfoNotAdded = !showInfoNotAdded">
+                      <div class="info-icon" style="color: #369696">
+                        <i :class="showInfoNotAdded ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-warehouse"></i>
+                  <div v-if="showInfoNotAdded && activeItem === 'Requests'" style="border-top: 1px solid var(--border-color); padding-top: 12px; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: flex; flex-wrap: wrap; gap: 20px;">
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.designation">
+                      DESIGNATION : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).designation).toUpperCase() ]]</span>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Provider</span>
-                      <span class="info-value"
-                        >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
-                      >
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.department">
+                      DEPARTMENT : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).department).toUpperCase() ]]</span>
                     </div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-building"></i>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.branch">
+                      BRANCH : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).branch).toUpperCase() ]]</span>
                     </div>
-                    <div class="info-content">
-                      <span class="info-label">Department</span>
-                      <span class="info-value"
-                        >[[ detailRecord.department || '-' ]]</span
-                      >
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.cell_number">
+                      CELL NUMBER : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).cell_number).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.company_email">
+                      COMPANY EMAIL : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).company_email).toUpperCase() ]]</span>
+                    </div>
+                    <div v-if="getEmployeeDetails(detailRecord.employee)?.custom_division">
+                      CUSTOM DIVISION : <span style="color: #ffffff;">[[ String(getEmployeeDetails(detailRecord.employee).custom_division).toUpperCase() ]]</span>
                     </div>
                   </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-calendar-day"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Required By</span>
-                      <span class="info-value"
-                        >[[ detailRecord.required_by_date || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-info-circle"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">Request From</span>
-                      <span class="info-value"
-                        >[[ detailRecord.request_from || '-' ]]</span
-                      >
-                    </div>
-                  </div>
-                  <div class="info-item" v-if="activeItem === 'Requests'">
-                    <div class="info-icon" style="color: #369696">
-                      <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="info-content">
-                      <span class="info-label">To Purchase</span>
-                      <input 
-                        type="checkbox" 
-                        :checked="detailRecord.show_to_purchase" 
-                        disabled
-                        style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
-                      />
-                    </div>
-                  </div>
-
                 </div>
               </div>
 
@@ -5993,9 +6046,29 @@
 
                       <div class="info-item">
                         <div class="info-icon"><i class="fas fa-barcode"></i></div>
-                        <div class="info-content">
+                        <div class="info-content" style="width: 100%;">
                           <span class="info-label">Serial No</span>
-                          <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                            <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                            <div v-if="detailRecord.serial_no" style="display: flex; gap: 4px;">
+                              <!-- View button -->
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px 4px; font-size: 0.85rem;"
+                                title="View Serial No Details"
+                                @click="loadLinkedSerialRecord(detailRecord.serial_no, false)"
+                              >
+                                <i class="fas fa-eye"></i>
+                              </button>
+                              <!-- Pencil (edit) button -->
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px 4px; font-size: 0.85rem;"
+                                title="Edit Serial No"
+                                @click="loadLinkedSerialRecord(detailRecord.serial_no, true)"
+                              >
+                                <i class="fas fa-pencil-alt"></i>
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -6038,7 +6111,7 @@
                         <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
                         <div class="info-content">
                           <span class="info-label">Location</span>
-                          <span class="info-value">[[ detailRecord.location || '-' ]]</span>
+                          <span class="info-value">[[ getBranchNameFromLocation(detailRecord.location) ]]</span>
                         </div>
                       </div>
 
@@ -6074,6 +6147,103 @@
                         </div>
                       </div>
 
+                    </div>
+                  </div>
+
+                  <!-- Card 3: Linked Serial No Detail -->
+                  <div v-if="linkedSerialRecord" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible;">
+                    <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-barcode" style="color: #369696;"></i>
+                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Serial No Detail: [[ linkedSerialRecord.name ]]</span>
+                      </div>
+                      <div style="display: flex; gap: 8px; align-items: center;">
+                        <!-- Save / Cancel for inline edit -->
+                        <button
+                          v-if="linkedSerialEditing"
+                          class="btn-create-inline"
+                          style="padding: 4px 8px !important; font-size: 0.75rem !important;"
+                          @click="saveLinkedSerialRecord()"
+                        >
+                          Save
+                        </button>
+                        <button
+                          v-if="linkedSerialEditing"
+                          class="btn-view-toggle"
+                          style="padding: 4px 8px !important; font-size: 0.75rem !important; color: #ef4444;"
+                          @click="linkedSerialEditing = false"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          v-if="!linkedSerialEditing"
+                          style="background: transparent; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; padding: 4px;"
+                          title="Edit Serial No"
+                          @click="linkedSerialEditing = true"
+                        >
+                          <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button
+                          style="background: transparent; border: none; color: #ef4444; font-size: 0.85rem; cursor: pointer; padding: 4px;"
+                          title="Close"
+                          @click="linkedSerialRecord = null"
+                        >
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div style="padding: 20px;">
+                      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-muted);">Configuration Table</span>
+                        <button
+                          v-if="linkedSerialEditing"
+                          class="btn-create-inline"
+                          style="padding: 4px 8px !important; font-size: 0.75rem !important;"
+                          @click="addLinkedSerialConfigRow()"
+                        >
+                          <i class="fas fa-plus"></i> Add Row
+                        </button>
+                      </div>
+
+                      <div class="table-responsive" style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                        <table class="items-table" style="width: 100%; border-collapse: collapse;">
+                          <thead>
+                            <tr style="background: rgba(100, 116, 139, 0.02); text-align: left; border-bottom: 1px solid var(--border-color);">
+                              <th style="padding: 10px 12px; font-size: 0.75rem;">Type</th>
+                              <th style="padding: 10px 12px; font-size: 0.75rem;">Value</th>
+                              <th v-if="linkedSerialEditing" style="padding: 10px 12px; font-size: 0.75rem; text-align: center; width: 50px;">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr v-for="(row, idx) in linkedSerialRecord.configuration_table" :key="row.name || idx" style="border-bottom: 1px solid var(--border-color);">
+                              <td style="padding: 10px 12px; font-size: 0.85rem; font-weight: 600;">
+                                <select v-if="linkedSerialEditing" class="form-input" style="padding: 4px 8px !important; height: 30px; width: 100%;" v-model="row.config_type">
+                                  <option value="" disabled>Select Type</option>
+                                  <option v-for="opt in configTypes.filter(opt => !linkedSerialRecord.configuration_table.some((r, i) => i !== idx && r.config_type === opt))" :value="opt">[[ opt ]]</option>
+                                </select>
+                                <span v-else>[[ row.config_type ]]</span>
+                              </td>
+                              <td style="padding: 10px 12px; font-size: 0.85rem; font-weight: 600;">
+                                <input v-if="linkedSerialEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px; width: 100%;" v-model="row.config_value" />
+                                <span v-else>[[ row.config_value ]]</span>
+                              </td>
+                              <td v-if="linkedSerialEditing" style="padding: 10px 12px; text-align: center; width: 50px;">
+                                <button
+                                  class="btn-create-inline"
+                                  style="padding: 4px 8px !important; font-size: 0.75rem !important; background: #ef4444 !important; border-color: #ef4444 !important;"
+                                  @click="linkedSerialRecord.configuration_table.splice(idx, 1)"
+                                >
+                                  <i class="fas fa-times"></i>
+                                </button>
+                              </td>
+                            </tr>
+                            <tr v-if="!linkedSerialRecord.configuration_table || !linkedSerialRecord.configuration_table.length">
+                              <td colspan="3" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">No configuration items found.</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 
@@ -6760,9 +6930,20 @@
                     color: var(--text-main);
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                   "
                 >
-                  [[ activeItem ]] Items
+                  <span>[[ activeItem ]] Items</span>
+                  <button
+                    v-if="activeItem === 'Serial No' && isEditing"
+                    class="btn-create-inline"
+                    style="padding: 4px 8px !important; font-size: 0.75rem !important;"
+                    @click="addSerialConfigRow()"
+                  >
+                    <i class="fas fa-plus"></i> Add
+                  </button>
                 </h4>
                 <div
                   v-if="(detailRecord.items && detailRecord.items.length) || (detailRecord.assets && detailRecord.assets.length) || (detailRecord.configuration_table && detailRecord.configuration_table.length) || (detailRecord.entries && detailRecord.entries.length)"
@@ -6822,6 +7003,7 @@
                         <tr>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Configuration Type</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Value</th>
+                          <th v-if="isEditing" style="padding: 10px 12px !important; font-size: 0.75rem !important; text-align: center; width: 50px;">Action</th>
                         </tr>
                       </thead>
                       <!-- Serial No Batch Header -->
@@ -6830,6 +7012,7 @@
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Serial No</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Warehouse</th>
                           <th style="padding: 10px 12px !important; font-size: 0.75rem !important;">Batch</th>
+                          <th v-if="isEditing" style="padding: 10px 12px !important; font-size: 0.75rem !important; text-align: center; width: 50px;">Action</th>
                         </tr>
                       </thead>
                       <!-- Standard Header -->
@@ -6940,18 +7123,54 @@
 
                       <!-- Serial No Individual Body -->
                       <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'individual'">
-                        <tr v-for="row in detailRecord.configuration_table" :key="row.name">
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_type ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.config_value ]]</td>
+                        <tr v-for="(row, idx) in detailRecord.configuration_table" :key="row.name || idx">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <select v-if="isEditing" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.config_type">
+                              <option value="" disabled>Select Type</option>
+                              <option v-for="opt in configTypes.filter(opt => !detailRecord.configuration_table.some((r, i) => i !== idx && r.config_type === opt))" :value="opt">[[ opt ]]</option>
+                            </select>
+                            <span v-else>[[ row.config_type ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.config_value" />
+                            <span v-else>[[ row.config_value ]]</span>
+                          </td>
+                          <td v-if="isEditing" style="padding: 10px 12px !important; text-align: center; width: 50px;">
+                            <button
+                              class="btn-create-inline"
+                              style="padding: 4px 8px !important; font-size: 0.75rem !important; background: #ef4444 !important; border-color: #ef4444 !important;"
+                              @click="detailRecord.configuration_table.splice(idx, 1)"
+                            >
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
 
                       <!-- Serial No Batch Body -->
                       <tbody v-else-if="activeItem === 'Serial No' && serialMode === 'batch'">
-                        <tr v-for="row in detailRecord.entries" :key="row.name">
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600; color: #369696;">[[ row.serial_no ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.warehouse ]]</td>
-                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">[[ row.batch_no || '-' ]]</td>
+                        <tr v-for="(row, idx) in detailRecord.entries" :key="row.name || idx">
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600; color: #369696;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.serial_no" />
+                            <span v-else>[[ row.serial_no ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.warehouse" />
+                            <span v-else>[[ row.warehouse ]]</span>
+                          </td>
+                          <td style="padding: 10px 12px !important; font-size: 0.85rem; font-weight: 600;">
+                            <input v-if="isEditing" type="text" class="form-input" style="padding: 4px 8px !important; height: 30px;" v-model="row.batch_no" />
+                            <span v-else>[[ row.batch_no || '-' ]]</span>
+                          </td>
+                          <td v-if="isEditing" style="padding: 10px 12px !important; text-align: center; width: 50px;">
+                            <button
+                              class="btn-create-inline"
+                              style="padding: 4px 8px !important; font-size: 0.75rem !important; background: #ef4444 !important; border-color: #ef4444 !important;"
+                              @click="detailRecord.entries.splice(idx, 1)"
+                            >
+                              <i class="fas fa-times"></i>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
 
@@ -8298,7 +8517,6 @@
                     <!-- Asset Master Buttons -->
                     <button
                       class="btn-create-inline"
-                      style="background: #369696; border-color: #369696"
                       @click.stop="submitRowRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus === 0"
                     >
@@ -8306,7 +8524,6 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      style="background: #369696; border-color: #369696"
                       @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
@@ -10688,6 +10905,17 @@
     gap: 8px;
   }
 
+  .row-action .btn-create-inline {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    border-radius: 8px !important;
+    min-width: 80px !important;
+    height: 30px !important;
+    box-shadow: none !important;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
   .status-badge {
     padding: 4px 10px;
     border-radius: 999px;
@@ -11938,6 +12166,13 @@
       $delimiters: ["[[", "]]"],
       dashboardDisplayMode: "cards",
       isEditing: false,
+      linkedSerialRecord: null,
+      linkedSerialEditing: false,
+      configTypes: [
+        "MAC Address", "Model Number", "Office Key", "Windows Key", 
+        "Operating System", "Processor", "RAM", "Serial Number", 
+        "Storage", "Vendor", "Warranty start date", "Warranty end date", "Make"
+      ],
       showFilterPopup: false,
       activeFilterKey: null,
       invoiceNumbers: [],
@@ -12459,6 +12694,8 @@
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
       showProfileModal: false,
+      showInfoNotAdded: false,
+      branchAccessDesignations: ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"],
       profileData: null,
       showCreateItemModal: false,
       showItemCreateView: false,
@@ -13069,7 +13306,7 @@
                     (item) =>
                       item.label === "Requests" ||
                       (["Branch Stock", "Inward"].includes(item.label) &&
-                        ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"].includes(designation)),
+                        this.branchAccessDesignations.includes(designation)),
                   );
                 }
               }
@@ -13453,14 +13690,20 @@
             args: {
               doctype: 'Sahayog Settings',
               filters: {},
-              fieldname: 'restrict_inward'
+              fieldname: ['restrict_inward', 'branch_access']
             }
           });
           if (settings.message) {
             this.restrictInward = !!settings.message.restrict_inward;
+            if (settings.message.branch_access) {
+              this.branchAccessDesignations = settings.message.branch_access
+                .split(",")
+                .map(d => d.trim().toUpperCase())
+                .filter(Boolean);
+            }
           }
         } catch (e) {
-          console.error("Failed to fetch restrict_inward:", e);
+          console.error("Failed to fetch restrict_inward and branch_access:", e);
         }
         // Fetch user's full name from User doctype
         try {
@@ -13530,6 +13773,18 @@
         }
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
+
+        // Fetch Sahayog Serial Configuration config_type options
+        try {
+          frappe.model.with_doctype("Sahayog Serial Configuration", () => {
+            const configField = frappe.meta.get_docfield("Sahayog Serial Configuration", "config_type");
+            if (configField && configField.options) {
+              this.configTypes = configField.options.split('\n').filter(Boolean);
+            }
+          });
+        } catch (e) {
+          console.warn("Failed to fetch Sahayog Serial Configuration metadata:", e);
+        }
 
         // Reset create views
         this.showEMRCreateView = false;
@@ -13608,6 +13863,8 @@
         this.showEMRMoreDetails = false;
         this.showBranchStockUseView = false;
         this.isEditing = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
 
         if (item.label === "Dashboard") {
           await this.fetchRequestStats();
@@ -13971,23 +14228,23 @@
             res = await frappe.call({
               method:
                 "sahayog.procurement.api.stock_balance_ledger.get_wh_dept_map",
+              args: {
+                limit: limit,
+                start: start,
+                search_text: this.searchText,
+              },
             });
             console.log("Access data response:", res);
             if (res.message) {
-              let data = res.message;
-              if (this.searchText) {
-                const search = this.searchText.toLowerCase();
-                data = data.filter(
-                  (row) =>
-                    (row.user_id || "").toLowerCase().includes(search) ||
-                    (row.warehouse || "").toLowerCase().includes(search) ||
-                    (row.inventory_type || "").toLowerCase().includes(search),
-                );
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
               }
-              this.rows = data;
-              this.loadedRows = data.length;
-              this.totalRows = data.length;
-              this.hasMore = false;
+              this.loadedRows = this.rows.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
             }
           } else {
             let filters = [];
@@ -16784,6 +17041,8 @@
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         this.showDispatchHistory = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -16814,6 +17073,14 @@
                 this.detailRecord.custodian_display = this.getEmployeeName(this.detailRecord.custodian);
               }
 
+              // Note: Uncomment the block below if you want the linked Serial No Detail card 
+              // to automatically pre-open/pre-load when opening an Asset Master record.
+              /*
+              if (this.activeItem === "Asset Master" && this.detailRecord.serial_no) {
+                this.loadLinkedSerialRecord(this.detailRecord.serial_no, false);
+              }
+              */
+
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
@@ -16843,10 +17110,186 @@
         window.location.href = `/app/${slug}/${encodeURIComponent(docname)}`;
       },
 
+      async loadLinkedSerialRecord(serialNoName, editMode = false) {
+        if (!serialNoName) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get",
+            args: {
+              doctype: "Serial No",
+              name: serialNoName,
+            },
+          });
+          if (res.message) {
+            this.linkedSerialRecord = res.message;
+            if (!this.linkedSerialRecord.configuration_table) {
+              this.linkedSerialRecord.configuration_table = [];
+            }
+            this.linkedSerialEditing = editMode;
+          }
+        } catch (e) {
+          console.error("Failed to load linked Serial No:", e);
+          frappe.show_alert({
+            message: "Failed to load Serial No detail",
+            indicator: "red"
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      addLinkedSerialConfigRow() {
+        if (!this.linkedSerialRecord) return;
+        if (!this.linkedSerialRecord.configuration_table) {
+          this.linkedSerialRecord.configuration_table = [];
+        }
+        this.linkedSerialRecord.configuration_table.push({
+          config_type: "",
+          config_value: ""
+        });
+      },
+
+      async saveLinkedSerialRecord() {
+        if (!this.linkedSerialRecord) return;
+        this.loading = true;
+        try {
+          if (this.linkedSerialRecord.configuration_table) {
+            this.linkedSerialRecord.configuration_table = this.linkedSerialRecord.configuration_table.filter(r => r.config_type);
+          }
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.linkedSerialRecord,
+            },
+          });
+          if (res.message) {
+            this.linkedSerialRecord = res.message;
+            this.linkedSerialEditing = false;
+            frappe.show_alert({
+              message: "Serial No updated successfully",
+              indicator: "green",
+            });
+          }
+        } catch (e) {
+          console.error("Failed to save linked Serial No:", e);
+          frappe.show_alert({
+            message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async openSerialRecord(serialNoName) {
+        if (!serialNoName) return;
+        const targetView = this.findSidebarItem("Serial No");
+        if (targetView) {
+          await this.setPage(targetView);
+          this.currentView = this.views["Serial No"];
+          await this.openRecord({ name: serialNoName });
+        }
+      },
+
+      async editSerialRecord(serialNoName) {
+        if (!serialNoName) return;
+        const targetView = this.findSidebarItem("Serial No");
+        if (targetView) {
+          await this.setPage(targetView);
+          this.currentView = this.views["Serial No"];
+          await this.openRecord({ name: serialNoName });
+          this.isEditing = true;
+        }
+      },
+
+      addSerialConfigRow() {
+        if (!this.detailRecord) return;
+        if (this.serialMode === 'individual') {
+          if (!this.detailRecord.configuration_table) {
+            this.detailRecord.configuration_table = [];
+          }
+          this.detailRecord.configuration_table.push({
+            config_type: "",
+            config_value: ""
+          });
+        } else if (this.serialMode === 'batch') {
+          if (!this.detailRecord.entries) {
+            this.detailRecord.entries = [];
+          }
+          this.detailRecord.entries.push({
+            serial_no: "",
+            warehouse: "",
+            batch_no: ""
+          });
+        }
+      },
+
+      async saveSerialRecord() {
+        if (!this.detailRecord) return;
+        this.loading = true;
+        try {
+          if (this.detailRecord.configuration_table) {
+            this.detailRecord.configuration_table = this.detailRecord.configuration_table.filter(r => r.config_type);
+          }
+          if (this.detailRecord.entries) {
+            this.detailRecord.entries = this.detailRecord.entries.filter(r => r.serial_no);
+          }
+
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.detailRecord,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isEditing = false;
+            frappe.show_alert({
+              message: "Serial No updated successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save Serial No error:", e);
+          frappe.show_alert({
+            message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async cancelSerialEdit() {
+        this.isEditing = false;
+        if (!this.detailRecord || !this.detailRecord.name) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get",
+            args: {
+              doctype: this.currentView.doctype,
+              name: this.detailRecord.name,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+          }
+        } catch (e) {
+          console.error("Error reverting Serial No edits:", e);
+        } finally {
+          this.loading = false;
+        }
+      },
+
       closeDetailView() {
         this.showDetailView = false;
         this.isEditing = false;
         this.showDispatchHistory = false;
+        this.linkedSerialRecord = null;
+        this.linkedSerialEditing = false;
         // Update URL to remove record ID
         window.history.pushState(null, '', '/stockio#/' + this.activeItem.toLowerCase());
         
@@ -17025,10 +17468,13 @@
 
         let value = row[key];
 
-        // 🔥 Special handling for warehouse ID to branch name
-        if (["target_warehouse", "source_warehouse", "set_warehouse", "from_warehouse", "to_warehouse", "warehouse"].includes(key)) {
+        // 🔥 Special handling for warehouse ID or location to branch name
+        if (["target_warehouse", "source_warehouse", "set_warehouse", "from_warehouse", "to_warehouse", "warehouse", "location"].includes(key)) {
           const val = value;
           if (val) {
+            const directBranch = this.sahayog_branches.find((b) => b.name === String(val) || b.branch === String(val));
+            if (directBranch) return directBranch.branch;
+
             const match = String(val).match(/\b\d{4}\b/);
             if (match) {
               const solId = match[0];
@@ -17082,6 +17528,26 @@
           (e) => e.user_id === id || e.name === id,
         );
         return emp ? emp.employee_name : id;
+      },
+      getEmployeeDept(id) {
+        if (!id || id === "-") return "-";
+        const emp = this.employees.find(
+          (e) => e.user_id === id || e.name === id,
+        );
+        return emp ? emp.department : "-";
+      },
+      getEmployeeDetails(id) {
+        if (!id || id === "-") return null;
+        return this.employees.find(
+          (e) => e.user_id === id || e.name === id,
+        );
+      },
+      getBranchNameFromLocation(location) {
+        if (!location || location === "-") return "-";
+        const branch = (this.sahayog_branches || []).find(
+          (b) => b.name === location || b.branch === location
+        );
+        return branch ? branch.branch : location;
       },
       getBadgeText(row, key) {
         if (key === "docstatus") {
