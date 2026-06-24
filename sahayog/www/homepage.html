@@ -180,7 +180,7 @@
 
     main.app-main {
       flex: 1;
-      padding: 2rem 2rem 15rem;
+      padding: 0.5rem 1.5rem 10rem;
       max-width: 100%;
       overflow-y: auto;
       scrollbar-width: none;
@@ -193,24 +193,24 @@
 
     @media (max-width: 480px) {
       main.app-main {
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-        padding-bottom: 12rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-bottom: 10rem !important;
       }
     }
 
     /* Icon-based grid layout - NO CARDS */
     .icon-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-      gap: 2rem 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.3rem 0.2rem;
       justify-items: center;
     }
 
     @media (max-width: 480px) {
       .icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-        gap: 1.5rem 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.2rem 0.1rem;
       }
     }
 
@@ -230,52 +230,49 @@
     }
 
     .icon-item:hover {
-      transform: translateY(-5px);
+      transform: translateY(-2px);
     }
 
     .icon-item:hover .icon-circle {
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     }
 
     /* Icon circle container */
     .icon-circle {
-      width: 60px;
-      height: 60px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-      transition:
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 480px) {
       .icon-circle {
-        width: 50px;
-        height: 50px;
-        font-size: 1.25rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
       }
     }
 
     /* Icon label */
     .icon-label {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.55rem;
+      font-weight: 500;
       text-align: center;
-      line-height: 1.2;
+      line-height: 1.15;
       letter-spacing: 0.01em;
       color: var(--text);
-      max-width: 85px;
+      max-width: 70px;
     }
 
     @media (max-width: 480px) {
       .icon-label {
-        font-size: 0.65rem;
-        max-width: 70px;
+        font-size: 0.6rem;
+        max-width: 60px;
       }
     }
 
@@ -387,8 +384,8 @@
     /* Tab bar */
     .tab-bar {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
       flex-wrap: wrap;
     }
     .tab-btn {
