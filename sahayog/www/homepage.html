@@ -180,7 +180,7 @@
 
     main.app-main {
       flex: 1;
-      padding: 2rem 2rem 15rem;
+      padding: 0.5rem 1.5rem 10rem;
       max-width: 100%;
       overflow-y: auto;
       scrollbar-width: none;
@@ -193,24 +193,24 @@
 
     @media (max-width: 480px) {
       main.app-main {
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-        padding-bottom: 12rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        padding-bottom: 10rem !important;
       }
     }
 
     /* Icon-based grid layout - NO CARDS */
-    .quick-actions .icon-grid {
+    .icon-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
-      gap: 2rem 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 0.3rem 0.2rem;
       justify-items: center;
     }
 
     @media (max-width: 480px) {
-      .quick-actions .icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-        gap: 1.5rem 1rem;
+      .icon-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 0.2rem 0.1rem;
       }
     }
 
@@ -230,52 +230,49 @@
     }
 
     .icon-item:hover {
-      transform: translateY(-5px);
+      transform: translateY(-2px);
     }
 
     .icon-item:hover .icon-circle {
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
     }
 
     /* Icon circle container */
     .icon-circle {
-      width: 60px;
-      height: 60px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-      transition:
-        box-shadow 0.2s ease,
-        transform 0.2s ease;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
     @media (max-width: 480px) {
       .icon-circle {
-        width: 50px;
-        height: 50px;
-        font-size: 1.25rem;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
       }
     }
 
     /* Icon label */
     .icon-label {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.55rem;
+      font-weight: 500;
       text-align: center;
-      line-height: 1.2;
+      line-height: 1.15;
       letter-spacing: 0.01em;
       color: var(--text);
-      max-width: 85px;
+      max-width: 70px;
     }
 
     @media (max-width: 480px) {
       .icon-label {
-        font-size: 0.65rem;
-        max-width: 70px;
+        font-size: 0.6rem;
+        max-width: 60px;
       }
     }
 
@@ -364,6 +361,53 @@
     .pending-actions-btn:hover i.fa-arrow-right {
       transform: translateX(5px);
     }
+
+    /* Category section headings */
+    .category-section {
+      margin-bottom: 2.5rem;
+    }
+    .category-section:last-child {
+      margin-bottom: 0;
+    }
+    .category-heading {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-light);
+      margin-bottom: 1.25rem;
+      padding-left: 0.6rem;
+      border-left: 3px solid var(--primary);
+    }
+  </style>
+  <style>
+    /* Tab bar */
+    .tab-bar {
+      display: flex;
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 0.45rem 1.2rem;
+      border-radius: 50px;
+      border: 1px solid #e5e7eb;
+      background: white;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
   </style>
 </head>
 
@@ -374,16 +418,13 @@
         <div class="avatar relative group" id="avatar-placeholder">
           <div id="avatar-initial" class="avatar-initial">A</div>
 
-          <!-- Lock icon attached button -->
           <div id="random-gesture"
             class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]">
-            <!-- White tick inside -->
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="white"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
 
-            <!-- Tooltip that appears automatically -->
             <div id="gesture-tooltip"
               class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-black text-white rounded shadow opacity-0 pointer-events-none transition-opacity duration-500 whitespace-nowrap">
               Don't click this
@@ -399,7 +440,6 @@
         </div>
       </div>
 
-      <!-- Pending Actions Button (Right Aligned) -->
       <div class="pending-actions-wrapper" id="pending-actions-container" style="display: none; margin-bottom: 0">
         <a href="/app/pending-request" class="pending-actions-btn" id="pending-actions-link"
           style="padding: 0.6rem 1.5rem; max-width: none">
@@ -410,159 +450,88 @@
       </div>
     </header>
     <main class="app-main">
-      <section class="quick-actions" aria-label="Quick action icons">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="all">All</button>
+        <button class="tab-btn" data-tab="operations">Operations</button>
+        <button class="tab-btn" data-tab="l&d">L&D</button>
+        <button class="tab-btn" data-tab="loan">Loan</button>
+        <button class="tab-btn" data-tab="hr">HR</button>
+      </div>
         <div class="icon-grid">
-          <!-- Tickets -->
           <a class="icon-item" href="/app/my-tickets" role="link" tabindex="0">
             <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
               <i class="fas fa-ticket-alt"></i>
             </div>
             <span class="icon-label">Tickets</span>
           </a>
-          <!-- StockIO -->
           <a class="icon-item stockio-icon" href="/stockio" role="link" tabindex="0">
             <div class="icon-circle bg-amber-100 text-amber-700">
               <span class="fas fa-cubes"></span>
             </div>
             <span class="icon-label">StockIO</span>
           </a>
-
-          <!-- Assets -->
           <a class="icon-item" href="/app/asset-requisition" role="link" tabindex="0">
             <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
               <i class="fas fa-laptop"></i>
             </div>
             <span class="icon-label">Assets</span>
           </a>
-
-          <!-- CRM -->
-          <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
-            <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
-              <i class="fas fa-users"></i>
-            </div>
-            <span class="icon-label">CRM</span>
-          </a>
-
-          <!-- PMS -->
-          <!-- <a class="icon-item" href="http://182.19.71.132:81/pms-login" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f6f0d8] text-[#d97706]">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <span class="icon-label">PMS</span>
-          </a> -->
-
-          <!-- My Approvals -->
-          <a class="icon-item" href="/app/approval-request" role="link" tabindex="0">
-            <div class="icon-circle" style="background-color: #e6f9f0; color: #28a745">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <span class="icon-label">My Approvals</span>
-          </a>
-
-          <!-- Operations -->
-          <a class="icon-item" href="/policies" role="link" tabindex="0">
-            <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
-              <i class="fas fa-cog"></i>
-            </div>
-            <span class="icon-label">Operations</span>
-          </a>
-
-          <!-- Audit -->
-          <a class="icon-item" href="/app/audit-management" role="link" tabindex="0">
-            <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
-              <i class="fas fa-clipboard-check"></i>
-            </div>
-            <span class="icon-label">Audit</span>
-          </a>
-
-          <!-- Praman -->
-          <!-- <a class="icon-item" href="/app/praman" role="link" tabindex="0">
-              <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-                <i class="fas fa-chart-pie"></i>
-              </div>
-              <span class="icon-label">Praman</span>
-            </a> -->
-
-          <!-- My Agents -->
-          <a class="icon-item" href="/app/agent-management" role="link" tabindex="0">
-            <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
-              <i class="fas fa-user-tie"></i>
-            </div>
-            <span class="icon-label">My Agents</span>
-          </a>
-
-          <!-- Branch Proposal -->
-          <a class="icon-item" href="/app/branch-proposal" role="link" tabindex="0">
-            <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
-              <i class="fas fa-building"></i>
-            </div>
-            <span class="icon-label">Branch Proposal</span>
-          </a>
-
-          <!-- Tasks -->
-          <!-- <a
-              class="icon-item task-icon"
-              href="/app/task"
-              role="link"
-              tabindex="0"
-              onclick="handleTaskCardClick(event)"
-            >
-              <div class="icon-circle bg-[#dbeafe] text-[#1d4ed8]">
-                <i class="fas fa-tasks"></i>
-              </div>
-              <span class="icon-label">Tasks</span>
-            </a> -->
-
-          <!-- Taskflow -->
-          <a class="icon-item" href="/taskflow" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-              <i class="fa fa-tasks"></i>
-            </div>
-            <span class="icon-label">Taskflow</span>
-          </a>
-
-          <!-- User Unlock -->
           <a class="icon-item" href="/app/user-unlock" role="link" tabindex="0">
             <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
               <i class="fas fa-unlock"></i>
             </div>
             <span class="icon-label">Finacle User Unlock</span>
           </a>
+          <a class="icon-item" href="/photo_signature_utility" role="link" tabindex="0">
+            <div class="icon-circle" style="background-color: #e0f0ff; color: #007bff">
+              <i class="fas fa-id-card"></i>
+            </div>
+            <span class="icon-label"> Netwin Photo & Sign </span>
+          </a>
+          <a class="icon-item" href="/netwin_statement" role="link" tabindex="0">
+            <div class="icon-circle" style="background-color: #e6f7ec; color: #28a745">
+              <i class="fas fa-file-download"></i>
+            </div>
+            <span class="icon-label"> Netwin Statement </span>
+          </a>
 
-          <!-- MVCD Tracker -->
-          <a class="icon-item" href="/app/mvcd-status" role="link" tabindex="0">
+          <a class="icon-item" data-tab="operations" href="/policies" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
+              <i class="fas fa-cog"></i>
+            </div>
+            <span class="icon-label">Operations</span>
+          </a>
+          <a class="icon-item" href="/app/branch-proposal" role="link" tabindex="0">
+            <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
+              <i class="fas fa-building"></i>
+            </div>
+            <span class="icon-label">Branch Proposal</span>
+          </a>
+          <a class="icon-item" data-tab="operations" href="/app/mvcd-status" role="link" tabindex="0">
             <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
               <i class="fas fa-university"></i>
             </div>
             <span class="icon-label">MVCD Tracker</span>
           </a>
-
-          <!-- Finacle CBS Reports -->
-          <a class="icon-item" href="/app/finacle-report-portal" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
-              <i class="fas fa-laptop-code"></i>
-            </div>
-            <span class="icon-label">Finacle CBS Reports</span>
-          </a>
-
-          <!-- SS Trainer -->
-          <a class="icon-item" href="/app/trainer" role="link" tabindex="0">
-            <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
-              <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-            <span class="icon-label">SS Trainer</span>
-          </a>
-
-          <!-- Drishti -->
-          <a class="icon-item" href="/app/sahayog_dashboard/" role="link" tabindex="0">
+          <a class="icon-item" data-tab="operations" href="app/cash-management-system" role="link" tabindex="0">
             <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-money-bill-wave"></i>
             </div>
-            <span class="icon-label">Drishti</span>
+            <span class="icon-label">CMS</span>
           </a>
-
-          <!-- TTUM Maker -->
-          <a class="icon-item" href="/app/ttum-maker/" role="link" tabindex="0">
+          <a class="icon-item" data-tab="operations" href="/eod-checklist" role="link" tabindex="0">
+            <div class="icon-circle" style="background-color: #ccf2ee; color: #00b09b">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <span class="icon-label">EOD Checklist</span>
+          </a>
+          <a class="icon-item" data-tab="operations" href="/cif_tracker" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa fa-rocket"></i>
+            </div>
+            <span class="icon-label">CIF Tracker</span>
+          </a>
+          <a class="icon-item" data-tab="operations" href="/app/ttum-maker/" role="link" tabindex="0">
             <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
               <i class="fas fa-file-excel"></i>
               <i class="fas fa-exchange-alt"></i>
@@ -570,23 +539,18 @@
             <span class="icon-label">TTUM Maker</span>
           </a>
 
-          <!-- Branch Master -->
-          <a class="icon-item" href="/app/query-report/Branch%20Master" role="link" tabindex="0">
-            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-              <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
-              <i class="fas fa-sitemap"></i>
+          <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
+              <i class="fas fa-users"></i>
             </div>
-            <span class="icon-label">Branch Master</span>
+            <span class="icon-label">CRM</span>
           </a>
-
-          <a class="icon-item" href="app/cash-management-system" role="link" tabindex="0">
-            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-              <!-- Updated icon for Branch Master: Hierarchy Icon (Sitemap) -->
-              <i class="fas fa-money-bill-wave"></i>
+          <a class="icon-item" href="/app/agent-management" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
+              <i class="fas fa-user-tie"></i>
             </div>
-            <span class="icon-label">CMS</span>
+            <span class="icon-label">My Agents</span>
           </a>
-          <!-- Customer  360 -->
           <a class="icon-item" href="/app/customer-360" role="link" tabindex="0">
             <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
               <i class="fas fa-user-circle"></i>
@@ -595,102 +559,36 @@
             <span class="icon-label">Customer 360</span>
           </a>
 
-          <!-- Interest Calculator -->
           <a class="icon-item" href="/interest_calculator" role="link" tabindex="0">
             <div class="icon-circle bg-yellow-200 text-yellow-800">
               <span class="rupee-icon">₹</span>
             </div>
             <span class="icon-label">SMBG/RD Interest Calculator</span>
           </a>
-
-          <!-- Permission Manager -->
-          <a class="icon-item" href="/app/permission-config" role="link" tabindex="0">
-            <div class="icon-circle bg-purple-200 text-purple-800">
-              <i class="fas fa-user-shield"></i>
-            </div>
-            <span class="icon-label">Permission Manager</span>
-          </a>
-
-          <!-- Loan Management -->
-          <a class="icon-item" href="/loan_workspace" role="link" tabindex="0">
+          <a class="icon-item" data-tab="loan" href="/loan_workspace" role="link" tabindex="0">
             <div class="icon-circle bg-purple-200 text-purple-800">
               <i class="fas fa-hand-holding-usd"></i>
             </div>
             <span class="icon-label">Loan Management</span>
           </a>
-          <!-- EOD Checklist -->
-          <a class="icon-item" href="/eod-checklist" role="link" tabindex="0">
-            <div class="icon-circle" style="background-color: #ccf2ee; color: #00b09b">
-              <i class="fas fa-clipboard-check"></i>
-            </div>
-            <span class="icon-label">EOD Checklist</span>
-          </a>
-
-          <!-- Netwin Photo & Sign -->
-          <!-- <a class="icon-item" href="/photo_signature_utility" role="link" tabindex="0">
-            <div class="icon-circle" style="background-color: #ccf2ee; color: #00b09b;">
-              <i class="fas fa-id-card"></i>
-            </div>
-            <span class="icon-label">Netwin Photo & Sign</span>
-          </a> -->
-
-          <!-- Netwin Photo & Sign -->
-          <a class="icon-item" href="/photo_signature_utility" role="link" tabindex="0">
-            <div class="icon-circle" style="background-color: #e0f0ff; color: #007bff">
-              <i class="fas fa-id-card"></i>
-            </div>
-            <span class="icon-label"> Netwin Photo & Sign </span>
-          </a>
-
-          <!-- Netwin Statement -->
-          <a class="icon-item" href="/netwin_statement" role="link" tabindex="0">
-            <div class="icon-circle" style="background-color: #e6f7ec; color: #28a745">
-              <i class="fas fa-file-download"></i>
-            </div>
-            <span class="icon-label"> Netwin Statement </span>
-          </a>
-
-          <!-- Employee Cost Code -->
-          <a class="icon-item" href="/app/cost-code-viewer" role="link" tabindex="0">
-            <div class="icon-circle bg-yellow-200 text-yellow-800">
-              <span class="fa fa-money-bag">💰</span>
-            </div>
-            <span class="icon-label">Employee Cost Code</span>
-          </a>
-
-          <!-- Petty Cash Management -->
           <a class="icon-item" href="/app/petty-cash-management" role="link" tabindex="0">
             <div class="icon-circle bg-emerald-100 text-emerald-700">
               <span class="fa fa-wallet"></span>
             </div>
             <span class="icon-label">Petty Cash Management</span>
           </a>
-
-          <!-- CIF Tracker -->
-          <a class="icon-item" href="/cif_tracker" role="link" tabindex="0">
+          <a class="icon-item" href="/share_tracker" role="link" tabindex="0">
             <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-              <i class="fa fa-rocket"></i>
+              <i class="fa fa-file-invoice-dollar"></i>
             </div>
-            <span class="icon-label">CIF Tracker</span>
+            <span class="icon-label">Share Tracker</span>
           </a>
-
-          <!-- DAMS -->
-          <a class="icon-item" href="/app/disciplinary-management" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-              <i class="fa-solid fa-building-user"></i>
+          <a class="icon-item" href="/app/cost-code-viewer" role="link" tabindex="0">
+            <div class="icon-circle bg-yellow-200 text-yellow-800">
+              <span class="fa fa-money-bag">💰</span>
             </div>
-            <span class="icon-label">DAMS</span>
+            <span class="icon-label">Employee Cost Code</span>
           </a>
-
-          <!-- RPT To Excel Converter -->
-          <a class="icon-item" href="/report_converter" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
-              <i class="fa fa-sync"></i>
-            </div>
-            <span class="icon-label">RPT Excel Converter</span>
-          </a>
-
-          <!-- Form16 Downloader -->
           <a class="icon-item" href="/form16" role="link" tabindex="0">
             <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
               <i class="fa-solid fa-file-arrow-down fa-2x"></i>
@@ -698,22 +596,76 @@
             <span class="icon-label">Form16 Downloader</span>
           </a>
 
-          <!-- Attendance Portal -->
-          <a class="icon-item" href="/team_attendance" role="link" tabindex="0">
+          <a class="icon-item" data-tab="l&d" href="/app/trainer" role="link" tabindex="0">
+            <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <span class="icon-label">SS Trainer</span>
+          </a>
+          <a class="icon-item" data-tab="hr" href="/app/disciplinary-management" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa-solid fa-building-user"></i>
+            </div>
+            <span class="icon-label">DAMS</span>
+          </a>
+          <a class="icon-item" data-tab="hr" href="/team_attendance" role="link" tabindex="0">
             <div class="icon-circle bg-purple-100 text-purple-700">
               <i class="fas fa-fingerprint"></i>
             </div>
             <span class="icon-label">Attendance Portal</span>
           </a>
 
-          <a class="icon-item" href="/share_tracker" role="link" tabindex="0">
-            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-              <i class="fa fa-file-invoice-dollar"></i>
+          <a class="icon-item" href="/app/audit-management" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
+              <i class="fas fa-clipboard-check"></i>
             </div>
-            <span class="icon-label">Share Tracker</span>
+            <span class="icon-label">Audit</span>
+          </a>
+          <a class="icon-item" href="/app/approval-request" role="link" tabindex="0">
+            <div class="icon-circle" style="background-color: #e6f9f0; color: #28a745">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <span class="icon-label">My Approvals</span>
+          </a>
+
+          <a class="icon-item" href="/app/finacle-report-portal" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <span class="icon-label">Finacle CBS Reports</span>
+          </a>
+          <a class="icon-item" href="/app/sahayog_dashboard/" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-eye"></i>
+            </div>
+            <span class="icon-label">Drishti</span>
+          </a>
+          <a class="icon-item" href="/report_converter" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
+              <i class="fa fa-sync"></i>
+            </div>
+            <span class="icon-label">RPT Excel Converter</span>
+          </a>
+          <a class="icon-item" href="/app/query-report/Branch%20Master" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <span class="icon-label">Branch Master</span>
+          </a>
+
+          <a class="icon-item" href="/taskflow" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa fa-tasks"></i>
+            </div>
+            <span class="icon-label">Taskflow</span>
+          </a>
+          <a class="icon-item" href="/app/permission-config" role="link" tabindex="0">
+            <div class="icon-circle bg-purple-200 text-purple-800">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <span class="icon-label">Permission Manager</span>
           </a>
         </div>
-      </section>
     </main>
   </div>
   <script>
@@ -1230,8 +1182,31 @@
         tooltip.classList.remove("opacity-100");
       }, 2000);
     });
+
+    // Tab switching
+    document.addEventListener("DOMContentLoaded", function () {
+      const tabs = document.querySelectorAll(".tab-btn");
+      const items = document.querySelectorAll(".icon-item");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", function () {
+          tabs.forEach((t) => t.classList.remove("active"));
+          this.classList.add("active");
+
+          const target = this.dataset.tab;
+
+          items.forEach((item) => {
+            if (target === "all") {
+              item.style.display = "";
+            } else {
+              item.style.display =
+                item.dataset.tab === target ? "" : "none";
+            }
+          });
+        });
+      });
+    });
   </script>
-  <!-- CRM Modal -->
   <div id="crm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all">
       <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">
