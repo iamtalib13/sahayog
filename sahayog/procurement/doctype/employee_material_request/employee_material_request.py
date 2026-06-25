@@ -706,6 +706,8 @@ def update_emr_item_status(docname, item_status_map):
     # Track which items are changing from 'Approved' to 'Dispatch'
     transitioned_items = []
     
+    # First pass: identify transitions and collect update values
+    updates = []
     for item in doc.items:
         row_data = item_status_map.get(item.name)
         if row_data:
@@ -714,22 +716,29 @@ def update_emr_item_status(docname, item_status_map):
             if item.status == "Approved" and new_status == "Dispatch":
                 transitioned_items.append(item)
                 
-            # Perform update on the memory object so we can check the final state of all items
+            # Collect fields to update
+            update_values = {}
             if isinstance(row_data, dict):
                 status = row_data.get("status")
                 dispatch_detail = row_data.get("dispatch_detail")
                 if status:
-                    item.status = status
+                    update_values["status"] = status
                 if dispatch_detail:
-                    item.dispatch_detail = dispatch_detail
+                    update_values["dispatch_detail"] = dispatch_detail
             else:
-                item.status = row_data
+                update_values["status"] = row_data
+            
+            if update_values:
+                updates.append((item.name, update_values))
 
-    # Save the document changes using doc.save() so standard hooks/validation/update run and DB is updated
-    doc.save()
+    # Use db.set_value to bypass submitted document restrictions on child table status fields
+    for row_name, values in updates:
+        for field, value in values.items():
+            frappe.db.set_value("Material Request Items", row_name, field, value)
     frappe.db.commit()
 
-    # Now check if ALL items in the child table have the status 'Dispatch'
+    # Re-read doc to check final state of all items
+    doc = frappe.get_doc("Employee Material Request", docname)
     all_dispatched = all(item.status == "Dispatch" for item in doc.items)
     
     # If all items are Dispatched and we had items transitioning to Dispatch in this call
