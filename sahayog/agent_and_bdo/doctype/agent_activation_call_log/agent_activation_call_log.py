@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.document import Document
 
-FOLLOWUP_TYPES = ("Follow-up Required", "Call Back Later")
+FOLLOWUP_TYPES = ("Follow-up Required",)
 CHECKBOX_TYPES = ("Positive", "Negative")
 
 class AgentActivationCallLog(Document):
@@ -12,7 +12,7 @@ class AgentActivationCallLog(Document):
         self._validate_unique_assignment()
 
     def on_submit(self):
-        if self.exited and self.agent:
+        if (self.exited or self.want_to_exit) and self.agent:
             frappe.db.set_value("Agent", self.agent, "calling_status", "Exited")
 
     def _validate_unique_assignment(self):
@@ -75,11 +75,12 @@ class AgentActivationCallLog(Document):
 
         # Positive / Negative — need at least one checkbox
         if reply in CHECKBOX_TYPES:
-            if not (self.wants_to_stay or self.exited):
+            if not (self.wants_to_stay or self.want_to_exit or self.exited):
                 frappe.throw(
-                    "Please select at least one option — Wants to Stay or Exited."
+                    "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
                 )
             if self.exited:
                 self.wants_to_stay = 0
+                self.want_to_exit = 0
                 if not self.date_of_exit:
                     frappe.throw("Please provide a Date of Exit when 'Exited' is selected.")
