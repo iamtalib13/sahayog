@@ -903,3 +903,22 @@ def update_material_request_approval_status(docname, action, remark=""):
     elif doc.status == "Pending HO Approval": frappe.db.set_value("Employee Material Request", docname, "ho_officer_remarks", remark)
     frappe.db.commit()
     return {"success": True}
+
+@frappe.whitelist()
+def send_email_from_popup(docname):
+    """Send email to the appropriate person based on the current stage of the EMR."""
+    doc = frappe.get_doc("Employee Material Request", docname)
+    status = doc.status
+
+    if status in ("Pending Reporting Person",):
+        doc.send_reporting_person_email()
+    elif status in ("Pending HO Approval",):
+        doc.send_ho_officer_email()
+    elif status in ("Approved",):
+        doc.send_approved_employee_email()
+    elif status in ("Partially Dispatched", "Dispatch"):
+        doc.send_dispatch_notification_to_employee(doc.items)
+    else:
+        frappe.throw(f"Cannot send email for status: {status}")
+
+    return {"success": True}
