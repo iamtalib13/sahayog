@@ -16460,6 +16460,7 @@
             this.emailTimerSeconds--;
           } else {
             this.stopEmailTimer();
+            this.sendEmailNow();
           }
         }, 1000);
       },
@@ -16474,9 +16475,20 @@
         const s = secs % 60;
         return `${m}:${s.toString().padStart(2, '0')}`;
       },
-      sendEmailNow() {
+      async sendEmailNow() {
         this.stopEmailTimer();
-        frappe.show_alert({ message: `Email sent to ${this.emailPopupData.recipient}`, indicator: 'green' });
+        if (!this.detailRecord || !this.detailRecord.name) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.send_email_from_popup",
+            args: { docname: this.detailRecord.name },
+          });
+          if (res.message && res.message.success) {
+            frappe.show_alert({ message: `Email sent to ${res.message.sent_to}`, indicator: 'green' });
+          }
+        } catch (e) {
+          frappe.show_alert({ message: 'Failed to send email', indicator: 'red' });
+        }
         this.showEmailPopup = false;
       },
       handleUse(row) {
