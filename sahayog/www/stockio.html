@@ -1955,7 +1955,7 @@
         </button>
         <button
           class="btn-view-toggle"
-          v-if="activeItem === 'Requests' && showDetailView && detailRecord"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord && getRequestStatus(detailRecord) !== 'Draft'"
           title="Email"
           @click="openEmailPopup()"
         >
