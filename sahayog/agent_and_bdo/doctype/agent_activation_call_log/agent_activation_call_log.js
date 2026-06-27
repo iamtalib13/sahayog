@@ -5,7 +5,7 @@ frappe.ui.form.on("Agent Activation Call Log", {
   refresh(frm) {
     frm.trigger("hide_sidebar_options");
 
-    // Exclude exited agents from dropdown
+    // Exclude agents with Exited calling_status from dropdown
     frm.set_query("agent", () => ({
       filters: [["Agent", "calling_status", "!=", "Exited"]]
     }));
@@ -29,8 +29,30 @@ frappe.ui.form.on("Agent Activation Call Log", {
 
   wants_to_stay: function (frm) {
     if (frm.doc.wants_to_stay === 1) {
+      frm.set_value("want_to_exit", 0);
       frm.set_value("exited", 0);
       frm.set_value("amount", "");
+    }
+  },
+
+  want_to_exit: function (frm) {
+    if (frm.doc.want_to_exit === 1) {
+      frappe.confirm(
+        `Agent <b>${frappe.utils.escape_html(frm.doc.agent || "this SS")}</b> will be marked as <b>Want to Exit</b>
+        and removed from the inactive SS pool permanently.<br><br>Are you sure?`,
+        () => {
+          // confirmed — clear other checkboxes
+          frm.set_value("wants_to_stay", 0);
+          frm.set_value("exited", 0);
+          frm.set_value("amount", "");
+        },
+        () => {
+          // cancelled — uncheck want_to_exit
+          frm.set_value("want_to_exit", 0);
+        }
+      );
+    } else {
+      frm.set_value("date_of_exit", "");
     }
   },
 
@@ -42,6 +64,7 @@ frappe.ui.form.on("Agent Activation Call Log", {
         () => {
           // confirmed — clear other checkboxes
           frm.set_value("wants_to_stay", 0);
+          frm.set_value("want_to_exit", 0);
           frm.set_value("amount", "");
         },
         () => {
@@ -85,6 +108,7 @@ frappe.ui.form.on("Agent Activation Call Log", {
     frm.toggle_display("wants_to_stay", needsCheckbox);
     frm.toggle_display("amount", needsCheckbox);
     frm.toggle_display("exited", needsCheckbox);
+    frm.toggle_display("want_to_exit", needsCheckbox);
     frm.toggle_display("date_of_exit", needsCheckbox);
   },
 
