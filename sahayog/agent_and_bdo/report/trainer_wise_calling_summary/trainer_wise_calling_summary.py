@@ -13,6 +13,7 @@ def execute(filters=None):
         {"label": "Not Reachable", "fieldname": "not_reachable", "fieldtype": "Int", "width": 120},
         {"label": "Follow-up Cases", "fieldname": "followup_cases", "fieldtype": "Int", "width": 130},
         {"label": "Wants to Stay", "fieldname": "wants_to_stay", "fieldtype": "Int", "width": 110},
+        {"label": "Want to Exit", "fieldname": "want_to_exit", "fieldtype": "Int", "width": 110},
         {"label": "Exited", "fieldname": "exited", "fieldtype": "Int", "width": 80},
     ]
 
@@ -33,8 +34,9 @@ def execute(filters=None):
             SUM(acl.reply_type = 'Positive') AS positive,
             SUM(acl.reply_type = 'Negative') AS negative,
             SUM(acl.reply_type = 'Not Reachable') AS not_reachable,
-            SUM(acl.reply_type IN ('Follow-up Required', 'Call Back Later')) AS followup_cases,
+            SUM(acl.reply_type = 'Follow-up Required') AS followup_cases,
             SUM(acl.wants_to_stay) AS wants_to_stay,
+            SUM(acl.want_to_exit) AS want_to_exit,
             SUM(acl.exited) AS exited
         FROM `tabAgent Activation Call Log` acl
         LEFT JOIN `tabUser` u ON u.name = acl.trainer
