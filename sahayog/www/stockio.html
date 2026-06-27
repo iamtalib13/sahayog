@@ -15981,7 +15981,7 @@
           ? "Are you sure you want to send this request for approval?"
           : `Are you sure you want to permanently submit this ${this.activeItem} record?`;
 
-        frappe.confirm(confirmMsg, async () => {
+        this.showConfirm("Confirm Submission", confirmMsg, async () => {
           this.loading = true;
           try {
             // Fetch latest document to avoid TimestampMismatchError
@@ -16564,7 +16564,7 @@
             ? `Are you sure you want to send request ${row.name} for approval?`
             : `Are you sure you want to submit ${row.name}?`;
 
-        frappe.confirm(confirmMsg, async () => {
+        this.showConfirm("Confirm Submission", confirmMsg, async () => {
           this.loading = true;
           try {
             // Fetch the latest document to avoid TimestampMismatchError
@@ -16619,7 +16619,7 @@
         if (!row || !row.name) return;
         const doctype = this.currentView.doctype;
 
-        frappe.confirm(`Are you sure you want to CANCEL ${row.name}? This action cannot be undone.`, async () => {
+        this.showConfirm("Confirm Cancellation", `Are you sure you want to CANCEL ${row.name}? This action cannot be undone.`, async () => {
           this.loading = true;
           try {
             await frappe.call({
