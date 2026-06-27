@@ -39,3 +39,4 @@ sahayog.patches.fix_trainer_dashboard_script
 sahayog.patches.update_trainer_dashboard_v2
 sahayog.patches.update_trainer_dashboard_v3
 sahayog.patches.update_trainer_dashboard_v4
+sahayog.patches.update_trainer_dashboard_v5
