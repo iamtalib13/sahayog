@@ -14,7 +14,7 @@ def execute(filters=None):
         {"label": "Date of Exit", "fieldname": "date_of_exit", "fieldtype": "Date", "width": 110},
     ]
 
-    conditions = "WHERE ac.docstatus < 2 AND ac.exited = 1"
+    conditions = "WHERE ac.docstatus < 2 AND (ac.exited = 1 OR ac.want_to_exit = 1)"
     if filters.get("from_date"):
         conditions += " AND ac.calling_date >= %(from_date)s"
     if filters.get("to_date"):
