@@ -17122,6 +17122,9 @@
             frappe.show_alert({ message: `EMR ${docName} created!`, indicator: "green" });
             this.showEMRCreateView = false;
             await this.fetchData("Employee Material Request"); // Refresh list
+            // Open the created record
+            const createdRow = this.rows.find(r => r.name === docName);
+            if (createdRow) await this.openRecord(createdRow);
           }
         } catch (e) {
           console.error("EMR creation error:", e);
