@@ -17101,6 +17101,24 @@
                 },
               });
             }
+
+            // Auto skip both stages if: user designation in branch_access AND department=Stationery AND not in wh_dept_map
+            const isStationery = this.emrForm.department && String(this.emrForm.department).toLowerCase() === "stationery";
+            const isBranchAccessUser = this.userDesignation && this.branchAccessDesignations && this.branchAccessDesignations.includes(String(this.userDesignation).trim().toUpperCase());
+            const notInWhDeptMap = !this.wh_dept_map.some(m => m.user_id === frappe.session.user);
+
+            if (isStationery && isBranchAccessUser && notInWhDeptMap) {
+              try {
+                await frappe.call({
+                  method: "sahayog.procurement.api.stock_balance_ledger.skip_approval_stage",
+                  args: { docname: docName, stage: "Both" },
+                });
+                frappe.show_alert({ message: `EMR ${docName} auto-approved (Stationery)`, indicator: "green" });
+              } catch (skipErr) {
+                console.error("Auto-skip both stages failed:", skipErr);
+              }
+            }
+
             frappe.msgprint(`EMR ${docName} created!`);
             this.showEMRCreateView = false;
             await this.fetchData("Employee Material Request"); // Refresh list
