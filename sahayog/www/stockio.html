@@ -1849,6 +1849,13 @@
             :class="isFullscreen ? 'fa-compress' : 'fa-expand'"
           ></i>
         </button>
+        <button
+          class="btn-view-toggle"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord && ['Approved', 'Partially Dispatched', 'Dispatch'].includes(getRequestStatus(detailRecord))"
+          title="Email"
+        >
+          <i class="fas fa-envelope"></i>
+        </button>
 
         <!-- Branch Stock Filter Buttons -->
         <div v-if="activeItem === 'Branch Stock'" style="display: flex; gap: 8px; margin-right: 8px;">
