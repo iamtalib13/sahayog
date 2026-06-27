@@ -32,6 +32,7 @@
   "amount",
   "column_break_ekar",
   "exited",
+  "want_to_exit",
   "date_of_exit",
   "section_break_wdqk",
   "remarks",
@@ -127,14 +128,14 @@
    "fieldtype": "Select",
    "label": "Reply Type",
    "mandatory_depends_on": "eval:doc.connected_status==\"Yes\"",
-   "options": "\nPositive\nNegative\nNot Reachable\nCall Back Later\nFollow-up Required"
+  "options": "\nPositive\nNegative\nNot Reachable\nFollow-up Required"
   },
   {
-   "depends_on": "eval:['Follow-up Required','Call Back Later'].includes(doc.reply_type)",
+   "depends_on": "eval:doc.reply_type==\"Follow-up Required\"",
    "fieldname": "follow_up_date",
    "fieldtype": "Date",
    "label": "Follow-up Date",
-   "mandatory_depends_on": "eval:['Follow-up Required','Call Back Later'].includes(doc.reply_type)"
+   "mandatory_depends_on": "eval:doc.reply_type==\"Follow-up Required\""
   },
   {
    "depends_on": "eval:doc.reply_type",
@@ -149,10 +150,34 @@
    "label": "Wants to Stay"
   },
   {
+   "depends_on": "eval:doc.wants_to_stay",
+   "fieldname": "amount",
+   "fieldtype": "Data",
+   "label": "Amount"
+  },
+  {
+   "fieldname": "column_break_ekar",
+   "fieldtype": "Column Break",
+   "label": "Inactive Details"
+  },
+  {
    "default": "0",
    "fieldname": "exited",
    "fieldtype": "Check",
    "label": "Exited"
+  },
+  {
+   "default": "0",
+   "fieldname": "want_to_exit",
+   "fieldtype": "Check",
+   "label": "Want to Exit"
+  },
+  {
+   "depends_on": "eval:doc.want_to_exit || doc.exited",
+   "fieldname": "date_of_exit",
+   "fieldtype": "Date",
+   "label": "Date of Exit",
+   "no_copy": 1
   },
   {
    "depends_on": "eval:doc.connected_status",
@@ -189,24 +214,6 @@
    "search_index": 1
   },
   {
-   "depends_on": "eval:doc.exited",
-   "fieldname": "date_of_exit",
-   "fieldtype": "Date",
-   "label": "Date of Exit",
-   "no_copy": 1
-  },
-  {
-   "depends_on": "eval:doc.wants_to_stay",
-   "fieldname": "amount",
-   "fieldtype": "Data",
-   "label": "Amount"
-  },
-  {
-   "fieldname": "column_break_ekar",
-   "fieldtype": "Column Break",
-   "label": "Inactive Details"
-  },
-  {
    "fieldname": "active_details_column",
    "fieldtype": "Column Break",
    "label": "Active Details"
@@ -220,7 +227,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-20 12:15:00.000000",
+ "modified": "2026-06-27 15:20:00.000000",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
