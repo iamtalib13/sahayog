@@ -16032,7 +16032,7 @@
             console.error("Submission error:", e);
             const errorMsg =
               e.message || e.exc || `Error submitting ${this.activeItem}`;
-            frappe.msgprint(`Error: ${errorMsg}`);
+            frappe.show_alert({ message: `Error: ${errorMsg}`, indicator: "red" });
           } finally {
             this.loading = false;
           }
@@ -16608,7 +16608,7 @@
             }
           } catch (e) {
             console.error("Submission error:", e);
-            frappe.msgprint(e.message || "Error submitting record");
+            frappe.show_alert({ message: e.message || "Error submitting record", indicator: "red" });
           } finally {
             this.loading = false;
           }
@@ -16634,7 +16634,7 @@
             await this.fetchData(doctype);
           } catch (e) {
             console.error("Cancellation error:", e);
-            frappe.msgprint(e.message || "Error cancelling record");
+            frappe.show_alert({ message: e.message || "Error cancelling record", indicator: "red" });
           } finally {
             this.loading = false;
           }
@@ -17119,7 +17119,7 @@
               }
             }
 
-            frappe.msgprint(`EMR ${docName} created!`);
+            frappe.show_alert({ message: `EMR ${docName} created!`, indicator: "green" });
             this.showEMRCreateView = false;
             await this.fetchData("Employee Material Request"); // Refresh list
           }
@@ -17131,7 +17131,7 @@
             (e._server_messages
               ? JSON.parse(e._server_messages)[0].message
               : "Unknown Error during EMR creation");
-          frappe.msgprint(`Error: ${errorMsg}`);
+          frappe.show_alert({ message: `Error: ${errorMsg}`, indicator: "red" });
         } finally {
           this.creatingEMR = false;
         }
