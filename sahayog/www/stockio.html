@@ -1408,6 +1408,110 @@
     </div>
   </div>
 
+  <!-- Email Preview Popup -->
+  <div v-if="showEmailPopup" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 10px;">
+    <div class="email-popup-card" style="background: var(--bg-surface); border-radius: 12px; width: 600px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); overflow: hidden;">
+      
+      <!-- Header -->
+      <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <i class="fas fa-envelope" style="color: #369696; font-size: 18px;"></i>
+          <h3 style="margin: 0; font-size: 1rem; font-weight: 800; color: var(--text-main);">[[ emailPopupData.title ]]</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Timer -->
+          <div v-if="emailTimerSeconds > 0" style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(54, 150, 150, 0.1); border: 1px solid rgba(54, 150, 150, 0.3);">
+            <i class="fas fa-clock" style="color: #369696; font-size: 12px;"></i>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #369696; font-variant-numeric: tabular-nums;">[[ formatTimer(emailTimerSeconds) ]]</span>
+          </div>
+          <button @click="showEmailPopup = false; stopEmailTimer();" style="background: transparent; border: none; font-size: 1.2rem; color: var(--text-muted); cursor: pointer; padding: 4px; line-height: 1;"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+
+      <!-- Email Content -->
+      <div style="flex: 1; overflow-y: auto; padding: 0; background: #f8fafc;">
+        <!-- Stage Badge -->
+        <div style="padding: 16px 20px 0;">
+          <span :style="{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', background: emailPopupData.stageColor + '15', color: emailPopupData.stageColor, border: '1px solid ' + emailPopupData.stageColor + '30' }">
+            [[ emailPopupData.stageLabel ]]
+          </span>
+        </div>
+
+        <!-- Recipient -->
+        <div style="padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #edf2f7;">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; min-width: 80px;">To:</span>
+          <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-main);">[[ emailPopupData.recipient ]]</span>
+        </div>
+
+        <!-- Subject -->
+        <div style="padding: 12px 20px; border-bottom: 1px solid #edf2f7;">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 4px;">Subject</span>
+          <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">[[ emailPopupData.subject ]]</span>
+        </div>
+
+        <!-- Request Details Table -->
+        <div style="padding: 16px 20px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; width: 160px; font-size: 0.8rem;">Request ID</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ detailRecord.name ]]</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">Employee</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ detailRecord.employee ? (getEmployeeName(detailRecord.employee) + ' (' + detailRecord.employee + ')') : '-' ]]</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">Department</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ detailRecord.department || '-' ]]</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">Required By</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ detailRecord.required_by_date || '-' ]]</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">Status</td>
+              <td style="padding: 8px 0;">
+                <span :style="{ display: 'inline-block', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', background: emailPopupData.stageColor + '15', color: emailPopupData.stageColor }">
+                  [[ getRequestStatus(detailRecord) ]]
+                </span>
+              </td>
+            </tr>
+            <tr v-if="detailRecord.reporting_person" style="border-bottom: 1px solid #edf2f7;">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">Reporting Person</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ getEmployeeName(detailRecord.reporting_person) || detailRecord.reporting_person ]]</td>
+            </tr>
+            <tr v-if="detailRecord.head_office_officer">
+              <td style="padding: 8px 0; font-weight: 700; color: #64748b; font-size: 0.8rem;">HO Officer</td>
+              <td style="padding: 8px 0; color: var(--text-main); font-weight: 600;">[[ getEmployeeName(detailRecord.head_office_officer) || detailRecord.head_office_officer ]]</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Items Preview -->
+        <div v-if="detailRecord.items && detailRecord.items.length" style="padding: 0 20px 16px;">
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px;">Requested Items ([[ detailRecord.items.length ]])</div>
+          <div style="background: white; border: 1px solid #edf2f7; border-radius: 8px; overflow: hidden;">
+            <div v-for="(item, idx) in detailRecord.items.slice(0, 5)" :key="idx" style="padding: 8px 12px; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-main);">[[ item.item_code ]]</span>
+              <span style="font-size: 0.75rem; color: #64748b;">Qty: [[ item.qty ]]</span>
+            </div>
+            <div v-if="detailRecord.items.length > 5" style="padding: 6px 12px; text-align: center; font-size: 0.75rem; color: #94a3b8;">
+              + [[ detailRecord.items.length - 5 ]] more items
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; background: var(--bg-card);">
+        <button class="btn-cancel" @click="showEmailPopup = false; stopEmailTimer();" style="padding: 8px 16px; font-size: 0.85rem;">Cancel</button>
+        <button class="btn-create" @click="sendEmailNow()" style="padding: 8px 16px; font-size: 0.85rem;">
+          <i class="fas fa-paper-plane" style="margin-right: 6px;"></i>Send Now
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content Area -->
   <main class="main-area">
     <header class="top-header">
@@ -1851,8 +1955,9 @@
         </button>
         <button
           class="btn-view-toggle"
-          v-if="activeItem === 'Requests' && showDetailView && detailRecord && ['Approved', 'Partially Dispatched', 'Dispatch'].includes(getRequestStatus(detailRecord))"
+          v-if="activeItem === 'Requests' && showDetailView && detailRecord"
           title="Email"
+          @click="openEmailPopup()"
         >
           <i class="fas fa-envelope"></i>
         </button>
@@ -12183,6 +12288,13 @@
     font-size: 13px;
     color: var(--text-main);
   }
+  .email-popup-card {
+    animation: emailPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes emailPopIn {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
 </style>
 
 <script src="/assets/sahayog/js/petite-vue.iife.js"></script>
@@ -12232,6 +12344,16 @@
       restrictInward: false,
       showDispatchHistory: false,
       dispatchHistory: [],
+      showEmailPopup: false,
+      emailPopupData: {
+        title: '',
+        stageLabel: '',
+        stageColor: '#369696',
+        recipient: '',
+        subject: '',
+      },
+      emailTimerSeconds: 0,
+      emailTimerInterval: null,
       serialAndBatchBundles: [],
       showInwardCreateView: false,
       showWarehouseCreateModal: false,
@@ -16260,6 +16382,102 @@
         const format = isInward ? "Proforma Inward" : "Proforma";
         const url = `/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(row.name)}&format=${encodeURIComponent(format)}&trigger_print=1`;
         window.open(url, "_blank");
+      },
+      openEmailPopup() {
+        if (!this.detailRecord) return;
+        const status = this.getRequestStatus(this.detailRecord);
+        const empName = this.detailRecord.employee
+          ? (this.getEmployeeName(this.detailRecord.employee) || this.detailRecord.employee)
+          : '-';
+        const rpName = this.detailRecord.reporting_person
+          ? (this.getEmployeeName(this.detailRecord.reporting_person) || this.detailRecord.reporting_person)
+          : null;
+        const hoName = this.detailRecord.head_office_officer
+          ? (this.getEmployeeName(this.detailRecord.head_office_officer) || this.detailRecord.head_office_officer)
+          : null;
+
+        let data = {};
+
+        if (status === 'Pending Reporting Person' || status === 'Reporting Pending') {
+          data = {
+            title: 'Reporting Person Approval Email',
+            stageLabel: 'Pending Reporting Person',
+            stageColor: '#f59e0b',
+            recipient: rpName || 'Reporting Person',
+            subject: `Approval Required: Material Request ${this.detailRecord.name}`,
+          };
+        } else if (status === 'Pending HO Approval' || status === 'HO Pending') {
+          data = {
+            title: 'HO Officer Approval Email',
+            stageLabel: 'Pending HO Approval',
+            stageColor: '#3b82f6',
+            recipient: hoName || 'Head Office Officer',
+            subject: `Approval Required: Material Request ${this.detailRecord.name}`,
+          };
+        } else if (status === 'Approved') {
+          data = {
+            title: 'Approval Confirmation Email',
+            stageLabel: 'Approved',
+            stageColor: '#10b981',
+            recipient: empName,
+            subject: `Approved: Material Request ${this.detailRecord.name}`,
+          };
+        } else if (status === 'Partially Dispatched') {
+          data = {
+            title: 'Partial Dispatch Notification',
+            stageLabel: 'Partially Dispatched',
+            stageColor: '#f97316',
+            recipient: empName,
+            subject: `Partially Dispatched: Material Request ${this.detailRecord.name}`,
+          };
+        } else if (status === 'Dispatch') {
+          data = {
+            title: 'Dispatch Confirmation Email',
+            stageLabel: 'Dispatched',
+            stageColor: '#10b981',
+            recipient: empName,
+            subject: `Dispatched: Material Request ${this.detailRecord.name}`,
+          };
+        } else {
+          data = {
+            title: 'Request Status Email',
+            stageLabel: status || 'Draft',
+            stageColor: '#64748b',
+            recipient: rpName || empName,
+            subject: `Material Request ${this.detailRecord.name} - ${status}`,
+          };
+        }
+
+        this.emailPopupData = data;
+        this.showEmailPopup = true;
+        this.startEmailTimer(30);
+      },
+      startEmailTimer(seconds) {
+        this.stopEmailTimer();
+        this.emailTimerSeconds = seconds;
+        this.emailTimerInterval = setInterval(() => {
+          if (this.emailTimerSeconds > 0) {
+            this.emailTimerSeconds--;
+          } else {
+            this.stopEmailTimer();
+          }
+        }, 1000);
+      },
+      stopEmailTimer() {
+        if (this.emailTimerInterval) {
+          clearInterval(this.emailTimerInterval);
+          this.emailTimerInterval = null;
+        }
+      },
+      formatTimer(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+      },
+      sendEmailNow() {
+        this.stopEmailTimer();
+        frappe.show_alert({ message: `Email sent to ${this.emailPopupData.recipient}`, indicator: 'green' });
+        this.showEmailPopup = false;
       },
       handleUse(row) {
         if (!row && this.selectedRows.length === 0) return;
