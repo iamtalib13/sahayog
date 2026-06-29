@@ -32,6 +32,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
       frm.set_value("want_to_exit", 0);
       frm.set_value("exited", 0);
       frm.set_value("amount", "");
+      frm.set_value("collection_date", "");
+      frm.set_value("attachment", "");
     }
   },
 
@@ -45,6 +47,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
           frm.set_value("wants_to_stay", 0);
           frm.set_value("exited", 0);
           frm.set_value("amount", "");
+          frm.set_value("collection_date", "");
+          frm.set_value("attachment", "");
         },
         () => {
           // cancelled — uncheck want_to_exit
@@ -66,6 +70,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
           frm.set_value("wants_to_stay", 0);
           frm.set_value("want_to_exit", 0);
           frm.set_value("amount", "");
+          frm.set_value("collection_date", "");
+          frm.set_value("attachment", "");
         },
         () => {
           // cancelled — uncheck exited
@@ -89,6 +95,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
       frm.set_value("wants_to_stay", 0);
       frm.set_value("exited", 0);
       frm.set_value("amount", "");
+      frm.set_value("collection_date", "");
+      frm.set_value("attachment", "");
       frm.set_value("date_of_exit", "");
     }
 
@@ -107,6 +115,8 @@ frappe.ui.form.on("Agent Activation Call Log", {
     frm.toggle_display("column_break_ekar", needsCheckbox);
     frm.toggle_display("wants_to_stay", needsCheckbox);
     frm.toggle_display("amount", needsCheckbox);
+    frm.toggle_display("collection_date", needsCheckbox);
+    frm.toggle_display("attachment", needsCheckbox);
     frm.toggle_display("exited", needsCheckbox);
     frm.toggle_display("want_to_exit", needsCheckbox);
     frm.toggle_display("date_of_exit", needsCheckbox);
