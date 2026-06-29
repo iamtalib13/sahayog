@@ -1079,7 +1079,7 @@ def get_portal_master_data():
         "emr_names": [r.name for r in frappe.get_all("Employee Material Request", order_by="creation desc", limit=500)],
         "purchase_receipt_names": [r.name for r in frappe.get_all("Purchase Receipt", order_by="creation desc", limit=500)],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
-        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "custom_item_department", "description"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "is_stock_item", "custom_item_department", "description"], filters={"disabled": 0}),
         "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian", "brand", "serial_no"], filters={"docstatus": 1}),
         "item_groups": [g.name for g in frappe.get_all("Item Group")],
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
