@@ -5,9 +5,9 @@ frappe.ui.form.on("Agent Activation Call Log", {
   refresh(frm) {
     frm.trigger("hide_sidebar_options");
 
-    // Exclude agents with Exited calling_status from dropdown
+    // Exclude exited agents — derived from call log records, not Agent field
     frm.set_query("agent", () => ({
-      filters: [["Agent", "calling_status", "!=", "Exited"]]
+      query: "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query.get_non_exited_agents"
     }));
 
     if (frm.doc.agent) {
@@ -86,7 +86,7 @@ frappe.ui.form.on("Agent Activation Call Log", {
   reply_type: function (frm) {
     frm.trigger("_apply_reply_type_display");
 
-    const followupTypes = ["Follow-up Required", "Call Back Later"];
+    const followupTypes = ["Follow-up Required"];
     const checkboxTypes = ["Positive", "Negative"];
     const reply = frm.doc.reply_type;
 
