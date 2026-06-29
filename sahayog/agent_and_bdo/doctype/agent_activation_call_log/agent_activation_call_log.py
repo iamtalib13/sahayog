@@ -12,8 +12,7 @@ class AgentActivationCallLog(Document):
         self._validate_unique_assignment()
 
     def on_submit(self):
-        if (self.exited or self.want_to_exit) and self.agent:
-            frappe.db.set_value("Agent", self.agent, "calling_status", "Exited")
+        pass  # Status is derived from call log records — no write to Agent needed
 
     def _validate_unique_assignment(self):
         """One active SS must be assigned to only one trainer at a time."""
@@ -45,10 +44,10 @@ class AgentActivationCallLog(Document):
         if self.amount:
             try:
                 amt = float(self.amount)
-            except ValueError:
+            except (ValueError, TypeError):
                 frappe.throw("Amount must be a valid number.")
-            if not amt.is_integer() or amt <= 0:
-                frappe.throw("Amount must be a positive integer.")
+            if amt <= 0:
+                frappe.throw("Amount must be a positive number.")
 
         if self.connected_status == "No":
             return
