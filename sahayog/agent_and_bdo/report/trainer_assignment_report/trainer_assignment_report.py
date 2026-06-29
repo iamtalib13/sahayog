@@ -7,6 +7,7 @@ def execute(filters=None):
         {"label": "Trainer", "fieldname": "trainer_name", "fieldtype": "Data", "width": 200},
         {"label": "Total Assigned", "fieldname": "total_assigned", "fieldtype": "Int", "width": 130},
         {"label": "Active Cases", "fieldname": "active_cases", "fieldtype": "Int", "width": 120},
+        {"label": "Inactive Cases", "fieldname": "inactive_cases", "fieldtype": "Int", "width": 120},
         {"label": "Follow-up Cases", "fieldname": "followup_cases", "fieldtype": "Int", "width": 130},
         {"label": "Exit Cases", "fieldname": "exit_cases", "fieldtype": "Int", "width": 110},
         {"label": "Pending Cases", "fieldname": "pending_cases", "fieldtype": "Int", "width": 120},
@@ -24,13 +25,30 @@ def execute(filters=None):
         SELECT
             COALESCE(u.full_name, acl.trainer) AS trainer_name,
             COUNT(DISTINCT acl.agent) AS total_assigned,
-            SUM(acl.wants_to_stay) AS active_cases,
-            SUM(acl.reply_type IN ('Follow-up Required', 'Call Back Later')) AS followup_cases,
-            SUM(acl.exited) AS exit_cases,
-            COUNT(DISTINCT acl.agent)
-                - SUM(acl.wants_to_stay)
-                - SUM(acl.reply_type IN ('Follow-up Required', 'Call Back Later'))
-                - SUM(acl.exited) AS pending_cases
+            COUNT(DISTINCT CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM `tabAgent Activation Call Log` x
+                    WHERE x.agent = acl.agent
+                      AND x.docstatus = 1
+                      AND x.calling_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+                ) THEN acl.agent
+            END) AS active_cases,
+            COUNT(DISTINCT CASE
+                WHEN NOT EXISTS (
+                    SELECT 1 FROM `tabAgent Activation Call Log` x
+                    WHERE x.agent = acl.agent
+                      AND x.docstatus = 1
+                      AND x.calling_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+                ) THEN acl.agent
+            END) AS inactive_cases,
+            COUNT(DISTINCT CASE WHEN acl.reply_type = 'Follow-up Required' THEN acl.agent END) AS followup_cases,
+            COUNT(DISTINCT CASE WHEN acl.exited = 1 OR acl.want_to_exit = 1 THEN acl.agent END) AS exit_cases,
+            COUNT(DISTINCT CASE
+                WHEN acl.exited = 0 AND acl.want_to_exit = 0
+                  AND acl.wants_to_stay = 0
+                  AND acl.reply_type != 'Follow-up Required'
+                THEN acl.agent
+            END) AS pending_cases
         FROM `tabAgent Activation Call Log` acl
         LEFT JOIN `tabUser` u ON u.name = acl.trainer
         {conditions}
