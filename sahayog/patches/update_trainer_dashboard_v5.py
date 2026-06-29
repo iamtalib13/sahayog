@@ -64,6 +64,18 @@ def execute():
         'fields: ["name","agent","calling_date","modified","wants_to_stay","want_to_exit","exited","reply_type","follow_up_date"]'
     )
 
+    # 7. HTML: add Detailed Agent Calling Report to reports dropdown
+    doc.html = doc.html.replace(
+        '<a class="aad-dropdown-item" data-report="Agent Exit Summary Report">Agent Exit Summary Report</a>',
+        '<a class="aad-dropdown-item" data-report="Agent Exit Summary Report">Agent Exit Summary Report</a>\n          <a class="aad-dropdown-item" data-report="Detailed Agent Calling Report">Detailed Agent Calling Report</a>'
+    )
+
+    # 8. HTML: remove Call Back Later from dropdown if present
+    doc.html = doc.html.replace(
+        '\n          <a class="aad-dropdown-item" data-report="Call Back Later">Call Back Later</a>',
+        ''
+    )
+
     doc.save()
     frappe.db.commit()
     print("Done: Want to Exit card added to Trainer Dashboard")
