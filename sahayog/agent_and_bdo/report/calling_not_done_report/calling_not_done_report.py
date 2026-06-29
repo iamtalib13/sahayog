@@ -15,6 +15,7 @@ def execute(filters=None):
         {"label": "Branch Name", "fieldname": "branch_name", "fieldtype": "Data", "width": 160},
         {"label": "Calling Attempts (All Time)", "fieldname": "calling_attempts", "fieldtype": "Int", "width": 160},
         {"label": "Last Call Date", "fieldname": "last_call_date", "fieldtype": "Date", "width": 120},
+        {"label": "Calling Status", "fieldname": "calling_status", "fieldtype": "Data", "width": 110},
     ]
 
     trainer_condition = ""
@@ -30,11 +31,16 @@ def execute(filters=None):
             a.branch_code,
             a.branch_name,
             COUNT(acl.name) AS calling_attempts,
-            MAX(acl.calling_date) AS last_call_date
+            MAX(acl.calling_date) AS last_call_date,
+            'Inactive' AS calling_status
         FROM `tabAgent Activation Call Log` acl
-        INNER JOIN `tabAgent` a ON a.name = acl.agent AND a.calling_status != 'Exited'
+        INNER JOIN `tabAgent` a ON a.name = acl.agent
         LEFT JOIN `tabUser` u ON u.name = acl.trainer
         WHERE acl.docstatus < 2
+            AND acl.agent NOT IN (
+                SELECT agent FROM `tabAgent Activation Call Log`
+                WHERE docstatus = 1 AND (exited = 1 OR want_to_exit = 1)
+            )
             {trainer_condition}
         GROUP BY acl.trainer, acl.agent
         HAVING SUM(
