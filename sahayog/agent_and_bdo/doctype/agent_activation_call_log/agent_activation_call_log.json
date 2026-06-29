@@ -30,6 +30,8 @@
   "active_details_column",
   "wants_to_stay",
   "amount",
+  "collection_date",
+  "attachment",
   "column_break_ekar",
   "exited",
   "want_to_exit",
@@ -128,7 +130,7 @@
    "fieldtype": "Select",
    "label": "Reply Type",
    "mandatory_depends_on": "eval:doc.connected_status==\"Yes\"",
-  "options": "\nPositive\nNegative\nNot Reachable\nFollow-up Required"
+   "options": "\nPositive\nNegative\nNot Reachable\nFollow-up Required"
   },
   {
    "depends_on": "eval:doc.reply_type==\"Follow-up Required\"",
@@ -150,10 +152,25 @@
    "label": "Wants to Stay"
   },
   {
+   "allow_on_submit": 1,
    "depends_on": "eval:doc.wants_to_stay",
    "fieldname": "amount",
    "fieldtype": "Data",
    "label": "Amount"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.wants_to_stay",
+   "fieldname": "collection_date",
+   "fieldtype": "Date",
+   "label": "Collection Date"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.wants_to_stay",
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
   },
   {
    "fieldname": "column_break_ekar",
@@ -227,7 +244,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-27 15:20:00.000000",
+ "modified": "2026-06-29 12:42:14.380806",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent Activation Call Log",
