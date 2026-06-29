@@ -69,63 +69,57 @@ def auto_approve_attendance_corrections():
     return f"Processed {len(pending_corrections)} attendance correction requests."
 
 
-def notify_inactive_ss():
-    """
-    Daily job: find agents with no call log activity for 90+ days.
-    Status is derived purely from Agent Activation Call Log — no write to Agent doctype.
-    Sends an alert email to all Trainer Head users listing these inactive agents.
-    """
-    inactive_agents = frappe.db.sql(
-        """
-        SELECT
-            a.name AS agent_code,
-            a.agent_name,
-            a.branch_name,
-            MAX(acl.calling_date) AS last_call_date,
-            DATEDIFF(CURDATE(), MAX(acl.calling_date)) AS days_since_last_call
-        FROM `tabAgent` a
-        LEFT JOIN `tabAgent Activation Call Log` acl
-            ON acl.agent = a.name AND acl.docstatus = 1
-        WHERE a.name NOT IN (
-            SELECT agent FROM `tabAgent Activation Call Log`
-            WHERE docstatus = 1 AND (exited = 1 OR want_to_exit = 1)
-            AND agent IS NOT NULL
-        )
-        GROUP BY a.name, a.agent_name, a.branch_name
-        HAVING last_call_date IS NULL
-            OR DATEDIFF(CURDATE(), MAX(acl.calling_date)) >= 90
-        ORDER BY days_since_last_call DESC
-        """,
-        as_dict=True,
-    )
 
-    if not inactive_agents:
-        return
-
-    trainer_heads = frappe.get_all(
-        "Has Role",
-        filters={"role": "Trainer Head", "parenttype": "User"},
-        pluck="parent",
-    )
-    if not trainer_heads:
-        return
-
-    rows = "".join(
-        f"<tr><td>{a.agent_code}</td><td>{a.agent_name}</td><td>{a.branch_name or '-'}</td>"
-        f"<td>{a.last_call_date or 'Never'}</td><td>{a.days_since_last_call or '90+'}</td></tr>"
-        for a in inactive_agents
-    )
-    message = f"""
-        <p>{len(inactive_agents)} SS(s) have had no calling activity for 90+ days and are considered <b>Inactive</b>.</p>
-        <table border="1" cellpadding="4" cellspacing="0">
-            <thead><tr><th>Code</th><th>Name</th><th>Branch</th><th>Last Call</th><th>Days Inactive</th></tr></thead>
-            <tbody>{rows}</tbody>
-        </table>
-    """
-
-    for user in trainer_heads:
-        frappe.sendmail(
-            recipients=[user],
-            subject=f"Inactive SS Alert — {len(inactive_agents)} SS(s) inactive for 90+ days",
-            message=message,
-        )
+# def notify_inactive_ss():
+#     """
+#     Daily job: find agents with no call log activity for 90+ days.
+#     Uncomment and register in hooks.py daily scheduler to enable.
+#     """
+#     inactive_agents = frappe.db.sql(
+#         """
+#         SELECT
+#             a.name AS agent_code,
+#             a.agent_name,
+#             a.branch_name,
+#             MAX(acl.calling_date) AS last_call_date,
+#             DATEDIFF(CURDATE(), MAX(acl.calling_date)) AS days_since_last_call
+#         FROM `tabAgent` a
+#         LEFT JOIN `tabAgent Activation Call Log` acl
+#             ON acl.agent = a.name AND acl.docstatus = 1
+#         WHERE a.name NOT IN (
+#             SELECT agent FROM `tabAgent Activation Call Log`
+#             WHERE docstatus = 1 AND (exited = 1 OR want_to_exit = 1)
+#             AND agent IS NOT NULL
+#         )
+#         GROUP BY a.name, a.agent_name, a.branch_name
+#         HAVING last_call_date IS NULL
+#             OR DATEDIFF(CURDATE(), MAX(acl.calling_date)) >= 90
+#         ORDER BY days_since_last_call DESC
+#         """,
+#         as_dict=True,
+#     )
+#     if not inactive_agents:
+#         return
+#     trainer_heads = frappe.get_all(
+#         "Has Role", filters={"role": "Trainer Head", "parenttype": "User"}, pluck="parent"
+#     )
+#     if not trainer_heads:
+#         return
+#     rows = "".join(
+#         f"<tr><td>{a.agent_code}</td><td>{a.agent_name}</td><td>{a.branch_name or '-'}</td>"
+#         f"<td>{a.last_call_date or 'Never'}</td><td>{a.days_since_last_call or '90+'}</td></tr>"
+#         for a in inactive_agents
+#     )
+#     message = f"""
+#         <p>{len(inactive_agents)} SS(s) inactive for 90+ days.</p>
+#         <table border="1" cellpadding="4">
+#             <thead><tr><th>Code</th><th>Name</th><th>Branch</th><th>Last Call</th><th>Days</th></tr></thead>
+#             <tbody>{rows}</tbody>
+#         </table>
+#     """
+#     for user in trainer_heads:
+#         frappe.sendmail(
+#             recipients=[user],
+#             subject=f"Inactive SS Alert — {len(inactive_agents)} SS(s) inactive for 90+ days",
+#             message=message,
+#         )
