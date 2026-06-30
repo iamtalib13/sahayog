@@ -1,4 +1,5 @@
 import frappe
+from sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query import get_trainer_filter
 
 
 def execute(filters=None):
@@ -17,7 +18,7 @@ def execute(filters=None):
         {"label": "Last Call Date", "fieldname": "last_call_date", "fieldtype": "Date", "width": 120},
     ]
 
-    trainer_condition = ""
+    trainer_condition = get_trainer_filter("acl")
     if filters.get("trainer"):
         trainer_condition = "AND acl.trainer = %(trainer)s"
 
