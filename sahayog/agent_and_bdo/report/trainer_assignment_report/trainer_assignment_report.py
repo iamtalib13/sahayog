@@ -1,4 +1,6 @@
 import frappe
+from sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query import get_trainer_filter
+
 
 def execute(filters=None):
     filters = filters or {}
@@ -13,6 +15,7 @@ def execute(filters=None):
     ]
 
     conditions = "WHERE acl.docstatus < 2"
+    conditions += " " + get_trainer_filter("acl")
     if filters.get("trainer"):
         conditions += " AND acl.trainer = %(trainer)s"
     if filters.get("from_date"):

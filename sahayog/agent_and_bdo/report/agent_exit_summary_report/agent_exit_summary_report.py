@@ -1,4 +1,6 @@
 import frappe
+from sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query import get_trainer_filter
+
 
 def execute(filters=None):
     filters = filters or {}
@@ -15,6 +17,7 @@ def execute(filters=None):
     ]
 
     conditions = "WHERE ac.docstatus < 2 AND (ac.exited = 1 OR ac.want_to_exit = 1)"
+    conditions += " " + get_trainer_filter("ac")
     if filters.get("from_date"):
         conditions += " AND ac.calling_date >= %(from_date)s"
     if filters.get("to_date"):
