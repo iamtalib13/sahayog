@@ -23,7 +23,6 @@ def execute(filters=None):
         {"label": "Want to Exit", "fieldname": "want_to_exit", "fieldtype": "Check", "width": 100},
         {"label": "Exited", "fieldname": "exited", "fieldtype": "Check", "width": 80},
         {"label": "Status", "fieldname": "agent_status", "fieldtype": "Data", "width": 120},
-        {"label": "SS Calling Status", "fieldname": "ss_calling_status", "fieldtype": "Data", "width": 120},
         {"label": "Collection Amount", "fieldname": "amount", "fieldtype": "Data", "width": 130},
         {"label": "Collection Date", "fieldname": "collection_date", "fieldtype": "Date", "width": 120},
         {"label": "Remarks", "fieldname": "remarks", "fieldtype": "Data", "width": 200},
@@ -72,15 +71,6 @@ def execute(filters=None):
                     AND IFNULL(acl.want_to_exit, 0) = 0 THEN 'Pending'
                 ELSE ''
             END AS agent_status,
-            CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM `tabAgent Activation Call Log` x
-                    WHERE x.agent = acl.agent
-                      AND x.docstatus = 1
-                      AND x.calling_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-                ) THEN 'Active'
-                ELSE 'Inactive'
-            END AS ss_calling_status,
             acl.amount,
             acl.collection_date,
             acl.remarks
