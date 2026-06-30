@@ -1,7 +1,6 @@
-# Copyright (c) 2025, Developer Team and contributors
-# For license information, please see license.txt
-
 import frappe
+from sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query import get_trainer_filter
+
 
 def execute(filters=None):
     filters = filters or {}
@@ -28,7 +27,7 @@ def execute(filters=None):
         {"label": "Remarks", "fieldname": "remarks", "fieldtype": "Data", "width": 200},
     ]
 
-    conditions = ""
+    conditions = get_trainer_filter("acl")
     if filters.get("from_date"):
         conditions += " AND acl.calling_date >= %(from_date)s"
     if filters.get("to_date"):
