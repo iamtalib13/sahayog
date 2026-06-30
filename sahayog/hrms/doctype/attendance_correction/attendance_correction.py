@@ -59,5 +59,3 @@ class AttendanceCorrection(Document):
         self.db_set("attendance_record", self.attendance_record)
         self.db_set("approved_by", self.approved_by)
         self.db_set("approval_date", self.approval_date)
-
-        frappe.msgprint(f"Attendance updated for {self.employee} on {self.attendance_date}")

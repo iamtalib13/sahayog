@@ -36,6 +36,507 @@ class EmployeeMaterialRequest(Document):
             # Determine who rejected it based on current stage
             pass 
 
+        # Check if status transitions from Draft to Reporting Pending or Pending Reporting Person
+        old_status = self.get_db_value("status") or "Draft"
+        if old_status == "Draft" and self.status in ["Pending Reporting Person", "Reporting Pending"]:
+            self.flags.send_notification_email = True
+
+        # Check if status transitions to Pending HO Approval or HO Pending
+        is_ho_transition = (old_status in ["Pending Reporting Person", "Reporting Pending", "Draft"] and 
+                            self.status in ["Pending HO Approval", "HO Pending"])
+        if is_ho_transition:
+            self.flags.send_ho_notification_email = True
+
+        # Check if status transitions to Approved
+        is_approved_transition = (old_status in ["Pending HO Approval", "HO Pending"] and 
+                                  self.status in ["Approved"])
+        if is_approved_transition:
+            self.flags.send_approved_notification_email = True
+
+    def on_update(self):
+        if self.flags.get("send_notification_email"):
+            self.send_reporting_person_email()
+            self.flags.send_notification_email = False
+        if self.flags.get("send_ho_notification_email"):
+            self.send_ho_officer_email()
+            self.flags.send_ho_notification_email = False
+        if self.flags.get("send_approved_notification_email"):
+            self.send_approved_employee_email()
+            self.flags.send_approved_notification_email = False
+
+    def send_approved_employee_email(self):
+        # 1. Check Sahayog Settings notification checkbox
+        notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
+        if not notification_enabled:
+            return
+
+        # 2. Get Employee's company email from Employee Doctype using self.employee
+        employee_email = None
+        if self.employee:
+            # Employee field in EMR is a link to Employee Doctype, which is the Employee ID (EMP-XXXX)
+            employee_email = frappe.db.get_value("Employee", self.employee, "company_email")
+
+        if not employee_email:
+            frappe.log_error(f"Could not find company email for employee: {self.employee}", "EMR Notification Email Error")
+            return
+
+        # 3. Fetch employee name if possible
+        employee_name = frappe.db.get_value("Employee", self.employee, "employee_name") or ""
+        employee_display = f"{self.employee} ({employee_name})" if employee_name else self.employee
+
+        # 4. Construct URL
+        site_url = frappe.utils.get_url()
+        redirect_url = f"{site_url}/stockio#/requests/{self.name}"
+
+        # 5. Build HTML message
+        subject = f"Approved: Material Request {self.name}"
+        
+        # Format approval statuses
+        rp_status = self.reporting_person_status or "Approved"
+        ho_status = self.ho_officer_status or "Approved"
+
+        message = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #48bb78; padding: 20px; text-align: center; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Material Request Approved</h2>
+            </div>
+            
+            <div style="padding: 24px; background-color: #ffffff;">
+                <p>Hello,</p>
+                <p>Your Material Request has been approved.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568; width: 180px;">Request ID:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.name}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Employee:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{employee_display}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Requested By:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.requested_by}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Required By Date:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.required_by_date or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Department:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.department or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Request Type:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.request_type or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Remarks:</td>
+                        <td style="padding: 10px 0; color: #2d3748; font-style: italic;">{self.ho_officer_remarks or self.reporting_person_remarks or '-'}</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #4a5568; margin-top: 25px; border-bottom: 2px solid #48bb78; padding-bottom: 6px;">Approval Flow Status</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f7fafc;">
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Stage</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">1. Draft Stage</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; color: #48bb78; font-weight: bold;">Completed</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">2. Reporting Person Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #48bb78;">{rp_status}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">3. HO Approval Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #48bb78;">{ho_status}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+                    <a href="{redirect_url}" style="background-color: #48bb78; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(72, 187, 120, 0.2);">
+                        View Request in StockIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                This is an automated notification from Sahayog System.
+            </div>
+        </div>
+        """
+
+        # Send email using frappe.sendmail
+        try:
+            frappe.sendmail(
+                recipients=[employee_email],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send email to {employee_email}: {str(e)}", "EMR Notification Email Error")
+
+    def send_dispatch_notification_to_employee(self, transitioned_items):
+        # 1. Check Sahayog Settings notification checkbox
+        notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
+        if not notification_enabled:
+            return
+
+        # 2. Get Employee's company email
+        employee_email = None
+        if self.employee:
+            employee_email = frappe.db.get_value("Employee", self.employee, "company_email")
+
+        if not employee_email:
+            frappe.log_error(f"Could not find company email for employee: {self.employee}", "EMR Notification Email Error")
+            return
+
+        # 3. Construct URL
+        site_url = frappe.utils.get_url()
+        redirect_url = f"{site_url}/stockio#/requests/{self.name}"
+
+        # 4. Build Table Rows of transitioned items
+        rows_html = ""
+        for item in transitioned_items:
+            rows_html += f"""
+            <tr style="border-bottom: 1px solid #edf2f7;">
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_code}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_name or '-'}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px;">{item.item_category or '-'}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; text-align: center;">{item.quantity or 0}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; text-align: center;">{item.approved_quantity or 0}</td>
+                <td style="padding: 10px; border: 1px solid #edf2f7; font-size: 13px; font-weight: bold; color: #3182ce;">{item.status}</td>
+            </tr>
+            """
+
+        # 5. Build HTML message
+        subject = f"Dispatched: Material Request {self.name}"
+        
+        message = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #3182ce; padding: 20px; text-align: center; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Material Request Items Dispatched</h2>
+            </div>
+            
+            <div style="padding: 24px; background-color: #ffffff;">
+                <p>Hello,</p>
+                <p>All items in your Material Request <strong>{self.name}</strong> have been successfully dispatched.</p>
+                
+                <h3 style="color: #4a5568; margin-top: 25px; border-bottom: 2px solid #3182ce; padding-bottom: 6px;">Dispatched Items Details</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: left; border: 1px solid #edf2f7;">
+                    <thead>
+                        <tr style="background-color: #f7fafc;">
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Item Code</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Item Name</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Category</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase; text-align: center;">Req Qty</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase; text-align: center;">App Qty</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 12px; text-transform: uppercase;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_html}
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+                    <a href="{redirect_url}" style="background-color: #3182ce; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(49, 130, 206, 0.2);">
+                        View Request in StockIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                This is an automated notification from Sahayog System.
+            </div>
+        </div>
+        """
+
+        # Send email using frappe.sendmail
+        try:
+            frappe.sendmail(
+                recipients=[employee_email],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send dispatch email to {employee_email}: {str(e)}", "EMR Notification Email Error")
+
+    def send_ho_officer_email(self):
+        # 1. Check Sahayog Settings notification checkbox
+        notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
+        if not notification_enabled:
+            return
+
+        # 2. Get HO Officer's email from Employee Doctype
+        ho_officer_email = None
+        if self.head_office_officer:
+            # Try by user_id first
+            emp_email = frappe.db.get_value("Employee", {"user_id": self.head_office_officer}, "company_email")
+            if emp_email:
+                ho_officer_email = emp_email
+            else:
+                # Try by Employee ID
+                emp_email = frappe.db.get_value("Employee", self.head_office_officer, "company_email")
+                if emp_email:
+                    ho_officer_email = emp_email
+                else:
+                    # Fallback to head_office_officer itself if it contains @
+                    if "@" in self.head_office_officer:
+                        ho_officer_email = self.head_office_officer
+
+        if not ho_officer_email:
+            frappe.log_error(f"Could not find company email for HO officer: {self.head_office_officer}", "EMR Notification Email Error")
+            return
+
+        # 3. Fetch employee name if possible
+        employee_name = frappe.db.get_value("Employee", self.employee, "employee_name") or ""
+        employee_display = f"{self.employee} ({employee_name})" if employee_name else self.employee
+
+        # 4. Construct URL
+        site_url = frappe.utils.get_url()
+        redirect_url = f"{site_url}/stockio#/requests/{self.name}"
+
+        # 5. Build HTML message
+        subject = f"Verification Required: Material Request {self.name}"
+        
+        # Format approval statuses
+        rp_status = self.reporting_person_status or "Pending"
+        ho_status = self.ho_officer_status or "Pending"
+
+        message = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #369696; padding: 20px; text-align: center; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Material Request Pending Approval</h2>
+            </div>
+            
+            <div style="padding: 24px; background-color: #ffffff;">
+                <p>Hello,</p>
+                <p>A new Material Request has been submitted and is pending your review.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568; width: 180px;">Request ID:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.name}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Employee:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{employee_display}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Requested By:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.requested_by}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Required By Date:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.required_by_date or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Department:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.department or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Request Type:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.request_type or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Remarks:</td>
+                        <td style="padding: 10px 0; color: #2d3748; font-style: italic;">{self.ho_officer_remarks or self.reporting_person_remarks or '-'}</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #4a5568; margin-top: 25px; border-bottom: 2px solid #369696; padding-bottom: 6px;">Approval Flow Status</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f7fafc;">
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Stage</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">1. Draft Stage</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; color: #48bb78; font-weight: bold;">Completed</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">2. Reporting Person Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #48bb78;">{rp_status}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">3. HO Approval Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #dd6b20;">{ho_status}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+                    <a href="{redirect_url}" style="background-color: #369696; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(54, 150, 150, 0.2);">
+                        View Request in StockIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                This is an automated notification from Sahayog System.
+            </div>
+        </div>
+        """
+
+        # Send email using frappe.sendmail
+        try:
+            frappe.sendmail(
+                recipients=[ho_officer_email],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send email to {ho_officer_email}: {str(e)}", "EMR Notification Email Error")
+
+    def send_reporting_person_email(self):
+        # 1. Check Sahayog Settings notification checkbox
+        notification_enabled = frappe.db.get_single_value("Sahayog Settings", "notification")
+        if not notification_enabled:
+            return
+
+        # 2. Get Reporting Person's email from Employee Doctype
+        reporting_person_email = None
+        if self.reporting_person:
+            # Try by user_id first
+            emp_email = frappe.db.get_value("Employee", {"user_id": self.reporting_person}, "company_email")
+            if emp_email:
+                reporting_person_email = emp_email
+            else:
+                # Try by Employee ID
+                emp_email = frappe.db.get_value("Employee", self.reporting_person, "company_email")
+                if emp_email:
+                    reporting_person_email = emp_email
+                else:
+                    # Fallback to reporting_person itself if it contains @
+                    if "@" in self.reporting_person:
+                        reporting_person_email = self.reporting_person
+
+        if not reporting_person_email:
+            frappe.log_error(f"Could not find company email for reporting person: {self.reporting_person}", "EMR Notification Email Error")
+            return
+
+        # 3. Fetch employee name if possible
+        employee_name = frappe.db.get_value("Employee", self.employee, "employee_name") or ""
+        employee_display = f"{self.employee} ({employee_name})" if employee_name else self.employee
+
+        # 4. Construct URL
+        site_url = frappe.utils.get_url()
+        redirect_url = f"{site_url}/stockio#/requests/{self.name}"
+
+        # 5. Build HTML message
+        subject = f"Verification Required: Material Request {self.name}"
+        
+        # Format approval statuses
+        rp_status = self.reporting_person_status or "Pending"
+        ho_status = self.ho_officer_status or "Pending"
+
+        message = f"""
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #369696; padding: 20px; text-align: center; color: #ffffff;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Material Request Pending Approval</h2>
+            </div>
+            
+            <div style="padding: 24px; background-color: #ffffff;">
+                <p>Hello,</p>
+                <p>A new Material Request has been submitted and is pending your review.</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568; width: 180px;">Request ID:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.name}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Employee:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{employee_display}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Requested By:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.requested_by}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Required By Date:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.required_by_date or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Department:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.department or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Request Type:</td>
+                        <td style="padding: 10px 0; color: #2d3748;">{self.request_type or '-'}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 10px 0; font-weight: bold; color: #4a5568;">Remarks:</td>
+                        <td style="padding: 10px 0; color: #2d3748; font-style: italic;">{self.reporting_person_remarks or self.ho_officer_remarks or '-'}</td>
+                    </tr>
+                </table>
+
+                <h3 style="color: #4a5568; margin-top: 25px; border-bottom: 2px solid #369696; padding-bottom: 6px;">Approval Flow Status</h3>
+                <table style="width: 100%; border-collapse: collapse; margin: 15px 0; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f7fafc;">
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Stage</th>
+                            <th style="padding: 10px; border: 1px solid #edf2f7; color: #718096; font-size: 13px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">1. Draft Stage</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; color: #48bb78; font-weight: bold;">Completed</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">2. Reporting Person Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #dd6b20;">{rp_status}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold;">3. HO Approval Status</td>
+                            <td style="padding: 10px; border: 1px solid #edf2f7; font-weight: bold; color: #dd6b20;">{ho_status}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="text-align: center; margin-top: 30px; margin-bottom: 20px;">
+                    <a href="{redirect_url}" style="background-color: #369696; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(54, 150, 150, 0.2);">
+                        View Request in StockIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #a0aec0; border-top: 1px solid #edf2f7;">
+                This is an automated notification from Sahayog System.
+            </div>
+        </div>
+        """
+
+        # Send email using frappe.sendmail
+        try:
+            frappe.sendmail(
+                recipients=[reporting_person_email],
+                subject=subject,
+                message=message,
+                reference_doctype=self.doctype,
+                reference_name=self.name
+            )
+        except Exception as e:
+            frappe.log_error(f"Failed to send email to {reporting_person_email}: {str(e)}", "EMR Notification Email Error") 
+
     def set_request_datetime_once(self):        
         if self.status == "Pending Reporting Person" and not self.request_datetime:
             if self.is_new() or self.docstatus == 0:
@@ -200,19 +701,50 @@ def update_emr_item_status(docname, item_status_map):
     if isinstance(item_status_map, str):
         item_status_map = frappe.parse_json(item_status_map)
         
-    for row_name, data in item_status_map.items():
-        if isinstance(data, dict):
-            status = data.get("status")
-            dispatch_detail = data.get("dispatch_detail")
-            if status:
-                frappe.db.set_value("Material Request Items", row_name, "status", status)
-            if dispatch_detail:
-                frappe.db.set_value("Material Request Items", row_name, "dispatch_detail", dispatch_detail)
-        else:
-            # Fallback for simple status string update
-            frappe.db.set_value("Material Request Items", row_name, "status", data)
+    doc = frappe.get_doc("Employee Material Request", docname)
+    
+    # Track which items are changing from 'Approved' to 'Dispatch'
+    transitioned_items = []
+    
+    # First pass: identify transitions and collect update values
+    updates = []
+    for item in doc.items:
+        row_data = item_status_map.get(item.name)
+        if row_data:
+            new_status = row_data.get("status") if isinstance(row_data, dict) else row_data
+            # If transitioning from Approved to Dispatch
+            if item.status == "Approved" and new_status == "Dispatch":
+                transitioned_items.append(item)
+                
+            # Collect fields to update
+            update_values = {}
+            if isinstance(row_data, dict):
+                status = row_data.get("status")
+                dispatch_detail = row_data.get("dispatch_detail")
+                if status:
+                    update_values["status"] = status
+                if dispatch_detail:
+                    update_values["dispatch_detail"] = dispatch_detail
+            else:
+                update_values["status"] = row_data
             
+            if update_values:
+                updates.append((item.name, update_values))
+
+    # Use db.set_value to bypass submitted document restrictions on child table status fields
+    for row_name, values in updates:
+        for field, value in values.items():
+            frappe.db.set_value("Material Request Items", row_name, field, value)
     frappe.db.commit()
+
+    # Re-read doc to check final state of all items
+    doc = frappe.get_doc("Employee Material Request", docname)
+    all_dispatched = all(item.status == "Dispatch" for item in doc.items)
+    
+    # If all items are Dispatched and we had items transitioning to Dispatch in this call
+    if all_dispatched and transitioned_items:
+        doc.send_dispatch_notification_to_employee(transitioned_items)
+
     return {"success": True}
 
 # Whitelisted API Methods
@@ -370,4 +902,23 @@ def update_material_request_approval_status(docname, action, remark=""):
     if doc.status == "Pending Reporting Person": frappe.db.set_value("Employee Material Request", docname, "reporting_person_remarks", remark)
     elif doc.status == "Pending HO Approval": frappe.db.set_value("Employee Material Request", docname, "ho_officer_remarks", remark)
     frappe.db.commit()
+    return {"success": True}
+
+@frappe.whitelist()
+def send_email_from_popup(docname):
+    """Send email to the appropriate person based on the current stage of the EMR."""
+    doc = frappe.get_doc("Employee Material Request", docname)
+    status = doc.status
+
+    if status in ("Pending Reporting Person",):
+        doc.send_reporting_person_email()
+    elif status in ("Pending HO Approval",):
+        doc.send_ho_officer_email()
+    elif status in ("Approved",):
+        doc.send_approved_employee_email()
+    elif status in ("Partially Dispatched", "Dispatch"):
+        doc.send_dispatch_notification_to_employee(doc.items)
+    else:
+        frappe.throw(f"Cannot send email for status: {status}")
+
     return {"success": True}

@@ -40,3 +40,4 @@ sahayog.patches.update_trainer_dashboard_v2
 sahayog.patches.update_trainer_dashboard_v3
 sahayog.patches.update_trainer_dashboard_v4
 sahayog.patches.update_trainer_dashboard_v5
+sahayog.patches.add_lead_docperm_for_branch_manager

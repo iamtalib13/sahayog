@@ -673,7 +673,7 @@
         font-weight: 500;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         transition: 0.3s;
-        z-index: 999;
+        z-index: 99999;
         pointer-events: none;
         white-space: nowrap;
       }
@@ -1115,6 +1115,14 @@
       >
         Correction Approvals
       </button>
+      <button
+        class="nav-tab"
+        id="tabReports"
+        style="display: none"
+        onclick="switchTab('reports', this)"
+      >
+        Reports
+      </button>
     </div>
 
     <!-- APPROVAL SUB-TABS -->
@@ -1278,14 +1286,32 @@
             </div>
             <div class="card-head" style="border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
               <h3>Staff List &amp; Directory</h3>
-              <button 
-                id="btnCreateEmployee" 
-                class="btn-in" 
-                style="display: none; padding: 6px 14px; background: var(--brand2); color: #fff; border: none; font-size: 11px; font-weight: 700;"
-                onclick="openCreateEmployeeModal()"
-              >
-                + Create Employee
-              </button>
+              <div style="display:flex; gap:8px;">
+                <button 
+                  id="btnCreateEmployee" 
+                  class="btn-in" 
+                  style="display: none; padding: 6px 14px; background: var(--brand2); color: #fff; border: none; font-size: 11px; font-weight: 700;"
+                  onclick="openCreateEmployeeModal()"
+                >
+                  + Create Employee
+                </button>
+                <button 
+                  id="btnExitEmployee" 
+                  class="btn-out" 
+                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700;"
+                  onclick="openExitEmployeeModal()"
+                >
+                  Exit Employee
+                </button>
+                <button
+                  id="btnImportEmployees"
+                  class="btn-clear"
+                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700;"
+                  onclick="openImportModal()"
+                >
+                  ⬆ Import
+                </button>
+              </div>
             </div>
 
             <!-- HR ADVANCED FILTER BAR -->
@@ -1532,12 +1558,13 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Basic Information</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Employee Code *</label><input type="text" name="employee_number" class="member-select" required></div>
+                      <div><label>Employee Code</label><input type="text" name="employee_number" id="new_emp_code" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;" placeholder="Fetching ID..."></div>
+
                       <div><label>First Name *</label><input type="text" name="first_name" class="member-select" required></div>
                       <div><label>Middle Name</label><input type="text" name="middle_name" class="member-select"></div>
                       <div><label>Last Name *</label><input type="text" name="last_name" class="member-select" required></div>
                       <div><label>Gender *</label><select name="gender" class="member-select" required><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
-                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" class="member-select" required></div>
+                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" id="new_emp_dob" class="member-select" required></div>
                       <div><label>Marital Status</label><select name="marital_status" class="member-select"><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>
                       <div><label>Blood Group</label><input type="text" name="blood_group" class="member-select" placeholder="e.g. O+"></div>
                     </div>
@@ -1547,8 +1574,8 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
-                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
+                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" id="new_emp_doj" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
+                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" id="new_emp_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
                       <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
                       <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
                       <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
@@ -1597,6 +1624,65 @@
                   <div style="display: flex; gap: 15px; justify-content: flex-end; border-top:2px solid #f1f5f9; padding-top:20px;">
                     <button type="button" class="btn-clear" onclick="closeCreateEmployeeModal()" style="padding:10px 25px;">Cancel</button>
                     <button type="submit" id="btnSubmitEmployee" class="btn-in" style="padding:10px 40px; font-weight:700;">Create Employee</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- IMPORT EMPLOYEES MODAL -->
+            <div id="importEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
+                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:var(--brand); margin:0;">Import Employees</h3>
+                  <button onclick="closeImportModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+
+                <!-- Step 1: Download Template -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 1 — Download Sample Template</div>
+                  <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Fill in employee data using this CSV template. Do not change column headers.</div>
+                  <button onclick="downloadImportTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:var(--brand2); border:none;">⬇ Download Template</button>
+                </div>
+
+                <!-- Step 2: Upload CSV -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
+                  <input type="file" id="importCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
+                  <button onclick="submitImport()" id="btnSubmitImport" class="btn-in" style="width:100%; padding:10px; font-weight:700;">Import Employees</button>
+                </div>
+
+                <!-- Results -->
+                <div id="importResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
+              </div>
+            </div>
+
+            <!-- EXIT EMPLOYEE MODAL -->
+            <div id="exitEmployeeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:460px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
+                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:var(--danger); margin:0;">Exit Employee</h3>
+                  <button onclick="closeExitEmployeeModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+                <form id="exitEmployeeForm" onsubmit="event.preventDefault(); submitExitEmployee();">
+                  <div style="margin-bottom:14px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Select Employee *</label>
+                    <select id="exit_emp_select" class="member-select" required></select>
+                  </div>
+                  <div style="margin-bottom:14px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Resignation Letter Date *</label>
+                    <input type="date" id="exit_resignation_date" class="member-select" required>
+                  </div>
+                  <div style="margin-bottom:14px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Relieving Date *</label>
+                    <input type="date" id="exit_relieving_date" class="member-select" required>
+                  </div>
+                  <div style="margin-bottom:20px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason for Leaving *</label>
+                    <textarea id="exit_reason" class="member-select" rows="3" required placeholder="e.g. Personal reasons, better opportunity..."></textarea>
+                  </div>
+                  <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
+                    <button type="button" class="btn-clear" onclick="closeExitEmployeeModal()" style="padding:9px 20px;">Cancel</button>
+                    <button type="submit" id="btnSubmitExit" class="btn-out" style="padding:9px 24px; font-weight:700;">Confirm Exit</button>
                   </div>
                 </form>
               </div>
@@ -2069,7 +2155,10 @@
     <div class="dashboard-drawer" id="dashboardDrawer">
       <div class="drawer-header">
         <span>Attendance Insights</span>
-        <button onclick="closeDashboardDrawer()">✕</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button id="drawerEditBtn" style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;" onclick="toggleEmployeeEditMode()">✏️ Edit</button>
+          <button onclick="closeDashboardDrawer()">✕</button>
+        </div>
       </div>
       <div class="drawer-content" id="dashboardContent">
         <div style="text-align: center; color: var(--muted); padding: 40px 0">
@@ -2112,6 +2201,8 @@
       function openDashboardDrawer() {
         document.getElementById("dashboardDrawer").classList.add("open");
         document.getElementById("drawerOverlay").classList.add("show");
+        document.getElementById("drawerEditBtn").style.display = "none";
+        document.querySelector(".drawer-header span").textContent = "Attendance Insights";
         if (selectedMemberId) {
           loadAttendanceDashboard(selectedMemberId);
         }
@@ -2446,8 +2537,16 @@
         const divSel = document.getElementById("new_emp_division");
         const shiftSel = document.getElementById("new_emp_shift");
         const empTypeSel = document.getElementById("new_emp_employment_type");
+        const empCodeInp = document.getElementById("new_emp_code");
+
+        // Fetch next P-series ID
+        const nextId = await callAPI("get_next_support_staff_id", {}, "employee");
+        if (nextId && empCodeInp) {
+          empCodeInp.value = nextId;
+        }
 
         // Only fetch if not already populated
+
         if (desigSel.options.length <= 1) {
           const designations = await callAPI("get_designations", {}, "employee");
           if (designations) {
@@ -2529,6 +2628,24 @@
       async function submitCreateEmployee() {
         const form = document.getElementById("createEmployeeForm");
         const formData = new FormData(form);
+        const dob = document.getElementById("new_emp_dob").value;
+        const doj = document.getElementById("new_emp_doj").value;
+
+        if (dob && doj) {
+          const birthDate = new Date(dob);
+          const joiningDate = new Date(doj);
+          let ageAtJoining = joiningDate.getFullYear() - birthDate.getFullYear();
+          const m = joiningDate.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && joiningDate.getDate() < birthDate.getDate())) {
+            ageAtJoining--;
+          }
+
+          if (ageAtJoining < 18) {
+            showToast("Date of Joining must be at least 18 years after Date of Birth");
+            return;
+          }
+        }
+
         const data = {};
         formData.forEach((value, key) => (data[key] = value));
 
@@ -2663,6 +2780,18 @@
             },
           );
 
+          if (response.status === 417) {
+            try {
+              const errBody = await response.json();
+              const msgs = JSON.parse(errBody._server_messages || "[]");
+              const msg = JSON.parse(msgs[0]).message;
+              showToast(msg);
+            } catch (e) {
+              showToast("Validation Error. Please check your inputs.");
+            }
+            return null;
+          }
+
           if (response.status === 401) {
             showToast("Session expired. Please login again.");
             return null;
@@ -2694,6 +2823,15 @@
 
           if (res.exc) {
             console.error(res.exc);
+            // Try to extract a clean validation message
+            if (res._server_messages) {
+              try {
+                const msgs = JSON.parse(res._server_messages);
+                const msg = JSON.parse(msgs[0]).message;
+                showToast(msg);
+                return null;
+              } catch (e) {}
+            }
             showToast("Request failed. Please try again.");
             return null;
           }
@@ -2755,6 +2893,10 @@
         // Calendar Visibility Logic for HR
         if (isHR()) {
             if (btnCreateEmployee) btnCreateEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
+            const btnExitEmployee = document.getElementById("btnExitEmployee");
+            if (btnExitEmployee) btnExitEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
+            const btnImportEmployees = document.getElementById("btnImportEmployees");
+            if (btnImportEmployees) btnImportEmployees.style.display = (tab === 'attendance') ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -2790,6 +2932,13 @@
 
           if (tab === "leave") loadTeamLeaves();
           else loadCorrectionRequests();
+        } else if (tab === "reports") {
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (empList) empList.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          renderReportsTab();
         }
       }
 
@@ -3113,6 +3262,10 @@
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee) btnExitEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          const btnImportEmployees = document.getElementById("btnImportEmployees");
+          if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "Leave Approvals";
@@ -3122,6 +3275,8 @@
             corrTab.textContent = "Correction Approvals";
           }
           if (hrTab) hrTab.style.display = "flex";
+          const reportsTab = document.getElementById("tabReports");
+          if (reportsTab) reportsTab.style.display = "flex";
           if (bulkBar)
             bulkBar.style.setProperty("display", "none", "important");
 
@@ -3438,10 +3593,11 @@
       }
 
       function updateLeaveCard(key, data) {
-        document.getElementById(`lb-${key}-bal`).textContent =
-          data.unused_leaves;
+        document.getElementById(`lb-${key}-bal`).textContent = data.unused_leaves;
+        const opening = data.carry_forwarded_leaves_count || 0;
+        const used = data.total_leaves_allocated - data.unused_leaves;
         document.getElementById(`lb-${key}-sub`).textContent =
-          `${data.total_leaves_allocated - data.unused_leaves} used / ${data.total_leaves_allocated} total`;
+          `Opening: ${opening} | Used: ${used} / ${data.total_leaves_allocated}`;
       }
 
       async function loadCalendarHistory() {
@@ -3530,7 +3686,7 @@
 
           let actionsHtml = "";
           if (isHR()) {
-            actionsHtml = ""; // Read-only for HR
+            actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
           } else {
             // Logic for Branch Manager (manage others) or Employee (manage self)
             const canManage = isBranchManager() || s.is_self;
@@ -3957,7 +4113,274 @@
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
         
-        document.querySelector('input[name="final_confirmation_date"]').value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById("new_emp_confirmation_date").value = `${yyyy}-${mm}-${dd}`;
+      }
+
+      let _currentProfileEmployee = null;
+      let _currentProfileData = null;
+
+      async function openEmployeeProfile(empId) {
+        _currentProfileEmployee = empId;
+        const drawer = document.getElementById("dashboardDrawer");
+        const content = document.getElementById("dashboardContent");
+        document.querySelector(".drawer-header span").textContent = "Employee Profile";
+        document.getElementById("drawerEditBtn").style.display = "inline-block";
+        content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        drawer.classList.add("open");
+        document.getElementById("drawerOverlay").classList.add("show");
+
+        const e = await callAPI("get_employee_profile", { employee: empId }, "employee");
+        if (!e) return;
+        _currentProfileData = e;
+        renderEmployeeProfileView(e);
+      }
+
+      function renderEmployeeProfileView(e) {
+        const fmt = d => d ? new Date(d).toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"}) : "—";
+        const val = v => v || "—";
+        const row = (label, value) => value && value !== "—" ? `
+          <div class="dash-row"><span class="dash-lbl">${label}</span>
+          <span class="dash-val" style="text-align:right;max-width:60%;word-break:break-word;">${value}</span></div>` : "";
+
+        document.getElementById("dashboardContent").innerHTML = `
+          <div class="emp-header-card">
+            <div style="width:56px;height:56px;border-radius:50%;background:var(--brand2);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">${e.employee_name.charAt(0)}</div>
+            <div class="emp-h-name">${e.employee_name}</div>
+            <div class="emp-h-sub">${val(e.designation)} ${e.department ? "· " + e.department : ""}</div>
+            <div style="margin-top:6px;"><span style="background:${e.status==='Active'?'#dcfce7':'#fee2e2'};color:${e.status==='Active'?'#16a34a':'#dc2626'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${val(e.status)}</span></div>
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
+            ${row("Employee Code", e.name)} ${row("Gender", e.gender)} ${row("Date of Birth", fmt(e.date_of_birth))} ${row("Marital Status", e.marital_status)} ${row("Blood Group", e.blood_group)}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
+            ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)}
+            ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", e.custom_zone)} ${row("Region", e.custom_region)} ${row("District", e.custom_district)}
+            ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
+            ${e.status==="Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
+            ${e.status==="Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
+            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("Permanent Address", e.permanent_address)}
+          </div>
+          <div class="dash-section"><div class="dash-sec-title">Banking</div>
+            ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
+          </div>
+          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}</div>` : ""}
+        `;
+      }
+
+      function toggleEmployeeEditMode() {
+        const e = _currentProfileData;
+        if (!e) return;
+        const isHRMgr = userRoles.includes("HR Manager") || userRoles.includes("Administrator");
+        const inp = (name, value, type="text") => `<input name="${name}" value="${value||""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+
+        document.getElementById("drawerEditBtn").style.display = "none";
+        document.getElementById("dashboardContent").innerHTML = `
+          <div class="emp-header-card" style="margin-bottom:16px;">
+            <div class="emp-h-name">${e.employee_name}</div>
+            <div class="emp-h-sub">${e.name}</div>
+          </div>
+          <form id="empEditForm" onsubmit="event.preventDefault(); saveEmployeeProfile();">
+            <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Mobile</label>${inp("cell_number", e.cell_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address||""}</textarea></div>
+              </div>
+            </div>
+            <div class="dash-section"><div class="dash-sec-title">Employment</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
+              </div>
+            </div>
+            <div class="dash-section"><div class="dash-sec-title">Banking</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Bank Name</label>${inp("bank_name", e.bank_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
+              </div>
+            </div>
+            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+              <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
+            </div>` : ""}
+            <div style="display:flex;gap:10px;padding-top:10px;">
+              <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
+              <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
+            </div>
+          </form>
+        `;
+      }
+
+      async function saveEmployeeProfile() {
+        const form = document.getElementById("empEditForm");
+        const fd = new FormData(form);
+        const data = {};
+        fd.forEach((v, k) => data[k] = v);
+
+        const btn = document.getElementById("btnSaveProfile");
+        btn.disabled = true; btn.textContent = "Saving...";
+
+        const res = await callAPI("update_employee_profile", { employee: _currentProfileEmployee, data }, "employee");
+        btn.disabled = false; btn.textContent = "Save Changes";
+
+        if (res && res.success) {
+          showToast(res.message);
+          const updated = await callAPI("get_employee_profile", { employee: _currentProfileEmployee }, "employee");
+          if (updated) { _currentProfileData = updated; renderEmployeeProfileView(updated); }
+          document.getElementById("drawerEditBtn").style.display = "inline-block";
+        }
+      }
+
+      function renderReportsTab() {
+        const reports = [
+          { name: "SS Employee Master Report", desc: "Active & inactive support staff with all master data", icon: "👥" },
+          { name: "SS Monthly Attendance Report", desc: "Month-wise attendance summary per employee", icon: "📅" },
+          { name: "SS Branch-wise Attendance Report", desc: "Branch-level attendance statistics for a month", icon: "🏢" },
+          { name: "SS Leave Balance Report", desc: "Current leave balance (CL, SL, EL) per employee", icon: "🌿" },
+          { name: "SS Salary Register", desc: "Monthly gross salary register for active support staff", icon: "💰" },
+        ];
+
+        document.getElementById("hrDashboardContent").innerHTML = `
+          <div style="padding:4px 0 20px;">
+            <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin-bottom:6px;">MIS Reports</h3>
+            <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">Support Staff Reports — Click to open in Frappe Report view with filters & Excel download.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;">
+              ${reports.map(r => `
+                <a href="/app/query-report/${encodeURIComponent(r.name)}" target="_blank" style="text-decoration:none;">
+                  <div style="background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:18px; display:flex; gap:14px; align-items:flex-start; box-shadow:var(--shadow); transition:0.15s; cursor:pointer;"
+                    onmouseover="this.style.borderColor='var(--brand2)'" onmouseout="this.style.borderColor='var(--border)'">
+                    <div style="font-size:28px; line-height:1;">${r.icon}</div>
+                    <div>
+                      <div style="font-size:13px; font-weight:700; color:var(--brand); margin-bottom:4px;">${r.name}</div>
+                      <div style="font-size:11px; color:var(--muted); line-height:1.5;">${r.desc}</div>
+                    </div>
+                  </div>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }
+
+      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
+
+      function openImportModal() {
+        document.getElementById("importResults").style.display = "none";
+        document.getElementById("importCsvFile").value = "";
+        document.getElementById("importEmployeesModal").style.display = "flex";
+      }
+
+      function closeImportModal() {
+        document.getElementById("importEmployeesModal").style.display = "none";
+      }
+
+      function downloadImportTemplate() {
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
+        const csv = [IMPORT_COLUMNS.join(","), sampleRow.join(",")].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "employee_import_template.csv";
+        a.click();
+      }
+
+      async function submitImport() {
+        const file = document.getElementById("importCsvFile").files[0];
+        if (!file) { showToast("Please select a CSV file"); return; }
+
+        const btn = document.getElementById("btnSubmitImport");
+        btn.disabled = true; btn.textContent = "Importing...";
+
+        const text = await file.text();
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        const rows = lines.slice(1).filter(l => l.trim()).map(line => {
+          const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = vals[i] || "");
+          obj["custom_is_support_staff"] = 1;
+          return obj;
+        });
+
+        if (rows.length === 0) { showToast("No data rows found in CSV"); btn.disabled = false; btn.textContent = "Import Employees"; return; }
+
+        const res = await callAPI("bulk_import_employees", { rows }, "employee");
+        btn.disabled = false; btn.textContent = "Import Employees";
+
+        if (!res) return;
+
+        const resultsDiv = document.getElementById("importResults");
+        resultsDiv.style.display = "block";
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
+          ✅ Created: <span style="color:var(--success)">${res.created}</span> &nbsp; ❌ Failed: <span style="color:var(--danger)">${res.failed}</span>
+        </div>`;
+        if (res.errors.length > 0) {
+          html += res.errors.map(e => `
+            <div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
+              <b>Row ${e.row} — ${e.name}:</b> ${e.error}
+            </div>`).join("");
+        }
+        resultsDiv.innerHTML = html;
+        if (res.created > 0) fetchTeamData();
+      }
+
+      async function openExitEmployeeModal() {
+        const sel = document.getElementById("exit_emp_select");
+        sel.innerHTML = '<option value="">— Select Employee —</option>';
+        const employees = await callAPI("get_active_support_staff", {}, "employee");
+        if (employees) {
+          employees.forEach(e => {
+            const opt = document.createElement("option");
+            opt.value = e.name;
+            opt.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
+            sel.appendChild(opt);
+          });
+        }
+        document.getElementById("exitEmployeeModal").style.display = "flex";
+      }
+
+      function closeExitEmployeeModal() {
+        document.getElementById("exitEmployeeModal").style.display = "none";
+        document.getElementById("exitEmployeeForm").reset();
+      }
+
+      async function submitExitEmployee() {
+        const employee = document.getElementById("exit_emp_select").value;
+        const resignation_date = document.getElementById("exit_resignation_date").value;
+        const relieving_date = document.getElementById("exit_relieving_date").value;
+        const reason = document.getElementById("exit_reason").value;
+
+        if (resignation_date && relieving_date && relieving_date < resignation_date) {
+          showToast("Relieving date cannot be before Resignation date");
+          return;
+        }
+
+        const btn = document.getElementById("btnSubmitExit");
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+
+        const res = await callAPI("process_employee_exit", {
+          employee,
+          resignation_letter_date: resignation_date,
+          relieving_date,
+          reason_for_leaving: reason,
+        }, "employee");
+
+        btn.disabled = false;
+        btn.textContent = "Confirm Exit";
+
+        if (res && res.success) {
+          showToast(res.message);
+          closeExitEmployeeModal();
+          fetchTeamData();
+        }
       }
 
       fetchTeamData();

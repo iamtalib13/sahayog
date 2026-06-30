@@ -44,7 +44,6 @@ def sync_district_state():
             doc.insert(ignore_permissions=True)
 
 
-@frappe.whitelist()
 def auto_approve_attendance_corrections():
     """Auto-approve all pending attendance correction requests."""
     pending_corrections = frappe.get_all(

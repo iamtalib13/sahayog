@@ -5,17 +5,30 @@
     <style>
         @media print {
             @page { 
+                size: A4;
                 margin: 0; 
             }
             body { 
-                margin: 1mm 7mm 1.5cm 7mm; 
+                margin: 0; 
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
         }
         .proforma-container {
-            padding: 10px;
+            width: 210mm;
+            height: 297mm;
+            padding: 35mm 15mm 20mm 15mm;
+            box-sizing: border-box;
+            background-image: url("/assets/sahayog/images/dams_letter.png");
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: #333;
             line-height: 1.6;
+            display: flex;
+            flex-direction: column;
         }
         .header {
             display: flex;
@@ -48,6 +61,16 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            flex: 1;
+        }
+        .items-table tr {
+            height: 35px;
+        }
+        .items-table tbody tr:last-child {
+            height: auto;
+        }
+        .items-table tfoot tr {
+            height: 45px;
         }
         .items-table th {
             background-color: #f8f9fa;
@@ -80,7 +103,7 @@
             }
         }
         .signature-section {
-            margin-top: 60px;
+            margin-top: auto;
             display: flex;
             justify-content: space-between;
         }
@@ -95,15 +118,7 @@
 </head>
 <body>
     <div class="proforma-container">
-        <div class="header" style="border-bottom: none; margin-bottom: 0;">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <img src="/assets/sahayog/images/sahayog_logo_2025.png" alt="Sahayog Logo" style="height: 45px; width: auto;">
-                <div style="text-align: right;">
-                    <h1 style="margin: 0; color: #006363; font-size: 28px; letter-spacing: 2px;">PROFORMA</h1>
-                </div>
-            </div>
-        </div>
-        <hr style="border: none; border-top: 2px solid #006363; margin: 10px 0 20px 0;">
+
 
         <div class="info-section">
             <div class="info-box">
@@ -193,6 +208,8 @@
             <p style="font-size: 14px; background: #f9f9f9; padding: 10px; border-left: 3px solid #006363;">{{ doc.remark }}</p>
         </div>
         {% endif %}
+
+
 
         <div class="signature-section">
             <div class="signature-box">

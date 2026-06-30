@@ -44,7 +44,7 @@ class MyCRM {
       search: "",
       data: [],
       filteredData: [],
-      limit: 5, // Records count per fetch
+      limit: 3, // Records count per fetch
       hasMore: true,
       totalCount: 0, // Total for the current section
       leadCount: 0, // Total lead count for badge

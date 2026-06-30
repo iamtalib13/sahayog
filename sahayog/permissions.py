@@ -1,47 +1,94 @@
 import frappe
 
+def has_lead_permission(doc, ptype, user):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+
+    if "Administrator" in user_roles or "Sales Manager" in user_roles or "System Manager" in user_roles:
+        return True
+
+    if "Branch Manager" in user_roles:
+        if ptype == "create":
+            return True
+
+        if not doc:
+            return None
+
+        if not doc.get("sol_id"):
+            return None
+
+        user_sol_ids = get_user_sol_ids(user)
+        if str(doc.sol_id) in [str(s) for s in user_sol_ids]:
+            return True
+
+        if doc.owner == user:
+            return True
+
+        return False
+
+    return None
+
+
+def get_user_sol_ids(user):
+    rp = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    if not rp:
+        return []
+    return frappe.get_all("Sol Items", filters={"parent": rp}, pluck="sol_id")
+
+
 def get_lead_permission(user, doctype=None):
     if not user:
         user = frappe.session.user
 
     user_roles = frappe.get_roles(user)
-    
-    # Allow full access for these roles
+
     if "Administrator" in user_roles or "Sales Manager" in user_roles or "Operations Support Manager" in user_roles:
         return ""
 
     conditions = []
 
-    # Get employee record
-    employee = frappe.db.get_value(
-        "Employee",
-        {"user_id": user},
-        ["branch", "custom_zone", "custom_region"],
-        as_dict=True
-    )
+    pref = get_user_report_preference_filters(user)
+    if pref:
+        pref_parts = []
 
-    # Branch Manager - Only their branch leads
-    if "Branch Manager" in user_roles and employee and employee.branch:
-        conditions.append(f"`tabLead`.custom_branch = '{employee.branch}'")
+        if pref.get("sol_ids"):
+            sol_list = ", ".join(f"'{s}'" for s in pref["sol_ids"])
+            pref_parts.append(f"`tabLead`.sol_id IN ({sol_list})")
 
-    # Zonal Manager - All leads in their zone
-    if "Zonal Manager" in user_roles and employee and employee.custom_zone:
-        conditions.append(f"`tabLead`.custom_zone = '{employee.custom_zone}'")
+        if pref.get("zones"):
+            zone_list = ", ".join(f"'{z}'" for z in pref["zones"])
+            pref_parts.append(f"`tabLead`.custom_zone IN ({zone_list})")
 
-    # ✅ Regional Manager - Only their region within their zone
-    if "Regional Manager" in user_roles and employee:
-        if employee.custom_zone and employee.custom_region:
-            # Both zone AND region must match (proper hierarchy)
-            conditions.append(f"(`tabLead`.custom_zone = '{employee.custom_zone}' AND `tabLead`.custom_region = '{employee.custom_region}')")
-        elif employee.custom_zone:
-            # Fallback to zone if region not set
-            conditions.append(f"`tabLead`.custom_zone = '{employee.custom_zone}'")
+        if pref.get("regions") and not pref.get("is_all_regions"):
+            region_list = ", ".join(f"'{r}'" for r in pref["regions"])
+            pref_parts.append(f"`tabLead`.custom_region IN ({region_list})")
 
-    # Universal access - Owner and assigned leads (all roles get this)
+        if pref_parts:
+            conditions.append("(" + " and ".join(pref_parts) + ")")
+
     conditions.append(f"`tabLead`.owner = '{user}'")
     conditions.append(f"`tabLead`._assign LIKE '%\"{user}\"%'")
 
     return " or ".join(conditions) if conditions else ""
+
+
+def get_user_report_preference_filters(user):
+    rp = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    if not rp:
+        return None
+
+    doc = frappe.get_doc("Report Preference", rp)
+
+    result = {
+        "sol_ids": [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")],
+        "zones": [d.get("zone") for d in doc.get("zone", []) if d.get("zone")],
+        "regions": [d.get("region") for d in doc.get("region", []) if d.get("region")],
+        "is_all_regions": bool(doc.get("all_regions")),
+    }
+
+    return result
 
 
 

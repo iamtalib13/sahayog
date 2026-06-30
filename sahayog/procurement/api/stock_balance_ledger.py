@@ -569,7 +569,7 @@ def get_movement_list(limit=20, start=0, search_text=None):
 
 
 @frappe.whitelist()
-def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None):
+def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None, item_code=None, warehouse_filter=None):
     """
     API to fetch Branch Stock data (reusing report logic)
     """
@@ -589,8 +589,13 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
     sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     filters = {}
-    if warehouse:
+    if warehouse_filter:
+        filters["warehouse"] = warehouse_filter
+    elif warehouse:
         filters["warehouse"] = warehouse
+    
+    if item_code:
+        filters["item_code"] = item_code
 
     _, data = execute(filters)
 
@@ -613,18 +618,27 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
         data = [row for row in data if row.get("warehouse") != user_warehouse]
 
     if search_text:
-        search_text = search_text.lower()
+        terms = search_text.lower().split()
         # Fetch all branches for mapping
         branches = frappe.get_all("Sahayog Branch", fields=["name", "branch"])
         branch_map = {b.name: b.branch.lower() for b in branches if b.branch}
 
-        data = [
-            row for row in data 
-            if search_text in str(row.get("item_code", "")).lower() or 
-               search_text in str(row.get("item_name", "")).lower() or 
-               search_text in str(row.get("warehouse", "")).lower() or
-               (branch_map.get(row.get("warehouse"), "") and search_text in branch_map.get(row.get("warehouse", "")))
-        ]
+        filtered_data = []
+        for row in data:
+            match_all = True
+            for term in terms:
+                found_term = (
+                    term in str(row.get("item_code", "")).lower() or 
+                    term in str(row.get("item_name", "")).lower() or 
+                    term in str(row.get("warehouse", "")).lower() or
+                    (branch_map.get(row.get("warehouse"), "") and term in branch_map.get(row.get("warehouse", "")))
+                )
+                if not found_term:
+                    match_all = False
+                    break
+            if match_all:
+                filtered_data.append(row)
+        data = filtered_data
         
     total_count = len(data)
     
@@ -778,7 +792,7 @@ def get_invoice_numbers():
     return None
 
 @frappe.whitelist()
-def get_wh_dept_map():
+def get_wh_dept_map(limit=None, start=None, search_text=None):
     """
     Fetch the wh_dept_map child table from Sahayog Settings.
     """
@@ -787,17 +801,49 @@ def get_wh_dept_map():
         
     try:
         # Fetching directly from the child table doctype bypassing Sahayog Settings permissions
-        return frappe.get_all(
+        data = frappe.get_all(
             "Default Warehouse",
             filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"},
-            fields=["user_id", "warehouse", "inventory_type", "name"]
+            fields=["user_id", "warehouse", "inventory_type", "dfault", "name"]
         )
+        
+        # Apply search_text filtering
+        if search_text:
+            terms = search_text.lower().split()
+            filtered_data = []
+            for row in data:
+                match_all = True
+                for term in terms:
+                    found_term = (
+                        term in str(row.get("user_id", "")).lower() or 
+                        term in str(row.get("warehouse", "")).lower() or 
+                        term in str(row.get("inventory_type", "")).lower()
+                    )
+                    if not found_term:
+                        match_all = False
+                        break
+                if match_all:
+                    filtered_data.append(row)
+            data = filtered_data
+            
+        total_count = len(data)
+        
+        # Apply pagination if limit/start are provided
+        if limit is not None and start is not None:
+            start = int(start)
+            limit = int(limit)
+            data = data[start:start+limit]
+            
+        return {
+            "data": data,
+            "total": total_count
+        }
     except Exception as e:
         frappe.log_error(f"Error in get_wh_dept_map: {str(e)}")
-        return []
+        return {"data": [], "total": 0}
 
 @frappe.whitelist()
-def add_wh_dept_entry(user_id, warehouse, inventory_type):
+def add_wh_dept_entry(user_id, warehouse, inventory_type, dfault=0):
     """
     Add a new entry to the wh_dept_map child table in Sahayog Settings.
     """
@@ -809,7 +855,8 @@ def add_wh_dept_entry(user_id, warehouse, inventory_type):
         settings.append("wh_dept_map", {
             "user_id": user_id,
             "warehouse": warehouse,
-            "inventory_type": inventory_type
+            "inventory_type": inventory_type,
+            "dfault": dfault
         })
         settings.save(ignore_permissions=True)
         return {"status": "success", "message": "Entry added successfully"}
@@ -818,7 +865,7 @@ def add_wh_dept_entry(user_id, warehouse, inventory_type):
         frappe.throw(str(e))
 
 @frappe.whitelist()
-def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
+def update_wh_dept_entry(name, user_id, warehouse, inventory_type, dfault=0):
     """
     Update an existing entry in the wh_dept_map child table.
     """
@@ -833,6 +880,7 @@ def update_wh_dept_entry(name, user_id, warehouse, inventory_type):
                 row.user_id = user_id
                 row.warehouse = warehouse
                 row.inventory_type = inventory_type
+                row.dfault = dfault
                 found = True
                 break
         
@@ -1024,14 +1072,14 @@ def get_portal_master_data():
     available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name", "item_code"])
 
     return {
-        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number"]),
+        "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number", "designation", "department", "branch", "cell_number", "company_email", "custom_division"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
         "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
         "wh_dept_map": frappe.get_all("Default Warehouse", filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"}, fields=["inventory_type", "warehouse", "dfault", "user_id"]),
         "emr_names": [r.name for r in frappe.get_all("Employee Material Request", order_by="creation desc", limit=500)],
         "purchase_receipt_names": [r.name for r in frappe.get_all("Purchase Receipt", order_by="creation desc", limit=500)],
         "suppliers": frappe.get_all("Supplier", fields=["name", "supplier_name"], filters={"disabled": 0}),
-        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "custom_item_department", "description"], filters={"disabled": 0}),
+        "items": frappe.get_all("Item", fields=["name", "item_name", "stock_uom", "is_fixed_asset", "is_stock_item", "custom_item_department", "description"], filters={"disabled": 0}),
         "assets_list": frappe.get_all("Asset", fields=["name", "asset_name", "item_code", "item_name", "location", "custodian", "brand", "serial_no"], filters={"docstatus": 1}),
         "item_groups": [g.name for g in frappe.get_all("Item Group")],
         "item_departments": [d.name for d in frappe.get_all("Item Department")],
@@ -1054,7 +1102,10 @@ def skip_approval_stage(docname, stage):
     """
     doc = frappe.get_doc("Employee Material Request", docname)
     
-    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user:
+    # Check if user is in wh_dept_map
+    is_warehouse_user = frappe.db.exists("Default Warehouse", {"parent": "Sahayog Settings", "parenttype": "Sahayog Settings", "user_id": frappe.session.user})
+    
+    if "Administrator" not in frappe.get_roles() and doc.owner != frappe.session.user and not is_warehouse_user:
         frappe.throw(_("Not permitted"), frappe.PermissionError)
     
     update_fields = {}
@@ -1071,6 +1122,12 @@ def skip_approval_stage(docname, stage):
         update_fields["ho_officer_status"] = "Skip"
         update_fields["status"] = "Approved"
         update_fields["docstatus"] = 1
+        
+        # Update child table items
+        for item in doc.items:
+            item.approved_quantity = item.quantity
+            item.status = "Approved"
+        doc.save(ignore_permissions=True)
     
     # Use db.set_value to bypass workflow and validation rules
     frappe.db.set_value("Employee Material Request", docname, update_fields)
@@ -1084,3 +1141,37 @@ def skip_approval_stage(docname, stage):
     frappe.db.commit()
     
     return {"status": "success"}
+
+@frappe.whitelist()
+def get_stock_history(item_code, warehouse):
+    """
+    Fetch stock entries for an item in a specific warehouse for the last 3 months.
+    """
+    from datetime import datetime, timedelta
+
+    three_months_ago = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d %H:%M:%S')
+    
+    stock_entries = frappe.db.sql("""
+        SELECT 
+            se.name, 
+            se.posting_date, 
+            se.posting_time,
+            sed.actual_qty,
+            sed.qty,
+            sed.t_warehouse,
+            se.stock_entry_type
+        FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` sed ON se.name = sed.parent
+        WHERE sed.item_code = %(item_code)s 
+          AND sed.s_warehouse = %(warehouse)s
+          AND sed.t_warehouse IS NULL
+          AND se.posting_date >= %(three_months_ago)s
+          AND se.docstatus = 1
+        ORDER BY se.posting_date DESC, se.posting_time DESC
+    """, {
+        "item_code": item_code,
+        "warehouse": warehouse,
+        "three_months_ago": three_months_ago
+    }, as_dict=True)
+    
+    return stock_entries

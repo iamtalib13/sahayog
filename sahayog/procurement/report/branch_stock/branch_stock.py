@@ -7,6 +7,7 @@ def execute(filters=None):
         filters = {}
 
     warehouse = filters.get("warehouse")
+    item_code = filters.get("item_code")
 
     columns = [
         dict(fieldname="item_code", label="Item Code", fieldtype="Link", options="Item", width=150),
@@ -22,7 +23,12 @@ def execute(filters=None):
     if warehouse:
         conditions += " AND bin.warehouse = %(warehouse)s"
         values["warehouse"] = warehouse
-    else:
+    
+    if item_code:
+        conditions += " AND bin.item_code = %(item_code)s"
+        values["item_code"] = item_code
+
+    if not warehouse:
         # Check if user exists in Sahayog Settings
         user = frappe.session.user
         exists_in_settings = frappe.db.exists(
