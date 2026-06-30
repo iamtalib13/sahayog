@@ -1,4 +1,4 @@
-frappe.query_reports["Trainer-wise Calling Summary"] = {
+frappe.query_reports["Follow-up Report"] = {
   filters: [
     {
       fieldname: "from_date",
@@ -17,6 +17,11 @@ frappe.query_reports["Trainer-wise Calling Summary"] = {
       label: "Trainer",
       fieldtype: "Link",
       options: "User",
+    },
+    {
+      fieldname: "follow_up_date",
+      label: "Follow-up Date",
+      fieldtype: "Date",
     },
   ],
 };

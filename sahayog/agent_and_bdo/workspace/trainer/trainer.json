@@ -33,6 +33,42 @@
   }
  ],
  "sequence_id": 75.0,
- "shortcuts": [],
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "format": "Report",
+   "label": "Trainer Assignment Report",
+   "link_to": "Trainer Assignment Report",
+   "type": "Report"
+  },
+  {
+   "color": "Green",
+   "format": "Report",
+   "label": "Follow-up Report",
+   "link_to": "Follow-up Report",
+   "type": "Report"
+  },
+  {
+   "color": "Orange",
+   "format": "Report",
+   "label": "Calling Not Done Report",
+   "link_to": "Calling Not Done Report",
+   "type": "Report"
+  },
+  {
+   "color": "Purple",
+   "format": "Report",
+   "label": "Trainer-wise Calling Summary",
+   "link_to": "Trainer-wise Calling Summary",
+   "type": "Report"
+  },
+  {
+   "color": "Red",
+   "format": "Report",
+   "label": "Agent Exit Summary Report",
+   "link_to": "Agent Exit Summary Report",
+   "type": "Report"
+  }
+ ],
  "title": "Trainer"
 }

@@ -1,4 +1,4 @@
-frappe.query_reports["Trainer-wise Calling Summary"] = {
+frappe.query_reports["Trainer Assignment Report"] = {
   filters: [
     {
       fieldname: "from_date",

@@ -1,72 +1,85 @@
 import frappe
 from frappe.model.document import Document
 
+FOLLOWUP_TYPES = ("Follow-up Required",)
+CHECKBOX_TYPES = ("Positive", "Negative")
+
 class AgentActivationCallLog(Document):
-    
+
     def before_insert(self):
-        """Set trainer as the currently logged-in user automatically."""
         if not self.trainer:
             self.trainer = frappe.session.user
+        self._validate_unique_assignment()
 
-    def before_submit(self):
-        """Validate that at least one status checkbox is selected before submit - BYPASS if connected_status is 'No'."""
-        # BYPASS checkbox validation when connected_status is 'No'
-        if self.connected_status == "No":
-            return
-        
-        # Original validation for connected_status = 'Yes'
-        if not (self.wants_to_stay or self.want_to_exit or self.exited):
+    def on_submit(self):
+        pass  # Status is derived from call log records — no write to Agent needed
+
+    def _validate_unique_assignment(self):
+        """One active SS must be assigned to only one trainer at a time."""
+        existing_trainer = frappe.db.get_value(
+            "Agent Activation Call Log",
+            {
+                "agent": self.agent,
+                "trainer": ["!=", frappe.session.user],
+                "docstatus": ["<", 2],
+                "exited": 0,
+            },
+            "trainer",
+        )
+        if existing_trainer:
+            trainer_name = frappe.db.get_value("User", existing_trainer, "full_name") or existing_trainer
             frappe.throw(
-                "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
+                f"This SS is already assigned to trainer <b>{trainer_name}</b>. "
+                "An SS can only be assigned to one trainer at a time."
             )
 
-        # Validate date_of_exit when exited is checked
-        if self.exited and not self.date_of_exit:
-            frappe.throw("Please select Date of Exit when 'Exited' is checked.")
-    
     def before_save(self):
-        """Ensure the correct behavior when wants_to_stay is checked and amount is validated."""
-
-
-            # NEW: Agent Phone Number validation - 10 digits only
-        phone = (self.agent_phone_number or "").strip()
+        phone = "".join(filter(str.isdigit, self.agent_phone_number or ""))
         if phone:
-            # Only digits and exactly 10 characters
-            if len(phone) != 10 or not phone.isdigit():
-                frappe.throw(
-                    "Agent Phone Number must be exactly 10 digits and contain only numbers."
-                )
-    
-        # Validate amount
+            phone = phone[-10:]  # strip country code if present
+            if len(phone) != 10:
+                frappe.throw("Agent Phone Number must be exactly 10 digits.")
+            self.agent_phone_number = phone
+
         if self.amount:
-            # Check if the amount is a valid number
             try:
                 amt = float(self.amount)
-            except ValueError:
-                frappe.throw("Amount must be a valid number when 'Wants to Stay' is checked.")
-            
-            # Ensure the amount is a valid integer and greater than zero
-            if not amt.is_integer():
-                frappe.throw("Amount must be an integer value when 'Wants to Stay' is checked.")
-            
+            except (ValueError, TypeError):
+                frappe.throw("Amount must be a valid number.")
             if amt <= 0:
-                frappe.throw("Amount must be greater than zero when 'Wants to Stay' is checked.")
-        
-        # BYPASS checkbox validation when connected_status is 'No'
+                frappe.throw("Amount must be a positive number.")
+
         if self.connected_status == "No":
             return
-        
-        # Validate that at least one checkbox is selected (wants_to_stay, want_to_exit, exited)
-        if not (self.wants_to_stay or self.want_to_exit or self.exited):
-            frappe.throw(
-                "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
-            )
-        
-        # If 'exited' is checked, ensure 'wants_to_stay' and 'want_to_exit' are unchecked
-        if self.exited:
-            if self.wants_to_stay:
+
+        self._validate_reply_logic()
+
+    def before_submit(self):
+        if self.connected_status == "No":
+            return
+        self._validate_reply_logic()
+
+    def _validate_reply_logic(self):
+        reply = self.reply_type
+
+        # Follow-up types need a follow_up_date, no checkbox required
+        if reply in FOLLOWUP_TYPES:
+            if not self.follow_up_date:
+                frappe.throw(f"Please set a Follow-up Date when Reply Type is '{reply}'.")
+            return
+
+        # Not Reachable — no checkbox or date required
+        if reply == "Not Reachable":
+            return
+
+        # Positive / Negative — need at least one checkbox
+        if reply in CHECKBOX_TYPES:
+            if not (self.wants_to_stay or self.want_to_exit or self.exited):
+                frappe.throw(
+                    "Please select at least one option — Wants to Stay, Want to Exit, or Exited."
+                )
+            if self.exited:
                 self.wants_to_stay = 0
-            if self.want_to_exit:
                 self.want_to_exit = 0
-            if not self.date_of_exit:
-                frappe.throw("Please provide a Date of Exit when 'Exited' is selected.")
+                if not self.date_of_exit:
+                    frappe.throw("Please provide a Date of Exit when 'Exited' is selected.")

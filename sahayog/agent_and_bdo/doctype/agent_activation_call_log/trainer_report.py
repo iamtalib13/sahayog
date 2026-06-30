@@ -294,7 +294,7 @@ def send_daily_trainer_report():
             "sstrainingmanager.rongp@sahayogmultistate.com",
             "Jitendra.pachlongia@sahayogmultistate.com",
             "samresh.c@sahayogmultistate.com",
-            "talib.s@sahayogmultistate.com"
+            "talib.s@sahayogmultistate.com",
             "frappeone59@gmail.com",
             # "iamfaijankq@gmail.com",
             # "rarishab893@gmail.com",

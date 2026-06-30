@@ -5,12 +5,20 @@ frappe.ui.form.on("Agent Activation Call Log", {
   refresh(frm) {
     frm.trigger("hide_sidebar_options");
 
-    // Only trigger agent and trainer if they have values
+    // Exclude exited agents — derived from call log records, not Agent field
+    frm.set_query("agent", () => ({
+      query: "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query.get_non_exited_agents"
+    }));
+
     if (frm.doc.agent) {
       frm.trigger("load_agent_details");
     }
     if (frm.doc.trainer) {
       frm.trigger("show_trainer_name");
+    }
+    // Only toggle visibility on refresh — don't set values, which would dirty the form
+    if (frm.doc.reply_type) {
+      frm.trigger("_apply_reply_type_display");
     }
   },
 
@@ -21,58 +29,97 @@ frappe.ui.form.on("Agent Activation Call Log", {
 
   wants_to_stay: function (frm) {
     if (frm.doc.wants_to_stay === 1) {
-      // Clear other checkboxes
       frm.set_value("want_to_exit", 0);
       frm.set_value("exited", 0);
-
       frm.set_value("amount", "");
+      frm.set_value("collection_date", "");
+      frm.set_value("attachment", "");
     }
   },
 
   want_to_exit: function (frm) {
     if (frm.doc.want_to_exit === 1) {
-      // Clear other checkboxes
-      frm.set_value("wants_to_stay", 0);
-      frm.set_value("exited", 0);
-      frm.set_value("amount", "");
+      frappe.confirm(
+        `Agent <b>${frappe.utils.escape_html(frm.doc.agent || "this SS")}</b> will be marked as <b>Want to Exit</b>
+        and removed from the inactive SS pool permanently.<br><br>Are you sure?`,
+        () => {
+          // confirmed — clear other checkboxes
+          frm.set_value("wants_to_stay", 0);
+          frm.set_value("exited", 0);
+          frm.set_value("amount", "");
+          frm.set_value("collection_date", "");
+          frm.set_value("attachment", "");
+        },
+        () => {
+          // cancelled — uncheck want_to_exit
+          frm.set_value("want_to_exit", 0);
+        }
+      );
+    } else {
+      frm.set_value("date_of_exit", "");
     }
   },
 
   exited: function (frm) {
     if (frm.doc.exited === 1) {
-      // Clear other checkboxes
-      frm.set_value("wants_to_stay", 0);
-      frm.set_value("want_to_exit", 0);
-      frm.set_value("amount", "");
-
-      // Show popup only if agent is selected and date_of_exit is not already set
-      // if (frm.doc.agent && !frm.doc.date_of_exit) {
-      //   frappe.prompt(
-      //     [
-      //       {
-      //         fieldname: "exit_date",
-      //         fieldtype: "Date",
-      //         label: "Date of Exit",
-      //         reqd: 1,
-      //         default: frappe.datetime.nowdate(),
-      //       },
-      //     ],
-      //     function (values) {
-      //       if (values.exit_date) {
-      //         frm.set_value("date_of_exit", values.exit_date);
-      //       } else {
-      //         frm.set_value("exited", 0);
-      //         frappe.msgprint("Please select Date of Exit.");
-      //       }
-      //     },
-      //     "Enter Date of Exit",
-      //     "Submit"
-      //   );
-      // }
+      frappe.confirm(
+        `Agent <b>${frappe.utils.escape_html(frm.doc.agent || "this SS")}</b> will be marked as <b>Exited</b>
+        and removed from the inactive SS pool permanently.<br><br>Are you sure?`,
+        () => {
+          // confirmed — clear other checkboxes
+          frm.set_value("wants_to_stay", 0);
+          frm.set_value("want_to_exit", 0);
+          frm.set_value("amount", "");
+          frm.set_value("collection_date", "");
+          frm.set_value("attachment", "");
+        },
+        () => {
+          // cancelled — uncheck exited
+          frm.set_value("exited", 0);
+        }
+      );
     } else {
-      // Clear date_of_exit when unchecked
       frm.set_value("date_of_exit", "");
     }
+  },
+
+  reply_type: function (frm) {
+    frm.trigger("_apply_reply_type_display");
+
+    const followupTypes = ["Follow-up Required"];
+    const checkboxTypes = ["Positive", "Negative"];
+    const reply = frm.doc.reply_type;
+
+    // Clear checkboxes when switching away from Positive/Negative
+    if (!checkboxTypes.includes(reply)) {
+      frm.set_value("wants_to_stay", 0);
+      frm.set_value("exited", 0);
+      frm.set_value("amount", "");
+      frm.set_value("collection_date", "");
+      frm.set_value("attachment", "");
+      frm.set_value("date_of_exit", "");
+    }
+
+    // Clear follow_up_date when switching away from follow-up types
+    if (!followupTypes.includes(reply)) {
+      frm.set_value("follow_up_date", "");
+    }
+  },
+
+  _apply_reply_type_display: function (frm) {
+    const checkboxTypes = ["Positive", "Negative"];
+    const needsCheckbox = checkboxTypes.includes(frm.doc.reply_type);
+
+    frm.toggle_display("status_section", needsCheckbox);
+    frm.toggle_display("active_details_column", needsCheckbox);
+    frm.toggle_display("column_break_ekar", needsCheckbox);
+    frm.toggle_display("wants_to_stay", needsCheckbox);
+    frm.toggle_display("amount", needsCheckbox);
+    frm.toggle_display("collection_date", needsCheckbox);
+    frm.toggle_display("attachment", needsCheckbox);
+    frm.toggle_display("exited", needsCheckbox);
+    frm.toggle_display("want_to_exit", needsCheckbox);
+    frm.toggle_display("date_of_exit", needsCheckbox);
   },
 
   agent: function (frm) {
@@ -98,18 +145,26 @@ frappe.ui.form.on("Agent Activation Call Log", {
   load_agent_details: function (frm) {
     if (!frm.doc.agent) return;
 
-    frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
-      // Handle phone number
-      if (agent.phone_number) {
-        frm.set_value("agent_phone_number", agent.phone_number);
-        frm.set_df_property("agent_phone_number", "read_only", 1);
-      } else {
-        frm.set_df_property("agent_phone_number", "read_only", 0);
-      }
+    const isNew = frm.is_new();
 
-      // Set date of joining from creation_date
-      if (agent.creation_date) {
-        frm.set_value("date_of_joining", agent.creation_date);
+    frappe.db.get_doc("Agent", frm.doc.agent).then((agent) => {
+      // Only set values on new docs — for saved docs just update display
+      if (isNew) {
+        if (agent.phone_number) {
+          frm.set_value("agent_phone_number", agent.phone_number);
+          frm.set_df_property("agent_phone_number", "read_only", 1);
+        } else {
+          frm.set_df_property("agent_phone_number", "read_only", 0);
+        }
+        if (agent.creation_date) {
+          frm.set_value("date_of_joining", agent.creation_date);
+        }
+      } else {
+        frm.set_df_property(
+          "agent_phone_number",
+          "read_only",
+          agent.phone_number ? 1 : 0
+        );
       }
 
       // Display agent name

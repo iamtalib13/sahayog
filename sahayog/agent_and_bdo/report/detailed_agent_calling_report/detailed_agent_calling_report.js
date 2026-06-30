@@ -19,7 +19,7 @@ frappe.query_reports["Detailed Agent Calling Report"] = {
       fieldname: "trainer",
       label: "Trainer",
       fieldtype: "Link",
-      options: "Employee",
+      options: "User",
     },
     {
       fieldname: "agent",
@@ -37,7 +37,7 @@ frappe.query_reports["Detailed Agent Calling Report"] = {
       fieldname: "reply_type",
       label: "Reply Type",
       fieldtype: "Select",
-      options: "\nPositive\nNegative",
+      options: "\nPositive\nNegative\nNot Reachable\nFollow-up Required",
     },
   ],
 };

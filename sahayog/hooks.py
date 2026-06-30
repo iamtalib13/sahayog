@@ -410,7 +410,7 @@ scheduler_events = {
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
         "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
-        "sahayog.sahayog.doctype.bank_eod.bank_eod.create_daily_bank_eod"
+        "sahayog.sahayog.doctype.bank_eod.bank_eod.create_daily_bank_eod",
     ],
     # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
