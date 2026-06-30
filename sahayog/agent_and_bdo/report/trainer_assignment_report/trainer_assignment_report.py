@@ -7,7 +7,6 @@ def execute(filters=None):
         {"label": "Trainer", "fieldname": "trainer_name", "fieldtype": "Data", "width": 200},
         {"label": "Total Assigned", "fieldname": "total_assigned", "fieldtype": "Int", "width": 130},
         {"label": "Active Cases", "fieldname": "active_cases", "fieldtype": "Int", "width": 120},
-        {"label": "Inactive Cases", "fieldname": "inactive_cases", "fieldtype": "Int", "width": 120},
         {"label": "Follow-up Cases", "fieldname": "followup_cases", "fieldtype": "Int", "width": 130},
         {"label": "Exit Cases", "fieldname": "exit_cases", "fieldtype": "Int", "width": 110},
         {"label": "Pending Cases", "fieldname": "pending_cases", "fieldtype": "Int", "width": 120},
@@ -26,21 +25,13 @@ def execute(filters=None):
             COALESCE(u.full_name, acl.trainer) AS trainer_name,
             COUNT(DISTINCT acl.agent) AS total_assigned,
             COUNT(DISTINCT CASE
-                WHEN EXISTS (
-                    SELECT 1 FROM `tabAgent Activation Call Log` x
-                    WHERE x.agent = acl.agent
-                      AND x.docstatus = 1
-                      AND x.calling_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-                ) THEN acl.agent
+                WHEN acl.name = (
+                    SELECT x.name FROM `tabAgent Activation Call Log` x
+                    WHERE x.agent = acl.agent AND x.docstatus < 2
+                    ORDER BY x.calling_date DESC, x.creation DESC
+                    LIMIT 1
+                ) AND acl.wants_to_stay = 1 THEN acl.agent
             END) AS active_cases,
-            COUNT(DISTINCT CASE
-                WHEN NOT EXISTS (
-                    SELECT 1 FROM `tabAgent Activation Call Log` x
-                    WHERE x.agent = acl.agent
-                      AND x.docstatus = 1
-                      AND x.calling_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
-                ) THEN acl.agent
-            END) AS inactive_cases,
             COUNT(DISTINCT CASE WHEN acl.reply_type = 'Follow-up Required' THEN acl.agent END) AS followup_cases,
             COUNT(DISTINCT CASE WHEN acl.exited = 1 OR acl.want_to_exit = 1 THEN acl.agent END) AS exit_cases,
             COUNT(DISTINCT CASE
