@@ -1,6 +1,21 @@
 import frappe
 
 
+def get_trainer_filter(alias="acl"):
+    """Return SQL condition so Trainer sees only their own records.
+    Trainer Head / System Manager / Administrator sees all."""
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+
+    if "Administrator" in roles or "System Manager" in roles or "Trainer Head" in roles:
+        return ""
+
+    if "Trainer" in roles:
+        return f"AND {alias}.trainer = {frappe.db.escape(user)}"
+
+    return ""
+
+
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def get_non_exited_agents(doctype, txt, searchfield, start, page_len, filters):
