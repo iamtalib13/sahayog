@@ -339,6 +339,7 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.set_is_operation_lead",
         ],
         "validate": [
+            "sahayog.scrm.controller.lead.lead.validate_duplicate_lead",
             "sahayog.scrm.controller.lead.lead.validate_required_employee_fields"
         ],
     },
