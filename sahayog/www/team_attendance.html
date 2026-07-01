@@ -485,6 +485,11 @@
       .cal-d.woff {
         color: #d1d5db;
       }
+      .cal-d.before-doj {
+        color: #e5e7eb;
+        cursor: not-allowed;
+        background: #f9fafb;
+      }
       .cal-d.empty {
         cursor: default;
       }
@@ -999,7 +1004,7 @@
   </head>
   <body>
     <!-- TOP BAR -->
-    <nav class="topbar">
+    <nav class="topbar" style="position:sticky; top:0; z-index:100;">
       <div class="topbar-left">
         <button
           class="menu-btn"
@@ -1056,6 +1061,9 @@
         gap: 20px;
         height: 48px;
         align-items: stretch;
+        position: sticky;
+        top: 52px;
+        z-index: 99;
       "
     >
       <button
@@ -1108,6 +1116,9 @@
         border-bottom: 1px solid var(--border);
         padding: 8px 20px;
         gap: 10px;
+        position: sticky;
+        top: 100px;
+        z-index: 98;
       "
     >
       <button
@@ -1515,7 +1526,7 @@
                   background: #fff;
                   border-radius: 20px;
                   width: 95%;
-                  max-width: 850px;
+                  max-width: 1200px;
                   max-height: 90vh;
                   overflow-y: auto;
                   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -1643,7 +1654,11 @@
                 <form id="exitEmployeeForm" onsubmit="event.preventDefault(); submitExitEmployee();">
                   <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Select Employee *</label>
-                    <select id="exit_emp_select" class="member-select" required></select>
+                    <div style="position:relative;">
+                      <input type="text" id="exit_emp_search_input" class="member-select" placeholder="Type to search..." autocomplete="off" required onfocus="showExitEmpDropdown()" oninput="filterExitEmp(this.value)" onblur="setTimeout(()=>hideExitEmpDropdown(),200)">
+                      <input type="hidden" id="exit_emp_select">
+                      <div id="exit_emp_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
+                    </div>
                   </div>
                   <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Resignation Letter Date *</label>
@@ -2643,6 +2658,26 @@
         hideReportingDropdown();
       }
 
+      function filterExitEmp(query) {
+        const dd = document.getElementById("exit_emp_dropdown");
+        const items = dd.querySelectorAll(".exit-emp-item");
+        const q = query.toLowerCase();
+        items.forEach(item => {
+          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+      }
+      function showExitEmpDropdown() {
+        document.getElementById("exit_emp_dropdown").style.display = "block";
+      }
+      function hideExitEmpDropdown() {
+        document.getElementById("exit_emp_dropdown").style.display = "none";
+      }
+      function selectExitEmp(value, label) {
+        document.getElementById("exit_emp_select").value = value;
+        document.getElementById("exit_emp_search_input").value = label;
+        hideExitEmpDropdown();
+      }
+
       function closeCreateEmployeeModal() {
         document.getElementById("createEmployeeModal").style.display = "none";
         document.getElementById("createEmployeeForm").reset();
@@ -3131,6 +3166,18 @@
 
       // ── CALENDAR NAVIGATION FIX ────────────────────────────
       function changeMonth(direction) {
+        if (direction < 0 && selectedMemberId) {
+          const emp = staff.find(x => x.name === selectedMemberId);
+          if (emp && emp.date_of_joining) {
+            const doj = new Date(emp.date_of_joining);
+            const targetMonth = calMonth + direction;
+            let tYear = calYear;
+            let tMonth = targetMonth;
+            if (tMonth > 11) { tMonth = 0; tYear++; }
+            else if (tMonth < 0) { tMonth = 11; tYear--; }
+            if (tYear < doj.getFullYear() || (tYear === doj.getFullYear() && tMonth < doj.getMonth())) return;
+          }
+        }
         calMonth += direction;
         if (calMonth > 11) {
           calMonth = 0;
@@ -3784,7 +3831,7 @@
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
@@ -3819,6 +3866,8 @@
 
       function renderCalendar() {
         const grid = document.getElementById("calDays");
+        const emp = staff.find(x => x.name === selectedMemberId);
+        const doj = emp ? new Date(emp.date_of_joining) : null;
         const months = [
           "January",
           "February",
@@ -3867,17 +3916,21 @@
             cls += " pending-corr-d";
           else if (isWeekend) cls += " woff";
 
-          cell.className = cls;
           cell.textContent = d;
           cell.title = histStatus || key;
 
-          // Add click handler for past/today dates
-          if (new Date(key) <= new Date(todayKey)) {
+          // Disable dates before employee's date of joining
+          const isBeforeDoj = doj && new Date(key) < new Date(doj.getFullYear(), doj.getMonth(), doj.getDate());
+
+          if (isBeforeDoj) {
+            cls += " before-doj";
+          } else if (new Date(key) <= new Date(todayKey)) {
             cell.onclick = () =>
               openCorrectionModal(key, histStatus || "Not Marked");
             cell.style.cursor = "pointer";
           }
 
+          cell.className = cls;
           grid.appendChild(cell);
         }
       }
@@ -4396,15 +4449,22 @@
       }
 
       async function openExitEmployeeModal() {
-        const sel = document.getElementById("exit_emp_select");
-        sel.innerHTML = '<option value="">— Select Employee —</option>';
+        document.getElementById("exit_emp_search_input").value = "";
+        document.getElementById("exit_emp_select").value = "";
+        const dd = document.getElementById("exit_emp_dropdown");
+        dd.innerHTML = "";
         const employees = await callAPI("get_active_support_staff", {}, "employee");
         if (employees) {
           employees.forEach(e => {
-            const opt = document.createElement("option");
-            opt.value = e.name;
-            opt.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
-            sel.appendChild(opt);
+            const item = document.createElement("div");
+            item.className = "exit-emp-item";
+            item.dataset.value = e.name;
+            item.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
+            item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => item.style.background = "#f0f2f8";
+            item.onmouseout = () => item.style.background = "";
+            item.onmousedown = (ev) => { ev.preventDefault(); selectExitEmp(e.name, item.textContent); };
+            dd.appendChild(item);
           });
         }
         document.getElementById("exitEmployeeModal").style.display = "flex";
@@ -4413,10 +4473,13 @@
       function closeExitEmployeeModal() {
         document.getElementById("exitEmployeeModal").style.display = "none";
         document.getElementById("exitEmployeeForm").reset();
+        document.getElementById("exit_emp_search_input").value = "";
+        document.getElementById("exit_emp_select").value = "";
       }
 
       async function submitExitEmployee() {
         const employee = document.getElementById("exit_emp_select").value;
+        if (!employee) { showToast("Please select an employee"); return; }
         const resignation_date = document.getElementById("exit_resignation_date").value;
         const relieving_date = document.getElementById("exit_relieving_date").value;
         const reason = document.getElementById("exit_reason").value;
