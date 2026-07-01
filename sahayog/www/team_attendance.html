@@ -3831,7 +3831,7 @@
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} ${s.status && s.status !== "Active" ? `<span style="font-size:10px;background:${s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
