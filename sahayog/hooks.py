@@ -258,6 +258,9 @@ override_doctype_class = {
 # ---------------
 # Hook on document methods and events
 doc_events = {
+    "Employee Checkin": {
+        "validate": "sahayog.doc_events.employee_checkin.clear_offshift",
+    },
     "Employee": {
         "autoname": "sahayog.override.employee_naming.set_name_by_naming_series_override",
         "after_insert": [
