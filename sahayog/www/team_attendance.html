@@ -4424,15 +4424,13 @@
         document.getElementById("exit_emp_select").value = "";
         const dd = document.getElementById("exit_emp_dropdown");
         dd.innerHTML = "";
-        if (!window._empList) {
-          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
-        }
-        if (window._empList) {
-          window._empList.forEach(e => {
+        const employees = await callAPI("get_active_support_staff", {}, "employee");
+        if (employees) {
+          employees.forEach(e => {
             const item = document.createElement("div");
             item.className = "exit-emp-item";
             item.dataset.value = e.name;
-            item.textContent = e.employee_name + " (" + e.name + ")";
+            item.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
             item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
             item.onmouseover = () => item.style.background = "#f0f2f8";
             item.onmouseout = () => item.style.background = "";
