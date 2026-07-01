@@ -1643,7 +1643,11 @@
                 <form id="exitEmployeeForm" onsubmit="event.preventDefault(); submitExitEmployee();">
                   <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Select Employee *</label>
-                    <select id="exit_emp_select" class="member-select" required></select>
+                    <div style="position:relative;">
+                      <input type="text" id="exit_emp_search_input" class="member-select" placeholder="Type to search..." autocomplete="off" required onfocus="showExitEmpDropdown()" oninput="filterExitEmp(this.value)" onblur="setTimeout(()=>hideExitEmpDropdown(),200)">
+                      <input type="hidden" id="exit_emp_select">
+                      <div id="exit_emp_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
+                    </div>
                   </div>
                   <div style="margin-bottom:14px;">
                     <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Resignation Letter Date *</label>
@@ -2641,6 +2645,26 @@
         document.getElementById("new_emp_reports_to").value = value;
         document.getElementById("new_emp_reports_to_input").value = label;
         hideReportingDropdown();
+      }
+
+      function filterExitEmp(query) {
+        const dd = document.getElementById("exit_emp_dropdown");
+        const items = dd.querySelectorAll(".exit-emp-item");
+        const q = query.toLowerCase();
+        items.forEach(item => {
+          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+      }
+      function showExitEmpDropdown() {
+        document.getElementById("exit_emp_dropdown").style.display = "block";
+      }
+      function hideExitEmpDropdown() {
+        document.getElementById("exit_emp_dropdown").style.display = "none";
+      }
+      function selectExitEmp(value, label) {
+        document.getElementById("exit_emp_select").value = value;
+        document.getElementById("exit_emp_search_input").value = label;
+        hideExitEmpDropdown();
       }
 
       function closeCreateEmployeeModal() {
@@ -4396,15 +4420,24 @@
       }
 
       async function openExitEmployeeModal() {
-        const sel = document.getElementById("exit_emp_select");
-        sel.innerHTML = '<option value="">— Select Employee —</option>';
-        const employees = await callAPI("get_active_support_staff", {}, "employee");
-        if (employees) {
-          employees.forEach(e => {
-            const opt = document.createElement("option");
-            opt.value = e.name;
-            opt.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
-            sel.appendChild(opt);
+        document.getElementById("exit_emp_search_input").value = "";
+        document.getElementById("exit_emp_select").value = "";
+        const dd = document.getElementById("exit_emp_dropdown");
+        dd.innerHTML = "";
+        if (!window._empList) {
+          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
+        }
+        if (window._empList) {
+          window._empList.forEach(e => {
+            const item = document.createElement("div");
+            item.className = "exit-emp-item";
+            item.dataset.value = e.name;
+            item.textContent = e.employee_name + " (" + e.name + ")";
+            item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => item.style.background = "#f0f2f8";
+            item.onmouseout = () => item.style.background = "";
+            item.onmousedown = (ev) => { ev.preventDefault(); selectExitEmp(e.name, item.textContent); };
+            dd.appendChild(item);
           });
         }
         document.getElementById("exitEmployeeModal").style.display = "flex";
@@ -4413,10 +4446,13 @@
       function closeExitEmployeeModal() {
         document.getElementById("exitEmployeeModal").style.display = "none";
         document.getElementById("exitEmployeeForm").reset();
+        document.getElementById("exit_emp_search_input").value = "";
+        document.getElementById("exit_emp_select").value = "";
       }
 
       async function submitExitEmployee() {
         const employee = document.getElementById("exit_emp_select").value;
+        if (!employee) { showToast("Please select an employee"); return; }
         const resignation_date = document.getElementById("exit_resignation_date").value;
         const relieving_date = document.getElementById("exit_relieving_date").value;
         const reason = document.getElementById("exit_reason").value;
