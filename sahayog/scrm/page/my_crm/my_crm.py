@@ -165,9 +165,6 @@
 
 
 import json
-
-import json
-
 import frappe
 from frappe.utils import flt, add_days, nowdate
 
@@ -197,7 +194,6 @@ def get_crm_data(section: str, limit: int = 20, cursor: str = "0", search_term: 
         response.update({"data": data, "next_cursor": next_cursor, "total_count": total, "appointment_count": total})
 
     return response
-
 
 def _get_lead_data(limit, offset, search_term):
     user = frappe.session.user
@@ -290,23 +286,27 @@ def _get_appointment_data(limit, offset, search_term):
 
 
 @frappe.whitelist()
-def check_duplicate(mobile_no, products):
+def check_duplicate(mobile_no, products, current_lead=None):
     p_list = json.loads(products) if isinstance(products, str) else products
     seven_days_ago = add_days(nowdate(), -7)
 
     for p in p_list:
-        exists = frappe.db.sql(
-            """
+        query = """
             SELECT l.name FROM `tabLead` l
             JOIN `tabLead Product` lp ON lp.parent = l.name
             WHERE l.mobile_no = %s
             AND lp.product = %s
             AND lp.product_amount = %s
             AND l.creation >= %s
-            LIMIT 1
-            """,
-            (mobile_no, p.get("product"), p.get("product_amount"), seven_days_ago)
-        )
+        """
+        params = [mobile_no, p.get("product"), p.get("product_amount"), seven_days_ago]
+
+        if current_lead:
+            query += " AND l.name != %s"
+            params.append(current_lead)
+
+        query += " LIMIT 1"
+        exists = frappe.db.sql(query, tuple(params))
 
         if exists:
             return {"duplicate": True, "product": p.get("product")}
