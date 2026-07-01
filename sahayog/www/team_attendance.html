@@ -85,27 +85,6 @@
         font-size: 13px;
         border: 2px solid #fff;
       }
-      .subbar {
-        background: var(--brand2);
-        padding: 0 20px;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .subbar span {
-        color: #fff;
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .subbar-badge {
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
-        padding: 3px 12px;
-        color: #fff;
-        font-size: 11px;
-      }
-
       /* LAYOUT */
       .layout {
         display: block;
@@ -1066,11 +1045,6 @@
         <div class="av">BM</div>
       </div>
     </nav>
-    <div class="subbar">
-      <span id="subbarTitle">Team Attendance Management</span>
-      <span class="subbar-badge" id="todayDate"></span>
-    </div>
-
     <!-- NEW GLOBAL NAVIGATION TABS -->
     <div
       id="globalNav"
@@ -2748,16 +2722,6 @@
       let calMonth = now.getMonth();
       const todayKey = now.toISOString().split("T")[0];
 
-      document.getElementById("todayDate").textContent = now.toLocaleDateString(
-        "en-IN",
-        {
-          weekday: "short",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        },
-      );
-
       // ── API HELPERS ───────────────────────────────────────
       async function callAPI(method, params = {}, module = "attendance") {
         const headers = {
@@ -3252,12 +3216,10 @@
         const hrTab = document.getElementById("tabHRDashboard");
         const hrFilters = document.getElementById("hrAdvancedFilters");
         const bulkBar = document.getElementById("bulkBar");
-        const subbarTitle = document.getElementById("subbarTitle");
         const btnApplyLeave = document.getElementById("btnApplyLeave");
         const btnCreateEmployee = document.getElementById("btnCreateEmployee");
 
         if (isHR()) {
-          if (subbarTitle) subbarTitle.textContent = "HR Dashboard";
           if (attendanceTab) attendanceTab.textContent = "Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
           // Button will be managed inside switchTab based on tab context
@@ -3288,8 +3250,6 @@
           populateAllFilters();
         } else {
           isFirstLoad = false;
-          if (subbarTitle)
-            subbarTitle.textContent = "Team Attendance Management";
           if (attendanceTab) attendanceTab.textContent = "Attendance";
           if (btnApplyLeave) btnApplyLeave.style.display = "inline-block";
           if (leaveTab) leaveTab.style.display = "none";
