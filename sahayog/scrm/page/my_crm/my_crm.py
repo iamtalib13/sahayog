@@ -287,10 +287,18 @@ def _get_appointment_data(limit, offset, search_term):
 
 @frappe.whitelist()
 def check_duplicate(mobile_no, products, current_lead=None):
+    """Pre-check API for duplicate leads (read-only, no locking).
+    Actual enforcement is in validate_duplicate_lead (validate hook)."""
     p_list = json.loads(products) if isinstance(products, str) else products
     seven_days_ago = add_days(nowdate(), -7)
 
     for p in p_list:
+        product = p.get("product")
+        amount = p.get("product_amount")
+
+        if not product or not amount:
+            continue
+
         query = """
             SELECT l.name FROM `tabLead` l
             JOIN `tabLead Product` lp ON lp.parent = l.name
@@ -299,7 +307,7 @@ def check_duplicate(mobile_no, products, current_lead=None):
             AND lp.product_amount = %s
             AND l.creation >= %s
         """
-        params = [mobile_no, p.get("product"), p.get("product_amount"), seven_days_ago]
+        params = [mobile_no, product, amount, seven_days_ago]
 
         if current_lead:
             query += " AND l.name != %s"
@@ -309,7 +317,7 @@ def check_duplicate(mobile_no, products, current_lead=None):
         exists = frappe.db.sql(query, tuple(params))
 
         if exists:
-            return {"duplicate": True, "product": p.get("product")}
+            return {"duplicate": True, "product": product}
 
     return {"duplicate": False}
 
