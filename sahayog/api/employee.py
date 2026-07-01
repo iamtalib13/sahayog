@@ -335,6 +335,16 @@ def get_branch_details_by_sol_id(sol_id):
     }
 
 @frappe.whitelist()
+def get_employees_for_reporting():
+    return frappe.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        fields=["name", "employee_name", "designation"],
+        order_by="employee_name"
+    )
+
+
+@frappe.whitelist()
 def get_logged_in_employee():
     if frappe.session.user == "Administrator":
         return {
