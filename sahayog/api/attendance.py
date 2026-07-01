@@ -48,7 +48,7 @@ def get_team_attendance_data():
             "gender", "image", "department", "date_of_joining", 
             "reports_to", "cell_number", "company_email"
         ],
-        order_by="employee_name"
+        order_by="modified desc"
     )
     
     if not team:

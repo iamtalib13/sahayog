@@ -485,6 +485,11 @@
       .cal-d.woff {
         color: #d1d5db;
       }
+      .cal-d.before-doj {
+        color: #e5e7eb;
+        cursor: not-allowed;
+        background: #f9fafb;
+      }
       .cal-d.empty {
         cursor: default;
       }
@@ -3161,6 +3166,18 @@
 
       // ── CALENDAR NAVIGATION FIX ────────────────────────────
       function changeMonth(direction) {
+        if (direction < 0 && selectedMemberId) {
+          const emp = staff.find(x => x.name === selectedMemberId);
+          if (emp && emp.date_of_joining) {
+            const doj = new Date(emp.date_of_joining);
+            const targetMonth = calMonth + direction;
+            let tYear = calYear;
+            let tMonth = targetMonth;
+            if (tMonth > 11) { tMonth = 0; tYear++; }
+            else if (tMonth < 0) { tMonth = 11; tYear--; }
+            if (tYear < doj.getFullYear() || (tYear === doj.getFullYear() && tMonth < doj.getMonth())) return;
+          }
+        }
         calMonth += direction;
         if (calMonth > 11) {
           calMonth = 0;
@@ -3849,6 +3866,8 @@
 
       function renderCalendar() {
         const grid = document.getElementById("calDays");
+        const emp = staff.find(x => x.name === selectedMemberId);
+        const doj = emp ? new Date(emp.date_of_joining) : null;
         const months = [
           "January",
           "February",
@@ -3897,17 +3916,21 @@
             cls += " pending-corr-d";
           else if (isWeekend) cls += " woff";
 
-          cell.className = cls;
           cell.textContent = d;
           cell.title = histStatus || key;
 
-          // Add click handler for past/today dates
-          if (new Date(key) <= new Date(todayKey)) {
+          // Disable dates before employee's date of joining
+          const isBeforeDoj = doj && new Date(key) < new Date(doj.getFullYear(), doj.getMonth(), doj.getDate());
+
+          if (isBeforeDoj) {
+            cls += " before-doj";
+          } else if (new Date(key) <= new Date(todayKey)) {
             cell.onclick = () =>
               openCorrectionModal(key, histStatus || "Not Marked");
             cell.style.cursor = "pointer";
           }
 
+          cell.className = cls;
           grid.appendChild(cell);
         }
       }
