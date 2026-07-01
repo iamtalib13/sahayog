@@ -82,7 +82,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1.25rem 2rem;
+      padding: 0.5rem 1rem;
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
@@ -451,6 +451,7 @@
     </header>
     <main class="app-main">
       <div class="tab-bar">
+        <input type="text" id="search-input" class="tab-btn" placeholder="Search..." style="outline:none; min-width:90px; width:90px;">
         <button class="tab-btn active" data-tab="all">All</button>
         <button class="tab-btn" data-tab="operations">Operations</button>
         <button class="tab-btn" data-tab="l&d">L&D</button>
@@ -1187,9 +1188,11 @@
     document.addEventListener("DOMContentLoaded", function () {
       const tabs = document.querySelectorAll(".tab-btn");
       const items = document.querySelectorAll(".icon-item");
+      const searchInput = document.getElementById("search-input");
 
       tabs.forEach((tab) => {
         tab.addEventListener("click", function () {
+          if (this === searchInput) return;
           tabs.forEach((t) => t.classList.remove("active"));
           this.classList.add("active");
 
@@ -1203,6 +1206,26 @@
                 item.dataset.tab === target ? "" : "none";
             }
           });
+        });
+      });
+
+      searchInput.addEventListener("input", function () {
+        const query = this.value.toLowerCase().trim();
+        tabs.forEach((t) => t.classList.remove("active"));
+
+        if (query === "") {
+          document.querySelector('[data-tab="all"]').classList.add("active");
+          items.forEach((item) => {
+            item.style.display = "";
+          });
+          return;
+        }
+
+        document.querySelector('[data-tab="all"]').classList.add("active");
+
+        items.forEach((item) => {
+          const label = (item.querySelector(".icon-label")?.textContent || "").toLowerCase();
+          item.style.display = label.includes(query) ? "" : "none";
         });
       });
     });
