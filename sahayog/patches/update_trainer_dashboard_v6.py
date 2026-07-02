@@ -714,10 +714,12 @@ DASHBOARD_SCRIPT_P3 = """
 
   // Calendar type toggle pills (Trainer Head / System Manager only)
   root.querySelectorAll(".aad-cal-type-pill").forEach(pill => {
-    pill.onclick = () => {
+    pill.onclick = async () => {
       root.querySelectorAll(".aad-cal-type-pill").forEach(p => p.classList.remove("active"));
       pill.classList.add("active");
       calTypeFilter = pill.dataset.ctype;
+      // Re-fetch events with new filter
+      calEvents = await fetchCalEvents(calYear, calMonth);
       renderCalendar();
     };
   });
