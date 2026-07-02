@@ -41,3 +41,5 @@ sahayog.patches.update_trainer_dashboard_v3
 sahayog.patches.update_trainer_dashboard_v4
 sahayog.patches.update_trainer_dashboard_v5
 sahayog.patches.add_lead_docperm_for_branch_manager
+sahayog.patches.add_calendar_type_to_meeting
+sahayog.patches.update_trainer_dashboard_v6
