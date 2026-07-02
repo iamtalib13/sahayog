@@ -3354,23 +3354,10 @@ createLead() {
           fieldname: "status",
           fieldtype: "Select",
           label: "Status",
-          options: "Lead\nFollow Up\nConverted\nNot Interested",
+          options: "Lead",
           default: "Lead",
           reqd: 1,
-          onchange: function () {
-            const status = this.get_value();
-            const $appt_field = dialog.get_field("scheduled_time").$wrapper;
-            if (status === "Follow Up") {
-              $appt_field.show();
-              dialog.set_df_property("scheduled_time", "reqd", 1);
-            } else {
-              $appt_field.hide();
-              dialog.set_df_property("scheduled_time", "reqd", 0);
-            }
-          },
         },
-        { fieldname: "section_break_appt", fieldtype: "Section Break" },
-        { fieldname: "scheduled_time", fieldtype: "Datetime", label: "Appointment Date & Time", reqd: 0 },
         { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
         { fieldname: "product_html", fieldtype: "HTML" },
       ],
@@ -3561,8 +3548,6 @@ createLead() {
         dialog.set_value("mobile_no", val);
     });
 
-    const appt = dialog.get_field("scheduled_time").$wrapper.hide();
-    appt.find("input").attr("placeholder", "DD/MM/YYYY, HH:MM:SS");
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
   }
