@@ -523,26 +523,30 @@ DASHBOARD_SCRIPT_P2 = """
       return;
     }
 
-    // Batch fetch trainer names and attendee details
+    // Initialize data structures
     const trainerIds = meetings.map(m => m.trainer).filter(Boolean);
     const meetingNames = meetings.map(m => m.name);
     const trainerNames = {};
     const attendeeDetails = {};
 
+    // Create promises array
+    const allPromises = [];
+
     // Fetch trainer names
     if (trainerIds.length) {
-      frappe.db.get_list("Employee", {
+      const trainerPromise = frappe.db.get_list("Employee", {
         filters: [["name","in", trainerIds]],
         fields: ["name","employee_name"],
         limit_page_length: 0
       }).then(emps => {
         emps.forEach(e => { trainerNames[e.name] = e.employee_name || e.name; });
       });
+      allPromises.push(trainerPromise);
     }
 
     // Fetch attendee details for each meeting
-    const attendeePromises = meetingNames.map(name => 
-      frappe.call({
+    meetingNames.forEach(name => {
+      const attendeePromise = frappe.call({
         method: "frappe.client.get",
         args: {
           doctype: "Meeting",
@@ -550,48 +554,39 @@ DASHBOARD_SCRIPT_P2 = """
         }
       }).then(r => {
         if (r.message && r.message.attandees_table && r.message.attandees_table.length > 0) {
-          // Get employee IDs from attendees
-          const empIds = r.message.attandees_table.map(a => a.employee).filter(Boolean);
-          if (empIds.length > 0) {
-            return frappe.db.get_list("Employee", {
-              filters: [["name","in", empIds]],
-              fields: ["name","employee_name"],
-              limit_page_length: 0
-            }).then(emps => {
-              const empMap = {};
-              emps.forEach(e => { empMap[e.name] = e.employee_name || e.name; });
-              attendeeDetails[name] = r.message.attandees_table.map(a => 
-                empMap[a.employee] || a.employee || "-"
-              );
-            });
-          } else {
-            attendeeDetails[name] = [];
-          }
+          // Use full_name if available, otherwise agent_employee
+          attendeeDetails[name] = r.message.attandees_table.map(a => 
+            a.full_name || a.agent_employee || "-"
+          ).filter(n => n !== "-");
         } else {
           attendeeDetails[name] = [];
         }
-      }).catch(() => {
+      }).catch(err => {
+        console.error("Error fetching attendees for " + name, err);
         attendeeDetails[name] = [];
-      })
-    );
+      });
+      allPromises.push(attendeePromise);
+    });
 
-    // Wait for all attendee details to be fetched then render
-    Promise.all(attendeePromises).then(() => {
+    // Wait for all promises to complete then render
+    Promise.all(allPromises).then(() => {
       tbody.innerHTML = meetings.map((m, i) => {
         const dateStr = m.date ? frappe.datetime.str_to_user(m.date) : "-";
         const timeStr = (m.start_time ? fmtTime(m.start_time) : "") + (m.end_time ? " – " + fmtTime(m.end_time) : "");
         const c = eventColor(m);
         const trainer = trainerNames[m.trainer] || m.trainer || "-";
         const attendees = attendeeDetails[m.name] || [];
+        
         let attendeeDisplay = "-";
         if (attendees.length > 0) {
           const showNames = attendees.slice(0, 2);
           const remaining = attendees.length - showNames.length;
           attendeeDisplay = '<div style="font-size:11px;line-height:1.4">' 
-            + showNames.map(name => '<div>' + frappe.utils.escape_html(name) + '</div>').join('')
-            + (remaining > 0 ? '<div style="color:var(--text-muted);font-style:italic">+' + remaining + ' more</div>' : '')
+            + showNames.map(name => '<div style="margin:2px 0">' + frappe.utils.escape_html(name) + '</div>').join('')
+            + (remaining > 0 ? '<div style="color:#6c7680;font-style:italic;margin-top:2px">+' + remaining + ' more</div>' : '')
             + '</div>';
         }
+        
         return '<tr class="aad-mt-row" style="cursor:pointer" data-name="' + encodeURIComponent(m.name) + '">'
           + '<td class="aad-col-index">' + ((mtCurrentPage - 1) * mtPageSize + i + 1) + '</td>'
           + '<td>' + dateStr + '</td>'
@@ -607,6 +602,9 @@ DASHBOARD_SCRIPT_P2 = """
       tbody.querySelectorAll(".aad-mt-row").forEach(row => {
         row.onclick = () => { frappe.set_route("Form", "Meeting", decodeURIComponent(row.dataset.name)); };
       });
+    }).catch(err => {
+      console.error("Error rendering meetings table", err);
+      tbody.innerHTML = '<tr><td colspan="7" class="aad-empty-state" style="color:red"><p>Error loading data</p></td></tr>';
     });
   }
 
