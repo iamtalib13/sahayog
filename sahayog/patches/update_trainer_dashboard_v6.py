@@ -218,10 +218,32 @@ DASHBOARD_SCRIPT_P1 = """(function(){
   const roles = frappe.user_roles || [];
   const isHead = roles.includes("Trainer Head") || roles.includes("System Manager") || roles.includes("Administrator");
   const isTrainer = roles.includes("Trainer");
+  const isEmployee = roles.includes("Employee") && !isHead && !isTrainer;
   const trainer = (!isHead && isTrainer) ? user : null;
 
   /* ── TAB SWITCHING ─────────────────────────────────────── */
-  let activeTab = "calllogs";
+  let activeTab = isEmployee ? "trainers" : "calllogs";
+  
+  // Hide Call Logs tab and header actions for Employee role
+  if (isEmployee) {
+    const callLogsTab = root.querySelector('.aad-tab[data-tab="calllogs"]');
+    const callLogsContent = root.querySelector('#tab-calllogs');
+    const headerActions = root.querySelector('.aad-header-actions');
+    
+    if (callLogsTab) callLogsTab.style.display = 'none';
+    if (callLogsContent) callLogsContent.style.display = 'none';
+    if (headerActions) headerActions.style.display = 'none';
+    
+    // Remove active from Call Logs and set Meetings as active
+    root.querySelectorAll(".aad-tab").forEach(t => t.classList.remove("active"));
+    root.querySelectorAll(".aad-tab-content").forEach(t => t.classList.remove("active"));
+    
+    const meetingsTab = root.querySelector('.aad-tab[data-tab="trainers"]');
+    const meetingsContent = root.querySelector('#tab-trainers');
+    if (meetingsTab) meetingsTab.classList.add("active");
+    if (meetingsContent) meetingsContent.classList.add("active");
+  }
+  
   root.querySelectorAll(".aad-tab").forEach(btn => {
     btn.onclick = () => {
       root.querySelectorAll(".aad-tab").forEach(t => t.classList.remove("active"));
@@ -444,7 +466,9 @@ DASHBOARD_SCRIPT_P1 = """(function(){
   });
 
   initDates();
-  loadData();
+  if (!isEmployee) {
+    loadData();
+  }
 
   /* ── SHARED HELPERS (used by Meetings + Calendar tabs) ── */
   function fmtTime(t) {
@@ -494,6 +518,8 @@ DASHBOARD_SCRIPT_P2 = """
     if (trDateFrom && trDateTo) f["date"] = ["between", [trDateFrom, trDateTo]];
     if (trTopic) f["topic"] = trTopic;
     if (trCalType) f["calendar_type"] = trCalType;
+    // Employee role: only show their own meetings
+    if (isEmployee) f["owner"] = user;
     return f;
   }
 
@@ -653,6 +679,11 @@ DASHBOARD_SCRIPT_P2 = """
   root.querySelector(".aad-tr-new-meeting").onclick = () => { frappe.new_doc("Meeting"); };
   root.querySelector(".aad-mt-prev-btn").onclick = () => { if(mtCurrentPage>1){ mtCurrentPage--; loadTrainers(); } };
   root.querySelector(".aad-mt-next-btn").onclick = () => { if(mtCurrentPage < Math.ceil(mtTotalRecords/mtPageSize)){ mtCurrentPage++; loadTrainers(); } };
+  
+  // Auto-load Meetings tab for Employee role
+  if (isEmployee && activeTab === "trainers") {
+    loadTrainers();
+  }
 """
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -672,6 +703,10 @@ DASHBOARD_SCRIPT_P3 = """
     calTypeFilter = "SS Training";
   } else if (isTrainer) {
     calTypeFilter = "SS Training";
+    root.querySelector(".aad-cal-new-meeting").classList.remove("aad-cal-type-hidden");
+  } else if (isEmployee) {
+    // Employee: show only Employee Training calendar, no calendar type filter pills
+    calTypeFilter = "";  // Show all their meetings regardless of calendar type
     root.querySelector(".aad-cal-new-meeting").classList.remove("aad-cal-type-hidden");
   } else {
     calTypeFilter = "Employee Training";
@@ -695,6 +730,8 @@ DASHBOARD_SCRIPT_P3 = """
     const to   = year + "-" + String(month+1).padStart(2,"0") + "-" + String(lastDay).padStart(2,"0");
     const filters = { date: ["between", [from, to]], docstatus: ["<", 2] };
     if (calTypeFilter) filters["calendar_type"] = calTypeFilter;
+    // Employee role: only show their own meetings
+    if (isEmployee) filters["owner"] = user;
     try {
       return await frappe.db.get_list("Meeting", {
         fields: ["name","date","start_time","end_time","topic","training_location","calendar_type","trainer"],
@@ -758,11 +795,12 @@ DASHBOARD_SCRIPT_P3 = """
     body.querySelectorAll(".aad-cal-event").forEach(chip => {
       chip.onclick = e => { e.stopPropagation(); showEventPopup(chip.dataset.name); };
     });
-    if (isTrainer || isHead) {
+    if (isTrainer || isHead || isEmployee) {
       body.querySelectorAll(".aad-cal-cell:not(.aad-cal-empty)").forEach(cell => {
         cell.onclick = () => {
           // only open new meeting if click is directly on cell, not event chip
-          frappe.new_doc("Meeting", { date: cell.dataset.date, calendar_type: calTypeFilter || "SS Training" });
+          const defaultCalType = isEmployee ? "Employee Training" : (calTypeFilter || "SS Training");
+          frappe.new_doc("Meeting", { date: cell.dataset.date, calendar_type: defaultCalType });
         };
       });
     }
@@ -812,7 +850,8 @@ DASHBOARD_SCRIPT_P3 = """
     renderCalendar();
   };
   root.querySelector(".aad-cal-new-meeting").onclick = () => {
-    frappe.new_doc("Meeting", { calendar_type: calTypeFilter || "SS Training" });
+    const defaultCalType = isEmployee ? "Employee Training" : (calTypeFilter || "SS Training");
+    frappe.new_doc("Meeting", { calendar_type: defaultCalType });
   };
 
   async function initCalendar() {
