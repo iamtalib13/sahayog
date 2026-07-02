@@ -523,11 +523,11 @@ DASHBOARD_SCRIPT_P2 = """
       return;
     }
 
-    // Batch fetch trainer names and attendee counts
+    // Batch fetch trainer names and attendee details
     const trainerIds = meetings.map(m => m.trainer).filter(Boolean);
     const meetingNames = meetings.map(m => m.name);
     const trainerNames = {};
-    const attendeeCounts = {};
+    const attendeeDetails = {};
 
     // Fetch trainer names
     if (trainerIds.length) {
@@ -540,7 +540,7 @@ DASHBOARD_SCRIPT_P2 = """
       });
     }
 
-    // Fetch attendee counts for each meeting
+    // Fetch attendee details for each meeting
     const attendeePromises = meetingNames.map(name => 
       frappe.call({
         method: "frappe.client.get",
@@ -549,24 +549,49 @@ DASHBOARD_SCRIPT_P2 = """
           name: name
         }
       }).then(r => {
-        if (r.message && r.message.attandees_table) {
-          attendeeCounts[name] = r.message.attandees_table.length;
+        if (r.message && r.message.attandees_table && r.message.attandees_table.length > 0) {
+          // Get employee IDs from attendees
+          const empIds = r.message.attandees_table.map(a => a.employee).filter(Boolean);
+          if (empIds.length > 0) {
+            return frappe.db.get_list("Employee", {
+              filters: [["name","in", empIds]],
+              fields: ["name","employee_name"],
+              limit_page_length: 0
+            }).then(emps => {
+              const empMap = {};
+              emps.forEach(e => { empMap[e.name] = e.employee_name || e.name; });
+              attendeeDetails[name] = r.message.attandees_table.map(a => 
+                empMap[a.employee] || a.employee || "-"
+              );
+            });
+          } else {
+            attendeeDetails[name] = [];
+          }
         } else {
-          attendeeCounts[name] = 0;
+          attendeeDetails[name] = [];
         }
       }).catch(() => {
-        attendeeCounts[name] = 0;
+        attendeeDetails[name] = [];
       })
     );
 
-    // Wait for all attendee counts to be fetched then render
+    // Wait for all attendee details to be fetched then render
     Promise.all(attendeePromises).then(() => {
       tbody.innerHTML = meetings.map((m, i) => {
         const dateStr = m.date ? frappe.datetime.str_to_user(m.date) : "-";
         const timeStr = (m.start_time ? fmtTime(m.start_time) : "") + (m.end_time ? " – " + fmtTime(m.end_time) : "");
         const c = eventColor(m);
         const trainer = trainerNames[m.trainer] || m.trainer || "-";
-        const attendeeCount = attendeeCounts[m.name] || 0;
+        const attendees = attendeeDetails[m.name] || [];
+        let attendeeDisplay = "-";
+        if (attendees.length > 0) {
+          const showNames = attendees.slice(0, 2);
+          const remaining = attendees.length - showNames.length;
+          attendeeDisplay = '<div style="font-size:11px;line-height:1.4">' 
+            + showNames.map(name => '<div>' + frappe.utils.escape_html(name) + '</div>').join('')
+            + (remaining > 0 ? '<div style="color:var(--text-muted);font-style:italic">+' + remaining + ' more</div>' : '')
+            + '</div>';
+        }
         return '<tr class="aad-mt-row" style="cursor:pointer" data-name="' + encodeURIComponent(m.name) + '">'
           + '<td class="aad-col-index">' + ((mtCurrentPage - 1) * mtPageSize + i + 1) + '</td>'
           + '<td>' + dateStr + '</td>'
@@ -574,7 +599,7 @@ DASHBOARD_SCRIPT_P2 = """
           + '<td><span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + frappe.utils.escape_html(m.topic || "-") + '</span></td>'
           + '<td>' + (m.calendar_type ? '<span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + m.calendar_type + '</span>' : "-") + '</td>'
           + '<td>' + frappe.utils.escape_html(trainer) + '</td>'
-          + '<td class="aad-tr-center">' + attendeeCount + '</td>'
+          + '<td class="aad-tr-left">' + attendeeDisplay + '</td>'
           + '</tr>';
       }).join("");
 
@@ -878,6 +903,7 @@ DASHBOARD_STYLE = """
 .aad-table th { padding:10px 12px; text-align:left; font-weight:500; color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
 .aad-col-index { width:50px; text-align:center; }
 .aad-tr-center { text-align:center; }
+.aad-tr-left { text-align:left; vertical-align:top; padding-top:8px !important; padding-bottom:8px !important; }
 .aad-table tbody tr { border-bottom:1px solid var(--border-subtle); }
 .aad-table tbody tr:hover { background:var(--bg-default); }
 .aad-table td { padding:10px 12px; color:var(--text-base); }
