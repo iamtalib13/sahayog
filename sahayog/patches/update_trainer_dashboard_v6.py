@@ -153,13 +153,12 @@ DASHBOARD_HTML = """<div class="aad-dashboard">
             <th>Time</th>
             <th>Topic</th>
             <th>Calendar Type</th>
-            <th>Location</th>
             <th>Trainer</th>
             <th>Attendees</th>
           </tr>
         </thead>
         <tbody class="aad-tr-body">
-          <tr class="aad-loading-row"><td colspan="8"><div class="aad-spinner"></div></td></tr>
+          <tr class="aad-loading-row"><td colspan="7"><div class="aad-spinner"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -184,7 +183,6 @@ DASHBOARD_HTML = """<div class="aad-dashboard">
       <button class="aad-btn aad-cal-prev">&#8592;</button>
       <h2 class="aad-cal-month-label"></h2>
       <button class="aad-btn aad-cal-next">&#8594;</button>
-      <button class="aad-btn aad-btn-secondary aad-cal-today-btn">Today</button>
       <button class="aad-btn aad-btn-primary aad-cal-new-meeting aad-cal-type-hidden">+ New Meeting</button>
     </div>
     <div class="aad-cal-legend">
@@ -521,13 +519,17 @@ DASHBOARD_SCRIPT_P2 = """
   function renderMeetingsTable(meetings) {
     const tbody = root.querySelector(".aad-tr-body");
     if (!meetings.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="aad-empty-state"><p>No meetings found</p></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="aad-empty-state"><p>No meetings found</p></td></tr>';
       return;
     }
 
-    // Batch fetch trainer names
+    // Batch fetch trainer names and attendee counts
     const trainerIds = meetings.map(m => m.trainer).filter(Boolean);
+    const meetingNames = meetings.map(m => m.name);
     const trainerNames = {};
+    const attendeeCounts = {};
+
+    // Fetch trainer names
     if (trainerIds.length) {
       frappe.db.get_list("Employee", {
         filters: [["name","in", trainerIds]],
@@ -538,26 +540,48 @@ DASHBOARD_SCRIPT_P2 = """
       });
     }
 
-    tbody.innerHTML = meetings.map((m, i) => {
-      const dateStr = m.date ? frappe.datetime.str_to_user(m.date) : "-";
-      const timeStr = (m.start_time ? fmtTime(m.start_time) : "") + (m.end_time ? " – " + fmtTime(m.end_time) : "");
-      const c = eventColor(m);
-      const trainer = trainerNames[m.trainer] || m.trainer || "-";
-      return '<tr class="aad-mt-row" style="cursor:pointer" data-name="' + encodeURIComponent(m.name) + '">'
-        + '<td class="aad-col-index">' + ((mtCurrentPage - 1) * mtPageSize + i + 1) + '</td>'
-        + '<td>' + dateStr + '</td>'
-        + '<td>' + (timeStr || "-") + '</td>'
-        + '<td><span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + frappe.utils.escape_html(m.topic || "-") + '</span></td>'
-        + '<td>' + (m.calendar_type ? '<span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + m.calendar_type + '</span>' : "-") + '</td>'
-        + '<td>' + frappe.utils.escape_html(m.training_location || "-") + '</td>'
-        + '<td>' + frappe.utils.escape_html(trainer) + '</td>'
-        + '<td class="aad-tr-center">-</td>'
-        + '</tr>';
-    }).join("");
+    // Fetch attendee counts for each meeting
+    const attendeePromises = meetingNames.map(name => 
+      frappe.call({
+        method: "frappe.client.get",
+        args: {
+          doctype: "Meeting",
+          name: name
+        }
+      }).then(r => {
+        if (r.message && r.message.attandees_table) {
+          attendeeCounts[name] = r.message.attandees_table.length;
+        } else {
+          attendeeCounts[name] = 0;
+        }
+      }).catch(() => {
+        attendeeCounts[name] = 0;
+      })
+    );
 
-    // Attach row click
-    tbody.querySelectorAll(".aad-mt-row").forEach(row => {
-      row.onclick = () => { frappe.set_route("Form", "Meeting", decodeURIComponent(row.dataset.name)); };
+    // Wait for all attendee counts to be fetched then render
+    Promise.all(attendeePromises).then(() => {
+      tbody.innerHTML = meetings.map((m, i) => {
+        const dateStr = m.date ? frappe.datetime.str_to_user(m.date) : "-";
+        const timeStr = (m.start_time ? fmtTime(m.start_time) : "") + (m.end_time ? " – " + fmtTime(m.end_time) : "");
+        const c = eventColor(m);
+        const trainer = trainerNames[m.trainer] || m.trainer || "-";
+        const attendeeCount = attendeeCounts[m.name] || 0;
+        return '<tr class="aad-mt-row" style="cursor:pointer" data-name="' + encodeURIComponent(m.name) + '">'
+          + '<td class="aad-col-index">' + ((mtCurrentPage - 1) * mtPageSize + i + 1) + '</td>'
+          + '<td>' + dateStr + '</td>'
+          + '<td>' + (timeStr || "-") + '</td>'
+          + '<td><span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + frappe.utils.escape_html(m.topic || "-") + '</span></td>'
+          + '<td>' + (m.calendar_type ? '<span class="aad-badge" style="background:' + c.bg + ';color:' + c.text + ';border:1px solid ' + c.border + '">' + m.calendar_type + '</span>' : "-") + '</td>'
+          + '<td>' + frappe.utils.escape_html(trainer) + '</td>'
+          + '<td class="aad-tr-center">' + attendeeCount + '</td>'
+          + '</tr>';
+      }).join("");
+
+      // Attach row click
+      tbody.querySelectorAll(".aad-mt-row").forEach(row => {
+        row.onclick = () => { frappe.set_route("Form", "Meeting", decodeURIComponent(row.dataset.name)); };
+      });
     });
   }
 
@@ -764,12 +788,6 @@ DASHBOARD_SCRIPT_P3 = """
     calEvents = await fetchCalEvents(calYear, calMonth);
     renderCalendar();
   };
-  root.querySelector(".aad-cal-today-btn").onclick = async () => {
-    const t = new Date();
-    calYear=t.getFullYear(); calMonth=t.getMonth();
-    calEvents = await fetchCalEvents(calYear, calMonth);
-    renderCalendar();
-  };
   root.querySelector(".aad-cal-new-meeting").onclick = () => {
     frappe.new_doc("Meeting", { calendar_type: calTypeFilter || "SS Training" });
   };
@@ -807,12 +825,13 @@ DASHBOARD_STYLE = """
 .aad-header-actions { display:flex; gap:8px; align-items:center; }
 
 /* Buttons */
-.aad-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:6px; border:1px solid var(--border-default); background:#fff; color:var(--text-base); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; }
-.aad-btn:hover:not(:disabled) { background:var(--bg-secondary); border-color:#3b82f6; color:#000; }
+.aad-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:6px; border:1px solid var(--border-default); background:#fff; color:var(--text-base); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; transition:all .15s; }
+.aad-btn:hover:not(:disabled) { background:var(--bg-secondary); border-color:#3b82f6; }
 .aad-btn:disabled { opacity:.5; cursor:not-allowed; }
 .aad-btn-primary { background:var(--primary); color:#fff; border:none; }
-.aad-btn-primary:hover { background:#2563eb; color:#fff !important; }
+.aad-btn-primary:hover:not(:disabled) { background:#2563eb; border:none; }
 .aad-btn-secondary { background:#fff; border:1px solid var(--border-default); }
+.aad-btn-secondary:hover:not(:disabled) { background:var(--bg-secondary); border-color:#3b82f6; }
 
 /* Reports dropdown */
 .aad-reports-dropdown { position:relative; }
