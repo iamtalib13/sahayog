@@ -35,6 +35,49 @@ def update_employee_details(doc, method):
             frappe.throw("An error occurred while updating employee details.")
 
 
+def validate_duplicate_lead(doc, method):
+    """Server-side duplicate lead check — same mobile + product + amount within 7 days.
+    Two-step approach: find lead names first, then lock with FOR UPDATE to prevent deadlocks."""
+    if not doc.mobile_no or not doc.get("custom_product_table"):
+        return
+
+    from frappe.utils import add_days, nowdate
+    seven_days_ago = add_days(nowdate(), -7)
+
+    for row in doc.custom_product_table:
+        if not row.product or not row.product_amount:
+            continue
+
+        # Step 1: Find duplicate lead names
+        lead_names = frappe.db.sql(
+            """
+            SELECT DISTINCT l.name FROM `tabLead` l
+            JOIN `tabLead Product` lp ON lp.parent = l.name
+            WHERE l.mobile_no = %s
+            AND lp.product = %s
+            AND lp.product_amount = %s
+            AND l.creation >= %s
+            AND l.name != %s
+            """,
+            (doc.mobile_no, row.product, row.product_amount, seven_days_ago, doc.name or ""),
+            pluck=True,
+        )
+
+        if not lead_names:
+            continue
+
+        # Step 2: Lock those specific rows to prevent concurrent inserts
+        frappe.db.sql(
+            "SELECT name FROM `tabLead` WHERE name IN %s FOR UPDATE",
+            (tuple(lead_names),),
+        )
+
+        frappe.throw(
+            title="Duplicate Lead",
+            msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {lead_names[0]})"
+        )
+
+
 def validate_required_employee_fields(doc, method):
     """Validate that all required employee fields are set before allowing Lead creation"""
     if frappe.session.user != "Administrator":

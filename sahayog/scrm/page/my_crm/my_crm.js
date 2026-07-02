@@ -12,6 +12,21 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
   src = "/assets/sahayog/js/petite-vue.iife.js";
 };
 
+let _freezeStartTime = null;
+const FREEZE_MIN_DURATION = 1500;
+
+function freezeScreen(msg) {
+  _freezeStartTime = Date.now();
+  frappe.dom.freeze(msg);
+}
+
+function unfreezeScreen() {
+  if (_freezeStartTime === null) { frappe.dom.unfreeze(); return; }
+  const elapsed = Date.now() - _freezeStartTime;
+  const remaining = Math.max(0, FREEZE_MIN_DURATION - elapsed);
+  setTimeout(() => { frappe.dom.unfreeze(); _freezeStartTime = null; }, remaining);
+}
+
 class MyCRM {
   constructor(wrapper) {
     this.page = wrapper.page;
@@ -1619,8 +1634,13 @@ async getEmployeeByUser(userId) {
     const input_appt_time = d.$wrapper.find("#new_appt_t_edit").val();
     const btn = d.get_primary_btn();
 
+    btn.prop('disabled', true);
+    freezeScreen("Updating Lead...");
+
     // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
+        frappe.dom.unfreeze();
+        btn.prop('disabled', false);
         return showError(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
 
@@ -1634,12 +1654,16 @@ async getEmployeeByUser(userId) {
     // 🛡️ Validate Product Amounts (Must be > 0)
     const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
     if (invalidProducts.length > 0) {
+        frappe.dom.unfreeze();
+        btn.prop('disabled', false);
         return showError(__("Please enter a valid amount (greater than 0) for all products."));
     }
 
-    // ✅ AUTO TAB SWITCH LOGIC
+    // ✅ AUTO TAB SWITCH LOGIC — pehle check karo taaki appointment tab pe redirect ho sake
     if (input_status === "Follow Up") {
         if (!appointmentsData.length && !input_appt_time) {
+            frappe.dom.unfreeze();
+            btn.prop('disabled', false);
             showError(__('Please schedule an appointment to set status as <b>Follow Up</b>.'));
             d.$wrapper.find("#tab-appt-btn").trigger("click");
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
@@ -1649,7 +1673,20 @@ async getEmployeeByUser(userId) {
         }
     }
 
-    btn.prop('disabled', true);
+    // 🛡️ Duplicate Lead Check (same mobile + product + amount within 7 days)
+    if (input_mobile && productsData.length > 0) {
+        try {
+            const dupCheck = await frappe.call({
+                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
+                args: { mobile_no: input_mobile, products: productsData, current_lead: name }
+            });
+            if (dupCheck.message && dupCheck.message.duplicate) {
+                btn.prop('disabled', false);
+                frappe.dom.unfreeze();
+                return showError(__(`A lead for Product (${dupCheck.message.product}) already exists for this number within the last 7 days.`));
+            }
+        } catch (e) { console.error(e); }
+    }
 
     try {
         // 🛡️ Optional: Create Appointment if time is provided
@@ -1662,6 +1699,7 @@ async getEmployeeByUser(userId) {
             if (dupRes.message && dupRes.message.duplicate) {
                 showError(__("An appointment already exists for this Lead at the selected time."));
                 btn.prop('disabled', false);
+                frappe.dom.unfreeze();
                 return;
             }
 
@@ -1705,6 +1743,8 @@ async getEmployeeByUser(userId) {
     } catch (e) {
         console.error(e);
         btn.prop('disabled', false);
+    } finally {
+        unfreezeScreen();
     }
 },
       });
@@ -1912,6 +1952,7 @@ async editAppointment(name) {
             primary_action: async (values) => {
                 const btn = d.get_primary_btn();
                 btn.prop('disabled', true);
+                freezeScreen("Updating Appointment...");
 
                 const final_values = {
                     scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
@@ -1927,8 +1968,6 @@ async editAppointment(name) {
                             name: name,
                             fieldname: final_values,
                         },
-                        freeze: true,
-                        freeze_message: "Updating..."
                     });
                     frappe.show_alert({ message: __("Appointment Updated"), indicator: "green" });
                     d.hide();
@@ -1936,6 +1975,8 @@ async editAppointment(name) {
                 } catch (e) {
                     console.error(e);
                     btn.prop('disabled', false);
+                } finally {
+                    unfreezeScreen();
                 }
             },
         });
@@ -3322,30 +3363,16 @@ createLead() {
             fieldtype: "Link", 
             label: "Source", 
             options: "Lead Source", 
-            reqd: 1,
-            onchange: () => checkDuplicateWarning() 
+            reqd: 1
         },
         {
           fieldname: "status",
           fieldtype: "Select",
           label: "Status",
-          options: "Lead\nFollow Up\nConverted\nNot Interested",
+          options: "Lead",
           default: "Lead",
           reqd: 1,
-          onchange: function () {
-            const status = this.get_value();
-            const $appt_field = dialog.get_field("scheduled_time").$wrapper;
-            if (status === "Follow Up") {
-              $appt_field.show();
-              dialog.set_df_property("scheduled_time", "reqd", 1);
-            } else {
-              $appt_field.hide();
-              dialog.set_df_property("scheduled_time", "reqd", 0);
-            }
-          },
         },
-        { fieldname: "section_break_appt", fieldtype: "Section Break" },
-        { fieldname: "scheduled_time", fieldtype: "Datetime", label: "Appointment Date & Time", reqd: 0 },
         { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
         { fieldname: "product_html", fieldtype: "HTML" },
       ],
@@ -3353,15 +3380,18 @@ createLead() {
       primary_action: async (values) => {
         const btn = dialog.get_primary_btn();
         btn.prop('disabled', true);
+        freezeScreen("Creating Lead...");
 
         if (!validateIndianPhone(values.mobile_no)) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
           btn.prop('disabled', false);
+          frappe.dom.unfreeze();
           return;
         }
         if (productsData.length === 0) {
           frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
           btn.prop('disabled', false);
+          frappe.dom.unfreeze();
           return;
         }
 
@@ -3374,6 +3404,7 @@ createLead() {
             message: "Please enter a valid amount (greater than 0) for all products." 
           });
           btn.prop('disabled', false);
+          frappe.dom.unfreeze();
           return;
         }
 
@@ -3381,6 +3412,7 @@ createLead() {
         const isStillDuplicate = await checkDuplicateWarning(true);
         if (isStillDuplicate) {
           btn.prop('disabled', false);
+          frappe.dom.unfreeze();
           return;
         }
 
@@ -3397,8 +3429,6 @@ createLead() {
           const response = await frappe.call({
             method: "frappe.client.insert",
             args: { doc: leadDoc },
-            freeze: true,
-            freeze_message: "Creating Lead..."
           });
           if (!response.exc) {
               frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
@@ -3411,6 +3441,8 @@ createLead() {
           console.error(error);
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
+        } finally {
+          unfreezeScreen();
         }
       },
     });
@@ -3490,7 +3522,7 @@ createLead() {
             render_input: true,
           });
           if (row.product) productField.set_value(row.product);
-          tr.find(".product-amount").on("change", function () {
+          tr.find(".product-amount").on("input", function () {
             let val = parseFloat($(this).val()) || 0;
             if (val < 0) val = 0;
             $(this).val(val);
@@ -3531,8 +3563,6 @@ createLead() {
         dialog.set_value("mobile_no", val);
     });
 
-    const appt = dialog.get_field("scheduled_time").$wrapper.hide();
-    appt.find("input").attr("placeholder", "DD/MM/YYYY, HH:MM:SS");
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
   }
@@ -3679,6 +3709,7 @@ createLead() {
         if (!time) return frappe.msgprint("Please select Date & Time");
 
         btn.prop('disabled', true);
+        freezeScreen("Creating Appointment...");
         try {
           // 🛡️ Duplicate Appointment Check
           const dupRes = await frappe.call({
@@ -3693,6 +3724,7 @@ createLead() {
               message: __("An appointment already exists for this Lead at the selected time.")
             });
             btn.prop('disabled', false);
+            frappe.dom.unfreeze();
             return;
           }
 
@@ -3711,8 +3743,6 @@ createLead() {
                 customer_details: d.$wrapper.find("#create_appt_remarks").val(),
               },
             },
-            freeze: true,
-            freeze_message: "Booking Appointment..."
           });
 
           frappe.show_alert({ message: "✅ Appointment created", indicator: "green" }, 3);
@@ -3722,6 +3752,8 @@ createLead() {
         } catch (error) {
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
+        } finally {
+          unfreezeScreen();
         }
       },
     });
