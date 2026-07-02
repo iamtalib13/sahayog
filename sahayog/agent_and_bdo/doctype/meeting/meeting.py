@@ -8,13 +8,14 @@ class Meeting(Document):
         self.set_trainer_from_user()
 
     def set_trainer_from_user(self):
-        try:
-            employee_name = frappe.db.get_value('Employee', {'user_id': frappe.session.user}, 'name')
-            if not employee_name:
-                frappe.throw("Employee not found for the current user.")
-            self.trainer = employee_name
-        except Exception as e:
-            frappe.throw("An unexpected error occurred while setting the trainer.")
+        # Admin / System Manager can create meetings without a linked Employee
+        roles = frappe.get_roles(frappe.session.user)
+        if 'Administrator' in roles or 'System Manager' in roles:
+            return
+        employee_name = frappe.db.get_value('Employee', {'user_id': frappe.session.user}, 'name')
+        if not employee_name:
+            frappe.throw("Employee not found for the current user.")
+        self.trainer = employee_name
 
 
 @frappe.whitelist()
