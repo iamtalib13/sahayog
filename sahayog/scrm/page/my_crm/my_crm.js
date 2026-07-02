@@ -12,6 +12,21 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
   src = "/assets/sahayog/js/petite-vue.iife.js";
 };
 
+let _freezeStartTime = null;
+const FREEZE_MIN_DURATION = 1500;
+
+function freezeScreen(msg) {
+  _freezeStartTime = Date.now();
+  frappe.dom.freeze(msg);
+}
+
+function unfreezeScreen() {
+  if (_freezeStartTime === null) { frappe.dom.unfreeze(); return; }
+  const elapsed = Date.now() - _freezeStartTime;
+  const remaining = Math.max(0, FREEZE_MIN_DURATION - elapsed);
+  setTimeout(() => { frappe.dom.unfreeze(); _freezeStartTime = null; }, remaining);
+}
+
 class MyCRM {
   constructor(wrapper) {
     this.page = wrapper.page;
@@ -1620,7 +1635,7 @@ async getEmployeeByUser(userId) {
     const btn = d.get_primary_btn();
 
     btn.prop('disabled', true);
-    frappe.dom.freeze("Updating Lead...");
+    freezeScreen("Updating Lead...");
 
     // 📱 Mobile Validation
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
@@ -1729,7 +1744,7 @@ async getEmployeeByUser(userId) {
         console.error(e);
         btn.prop('disabled', false);
     } finally {
-        frappe.dom.unfreeze();
+        unfreezeScreen();
     }
 },
       });
@@ -1937,7 +1952,7 @@ async editAppointment(name) {
             primary_action: async (values) => {
                 const btn = d.get_primary_btn();
                 btn.prop('disabled', true);
-                frappe.dom.freeze("Updating Appointment...");
+                freezeScreen("Updating Appointment...");
 
                 const final_values = {
                     scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
@@ -1961,7 +1976,7 @@ async editAppointment(name) {
                     console.error(e);
                     btn.prop('disabled', false);
                 } finally {
-                    frappe.dom.unfreeze();
+                    unfreezeScreen();
                 }
             },
         });
@@ -3365,7 +3380,7 @@ createLead() {
       primary_action: async (values) => {
         const btn = dialog.get_primary_btn();
         btn.prop('disabled', true);
-        frappe.dom.freeze("Creating Lead...");
+        freezeScreen("Creating Lead...");
 
         if (!validateIndianPhone(values.mobile_no)) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
@@ -3427,7 +3442,7 @@ createLead() {
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
         } finally {
-          frappe.dom.unfreeze();
+          unfreezeScreen();
         }
       },
     });
@@ -3694,7 +3709,7 @@ createLead() {
         if (!time) return frappe.msgprint("Please select Date & Time");
 
         btn.prop('disabled', true);
-        frappe.dom.freeze("Creating Appointment...");
+        freezeScreen("Creating Appointment...");
         try {
           // 🛡️ Duplicate Appointment Check
           const dupRes = await frappe.call({
@@ -3738,7 +3753,7 @@ createLead() {
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
         } finally {
-          frappe.dom.unfreeze();
+          unfreezeScreen();
         }
       },
     });
