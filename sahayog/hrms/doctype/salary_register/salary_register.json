@@ -1,0 +1,226 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:SAL-{payroll_month}-{employee}-{####}",
+ "creation": "2026-07-03 13:40:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "payroll_run",
+  "payroll_month",
+  "section_employee",
+  "employee",
+  "employee_name",
+  "column_break_emp",
+  "branch",
+  "designation",
+  "section_earnings",
+  "gross_salary",
+  "section_deductions",
+  "medical_deduction",
+  "staff_loan_emi",
+  "column_break_ded",
+  "other_deduction",
+  "other_deduction_reason",
+  "section_calculation",
+  "total_deductions",
+  "column_break_calc",
+  "net_salary",
+  "section_banking",
+  "bank_name",
+  "column_break_bank",
+  "bank_account_no"
+ ],
+ "fields": [
+  {
+   "fieldname": "payroll_run",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payroll Run",
+   "options": "Payroll Run",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "payroll_run.payroll_month",
+   "fieldname": "payroll_month",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payroll Month",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_employee",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_emp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.sahayog_branch",
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_earnings",
+   "fieldtype": "Section Break",
+   "label": "Earnings"
+  },
+  {
+   "fieldname": "gross_salary",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Gross Salary",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_deductions",
+   "fieldtype": "Section Break",
+   "label": "Deductions"
+  },
+  {
+   "default": "0",
+   "fieldname": "medical_deduction",
+   "fieldtype": "Currency",
+   "label": "Medical Deduction"
+  },
+  {
+   "default": "0",
+   "fieldname": "staff_loan_emi",
+   "fieldtype": "Currency",
+   "label": "Staff Loan EMI"
+  },
+  {
+   "fieldname": "column_break_ded",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Manual adjustments, arrears, penalties etc.",
+   "fieldname": "other_deduction",
+   "fieldtype": "Currency",
+   "label": "Other Deduction"
+  },
+  {
+   "depends_on": "eval:doc.other_deduction>0",
+   "fieldname": "other_deduction_reason",
+   "fieldtype": "Small Text",
+   "label": "Other Deduction Reason"
+  },
+  {
+   "fieldname": "section_calculation",
+   "fieldtype": "Section Break",
+   "label": "Calculation"
+  },
+  {
+   "bold": 1,
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_calc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_salary",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Salary",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_banking",
+   "fieldtype": "Section Break",
+   "label": "Banking Details"
+  },
+  {
+   "fetch_from": "employee.bank_name",
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bank",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.bank_ac_no",
+   "fieldname": "bank_account_no",
+   "fieldtype": "Data",
+   "label": "Bank Account Number",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-03 13:40:00.000000",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Salary Register",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
