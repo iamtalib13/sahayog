@@ -44,3 +44,4 @@ sahayog.patches.add_lead_docperm_for_branch_manager
 sahayog.patches.add_calendar_type_to_meeting
 sahayog.patches.update_trainer_dashboard_v6
 sahayog.patches.add_trainer_head_to_workspace
+sahayog.patches.custom_fields.add_payroll_fields_to_employee
