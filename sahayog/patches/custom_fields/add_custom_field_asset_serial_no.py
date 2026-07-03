@@ -9,6 +9,6 @@ def execute():
             "fieldname": "serial_no",
             "fieldtype": "Link",
             "options": "Serial No",
-            "insert_after": "cost_center",
+            "insert_after": "asset_owner",
         }).insert()
         frappe.db.commit()
