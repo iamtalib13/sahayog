@@ -1071,7 +1071,7 @@
         id="tabAttendance"
         onclick="switchTab('attendance', this)"
       >
-        Attendance
+        📅 Attendance
       </button>
       <button
         class="nav-tab"
@@ -1079,7 +1079,7 @@
         style="display: none"
         onclick="switchTab('hr_dashboard', this)"
       >
-        HR Dashboard
+        👥 HR Dashboard
       </button>
       <button
         class="nav-tab"
@@ -1087,7 +1087,7 @@
         style="display: none"
         onclick="switchTab('leave', this)"
       >
-        Leave Approvals
+        📝 Leave Approvals
       </button>
       <button
         class="nav-tab"
@@ -1095,7 +1095,7 @@
         style="display: none"
         onclick="switchTab('corrections', this)"
       >
-        Correction Approvals
+        ✏️ Correction Approvals
       </button>
       <button
         class="nav-tab"
@@ -1103,7 +1103,7 @@
         style="display: none"
         onclick="switchTab('reports', this)"
       >
-        Reports
+        📊 Reports
       </button>
       <button
         class="nav-tab"
@@ -1134,14 +1134,14 @@
         id="subTabPending"
         onclick="switchSubTab('pending')"
       >
-        Pending Requests
+        ⏳ Pending Requests
       </button>
       <button
         class="ftab"
         id="subTabHistory"
         onclick="switchSubTab('history')"
       >
-        Approval History
+        📜 Approval History
       </button>
 
       <!-- History Search & Filter (visible only in history sub-tab) -->
@@ -3386,7 +3386,7 @@
         const btnCreateEmployee = document.getElementById("btnCreateEmployee");
 
         if (isHR()) {
-          if (attendanceTab) attendanceTab.textContent = "Employee Directory";
+          if (attendanceTab) attendanceTab.textContent = "👤 Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
@@ -3396,11 +3396,11 @@
           if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
-            leaveTab.textContent = "Leave Approvals";
+            leaveTab.textContent = "📝 Leave Approvals";
           }
           if (corrTab) {
             corrTab.style.display = "flex";
-            corrTab.textContent = "Correction Approvals";
+            corrTab.textContent = "✏️ Correction Approvals";
           }
           if (hrTab) hrTab.style.display = "flex";
           const reportsTab = document.getElementById("tabReports");
