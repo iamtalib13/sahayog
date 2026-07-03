@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-02 13:55:42.873943",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "function",
+  "parameter",
+  "weightage",
+  "source",
+  "column_break_vsbi",
+  "scoring_methodology",
+  "source_obtain"
+ ],
+ "fields": [
+  {
+   "fieldname": "function",
+   "fieldtype": "Data",
+   "label": "Function"
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "label": "Parameter"
+  },
+  {
+   "fieldname": "weightage",
+   "fieldtype": "Float",
+   "label": "Weightage"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source"
+  },
+  {
+   "fieldname": "column_break_vsbi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scoring_methodology",
+   "fieldtype": "Small Text",
+   "label": "Scoring Methodology"
+  },
+  {
+   "fieldname": "source_obtain",
+   "fieldtype": "Int",
+   "label": "Source Obtain"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-03 12:36:35.905691",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Branch Score Matrixx",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
