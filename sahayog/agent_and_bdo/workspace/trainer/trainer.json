@@ -30,6 +30,12 @@
  "roles": [
   {
    "role": "Trainer"
+  },
+  {
+   "role": "Trainer Head"
+  },
+  {
+   "role": "Employee"
   }
  ],
  "sequence_id": 75.0,

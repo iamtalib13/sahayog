@@ -1036,17 +1036,7 @@
         <span class="topbar-title">Sahayog Attendance Portal</span>
       </div>
       <div class="topbar-right">
-        <svg
-          width="20"
-          height="20"
-          fill="none"
-          stroke="#fff"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
+        <span id="todayDate" style="color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif;"></span>
         <div class="av">BM</div>
       </div>
     </nav>
@@ -1071,7 +1061,7 @@
         id="tabAttendance"
         onclick="switchTab('attendance', this)"
       >
-        Attendance
+        📅 Attendance
       </button>
       <button
         class="nav-tab"
@@ -1079,7 +1069,7 @@
         style="display: none"
         onclick="switchTab('hr_dashboard', this)"
       >
-        HR Dashboard
+        👥 HR Dashboard
       </button>
       <button
         class="nav-tab"
@@ -1087,7 +1077,7 @@
         style="display: none"
         onclick="switchTab('leave', this)"
       >
-        Leave Approvals
+        📝 Leave Approvals
       </button>
       <button
         class="nav-tab"
@@ -1095,7 +1085,7 @@
         style="display: none"
         onclick="switchTab('corrections', this)"
       >
-        Correction Approvals
+        ✏️ Correction Approvals
       </button>
       <button
         class="nav-tab"
@@ -1103,7 +1093,15 @@
         style="display: none"
         onclick="switchTab('reports', this)"
       >
-        Reports
+        📊 Reports
+      </button>
+      <button
+        class="nav-tab"
+        id="tabPayroll"
+        style="display: none"
+        onclick="switchTab('payroll', this)"
+      >
+        💰 Payroll
       </button>
     </div>
 
@@ -1126,14 +1124,14 @@
         id="subTabPending"
         onclick="switchSubTab('pending')"
       >
-        Pending Requests
+        ⏳ Pending Requests
       </button>
       <button
         class="ftab"
         id="subTabHistory"
         onclick="switchSubTab('history')"
       >
-        Approval History
+        📜 Approval History
       </button>
 
       <!-- History Search & Filter (visible only in history sub-tab) -->
@@ -2165,6 +2163,7 @@
     ></div>
 
     <script>
+      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
       // ── CONFIG & STATE ──────────────────────────────────────
       const COLORS = [
         "#6366f1",
@@ -2773,6 +2772,7 @@
 
         data.branch = document.getElementById("new_emp_branch_name").value;
         data.sol_id = document.getElementById("new_emp_sol_id").value;
+        data.custom_medical_deduction = 100;
 
         const res = await callAPI("create_support_staff", { data: data }, "employee");
 
@@ -3042,6 +3042,13 @@
           if (empList) empList.style.display = "none";
           if (hrDash) hrDash.style.display = "block";
           renderReportsTab();
+        } else if (tab === "payroll") {
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (empList) empList.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          loadPayrollDashboard();
         }
       }
 
@@ -3371,7 +3378,7 @@
         const btnCreateEmployee = document.getElementById("btnCreateEmployee");
 
         if (isHR()) {
-          if (attendanceTab) attendanceTab.textContent = "Employee Directory";
+          if (attendanceTab) attendanceTab.textContent = "👤 Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
@@ -3381,15 +3388,17 @@
           if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
-            leaveTab.textContent = "Leave Approvals";
+            leaveTab.textContent = "📝 Leave Approvals";
           }
           if (corrTab) {
             corrTab.style.display = "flex";
-            corrTab.textContent = "Correction Approvals";
+            corrTab.textContent = "✏️ Correction Approvals";
           }
           if (hrTab) hrTab.style.display = "flex";
           const reportsTab = document.getElementById("tabReports");
           if (reportsTab) reportsTab.style.display = "flex";
+          const payrollTab = document.getElementById("tabPayroll");
+          if (payrollTab) payrollTab.style.display = "flex";
           if (bulkBar)
             bulkBar.style.setProperty("display", "none", "important");
 
@@ -4323,8 +4332,9 @@
                 <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
               </div>
             </div>
-            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Loan <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
+              <div style="margin-top:10px;"><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
             </div>` : ""}
             <div style="display:flex;gap:10px;padding-top:10px;">
               <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
@@ -4423,6 +4433,7 @@
           const obj = {};
           headers.forEach((h, i) => obj[h] = vals[i] || "");
           obj["custom_is_support_staff"] = 1;
+          obj["custom_medical_deduction"] = 100;
           return obj;
         });
 
@@ -4507,6 +4518,301 @@
           showToast(res.message);
           closeExitEmployeeModal();
           fetchTeamData();
+        }
+      }
+
+      // ── PAYROLL MANAGEMENT ───────────────────────────────
+      async function loadPayrollDashboard() {
+        const month = document.getElementById("payrollMonthSelector")?.value || 
+                      new Date().toISOString().substring(0, 7);
+        
+        const container = document.getElementById("hrDashboardContent");
+        container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        
+        const data = await callAPI("get_salary_register_list", { payroll_month: month }, "payroll");
+        if (!data) return;
+        
+        const hasPayrollRun = data.payroll_run && data.payroll_run.status !== "Draft";
+        const canGenerate = !data.payroll_run || data.payroll_run.status === "Draft";
+        const canSubmit = data.payroll_run && data.payroll_run.status === "Generated";
+        const canMarkPaid = data.payroll_run && data.payroll_run.status === "Submitted";
+        const canEdit = data.payroll_run && (data.payroll_run.status === "Generated" || data.payroll_run.status === "Draft");
+        const showPaymentReport = data.payroll_run && data.payroll_run.status !== "Draft";
+        
+        container.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">💰 Salary Register - ${month}</h3>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="month" id="payrollMonthSelector" value="${month}" onchange="loadPayrollDashboard()" 
+                style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px;">
+              ${canGenerate ? `
+                <button class="btn-in" onclick="generatePayroll('${month}')" 
+                  style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap;">⚡ Generate Payslips</button>
+              ` : ''}
+              ${canSubmit ? `
+                <button class="btn-in" onclick="submitPayroll('${data.payroll_run.name}', '${month}')" 
+                  style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; background:#10b981; border:none; color:#fff;">✅ Submit Payroll</button>
+              ` : ''}
+              ${canMarkPaid ? `
+                <button class="btn-in" onclick="markPayrollPaid('${data.payroll_run.name}', '${month}')" 
+                  style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; background:#8b5cf6; border:none; color:#fff;">💰 Mark as Paid</button>
+              ` : ''}
+              ${showPaymentReport ? `
+                <button class="btn-clear" onclick="downloadBankPayment('${month}')" 
+                  style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📥 Payment Report</button>
+              ` : ''}
+            </div>
+          </div>
+          ${data.payroll_run ? `
+            <div style="background:${data.payroll_run.status === 'Generated' ? '#f0fdf4' : data.payroll_run.status === 'Submitted' ? '#eff6ff' : data.payroll_run.status === 'Paid' ? '#f5f3ff' : '#fef3c7'}; padding:12px 16px; border-radius:10px; margin-bottom:20px; border:1px solid ${data.payroll_run.status === 'Generated' ? '#bbf7d0' : data.payroll_run.status === 'Submitted' ? '#bfdbfe' : data.payroll_run.status === 'Paid' ? '#e0e7ff' : '#fde68a'};">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:13px; font-weight:600; color:${data.payroll_run.status === 'Generated' ? '#16a34a' : data.payroll_run.status === 'Submitted' ? '#2563eb' : data.payroll_run.status === 'Paid' ? '#7c3aed' : '#d97706'};">
+                  ${data.payroll_run.status === 'Generated' ? '✅' : data.payroll_run.status === 'Submitted' ? '📋' : data.payroll_run.status === 'Paid' ? '💰' : '⏳'} Payroll Run: ${data.payroll_run.name} - ${data.payroll_run.status}
+                </span>
+                <a href="/app/payroll-run/${data.payroll_run.name}" target="_blank" style="font-size:11px; color:var(--brand2); font-weight:600; text-decoration:none;">View Details →</a>
+              </div>
+            </div>
+          ` : `
+            <div style="background:#fff7ed; padding:16px; border-radius:10px; margin-bottom:20px; border:1px solid #fed7aa; text-align:center;">
+              <div style="font-size:14px; font-weight:600; color:#c2410c; margin-bottom:6px;">⚠️ No payroll run found for ${month}</div>
+              <div style="font-size:12px; color:#9a3412;">Click "Generate Payslips" to create salary register for this month</div>
+            </div>
+          `}
+          <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px;">
+            <div style="background:#f8fafc; padding:14px; border-radius:10px; text-align:center; border:1px solid #e2e8f0;">
+              <div style="font-size:20px; font-weight:800; color:var(--brand);">${data.summary.total_employees}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Employees</div>
+            </div>
+            <div style="background:#f0fdf4; padding:14px; border-radius:10px; text-align:center; border:1px solid #bbf7d0;">
+              <div style="font-size:16px; font-weight:800; color:#16a34a;">₹${Number(data.summary.total_gross).toLocaleString('en-IN')}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Gross</div>
+            </div>
+            <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_medical).toLocaleString('en-IN')}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Medical</div>
+            </div>
+            <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_loan).toLocaleString('en-IN')}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Loan EMI</div>
+            </div>
+            <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_other).toLocaleString('en-IN')}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Other Ded.</div>
+            </div>
+            <div style="background:#f5f3ff; padding:14px; border-radius:10px; text-align:center; border:1px solid #e0e7ff;">
+              <div style="font-size:16px; font-weight:800; color:var(--brand2);">₹${Number(data.summary.total_net).toLocaleString('en-IN')}</div>
+              <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Net Payable</div>
+            </div>
+          </div>
+          <div style="background:#fff; border-radius:14px; overflow:hidden; box-shadow:var(--shadow);">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead style="background:#f8fafc;">
+                <tr style="text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">
+                  <th style="padding:12px;">Employee</th>
+                  <th style="padding:12px;">Branch</th>
+                  <th style="padding:12px; text-align:right;">Gross</th>
+                  <th style="padding:12px; text-align:right;">Medical</th>
+                  <th style="padding:12px; text-align:right;">Loan EMI</th>
+                  <th style="padding:12px; text-align:right;">Other</th>
+                  <th style="padding:12px; text-align:right;">Net Pay</th>
+                  <th style="padding:12px; text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.data.map(row => `
+                  <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:12px;">
+                      <div style="font-weight:600; color:var(--brand);">${row.employee_name}</div>
+                      <div style="font-size:10px; color:var(--muted);">${row.employee}</div>
+                    </td>
+                    <td style="padding:12px;">${row.branch || '-'}</td>
+                    <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.other_deduction).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px; text-align:right; color:var(--success); font-weight:700;">₹${Number(row.net_salary).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px; text-align:center;">
+                      <button class="btn-clear" style="font-size:10px; padding:4px 8px;" onclick="viewSalarySlip('${row.employee}', '${month}')">👁️ View</button>
+                      ${canEdit ? `<button class="btn-clear" style="font-size:10px; padding:4px 8px; margin-left:4px;" onclick="openEditDeductionModal('${row.name}', '${row.employee_name}', ${row.other_deduction}, '${(row.other_deduction_reason || '').replace(/'/g, "\\'")}')">✏️ Edit</button>` : ''}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      async function generatePayroll(month) {
+        if (!confirm(`Generate payslips for ${month}?\\n\\nThis will create salary registers for all active support staff.`)) return;
+        showToast("Creating payroll run...");
+        const createRes = await callAPI("create_payroll_run", { payroll_month: month }, "payroll");
+        if (!createRes || !createRes.success) return;
+        showToast("Generating salary registers...");
+        const genRes = await callAPI("generate_salary_register", { payroll_run_id: createRes.payroll_id }, "payroll");
+        if (genRes && genRes.success) {
+          showToast(`✅ ${genRes.message}`);
+          loadPayrollDashboard();
+        }
+      }
+
+      async function viewSalarySlip(employee, month) {
+        const data = await callAPI("get_employee_salary_slip", { employee, payroll_month: month }, "payroll");
+        if (!data) return;
+        const modal = document.createElement('div');
+        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">Salary Slip</h3>
+              <button onclick="this.closest('div[style*=fixed]').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            <div style="text-align:center; margin-bottom:20px; padding:12px; background:#f8fafc; border-radius:10px;">
+              <div style="font-size:16px; font-weight:700; color:var(--brand);">${data.register.employee_name}</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:2px;">${data.register.designation} | ${data.register.branch}</div>
+              <div style="font-size:13px; font-weight:600; color:var(--brand2); margin-top:6px;">For the month of ${month}</div>
+            </div>
+            <div style="margin-bottom:16px;">
+              <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Earnings</div>
+              ${data.earnings.map(e => `<div style="display:flex; justify-content:space-between; padding:8px; background:#f0fdf4; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${e.component}</span><span style="font-weight:700; color:#16a34a;">₹ ${Number(e.amount).toLocaleString('en-IN')}</span></div>`).join('')}
+            </div>
+            <div style="margin-bottom:16px;">
+              <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Deductions</div>
+              ${data.deductions.length > 0 ? data.deductions.map(d => `<div style="display:flex; justify-content:space-between; padding:8px; background:#fef2f2; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${d.component}${d.reason ? ' <span style="font-size:10px;color:var(--muted);">(' + d.reason + ')</span>' : ''}</span><span style="font-weight:700; color:#dc2626;">₹ ${Number(d.amount).toLocaleString('en-IN')}</span></div>`).join('') : '<div style="text-align:center; padding:10px; color:var(--muted); font-size:12px;">No deductions</div>'}
+            </div>
+            <div style="padding:16px; background:var(--brand2); color:#fff; border-radius:12px; text-align:center;">
+              <div style="font-size:11px; text-transform:uppercase; opacity:0.9; margin-bottom:4px;">Net Salary</div>
+              <div style="font-size:24px; font-weight:800;">₹ ${Number(data.register.net_salary).toLocaleString('en-IN')}</div>
+            </div>
+            <div style="margin-top:16px; padding:12px; background:#f8fafc; border-radius:8px; font-size:11px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:var(--muted);">Bank:</span><span style="font-weight:600;">${data.register.bank_name || '-'}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Account:</span><span style="font-weight:600;">${data.register.bank_account_no || '-'}</span></div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      async function openEditDeductionModal(registerId, employeeName, currentAmount, currentReason) {
+        const modal = document.createElement('div');
+        modal.id = 'editDeductionModal';
+        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:450px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">Edit Other Deduction</h3>
+              <button onclick="document.getElementById('editDeductionModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            
+            <div style="text-align:center; margin-bottom:20px; padding:12px; background:#f8fafc; border-radius:10px;">
+              <div style="font-size:15px; font-weight:700; color:var(--brand);">${employeeName}</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:4px;">Adjust other deductions (penalties, arrears, etc.)</div>
+            </div>
+            
+            <form id="editDeductionForm" onsubmit="event.preventDefault(); saveOtherDeduction('${registerId}');">
+              <div style="margin-bottom:14px;">
+                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Other Deduction Amount</label>
+                <input type="number" id="otherDeductionAmount" class="member-select" value="${currentAmount || 0}" min="0" step="0.01" required style="font-size:14px; font-weight:600;">
+              </div>
+              
+              <div style="margin-bottom:20px;">
+                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason <span style="color:#dc2626;">*</span></label>
+                <textarea id="otherDeductionReason" class="member-select" rows="3" required placeholder="e.g., Penalty for unauthorized absence, Advance salary recovery, etc.">${currentReason || ''}</textarea>
+              </div>
+              
+              <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
+                <button type="button" class="btn-clear" onclick="document.getElementById('editDeductionModal').remove()" style="padding:9px 20px;">Cancel</button>
+                <button type="submit" id="btnSaveDeduction" class="btn-in" style="padding:9px 24px; font-weight:700;">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+      }
+
+      async function saveOtherDeduction(registerId) {
+        const amount = document.getElementById('otherDeductionAmount').value;
+        const reason = document.getElementById('otherDeductionReason').value.trim();
+        
+        if (parseFloat(amount) > 0 && !reason) {
+          showToast("Please provide reason for deduction");
+          return;
+        }
+        
+        const btn = document.getElementById('btnSaveDeduction');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        
+        const res = await callAPI("update_salary_deduction", {
+          register_id: registerId,
+          other_deduction: amount,
+          reason: reason
+        }, "payroll");
+        
+        btn.disabled = false;
+        btn.textContent = originalText;
+        
+        if (res && res.success) {
+          showToast("✅ Deduction updated successfully!");
+          document.getElementById('editDeductionModal').remove();
+          loadPayrollDashboard(); // Refresh the table
+        }
+      }
+
+      async function submitPayroll(payrollRunId, month) {
+        if (!confirm(`Submit payroll for ${month}?\\n\\nThis will lock the payroll. No further edits will be allowed.\\n\\nAre you sure all salary registers are reviewed and correct?`)) {
+          return;
+        }
+        
+        showToast("Submitting payroll...");
+        
+        const res = await callAPI("submit_payroll_run", { payroll_run_id: payrollRunId }, "payroll");
+        
+        if (res && res.success) {
+          showToast(`✅ ${res.message}`);
+          loadPayrollDashboard();
+        }
+      }
+
+      async function markPayrollPaid(payrollRunId, month) {
+        if (!confirm(`Mark payroll as PAID for ${month}?\\n\\nConfirm that bank transfer has been completed for all employees.\\n\\nThis action records the payment completion.`)) {
+          return;
+        }
+        
+        showToast("Marking as paid...");
+        
+        const res = await callAPI("mark_payroll_paid", { payroll_run_id: payrollRunId }, "payroll");
+        
+        if (res && res.success) {
+          showToast(`✅ ${res.message}`);
+          loadPayrollDashboard();
+        }
+      }
+
+      async function downloadBankPayment(month) {
+        showToast("Generating bank payment file...");
+        try {
+          const response = await fetch(`/api/method/sahayog.api.payroll.export_bank_payment_csv`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content },
+            body: JSON.stringify({ payroll_month: month }),
+            credentials: 'include'
+          });
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `salary_payment_${month}.csv`;
+          a.click();
+          showToast("✅ Bank payment file downloaded!");
+        } catch (e) {
+          showToast("Error downloading file");
+          console.error(e);
         }
       }
 

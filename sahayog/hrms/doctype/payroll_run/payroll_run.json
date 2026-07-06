@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:PAY-{payroll_month}-{####}",
+ "creation": "2026-07-03 13:40:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "payroll_month",
+  "posting_date",
+  "branch_filter",
+  "status",
+  "section_summary",
+  "total_employees",
+  "column_break_1",
+  "total_gross",
+  "total_deductions",
+  "total_net_pay",
+  "section_actions",
+  "generate_salary_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "payroll_month",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Payroll Month",
+   "reqd": 1,
+   "description": "Format: YYYY-MM (e.g., 2026-07)"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "branch_filter",
+   "fieldtype": "Link",
+   "label": "Branch Filter (Optional)",
+   "options": "Sahayog Branch"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nGenerated\nSubmitted\nPaid\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "total_employees",
+   "fieldtype": "Int",
+   "label": "Total Employees",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_gross",
+   "fieldtype": "Currency",
+   "label": "Total Gross Salary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_deductions",
+   "fieldtype": "Currency",
+   "label": "Total Deductions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_net_pay",
+   "fieldtype": "Currency",
+   "label": "Total Net Pay",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_actions",
+   "fieldtype": "Section Break",
+   "label": "Actions"
+  },
+  {
+   "depends_on": "eval:doc.status=='Draft'",
+   "fieldname": "generate_salary_html",
+   "fieldtype": "HTML",
+   "label": "Generate Salary",
+   "options": "<button class='btn btn-primary btn-sm' onclick=\"frappe.call({method: 'sahayog.api.payroll.generate_salary_register', args: {payroll_run_id: cur_frm.doc.name}, freeze: true, freeze_message: 'Generating Salary Register...', callback: function(r) { if(r.message && r.message.success) { frappe.msgprint(r.message.message); cur_frm.reload_doc(); } }})\">⚡ Generate Salary Register</button>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-03 13:40:00.000000",
+ "modified_by": "Administrator",
+ "module": "HRMS",
+ "name": "Payroll Run",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User",
+   "share": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

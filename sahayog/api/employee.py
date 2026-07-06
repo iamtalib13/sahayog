@@ -134,6 +134,7 @@ def create_support_staff(data):
         
         # Custom Fields
         "custom_is_support_staff": 1,
+        "custom_medical_deduction": 100,
         "custom_pan_number": data.get("pan_number"),
         "custom_aadhar_number": data.get("aadhaar_card_number"),
     })
@@ -235,9 +236,10 @@ def update_employee_profile(employee, data):
         "bank_name", "bank_ac_no", "blood_group", "marital_status",
         "employment_type", "custom_pan_number", "custom_aadhar_number",
     ]
-    # salary only for HR Manager / Admin
+    # salary & loan only for HR Manager / Admin
     if any(r in roles for r in ["HR Manager", "Administrator"]):
         allowed_fields.append("ctc")
+        allowed_fields.append("custom_staff_loan_emi")
 
     update = {k: data[k] for k in allowed_fields if k in data}
     if not update:
@@ -261,7 +263,7 @@ def get_employee_profile(employee):
         "cell_number", "personal_email", "permanent_address",
         "custom_pan_number", "custom_aadhar_number",
         "bank_name", "bank_ac_no", "reports_to",
-        "marital_status", "blood_group", "ctc"
+        "marital_status", "blood_group", "ctc", "custom_staff_loan_emi"
     ], as_dict=True)
 
     if not e:
