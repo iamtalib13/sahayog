@@ -5,19 +5,21 @@
  "creation": "2025-06-02 12:56:11.347306",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
-  "section_break_zarz",
-  "trainer",
-  "date",
-  "start_time",
-  "end_time",
-  "column_break_sfsv",
-  "training_location",
-  "topic",
-  "amended_from",
-  "section_break_xhny",
-  "attandees_table"
- ],
+  "field_order": [
+   "section_break_zarz",
+   "trainer",
+   "date",
+   "start_time",
+   "end_time",
+   "column_break_sfsv",
+   "training_location",
+   "topic",
+   "branch",
+   "attendee_type",
+   "amended_from",
+   "section_break_xhny",
+   "attandees_table"
+  ],
  "fields": [
   {
    "fieldname": "section_break_zarz",
@@ -62,12 +64,25 @@
    "options": "\nMeeting\nInduction\nRefreshment Training",
    "reqd": 1
   },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Time",
-   "label": "End Time"
-  },
-  {
+   {
+    "fieldname": "end_time",
+    "fieldtype": "Time",
+    "label": "End Time"
+   },
+   {
+    "fieldname": "branch",
+    "fieldtype": "Link",
+    "label": "Branch",
+    "options": "Sahayog Branch"
+   },
+   {
+    "fieldname": "attendee_type",
+    "fieldtype": "Select",
+    "label": "Attendee Type",
+    "options": "\nAgent\nEmployee",
+    "depends_on": "eval:doc.branch"
+   },
+   {
    "fieldname": "section_break_xhny",
    "fieldtype": "Section Break",
    "label": "Attendees Details"
@@ -89,7 +104,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-11 17:55:13.211215",
+ "modified": "2026-07-06 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
