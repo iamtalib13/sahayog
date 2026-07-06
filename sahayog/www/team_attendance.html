@@ -2772,6 +2772,7 @@
 
         data.branch = document.getElementById("new_emp_branch_name").value;
         data.sol_id = document.getElementById("new_emp_sol_id").value;
+        data.custom_medical_deduction = 100;
 
         const res = await callAPI("create_support_staff", { data: data }, "employee");
 
@@ -4431,6 +4432,7 @@
           const obj = {};
           headers.forEach((h, i) => obj[h] = vals[i] || "");
           obj["custom_is_support_staff"] = 1;
+          obj["custom_medical_deduction"] = 100;
           return obj;
         });
 

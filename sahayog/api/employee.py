@@ -134,6 +134,7 @@ def create_support_staff(data):
         
         # Custom Fields
         "custom_is_support_staff": 1,
+        "custom_medical_deduction": 100,
         "custom_pan_number": data.get("pan_number"),
         "custom_aadhar_number": data.get("aadhaar_card_number"),
     })
