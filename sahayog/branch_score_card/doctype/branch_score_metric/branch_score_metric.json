@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-06 11:49:26.108048",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "functions",
+  "parameter",
+  "weightage",
+  "column_break_xjcz",
+  "scoring_methodology",
+  "column_break_onog",
+  "source",
+  "score_obtained"
+ ],
+ "fields": [
+  {
+   "fieldname": "functions",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Functions"
+  },
+  {
+   "fieldname": "parameter",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Parameter"
+  },
+  {
+   "fieldname": "weightage",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Weightage"
+  },
+  {
+   "fieldname": "column_break_xjcz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scoring_methodology",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Scoring Methodology"
+  },
+  {
+   "fieldname": "column_break_onog",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Source"
+  },
+  {
+   "fieldname": "score_obtained",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Score Obtained"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-06 12:17:23.125743",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "Branch Score Metric",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
