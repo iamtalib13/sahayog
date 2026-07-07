@@ -1,1290 +1,1511 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#2563eb" name="theme-color" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <meta content="Sahayog Support System Dashboard" name="description" />
+    <title>Support System</title>
+    <link href="manifest.json" rel="manifest" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom properties for colors and shadows */
+      :root {
+        --primary: #2563eb;
+        --primary-light: #dbeafe;
+        --secondary: #4f46e5;
+        --text: #1f2937;
+        --text-light: #6b7280;
+        --background: #f9fafb;
+        --card-bg: #ffffff;
+        --shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --radius: 16px;
+        --radius-sm: 12px;
+      }
 
-<head>
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1" name="viewport" />
-  <meta content="#2563eb" name="theme-color" />
-  <meta name="csrf-token" content="{{ csrf_token }}" />
-  <meta content="Sahayog Support System Dashboard" name="description" />
-  <title>Support System</title>
-  <link href="manifest.json" rel="manifest" />
-  <link href="https://fonts.googleapis.com" rel="preconnect" />
-  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
-    rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Custom properties for colors and shadows */
-    :root {
-      --primary: #2563eb;
-      --primary-light: #dbeafe;
-      --secondary: #4f46e5;
-      --text: #1f2937;
-      --text-light: #6b7280;
-      --background: #f9fafb;
-      --card-bg: #ffffff;
-      --shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --radius: 16px;
-      --radius-sm: 12px;
-    }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+        scrollbar-width: none;
+        /* Firefox */
+      }
 
-    html,
-    body {
-      height: 100%;
-      overflow: hidden;
-      scrollbar-width: none;
-      /* Firefox */
-    }
+      /* Chrome, Safari, Edge (Webkit) */
+      body::-webkit-scrollbar {
+        display: none;
+      }
 
-    /* Chrome, Safari, Edge (Webkit) */
-    body::-webkit-scrollbar {
-      display: none;
-    }
+      body {
+        background-color: var(--background);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        line-height: 1.5;
+        height: 100vh;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+      }
 
-    body {
-      background-color: var(--background);
-      color: var(--text);
-      font-family: "Inter", sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-      height: 100vh;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-    }
-
-    .app-container {
-      width: 100%;
-      max-width: 1200px;
-      background-color: white;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      position: relative;
-    }
-
-    @media (max-width: 480px) {
       .app-container {
-        max-width: 480px;
-        padding-left: 0;
-        padding-right: 0;
+        width: 100%;
+        max-width: 1200px;
+        background-color: white;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        position: relative;
       }
-    }
 
-    .app-header {
-      flex-shrink: 0;
-      background-color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 1rem;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
+      @media (max-width: 480px) {
+        .app-container {
+          max-width: 480px;
+          padding-left: 0;
+          padding-right: 0;
+        }
+      }
 
-    @media (max-width: 480px) {
       .app-header {
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
+        flex-shrink: 0;
+        background-color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       }
-    }
 
-    .profile-section {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
+      @media (max-width: 480px) {
+        .app-header {
+          padding-left: 1.5rem !important;
+          padding-right: 1.5rem !important;
+        }
+      }
 
-    .avatar {
-      width: 70px;
-      height: 70px;
-      min-width: 70px;
-      min-height: 70px;
-      border-radius: 50%;
-      background-color: #2563eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      color: white;
-      font-weight: bold;
-      box-sizing: border-box;
-      flex-shrink: 0;
-    }
+      .profile-section {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+      }
 
-    .avatar-initial {
-      user-select: none;
-      line-height: 1;
-    }
-
-    @media (max-width: 480px) {
       .avatar {
-        width: 64px;
-        height: 64px;
-        min-width: 64px;
-        min-height: 64px;
-        font-size: 28px;
+        width: 70px;
+        height: 70px;
+        min-width: 70px;
+        min-height: 70px;
+        border-radius: 50%;
+        background-color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        color: white;
+        font-weight: bold;
+        box-sizing: border-box;
+        flex-shrink: 0;
       }
-    }
 
-    .profile-info {
-      display: flex;
-      flex-direction: column;
-    }
+      .avatar-initial {
+        user-select: none;
+        line-height: 1;
+      }
 
-    .profile-name {
-      font-weight: 700;
-      color: var(--text);
-      margin: 0;
-      letter-spacing: 0.02em;
-    }
+      @media (max-width: 480px) {
+        .avatar {
+          width: 64px;
+          height: 64px;
+          min-width: 64px;
+          min-height: 64px;
+          font-size: 28px;
+        }
+      }
 
-    .profile-role {
-      font-size: 0.875rem;
-      color: var(--text-light);
-      font-weight: 500;
-      letter-spacing: 0.01em;
-    }
+      .profile-info {
+        display: flex;
+        flex-direction: column;
+      }
 
-    .header-actions {
-      display: flex;
-      gap: 0.75rem;
-    }
+      .profile-name {
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        letter-spacing: 0.02em;
+      }
 
-    .icon-button {
-      width: 2.75rem;
-      height: 2.75rem;
-      border-radius: 9999px;
-      border: none;
-      background-color: transparent;
-      color: var(--text-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition:
-        background-color 0.25s,
-        color 0.25s;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
+      .profile-role {
+        font-size: 0.875rem;
+        color: var(--text-light);
+        font-weight: 500;
+        letter-spacing: 0.01em;
+      }
 
-    .icon-button:hover {
-      background-color: var(--primary-light);
-      color: var(--primary);
-      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
-    }
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+      }
 
-    main.app-main {
-      flex: 1;
-      padding: 0.5rem 1.5rem 10rem;
-      max-width: 100%;
-      overflow-y: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
+      .icon-button {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 9999px;
+        border: none;
+        background-color: transparent;
+        color: var(--text-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition:
+          background-color 0.25s,
+          color 0.25s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
 
-    main.app-main::-webkit-scrollbar {
-      display: none;
-    }
+      .icon-button:hover {
+        background-color: var(--primary-light);
+        color: var(--primary);
+        box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+      }
 
-    @media (max-width: 480px) {
       main.app-main {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        padding-bottom: 10rem !important;
+        flex: 1;
+        padding: 0.5rem 1.5rem 10rem;
+        max-width: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
       }
-    }
 
-    /* Icon-based grid layout - NO CARDS */
-    .icon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-      gap: 0.6rem 1.10rem;
-      justify-items: center;
-    }
+      main.app-main::-webkit-scrollbar {
+        display: none;
+      }
 
-    @media (max-width: 480px) {
+      @media (max-width: 480px) {
+        main.app-main {
+          padding-left: 0.75rem !important;
+          padding-right: 0.75rem !important;
+          padding-bottom: 10rem !important;
+        }
+      }
+
+      /* Icon-based grid layout - NO CARDS */
       .icon-grid {
-        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-        gap: 0.5rem 0.8rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 0.6rem 1.1rem;
+        justify-items: center;
       }
-    }
 
-    /* Icon item - minimal style */
-    .icon-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      color: inherit;
-      cursor: pointer;
-      transition:
-        transform 0.2s ease,
-        opacity 0.2s ease;
-      position: relative;
-    }
+      @media (max-width: 480px) {
+        .icon-grid {
+          grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+          gap: 0.5rem 0.8rem;
+        }
+      }
 
-    .icon-item:hover {
-      transform: translateY(-2px);
-    }
+      /* Icon item - minimal style */
+      .icon-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: inherit;
+        cursor: pointer;
+        transition:
+          transform 0.2s ease,
+          opacity 0.2s ease;
+        position: relative;
+      }
 
-    .icon-item:hover .icon-circle {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    }
+      .icon-item:hover {
+        transform: translateY(-2px);
+      }
 
-    /* Icon circle container */
-    .icon-circle {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
+      .icon-item:hover .icon-circle {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      }
 
-    @media (max-width: 480px) {
+      /* Icon circle container */
       .icon-circle {
-        width: 36px;
-        height: 36px;
-        font-size: 2rem;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       }
-    }
 
-    /* Icon label */
-    .icon-label {
-      font-size: 0.62rem;
-      font-weight: 500;
-      text-align: center;
-      line-height: 1.15;
-      letter-spacing: 0.01em;
-      color: var(--text);
-      max-width: 70px;
-    }
+      @media (max-width: 480px) {
+        .icon-circle {
+          width: 36px;
+          height: 36px;
+          font-size: 2rem;
+        }
+      }
 
-    @media (max-width: 480px) {
+      /* Icon label */
       .icon-label {
-        font-size: 0.6rem;
-        max-width: 60px;
-      }
-    }
-
-    /* Count badge for task notification */
-    .count-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background-color: #ef4444;
-      color: white;
-      border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      border: 2px solid white;
-    }
-
-    @keyframes ping {
-      0% {
-        transform: scale(1);
-        opacity: 1;
+        font-size: 0.62rem;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.15;
+        letter-spacing: 0.01em;
+        color: var(--text);
+        max-width: 70px;
       }
 
-      75%,
-      100% {
-        transform: scale(2);
-        opacity: 0;
+      @media (max-width: 480px) {
+        .icon-label {
+          font-size: 0.6rem;
+          max-width: 60px;
+        }
       }
-    }
 
-    .animate-ping {
-      animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
+      /* Count badge for task notification */
+      .count-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: #ef4444;
+        color: white;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: bold;
+        border: 2px solid white;
+      }
 
-    /* New Pending Actions Button */
-    .pending-actions-wrapper {
-      margin-bottom: 2rem;
-    }
+      @keyframes ping {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
 
-    .pending-actions-btn {
-      background-color: #34d399;
-      /* Default Soft Green */
-      color: white;
-      padding: 0.85rem 2rem;
-      border-radius: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      text-decoration: none !important;
-      font-weight: 600;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-    }
+        75%,
+        100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
 
-    .pending-actions-btn.has-pending {
-      background-color: #fb7185;
-      /* Soft Red */
-      box-shadow: 0 4px 12px rgba(251, 113, 133, 0.3);
-    }
+      .animate-ping {
+        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
 
-    .pending-actions-btn:hover {
-      transform: translateY(-2px);
-      filter: brightness(0.95);
-      color: white;
-    }
+      /* New Pending Actions Button */
+      .pending-actions-wrapper {
+        margin-bottom: 2rem;
+      }
 
-    .pending-actions-btn .count-val {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-    }
+      .pending-actions-btn {
+        background-color: #34d399;
+        /* Default Soft Green */
+        color: white;
+        padding: 0.85rem 2rem;
+        border-radius: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-decoration: none !important;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
 
-    .pending-actions-btn i.fa-arrow-right {
-      transition: transform 0.3s ease;
-    }
+      .pending-actions-btn.has-pending {
+        background-color: #fb7185;
+        /* Soft Red */
+        box-shadow: 0 4px 12px rgba(251, 113, 133, 0.3);
+      }
 
-    .pending-actions-btn:hover i.fa-arrow-right {
-      transform: translateX(5px);
-    }
+      .pending-actions-btn:hover {
+        transform: translateY(-2px);
+        filter: brightness(0.95);
+        color: white;
+      }
 
-    /* Category section headings */
-    .category-section {
-      margin-bottom: 2.5rem;
-    }
+      .pending-actions-btn .count-val {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+      }
 
-    .category-section:last-child {
-      margin-bottom: 0;
-    }
+      .pending-actions-btn i.fa-arrow-right {
+        transition: transform 0.3s ease;
+      }
 
-    .category-heading {
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-light);
-      margin-bottom: 1.25rem;
-      padding-left: 0.6rem;
-      border-left: 3px solid var(--primary);
-    }
-  </style>
-  <style>
-    /* Tab bar */
-    .tab-bar {
-      display: flex;
-      gap: 0.3rem;
-      margin-bottom: 0.5rem;
-      flex-wrap: wrap;
-    }
+      .pending-actions-btn:hover i.fa-arrow-right {
+        transform: translateX(5px);
+      }
 
-    .tab-btn {
-      padding: 0.1rem 0.5rem;
-      border-radius: 50px;
-      border: 1px solid #e5e7eb;
-      background: white;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--text-light);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+      /* Category section headings */
+      .category-section {
+        margin-bottom: 2.5rem;
+      }
 
-    .tab-btn:hover {
-      border-color: var(--primary);
-      color: var(--primary);
-    }
+      .category-section:last-child {
+        margin-bottom: 0;
+      }
 
-    .tab-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-  </style>
-</head>
+      .category-heading {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-light);
+        margin-bottom: 1.25rem;
+        padding-left: 0.6rem;
+        border-left: 3px solid var(--primary);
+      }
+    </style>
+    <style>
+      /* Tab bar */
+      .tab-bar {
+        display: flex;
+        gap: 0.3rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+      }
 
-<body>
-  <div class="app-container" role="main">
-    <header class="app-header">
-      <div class="profile-section">
-        <div class="avatar relative group" id="avatar-placeholder">
-          <div id="avatar-initial" class="avatar-initial">A</div>
+      .tab-btn {
+        padding: 0.1rem 0.5rem;
+        border-radius: 50px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-light);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
 
-          <div id="random-gesture"
-            class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="white"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+      .tab-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
 
-            <div id="gesture-tooltip"
-              class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-black text-white rounded shadow opacity-0 pointer-events-none transition-opacity duration-500 whitespace-nowrap">
-              Don't click this
+      .tab-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-container" role="main">
+      <header class="app-header">
+        <div class="profile-section">
+          <div class="avatar relative group" id="avatar-placeholder">
+            <div id="avatar-initial" class="avatar-initial">A</div>
+
+            <div
+              id="random-gesture"
+              class="absolute -bottom-1 -right-1 z-50 w-5 h-5 rounded-full bg-blue-500 shadow-inner cursor-pointer flex items-center justify-center text-white text-[10px]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-3 w-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+
+              <div
+                id="gesture-tooltip"
+                class="absolute bottom-full mb-1 px-2 py-[2px] text-[10px] leading-tight bg-black text-white rounded shadow opacity-0 pointer-events-none transition-opacity duration-500 whitespace-nowrap"
+              >
+                Don't click this
+              </div>
             </div>
           </div>
+
+          <div class="profile-info">
+            <p class="profile-greeting" id="greeting-message"></p>
+            <p class="profile-name" id="emp_name">Admin</p>
+            <span class="profile-role" id="emp_designation">Admin</span>
+            <span class="profile-role" id="emp_branch_sol"></span>
+          </div>
         </div>
 
-        <div class="profile-info">
-          <p class="profile-greeting" id="greeting-message"></p>
-          <p class="profile-name" id="emp_name">Admin</p>
-          <span class="profile-role" id="emp_designation">Admin</span>
-          <span class="profile-role" id="emp_branch_sol"></span>
+        <div
+          class="pending-actions-wrapper"
+          id="pending-actions-container"
+          style="display: none; margin-bottom: 0"
+        >
+          <a
+            href="/app/pending-request"
+            class="pending-actions-btn"
+            id="pending-actions-link"
+            style="padding: 0.6rem 1.5rem; max-width: none"
+          >
+            <span>Pending Actions</span>
+            <span class="count-val" id="global-pending-count">0</span>
+            <i class="fas fa-arrow-right"></i>
+          </a>
         </div>
-      </div>
+      </header>
+      <main class="app-main">
+        <div class="tab-bar">
+          <input
+            type="text"
+            id="search-input"
+            class="tab-btn"
+            placeholder="Search..."
+            style="outline: none; min-width: 90px; width: 90px"
+          />
+          <button class="tab-btn active" data-tab="all">All</button>
+          <button class="tab-btn" data-tab="operations">Operations</button>
+          <button class="tab-btn" data-tab="l&d">L&D</button>
+          <button class="tab-btn" data-tab="loan">Loan</button>
+          <button class="tab-btn" data-tab="hr">HR</button>
+        </div>
+        <div class="icon-grid">
+          <a class="icon-item" href="/app/my-tickets" role="link" tabindex="0">
+            <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <span class="icon-label">Tickets</span>
+          </a>
+          <a
+            class="icon-item stockio-icon"
+            href="/stockio"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-amber-100 text-amber-700">
+              <span class="fas fa-cubes"></span>
+            </div>
+            <span class="icon-label">StockIO</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/asset-requisition"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
+              <i class="fas fa-laptop"></i>
+            </div>
+            <span class="icon-label">Assets</span>
+          </a>
+          <a class="icon-item" href="/app/user-unlock" role="link" tabindex="0">
+            <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
+              <i class="fas fa-unlock"></i>
+            </div>
+            <span class="icon-label">Finacle User Unlock</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/photo_signature_utility"
+            role="link"
+            tabindex="0"
+          >
+            <div
+              class="icon-circle"
+              style="background-color: #e0f0ff; color: #007bff"
+            >
+              <i class="fas fa-id-card"></i>
+            </div>
+            <span class="icon-label"> Netwin Photo & Sign </span>
+          </a>
+          <a
+            class="icon-item"
+            href="/netwin_statement"
+            role="link"
+            tabindex="0"
+          >
+            <div
+              class="icon-circle"
+              style="background-color: #e6f7ec; color: #28a745"
+            >
+              <i class="fas fa-file-download"></i>
+            </div>
+            <span class="icon-label"> Netwin Statement </span>
+          </a>
 
-      <div class="pending-actions-wrapper" id="pending-actions-container" style="display: none; margin-bottom: 0">
-        <a href="/app/pending-request" class="pending-actions-btn" id="pending-actions-link"
-          style="padding: 0.6rem 1.5rem; max-width: none">
-          <span>Pending Actions</span>
-          <span class="count-val" id="global-pending-count">0</span>
-          <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-    </header>
-    <main class="app-main">
-      <div class="tab-bar">
-        <input type="text" id="search-input" class="tab-btn" placeholder="Search..."
-          style="outline:none; min-width:90px; width:90px;">
-        <button class="tab-btn active" data-tab="all">All</button>
-        <button class="tab-btn" data-tab="operations">Operations</button>
-        <button class="tab-btn" data-tab="l&d">L&D</button>
-        <button class="tab-btn" data-tab="loan">Loan</button>
-        <button class="tab-btn" data-tab="hr">HR</button>
-      </div>
-      <div class="icon-grid">
-        <a class="icon-item" href="/app/my-tickets" role="link" tabindex="0">
-          <div class="icon-circle bg-[#e5def0] text-[#7e3af2]">
-            <i class="fas fa-ticket-alt"></i>
-          </div>
-          <span class="icon-label">Tickets</span>
-        </a>
-        <a class="icon-item stockio-icon" href="/stockio" role="link" tabindex="0">
-          <div class="icon-circle bg-amber-100 text-amber-700">
-            <span class="fas fa-cubes"></span>
-          </div>
-          <span class="icon-label">StockIO</span>
-        </a>
-        <a class="icon-item" href="/app/asset-requisition" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d6edd9] text-[#16a34a]">
-            <i class="fas fa-laptop"></i>
-          </div>
-          <span class="icon-label">Assets</span>
-        </a>
-        <a class="icon-item" href="/app/user-unlock" role="link" tabindex="0">
-          <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
-            <i class="fas fa-unlock"></i>
-          </div>
-          <span class="icon-label">Finacle User Unlock</span>
-        </a>
-        <a class="icon-item" href="/photo_signature_utility" role="link" tabindex="0">
-          <div class="icon-circle" style="background-color: #e0f0ff; color: #007bff">
-            <i class="fas fa-id-card"></i>
-          </div>
-          <span class="icon-label"> Netwin Photo & Sign </span>
-        </a>
-        <a class="icon-item" href="/netwin_statement" role="link" tabindex="0">
-          <div class="icon-circle" style="background-color: #e6f7ec; color: #28a745">
-            <i class="fas fa-file-download"></i>
-          </div>
-          <span class="icon-label"> Netwin Statement </span>
-        </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="/policies"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
+              <i class="fas fa-cog"></i>
+            </div>
+            <span class="icon-label">Operations</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/branch-proposal"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
+              <i class="fas fa-building"></i>
+            </div>
+            <span class="icon-label">Branch Proposal</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="/app/mvcd-status"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
+              <i class="fas fa-university"></i>
+            </div>
+            <span class="icon-label">MVCD Tracker</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="app/cash-management-system"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <span class="icon-label">CMS</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="/eod-checklist"
+            role="link"
+            tabindex="0"
+          >
+            <div
+              class="icon-circle"
+              style="background-color: #ccf2ee; color: #00b09b"
+            >
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <span class="icon-label">EOD Checklist</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="/cif_tracker"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa fa-rocket"></i>
+            </div>
+            <span class="icon-label">CIF Tracker</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="operations"
+            href="/app/ttum-maker/"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-file-excel"></i>
+              <i class="fas fa-exchange-alt"></i>
+            </div>
+            <span class="icon-label">TTUM Maker</span>
+          </a>
 
-        <a class="icon-item" data-tab="operations" href="/policies" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d2fbf1] text-[#0d9488]">
-            <i class="fas fa-cog"></i>
-          </div>
-          <span class="icon-label">Operations</span>
-        </a>
-        <a class="icon-item" href="/app/branch-proposal" role="link" tabindex="0">
-          <div class="icon-circle bg-[#fef3c7] text-[#f59e0b]">
-            <i class="fas fa-building"></i>
-          </div>
-          <span class="icon-label">Branch Proposal</span>
-        </a>
-        <a class="icon-item" data-tab="operations" href="/app/mvcd-status" role="link" tabindex="0">
-          <div class="icon-circle bg-[#e0e7ff] text-[#4338ca]">
-            <i class="fas fa-university"></i>
-          </div>
-          <span class="icon-label">MVCD Tracker</span>
-        </a>
-        <a class="icon-item" data-tab="operations" href="app/cash-management-system" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-            <i class="fas fa-money-bill-wave"></i>
-          </div>
-          <span class="icon-label">CMS</span>
-        </a>
-        <a class="icon-item" data-tab="operations" href="/eod-checklist" role="link" tabindex="0">
-          <div class="icon-circle" style="background-color: #ccf2ee; color: #00b09b">
-            <i class="fas fa-clipboard-check"></i>
-          </div>
-          <span class="icon-label">EOD Checklist</span>
-        </a>
-        <a class="icon-item" data-tab="operations" href="/cif_tracker" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-            <i class="fa fa-rocket"></i>
-          </div>
-          <span class="icon-label">CIF Tracker</span>
-        </a>
-        <a class="icon-item" data-tab="operations" href="/app/ttum-maker/" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-            <i class="fas fa-file-excel"></i>
-            <i class="fas fa-exchange-alt"></i>
-          </div>
-          <span class="icon-label">TTUM Maker</span>
-        </a>
+          <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
+            <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
+              <i class="fas fa-users"></i>
+            </div>
+            <span class="icon-label">CRM</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/agent-management"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <span class="icon-label">My Agents</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/customer-360"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
+              <i class="fas fa-user-circle"></i>
+              <i class="fas fa-search"></i>
+            </div>
+            <span class="icon-label">Customer 360</span>
+          </a>
 
-        <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
-            <i class="fas fa-users"></i>
-          </div>
-          <span class="icon-label">CRM</span>
-        </a>
-        <a class="icon-item" href="/app/agent-management" role="link" tabindex="0">
-          <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
-            <i class="fas fa-user-tie"></i>
-          </div>
-          <span class="icon-label">My Agents</span>
-        </a>
-        <a class="icon-item" href="/app/customer-360" role="link" tabindex="0">
-          <div class="icon-circle bg-[#fce7f3] text-[#be185d]">
-            <i class="fas fa-user-circle"></i>
-            <i class="fas fa-search"></i>
-          </div>
-          <span class="icon-label">Customer 360</span>
-        </a>
+          <a
+            class="icon-item"
+            href="/interest_calculator"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-yellow-200 text-yellow-800">
+              <span class="rupee-icon">₹</span>
+            </div>
+            <span class="icon-label">SMBG/RD Interest Calculator</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="loan"
+            href="/loan_workspace"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-purple-200 text-purple-800">
+              <i class="fas fa-hand-holding-usd"></i>
+            </div>
+            <span class="icon-label">Loan Management</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/petty-cash-management"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-emerald-100 text-emerald-700">
+              <span class="fa fa-wallet"></span>
+            </div>
+            <span class="icon-label">Petty Cash Management</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/share-application"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa fa-file-invoice-dollar"></i>
+            </div>
+            <span class="icon-label">Share Tracker</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/cost-code-viewer"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-yellow-200 text-yellow-800">
+              <span class="fa fa-money-bag">💰</span>
+            </div>
+            <span class="icon-label">Employee Cost Code</span>
+          </a>
+          <a class="icon-item" href="/form16" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
+              <i class="fa-solid fa-file-arrow-down fa-2x"></i>
+            </div>
+            <span class="icon-label">Form16 Downloader</span>
+          </a>
 
-        <a class="icon-item" href="/interest_calculator" role="link" tabindex="0">
-          <div class="icon-circle bg-yellow-200 text-yellow-800">
-            <span class="rupee-icon">₹</span>
-          </div>
-          <span class="icon-label">SMBG/RD Interest Calculator</span>
-        </a>
-        <a class="icon-item" data-tab="loan" href="/loan_workspace" role="link" tabindex="0">
-          <div class="icon-circle bg-purple-200 text-purple-800">
-            <i class="fas fa-hand-holding-usd"></i>
-          </div>
-          <span class="icon-label">Loan Management</span>
-        </a>
-        <a class="icon-item" href="/app/petty-cash-management" role="link" tabindex="0">
-          <div class="icon-circle bg-emerald-100 text-emerald-700">
-            <span class="fa fa-wallet"></span>
-          </div>
-          <span class="icon-label">Petty Cash Management</span>
-        </a>
-        <a class="icon-item" href="/app/share-application" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-            <i class="fa fa-file-invoice-dollar"></i>
-          </div>
-          <span class="icon-label">Share Tracker</span>
-        </a>
-        <a class="icon-item" href="/app/cost-code-viewer" role="link" tabindex="0">
-          <div class="icon-circle bg-yellow-200 text-yellow-800">
-            <span class="fa fa-money-bag">💰</span>
-          </div>
-          <span class="icon-label">Employee Cost Code</span>
-        </a>
-        <a class="icon-item" href="/form16" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
-            <i class="fa-solid fa-file-arrow-down fa-2x"></i>
-          </div>
-          <span class="icon-label">Form16 Downloader</span>
-        </a>
+          <a
+            class="icon-item"
+            data-tab="l&d"
+            href="/app/trainer"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
+              <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <span class="icon-label">SS Trainer</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="hr"
+            href="/app/disciplinary-management"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa-solid fa-building-user"></i>
+            </div>
+            <span class="icon-label">DAMS</span>
+          </a>
+          <a
+            class="icon-item"
+            data-tab="hr"
+            href="/team_attendance"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-purple-100 text-purple-700">
+              <i class="fas fa-fingerprint"></i>
+            </div>
+            <span class="icon-label">Attendance Portal</span>
+          </a>
 
-        <a class="icon-item" data-tab="l&d" href="/app/trainer" role="link" tabindex="0">
-          <div class="icon-circle bg-[#dcfce7] text-[#15803d]">
-            <i class="fas fa-chalkboard-teacher"></i>
-          </div>
-          <span class="icon-label">SS Trainer</span>
-        </a>
-        <a class="icon-item" data-tab="hr" href="/app/disciplinary-management" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-            <i class="fa-solid fa-building-user"></i>
-          </div>
-          <span class="icon-label">DAMS</span>
-        </a>
-        <a class="icon-item" data-tab="hr" href="/team_attendance" role="link" tabindex="0">
-          <div class="icon-circle bg-purple-100 text-purple-700">
-            <i class="fas fa-fingerprint"></i>
-          </div>
-          <span class="icon-label">Attendance Portal</span>
-        </a>
+          <a
+            class="icon-item"
+            href="/app/audit-management"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <span class="icon-label">Audit</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/approval-request"
+            role="link"
+            tabindex="0"
+          >
+            <div
+              class="icon-circle"
+              style="background-color: #e6f9f0; color: #28a745"
+            >
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <span class="icon-label">My Approvals</span>
+          </a>
 
-        <a class="icon-item" href="/app/audit-management" role="link" tabindex="0">
-          <div class="icon-circle bg-[#e1e5f2] text-[#4f46e5]">
-            <i class="fas fa-clipboard-check"></i>
-          </div>
-          <span class="icon-label">Audit</span>
-        </a>
-        <a class="icon-item" href="/app/approval-request" role="link" tabindex="0">
-          <div class="icon-circle" style="background-color: #e6f9f0; color: #28a745">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <span class="icon-label">My Approvals</span>
-        </a>
+          <a
+            class="icon-item"
+            href="/app/finacle-report-portal"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
+              <i class="fas fa-laptop-code"></i>
+            </div>
+            <span class="icon-label">Finacle CBS Reports</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/sahayog_dashboard/"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-eye"></i>
+            </div>
+            <span class="icon-label">Drishti</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/report_converter"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
+              <i class="fa fa-sync"></i>
+            </div>
+            <span class="icon-label">RPT Excel Converter</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/query-report/Branch%20Master"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <span class="icon-label">Branch Master</span>
+          </a>
 
-        <a class="icon-item" href="/app/finacle-report-portal" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f3e8ff] text-[#7c3aed]">
-            <i class="fas fa-laptop-code"></i>
-          </div>
-          <span class="icon-label">Finacle CBS Reports</span>
-        </a>
-        <a class="icon-item" href="/app/sahayog_dashboard/" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-            <i class="fas fa-eye"></i>
-          </div>
-          <span class="icon-label">Drishti</span>
-        </a>
-        <a class="icon-item" href="/report_converter" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#236867]">
-            <i class="fa fa-sync"></i>
-          </div>
-          <span class="icon-label">RPT Excel Converter</span>
-        </a>
-        <a class="icon-item" href="/app/query-report/Branch%20Master" role="link" tabindex="0">
-          <div class="icon-circle bg-[#d1e7e5] text-[#236867]">
-            <i class="fas fa-sitemap"></i>
-          </div>
-          <span class="icon-label">Branch Master</span>
-        </a>
+          <a class="icon-item" href="/taskflow" role="link" tabindex="0">
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fa fa-tasks"></i>
+            </div>
+            <span class="icon-label">Taskflow</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/permission-config"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-purple-200 text-purple-800">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <span class="icon-label">Permission Manager</span>
+          </a>
+          <!-- Finacle TTUM Maker -->
+          <a
+            class="icon-item"
+            href="/finacle_ttum_maker"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+              <i class="fas fa-file-import"></i>
+            </div>
+            <span class="icon-label">Finacle TTUM Maker</span>
+          </a>
+          <a
+            class="icon-item"
+            href="/app/query-report/Sahayog%20Ticket%20Report"
+            role="link"
+            tabindex="0"
+          >
+            <div class="icon-circle bg-purple-200 text-purple-800">
+              <i class="fas fa-headset"></i>
+            </div>
+            <span class="icon-label">Help Desk Monitor</span>
+          </a>
+        </div>
+      </main>
+    </div>
+    <script>
+      // Function to handle Task card click with custom filtering
+      function handleTaskCardClick(event, taskCount) {
+        event.preventDefault();
 
-        <a class="icon-item" href="/taskflow" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-            <i class="fa fa-tasks"></i>
-          </div>
-          <span class="icon-label">Taskflow</span>
-        </a>
-        <a class="icon-item" href="/app/permission-config" role="link" tabindex="0">
-          <div class="icon-circle bg-purple-200 text-purple-800">
-            <i class="fas fa-user-shield"></i>
-          </div>
-          <span class="icon-label">Permission Manager</span>
-        </a>
-        <!-- Finacle TTUM Maker -->
-        <a class="icon-item" href="/finacle_ttum_maker" role="link" tabindex="0">
-          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
-            <i class="fas fa-file-import"></i>
-          </div>
-          <span class="icon-label">Finacle TTUM Maker</span>
-        </a>
-
-      </div>
-    </main>
-  </div>
-  <script>
-    // Function to handle Task card click with custom filtering
-    function handleTaskCardClick(event, taskCount) {
-      event.preventDefault();
-
-      if (!taskCount || taskCount === 0) {
-        alert("No tasks assigned to you");
-        return; // Stop navigation
-      }
-
-      const url = "/app/task";
-      if (window.top) {
-        window.top.location.href = url;
-      } else {
-        window.location.href = url;
-      }
-    }
-
-    // Function to fetch and display assigned task count
-    async function fetchAssignedTaskCount() {
-      const taskIcon = document.querySelector(".task-icon");
-      if (!taskIcon) return;
-
-      try {
-        const userRes = await fetch(
-          "/api/method/frappe.auth.get_logged_user",
-        );
-        const userData = await userRes.json();
-        const userId = userData.message;
-
-        if (!userId || userId === "Administrator") return;
-
-        // Use API to get assigned task count
-        const countRes = await fetch(
-          `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`,
-        );
-        const countData = await countRes.json();
-        const taskCount = countData.message || 0;
-
-        // Badge update
-        const existingBadge = taskIcon.querySelector(".count-badge");
-        if (existingBadge) existingBadge.remove();
-
-        if (taskCount > 0) {
-          const countBadge = document.createElement("div");
-          countBadge.className = "count-badge";
-          countBadge.textContent = taskCount;
-          taskIcon.appendChild(countBadge);
-
-          taskIcon.style.pointerEvents = "auto";
-          taskIcon.style.opacity = "1";
-        } else {
-          taskIcon.style.pointerEvents = "none";
-          taskIcon.style.opacity = "0.5";
+        if (!taskCount || taskCount === 0) {
+          alert("No tasks assigned to you");
+          return; // Stop navigation
         }
 
-        taskIcon.onclick = async function (e) {
-          e.preventDefault();
-          try {
-            await fetch(
-              `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`,
-            );
-            window.location.href = "/app/task";
-          } catch (err) {
-            frappe.msgprint(err?.message || "No tasks assigned to you");
-          }
-        };
-      } catch (error) {
-        console.error("Failed to fetch task count:", error);
-        taskIcon.style.pointerEvents = "none";
-        taskIcon.style.opacity = "0.5";
-      }
-    }
-
-    // Function to fetch and display pending request count
-    async function fetchPendingRequestsCount() {
-      const stockIcon = document.querySelector(".stockio-icon");
-      if (!stockIcon) return;
-
-      const csrfToken = document
-        .querySelector('meta[name="csrf-token"]')
-        .getAttribute("content");
-
-      // Use Frappe REST API to count filtered records
-      const filters = JSON.stringify([
-        ["docstatus", "=", 0],
-        ["status", "in", ["Pending Reporting Person", "Pending HO Approval"]],
-      ]);
-
-      // Note: For 'or_filters', it's safer to use a custom API.
-      // If the custom API is failing, try a simple fetch to a known working endpoint.
-      try {
-        const res = await fetch(
-          `/api/resource/Employee Material Request?filters=${encodeURIComponent(filters)}&fields=["name"]`,
-          {
-            method: "GET",
-            headers: {
-              "X-Frappe-CSRF-Token": csrfToken,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-        const data = await res.json();
-        const count = data.data ? data.data.length : 0;
-
-        if (count > 0) {
-          const countBadge = document.createElement("div");
-          countBadge.className = "count-badge";
-          countBadge.textContent = count;
-          stockIcon.appendChild(countBadge);
-        }
-      } catch (error) {
-        console.error("Failed to fetch pending requests count:", error);
-      }
-    }
-
-    // Function to fetch global pending count from the new Python API
-    async function fetchGlobalPendingCount() {
-      console.log("Starting fetchGlobalPendingCount...");
-      const container = document.getElementById("pending-actions-container");
-      const btnLink = document.getElementById("pending-actions-link");
-      const countSpan = document.getElementById("global-pending-count");
-
-      try {
-        const res = await fetch(
-          "/api/method/sahayog.sahayog.page.pending_request.pending_request.get_pending_requests_count",
-        );
-
-        if (!res.ok) {
-          console.error("API Response not OK:", res.status, res.statusText);
-          return;
-        }
-
-        const data = await res.json();
-        const count =
-          data && data.hasOwnProperty("message") ? data.message : 0;
-
-        countSpan.textContent = count;
-        container.style.display = "block"; // Always show
-
-        if (count > 0) {
-          btnLink.classList.add("has-pending"); // Becomes Red
-        } else {
-          btnLink.classList.remove("has-pending"); // Becomes Green
-        }
-      } catch (error) {
-        console.error("Critical error in fetchGlobalPendingCount:", error);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-      fetchAssignedTaskCount();
-      fetchPendingRequestsCount();
-      fetchGlobalPendingCount();
-    });
-
-    async function fetchEmployeeDetails() {
-      try {
-        const userRes = await fetch(
-          "/api/method/frappe.auth.get_logged_user",
-        );
-        const userData = await userRes.json();
-        const userId = userData.message;
-
-        if (!userId) return;
-
-        const greeting = getTimeBasedGreeting();
-
-        if (userId === "Administrator") {
-          document.getElementById("emp_name").textContent = "Administrator";
-          document.getElementById("emp_designation").textContent = "-";
-          document.getElementById("emp_branch_sol").textContent = "-";
-          document.getElementById("avatar-initial").textContent = "A";
-          document.getElementById("greeting-message").textContent =
-            `${greeting}, Administrator`;
-          return;
-        }
-
-        const filters = encodeURIComponent(
-          JSON.stringify([["user_id", "=", userId]]),
-        );
-        const fields = encodeURIComponent(
-          JSON.stringify([
-            "employee_name",
-            "designation",
-            "branch",
-            "sol_id",
-          ]),
-        );
-        const empRes = await fetch(
-          `/api/resource/Employee?filters=${filters}&fields=${fields}`,
-        );
-        const empData = await empRes.json();
-
-        if (empData.data && empData.data.length > 0) {
-          const emp = empData.data[0];
-          const employeeName = emp.employee_name || "N/A";
-          document.getElementById("emp_name").textContent = employeeName;
-          document.getElementById("emp_designation").textContent =
-            emp.designation || "N/A";
-
-          const branch = emp.branch || "N/A";
-          const solId =
-            emp.sol_id && emp.sol_id.trim() !== ""
-              ? emp.sol_id
-              : '<span style="color: red;">Please update your details for SOL ID</span>';
-
-          const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
-          document.getElementById("emp_branch_sol").innerHTML = branchSol;
-
-          const initial = employeeName.trim().charAt(0).toUpperCase();
-          document.getElementById("avatar-initial").textContent = initial;
-
-          document.getElementById("greeting-message").textContent =
-            `${greeting},`;
-        } else {
-          document.getElementById("emp_name").textContent = "Not Found";
-          document.getElementById("emp_designation").textContent = "-";
-          document.getElementById("avatar-initial").textContent = "?";
-          document.getElementById("greeting-message").textContent =
-            `${greeting},`;
-        }
-      } catch (error) {
-        console.error("Failed to load employee details:", error);
-      }
-    }
-
-    function getTimeBasedGreeting() {
-      const hour = new Date().getHours();
-      if (hour < 12) return "Good Morning";
-      if (hour < 17) return "Good Afternoon";
-      if (hour < 21) return "Good Evening";
-      return "Good Night";
-    }
-
-    fetchEmployeeDetails();
-
-    function openCRMModal(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      document.getElementById("crm-modal").classList.remove("hidden");
-    }
-
-    function closeCRMModal() {
-      document.getElementById("crm-modal").classList.add("hidden");
-    }
-
-    function navigateCRM(url) {
-      closeCRMModal();
-      if (window.top) {
-        window.top.location.href = url;
-      } else {
-        window.location.href = url;
-      }
-    }
-
-    function handleLinkClick(event) {
-      event.preventDefault();
-      const url = event.currentTarget.getAttribute("href");
-      if (url && url !== "#") {
+        const url = "/app/task";
         if (window.top) {
           window.top.location.href = url;
         } else {
           window.location.href = url;
         }
       }
-    }
 
-    document.addEventListener("DOMContentLoaded", function () {
-      const iconItems = document.querySelectorAll(".icon-item");
-      iconItems.forEach((item) => {
-        if (item.id === "crm-link") {
-          item.addEventListener("click", openCRMModal);
+      // Function to fetch and display assigned task count
+      async function fetchAssignedTaskCount() {
+        const taskIcon = document.querySelector(".task-icon");
+        if (!taskIcon) return;
+
+        try {
+          const userRes = await fetch(
+            "/api/method/frappe.auth.get_logged_user",
+          );
+          const userData = await userRes.json();
+          const userId = userData.message;
+
+          if (!userId || userId === "Administrator") return;
+
+          // Use API to get assigned task count
+          const countRes = await fetch(
+            `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`,
+          );
+          const countData = await countRes.json();
+          const taskCount = countData.message || 0;
+
+          // Badge update
+          const existingBadge = taskIcon.querySelector(".count-badge");
+          if (existingBadge) existingBadge.remove();
+
+          if (taskCount > 0) {
+            const countBadge = document.createElement("div");
+            countBadge.className = "count-badge";
+            countBadge.textContent = taskCount;
+            taskIcon.appendChild(countBadge);
+
+            taskIcon.style.pointerEvents = "auto";
+            taskIcon.style.opacity = "1";
+          } else {
+            taskIcon.style.pointerEvents = "none";
+            taskIcon.style.opacity = "0.5";
+          }
+
+          taskIcon.onclick = async function (e) {
+            e.preventDefault();
+            try {
+              await fetch(
+                `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`,
+              );
+              window.location.href = "/app/task";
+            } catch (err) {
+              frappe.msgprint(err?.message || "No tasks assigned to you");
+            }
+          };
+        } catch (error) {
+          console.error("Failed to fetch task count:", error);
+          taskIcon.style.pointerEvents = "none";
+          taskIcon.style.opacity = "0.5";
+        }
+      }
+
+      // Function to fetch and display pending request count
+      async function fetchPendingRequestsCount() {
+        const stockIcon = document.querySelector(".stockio-icon");
+        if (!stockIcon) return;
+
+        const csrfToken = document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
+
+        // Use Frappe REST API to count filtered records
+        const filters = JSON.stringify([
+          ["docstatus", "=", 0],
+          ["status", "in", ["Pending Reporting Person", "Pending HO Approval"]],
+        ]);
+
+        // Note: For 'or_filters', it's safer to use a custom API.
+        // If the custom API is failing, try a simple fetch to a known working endpoint.
+        try {
+          const res = await fetch(
+            `/api/resource/Employee Material Request?filters=${encodeURIComponent(filters)}&fields=["name"]`,
+            {
+              method: "GET",
+              headers: {
+                "X-Frappe-CSRF-Token": csrfToken,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+          const data = await res.json();
+          const count = data.data ? data.data.length : 0;
+
+          if (count > 0) {
+            const countBadge = document.createElement("div");
+            countBadge.className = "count-badge";
+            countBadge.textContent = count;
+            stockIcon.appendChild(countBadge);
+          }
+        } catch (error) {
+          console.error("Failed to fetch pending requests count:", error);
+        }
+      }
+
+      // Function to fetch global pending count from the new Python API
+      async function fetchGlobalPendingCount() {
+        console.log("Starting fetchGlobalPendingCount...");
+        const container = document.getElementById("pending-actions-container");
+        const btnLink = document.getElementById("pending-actions-link");
+        const countSpan = document.getElementById("global-pending-count");
+
+        try {
+          const res = await fetch(
+            "/api/method/sahayog.sahayog.page.pending_request.pending_request.get_pending_requests_count",
+          );
+
+          if (!res.ok) {
+            console.error("API Response not OK:", res.status, res.statusText);
+            return;
+          }
+
+          const data = await res.json();
+          const count =
+            data && data.hasOwnProperty("message") ? data.message : 0;
+
+          countSpan.textContent = count;
+          container.style.display = "block"; // Always show
+
+          if (count > 0) {
+            btnLink.classList.add("has-pending"); // Becomes Red
+          } else {
+            btnLink.classList.remove("has-pending"); // Becomes Green
+          }
+        } catch (error) {
+          console.error("Critical error in fetchGlobalPendingCount:", error);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        fetchAssignedTaskCount();
+        fetchPendingRequestsCount();
+        fetchGlobalPendingCount();
+      });
+
+      async function fetchEmployeeDetails() {
+        try {
+          const userRes = await fetch(
+            "/api/method/frappe.auth.get_logged_user",
+          );
+          const userData = await userRes.json();
+          const userId = userData.message;
+
+          if (!userId) return;
+
+          const greeting = getTimeBasedGreeting();
+
+          if (userId === "Administrator") {
+            document.getElementById("emp_name").textContent = "Administrator";
+            document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("emp_branch_sol").textContent = "-";
+            document.getElementById("avatar-initial").textContent = "A";
+            document.getElementById("greeting-message").textContent =
+              `${greeting}, Administrator`;
+            return;
+          }
+
+          const filters = encodeURIComponent(
+            JSON.stringify([["user_id", "=", userId]]),
+          );
+          const fields = encodeURIComponent(
+            JSON.stringify([
+              "employee_name",
+              "designation",
+              "branch",
+              "sol_id",
+            ]),
+          );
+          const empRes = await fetch(
+            `/api/resource/Employee?filters=${filters}&fields=${fields}`,
+          );
+          const empData = await empRes.json();
+
+          if (empData.data && empData.data.length > 0) {
+            const emp = empData.data[0];
+            const employeeName = emp.employee_name || "N/A";
+            document.getElementById("emp_name").textContent = employeeName;
+            document.getElementById("emp_designation").textContent =
+              emp.designation || "N/A";
+
+            const branch = emp.branch || "N/A";
+            const solId =
+              emp.sol_id && emp.sol_id.trim() !== ""
+                ? emp.sol_id
+                : '<span style="color: red;">Please update your details for SOL ID</span>';
+
+            const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
+            document.getElementById("emp_branch_sol").innerHTML = branchSol;
+
+            const initial = employeeName.trim().charAt(0).toUpperCase();
+            document.getElementById("avatar-initial").textContent = initial;
+
+            document.getElementById("greeting-message").textContent =
+              `${greeting},`;
+          } else {
+            document.getElementById("emp_name").textContent = "Not Found";
+            document.getElementById("emp_designation").textContent = "-";
+            document.getElementById("avatar-initial").textContent = "?";
+            document.getElementById("greeting-message").textContent =
+              `${greeting},`;
+          }
+        } catch (error) {
+          console.error("Failed to load employee details:", error);
+        }
+      }
+
+      function getTimeBasedGreeting() {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        if (hour < 21) return "Good Evening";
+        return "Good Night";
+      }
+
+      fetchEmployeeDetails();
+
+      function openCRMModal(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById("crm-modal").classList.remove("hidden");
+      }
+
+      function closeCRMModal() {
+        document.getElementById("crm-modal").classList.add("hidden");
+      }
+
+      function navigateCRM(url) {
+        closeCRMModal();
+        if (window.top) {
+          window.top.location.href = url;
         } else {
-          item.addEventListener("click", handleLinkClick);
+          window.location.href = url;
         }
-      });
-
-      // Add listener for the new pending actions button
-      const pendingLink = document.getElementById("pending-actions-link");
-      if (pendingLink) {
-        pendingLink.addEventListener("click", handleLinkClick);
       }
 
-      // Close modal when clicking outside
-      window.addEventListener("click", function (event) {
-        const modal = document.getElementById("crm-modal");
-        if (event.target === modal) {
-          closeCRMModal();
+      function handleLinkClick(event) {
+        event.preventDefault();
+        const url = event.currentTarget.getAttribute("href");
+        if (url && url !== "#") {
+          if (window.top) {
+            window.top.location.href = url;
+          } else {
+            window.location.href = url;
+          }
         }
-      });
+      }
 
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/sw.js")
-            .then((registration) => {
-              console.log("ServiceWorker registration successful");
-            })
-            .catch((err) => {
-              console.log("ServiceWorker registration failed: ", err);
-            });
+      document.addEventListener("DOMContentLoaded", function () {
+        const iconItems = document.querySelectorAll(".icon-item");
+        iconItems.forEach((item) => {
+          if (item.id === "crm-link") {
+            item.addEventListener("click", openCRMModal);
+          } else {
+            item.addEventListener("click", handleLinkClick);
+          }
         });
-      }
-    });
 
-    ("use strict");
-
-    function launchConfetti() {
-      if (document.getElementById("confetti-container")) return;
-
-      var random = Math.random,
-        cos = Math.cos,
-        sin = Math.sin,
-        PI = Math.PI,
-        PI2 = PI * 2,
-        confetti = [];
-
-      var particles = 10,
-        spread = 40,
-        sizeMin = 3,
-        sizeMax = 12 - sizeMin,
-        eccentricity = 10,
-        deviation = 100,
-        dxThetaMin = -0.1,
-        dxThetaMax = -dxThetaMin - dxThetaMin,
-        dyMin = 0.13,
-        dyMax = 0.18,
-        dThetaMin = 0.4,
-        dThetaMax = 0.7 - dThetaMin;
-
-      var colorThemes = [
-        function () {
-          return color(
-            (200 * random()) | 0,
-            (200 * random()) | 0,
-            (200 * random()) | 0,
-          );
-        },
-      ];
-
-      function color(r, g, b) {
-        return "rgb(" + r + "," + g + "," + b + ")";
-      }
-
-      function interpolation(a, b, t) {
-        return ((1 - cos(PI * t)) / 2) * (b - a) + a;
-      }
-
-      var radius = 1 / eccentricity,
-        radius2 = radius + radius;
-
-      function createPoisson() {
-        var domain = [radius, 1 - radius],
-          measure = 1 - radius2,
-          spline = [0, 1];
-        while (measure) {
-          var dart = measure * random(),
-            i,
-            l,
-            interval,
-            a,
-            b,
-            c,
-            d;
-          for (i = 0, l = domain.length, measure = 0; i < l; i += 2) {
-            ((a = domain[i]), (b = domain[i + 1]), (interval = b - a));
-            if (dart < measure + interval) {
-              spline.push((dart += a - measure));
-              break;
-            }
-            measure += interval;
-          }
-          ((c = dart - radius), (d = dart + radius));
-          for (i = domain.length - 1; i > 0; i -= 2) {
-            ((l = i - 1), (a = domain[l]), (b = domain[i]));
-            if (a >= c && a < d)
-              if (b > d) domain[l] = d;
-              else domain.splice(l, 2);
-            else if (a < c && b > c)
-              if (b <= d) domain[i] = c;
-              else domain.splice(i, 0, c, d);
-          }
-          for (i = 0, l = domain.length, measure = 0; i < l; i += 2)
-            measure += domain[i + 1] - domain[i];
+        // Add listener for the new pending actions button
+        const pendingLink = document.getElementById("pending-actions-link");
+        if (pendingLink) {
+          pendingLink.addEventListener("click", handleLinkClick);
         }
-        return spline.sort();
-      }
 
-      var container = document.createElement("div");
-      container.id = "confetti-container";
-      container.style.position = "fixed";
-      container.style.top = "0";
-      container.style.left = "0";
-      container.style.width = "100%";
-      container.style.height = "0";
-      container.style.overflow = "visible";
-      container.style.zIndex = "9999";
-      document.body.appendChild(container);
+        // Close modal when clicking outside
+        window.addEventListener("click", function (event) {
+          const modal = document.getElementById("crm-modal");
+          if (event.target === modal) {
+            closeCRMModal();
+          }
+        });
 
-      function Confetto(theme) {
-        this.frame = 0;
-        this.outer = document.createElement("div");
-        this.inner = document.createElement("div");
-        this.outer.appendChild(this.inner);
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", () => {
+            navigator.serviceWorker
+              .register("/sw.js")
+              .then((registration) => {
+                console.log("ServiceWorker registration successful");
+              })
+              .catch((err) => {
+                console.log("ServiceWorker registration failed: ", err);
+              });
+          });
+        }
+      });
 
-        var outerStyle = this.outer.style,
-          innerStyle = this.inner.style;
-        outerStyle.position = "absolute";
-        outerStyle.width = sizeMin + sizeMax * random() + "px";
-        outerStyle.height = sizeMin + sizeMax * random() + "px";
-        innerStyle.width = "100%";
-        innerStyle.height = "100%";
-        innerStyle.backgroundColor = theme();
+      ("use strict");
 
-        outerStyle.perspective = "50px";
-        outerStyle.transform = "rotate(" + 360 * random() + "deg)";
-        this.axis =
-          "rotate3D(" +
-          cos(360 * random()) +
-          "," +
-          cos(360 * random()) +
-          ",0,";
-        this.theta = 360 * random();
-        this.dTheta = dThetaMin + dThetaMax * random();
-        innerStyle.transform = this.axis + this.theta + "deg)";
+      function launchConfetti() {
+        if (document.getElementById("confetti-container")) return;
 
-        this.x = window.innerWidth * random();
-        this.y = -deviation;
-        this.dx = sin(dxThetaMin + dxThetaMax * random());
-        this.dy = dyMin + dyMax * random();
-        outerStyle.left = this.x + "px";
-        outerStyle.top = this.y + "px";
+        var random = Math.random,
+          cos = Math.cos,
+          sin = Math.sin,
+          PI = Math.PI,
+          PI2 = PI * 2,
+          confetti = [];
 
-        this.splineX = createPoisson();
-        this.splineY = [];
-        for (var i = 1, l = this.splineX.length - 1; i < l; ++i)
-          this.splineY[i] = deviation * random();
-        this.splineY[0] = this.splineY[l] = deviation * random();
+        var particles = 10,
+          spread = 40,
+          sizeMin = 3,
+          sizeMax = 12 - sizeMin,
+          eccentricity = 10,
+          deviation = 100,
+          dxThetaMin = -0.1,
+          dxThetaMax = -dxThetaMin - dxThetaMin,
+          dyMin = 0.13,
+          dyMax = 0.18,
+          dThetaMin = 0.4,
+          dThetaMax = 0.7 - dThetaMin;
 
-        this.update = function (height, delta) {
-          this.frame += delta;
-          this.x += this.dx * delta;
-          this.y += this.dy * delta;
-          this.theta += this.dTheta * delta;
+        var colorThemes = [
+          function () {
+            return color(
+              (200 * random()) | 0,
+              (200 * random()) | 0,
+              (200 * random()) | 0,
+            );
+          },
+        ];
 
-          var phi = (this.frame % 7777) / 7777,
-            i = 0,
-            j = 1;
-          while (phi >= this.splineX[j]) i = j++;
-          var rho = interpolation(
-            this.splineY[i],
-            this.splineY[j],
-            (phi - this.splineX[i]) / (this.splineX[j] - this.splineX[i]),
-          );
-          phi *= PI2;
+        function color(r, g, b) {
+          return "rgb(" + r + "," + g + "," + b + ")";
+        }
 
-          outerStyle.left = this.x + rho * cos(phi) + "px";
-          outerStyle.top = this.y + rho * sin(phi) + "px";
+        function interpolation(a, b, t) {
+          return ((1 - cos(PI * t)) / 2) * (b - a) + a;
+        }
+
+        var radius = 1 / eccentricity,
+          radius2 = radius + radius;
+
+        function createPoisson() {
+          var domain = [radius, 1 - radius],
+            measure = 1 - radius2,
+            spline = [0, 1];
+          while (measure) {
+            var dart = measure * random(),
+              i,
+              l,
+              interval,
+              a,
+              b,
+              c,
+              d;
+            for (i = 0, l = domain.length, measure = 0; i < l; i += 2) {
+              ((a = domain[i]), (b = domain[i + 1]), (interval = b - a));
+              if (dart < measure + interval) {
+                spline.push((dart += a - measure));
+                break;
+              }
+              measure += interval;
+            }
+            ((c = dart - radius), (d = dart + radius));
+            for (i = domain.length - 1; i > 0; i -= 2) {
+              ((l = i - 1), (a = domain[l]), (b = domain[i]));
+              if (a >= c && a < d)
+                if (b > d) domain[l] = d;
+                else domain.splice(l, 2);
+              else if (a < c && b > c)
+                if (b <= d) domain[i] = c;
+                else domain.splice(i, 0, c, d);
+            }
+            for (i = 0, l = domain.length, measure = 0; i < l; i += 2)
+              measure += domain[i + 1] - domain[i];
+          }
+          return spline.sort();
+        }
+
+        var container = document.createElement("div");
+        container.id = "confetti-container";
+        container.style.position = "fixed";
+        container.style.top = "0";
+        container.style.left = "0";
+        container.style.width = "100%";
+        container.style.height = "0";
+        container.style.overflow = "visible";
+        container.style.zIndex = "9999";
+        document.body.appendChild(container);
+
+        function Confetto(theme) {
+          this.frame = 0;
+          this.outer = document.createElement("div");
+          this.inner = document.createElement("div");
+          this.outer.appendChild(this.inner);
+
+          var outerStyle = this.outer.style,
+            innerStyle = this.inner.style;
+          outerStyle.position = "absolute";
+          outerStyle.width = sizeMin + sizeMax * random() + "px";
+          outerStyle.height = sizeMin + sizeMax * random() + "px";
+          innerStyle.width = "100%";
+          innerStyle.height = "100%";
+          innerStyle.backgroundColor = theme();
+
+          outerStyle.perspective = "50px";
+          outerStyle.transform = "rotate(" + 360 * random() + "deg)";
+          this.axis =
+            "rotate3D(" +
+            cos(360 * random()) +
+            "," +
+            cos(360 * random()) +
+            ",0,";
+          this.theta = 360 * random();
+          this.dTheta = dThetaMin + dThetaMax * random();
           innerStyle.transform = this.axis + this.theta + "deg)";
-          return this.y > height + deviation;
-        };
+
+          this.x = window.innerWidth * random();
+          this.y = -deviation;
+          this.dx = sin(dxThetaMin + dxThetaMax * random());
+          this.dy = dyMin + dyMax * random();
+          outerStyle.left = this.x + "px";
+          outerStyle.top = this.y + "px";
+
+          this.splineX = createPoisson();
+          this.splineY = [];
+          for (var i = 1, l = this.splineX.length - 1; i < l; ++i)
+            this.splineY[i] = deviation * random();
+          this.splineY[0] = this.splineY[l] = deviation * random();
+
+          this.update = function (height, delta) {
+            this.frame += delta;
+            this.x += this.dx * delta;
+            this.y += this.dy * delta;
+            this.theta += this.dTheta * delta;
+
+            var phi = (this.frame % 7777) / 7777,
+              i = 0,
+              j = 1;
+            while (phi >= this.splineX[j]) i = j++;
+            var rho = interpolation(
+              this.splineY[i],
+              this.splineY[j],
+              (phi - this.splineX[i]) / (this.splineX[j] - this.splineX[i]),
+            );
+            phi *= PI2;
+
+            outerStyle.left = this.x + rho * cos(phi) + "px";
+            outerStyle.top = this.y + rho * sin(phi) + "px";
+            innerStyle.transform = this.axis + this.theta + "deg)";
+            return this.y > height + deviation;
+          };
+        }
+
+        var frame, timer;
+        var theme = colorThemes[0];
+        (function addConfetto() {
+          var confetto = new Confetto(theme);
+          confetti.push(confetto);
+          container.appendChild(confetto.outer);
+          timer = setTimeout(addConfetto, spread * random());
+        })(0);
+
+        var prev;
+        requestAnimationFrame(function loop(timestamp) {
+          var delta = prev ? timestamp - prev : 0;
+          prev = timestamp;
+          var height = window.innerHeight;
+
+          for (var i = confetti.length - 1; i >= 0; --i) {
+            if (confetti[i].update(height, delta)) {
+              container.removeChild(confetti[i].outer);
+              confetti.splice(i, 1);
+            }
+          }
+
+          if (timer || confetti.length)
+            return (frame = requestAnimationFrame(loop));
+
+          document.body.removeChild(container);
+        });
+
+        setTimeout(() => {
+          clearTimeout(timer);
+          timer = null;
+        }, 5000);
       }
 
-      var frame, timer;
-      var theme = colorThemes[0];
-      (function addConfetto() {
-        var confetto = new Confetto(theme);
-        confetti.push(confetto);
-        container.appendChild(confetto.outer);
-        timer = setTimeout(addConfetto, spread * random());
-      })(0);
-
-      var prev;
-      requestAnimationFrame(function loop(timestamp) {
-        var delta = prev ? timestamp - prev : 0;
-        prev = timestamp;
-        var height = window.innerHeight;
-
-        for (var i = confetti.length - 1; i >= 0; --i) {
-          if (confetti[i].update(height, delta)) {
-            container.removeChild(confetti[i].outer);
-            confetti.splice(i, 1);
-          }
-        }
-
-        if (timer || confetti.length)
-          return (frame = requestAnimationFrame(loop));
-
-        document.body.removeChild(container);
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("random-gesture")
+          .addEventListener("click", function () {
+            launchConfetti();
+          });
       });
 
-      setTimeout(() => {
-        clearTimeout(timer);
-        timer = null;
-      }, 5000);
-    }
+      document.addEventListener("DOMContentLoaded", function () {
+        const tooltip = document.getElementById("gesture-tooltip");
+        tooltip.classList.add("opacity-100");
 
-    document.addEventListener("DOMContentLoaded", function () {
-      document
-        .getElementById("random-gesture")
-        .addEventListener("click", function () {
-          launchConfetti();
+        setTimeout(() => {
+          tooltip.classList.remove("opacity-100");
+        }, 2000);
+      });
+
+      // Tab switching
+      document.addEventListener("DOMContentLoaded", function () {
+        const tabs = document.querySelectorAll(".tab-btn");
+        const items = document.querySelectorAll(".icon-item");
+        const searchInput = document.getElementById("search-input");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            if (this === searchInput) return;
+            tabs.forEach((t) => t.classList.remove("active"));
+            this.classList.add("active");
+
+            const target = this.dataset.tab;
+
+            items.forEach((item) => {
+              if (target === "all") {
+                item.style.display = "";
+              } else {
+                item.style.display = item.dataset.tab === target ? "" : "none";
+              }
+            });
+          });
         });
-    });
 
-    document.addEventListener("DOMContentLoaded", function () {
-      const tooltip = document.getElementById("gesture-tooltip");
-      tooltip.classList.add("opacity-100");
-
-      setTimeout(() => {
-        tooltip.classList.remove("opacity-100");
-      }, 2000);
-    });
-
-    // Tab switching
-    document.addEventListener("DOMContentLoaded", function () {
-      const tabs = document.querySelectorAll(".tab-btn");
-      const items = document.querySelectorAll(".icon-item");
-      const searchInput = document.getElementById("search-input");
-
-      tabs.forEach((tab) => {
-        tab.addEventListener("click", function () {
-          if (this === searchInput) return;
+        searchInput.addEventListener("input", function () {
+          const query = this.value.toLowerCase().trim();
           tabs.forEach((t) => t.classList.remove("active"));
-          this.classList.add("active");
 
-          const target = this.dataset.tab;
-
-          items.forEach((item) => {
-            if (target === "all") {
+          if (query === "") {
+            document.querySelector('[data-tab="all"]').classList.add("active");
+            items.forEach((item) => {
               item.style.display = "";
-            } else {
-              item.style.display =
-                item.dataset.tab === target ? "" : "none";
-            }
-          });
-        });
-      });
+            });
+            return;
+          }
 
-      searchInput.addEventListener("input", function () {
-        const query = this.value.toLowerCase().trim();
-        tabs.forEach((t) => t.classList.remove("active"));
-
-        if (query === "") {
           document.querySelector('[data-tab="all"]').classList.add("active");
+
           items.forEach((item) => {
-            item.style.display = "";
+            const label = (
+              item.querySelector(".icon-label")?.textContent || ""
+            ).toLowerCase();
+            item.style.display = label.includes(query) ? "" : "none";
           });
-          return;
-        }
-
-        document.querySelector('[data-tab="all"]').classList.add("active");
-
-        items.forEach((item) => {
-          const label = (item.querySelector(".icon-label")?.textContent || "").toLowerCase();
-          item.style.display = label.includes(query) ? "" : "none";
         });
       });
-    });
-  </script>
-  <div id="crm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all">
-      <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">
-        Choose CRM View
-      </h3>
-      <div class="grid grid-cols-1 gap-4">
-        <button onclick="navigateCRM('/app/my-crm/')"
-          class="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group">
-          <div class="flex items-center">
-            <div
-              class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform">
-              <i class="fas fa-user-circle text-xl"></i>
+    </script>
+    <div
+      id="crm-modal"
+      class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black bg-opacity-50"
+    >
+      <div
+        class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all"
+      >
+        <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">
+          Choose CRM View
+        </h3>
+        <div class="grid grid-cols-1 gap-4">
+          <button
+            onclick="navigateCRM('/app/my-crm/')"
+            class="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform"
+              >
+                <i class="fas fa-user-circle text-xl"></i>
+              </div>
+              <div class="text-left">
+                <span class="block font-semibold text-blue-900">Portal</span>
+                <span class="text-xs text-blue-600">Open My CRM</span>
+              </div>
             </div>
-            <div class="text-left">
-              <span class="block font-semibold text-blue-900">Portal</span>
-              <span class="text-xs text-blue-600">Open My CRM</span>
+            <i class="fas fa-chevron-right text-blue-300"></i>
+          </button>
+          <button
+            onclick="navigateCRM('/app/crm-lead-report')"
+            class="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 transition-colors group"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform"
+              >
+                <i class="fas fa-chart-bar text-xl"></i>
+              </div>
+              <div class="text-left">
+                <span class="block font-semibold text-green-900"
+                  >Dashboard</span
+                >
+                <span class="text-xs text-green-600">CRM Lead Report</span>
+              </div>
             </div>
-          </div>
-          <i class="fas fa-chevron-right text-blue-300"></i>
-        </button>
-        <button onclick="navigateCRM('/app/crm-lead-report')"
-          class="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 transition-colors group">
-          <div class="flex items-center">
-            <div
-              class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform">
-              <i class="fas fa-chart-bar text-xl"></i>
-            </div>
-            <div class="text-left">
-              <span class="block font-semibold text-green-900">Dashboard</span>
-              <span class="text-xs text-green-600">CRM Lead Report</span>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right text-green-300"></i>
+            <i class="fas fa-chevron-right text-green-300"></i>
+          </button>
+        </div>
+        <button
+          onclick="closeCRMModal()"
+          class="mt-6 w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors"
+        >
+          Cancel
         </button>
       </div>
-      <button onclick="closeCRMModal()"
-        class="mt-6 w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors">
-        Cancel
-      </button>
     </div>
-  </div>
-</body>
-
+  </body>
 </html>
