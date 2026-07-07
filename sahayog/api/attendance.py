@@ -578,22 +578,40 @@ def get_employee_calendar(employee, month, year):
 @frappe.whitelist(allow_guest=False)
 def get_leave_balances(employee):
     """Fetch leave balances for the given employee."""
+    from frappe.utils import today
+    
+    # Fetch active leave allocations (valid for today's date)
     allocations = frappe.get_all("Leave Allocation",
-        filters={"employee": employee, "docstatus": 1},
-        fields=["leave_type", "total_leaves_allocated", "unused_leaves", "carry_forwarded_leaves_count"]
+        filters={
+            "employee": employee, 
+            "docstatus": 1,
+            "from_date": ["<=", today()],
+            "to_date": [">=", today()]
+        },
+        fields=["name", "leave_type", "total_leaves_allocated", "unused_leaves", 
+                "carry_forwarded_leaves_count", "from_date", "to_date"]
     )
 
     for alloc in allocations:
+        # Calculate used leaves ONLY within the allocation period
         total_used = frappe.db.sql("""
-            SELECT SUM(total_leave_days)
+            SELECT COALESCE(SUM(total_leave_days), 0)
             FROM `tabLeave Application`
             WHERE employee = %s
               AND leave_type = %s
               AND status = 'Approved'
               AND docstatus = 1
-        """, (employee, alloc.leave_type))[0][0] or 0
+              AND from_date >= %s
+              AND to_date <= %s
+        """, (employee, alloc.leave_type, alloc.from_date, alloc.to_date))[0][0] or 0
 
+        # Recalculate accurate balance
         alloc.unused_leaves = alloc.total_leaves_allocated - total_used
+        
+        # Remove internal fields not needed in frontend
+        alloc.pop("from_date", None)
+        alloc.pop("to_date", None)
+        alloc.pop("name", None)
 
     return allocations
 
