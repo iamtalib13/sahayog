@@ -30,12 +30,48 @@ def execute(filters=None):
     ]
 
     conditions = "WHERE e.custom_is_support_staff = 1"
+    
+    # Status filter
     if filters.get("status"):
         conditions += " AND e.status = %(status)s"
+    
+    # Branch filter
     if filters.get("branch"):
         conditions += " AND e.branch = %(branch)s"
+    
+    # Department filter
     if filters.get("department"):
         conditions += " AND e.department = %(department)s"
+    
+    # Designation filter
+    if filters.get("designation"):
+        conditions += " AND e.designation = %(designation)s"
+    
+    # Employment Type filter
+    if filters.get("employment_type"):
+        conditions += " AND e.employment_type = %(employment_type)s"
+    
+    # Zone filter
+    if filters.get("zone"):
+        conditions += " AND e.custom_zone = %(zone)s"
+    
+    # Region filter
+    if filters.get("region"):
+        conditions += " AND e.custom_region = %(region)s"
+    
+    # Date of Joining filters
+    if filters.get("from_date_of_joining"):
+        conditions += " AND e.date_of_joining >= %(from_date_of_joining)s"
+    
+    if filters.get("to_date_of_joining"):
+        conditions += " AND e.date_of_joining <= %(to_date_of_joining)s"
+    
+    # Relieving Date filters (for Left/Resigned employees)
+    if filters.get("from_relieving_date"):
+        conditions += " AND e.relieving_date >= %(from_relieving_date)s"
+    
+    if filters.get("to_relieving_date"):
+        conditions += " AND e.relieving_date <= %(to_relieving_date)s"
 
     data = frappe.db.sql(f"""
         SELECT
