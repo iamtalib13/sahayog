@@ -22,6 +22,7 @@ def execute(filters=None):
         {"label": "Mobile", "fieldname": "cell_number", "fieldtype": "Data", "width": 110},
         {"label": "PAN Number", "fieldname": "custom_pan_number", "fieldtype": "Data", "width": 120},
         {"label": "Aadhaar Number", "fieldname": "custom_aadhar_number", "fieldtype": "Data", "width": 130},
+        {"label": "UHID Number", "fieldname": "custom_uhid_number", "fieldtype": "Data", "width": 130},
         {"label": "Bank Name", "fieldname": "bank_name", "fieldtype": "Data", "width": 130},
         {"label": "Bank Account No", "fieldname": "bank_ac_no", "fieldtype": "Data", "width": 140},
         {"label": "Reporting Manager", "fieldname": "reports_to", "fieldtype": "Data", "width": 140},
@@ -78,7 +79,7 @@ def execute(filters=None):
             e.name, e.employee_name, e.gender, e.date_of_birth, e.date_of_joining,
             e.final_confirmation_date, e.department, e.designation, e.employment_type,
             e.branch, e.sahayog_branch, e.custom_zone, e.custom_region, e.custom_district,
-            e.cell_number, e.custom_pan_number, e.custom_aadhar_number,
+            e.cell_number, e.custom_pan_number, e.custom_aadhar_number, e.custom_uhid_number,
             e.bank_name, e.bank_ac_no, e.reports_to, e.status, e.relieving_date
         FROM `tabEmployee` e
         {conditions}

@@ -88,6 +88,9 @@ def create_support_staff(data):
 
     if data.get("aadhaar_card_number") and frappe.db.exists("Employee", {"custom_aadhar_number": data.get("aadhaar_card_number")}):
         frappe.throw(_("Aadhaar Number is already registered with another employee"))
+
+    if data.get("uhid_number") and frappe.db.exists("Employee", {"custom_uhid_number": data.get("uhid_number")}):
+        frappe.throw(_("UHID Number {0} is already registered with another employee").format(data.get("uhid_number")))
     
     # Date Validations
     doj = getdate(data.get("date_of_joining")) if data.get("date_of_joining") else None
@@ -137,6 +140,7 @@ def create_support_staff(data):
         "custom_medical_deduction": 100,
         "custom_pan_number": data.get("pan_number"),
         "custom_aadhar_number": data.get("aadhaar_card_number"),
+        "custom_uhid_number": data.get("uhid_number"),
     })
 
     new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
@@ -235,6 +239,7 @@ def update_employee_profile(employee, data):
         "designation", "department", "branch", "reports_to",
         "bank_name", "bank_ac_no", "blood_group", "marital_status",
         "employment_type", "custom_pan_number", "custom_aadhar_number",
+        "custom_uhid_number",
     ]
     # salary & loan only for HR Manager / Admin
     if any(r in roles for r in ["HR Manager", "Administrator"]):
@@ -261,7 +266,7 @@ def get_employee_profile(employee):
         "designation", "department", "employment_type", "branch", "sahayog_branch",
         "custom_zone", "custom_region", "custom_district",
         "cell_number", "personal_email", "permanent_address",
-        "custom_pan_number", "custom_aadhar_number",
+        "custom_pan_number", "custom_aadhar_number", "custom_uhid_number",
         "bank_name", "bank_ac_no", "reports_to",
         "marital_status", "blood_group", "ctc", "custom_staff_loan_emi"
     ], as_dict=True)

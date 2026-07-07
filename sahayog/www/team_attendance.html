@@ -1594,6 +1594,7 @@
                       <div><label>Personal Email</label><input type="email" name="personal_email" class="member-select"></div>
                       <div><label>PAN Number *</label><input type="text" name="pan_number" class="member-select" required style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
                       <div><label>Aadhaar Number *</label><input type="text" name="aadhaar_card_number" class="member-select" required></div>
+                      <div><label>UHID Number</label><input type="text" name="uhid_number" class="member-select" placeholder="e.g. ABHA-1234-5678-9012"></div>
                     </div>
                     <div style="margin-top:15px;">
                       <label>Permanent Address *</label>
@@ -4286,7 +4287,7 @@
             ${e.status==="Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
-            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("Permanent Address", e.permanent_address)}
+            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("UHID Number", e.custom_uhid_number)} ${row("Permanent Address", e.permanent_address)}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Banking</div>
             ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
@@ -4314,6 +4315,7 @@
                 <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address||""}</textarea></div>
               </div>
             </div>
