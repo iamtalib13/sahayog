@@ -8207,7 +8207,7 @@
               
               <!-- Card View -->
               <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
-                <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" style="padding: 16px; flex-direction: column; align-items: flex-start;">
+                <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" @click="openAssetAvailability(item)" style="padding: 16px; flex-direction: column; align-items: flex-start; cursor: pointer;">
                     <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
                     <div class="card-value" style="font-size: 1.5rem; color: #369696;">[[ item.count ]]</div>
                     <div class="card-label" style="font-size: 0.8rem;">[[ assetStatusFilter ]] Asset</div>
@@ -8216,7 +8216,7 @@
 
               <!-- List View -->
               <div v-else class="rows-list" style="margin-top: 16px;">
-                 <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color);">
+                 <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" @click="openAssetAvailability(item)" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                      <div style="font-weight: 600;">[[ item.item_name ]]</div>
                      <div style="font-weight: 700; color: #369696;">[[ item.count ]] [[ assetStatusFilter ]]</div>
                  </div>
@@ -8824,6 +8824,35 @@
       </div>
     </section>
   </main>
+
+  <!-- Asset Availability Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showAssetAvailabilityModal"
+    @click.self="showAssetAvailabilityModal = false"
+  >
+    <div class="profile-modal" style="max-width: 600px;">
+      <div class="profile-modal-header">
+        <h3>[[ assetAvailabilityModalData.title ]] - Available Serial Nos</h3>
+        <button class="profile-close" @click="showAssetAvailabilityModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 0;">
+        <div v-if="assetAvailabilityModalData.items.length === 0" style="text-align: center; padding: 40px; color: #999;">
+          No serial numbers found
+        </div>
+        <div v-else style="max-height: 60vh; overflow-y: auto;">
+          <div v-for="sn in assetAvailabilityModalData.items" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+              <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+            </div>
+            <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Workflow Action Modal -->
   <div
     class="profile-modal-overlay"
@@ -13189,6 +13218,9 @@
       assetViewMode: 'cards',
       assetStatusFilter: 'Available',
       assetGroupBy: 'Item',
+      showAssetAvailabilityModal: false,
+      assetAvailabilityModalData: { items: [], title: '' },
+      availableSerials: [],
 
       async getSerialWarehouseMap() {
         try {
@@ -13226,7 +13258,7 @@
           
           const warehouseMap = await this.getSerialWarehouseMap();
           
-          const availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name)).map(sn => ({
+          this.availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name)).map(sn => ({
               ...sn,
               warehouse: warehouseMap[sn.name]
           }));
@@ -13256,7 +13288,7 @@
           const summaryMap = {};
           
           if (this.assetStatusFilter === 'Available') {
-            availableSerials.forEach(sn => {
+            this.availableSerials.forEach(sn => {
                 const item = fixedAssetItems.find(i => i.name === sn.item_code);
                 if (item) {
                     let key = "";
@@ -13353,6 +13385,21 @@
         } catch (e) {
           console.error("Error fetching asset availability:", e);
         }
+      },
+
+      openAssetAvailability(item) {
+        let serials = [];
+        if (this.assetGroupBy === 'Item') {
+            serials = this.availableSerials.filter(sn => sn.item_code === item.item_code);
+        } else {
+            serials = this.availableSerials.filter(sn => {
+                const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
+                const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
+                return solId === item.item_code || sn.warehouse === item.item_code;
+            });
+        }
+        this.assetAvailabilityModalData = { items: serials, title: item.item_name };
+        this.showAssetAvailabilityModal = true;
       },
 
       get getChartBars() {
