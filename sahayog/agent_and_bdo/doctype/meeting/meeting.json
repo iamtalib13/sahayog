@@ -86,29 +86,30 @@
      "label": "Branch",
      "options": "Sahayog Branch"
     },
-    {
-     "fieldname": "attendee_type",
-     "fieldtype": "Select",
-     "label": "Attendee Type",
-     "options": "\nAgent\nEmployee",
-     "depends_on": "eval:doc.branch"
-    },
-   "fieldname": "section_break_xhny",
-   "fieldtype": "Section Break",
-   "label": "Attendees Details"
-  },
-  {
-   "depends_on": "eval:!doc.__islocal",
-   "fieldname": "trainer",
-   "fieldtype": "Link",
-   "label": "Trainer",
-   "options": "Employee"
-  },
-  {
-   "fieldname": "attandees_table",
-   "fieldtype": "Table",
-   "options": "Attendees"
-  }
+   {
+    "fieldname": "attendee_type",
+    "fieldtype": "Select",
+    "label": "Attendee Type",
+    "options": "\nAgent\nEmployee",
+    "depends_on": "eval:doc.branch"
+   },
+   {
+    "fieldname": "section_break_xhny",
+    "fieldtype": "Section Break",
+    "label": "Attendees Details"
+   },
+   {
+    "depends_on": "eval:!doc.__islocal",
+    "fieldname": "trainer",
+    "fieldtype": "Link",
+    "label": "Trainer",
+    "options": "Employee"
+   },
+   {
+    "fieldname": "attandees_table",
+    "fieldtype": "Table",
+    "options": "Attendees"
+   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
