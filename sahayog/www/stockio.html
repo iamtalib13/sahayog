@@ -2316,9 +2316,28 @@
           class="btn-create"
           v-if="showDetailView && detailRecord && detailRecord.docstatus === 0 && !isEditing && (activeItem === 'Asset Master' || activeItem === 'Movements')"
           style="background: #3b82f6; border-color: #3b82f6"
+          @click="isEditing = true"
         >
           <i class="fas fa-edit"></i>
           <span>Edit</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && isEditing && activeItem === 'Asset Master'"
+          style="background: #369696; border-color: #369696"
+          @click="saveRequest()"
+        >
+          <i class="fas fa-save"></i>
+          <span>Save</span>
+        </button>
+        <button
+          class="btn-create"
+          v-if="showDetailView && detailRecord && isEditing && activeItem === 'Asset Master'"
+          style="background: #ef4444; border-color: #ef4444"
+          @click="isEditing = false"
+        >
+          <i class="fas fa-times"></i>
+          <span>Cancel</span>
         </button>
         <!-- Cancel button removed from top header -->
         <button
