@@ -386,7 +386,7 @@ DASHBOARD_SCRIPT_P1 = """(function(){
         + '<td><span class="aad-badge aad-badge-' + s.cls + '">' + s.label + '</span></td>'
         + '<td>' + frappe.utils.escape_html(log.agent || "-") + '</td>'
         + '<td>' + (log.calling_date ? frappe.datetime.str_to_user(log.calling_date) : "-") + '</td>'
-        + '<td>' + frappe.utils.escape_html(log.reply_type || "-") + '</td>'
+        + '<td style="color:' + (log.reply_type === 'Positive' ? 'green' : log.reply_type === 'Negative' ? 'red' : 'inherit') + ';font-weight:' + (log.reply_type === 'Positive' || log.reply_type === 'Negative' ? '600' : 'normal') + '">' + frappe.utils.escape_html(log.reply_type || "-") + '</td>'
         + '<td>' + fd + '</td>'
         + '<td>' + mod + '</td>'
         + '</tr>';
