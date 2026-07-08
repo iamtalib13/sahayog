@@ -32,9 +32,31 @@ def execute(filters=None):
             e.department,
             la.leave_type,
             la.total_leaves_allocated,
-            (la.total_leaves_allocated - la.unused_leaves) AS used_leaves,
-            la.unused_leaves,
-            la.carry_forwarded_leaves_count
+            la.carry_forwarded_leaves_count,
+            la.from_date,
+            la.to_date,
+            -- Calculate actual used leaves within allocation period
+            COALESCE((
+                SELECT SUM(lapp.total_leave_days)
+                FROM `tabLeave Application` lapp
+                WHERE lapp.employee = la.employee
+                  AND lapp.leave_type = la.leave_type
+                  AND lapp.status = 'Approved'
+                  AND lapp.docstatus = 1
+                  AND lapp.from_date >= la.from_date
+                  AND lapp.to_date <= la.to_date
+            ), 0) AS used_leaves,
+            -- Calculate actual balance
+            (la.total_leaves_allocated - COALESCE((
+                SELECT SUM(lapp.total_leave_days)
+                FROM `tabLeave Application` lapp
+                WHERE lapp.employee = la.employee
+                  AND lapp.leave_type = la.leave_type
+                  AND lapp.status = 'Approved'
+                  AND lapp.docstatus = 1
+                  AND lapp.from_date >= la.from_date
+                  AND lapp.to_date <= la.to_date
+            ), 0)) AS unused_leaves
         FROM `tabLeave Allocation` la
         INNER JOIN `tabEmployee` e ON e.name = la.employee
         WHERE la.docstatus = 1

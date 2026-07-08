@@ -1318,22 +1318,6 @@
                 <option value="">All Branches</option>
               </select>
               <select
-                id="f_dept"
-                class="ftab"
-                style="height: 34px; min-width: 140px"
-                onchange="applyAllFilters()"
-              >
-                <option value="">All Departments</option>
-              </select>
-              <select
-                id="f_desig"
-                class="ftab"
-                style="height: 34px; min-width: 140px"
-                onchange="applyAllFilters()"
-              >
-                <option value="">All Designations</option>
-              </select>
-              <select
                 id="f_status"
                 class="ftab"
                 style="height: 34px; min-width: 140px"
@@ -1359,7 +1343,7 @@
                 id="staffSearch"
                 class="search-input"
                 style="flex: 1"
-                placeholder="🔍 Search staff members by name or ID..."
+                placeholder="🔍 Search by name, employee ID (P1, P2...) or designation..."
                 onkeyup="handleSearch()"
               />
             </div>
@@ -1570,7 +1554,7 @@
                           <div id="new_emp_reports_to_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
                         </div>
                       </div>
-                      <div><label>Shift *</label><select name="shift" id="new_emp_shift" class="member-select" required><option value="">Select Shift</option></select></div>
+                      <div><label>Shift</label><select name="shift" id="new_emp_shift" class="member-select"><option value="">Select Shift</option></select></div>
                     </div>
                   </div>
 
@@ -1578,11 +1562,11 @@
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
                       <div><label>Branch Code (SOL ID) *</label><select name="sol_id" id="new_emp_sol_id" class="member-select" onchange="handleBranchCodeChange(this.value)" required><option value="">Select Branch Code</option></select></div>
-                      <div><label>Branch Name *</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" required readonly></div>
-                      <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required readonly></div>
-                      <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required readonly></div>
-                      <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required readonly></div>
-                      <div><label>Division *</label><select name="division" id="new_emp_division" class="member-select" required><option value="">Select Division</option></select></div>
+                      <div><label>Branch Name</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" readonly></div>
+                      <div><label>Zone</label><input type="text" name="zone" id="new_emp_zone" class="member-select" readonly></div>
+                      <div><label>Region</label><input type="text" name="region" id="new_emp_region" class="member-select" readonly></div>
+                      <div><label>District</label><input type="text" name="district_name" id="new_emp_district" class="member-select" readonly></div>
+                      <div><label>Division</label><select name="division" id="new_emp_division" class="member-select"><option value="">Select Division</option></select></div>
                     </div>
                   </div>
 
@@ -1590,14 +1574,15 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Contact & Identity</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Mobile Number *</label><input type="text" name="mobile_number" class="member-select" required></div>
+                      <div><label>Mobile Number</label><input type="text" name="mobile_number" class="member-select"></div>
                       <div><label>Personal Email</label><input type="email" name="personal_email" class="member-select"></div>
-                      <div><label>PAN Number *</label><input type="text" name="pan_number" class="member-select" required style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-                      <div><label>Aadhaar Number *</label><input type="text" name="aadhaar_card_number" class="member-select" required></div>
+                      <div><label>PAN Number</label><input type="text" name="pan_number" class="member-select" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+                      <div><label>Aadhaar Number</label><input type="text" name="aadhaar_card_number" class="member-select"></div>
+                      <div><label>UHID Number</label><input type="text" name="uhid_number" class="member-select" placeholder="e.g. ABHA-1234-5678-9012"></div>
                     </div>
                     <div style="margin-top:15px;">
-                      <label>Permanent Address *</label>
-                      <textarea name="permanent_address" class="member-select" rows="2" required></textarea>
+                      <label>Permanent Address</label>
+                      <textarea name="permanent_address" class="member-select" rows="2"></textarea>
                     </div>
                   </div>
 
@@ -1626,7 +1611,11 @@
                 <!-- Step 1: Download Template -->
                 <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
                   <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 1 — Download Sample Template</div>
-                  <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Fill in employee data using this CSV template. Do not change column headers.</div>
+                  <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Fill in employee data using this CSV template. You can <strong>remove optional columns</strong> but <strong>do not remove mandatory columns</strong>.</div>
+                  <div style="font-size:11px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px 10px; margin-bottom:10px; color:#856404;">
+                    <strong>Mandatory columns:</strong> first_name, last_name, gender, date_of_joining, designation, department<br>
+                    <span style="font-weight:400; color:#6b7280;">All other columns are optional. Duplicate employees (same name + DOJ, or same UHID/PAN/Aadhaar) will be skipped automatically.</span>
+                  </div>
                   <button onclick="downloadImportTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:var(--brand2); border:none;">⬇ Download Template</button>
                 </div>
 
@@ -2726,25 +2715,25 @@
         }
 
         const mobile = formData.get("mobile_number")?.replace(/\D/g, "");
-        if (mobile.length !== 10) {
+        if (mobile && mobile.length !== 10) {
           showToast("Mobile Number must be exactly 10 digits.");
           return;
         }
-        formData.set("mobile_number", mobile);
+        if (mobile) formData.set("mobile_number", mobile);
 
         const pan = formData.get("pan_number")?.toUpperCase().trim();
-        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
           showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F).");
           return;
         }
-        formData.set("pan_number", pan);
+        if (pan) formData.set("pan_number", pan);
 
         const aadhaar = formData.get("aadhaar_card_number")?.replace(/\D/g, "");
-        if (aadhaar.length !== 12) {
+        if (aadhaar && aadhaar.length !== 12) {
           showToast("Aadhaar Number must be exactly 12 digits.");
           return;
         }
-        formData.set("aadhaar_card_number", aadhaar);
+        if (aadhaar) formData.set("aadhaar_card_number", aadhaar);
 
         const bankAc = formData.get("bank_account_number")?.trim();
         if (!bankAc || bankAc.length < 9 || bankAc.length > 18) {
@@ -3421,31 +3410,21 @@
 
       function populateAllFilters() {
         const bSel = document.getElementById("f_branch");
-        const dSel = document.getElementById("f_dept");
-        const dsSel = document.getElementById("f_desig");
 
         if (bSel.options.length > 1) return;
 
         const branches = [
           ...new Set(staff.map((s) => s.sahayog_branch).filter(Boolean)),
         ].sort();
-        const depts = [
-          ...new Set(staff.map((s) => s.department).filter(Boolean)),
-        ].sort();
-        const desigs = [
-          ...new Set(staff.map((s) => s.designation).filter(Boolean)),
-        ].sort();
 
         branches.forEach((x) => bSel.add(new Option(x, x)));
-        depts.forEach((x) => dSel.add(new Option(x, x)));
-        desigs.forEach((x) => dsSel.add(new Option(x, x)));
       }
 
       let f_vals = { branch: "", dept: "", desig: "", status: "" };
       function applyAllFilters() {
         f_vals.branch = document.getElementById("f_branch").value;
-        f_vals.dept = document.getElementById("f_dept").value;
-        f_vals.desig = document.getElementById("f_desig").value;
+        f_vals.dept = "";
+        f_vals.desig = "";
         f_vals.status = document.getElementById("f_status").value;
         renderEmpList();
       }
@@ -3772,6 +3751,7 @@
           if (
             searchQuery &&
             !s.employee_name.toLowerCase().includes(searchQuery) &&
+            !s.name.toLowerCase().includes(searchQuery) &&
             !(
               s.designation && s.designation.toLowerCase().includes(searchQuery)
             )
@@ -3840,7 +3820,7 @@
                 <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
@@ -4155,7 +4135,9 @@
             if (currentFilter === "pending" && status) return false;
             if (
               searchQuery &&
-              !s.employee_name.toLowerCase().includes(searchQuery)
+              !s.employee_name.toLowerCase().includes(searchQuery) &&
+              !s.name.toLowerCase().includes(searchQuery) &&
+              !(s.designation && s.designation.toLowerCase().includes(searchQuery))
             )
               return false;
             return true;
@@ -4286,7 +4268,7 @@
             ${e.status==="Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
-            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("Permanent Address", e.permanent_address)}
+            ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("UHID Number", e.custom_uhid_number)} ${row("Permanent Address", e.permanent_address)}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Banking</div>
             ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
@@ -4314,6 +4296,7 @@
                 <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address||""}</textarea></div>
               </div>
             </div>
@@ -4395,7 +4378,7 @@
         `;
       }
 
-      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
+      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
 
       function openImportModal() {
         document.getElementById("importResults").style.display = "none";
@@ -4408,8 +4391,10 @@
       }
 
       function downloadImportTemplate() {
-        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
-        const csv = [IMPORT_COLUMNS.join(","), sampleRow.join(",")].join("\n");
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
+        // Add a note row indicating mandatory fields
+        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
+        const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -4424,39 +4409,130 @@
         const btn = document.getElementById("btnSubmitImport");
         btn.disabled = true; btn.textContent = "Importing...";
 
+        console.log("[ImportEmployees] Starting import process...");
+
+        // ── Parse CSV ────────────────────────────────────────────────────────
         const text = await file.text();
         const lines = text.trim().split("\n");
         const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+        console.log("[ImportEmployees] CSV headers detected:", headers);
 
-        const rows = lines.slice(1).filter(l => l.trim()).map(line => {
-          const vals = line.split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+        // Skip any note/annotation rows (row 2 in template is the *Mandatory*/*Optional* row)
+        const SKIP_MARKERS = ["*mandatory*", "optional", "*optional*"];
+        const dataLines = lines.slice(1).filter(l => {
+          const firstCell = l.split(",")[0].trim().replace(/^"|"$/g, "").toLowerCase();
+          return l.trim() && !SKIP_MARKERS.includes(firstCell);
+        });
+
+        console.log(`[ImportEmployees] Total data rows after filtering: ${dataLines.length}`);
+
+        const rows = dataLines.map((line, idx) => {
+          // Proper CSV split: handle quoted values that may contain commas
+          const vals = [];
+          let cur = "", inQ = false;
+          for (let c of line) {
+            if (c === '"') { inQ = !inQ; }
+            else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
+            else { cur += c; }
+          }
+          vals.push(cur.trim());
+
           const obj = {};
-          headers.forEach((h, i) => obj[h] = vals[i] || "");
+          headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
           obj["custom_is_support_staff"] = 1;
           obj["custom_medical_deduction"] = 100;
+          console.log(`[ImportEmployees] Parsed row ${idx + 2}:`, obj);
           return obj;
         });
 
-        if (rows.length === 0) { showToast("No data rows found in CSV"); btn.disabled = false; btn.textContent = "Import Employees"; return; }
+        if (rows.length === 0) {
+          console.warn("[ImportEmployees] No data rows found in the CSV.");
+          showToast("No data rows found in CSV");
+          btn.disabled = false; btn.textContent = "Import Employees";
+          return;
+        }
 
-        const res = await callAPI("bulk_import_employees", { rows }, "employee");
-        btn.disabled = false; btn.textContent = "Import Employees";
-
-        if (!res) return;
+        // ── Send in batches ──────────────────────────────────────────────────
+        const BATCH_SIZE = 50;
+        const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+        let totalCreated = 0, totalFailed = 0, totalSkipped = 0, allErrors = [];
 
         const resultsDiv = document.getElementById("importResults");
         resultsDiv.style.display = "block";
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✅ Created: <span style="color:var(--success)">${res.created}</span> &nbsp; ❌ Failed: <span style="color:var(--danger)">${res.failed}</span>
-        </div>`;
-        if (res.errors.length > 0) {
-          html += res.errors.map(e => `
-            <div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
-              <b>Row ${e.row} — ${e.name}:</b> ${e.error}
-            </div>`).join("");
+
+        console.log(`[ImportEmployees] Sending ${rows.length} rows in ${totalBatches} batch(es) of ${BATCH_SIZE}`);
+
+        for (let b = 0; b < totalBatches; b++) {
+          const batch = rows.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+          btn.textContent = `Importing... (Batch ${b + 1}/${totalBatches})`;
+          resultsDiv.innerHTML = `<div style="font-size:13px; font-weight:600; color:var(--muted);">⏳ Processing batch ${b + 1} of ${totalBatches}... (${totalCreated} created so far)</div>`;
+
+          console.log(`[ImportEmployees] Sending batch ${b + 1}/${totalBatches} (${batch.length} rows)...`);
+
+          let res = null;
+          try {
+            res = await callAPI("bulk_import_employees", { rows: batch }, "employee");
+          } catch (apiErr) {
+            console.error(`[ImportEmployees] Batch ${b + 1} API call failed:`, apiErr);
+            allErrors.push({ row: "Batch " + (b + 1), name: "API Error", error: String(apiErr) });
+            totalFailed += batch.length;
+            continue;
+          }
+
+          if (res) {
+            console.log(`[ImportEmployees] Batch ${b + 1} response:`, res);
+            totalCreated  += res.created  || 0;
+            totalFailed   += res.failed   || 0;
+            totalSkipped  += res.skipped  || 0;
+            allErrors      = allErrors.concat(res.errors || []);
+
+            // Log each error/skip to console for easy debugging
+            (res.errors || []).forEach(e => {
+              console.warn(`[ImportEmployees] Row ${e.row} (${e.name}): ${e.error}`);
+            });
+          } else {
+            console.warn(`[ImportEmployees] Batch ${b + 1} returned null/empty response`);
+          }
+
+          // Small delay between batches to prevent throttling
+          if (b < totalBatches - 1) {
+            await new Promise(r => setTimeout(r, 500));
+          }
         }
+
+        btn.disabled = false; btn.textContent = "Import Employees";
+
+        console.log(`[ImportEmployees] Done — Created: ${totalCreated}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`);
+        if (allErrors.length > 0) {
+          console.group("[ImportEmployees] All errors/skips:");
+          allErrors.forEach(e => console.warn(`Row ${e.row} (${e.name}): ${e.error}`));
+          console.groupEnd();
+        }
+
+        // ── Render result summary ────────────────────────────────────────────
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
+          ✅ Created: <span style="color:var(--success)">${totalCreated}</span>
+          &nbsp;⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span>
+          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        </div>`;
+
+        if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details (check browser console for full log):</div>`;
+          html += allErrors.map(e => {
+            // Distinguish skipped (duplicates) vs actual failures by error text
+            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
+            const bg    = isSkip ? "#fffbeb" : "#fff1f2";
+            const bc    = isSkip ? "#fde68a" : "#fecaca";
+            const icon  = isSkip ? "⏭" : "❌";
+            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+              ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
+            </div>`;
+          }).join("");
+        }
+
         resultsDiv.innerHTML = html;
-        if (res.created > 0) fetchTeamData();
+
+        if (totalCreated > 0) fetchTeamData();
       }
 
       async function openExitEmployeeModal() {
