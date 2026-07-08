@@ -48,19 +48,109 @@ def get_next_support_staff_id():
 
 
 def _parse_date(val):
-    """Convert dd-mm-yyyy or dd/mm/yyyy to yyyy-mm-dd for MySQL."""
+    """
+    Convert any date format to a datetime.date object for safe use in frappe.get_doc.
+    Handles multiple formats: YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY, DD.MM.YYYY, 
+    MM/DD/YYYY, and text dates like "01-Jan-2024"
+    Returns a datetime.date object (not string) to bypass Frappe's internal string parser.
+    """
+    import datetime
+    import re
+    
     if not val:
         return None
     val = str(val).strip()
-    # Already in correct format
-    if len(val) == 10 and val[4] in ('-', '/') and val[7] in ('-', '/'):
-        return val.replace('/', '-')
-    # dd-mm-yyyy or dd/mm/yyyy
-    for sep in ('-', '/'):
+    if not val or val.lower() in ["none", "null", "na", "n/a"]:
+        return None
+
+    # ── Try common separators: - / . space ────────────────────────────────────
+    for sep in ('-', '/', '.', ' '):
         parts = val.split(sep)
-        if len(parts) == 3 and len(parts[2]) == 4:
-            return f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
-    return val
+        if len(parts) != 3:
+            continue
+        
+        try:
+            a, b, c = parts[0].strip(), parts[1].strip(), parts[2].strip()
+
+            # ── Handle text month (Jan, Feb, January, etc.) ──────────────────
+            month_map = {
+                "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
+                "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6,
+                "jul": 7, "july": 7, "aug": 8, "august": 8, "sep": 9, "september": 9,
+                "oct": 10, "october": 10, "nov": 11, "november": 11, "dec": 12, "december": 12
+            }
+            
+            # Check if middle part is text month (DD-MMM-YYYY)
+            if b.lower() in month_map:
+                day, month, year = int(a), month_map[b.lower()], int(c)
+                if len(c) == 2:  # 2-digit year → assume 20xx
+                    year = 2000 + year
+                return datetime.date(year, month, day)
+            
+            # Check if first part is text month (MMM-DD-YYYY)
+            if a.lower() in month_map:
+                month, day, year = month_map[a.lower()], int(b), int(c)
+                if len(c) == 2:
+                    year = 2000 + year
+                return datetime.date(year, month, day)
+
+            # ── Numeric-only dates ────────────────────────────────────────────
+            # YYYY-??-?? format (year first)
+            if len(a) == 4:
+                year, p1, p2 = int(a), int(b), int(c)
+                # If p1 > 12, it must be day → YYYY-DD-MM, swap to YYYY-MM-DD
+                if p1 > 12:
+                    month, day = p2, p1
+                else:
+                    # Could be YYYY-MM-DD or YYYY-DD-MM — assume MM-DD (US common)
+                    month, day = p1, p2
+                return datetime.date(year, month, day)
+
+            # DD-MM-YYYY or MM-DD-YYYY (day/month first, year last)
+            if len(c) == 4:
+                year = int(c)
+                p1, p2 = int(a), int(b)
+                
+                # Disambiguate: if p1 > 12, it's definitely DD-MM-YYYY
+                if p1 > 12:
+                    day, month = p1, p2
+                # If p2 > 12, it's MM-DD-YYYY
+                elif p2 > 12:
+                    month, day = p1, p2
+                # Both <= 12: assume DD-MM-YYYY (Indian format common)
+                else:
+                    day, month = p1, p2
+                
+                return datetime.date(year, month, day)
+            
+            # 2-digit year at end (DD-MM-YY) → assume 20YY
+            if len(c) == 2:
+                year = 2000 + int(c)
+                p1, p2 = int(a), int(b)
+                if p1 > 12:
+                    day, month = p1, p2
+                else:
+                    day, month = p1, p2  # Assume DD-MM
+                return datetime.date(year, month, day)
+
+        except (ValueError, TypeError):
+            continue
+
+    # ── Try ISO format directly (YYYYMMDD) ────────────────────────────────────
+    if len(val) == 8 and val.isdigit():
+        try:
+            return datetime.datetime.strptime(val, "%Y%m%d").date()
+        except ValueError:
+            pass
+
+    # ── Last resort: Use Frappe's getdate (handles many formats) ──────────────
+    try:
+        from frappe.utils import getdate
+        return getdate(val)
+    except Exception:
+        pass
+
+    return None  # Return None for unparseable dates instead of crashing
 
 
 @frappe.whitelist()
@@ -174,24 +264,237 @@ def create_support_staff(data):
 
 @frappe.whitelist()
 def bulk_import_employees(rows):
+    import json
+
+    # ── Permission check ──────────────────────────────────────────────────────
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
 
     if isinstance(rows, str):
-        import json
         rows = json.loads(rows)
 
-    results = {"created": 0, "failed": 0, "errors": []}
+    # ── Logger setup (writes to frappe.log / Error Log) ──────────────────────
+    logger = frappe.logger("bulk_employee_import", allow_site=True, max_size=5, file_count=3)
+    logger.info(f"[BulkImport] Started — {len(rows)} row(s) received by user: {frappe.session.user}")
 
-    for i, row in enumerate(rows, start=2):  # start=2 because row 1 is header
+    results = {"created": 0, "failed": 0, "skipped": 0, "errors": []}
+
+    # ── Only these fields are validated as mandatory during import ────────────
+    # NOTE: We intentionally do NOT enforce Employee-master mandatory fields
+    # like zone/region/district here — they are auto-filled from sol_id where
+    # possible, and the import uses ignore_mandatory=True so Frappe won't block.
+    MANDATORY_FIELDS = {
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "gender": "Gender",
+        "date_of_joining": "Date of Joining",
+        "designation": "Designation",
+        "department": "Department",
+    }
+
+    # ── Fetch table columns ONCE outside the loop ─────────────────────────────
+    existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
+
+    # ── Tell Frappe this is a bulk import — bypasses User creation throttle ───
+    # frappe.throttle_user_creation() skips itself when frappe.flags.in_import=True
+    frappe.flags.in_import = True
+
+    for i, row in enumerate(rows, start=2):  # row 1 = CSV header
+        emp_label = (
+            (row.get("first_name") or "") + " " + (row.get("last_name") or "")
+        ).strip() or f"Row {i}"
+
         try:
-            # Reuse existing create logic
-            create_support_staff(row)
+            # ── 1. Mandatory field validation ─────────────────────────────────
+            missing = []
+            for field, label in MANDATORY_FIELDS.items():
+                if not row.get(field):
+                    missing.append(label)
+            if missing:
+                reason = f"Missing mandatory fields: {', '.join(missing)}"
+                logger.warning(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
+                results["failed"] += 1
+                results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                continue
+
+            # ── 2. Duplicate checks (strongest ID first) ──────────────────────
+            # Check by UHID
+            if row.get("uhid_number"):
+                if frappe.db.exists("Employee", {"custom_uhid_number": row["uhid_number"]}):
+                    reason = f"Already exists — UHID '{row['uhid_number']}' already imported"
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
+                    results["skipped"] += 1
+                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    continue
+
+            # Check by PAN
+            if row.get("pan_number"):
+                if frappe.db.exists("Employee", {"custom_pan_number": row["pan_number"]}):
+                    reason = f"Already exists — PAN '{row['pan_number']}' already imported"
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
+                    results["skipped"] += 1
+                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    continue
+
+            # Check by Aadhaar
+            if row.get("aadhaar_card_number"):
+                if frappe.db.exists("Employee", {"custom_aadhar_number": row["aadhaar_card_number"]}):
+                    reason = f"Already exists — Aadhaar '{row['aadhaar_card_number']}' already imported"
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
+                    results["skipped"] += 1
+                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    continue
+
+            # Name-based duplicate check — always runs regardless of IDs
+            # Matches: same first_name + last_name + date_of_joining + support staff flag
+            full_name = f"{(row.get('first_name') or '').strip()} {(row.get('last_name') or '').strip()}".strip()
+            doj_val = _parse_date(row.get("date_of_joining"))
+            if full_name and doj_val:
+                name_dup = frappe.db.exists("Employee", {
+                    "employee_name": full_name,
+                    "date_of_joining": doj_val,
+                    "custom_is_support_staff": 1
+                })
+                if name_dup:
+                    reason = f"Already exists — Name '{full_name}' + DOJ '{doj_val}' already imported (Employee: {name_dup})"
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
+                    results["skipped"] += 1
+                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    continue
+
+            # ── 3. Date range validation ───────────────────────────────────────
+            doj = _parse_date(row.get("date_of_joining"))
+            conf_date = _parse_date(row.get("final_confirmation_date"))
+            if doj and conf_date and (conf_date - doj).days < 0:
+                reason = "Final Confirmation Date cannot be earlier than Date of Joining"
+                logger.warning(f"[BulkImport] Row {i} ({emp_label}) FAILED — {reason}")
+                results["failed"] += 1
+                results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                continue
+
+            # ── 4. Reporting Manager — skip silently if not found ──────────────
+            reports_to = row.get("reports_to") or None
+            if reports_to and not frappe.db.exists("Employee", reports_to):
+                logger.warning(
+                    f"[BulkImport] Row {i} ({emp_label}) — reports_to '{reports_to}' not found, importing without manager"
+                )
+                reports_to = None
+
+            # ── 4b. Parse dates and log if any raw value failed to parse ──────
+            parsed_dob = _parse_date(row.get("date_of_birth"))
+            parsed_doj = _parse_date(row.get("date_of_joining"))
+            parsed_conf = _parse_date(row.get("final_confirmation_date"))
+
+            if row.get("date_of_birth") and not parsed_dob:
+                logger.warning(
+                    f"[BulkImport] Row {i} ({emp_label}) — date_of_birth value '{row.get('date_of_birth')}' could not be parsed, will be saved as blank"
+                )
+            if row.get("date_of_joining") and not parsed_doj:
+                logger.warning(
+                    f"[BulkImport] Row {i} ({emp_label}) — date_of_joining value '{row.get('date_of_joining')}' could not be parsed, will be saved as blank"
+                )
+
+            # ── 5. Create Employee document ───────────────────────────────────
+            logger.info(f"[BulkImport] Row {i} ({emp_label}) — creating employee...")
+            new_emp = frappe.get_doc({
+                "doctype": "Employee",
+                "first_name": row.get("first_name"),
+                "middle_name": row.get("middle_name"),
+                "last_name": row.get("last_name"),
+                "gender": row.get("gender"),
+                "date_of_birth": parsed_dob,
+                "date_of_joining": parsed_doj,
+                "final_confirmation_date": parsed_conf,
+                "status": "Active",
+                "company": frappe.defaults.get_global_default("company"),
+                "department": row.get("department"),
+                "designation": row.get("designation"),
+                "branch": row.get("branch"),
+                "sahayog_branch": row.get("sol_id"),
+                "sol_id": row.get("sol_id"),
+                "reports_to": reports_to,
+                "cell_number": row.get("mobile_number"),
+                "personal_email": row.get("personal_email"),
+                "bank_name": row.get("bank_name"),
+                "bank_ac_no": row.get("bank_account_number"),
+                "marital_status": row.get("marital_status"),
+                "blood_group": row.get("blood_group"),
+                "permanent_address": row.get("permanent_address"),
+                "default_shift": row.get("shift"),
+                "employment_type": row.get("employment_type"),
+
+                # Custom Fields
+                "custom_is_support_staff": 1,
+                "custom_medical_deduction": 100,
+                "custom_pan_number": row.get("pan_number"),
+                "custom_aadhar_number": row.get("aadhaar_card_number"),
+                "custom_uhid_number": row.get("uhid_number"),
+            })
+            # ignore_mandatory=True because zone/region/district are filled via SQL below
+            new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
+
+            # ── 6. Fill optional SQL-level fields (ctc, zone, region, district) ─
+            col_map = {}
+
+            if row.get("monthly_gross_salary"):
+                col_map["ctc"] = row.get("monthly_gross_salary")
+
+            if row.get("sol_id") and frappe.db.exists("Sahayog Branch", row.get("sol_id")):
+                branch_doc = frappe.db.get_value(
+                    "Sahayog Branch", row.get("sol_id"),
+                    ["zone", "region", "district"], as_dict=True
+                )
+                col_map["custom_zone"]     = branch_doc.get("zone")
+                col_map["custom_region"]   = branch_doc.get("region")
+                col_map["custom_district"] = branch_doc.get("district")
+                logger.info(
+                    f"[BulkImport] Row {i} ({emp_label}) — mapped zone/region/district from Sahayog Branch '{row.get('sol_id')}'"
+                )
+            else:
+                # Fallback: use whatever was in the CSV row
+                col_map["custom_zone"]     = row.get("zone")
+                col_map["custom_region"]   = row.get("region")
+                col_map["custom_district"] = row.get("district_name")
+                if row.get("sol_id"):
+                    logger.warning(
+                        f"[BulkImport] Row {i} ({emp_label}) — sol_id '{row.get('sol_id')}' not found in Sahayog Branch, using CSV values for zone/region/district"
+                    )
+
+            for col, val in col_map.items():
+                if val and col in existing_cols:
+                    frappe.db.sql(
+                        f"UPDATE `tabEmployee` SET `{col}`=%s WHERE name=%s",
+                        (val, new_emp.name)
+                    )
+
+            # Commit each employee individually so one failure doesn't roll back others
+            frappe.db.commit()
             results["created"] += 1
+            logger.info(f"[BulkImport] Row {i} ({emp_label}) — SUCCESS, created as '{new_emp.name}'")
+
         except Exception as e:
+            frappe.db.rollback()
+            error_msg = str(e)
             results["failed"] += 1
-            results["errors"].append({"row": i, "name": row.get("first_name", "") + " " + row.get("last_name", ""), "error": str(e)})
+            results["errors"].append({"row": i, "name": emp_label, "error": error_msg})
+            logger.error(
+                f"[BulkImport] Row {i} ({emp_label}) — EXCEPTION: {error_msg}",
+                exc_info=True
+            )
+            # Log to Frappe Error Log so it shows in desk
+            frappe.log_error(
+                message=f"Row {i} | Employee: {emp_label}\n\nError: {error_msg}",
+                title="Bulk Employee Import Error"
+            )
+
+    logger.info(
+        f"[BulkImport] Finished — Created: {results['created']}, "
+        f"Failed: {results['failed']}, Skipped: {results['skipped']}"
+    )
+
+    # Reset import flag
+    frappe.flags.in_import = False
 
     return results
 
