@@ -13401,7 +13401,17 @@
                 }
             });
           } else {
-            allAssets.forEach(asset => {
+            const assignedRes = await frappe.call({
+                method: "frappe.client.get_list",
+                args: {
+                    doctype: "Asset",
+                    filters: { docstatus: 1, status: "Assigned" },
+                    fields: ["name", "serial_no", "item_code", "location", "zone"],
+                    limit_page_length: 0
+                }
+            });
+            const assignedAssets = assignedRes.message || [];
+            assignedAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 if (item) {
                     let key = "";
