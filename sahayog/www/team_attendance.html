@@ -1570,7 +1570,7 @@
                           <div id="new_emp_reports_to_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
                         </div>
                       </div>
-                      <div><label>Shift *</label><select name="shift" id="new_emp_shift" class="member-select" required><option value="">Select Shift</option></select></div>
+                      <div><label>Shift</label><select name="shift" id="new_emp_shift" class="member-select"><option value="">Select Shift</option></select></div>
                     </div>
                   </div>
 
@@ -1578,11 +1578,11 @@
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
                       <div><label>Branch Code (SOL ID) *</label><select name="sol_id" id="new_emp_sol_id" class="member-select" onchange="handleBranchCodeChange(this.value)" required><option value="">Select Branch Code</option></select></div>
-                      <div><label>Branch Name *</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" required readonly></div>
-                      <div><label>Zone *</label><input type="text" name="zone" id="new_emp_zone" class="member-select" required readonly></div>
-                      <div><label>Region *</label><input type="text" name="region" id="new_emp_region" class="member-select" required readonly></div>
-                      <div><label>District *</label><input type="text" name="district_name" id="new_emp_district" class="member-select" required readonly></div>
-                      <div><label>Division *</label><select name="division" id="new_emp_division" class="member-select" required><option value="">Select Division</option></select></div>
+                      <div><label>Branch Name</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" readonly></div>
+                      <div><label>Zone</label><input type="text" name="zone" id="new_emp_zone" class="member-select" readonly></div>
+                      <div><label>Region</label><input type="text" name="region" id="new_emp_region" class="member-select" readonly></div>
+                      <div><label>District</label><input type="text" name="district_name" id="new_emp_district" class="member-select" readonly></div>
+                      <div><label>Division</label><select name="division" id="new_emp_division" class="member-select"><option value="">Select Division</option></select></div>
                     </div>
                   </div>
 
@@ -1590,15 +1590,15 @@
                   <div style="margin-bottom:25px;">
                     <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Contact & Identity</h4>
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Mobile Number *</label><input type="text" name="mobile_number" class="member-select" required></div>
+                      <div><label>Mobile Number</label><input type="text" name="mobile_number" class="member-select"></div>
                       <div><label>Personal Email</label><input type="email" name="personal_email" class="member-select"></div>
-                      <div><label>PAN Number *</label><input type="text" name="pan_number" class="member-select" required style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-                      <div><label>Aadhaar Number *</label><input type="text" name="aadhaar_card_number" class="member-select" required></div>
+                      <div><label>PAN Number</label><input type="text" name="pan_number" class="member-select" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+                      <div><label>Aadhaar Number</label><input type="text" name="aadhaar_card_number" class="member-select"></div>
                       <div><label>UHID Number</label><input type="text" name="uhid_number" class="member-select" placeholder="e.g. ABHA-1234-5678-9012"></div>
                     </div>
                     <div style="margin-top:15px;">
-                      <label>Permanent Address *</label>
-                      <textarea name="permanent_address" class="member-select" rows="2" required></textarea>
+                      <label>Permanent Address</label>
+                      <textarea name="permanent_address" class="member-select" rows="2"></textarea>
                     </div>
                   </div>
 
