@@ -8833,20 +8833,39 @@
   >
     <div class="profile-modal" style="max-width: 600px;">
       <div class="profile-modal-header">
-        <h3>[[ assetAvailabilityModalData.title ]] - Available Serial Nos</h3>
+        <h3>[[ assetAvailabilityModalData.title ]] - Available</h3>
         <button class="profile-close" @click="showAssetAvailabilityModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 0;">
-        <div v-if="assetAvailabilityModalData.items.length === 0" style="text-align: center; padding: 40px; color: #999;">
-          No serial numbers found
+        <div v-if="(!assetAvailabilityModalData.serials || assetAvailabilityModalData.serials.length === 0) && (!assetAvailabilityModalData.assets || assetAvailabilityModalData.assets.length === 0)" style="text-align: center; padding: 40px; color: #999;">
+          No items found
         </div>
         <div v-else style="max-height: 60vh; overflow-y: auto;">
-          <div v-for="sn in assetAvailabilityModalData.items" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
-            <div>
-              <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
-              <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+          <!-- Available Serial Nos Section -->
+          <div v-if="assetAvailabilityModalData.serials && assetAvailabilityModalData.serials.length > 0">
+            <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
+              Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+              <div>
+                <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+              </div>
+              <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
+            </div>
+          </div>
+          <!-- Available Assets Section -->
+          <div v-if="assetAvailabilityModalData.assets && assetAvailabilityModalData.assets.length > 0">
+            <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
+              Assets ([[ assetAvailabilityModalData.assets.length ]])
+            </div>
+            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+              <div>
+                <div style="font-weight: 600; color: var(--text-main);">[[ asset.name ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ asset.serial_no || 'No Serial' ]]</div>
+              </div>
+              <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
+            </div>
           </div>
         </div>
       </div>
@@ -13221,6 +13240,7 @@
       showAssetAvailabilityModal: false,
       assetAvailabilityModalData: { items: [], title: '' },
       availableSerials: [],
+      availableAssets: [],
 
       async getSerialWarehouseMap() {
         try {
@@ -13236,32 +13256,13 @@
 
       async fetchAssetAvailability() {
         try {
-          const assetsRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Asset",
-              filters: { docstatus: 1, status: ["!=", "Scrapped"] },
-              fields: ["serial_no", "item_code", "location", "zone"]
-            }
+          // Fetch all available data from backend API
+          const result = await frappe.call({
+            method: "sahayog.procurement.api.asset_utils.get_available_assets"
           });
-          const allAssets = assetsRes.message || [];
-          const usedSerials = allAssets.map(a => a.serial_no).filter(sn => sn);
-          
-          const serialsRes = await frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-              doctype: "Serial No",
-              fields: ["name", "item_code"]
-            }
-          });
-          const allSerials = serialsRes.message || [];
-          
-          const warehouseMap = await this.getSerialWarehouseMap();
-          
-          this.availableSerials = allSerials.filter(sn => !usedSerials.includes(sn.name)).map(sn => ({
-              ...sn,
-              warehouse: warehouseMap[sn.name]
-          }));
+          const data = result.message || {};
+          this.availableSerials = data.serials || [];
+          this.availableAssets = data.assets || [];
           
           const itemsRes = await frappe.call({
             method: "frappe.client.get_list",
@@ -13288,6 +13289,7 @@
           const summaryMap = {};
           
           if (this.assetStatusFilter === 'Available') {
+            // Count unassigned Serial Nos
             this.availableSerials.forEach(sn => {
                 const item = fixedAssetItems.find(i => i.name === sn.item_code);
                 if (item) {
@@ -13331,6 +13333,41 @@
                             (b.name && b.name === sn.warehouse)
                         );
                         
+                        key = branch ? branch.region : "Unknown Region";
+                        label = key;
+                    }
+
+                    if (!summaryMap[key]) {
+                        summaryMap[key] = { 
+                            item_code: key, 
+                            item_name: label, 
+                            count: 0 
+                        };
+                    }
+                    summaryMap[key].count++;
+                }
+            });
+
+            // Count Available Assets (no movement or movement without source/from)
+            this.availableAssets.forEach(asset => {
+                const item = fixedAssetItems.find(i => i.name === asset.item_code);
+                if (item) {
+                    let key = "";
+                    let label = "";
+
+                    if (this.assetGroupBy === 'Item') {
+                        key = asset.item_code;
+                        label = item.item_name || asset.item_code;
+                    } else if (this.assetGroupBy === 'SOL/Branch') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.location || "Unknown";
+                        label = branch ? `${branch.branch} (${branch.name})` : (asset.location || "Unknown");
+                    } else if (this.assetGroupBy === 'Zone') {
+                        const branch = branches.find(b => b.name === asset.location);
+                        key = asset.zone || (branch ? branch.zone : "Unknown Zone");
+                        label = key;
+                    } else if (this.assetGroupBy === 'Region') {
+                        const branch = branches.find(b => b.name === asset.location);
                         key = branch ? branch.region : "Unknown Region";
                         label = key;
                     }
@@ -13389,16 +13426,19 @@
 
       openAssetAvailability(item) {
         let serials = [];
+        let assets = [];
         if (this.assetGroupBy === 'Item') {
             serials = this.availableSerials.filter(sn => sn.item_code === item.item_code);
+            assets = this.availableAssets.filter(a => a.item_code === item.item_code);
         } else {
             serials = this.availableSerials.filter(sn => {
                 const solIdMatch = sn.warehouse ? String(sn.warehouse).match(/\b\d{4}\b/) : null;
                 const solId = solIdMatch ? solIdMatch[0] : sn.warehouse;
                 return solId === item.item_code || sn.warehouse === item.item_code;
             });
+            assets = this.availableAssets.filter(a => a.location === item.item_code);
         }
-        this.assetAvailabilityModalData = { items: serials, title: item.item_name };
+        this.assetAvailabilityModalData = { serials: serials, assets: assets, title: item.item_name };
         this.showAssetAvailabilityModal = true;
       },
 
