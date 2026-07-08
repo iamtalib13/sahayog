@@ -1318,22 +1318,6 @@
                 <option value="">All Branches</option>
               </select>
               <select
-                id="f_dept"
-                class="ftab"
-                style="height: 34px; min-width: 140px"
-                onchange="applyAllFilters()"
-              >
-                <option value="">All Departments</option>
-              </select>
-              <select
-                id="f_desig"
-                class="ftab"
-                style="height: 34px; min-width: 140px"
-                onchange="applyAllFilters()"
-              >
-                <option value="">All Designations</option>
-              </select>
-              <select
                 id="f_status"
                 class="ftab"
                 style="height: 34px; min-width: 140px"
@@ -3426,31 +3410,21 @@
 
       function populateAllFilters() {
         const bSel = document.getElementById("f_branch");
-        const dSel = document.getElementById("f_dept");
-        const dsSel = document.getElementById("f_desig");
 
         if (bSel.options.length > 1) return;
 
         const branches = [
           ...new Set(staff.map((s) => s.sahayog_branch).filter(Boolean)),
         ].sort();
-        const depts = [
-          ...new Set(staff.map((s) => s.department).filter(Boolean)),
-        ].sort();
-        const desigs = [
-          ...new Set(staff.map((s) => s.designation).filter(Boolean)),
-        ].sort();
 
         branches.forEach((x) => bSel.add(new Option(x, x)));
-        depts.forEach((x) => dSel.add(new Option(x, x)));
-        desigs.forEach((x) => dsSel.add(new Option(x, x)));
       }
 
       let f_vals = { branch: "", dept: "", desig: "", status: "" };
       function applyAllFilters() {
         f_vals.branch = document.getElementById("f_branch").value;
-        f_vals.dept = document.getElementById("f_dept").value;
-        f_vals.desig = document.getElementById("f_desig").value;
+        f_vals.dept = "";
+        f_vals.desig = "";
         f_vals.status = document.getElementById("f_status").value;
         renderEmpList();
       }
