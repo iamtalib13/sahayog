@@ -2731,25 +2731,25 @@
         }
 
         const mobile = formData.get("mobile_number")?.replace(/\D/g, "");
-        if (mobile.length !== 10) {
+        if (mobile && mobile.length !== 10) {
           showToast("Mobile Number must be exactly 10 digits.");
           return;
         }
-        formData.set("mobile_number", mobile);
+        if (mobile) formData.set("mobile_number", mobile);
 
         const pan = formData.get("pan_number")?.toUpperCase().trim();
-        if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
           showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F).");
           return;
         }
-        formData.set("pan_number", pan);
+        if (pan) formData.set("pan_number", pan);
 
         const aadhaar = formData.get("aadhaar_card_number")?.replace(/\D/g, "");
-        if (aadhaar.length !== 12) {
+        if (aadhaar && aadhaar.length !== 12) {
           showToast("Aadhaar Number must be exactly 12 digits.");
           return;
         }
-        formData.set("aadhaar_card_number", aadhaar);
+        if (aadhaar) formData.set("aadhaar_card_number", aadhaar);
 
         const bankAc = formData.get("bank_account_number")?.trim();
         if (!bankAc || bankAc.length < 9 || bankAc.length > 18) {
