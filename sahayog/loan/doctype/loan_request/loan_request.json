@@ -1,0 +1,221 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:REQ-.YYYY.-.#####",
+ "creation": "2026-06-29 12:44:43.305624",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "branch_details_section",
+  "branch",
+  "purpose_of_loan",
+  "customer",
+  "mobile_number",
+  "deposit_account_no",
+  "column_break_branch",
+  "loan_type",
+  "loan_agreement",
+  "deposit_date",
+  "deposit_amount",
+  "column_break_deposit",
+  "vintage_complete_days",
+  "required_loan_amount",
+  "head_office_approval_section",
+  "scheme_code",
+  "approved_loan_amount",
+  "column_break_ho",
+  "remark",
+  "document_checklist_section",
+  "document_checklist",
+  "status_section",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "purpose_of_loan",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Purpose of Loan"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile Number"
+  },
+  {
+   "fieldname": "deposit_account_no",
+   "fieldtype": "Data",
+   "label": "Deposit Account No"
+  },
+  {
+   "fieldname": "column_break_branch",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "loan_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Loan Type",
+   "options": "Loan Type"
+  },
+  {
+   "fieldname": "loan_agreement",
+   "fieldtype": "Attach",
+   "label": "Loan Agreement"
+  },
+  {
+   "fieldname": "deposit_date",
+   "fieldtype": "Date",
+   "label": "Deposit Date"
+  },
+  {
+   "fieldname": "deposit_amount",
+   "fieldtype": "Currency",
+   "label": "Deposit Amount"
+  },
+  {
+   "fieldname": "column_break_deposit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vintage_complete_days",
+   "fieldtype": "Int",
+   "label": "Vintage / Complete Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "required_loan_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Required Loan Amount"
+  },
+  {
+   "fieldname": "head_office_approval_section",
+   "fieldtype": "Section Break",
+   "label": "Head Office Approval"
+  },
+  {
+   "fieldname": "scheme_code",
+   "fieldtype": "Data",
+   "label": "Scheme Code"
+  },
+  {
+   "fieldname": "approved_loan_amount",
+   "fieldtype": "Currency",
+   "label": "Approved Loan Amount"
+  },
+  {
+   "fieldname": "column_break_ho",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "label": "Remark"
+  },
+  {
+   "fieldname": "document_checklist_section",
+   "fieldtype": "Section Break",
+   "label": "Document Checklist"
+  },
+  {
+   "fieldname": "document_checklist",
+   "fieldtype": "Table",
+   "label": "Document Checklist",
+   "options": "Loan Document"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nRejected\nSent Back"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-29 12:49:54.154379",
+ "modified_by": "Administrator",
+ "module": "Loan",
+ "name": "Loan Request",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Draft"
+  },
+  {
+   "color": "Yellow",
+   "title": "Pending Approval"
+  },
+  {
+   "color": "Green",
+   "title": "Approved"
+  },
+  {
+   "color": "Red",
+   "title": "Rejected"
+  },
+  {
+   "color": "Orange",
+   "title": "Sent Back"
+  }
+ ]
+}
