@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:REQ-.YYYY.-.#####",
+ "autoname": "format:REQ-{YYYY}-{#####}",
  "creation": "2026-06-29 12:44:43.305624",
  "doctype": "DocType",
  "editable_grid": 1,
@@ -42,13 +42,15 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Branch",
-   "options": "Sahayog Branch"
+   "options": "Sahayog Branch",
+   "reqd": 1
   },
   {
    "fieldname": "purpose_of_loan",
    "fieldtype": "Small Text",
    "in_list_view": 1,
-   "label": "Purpose of Loan"
+   "label": "Purpose of Loan",
+   "reqd": 1
   },
   {
    "fieldname": "customer",
@@ -60,7 +62,8 @@
    "fieldname": "mobile_number",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Mobile Number"
+   "label": "Mobile Number",
+   "reqd": 1
   },
   {
    "fieldname": "deposit_account_no",
@@ -76,7 +79,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Loan Type",
-   "options": "Loan Type"
+   "options": "Loan Type",
+   "reqd": 1
   },
   {
    "fieldname": "loan_agreement",
@@ -86,12 +90,15 @@
   {
    "fieldname": "deposit_date",
    "fieldtype": "Date",
-   "label": "Deposit Date"
+   "label": "Deposit Date",
+   "reqd": 1
   },
   {
    "fieldname": "deposit_amount",
    "fieldtype": "Currency",
-   "label": "Deposit Amount"
+   "label": "Deposit Amount",
+   "non_negative": 1,
+   "reqd": 1
   },
   {
    "fieldname": "column_break_deposit",
@@ -107,7 +114,9 @@
    "fieldname": "required_loan_amount",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Required Loan Amount"
+   "label": "Required Loan Amount",
+   "non_negative": 1,
+   "reqd": 1
   },
   {
    "fieldname": "head_office_approval_section",
@@ -154,13 +163,13 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nPending Approval\nApproved\nRejected\nSent Back"
+   "options": "\nDraft\nPending Approval\nApproved\nRejected\nSent Back"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-29 12:49:54.154379",
+ "modified": "2026-07-09 17:22:59.879978",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Request",
