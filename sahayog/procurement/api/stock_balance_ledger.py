@@ -424,7 +424,7 @@ def get_asset_list(limit=20, start=0, search_text=None):
     values = {}
 
     if search_text:
-        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR ast.serial_no LIKE %(search)s OR ast.location LIKE %(search)s OR sb.branch LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR ast.serial_no LIKE %(search)s OR ast.location LIKE %(search)s OR sb.branch LIKE %(search)s OR ast.status LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
         values["search"] = f"%{search_text}%"
 
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
