@@ -346,6 +346,9 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.validate_required_employee_fields"
         ],
     },
+    "Appointment": {
+        "validate": "sahayog.scrm.controller.lead.lead.validate_duplicate_appointment",
+    },
     "Shareholder": {
         "before_insert": [
             "sahayog.doc_events.shareholder.before_save",
