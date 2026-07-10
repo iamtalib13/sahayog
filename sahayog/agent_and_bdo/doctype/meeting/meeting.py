@@ -27,3 +27,35 @@ def get_agent_full_name(reference_doctype, agent_employee):
 
     full_name = frappe.db.get_value(reference_doctype, agent_employee, name_field)
     return full_name or ""
+
+
+@frappe.whitelist()
+def get_branch_attendees(branch, attendee_type=None):
+    if not branch or not attendee_type:
+        return []
+
+    attendees = []
+
+    if attendee_type == "Employee":
+        employees = frappe.db.get_all("Employee",
+            filters={"sahayog_branch": branch, "status": "Active"},
+            fields=["name", "employee_name"])
+        for emp in employees:
+            attendees.append({
+                "reference_doctype": "Employee",
+                "agent_employee": emp.name,
+                "full_name": emp.employee_name
+            })
+
+    elif attendee_type == "Agent":
+        agents = frappe.db.get_all("Agent",
+            filters={"branch_code": branch, "status": "Allocated"},
+            fields=["name", "agent_name"])
+        for ag in agents:
+            attendees.append({
+                "reference_doctype": "Agent",
+                "agent_employee": ag.name,
+                "full_name": ag.agent_name
+            })
+
+    return attendees

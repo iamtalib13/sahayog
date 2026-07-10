@@ -222,26 +222,13 @@ DASHBOARD_SCRIPT_P1 = """(function(){
   const trainer = (!isHead && isTrainer) ? user : null;
 
   /* ── TAB SWITCHING ─────────────────────────────────────── */
-  let activeTab = isEmployee ? "trainers" : "calllogs";
+  let activeTab = "calllogs";
   
-  // Hide Call Logs tab and header actions for Employee role
-  if (isEmployee) {
-    const callLogsTab = root.querySelector('.aad-tab[data-tab="calllogs"]');
-    const callLogsContent = root.querySelector('#tab-calllogs');
-    const headerActions = root.querySelector('.aad-header-actions');
-    
-    if (callLogsTab) callLogsTab.style.display = 'none';
-    if (callLogsContent) callLogsContent.style.display = 'none';
-    if (headerActions) headerActions.style.display = 'none';
-    
-    // Remove active from Call Logs and set Meetings as active
-    root.querySelectorAll(".aad-tab").forEach(t => t.classList.remove("active"));
-    root.querySelectorAll(".aad-tab-content").forEach(t => t.classList.remove("active"));
-    
-    const meetingsTab = root.querySelector('.aad-tab[data-tab="trainers"]');
-    const meetingsContent = root.querySelector('#tab-trainers');
-    if (meetingsTab) meetingsTab.classList.add("active");
-    if (meetingsContent) meetingsContent.classList.add("active");
+  // Hide Meetings and Calendar tabs for non-Administrator users
+  const isAdmin = roles.includes("Administrator");
+  if (!isAdmin) {
+    root.querySelector('.aad-tab[data-tab="trainers"]').style.display = 'none';
+    root.querySelector('.aad-tab[data-tab="calendar"]').style.display = 'none';
   }
   
   root.querySelectorAll(".aad-tab").forEach(btn => {
@@ -386,7 +373,7 @@ DASHBOARD_SCRIPT_P1 = """(function(){
         + '<td><span class="aad-badge aad-badge-' + s.cls + '">' + s.label + '</span></td>'
         + '<td>' + frappe.utils.escape_html(log.agent || "-") + '</td>'
         + '<td>' + (log.calling_date ? frappe.datetime.str_to_user(log.calling_date) : "-") + '</td>'
-        + '<td>' + frappe.utils.escape_html(log.reply_type || "-") + '</td>'
+        + '<td style="color:' + (log.reply_type === 'Positive' ? 'green' : log.reply_type === 'Negative' ? 'red' : 'inherit') + ';font-weight:' + (log.reply_type === 'Positive' || log.reply_type === 'Negative' ? '600' : 'normal') + '">' + frappe.utils.escape_html(log.reply_type || "-") + '</td>'
         + '<td>' + fd + '</td>'
         + '<td>' + mod + '</td>'
         + '</tr>';
@@ -449,10 +436,11 @@ DASHBOARD_SCRIPT_P1 = """(function(){
     clearCache(); loadData();
   };
   let searchTimer;
-  root.querySelector(".aad-search").oninput = e => {
+  root.querySelector(".aad-search").oninput = function() {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => { searchText=e.target.value.trim(); currentPage=1; clearCache(); loadData(); }, 300);
+    searchTimer = setTimeout(() => { searchText=this.value.trim(); currentPage=1; clearCache(); loadData(); }, 300);
   };
+  root.querySelector(".aad-search").onkeydown = function(e) { e.stopPropagation(); };
   root.querySelector(".aad-prev-btn").onclick = () => { if(currentPage>1) goToPage(currentPage-1); };
   root.querySelector(".aad-next-btn").onclick = () => {
     if(currentPage < Math.ceil(totalRecords/pageSize)) goToPage(currentPage+1);
@@ -466,9 +454,7 @@ DASHBOARD_SCRIPT_P1 = """(function(){
   });
 
   initDates();
-  if (!isEmployee) {
-    loadData();
-  }
+  loadData();
 
   /* ── SHARED HELPERS (used by Meetings + Calendar tabs) ── */
   function fmtTime(t) {
@@ -680,10 +666,6 @@ DASHBOARD_SCRIPT_P2 = """
   root.querySelector(".aad-mt-prev-btn").onclick = () => { if(mtCurrentPage>1){ mtCurrentPage--; loadTrainers(); } };
   root.querySelector(".aad-mt-next-btn").onclick = () => { if(mtCurrentPage < Math.ceil(mtTotalRecords/mtPageSize)){ mtCurrentPage++; loadTrainers(); } };
   
-  // Auto-load Meetings tab for Employee role
-  if (isEmployee && activeTab === "trainers") {
-    loadTrainers();
-  }
 """
 
 # ─────────────────────────────────────────────────────────────────────────────

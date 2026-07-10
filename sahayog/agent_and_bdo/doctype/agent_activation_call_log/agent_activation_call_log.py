@@ -83,3 +83,35 @@ class AgentActivationCallLog(Document):
                 self.want_to_exit = 0
                 if not self.date_of_exit:
                     frappe.throw("Please provide a Date of Exit when 'Exited' is selected.")
+
+
+@frappe.whitelist()
+def reassign_agent(agent):
+    """Cancel all active call logs of the given agent with trainers other than
+    the current user, freeing the agent for reassignment. All data is preserved."""
+    user = frappe.session.user
+
+    old_logs = frappe.db.get_all(
+        "Agent Activation Call Log",
+        filters={
+            "agent": agent,
+            "trainer": ["!=", user],
+            "docstatus": ["<", 2],
+            "exited": 0,
+        },
+        fields=["name", "docstatus", "trainer"],
+    )
+
+    if not old_logs:
+        frappe.throw(
+            f"Agent <b>{agent}</b> has no active assignments from other trainers."
+        )
+
+    old_trainer_name = frappe.db.get_value("User", old_logs[0].trainer, "full_name") or old_logs[0].trainer
+    for log in old_logs:
+        frappe.db.set_value("Agent Activation Call Log", log.name, "docstatus", 2)
+
+    return {
+        "success": True,
+        "message": f"Agent <b>{agent}</b> reassigned from <b>{old_trainer_name}</b>. {len(old_logs)} old record(s) cancelled.",
+    }

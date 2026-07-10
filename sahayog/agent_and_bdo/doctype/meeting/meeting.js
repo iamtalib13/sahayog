@@ -5,13 +5,41 @@ frappe.ui.form.on("Meeting", {
   refresh(frm) {
     format_time_field(frm, "start_time");
     format_time_field(frm, "end_time");
-    console.log("Meeting form refreshed");
   },
   start_time(frm) {
     format_time_field(frm, "start_time");
   },
   end_time(frm) {
     format_time_field(frm, "end_time");
+  },
+  branch(frm) {
+    if (!frm.doc.branch) return;
+    frm.set_value("attendee_type", "");
+    frm.clear_table("attandees_table");
+    frm.refresh_field("attandees_table");
+  },
+  attendee_type(frm) {
+    if (!frm.doc.branch || !frm.doc.attendee_type) return;
+
+    frappe.call({
+      method: "sahayog.agent_and_bdo.doctype.meeting.meeting.get_branch_attendees",
+      args: {
+        branch: frm.doc.branch,
+        attendee_type: frm.doc.attendee_type,
+      },
+      callback: function (r) {
+        if (!r.message || !r.message.length) return;
+
+        frm.clear_table("attandees_table");
+        r.message.forEach(function (row) {
+          let child = frm.add_child("attandees_table");
+          child.reference_doctype = row.reference_doctype;
+          child.agent_employee = row.agent_employee;
+          child.full_name = row.full_name;
+        });
+        frm.refresh_field("attandees_table");
+      },
+    });
   },
 });
 frappe.ui.form.on("Attendees", {

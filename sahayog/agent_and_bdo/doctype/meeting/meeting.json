@@ -5,19 +5,22 @@
  "creation": "2025-06-02 12:56:11.347306",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
-  "section_break_zarz",
-  "trainer",
-  "date",
-  "start_time",
-  "end_time",
-  "column_break_sfsv",
-  "training_location",
-  "topic",
-  "amended_from",
-  "section_break_xhny",
-  "attandees_table"
- ],
+  "field_order": [
+   "section_break_zarz",
+   "trainer",
+   "date",
+   "start_time",
+   "end_time",
+   "column_break_sfsv",
+   "training_location",
+   "topic",
+   "calendar_type",
+   "branch",
+   "attendee_type",
+   "amended_from",
+   "section_break_xhny",
+   "attandees_table"
+  ],
  "fields": [
   {
    "fieldname": "section_break_zarz",
@@ -62,34 +65,57 @@
    "options": "\nMeeting\nInduction\nRefreshment Training",
    "reqd": 1
   },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Time",
-   "label": "End Time"
-  },
-  {
-   "fieldname": "section_break_xhny",
-   "fieldtype": "Section Break",
-   "label": "Attendees Details"
-  },
-  {
-   "depends_on": "eval:!doc.__islocal",
-   "fieldname": "trainer",
-   "fieldtype": "Link",
-   "label": "Trainer",
-   "options": "Employee"
-  },
-  {
-   "fieldname": "attandees_table",
-   "fieldtype": "Table",
-   "options": "Attendees"
-  }
+    {
+     "fieldname": "end_time",
+     "fieldtype": "Time",
+     "label": "End Time"
+    },
+    {
+     "default": "SS Training",
+     "fieldname": "calendar_type",
+     "fieldtype": "Select",
+     "in_list_view": 1,
+     "in_standard_filter": 1,
+     "label": "Calendar Type",
+     "options": "\nSS Training\nEmployee Training",
+     "description": "Determines which calendar this event appears on. SS Training = Trainer Dashboard Calendar. Employee Training = Employee Training Calendar."
+    },
+    {
+     "fieldname": "branch",
+     "fieldtype": "Link",
+     "label": "Branch",
+     "options": "Sahayog Branch"
+    },
+   {
+    "fieldname": "attendee_type",
+    "fieldtype": "Select",
+    "label": "Attendee Type",
+    "options": "\nAgent\nEmployee",
+    "depends_on": "eval:doc.branch"
+   },
+   {
+    "fieldname": "section_break_xhny",
+    "fieldtype": "Section Break",
+    "label": "Attendees Details"
+   },
+   {
+    "depends_on": "eval:!doc.__islocal",
+    "fieldname": "trainer",
+    "fieldtype": "Link",
+    "label": "Trainer",
+    "options": "Employee"
+   },
+   {
+    "fieldname": "attandees_table",
+    "fieldtype": "Table",
+    "options": "Attendees"
+   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-11 17:55:13.211215",
+ "modified": "2026-07-06 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
