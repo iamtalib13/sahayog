@@ -13672,7 +13672,16 @@
         }
 
         // Division
-        parts.push(this.createAssetForm.division ? this.createAssetForm.division.toUpperCase() : '[DIVISION]');
+        if (this.createAssetForm.division) {
+          const divWords = this.createAssetForm.division.trim().split(/\s+/);
+          if (divWords.length > 1) {
+            parts.push(divWords.map(w => w.charAt(0).toUpperCase()).join(''));
+          } else {
+            parts.push(divWords[0].substring(0, 4).toUpperCase());
+          }
+        } else {
+          parts.push('[DIVISION]');
+        }
 
         // Asset Code (Item)
         let asset_code = this.getAssetShortCode(this.createAssetForm.item_name, this.createAssetForm.item_code, '[ASSET]');
