@@ -1,6 +1,12 @@
 // Copyright (c) 2026, Developer Team and contributors
 // For license information, please see license.txt
 
+function validateIndianPhone(phone) {
+	// Indian mobile numbers: 10 digits, starts with 6-9
+	const regex = /^[6-9]\d{9}$/;
+	return regex.test(phone);
+}
+
 frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
 		// Hide Head Office Approval section when status is Draft
@@ -9,6 +15,35 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("approved_loan_amount", frm.doc.status !== "Draft");
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
+	},
+
+	mobile_number(frm) {
+		const phone = frm.doc.mobile_number;
+
+		if (!phone) return;
+
+		// Remove any non-digit characters
+		const cleanPhone = phone.replace(/\D/g, "");
+
+		// Check length
+		if (cleanPhone.length > 10) {
+			frm.set_value("mobile_number", cleanPhone.slice(0, 10));
+			frappe.show_alert({
+				message: __("Mobile number cannot exceed 10 digits"),
+				indicator: "red"
+			}, 3);
+			return;
+		}
+
+		// Validate Indian phone format (starts with 6-9)
+		if (cleanPhone.length === 10 && !validateIndianPhone(cleanPhone)) {
+			frappe.show_alert({
+				message: __("Invalid mobile number. Must start with 6, 7, 8, or 9"),
+				indicator: "orange"
+			}, 3);
+			frm.set_value("mobile_number", "");
+			return;
+		}
 	},
 
 	deposit_date(frm) {
