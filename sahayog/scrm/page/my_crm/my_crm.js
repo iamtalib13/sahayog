@@ -27,6 +27,34 @@ function unfreezeScreen() {
   setTimeout(() => { frappe.dom.unfreeze(); _freezeStartTime = null; }, remaining);
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function getLocalCRMData(section) {
+  try {
+    const raw = localStorage.getItem(`crm_local_${section}_${frappe.session.user}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setLocalCRMData(section, data, lastModified, totalCount) {
+  try {
+    localStorage.setItem(`crm_local_${section}_${frappe.session.user}`, JSON.stringify({
+      data, lastModified, totalCount,
+      timestamp: Date.now()
+    }));
+  } catch { }
+}
+
 class MyCRM {
   constructor(wrapper) {
     this.page = wrapper.page;
@@ -51,6 +79,10 @@ class MyCRM {
       userLeadNames: { data: [], timestamp: null, ttl: 10 * 60 * 1000 },
     };
 
+    this.assignedLeadNames = [];
+    this.assignedByMap = {};
+    this.assignedCount = 0;
+
     const savedSection = sessionStorage.getItem("mycrm_active_tab") || "lead";
 
     this.state = {
@@ -68,8 +100,6 @@ class MyCRM {
       appointmentCursor: null, // Cursor for appointment pagination
       isMobile: window.innerWidth <= 768,
     };
-
-    console.log("%c🚀 CRM Initialized", "color: #25d366; font-weight: bold;");
 
     // Petite-Vue bridge
     this.vue = null;
@@ -93,21 +123,34 @@ class MyCRM {
     this.detectMobile();
     this.setupPage();
     this.render();
-    // 🟢 Petite-Vue init (after DOM render)
     this.initPetiteVue();
-    // ✅ Restore last active tab after render
+
+    // Pehle localStorage se instant data dikhao
+    this.showLocalData();
+
     this.switchSection(this.state.section);
-
-    // Initial data fetch and badge updates are now handled by switchSection calling fetchData
-    // and fetchData getting all consolidated info from the backend.
-    // The following calls are no longer needed here.
-    // await this.loadUserLeads(); // Removed
-    // this.updateTabBadges();     // Removed
-
     this.setupRealtime();
-    this.startCacheMonitoring();
     this.setupPWA();
+  }
 
+  showLocalData() {
+    const localData = getLocalCRMData(this.state.section);
+    if (localData && localData.data && localData.data.length > 0) {
+      // Sirf pehle page (limit) load karo — baaki localStorage mein hai, Load More se aayega
+      this.state.data = localData.data.slice(0, this.state.limit);
+      this.state.totalCount = localData.totalCount || localData.data.length;
+      this.state.filteredData = [...this.state.data];
+      this.state.hasMore = this.state.data.length < this.state.totalCount;
+      // Cursor = total records in localStorage (taaki Load More sahi offset se API call kare)
+      if (this.state.section === "lead") {
+        this.state.leadCursor = localData.data.length;
+      } else {
+        this.state.appointmentCursor = localData.data.length;
+      }
+      this.applyFilter();
+      return true;
+    }
+    return false;
   }
 
   // Petite-Vue Initialization
@@ -153,8 +196,6 @@ class MyCRM {
     this.vue.mount(this.wrapper[0]);
 
     this.vueMounted = true;
-
-    console.log("%c🧩 Petite-Vue Mounted", "color:#42b883;font-weight:bold;");
   }
 
   // Mobile Detection (Optimized + Debounced)
@@ -188,13 +229,6 @@ class MyCRM {
     const age = Date.now() - cache.timestamp;
     const isValid = age < cache.ttl;
 
-    if (isValid) {
-      console.debug(`✅ CACHE HIT → ${key}`, {
-        age: `${Math.floor(age / 1000)}s`,
-        records: cache.data?.length || 0,
-      });
-    }
-
     return isValid;
   }
 
@@ -221,10 +255,6 @@ class MyCRM {
     if (typeof totalCount === "number") {
       cache.totalCount = totalCount;
     }
-
-    console.debug(`💾 CACHE UPDATED → ${key}`, {
-      records: data.length,
-    });
   }
 
   // Search Cache (Optimized)
@@ -236,7 +266,6 @@ class MyCRM {
     if (!cached) return null;
 
     if (Date.now() - cached.timestamp < cache.ttl) {
-      console.debug(`🔍 SEARCH CACHE HIT → "${term}"`);
       return cached.data;
     }
 
@@ -266,6 +295,7 @@ class MyCRM {
     if (section && this.cache[section]) {
       this.cache[section].timestamp = null;
       this.cache[section].searches?.clear();
+      localStorage.removeItem(`crm_local_${section}_${frappe.session.user}`);
       return;
     }
 
@@ -273,25 +303,11 @@ class MyCRM {
       cache.timestamp = null;
       cache.searches?.clear();
     });
-  }
-
-  // Cache Monitoring (Dev Friendly)
-  startCacheMonitoring() {
-    setInterval(() => {
-      console.groupCollapsed("📊 CRM Cache Stats");
-
-      Object.entries(this.cache).forEach(([key, cache]) => {
-        if (!cache.timestamp) return;
-
-        const age = Math.floor((Date.now() - cache.timestamp) / 1000);
-        console.log(`${key}`, {
-          records: cache.data?.length || 0,
-          age: `${age}s`,
-        });
-      });
-
-      console.groupEnd();
-    }, 30000);
+    // Clear all localStorage CRM data + assigned leads cache
+    ["lead", "appointment"].forEach(s => {
+      localStorage.removeItem(`crm_local_${s}_${frappe.session.user}`);
+    });
+    localStorage.removeItem(`crm_assigned_leads_${frappe.session.user}`);
   }
 
   // Page Setup (Petite-Vue Friendly)
@@ -853,7 +869,6 @@ class MyCRM {
   }
 
   attachEventListeners() {
-    console.log("🏠 Home Button Event Listener Attached");
     $("#mycrm-home-link").on("click", () => {
       frappe.set_route("sahayog-home");
     });
@@ -911,23 +926,16 @@ class MyCRM {
     });
   }
 
-  async fetchData(append = false) {
-    console.group(
-      `%c📥 ${this.state.section}`,
-      "color: #25d366; font-weight: bold;"
-    );
-
+  async fetchData(append = false, fetchLimit = null) {
     let cursorForFetch = null;
     if (append) {
         cursorForFetch = (this.state.section === "lead") ? this.state.leadCursor : this.state.appointmentCursor;
     }
 
-    if (!append || (append && !cursorForFetch)) { // If not appending, or appending but no cursor (meaning no more pages)
-      // Reset data for a fresh fetch if not appending
+    if (!append || (append && !cursorForFetch)) {
       if (!append) {
         this.state.data = [];
       }
-      // Reset cursors for new fetches for the current section
       if (this.state.section === "lead") {
         this.state.leadCursor = null;
       } else if (this.state.section === "appointment") {
@@ -936,13 +944,16 @@ class MyCRM {
       this.showLoading();
     }
 
+    // fetchLimit: pehle load pe zyada records fetch karo localStorage ke liye
+    const limit = fetchLimit || this.state.limit;
+
     try {
       const response = await frappe.call({
         method: "sahayog.scrm.page.my_crm.my_crm.get_crm_data",
         args: {
           section: this.state.section,
-          limit: this.state.limit,
-          cursor: cursorForFetch, // Pass current cursor (null for first fetch)
+          limit: limit,
+          cursor: cursorForFetch,
           search_term: this.state.search,
         },
       });
@@ -955,24 +966,35 @@ class MyCRM {
         this.state.data = data;
       }
 
-      this.state.totalCount = total_count; // Total for the current section
-      this.state.hasMore = !!next_cursor; // hasMore is true if next_cursor exists
+      this.state.totalCount = total_count;
+      this.state.hasMore = !!next_cursor;
 
-      // Update cursor for the next fetch for the current section
       if (this.state.section === "lead") {
           this.state.leadCursor = next_cursor;
       } else {
           this.state.appointmentCursor = next_cursor;
       }
       
-      // Update global Vue state for counts (from consolidated response)
       if (window.mycrmVue) {
           window.mycrmVue.leadCount = lead_count || 0;
           window.mycrmVue.appointmentCount = appointment_count || 0;
       }
 
-      // Caching logic
-      // If we are passing total_count from BE, then the cache should also store that.
+      // localStorage save — purana + naya merge
+      if (!this.state.search?.trim()) {
+        const localData = getLocalCRMData(this.state.section);
+        let finalData = this.state.data;
+        if (localData && localData.data && append) {
+          // Load More: purane localStorage mein naye append ho
+          const existingMap = new Map(localData.data.map(item => [item.name, item]));
+          this.state.data.forEach(item => existingMap.set(item.name, item));
+          finalData = [...existingMap.values()];
+        }
+        const lastMod = this.state.data[0]?.modified || localData?.lastModified;
+        setLocalCRMData(this.state.section, finalData, lastMod, total_count);
+      }
+
+      // In-memory cache
       if (!this.state.search?.trim() && !append) {
         this.setCacheData(this.state.section, this.state.data, this.state.totalCount);
       }
@@ -989,7 +1011,6 @@ class MyCRM {
       });
     } finally {
       this.hideLoading();
-      console.groupEnd();
     }
   }
 
@@ -1030,7 +1051,7 @@ class MyCRM {
     if (this.state.section === "lead") {
       // Validation: Sirf un leads ko count karein jo Assigned hain AND status 'Lead' hai
         const validatedAssignedCount = this.state.data.filter(item => 
-            this.assignedLeadNames.includes(item.name) && item.status === "Lead"
+            (this.assignedLeadNames || []).includes(item.name) && item.status === "Lead"
         ).length;
       return [
         { name: "Assigned To Me", count: validatedAssignedCount },
@@ -1057,7 +1078,7 @@ class MyCRM {
   // ✅ ASSIGNED TO ME — FIRST
   if (this.state.filter === "Assigned To Me") {
     this.state.filteredData = this.state.data.filter(item =>
-      this.assignedLeadNames.includes(item.name) && item.status === "Lead" // Added status check
+      (this.assignedLeadNames || []).includes(item.name) && item.status === "Lead"
     );
 
     this.state.activeFilter = this.state.filter;
@@ -1101,8 +1122,25 @@ class MyCRM {
   this.renderFilters();
   this.updateCount();
   }
-// Fetch assigned leads and map assigned by details
+// Fetch assigned leads and map assigned by details (batched — single query)
 async fetchAssignedLeads() {
+  const CACHE_KEY = `crm_assigned_leads_${frappe.session.user}`;
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Check localStorage cache first
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+    if (cached && cached.timestamp && (Date.now() - cached.timestamp < CACHE_TTL)) {
+      this.assignedByMap = cached.assignedByMap || {};
+      this.assignedLeadNames = cached.assignedLeadNames || [];
+      this.assignedCount = this.state.data.filter(item =>
+        this.assignedLeadNames.includes(item.name) && item.status === "Lead"
+      ).length;
+      return;
+    }
+  } catch (e) {}
+
+  // Cache miss ya stale — API se fetch karo
   const { message = [] } = await frappe.call({
     method: "frappe.client.get_list",
     args: {
@@ -1127,17 +1165,38 @@ async fetchAssignedLeads() {
     message.map(r => r.reference_name).filter(Boolean)
   )];
 
+  // Batch: collect all unique user IDs
+  const uniqueUserIds = [...new Set(
+    message.map(r => r.assigned_by).filter(Boolean)
+  )];
+
+  // Single query for all employees
+  let employeeMap = {};
+  if (uniqueUserIds.length > 0) {
+    try {
+      const employees = await frappe.get_all("Employee", {
+        filters: { user_id: ["in", uniqueUserIds] },
+        fields: ["user_id", "employee_name", "employee", "branch"]
+      });
+      employees.forEach(emp => {
+        employeeMap[emp.user_id] = {
+          name: emp.employee_name,
+          code: emp.employee,
+          branch: emp.branch || ""
+        };
+      });
+    } catch (e) {}
+  }
+
+  // Map data from single query result
   for (const lead of uniqueLeads) {
     const row = message.find(r => r.reference_name === lead);
     if (!row) continue;
 
-    const emp = row.assigned_by
-      ? await this.getEmployeeByUser(row.assigned_by)
-      : null;
+    const emp = row.assigned_by ? employeeMap[row.assigned_by] : null;
 
     this.assignedByMap[lead] = {
-      full_name:emp?.name ||  row.assigned_by_full_name || row.assigned_by ||
-        "Unknown",
+      full_name: emp?.name || row.assigned_by_full_name || row.assigned_by || "Unknown",
       employee_code: emp?.code || "",
       branch: emp?.branch || ""
     };
@@ -1145,36 +1204,18 @@ async fetchAssignedLeads() {
     this.assignedLeadNames.push(lead);
   }
 
-  // Yahan original assignedCount ki jagah validation ke baad wala count set hoga
-    this.assignedCount = this.state.data.filter(item => 
-        this.assignedLeadNames.includes(item.name) && item.status === "Lead"
-    ).length;
-
-  console.log("✅ Assigned Leads:", this.assignedLeadNames);
-}
-// Get employee details by user ID for assigned leads
-async getEmployeeByUser(userId) {
-  if (!userId) return null;
-
+  // Cache save karo
   try {
-    const res = await frappe.db.get_value(
-      "Employee",
-      { user_id: userId },
-      ["employee_name", "employee", "branch"]
-    );
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      timestamp: Date.now(),
+      assignedByMap: this.assignedByMap,
+      assignedLeadNames: this.assignedLeadNames
+    }));
+  } catch (e) {}
 
-    if (res && res.message) {
-      return {
-        name: res.message.employee_name,
-        code: res.message.employee,
-        branch: res.message.branch || ""
-      };
-    }
-  } catch (e) {
-    console.warn("Employee fetch failed for", userId);
-  }
-
-  return null;
+  this.assignedCount = this.state.data.filter(item =>
+    this.assignedLeadNames.includes(item.name) && item.status === "Lead"
+  ).length;
 }
 
   countStatus(status) {
@@ -2183,6 +2224,21 @@ renderWhatsAppCard(item) {
   async loadMore() {
     if (!this.state.hasMore || this.isLoading) return;
 
+    const localData = getLocalCRMData(this.state.section);
+
+    // localStorage mein aur data hai toh wahan se load karo
+    if (localData && localData.data && localData.data.length > this.state.data.length) {
+      const nextBatch = localData.data.slice(
+        this.state.data.length,
+        this.state.data.length + this.state.limit
+      );
+      this.state.data = [...this.state.data, ...nextBatch];
+      this.state.hasMore = this.state.data.length < this.state.totalCount;
+      this.applyFilter();
+      return;
+    }
+
+    // localStorage exhaust ho gaya, API se fetch karo
     this.isLoading = true;
     $("#mycrm-load-more-btn").html(
       '<i class="fa fa-spinner fa-spin"></i> Loading...',
@@ -2198,24 +2254,24 @@ renderWhatsAppCard(item) {
 
   async refresh() {
     this.invalidateCache(this.state.section);
-    // Reset cursors for the current section to fetch from start
+    // localStorage bhi clear for fresh sync
+    localStorage.removeItem(`crm_local_${this.state.section}_${frappe.session.user}`);
+
     if (this.state.section === "lead") {
         this.state.leadCursor = null;
     } else if (this.state.section === "appointment") {
         this.state.appointmentCursor = null;
     }
-    // No need to reset this.state.offset as it's no longer used for pagination logic
 
-    // await this.loadUserLeads(); // Removed
-    await this.fetchData(); // This will fetch data from the beginning due to null cursor
+    // 50 records fetch karo — Load More ke liye localStorage mein data rahe
+    await this.fetchData(false, 50);
+    this.showLocalData();
     $("#mycrm-list-container").scrollTop(0);
     frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
   }
 // section switcher
   async switchSection(section) {
     sessionStorage.setItem("mycrm_active_tab", section);
-
-    console.log(`%c Switch: ${section}`, "color: #25d366; font-weight: bold;");
 
     this.state.section = section;
     this.state.filter = "All";
@@ -2250,7 +2306,6 @@ renderWhatsAppCard(item) {
       $("#mycrm-count").hide();
       $("#mycrm-list-container").hide();
       $("#mycrm-reports-container").show();
-      // ✅ FIX: Set indicator for Reports section
       this.page.set_indicator("REPORTS", "blue");
       this.renderReports();
     } else {
@@ -2261,7 +2316,15 @@ renderWhatsAppCard(item) {
       $("#mycrm-reports-container").hide();
       this.page.set_indicator(section.toUpperCase(), "blue");
       $("#mycrm-list-container").scrollTop(0);
-      this.fetchData();
+
+      // Pehle localStorage se instant data dikhao
+      const loaded = this.showLocalData();
+      // Sirf tab fetch karo jab localStorage mein data na ho — pehle load pe 50 records fetch karo
+      if (!loaded) {
+        await this.fetchData(false, 50);
+        // Fetch ke baad sirf first page load karo — baaki localStorage mein hai
+        this.showLocalData();
+      }
     }
   }
 // render reports section
@@ -3352,7 +3415,7 @@ createLead() {
                 dialog.set_df_property("first_name", "read_only", 0);
               }
               // Number change hone par warning check refresh karein
-              checkDuplicateWarning();
+              checkDuplicateWarningDebounced();
             } catch (error) { console.error(error); }
           },
         },
@@ -3448,6 +3511,8 @@ createLead() {
     });
 
     // --- 🛡️ Global Warning Logic ---
+    let _dupAbortController = null;
+
     const checkDuplicateWarning = async (isSave = false) => {
         const mobile = dialog.get_value("mobile_no");
         const warningBanner = $("#duplicate-warning-banner");
@@ -3457,26 +3522,42 @@ createLead() {
             return false;
         }
 
-        const res = await frappe.call({
-            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
-            args: { mobile_no: mobile, products: productsData }
-        });
+        // Cancel previous in-flight request
+        if (_dupAbortController) {
+            _dupAbortController.abort();
+        }
+        _dupAbortController = new AbortController();
 
-        if (res.message && res.message.duplicate) {
-            warningBanner.show();
-            if (isSave) {
-                frappe.msgprint({ 
-                    title: __("Duplicate Detected"), 
-                    indicator: "red", 
-                    message: __(`A lead for Product (${res.message.product}) already exists for this number within the last 7 days.`) 
-                });
+        try {
+            const res = await frappe.call({
+                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
+                args: { mobile_no: mobile, products: productsData },
+                signal: _dupAbortController.signal,
+            });
+
+            if (res.message && res.message.duplicate) {
+                warningBanner.show();
+                if (isSave) {
+                    frappe.msgprint({ 
+                        title: __("Duplicate Detected"), 
+                        indicator: "red", 
+                        message: __(`A lead for Product (${res.message.product}) already exists for this number within the last 7 days.`) 
+                    });
+                }
+                return true;
+            } else {
+                warningBanner.hide();
+                return false;
             }
-            return true;
-        } else {
-            warningBanner.hide();
+        } catch (e) {
+            if (e.name === 'AbortError') return false;
+            console.error(e);
             return false;
         }
     };
+
+    // Debounced version — sirf real-time warning ke liye (800ms wait)
+    const checkDuplicateWarningDebounced = debounce(() => checkDuplicateWarning(false), 800);
 
     const renderProductTable = () => {
       const html = `<div class="lead-product-table">
@@ -3515,7 +3596,7 @@ createLead() {
               onchange: function () {
                 const val = this.get_value();
                 productsData[index].product = val;
-                checkDuplicateWarning(); // Real-time check
+                checkDuplicateWarningDebounced();
               },
             },
             parent: tr.find(`.product-link-wrapper-${index}`),
@@ -3527,12 +3608,12 @@ createLead() {
             if (val < 0) val = 0;
             $(this).val(val);
             productsData[index].product_amount = val;
-            checkDuplicateWarning(); // Real-time check
+            checkDuplicateWarningDebounced();
           });
           tr.find(".lead-product-del-btn").on("click", function () {
             productsData.splice(index, 1);
             renderRows();
-            checkDuplicateWarning();
+            checkDuplicateWarningDebounced();
           });
         });
       };
@@ -3880,10 +3961,17 @@ createLead() {
   }
 
   setupRealtime() {
+    let _lastRefresh = 0;
+    const THROTTLE_MS = 10000; // 10 seconds minimum between refreshes
+
     frappe.realtime.on("doc_update", (data) => {
       if (data.doctype === "Lead" || data.doctype === "Appointment") {
         this.invalidateCache(data.doctype.toLowerCase());
-        this.refresh();
+        const now = Date.now();
+        if (now - _lastRefresh > THROTTLE_MS) {
+          _lastRefresh = now;
+          this.refresh();
+        }
       }
     });
   }
@@ -3898,8 +3986,6 @@ createLead() {
     if (!$('meta[name="theme-color"]').length) {
       $("head").append('<meta name="theme-color" content="#25d366">');
     }
-
-    console.log("%c📱 PWA Ready", "color: #25d366; font-weight: bold;");
   }
 
   showLoading() {
