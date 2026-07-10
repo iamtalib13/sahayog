@@ -20,6 +20,62 @@ frappe.ui.form.on("Agent Activation Call Log", {
     if (frm.doc.reply_type) {
       frm.trigger("_apply_reply_type_display");
     }
+
+    // -- Reassign Agent button --
+    if (frappe.user.has_role("Trainer") || frappe.user.has_role("Trainer Head") || frappe.user.has_role("System Manager")) {
+      frm.add_custom_button(__("Reassign Agent"), () => {
+        const dlg = new frappe.ui.Dialog({
+          title: __("Reassign Agent"),
+          fields: [
+            {
+              fieldname: "agent",
+              fieldtype: "Link",
+              label: __("Agent"),
+              options: "Agent",
+              reqd: 1,
+              get_query: () => ({
+                query: "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_query.get_agents_of_other_trainers",
+              }),
+              onchange() {
+                const agent = dlg.get_value("agent");
+                const info = dlg.get_field("current_trainer_html");
+                if (!agent) { info.$wrapper.html(""); return; }
+                frappe.db.get_value("Agent Activation Call Log",
+                  { agent, docstatus: ["<", 2], exited: 0 },
+                  "trainer",
+                  (r) => {
+                    if (r && r.message && r.message.trainer) {
+                      frappe.db.get_value("User", r.message.trainer, "full_name", (ur) => {
+                        const name = (ur && ur.message && ur.message.full_name) || r.message.trainer;
+                        info.$wrapper.html(`<p class="text-muted" style="margin-top:5px">Currently assigned to: <b>${frappe.utils.escape_html(name)}</b></p>`);
+                      });
+                    }
+                  }
+                );
+              },
+            },
+            { fieldname: "current_trainer_html", fieldtype: "HTML" },
+          ],
+          primary_action_label: __("Reassign to Me"),
+          primary_action(values) {
+            frappe.call({
+              method: "sahayog.agent_and_bdo.doctype.agent_activation_call_log.agent_activation_call_log.reassign_agent",
+              args: { agent: values.agent },
+              freeze: true,
+              freeze_message: __("Reassigning agent..."),
+              callback(r) {
+                if (r.message && r.message.success) {
+                  frappe.show_alert({ message: r.message.message, indicator: "green" });
+                  dlg.hide();
+                  frappe.new_doc("Agent Activation Call Log", { agent: values.agent });
+                }
+              },
+            });
+          },
+        });
+        dlg.show();
+      });
+    }
   },
 
   hide_sidebar_options(frm) {
@@ -40,8 +96,7 @@ frappe.ui.form.on("Agent Activation Call Log", {
   want_to_exit: function (frm) {
     if (frm.doc.want_to_exit === 1) {
       frappe.confirm(
-        `Agent <b>${frappe.utils.escape_html(frm.doc.agent || "this SS")}</b> will be marked as <b>Want to Exit</b>
-        and removed from the inactive SS pool permanently.<br><br>Are you sure?`,
+        `Agent <b>${frappe.utils.escape_html(frm.doc.agent || "this SS")}</b> will be marked as <b>Want to Exit</b>.<br><br>Are you sure?`,
         () => {
           // confirmed — clear other checkboxes
           frm.set_value("wants_to_stay", 0);
