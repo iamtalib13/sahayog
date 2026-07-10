@@ -3381,6 +3381,7 @@ createLead() {
             if (!phone || phone.length < 10) {
                 dialog.set_value("first_name", "");
                 existingContact = null;
+                checkDuplicateWarningDebounced();
                 if (!phone) return;
             }
             if (phone.length === 10) {
@@ -3511,9 +3512,11 @@ createLead() {
     const checkDuplicateWarning = async (isSave = false) => {
         const mobile = dialog.get_value("mobile_no");
         const warningBanner = $("#duplicate-warning-banner");
+        const createBtn = dialog.get_primary_btn();
 
         if (!mobile || productsData.length === 0) {
             warningBanner.hide();
+            createBtn.prop("disabled", false).css("opacity", "1");
             return false;
         }
 
@@ -3532,6 +3535,8 @@ createLead() {
 
             if (res.message && res.message.duplicate) {
                 warningBanner.show();
+                // Duplicate hai — Create button disable
+                createBtn.prop("disabled", true).css("opacity", "0.5");
                 if (isSave) {
                     frappe.msgprint({ 
                         title: __("Duplicate Detected"), 
@@ -3542,11 +3547,12 @@ createLead() {
                 return true;
             } else {
                 warningBanner.hide();
+                // No duplicate — Create button enable
+                createBtn.prop("disabled", false).css("opacity", "1");
                 return false;
             }
         } catch (e) {
             if (e.name === 'AbortError') return false;
-            console.error(e);
             return false;
         }
     };
