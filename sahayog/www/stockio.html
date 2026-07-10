@@ -2285,6 +2285,26 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="activeItem === 'Serial No'">
+                  <div class="filter-options-grid">
+                    <div class="filter-dropdown-container">
+                      <button class="filter-option-btn" @click="toggleFilterDropdown('item_code')">
+                        Item: [[ filterForm.item_code_display || 'All' ]] <i class="fas" :class="activeFilterKey === 'item_code' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                      </button>
+                      <div v-if="activeFilterKey === 'item_code'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div class="filter-sub-option" @click="filterForm.item_code = ''; filterForm.item_code_display = ''; activeFilterKey = null; applyFilters()">All Items</div>
+                        <div 
+                          v-for="code in [...new Set(serial_nos.map(s => s.item_code).filter(c => c))]" 
+                          :key="code"
+                          class="filter-sub-option"
+                          @click="filterForm.item_code = code; filterForm.item_code_display = code; activeFilterKey = null; applyFilters()"
+                        >
+                          [[ code ]]
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
                 <template v-else>
                   <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
                 </template>
@@ -14527,6 +14547,9 @@
             }
           } else {
             let filters = [];
+            if (doctype === "Serial No" && this.filterForm.item_code) {
+              filters.push(["item_code", "=", this.filterForm.item_code]);
+            }
             let fields = ["*"];
             if (doctype === "Item") {
               fields = ["name", "item_code", "item_name", "item_group", "stock_uom", "custom_item_department", "description", "image", "disabled"];
