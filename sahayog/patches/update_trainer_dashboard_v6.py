@@ -436,12 +436,11 @@ DASHBOARD_SCRIPT_P1 = """(function(){
     clearCache(); loadData();
   };
   let searchTimer;
-  root.querySelector(".aad-search").oninput = e => {
-    e.stopPropagation();
+  root.querySelector(".aad-search").oninput = function() {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => { searchText=e.target.value.trim(); currentPage=1; clearCache(); loadData(); }, 300);
+    searchTimer = setTimeout(() => { searchText=this.value.trim(); currentPage=1; clearCache(); loadData(); }, 300);
   };
-  root.querySelector(".aad-search").onkeydown = e => { e.stopPropagation(); };
+  root.querySelector(".aad-search").onkeydown = function(e) { e.stopPropagation(); };
   root.querySelector(".aad-prev-btn").onclick = () => { if(currentPage>1) goToPage(currentPage-1); };
   root.querySelector(".aad-next-btn").onclick = () => {
     if(currentPage < Math.ceil(totalRecords/pageSize)) goToPage(currentPage+1);
