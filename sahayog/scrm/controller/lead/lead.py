@@ -36,8 +36,7 @@ def update_employee_details(doc, method):
 
 
 def validate_duplicate_lead(doc, method):
-    """Server-side duplicate lead check — same mobile + product + amount within 7 days.
-    Two-step approach: find lead names first, then lock with FOR UPDATE to prevent deadlocks."""
+    """Server-side duplicate lead check — same mobile + product + amount within 7 days."""
     if not doc.mobile_no or not doc.get("custom_product_table"):
         return
 
@@ -48,33 +47,50 @@ def validate_duplicate_lead(doc, method):
         if not row.product or not row.product_amount:
             continue
 
-        # Step 1: Find duplicate lead names
-        lead_names = frappe.db.sql(
+        exists = frappe.db.sql(
             """
-            SELECT DISTINCT l.name FROM `tabLead` l
+            SELECT l.name FROM `tabLead` l
             JOIN `tabLead Product` lp ON lp.parent = l.name
             WHERE l.mobile_no = %s
             AND lp.product = %s
             AND lp.product_amount = %s
             AND l.creation >= %s
             AND l.name != %s
+            LIMIT 1
             """,
             (doc.mobile_no, row.product, row.product_amount, seven_days_ago, doc.name or ""),
             pluck=True,
         )
 
-        if not lead_names:
-            continue
+        if exists:
+            frappe.throw(
+                title="Duplicate Lead",
+                msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {exists[0]})"
+            )
 
-        # Step 2: Lock those specific rows to prevent concurrent inserts
-        frappe.db.sql(
-            "SELECT name FROM `tabLead` WHERE name IN %s FOR UPDATE",
-            (tuple(lead_names),),
-        )
 
+def validate_duplicate_appointment(doc, method):
+    """Server-side duplicate appointment check — same party + scheduled_time.
+    Works for both create and update. Runs on Appointment validate hook."""
+    if not doc.party or not doc.scheduled_time:
+        return
+
+    filters = {
+        "party": doc.party,
+        "scheduled_time": doc.scheduled_time,
+        "status": ["!=", "Cancelled"],
+    }
+
+    # Skip self when updating
+    if doc.name:
+        filters["name"] = ["!=", doc.name]
+
+    exists = frappe.db.exists("Appointment", filters)
+
+    if exists:
         frappe.throw(
-            title="Duplicate Lead",
-            msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {lead_names[0]})"
+            title="Duplicate Appointment",
+            msg=f"An appointment already exists for this Lead at <b>{doc.scheduled_time}</b>. (Appointment: {exists})"
         )
 
 
