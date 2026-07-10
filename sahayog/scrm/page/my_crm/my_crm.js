@@ -3471,13 +3471,8 @@ createLead() {
           return;
         }
 
-        // Final Validation on Save
-        const isStillDuplicate = await checkDuplicateWarning(true);
-        if (isStillDuplicate) {
-          btn.prop('disabled', false);
-          frappe.dom.unfreeze();
-          return;
-        }
+        // Backend validate hook (validate_duplicate_lead) duplicate check karega
+        // Frontend check_duplicate API call hata diya — redundant tha
 
         try {
           const leadDoc = {
@@ -3792,22 +3787,8 @@ createLead() {
         btn.prop('disabled', true);
         freezeScreen("Creating Appointment...");
         try {
-          // 🛡️ Duplicate Appointment Check
-          const dupRes = await frappe.call({
-            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
-            args: { party: party, scheduled_time: time }
-          });
-
-          if (dupRes.message && dupRes.message.duplicate) {
-            frappe.msgprint({
-              title: __("Duplicate Appointment"),
-              indicator: "red",
-              message: __("An appointment already exists for this Lead at the selected time.")
-            });
-            btn.prop('disabled', false);
-            frappe.dom.unfreeze();
-            return;
-          }
+          // Backend validate hook (validate_duplicate_appointment) duplicate check karega
+          // Frontend check_duplicate_appointment API call hata diya — redundant tha
 
           await frappe.call({
             method: "frappe.client.insert",
