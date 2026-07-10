@@ -13666,7 +13666,7 @@
         // Location/Branch
         let loc_val = this.createAssetForm.branch_name || this.createAssetForm.location;
         if (loc_val) {
-            parts.push(loc_val.substring(0, 3).toUpperCase());
+            parts.push(loc_val.toUpperCase());
         } else {
             parts.push('[LOC]');
         }
