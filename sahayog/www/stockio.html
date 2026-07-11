@@ -8464,6 +8464,12 @@
                         [[ row.status ]]
                         <span v-if="serialMode === 'individual' && row.config_count" style="margin-left: 5px; opacity: 0.8;">([[ row.config_count ]])</span>
                       </span>
+                      <span v-else-if="serialMode === 'itemwise' && row.count !== undefined"
+                        class="status-badge"
+                        style="font-size: 0.7rem; padding: 2px 8px; background: rgba(54, 150, 150, 0.15); color: #369696; border: 1px solid rgba(54, 150, 150, 0.3);"
+                      >
+                        [[ row.count ]] Serial Nos
+                      </span>
                       <span v-else-if="row.total_qty !== undefined"
                         class="status-badge"
                         style="font-size: 0.7rem; padding: 2px 8px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;"
@@ -14708,6 +14714,20 @@
 
       get filteredRows() {
         let rows = this.rows.slice();
+
+        // Item Wise mode: group by item_code with count
+        if (this.activeItem === "Serial No" && this.serialMode === "itemwise") {
+          const grouped = {};
+          rows.forEach(row => {
+            const code = row.item_code || "Unknown";
+            if (!grouped[code]) {
+              grouped[code] = { item_code: code, name: code, count: 0 };
+            }
+            grouped[code].count++;
+          });
+          return Object.values(grouped).map(g => ({ ...g, config_count: g.count })).sort((a, b) => a.item_code.localeCompare(b.item_code));
+        }
+
         // Sort by item_code for Items section
         if (this.activeItem === "Items") {
           rows.sort((a, b) => {
