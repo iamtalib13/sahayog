@@ -8444,7 +8444,7 @@
                 v-for="row in filteredRows"
                 :key="row.name"
                 class="item-card"
-                @click="openRecord(row)"
+                @click="serialMode === 'itemwise' ? openItemWiseSerials(row) : openRecord(row)"
                 style="height: auto;"
               >
                 <div class="item-card-inner" style="padding: 15px;">
@@ -8498,7 +8498,7 @@
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
                 :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
-                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
+                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -8911,6 +8911,34 @@
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Wise Serial No Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showItemWiseModal"
+    @click.self="showItemWiseModal = false"
+  >
+    <div class="profile-modal" style="max-width: 600px;">
+      <div class="profile-modal-header">
+        <h3>[[ itemWiseModalData.item_code ]] — Serial Nos ([[ itemWiseModalData.serials.length ]])</h3>
+        <button class="profile-close" @click="showItemWiseModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 0;">
+        <div v-if="itemWiseModalData.serials.length === 0" style="text-align: center; padding: 40px; color: #999;">
+          No serial nos found
+        </div>
+        <div v-else style="max-height: 60vh; overflow-y: auto;">
+          <div v-for="sn in itemWiseModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+              <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+            </div>
+            <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
           </div>
         </div>
       </div>
@@ -13286,6 +13314,8 @@
       assetGroupBy: 'Item',
       showAssetAvailabilityModal: false,
       assetAvailabilityModalData: { items: [], title: '' },
+      showItemWiseModal: false,
+      itemWiseModalData: { item_code: '', serials: [] },
       availableSerials: [],
       availableAssets: [],
 
@@ -13497,6 +13527,27 @@
         }
         this.assetAvailabilityModalData = { serials: serials, assets: assets, title: item.item_name };
         this.showAssetAvailabilityModal = true;
+      },
+
+      async openItemWiseSerials(item) {
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              filters: { item_code: item.item_code },
+              fields: ["name", "item_code", "warehouse"],
+              limit_page_length: 0
+            }
+          });
+          this.itemWiseModalData = {
+            item_code: item.item_code,
+            serials: res.message || []
+          };
+          this.showItemWiseModal = true;
+        } catch (e) {
+          console.error("Error fetching serial nos:", e);
+        }
       },
 
       get getChartBars() {
