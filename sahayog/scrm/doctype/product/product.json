@@ -11,7 +11,10 @@
   "product_name",
   "product_type",
   "enabled",
-  "exclude"
+  "exclude",
+  "column_break_ngig",
+  "group_name",
+  "group_subname"
  ],
  "fields": [
   {
@@ -47,13 +50,29 @@
    "fieldname": "exclude",
    "fieldtype": "Check",
    "label": "Exclude"
+  },
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Select",
+   "label": "Group Name",
+   "options": "\nCASA\nDAM\nFD\nRD\nDD\nSMBG\nSHARE"
+  },
+  {
+   "fieldname": "column_break_ngig",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "group_subname",
+   "fieldtype": "Select",
+   "label": "Group Subname",
+   "options": "\nSA\nCA\nTASC"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-02-28 12:20:49.184737",
- "modified_by": "9517@sahayog.com",
+ "modified": "2026-07-10 12:45:05.802390",
+ "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
  "naming_rule": "By fieldname",
