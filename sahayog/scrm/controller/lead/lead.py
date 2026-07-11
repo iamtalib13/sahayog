@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+import re
 
 # Function to update employee details in the Lead document
 def update_employee_details(doc, method):
@@ -94,6 +95,39 @@ def validate_duplicate_appointment(doc, method):
         )
 
 
+def validate_appointment_fields(doc, method):
+    """Validate Appointment required fields — party and scheduled_time."""
+    if not doc.party:
+        frappe.throw(
+            title="Missing Lead",
+            msg="Please select a Lead for this appointment."
+        )
+    if not doc.scheduled_time:
+        frappe.throw(
+            title="Missing Date & Time",
+            msg="Please select a scheduled date and time."
+        )
+
+
+def validate_appointment_party(doc, method):
+    """Validate Appointment party (Lead) exists."""
+    if doc.party and not frappe.db.exists("Lead", doc.party):
+        frappe.throw(
+            title="Invalid Lead",
+            msg=f"Lead <b>{doc.party}</b> does not exist."
+        )
+
+
+def validate_appointment_time(doc, method):
+    """Validate Appointment scheduled time is not in the past."""
+    from frappe.utils import now_datetime
+    if doc.scheduled_time and doc.scheduled_time < now_datetime():
+        frappe.throw(
+            title="Invalid Date & Time",
+            msg="Scheduled time cannot be in the past."
+        )
+
+
 def validate_required_employee_fields(doc, method):
     """Validate that all required employee fields are set before allowing Lead creation"""
     if frappe.session.user != "Administrator":
@@ -112,6 +146,47 @@ def validate_required_employee_fields(doc, method):
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Lead Validation Error")
             frappe.throw("An error occurred while validating employee details.")
+
+
+def validate_lead_mobile(doc, method):
+    """Validate Lead mobile number format — 10 digits, starts with 6-9."""
+    if doc.mobile_no:
+        mobile = str(doc.mobile_no).strip()
+        if not re.match(r'^[6-9]\d{9}$', mobile):
+            frappe.throw(
+                title="Invalid Mobile Number",
+                msg="Mobile number must be exactly 10 digits and start with 6, 7, 8, or 9."
+            )
+
+
+def validate_lead_products(doc, method):
+    """Validate Lead product table — at least 1 product, all products have amount > 0."""
+    if not doc.get("custom_product_table") or len(doc.custom_product_table) == 0:
+        frappe.throw(
+            title="Missing Products",
+            msg="At least one product is required. Please add a product before saving."
+        )
+
+    for i, row in enumerate(doc.custom_product_table, 1):
+        if not row.product:
+            frappe.throw(
+                title="Missing Product",
+                msg=f"Row {i}: Product is required."
+            )
+        if not row.product_amount or row.product_amount <= 0:
+            frappe.throw(
+                title="Invalid Amount",
+                msg=f"Row {i}: Product amount must be greater than 0."
+            )
+
+
+def validate_lead_source(doc, method):
+    """Validate Lead source is set."""
+    if not doc.source:
+        frappe.throw(
+            title="Missing Source",
+            msg="Lead Source is required."
+        )
 
 
 
