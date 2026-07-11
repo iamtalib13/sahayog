@@ -1675,13 +1675,8 @@ async fetchAssignedLeads() {
     const input_appt_time = d.$wrapper.find("#new_appt_t_edit").val();
     const btn = d.get_primary_btn();
 
-    btn.prop('disabled', true);
-    freezeScreen("Updating Lead...");
-
-    // 📱 Mobile Validation
+    // Mobile validation — freeze se pehle
     if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
-        frappe.dom.unfreeze();
-        btn.prop('disabled', false);
         return showError(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
 
@@ -1692,19 +1687,15 @@ async fetchAssignedLeads() {
         source: d.$wrapper.find("#source_edit").val(), 
     };
 
-    // 🛡️ Validate Product Amounts (Must be > 0)
+    // Product validation — freeze se pehle
     const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
     if (invalidProducts.length > 0) {
-        frappe.dom.unfreeze();
-        btn.prop('disabled', false);
         return showError(__("Please enter a valid amount (greater than 0) for all products."));
     }
 
-    // ✅ AUTO TAB SWITCH LOGIC — pehle check karo taaki appointment tab pe redirect ho sake
+    // Follow Up check — freeze se pehle
     if (input_status === "Follow Up") {
         if (!appointmentsData.length && !input_appt_time) {
-            frappe.dom.unfreeze();
-            btn.prop('disabled', false);
             showError(__('Please schedule an appointment to set status as <b>Follow Up</b>.'));
             d.$wrapper.find("#tab-appt-btn").trigger("click");
             const $apptInput = d.$wrapper.find("#new_appt_t_edit");
@@ -1714,7 +1705,7 @@ async fetchAssignedLeads() {
         }
     }
 
-    // 🛡️ Duplicate Lead Check (same mobile + product + amount within 7 days)
+    // 🛡️ Duplicate check — freeze se pehle
     if (input_mobile && productsData.length > 0) {
         try {
             const dupCheck = await frappe.call({
@@ -1722,27 +1713,20 @@ async fetchAssignedLeads() {
                 args: { mobile_no: input_mobile, products: productsData, current_lead: name }
             });
             if (dupCheck.message && dupCheck.message.duplicate) {
-                btn.prop('disabled', false);
-                frappe.dom.unfreeze();
+                btn.prop('disabled', true).css("opacity", "0.5");
                 return showError(__(`A lead for Product (${dupCheck.message.product}) already exists for this number within the last 7 days.`));
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { }
     }
+
+    // No duplicate — ab freeze + save
+    btn.prop('disabled', true);
+    freezeScreen("Updating Lead...");
 
     try {
         // 🛡️ Optional: Create Appointment if time is provided
         if (input_appt_time) {
-            const dupRes = await frappe.call({
-                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
-                args: { party: name, scheduled_time: input_appt_time }
-            });
-
-            if (dupRes.message && dupRes.message.duplicate) {
-                showError(__("An appointment already exists for this Lead at the selected time."));
-                btn.prop('disabled', false);
-                frappe.dom.unfreeze();
-                return;
-            }
+            // Server-side validate hook (validate_duplicate_appointment) duplicate check karega
 
             await frappe.call({
                 method: "frappe.client.insert",
@@ -3350,11 +3334,39 @@ renderWhatsAppCard(item) {
 createLead() {
     let productsData = [];
     let existingContact = null;
+    let _dupAbort = null;
 
     const validateIndianPhone = (phone) => {
       const phoneRegex = /^[6-9]\d{9}$/;
       return phoneRegex.test(phone);
     };
+
+    const checkDuplicate = async () => {
+      const mobile = dialog.get_value("mobile_no");
+      const btn = dialog.get_primary_btn();
+      if (!mobile || mobile.length < 10 || productsData.length === 0) {
+        btn.prop("disabled", false).css("opacity", "1");
+        return;
+      }
+      if (_dupAbort) _dupAbort.abort();
+      _dupAbort = new AbortController();
+      try {
+        const res = await frappe.call({
+          method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
+          args: { mobile_no: mobile, products: productsData },
+          signal: _dupAbort.signal,
+        });
+        if (res.message && res.message.duplicate) {
+          btn.prop("disabled", true).css("opacity", "0.5");
+          frappe.show_alert({ message: __("Duplicate: Product ({0}) with this amount already exists within 7 days.", [res.message.product]), indicator: "red" }, 5);
+        } else {
+          btn.prop("disabled", false).css("opacity", "1");
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") btn.prop("disabled", false).css("opacity", "1");
+      }
+    };
+    const checkDuplicateDebounced = debounce(checkDuplicate, 800);
 
     const dialog = new frappe.ui.Dialog({
       title: "Create New Lead",
@@ -3364,9 +3376,6 @@ createLead() {
           fieldtype: "HTML",
           options: `
             <div id="customer-info-banner" style="display: none; padding: 12px; margin-bottom: 16px; border-radius: 6px; border-left: 4px solid #236867;"><div id="customer-info-text"></div></div>
-            <div id="duplicate-warning-banner" style="display: none; padding: 10px; margin-bottom: 16px; border-radius: 6px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; font-size: 13px;">
-                <strong>⚠️ Warning:</strong> Duplicate lead (Same Product & Amount) detected within the last 7 days.
-            </div>
           `,
         },
         {
@@ -3381,7 +3390,7 @@ createLead() {
             if (!phone || phone.length < 10) {
                 dialog.set_value("first_name", "");
                 existingContact = null;
-                checkDuplicateWarningDebounced();
+                checkDuplicateDebounced();
                 if (!phone) return;
             }
             if (phone.length === 10) {
@@ -3415,9 +3424,8 @@ createLead() {
                 dialog.set_value("first_name", "");
                 dialog.set_df_property("first_name", "read_only", 0);
               }
-              // Number change hone par warning check refresh karein
-              checkDuplicateWarningDebounced();
-            } catch (error) { console.error(error); }
+              checkDuplicateDebounced();
+            } catch (error) { }
           },
         },
         { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
@@ -3443,37 +3451,42 @@ createLead() {
       primary_action_label: "Create Lead",
       primary_action: async (values) => {
         const btn = dialog.get_primary_btn();
-        btn.prop('disabled', true);
-        freezeScreen("Creating Lead...");
 
+        // Basic validation — freeze se pehle
         if (!validateIndianPhone(values.mobile_no)) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
-          btn.prop('disabled', false);
-          frappe.dom.unfreeze();
           return;
         }
         if (productsData.length === 0) {
           frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
-          btn.prop('disabled', false);
-          frappe.dom.unfreeze();
           return;
         }
-
-        // 🛡️ Validate Product Amounts (Must be > 0)
         const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);
         if (invalidProducts.length > 0) {
-          frappe.msgprint({ 
-            title: "Invalid Amount", 
-            indicator: "red", 
-            message: "Please enter a valid amount (greater than 0) for all products." 
-          });
-          btn.prop('disabled', false);
-          frappe.dom.unfreeze();
+          frappe.msgprint({ title: "Invalid Amount", indicator: "red", message: "Please enter a valid amount (greater than 0) for all products." });
           return;
         }
 
-        // Backend validate hook (validate_duplicate_lead) duplicate check karega
-        // Frontend check_duplicate API call hata diya — redundant tha
+        // 🛡️ Duplicate check — freeze se pehle, agar duplicate toh btn disable
+        try {
+          const dupRes = await frappe.call({
+            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
+            args: { mobile_no: values.mobile_no, products: productsData },
+          });
+          if (dupRes.message && dupRes.message.duplicate) {
+            btn.prop('disabled', true).css("opacity", "0.5");
+            frappe.msgprint({
+              title: __("Duplicate Detected"),
+              indicator: "red",
+              message: __(`A lead for Product (${dupRes.message.product}) already exists for this number within the last 7 days.`)
+            });
+            return;
+          }
+        } catch (e) { }
+
+        // No duplicate — ab freeze + save
+        btn.prop('disabled', true);
+        freezeScreen("Creating Lead...");
 
         try {
           const leadDoc = {
@@ -3505,60 +3518,6 @@ createLead() {
         }
       },
     });
-
-    // --- 🛡️ Global Warning Logic ---
-    let _dupAbortController = null;
-
-    const checkDuplicateWarning = async (isSave = false) => {
-        const mobile = dialog.get_value("mobile_no");
-        const warningBanner = $("#duplicate-warning-banner");
-        const createBtn = dialog.get_primary_btn();
-
-        if (!mobile || productsData.length === 0) {
-            warningBanner.hide();
-            createBtn.prop("disabled", false).css("opacity", "1");
-            return false;
-        }
-
-        // Cancel previous in-flight request
-        if (_dupAbortController) {
-            _dupAbortController.abort();
-        }
-        _dupAbortController = new AbortController();
-
-        try {
-            const res = await frappe.call({
-                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
-                args: { mobile_no: mobile, products: productsData },
-                signal: _dupAbortController.signal,
-            });
-
-            if (res.message && res.message.duplicate) {
-                warningBanner.show();
-                // Duplicate hai — Create button disable
-                createBtn.prop("disabled", true).css("opacity", "0.5");
-                if (isSave) {
-                    frappe.msgprint({ 
-                        title: __("Duplicate Detected"), 
-                        indicator: "red", 
-                        message: __(`A lead for Product (${res.message.product}) already exists for this number within the last 7 days.`) 
-                    });
-                }
-                return true;
-            } else {
-                warningBanner.hide();
-                // No duplicate — Create button enable
-                createBtn.prop("disabled", false).css("opacity", "1");
-                return false;
-            }
-        } catch (e) {
-            if (e.name === 'AbortError') return false;
-            return false;
-        }
-    };
-
-    // Debounced version — sirf real-time warning ke liye (800ms wait)
-    const checkDuplicateWarningDebounced = debounce(() => checkDuplicateWarning(false), 800);
 
     const renderProductTable = () => {
       const html = `<div class="lead-product-table">
@@ -3597,7 +3556,7 @@ createLead() {
               onchange: function () {
                 const val = this.get_value();
                 productsData[index].product = val;
-                checkDuplicateWarningDebounced();
+                checkDuplicateDebounced();
               },
             },
             parent: tr.find(`.product-link-wrapper-${index}`),
@@ -3609,12 +3568,12 @@ createLead() {
             if (val < 0) val = 0;
             $(this).val(val);
             productsData[index].product_amount = val;
-            checkDuplicateWarningDebounced();
+            checkDuplicateDebounced();
           });
           tr.find(".lead-product-del-btn").on("click", function () {
             productsData.splice(index, 1);
             renderRows();
-            checkDuplicateWarningDebounced();
+            checkDuplicateDebounced();
           });
         });
       };
@@ -3767,6 +3726,38 @@ createLead() {
 
   createAppointment() {
     const me = this;
+    let _apptDupAbort = null;
+
+    const checkApptDuplicate = async () => {
+      const d_ref = me._apptDialog;
+      if (!d_ref) return;
+      const btn = d_ref.get_primary_btn();
+      const party = d_ref.$wrapper.find("#create_appt_lead").val();
+      const time = d_ref.$wrapper.find("#create_appt_time").val();
+      if (!party || !time) {
+        btn.prop("disabled", false).css("opacity", "1");
+        return;
+      }
+      if (_apptDupAbort) _apptDupAbort.abort();
+      _apptDupAbort = new AbortController();
+      try {
+        const res = await frappe.call({
+          method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
+          args: { party: party, scheduled_time: time },
+          signal: _apptDupAbort.signal,
+        });
+        if (res.message && res.message.duplicate) {
+          btn.prop("disabled", true).css("opacity", "0.5");
+          frappe.show_alert({ message: __("Duplicate: An appointment already exists for this Lead at the selected time."), indicator: "red" }, 5);
+        } else {
+          btn.prop("disabled", false).css("opacity", "1");
+        }
+      } catch (e) {
+        if (e.name !== "AbortError") btn.prop("disabled", false).css("opacity", "1");
+      }
+    };
+    const checkApptDuplicateDebounced = debounce(checkApptDuplicate, 800);
+
     const d = new frappe.ui.Dialog({
       title: "Create New Appointment",
       fields: [
@@ -3790,12 +3781,28 @@ createLead() {
         if (!party) return frappe.msgprint("Please select a Lead");
         if (!time) return frappe.msgprint("Please select Date & Time");
 
+        // 🛡️ Duplicate check — freeze se pehle
+        try {
+          const dupRes = await frappe.call({
+            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
+            args: { party: party, scheduled_time: time }
+          });
+          if (dupRes.message && dupRes.message.duplicate) {
+            btn.prop('disabled', true).css("opacity", "0.5");
+            frappe.msgprint({
+              title: __("Duplicate Detected"),
+              indicator: "red",
+              message: __("An appointment already exists for this Lead at the selected time.")
+            });
+            return;
+          }
+        } catch (e) { }
+
+        // No duplicate — ab freeze + save
         btn.prop('disabled', true);
         freezeScreen("Creating Appointment...");
-        try {
-          // Backend validate hook (validate_duplicate_appointment) duplicate check karega
-          // Frontend check_duplicate_appointment API call hata diya — redundant tha
 
+        try {
           await frappe.call({
             method: "frappe.client.insert",
             args: {
@@ -3920,9 +3927,14 @@ createLead() {
       });
     };
 
+    me._apptDialog = d;
     d.show();
     d.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
     renderCreateTab();
+
+    // Field change pe duplicate check
+    d.$wrapper.find("#create_appt_lead").on("change", checkApptDuplicateDebounced);
+    d.$wrapper.find("#create_appt_time").on("change", checkApptDuplicateDebounced);
 }
 
   exportData() {
