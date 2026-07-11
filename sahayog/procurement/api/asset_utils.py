@@ -46,10 +46,11 @@ def get_available_assets():
     - Assets with no movement at all, OR
     - Assets with movement but no source_location and no from_employee
     """
-    # 1. Get all active assets (submitted, not scrapped)
+
+    # 1. Get all active assets (draft/submitted, not scrapped)
     all_assets = frappe.db.get_all(
         "Asset",
-        filters={"docstatus": 1, "status": ["!=", "Scrapped"]},
+        filters={"docstatus": ["in", [0, 1]], "status": ["!=", "Scrapped"]},
         fields=["name", "serial_no", "item_code", "location", "zone"],
         ignore_permissions=True
     )

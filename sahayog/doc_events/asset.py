@@ -59,8 +59,22 @@ def custom_asset_autoname(doc, method):
     # Prefix 4: Sahayog Branch Name (Complete)
     location_part = (doc.location or "").strip().upper()
 
-    # Prefix 5: Division (First 3 letters)
-    division_code = (doc.division or "").strip().upper()[:3]
+    # Prefix 5: Division (Matching frontend logic: initials for multi-word or first 5 unique characters)
+    division_part = (doc.division or "").strip()
+    if division_part:
+        div_words = division_part.split()
+        if len(div_words) > 1:
+            division_code = "".join([w[0].upper() for w in div_words])
+        else:
+            seen = set()
+            unique_chars = []
+            for char in div_words[0].upper():
+                if char not in seen:
+                    seen.add(char)
+                    unique_chars.append(char)
+            division_code = "".join(unique_chars[:5])
+    else:
+        division_code = ""
 
     # Prefix 6: Asset Name (First 3 letters)
     asset_name_code = (doc.item_name or doc.item_code or "").strip().upper()[:3]
@@ -68,8 +82,11 @@ def custom_asset_autoname(doc, method):
     # Prefix 7: Brand (Full Brand Name)
     brand_code = (doc.brand or "").strip().upper()
 
+    # Prefix 8: Serial No (Optional, placed after brand)
+    serial_part = (doc.serial_no or "").strip()
+
     # Construct the base prefix for serial number
-    # Syntax: SMCCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/
+    # Syntax: SMCCSL/ZONE/STATE/LOCATION/DIVISION/ASSET/BRAND/SERIAL_NO/
     parts = [
         company_prefix,
         zone_code,
@@ -79,6 +96,8 @@ def custom_asset_autoname(doc, method):
         asset_name_code,
         brand_code
     ]
+    if serial_part:
+        parts.append(serial_part)
     
     # Filter out empty parts and join with /
     naming_prefix = "/".join([p for p in parts if p]) + "/"

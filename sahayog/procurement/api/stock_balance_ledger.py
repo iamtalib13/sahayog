@@ -424,7 +424,7 @@ def get_asset_list(limit=20, start=0, search_text=None):
     values = {}
 
     if search_text:
-        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
+        conditions.append("(ast.name LIKE %(search)s OR ast.asset_name LIKE %(search)s OR ast.serial_no LIKE %(search)s OR ast.location LIKE %(search)s OR sb.branch LIKE %(search)s OR ast.status LIKE %(search)s OR emp.employee_name LIKE %(search)s)")
         values["search"] = f"%{search_text}%"
 
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
@@ -434,6 +434,7 @@ def get_asset_list(limit=20, start=0, search_text=None):
         SELECT COUNT(*) 
         FROM `tabAsset` ast
         LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = ast.location
         {where_clause}
     """, values)[0][0]
 
@@ -441,9 +442,11 @@ def get_asset_list(limit=20, start=0, search_text=None):
     data = frappe.db.sql(f"""
         SELECT 
             ast.*, 
-            emp.employee_name as custodian_name
+            emp.employee_name as custodian_name,
+            sb.branch as location_name
         FROM `tabAsset` ast
         LEFT JOIN `tabEmployee` emp ON emp.name = ast.custodian
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = ast.location
         {where_clause}
         ORDER BY ast.creation DESC
         LIMIT %(limit)s OFFSET %(offset)s

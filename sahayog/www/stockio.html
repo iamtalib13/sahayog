@@ -2285,6 +2285,26 @@
                     </div>
                   </div>
                 </template>
+                <template v-else-if="activeItem === 'Serial No'">
+                  <div class="filter-options-grid">
+                    <div class="filter-dropdown-container">
+                      <button class="filter-option-btn" @click="toggleFilterDropdown('item_code')">
+                        Item: [[ filterForm.item_code_display || 'All' ]] <i class="fas" :class="activeFilterKey === 'item_code' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                      </button>
+                      <div v-if="activeFilterKey === 'item_code'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
+                        <div class="filter-sub-option" @click="filterForm.item_code = ''; filterForm.item_code_display = ''; activeFilterKey = null; applyFilters()">All Items</div>
+                        <div 
+                          v-for="code in [...new Set(serial_nos.map(s => s.item_code).filter(c => c))]" 
+                          :key="code"
+                          class="filter-sub-option"
+                          @click="filterForm.item_code = code; filterForm.item_code_display = code; activeFilterKey = null; applyFilters()"
+                        >
+                          [[ code ]]
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
                 <template v-else>
                   <div class="message-text">Filters for <strong>[[ activeItem ]]</strong> are coming soon! 🚀</div>
                 </template>
@@ -12795,6 +12815,7 @@
           columns: [
             { label: "Asset", key: "asset_name", width: 2, type: "avatar" },
             { label: "Code", key: "name", width: 1.5 },
+            { label: "Serial No", key: "serial_no", width: 1.5 },
             { label: "Custodian", key: "custodian_name", width: 1.5 },
             { label: "Location", key: "location", width: 1.5 },
             { label: "Status", key: "status", width: 1, type: "badge" },
@@ -13665,13 +13686,23 @@
         // Location/Branch
         let loc_val = this.createAssetForm.branch_name || this.createAssetForm.location;
         if (loc_val) {
-            parts.push(loc_val.substring(0, 3).toUpperCase());
+            parts.push(loc_val.toUpperCase());
         } else {
             parts.push('[LOC]');
         }
 
         // Division
-        parts.push(this.createAssetForm.division ? this.createAssetForm.division.toUpperCase() : '[DIVISION]');
+        if (this.createAssetForm.division) {
+          const divWords = this.createAssetForm.division.trim().split(/\s+/);
+          if (divWords.length > 1) {
+            parts.push(divWords.map(w => w.charAt(0).toUpperCase()).join(''));
+          } else {
+            const uniqueChars = [...new Set(divWords[0].toUpperCase())].slice(0, 5).join('');
+            parts.push(uniqueChars);
+          }
+        } else {
+          parts.push('[DIVISION]');
+        }
 
         // Asset Code (Item)
         let asset_code = this.getAssetShortCode(this.createAssetForm.item_name, this.createAssetForm.item_code, '[ASSET]');
@@ -14516,6 +14547,9 @@
             }
           } else {
             let filters = [];
+            if (doctype === "Serial No" && this.filterForm.item_code) {
+              filters.push(["item_code", "=", this.filterForm.item_code]);
+            }
             let fields = ["*"];
             if (doctype === "Item") {
               fields = ["name", "item_code", "item_name", "item_group", "stock_uom", "custom_item_department", "description", "image", "disabled"];
@@ -15447,6 +15481,30 @@
 
         this.creatingAsset = true;
         try {
+          // Create Serial No if it doesn't exist
+          if (this.createAssetForm.serial_no) {
+            const snRes = await frappe.call({
+              method: "frappe.client.get_value",
+              args: {
+                doctype: "Serial No",
+                filters: { name: this.createAssetForm.serial_no },
+                fieldname: "name",
+              },
+            });
+            if (!snRes.message || !snRes.message.name) {
+              await frappe.call({
+                method: "frappe.client.insert",
+                args: {
+                  doc: {
+                    doctype: "Serial No",
+                    serial_no: this.createAssetForm.serial_no,
+                    item_code: this.createAssetForm.item_code,
+                  },
+                },
+              });
+            }
+          }
+
           const doc = {
           doctype: "Asset",
           asset_name: this.createAssetForm.asset_name,
@@ -18177,3 +18235,4 @@
   });
 </script>
 {% endblock %}
+<!-- END -->
