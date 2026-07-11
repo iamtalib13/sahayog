@@ -1909,6 +1909,7 @@
         <div v-if="activeItem === 'Serial No' && !showDetailView" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
             <button @click="setSerialMode('batch')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'batch' ? '#369696' : 'transparent', color: serialMode === 'batch' ? 'white' : '#64748b' }">Batch</button>
             <button @click="setSerialMode('individual')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'individual' ? '#369696' : 'transparent', color: serialMode === 'individual' ? 'white' : '#64748b' }">Individual</button>
+            <button @click="setSerialMode('itemwise')" :style="{ padding: '6px 12px', border: 'none', borderRadius: '4px', background: serialMode === 'itemwise' ? '#369696' : 'transparent', color: serialMode === 'itemwise' ? 'white' : '#64748b' }">Item Wise</button>
         </div>
         <button
           v-if="activeItem === 'Serial No' && showDetailView && !isEditing"
@@ -8443,7 +8444,7 @@
                 v-for="row in filteredRows"
                 :key="row.name"
                 class="item-card"
-                @click="openRecord(row)"
+                @click="serialMode === 'itemwise' ? openItemWiseSerials(row) : openRecord(row)"
                 style="height: auto;"
               >
                 <div class="item-card-inner" style="padding: 15px;">
@@ -8462,6 +8463,12 @@
                       >
                         [[ row.status ]]
                         <span v-if="serialMode === 'individual' && row.config_count" style="margin-left: 5px; opacity: 0.8;">([[ row.config_count ]])</span>
+                      </span>
+                      <span v-else-if="serialMode === 'itemwise' && row.count !== undefined"
+                        class="status-badge"
+                        style="font-size: 0.7rem; padding: 2px 8px; background: rgba(54, 150, 150, 0.15); color: #369696; border: 1px solid rgba(54, 150, 150, 0.3);"
+                      >
+                        [[ row.count ]] Serial Nos
                       </span>
                       <span v-else-if="row.total_qty !== undefined"
                         class="status-badge"
@@ -8491,7 +8498,7 @@
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
                 :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
-                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
+                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -8904,6 +8911,34 @@
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Wise Serial No Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showItemWiseModal"
+    @click.self="showItemWiseModal = false"
+  >
+    <div class="profile-modal" style="max-width: 600px;">
+      <div class="profile-modal-header">
+        <h3>[[ itemWiseModalData.item_code ]] — Serial Nos ([[ itemWiseModalData.serials.length ]])</h3>
+        <button class="profile-close" @click="showItemWiseModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 0;">
+        <div v-if="itemWiseModalData.serials.length === 0" style="text-align: center; padding: 40px; color: #999;">
+          No serial nos found
+        </div>
+        <div v-else style="max-height: 60vh; overflow-y: auto;">
+          <div v-for="sn in itemWiseModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+              <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+            </div>
+            <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
           </div>
         </div>
       </div>
@@ -13132,6 +13167,7 @@
       showAssetActions: false,
       showAssetActionModal: false,
       serialMode: 'individual',
+      itemWiseData: null,
       assetActionTitle: '',
       assetActionFields: [],
       assetActionData: {},
@@ -13278,6 +13314,8 @@
       assetGroupBy: 'Item',
       showAssetAvailabilityModal: false,
       assetAvailabilityModalData: { items: [], title: '' },
+      showItemWiseModal: false,
+      itemWiseModalData: { item_code: '', serials: [] },
       availableSerials: [],
       availableAssets: [],
 
@@ -13489,6 +13527,27 @@
         }
         this.assetAvailabilityModalData = { serials: serials, assets: assets, title: item.item_name };
         this.showAssetAvailabilityModal = true;
+      },
+
+      async openItemWiseSerials(item) {
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              filters: { item_code: item.item_code },
+              fields: ["name", "item_code", "warehouse"],
+              limit_page_length: 0
+            }
+          });
+          this.itemWiseModalData = {
+            item_code: item.item_code,
+            serials: res.message || []
+          };
+          this.showItemWiseModal = true;
+        } catch (e) {
+          console.error("Error fetching serial nos:", e);
+        }
       },
 
       get getChartBars() {
@@ -14175,7 +14234,7 @@
         }
 
         if (item.label === "Serial No") {
-          this.itemView = "card";
+          this.itemView = "list";
         }
 
         if (item.doctype) {
@@ -14707,6 +14766,14 @@
 
       get filteredRows() {
         let rows = this.rows.slice();
+
+        // Item Wise mode: group by item_code with count
+        if (this.activeItem === "Serial No" && this.serialMode === "itemwise") {
+          if (this.itemWiseData) {
+            return this.itemWiseData.map(g => ({ ...g, name: g.item_code, config_count: g.count }));
+          }
+        }
+
         // Sort by item_code for Items section
         if (this.activeItem === "Items") {
           rows.sort((a, b) => {
@@ -18185,7 +18252,23 @@
       },
       async setSerialMode(mode) {
         this.serialMode = mode;
-        await this.fetchData(this.currentView.doctype);
+        if (mode === 'itemwise') {
+          try {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_serial_no_by_item"
+            });
+            this.itemWiseData = (res.message && res.message.data) || [];
+            this.totalRows = (res.message && res.message.total) || 0;
+            this.loadedRows = this.itemWiseData.length;
+            this.rows = [];
+          } catch (e) {
+            console.error("Error fetching item-wise data:", e);
+            this.itemWiseData = [];
+          }
+        } else {
+          this.itemWiseData = null;
+          await this.fetchData(this.currentView.doctype);
+        }
       },
       toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "light" : "dark";
