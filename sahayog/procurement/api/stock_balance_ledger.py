@@ -520,6 +520,27 @@ def get_serial_no_list(limit=20, start=0, search_text=None):
     }
 
 @frappe.whitelist()
+def get_serial_no_by_item():
+    """
+    Fetch Serial Nos grouped by item_code with count
+    """
+    data = frappe.db.sql("""
+        SELECT
+            item_code,
+            COUNT(*) as count
+        FROM `tabSerial No`
+        GROUP BY item_code
+        ORDER BY item_code ASC
+    """, as_dict=True)
+
+    total = sum(row.count for row in data)
+
+    return {
+        "data": data,
+        "total": total
+    }
+
+@frappe.whitelist()
 def get_movement_list(limit=20, start=0, search_text=None):
     """
     Fetch Asset Movements joined with first child item fields

@@ -13139,6 +13139,7 @@
       showAssetActions: false,
       showAssetActionModal: false,
       serialMode: 'individual',
+      itemWiseData: null,
       assetActionTitle: '',
       assetActionFields: [],
       assetActionData: {},
@@ -14717,15 +14718,9 @@
 
         // Item Wise mode: group by item_code with count
         if (this.activeItem === "Serial No" && this.serialMode === "itemwise") {
-          const grouped = {};
-          rows.forEach(row => {
-            const code = row.item_code || "Unknown";
-            if (!grouped[code]) {
-              grouped[code] = { item_code: code, name: code, count: 0 };
-            }
-            grouped[code].count++;
-          });
-          return Object.values(grouped).map(g => ({ ...g, config_count: g.count })).sort((a, b) => a.item_code.localeCompare(b.item_code));
+          if (this.itemWiseData) {
+            return this.itemWiseData.map(g => ({ ...g, name: g.item_code, config_count: g.count }));
+          }
         }
 
         // Sort by item_code for Items section
@@ -18206,7 +18201,23 @@
       },
       async setSerialMode(mode) {
         this.serialMode = mode;
-        await this.fetchData(this.currentView.doctype);
+        if (mode === 'itemwise') {
+          try {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_serial_no_by_item"
+            });
+            this.itemWiseData = (res.message && res.message.data) || [];
+            this.totalRows = (res.message && res.message.total) || 0;
+            this.loadedRows = this.itemWiseData.length;
+            this.rows = [];
+          } catch (e) {
+            console.error("Error fetching item-wise data:", e);
+            this.itemWiseData = [];
+          }
+        } else {
+          this.itemWiseData = null;
+          await this.fetchData(this.currentView.doctype);
+        }
       },
       toggleTheme() {
         this.currentTheme = this.currentTheme === "dark" ? "light" : "dark";
