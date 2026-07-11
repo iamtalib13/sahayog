@@ -99,12 +99,48 @@
   "workflow_state_name": "In Repair"
  },
  {
-  "docstatus": 0,
-  "doctype": "Workflow State",
-  "icon": "",
-  "modified": "2026-05-27 11:49:14.422054",
-  "name": "Scrapped",
-  "style": "",
-  "workflow_state_name": "Scrapped"
- }
+   "docstatus": 0,
+   "doctype": "Workflow State",
+   "icon": "",
+   "modified": "2026-05-27 11:49:14.422054",
+   "name": "Scrapped",
+   "style": "",
+   "workflow_state_name": "Scrapped"
+  },
+  {
+   "docstatus": 0,
+   "doctype": "Workflow State",
+   "icon": "",
+   "modified": "2026-07-09 10:00:00.000000",
+   "name": "Pending Approval",
+   "style": "Warning",
+   "workflow_state_name": "Pending Approval"
+  },
+  {
+   "docstatus": 0,
+   "doctype": "Workflow State",
+   "icon": "",
+   "modified": "2026-07-09 10:00:00.000000",
+   "name": "Approved",
+   "style": "Success",
+   "workflow_state_name": "Approved"
+  },
+  {
+   "docstatus": 0,
+   "doctype": "Workflow State",
+   "icon": "",
+   "modified": "2026-07-09 10:00:00.000000",
+   "name": "Rejected",
+   "style": "Danger",
+   "workflow_state_name": "Rejected"
+  },
+  {
+   "docstatus": 0,
+   "doctype": "Workflow State",
+   "icon": "",
+   "modified": "2026-07-09 10:00:00.000000",
+   "name": "Sent Back",
+   "style": "Orange",
+   "workflow_state_name": "Sent Back"
+  }
 ]

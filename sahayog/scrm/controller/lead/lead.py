@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+import re
 
 # Function to update employee details in the Lead document
 def update_employee_details(doc, method):
@@ -36,8 +37,7 @@ def update_employee_details(doc, method):
 
 
 def validate_duplicate_lead(doc, method):
-    """Server-side duplicate lead check — same mobile + product + amount within 7 days.
-    Two-step approach: find lead names first, then lock with FOR UPDATE to prevent deadlocks."""
+    """Server-side duplicate lead check — same mobile + product + amount within 7 days."""
     if not doc.mobile_no or not doc.get("custom_product_table"):
         return
 
@@ -48,33 +48,83 @@ def validate_duplicate_lead(doc, method):
         if not row.product or not row.product_amount:
             continue
 
-        # Step 1: Find duplicate lead names
-        lead_names = frappe.db.sql(
+        exists = frappe.db.sql(
             """
-            SELECT DISTINCT l.name FROM `tabLead` l
+            SELECT l.name FROM `tabLead` l
             JOIN `tabLead Product` lp ON lp.parent = l.name
             WHERE l.mobile_no = %s
             AND lp.product = %s
             AND lp.product_amount = %s
             AND l.creation >= %s
             AND l.name != %s
+            LIMIT 1
             """,
             (doc.mobile_no, row.product, row.product_amount, seven_days_ago, doc.name or ""),
             pluck=True,
         )
 
-        if not lead_names:
-            continue
+        if exists:
+            frappe.throw(
+                title="Duplicate Lead",
+                msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {exists[0]})"
+            )
 
-        # Step 2: Lock those specific rows to prevent concurrent inserts
-        frappe.db.sql(
-            "SELECT name FROM `tabLead` WHERE name IN %s FOR UPDATE",
-            (tuple(lead_names),),
+
+def validate_duplicate_appointment(doc, method):
+    """Server-side duplicate appointment check — same party + scheduled_time.
+    Works for both create and update. Runs on Appointment validate hook."""
+    if not doc.party or not doc.scheduled_time:
+        return
+
+    filters = {
+        "party": doc.party,
+        "scheduled_time": doc.scheduled_time,
+        "status": ["!=", "Cancelled"],
+    }
+
+    # Skip self when updating
+    if doc.name:
+        filters["name"] = ["!=", doc.name]
+
+    exists = frappe.db.exists("Appointment", filters)
+
+    if exists:
+        frappe.throw(
+            title="Duplicate Appointment",
+            msg=f"An appointment already exists for this Lead at <b>{doc.scheduled_time}</b>. (Appointment: {exists})"
         )
 
+
+def validate_appointment_fields(doc, method):
+    """Validate Appointment required fields — party and scheduled_time."""
+    if not doc.party:
         frappe.throw(
-            title="Duplicate Lead",
-            msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {lead_names[0]})"
+            title="Missing Lead",
+            msg="Please select a Lead for this appointment."
+        )
+    if not doc.scheduled_time:
+        frappe.throw(
+            title="Missing Date & Time",
+            msg="Please select a scheduled date and time."
+        )
+
+
+def validate_appointment_party(doc, method):
+    """Validate Appointment party (Lead) exists."""
+    if doc.party and not frappe.db.exists("Lead", doc.party):
+        frappe.throw(
+            title="Invalid Lead",
+            msg=f"Lead <b>{doc.party}</b> does not exist."
+        )
+
+
+def validate_appointment_time(doc, method):
+    """Validate Appointment scheduled time is not in the past."""
+    from frappe.utils import now_datetime
+    if doc.scheduled_time and doc.scheduled_time < now_datetime():
+        frappe.throw(
+            title="Invalid Date & Time",
+            msg="Scheduled time cannot be in the past."
         )
 
 
@@ -96,6 +146,47 @@ def validate_required_employee_fields(doc, method):
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Lead Validation Error")
             frappe.throw("An error occurred while validating employee details.")
+
+
+def validate_lead_mobile(doc, method):
+    """Validate Lead mobile number format — 10 digits, starts with 6-9."""
+    if doc.mobile_no:
+        mobile = str(doc.mobile_no).strip()
+        if not re.match(r'^[6-9]\d{9}$', mobile):
+            frappe.throw(
+                title="Invalid Mobile Number",
+                msg="Mobile number must be exactly 10 digits and start with 6, 7, 8, or 9."
+            )
+
+
+def validate_lead_products(doc, method):
+    """Validate Lead product table — at least 1 product, all products have amount > 0."""
+    if not doc.get("custom_product_table") or len(doc.custom_product_table) == 0:
+        frappe.throw(
+            title="Missing Products",
+            msg="At least one product is required. Please add a product before saving."
+        )
+
+    for i, row in enumerate(doc.custom_product_table, 1):
+        if not row.product:
+            frappe.throw(
+                title="Missing Product",
+                msg=f"Row {i}: Product is required."
+            )
+        if not row.product_amount or row.product_amount <= 0:
+            frappe.throw(
+                title="Invalid Amount",
+                msg=f"Row {i}: Product amount must be greater than 0."
+            )
+
+
+def validate_lead_source(doc, method):
+    """Validate Lead source is set."""
+    if not doc.source:
+        frappe.throw(
+            title="Missing Source",
+            msg="Lead Source is required."
+        )
 
 
 
