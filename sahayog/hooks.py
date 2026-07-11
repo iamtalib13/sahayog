@@ -342,12 +342,20 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.set_is_operation_lead",
         ],
         "validate": [
+            "sahayog.scrm.controller.lead.lead.validate_lead_mobile",
+            "sahayog.scrm.controller.lead.lead.validate_lead_products",
+            "sahayog.scrm.controller.lead.lead.validate_lead_source",
             "sahayog.scrm.controller.lead.lead.validate_duplicate_lead",
-            "sahayog.scrm.controller.lead.lead.validate_required_employee_fields"
+            "sahayog.scrm.controller.lead.lead.validate_required_employee_fields",
         ],
     },
     "Appointment": {
-        "validate": "sahayog.scrm.controller.lead.lead.validate_duplicate_appointment",
+        "validate": [
+            "sahayog.scrm.controller.lead.lead.validate_appointment_fields",
+            "sahayog.scrm.controller.lead.lead.validate_appointment_party",
+            "sahayog.scrm.controller.lead.lead.validate_appointment_time",
+            "sahayog.scrm.controller.lead.lead.validate_duplicate_appointment",
+        ],
     },
     "Shareholder": {
         "before_insert": [
