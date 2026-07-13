@@ -2017,6 +2017,7 @@ function load_case_timeline(frm) {
     { doctype: "Response to SCN", label: "Response to SCN" },
     { doctype: "Domestic Enquiry", label: "Domestic Enquiry" },
     { doctype: "Enquiry Reminder", label: "Enquiry Reminder" },
+    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry" },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
@@ -2031,8 +2032,7 @@ function load_case_timeline(frm) {
     String(case_id).startsWith("UA") ||
     (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
     frm.doctype === "Unauthorized Absence" ||
-    frm.doctype === "Reminder Of Unauthorized Absence" ||
-    frm.doctype === "Ex Parte Enquiry";
+    frm.doctype === "Reminder Of Unauthorized Absence";
 
   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
     ...stage,
