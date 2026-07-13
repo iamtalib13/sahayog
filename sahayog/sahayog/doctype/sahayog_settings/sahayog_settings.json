@@ -12,9 +12,12 @@
   "loc_perm_settings_section",
   "location_table_permissions",
   "inventory_tab",
-  "wh_dept_map",
   "restrict_inward",
+  "column_break_yawa",
   "notification",
+  "create_stockio_request",
+  "section_break_onti",
+  "wh_dept_map",
   "branch_access",
   "agent_setting_tab",
   "agent_automation_days",
@@ -148,13 +151,27 @@
    "fieldname": "branch_access",
    "fieldtype": "Small Text",
    "label": "Branch Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "create_stockio_request",
+   "fieldtype": "Check",
+   "label": "Create Stockio Request"
+  },
+  {
+   "fieldname": "column_break_yawa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_onti",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-24 16:19:39.206825",
+ "modified": "2026-07-13 17:57:43.567990",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
