@@ -182,6 +182,11 @@ function load_case_timeline(frm) {
       label: "Enquiry Reminder",
       allow_multiple: true,
     },
+    {
+      doctype: "Ex Parte Enquiry",
+      label: "Ex Parte Enquiry",
+      allow_multiple: true,
+    },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
@@ -306,6 +311,8 @@ function load_case_timeline(frm) {
             ? "Case Closure"
             : "Enquiry Reminder";
       } else if (dt === "Enquiry Reminder") {
+        next_doctype = (String(meta.enquiry_status || "").toLowerCase() === "attended") ? "Case Closure" : "Ex Parte Enquiry";
+      } else if (dt === "Ex Parte Enquiry") {
         next_doctype = "Case Closure";
       } else if (dt === "Unauthorized Absence") {
         next_doctype =
@@ -381,10 +388,7 @@ function load_case_timeline(frm) {
       }
 
       if (stage.doctype === "Domestic Enquiry") {
-        if (
-          (response === "yes" && status === "satisfactory") ||
-          has_draft
-        ) {
+        if ((response === "yes" && status === "satisfactory") || has_draft) {
           can_create = false;
         }
       }
