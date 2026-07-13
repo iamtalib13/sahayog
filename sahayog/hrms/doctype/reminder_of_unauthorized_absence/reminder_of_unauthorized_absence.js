@@ -89,7 +89,7 @@ frappe.ui.form.on("Reminder Of Unauthorized Absence", {
 
     frm.trigger("show_print_button");
     if (!frm.is_new()) {
-      load_case_timeline(frm);
+      setTimeout(() => load_case_timeline(frm), 0);
     }
 
     setTimeout(() => {
@@ -349,7 +349,7 @@ function load_case_timeline(frm) {
   };
 
   const load_record_summaries = () => {
-    return Promise.all(stage_defs.map((stage) => frappe.db.get_list(stage.doctype, { filters: { case_id }, fields: ["name"], order_by: "creation asc", limit_page_length: 500 }).then((records) => ({ doctype: stage.doctype, count: (records || []).length, names: (records || []).map((row) => row.name) })).catch(() => ({ doctype: stage.doctype, count: 0, names: [] }))));
+    return frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts", { case_id }).then((counts) => stage_defs.map((stage) => ({ doctype: stage.doctype, count: (counts[stage.doctype] || {}).count || 0, names: (counts[stage.doctype] || {}).names || [] }))).catch(() => stage_defs.map((stage) => ({ doctype: stage.doctype, count: 0, names: [] })));
   };
 
   const load_timeline = () => frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages", { case_id });
