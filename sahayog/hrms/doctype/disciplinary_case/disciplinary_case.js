@@ -884,6 +884,11 @@ function load_case_timeline(frm) {
       label: "Enquiry Reminder",
       allow_multiple: true,
     },
+    {
+      doctype: "Ex Parte Enquiry",
+      label: "Ex Parte Enquiry",
+      allow_multiple: true,
+    },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
@@ -910,8 +915,7 @@ function load_case_timeline(frm) {
     String(case_id).startsWith("UA") ||
     (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" ||
     frm.doctype === "Unauthorized Absence" ||
-    frm.doctype === "Reminder Of Unauthorized Absence" ||
-    frm.doctype === "Ex Parte Enquiry";
+    frm.doctype === "Reminder Of Unauthorized Absence";
 
   const stage_defs = (is_ua ? ua_stages : standard_stages).map(
     (stage, index) => ({
@@ -998,7 +1002,7 @@ function load_case_timeline(frm) {
           String(meta.status_of_response).toLowerCase() === "satisfactory"
             ? "Case Closure"
             : "Enquiry Reminder";
-      else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
+      else if (dt === "Enquiry Reminder") next_doctype = (String(meta.enquiry_status).toLowerCase() === "attended") ? "Case Closure" : "Ex Parte Enquiry";
       else if (dt === "Unauthorized Absence")
         next_doctype =
           String(meta.response_of_ua).toLowerCase() === "yes"
