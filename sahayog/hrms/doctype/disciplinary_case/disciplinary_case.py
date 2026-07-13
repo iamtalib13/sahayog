@@ -109,6 +109,7 @@ def get_case_stages(case_id):
             "Response to SCN",
             "Domestic Enquiry",
             "Enquiry Reminder",
+            "Ex Parte Enquiry",
             "Case Closure",
         ]
 
@@ -136,7 +137,7 @@ def get_case_stages(case_id):
             # Fetch additional metadata for branching logic
             extra_meta = {}
             # Ensure we fetch values even if they are empty
-            fields_to_fetch = ["status_of_response", "response_of_ua", "suspension_required", "response_of_reminder"]
+            fields_to_fetch = ["status_of_response", "response_of_ua", "suspension_required", "response_of_reminder", "enquiry_status"]
             
             # Get the actual document values
             doc = frappe.get_doc(stage, docinfo.name)
@@ -203,6 +204,7 @@ def get_case_stage_counts(case_id):
             "Response to SCN",
             "Domestic Enquiry",
             "Enquiry Reminder",
+            "Ex Parte Enquiry",
             "Case Closure",
         ]
 
