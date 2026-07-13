@@ -135,15 +135,12 @@ def get_case_stages(case_id):
                 status = "saved"      # 🟠
             
             # Fetch additional metadata for branching logic
-            extra_meta = {}
-            # Ensure we fetch values even if they are empty
             fields_to_fetch = ["status_of_response", "response_of_ua", "suspension_required", "response_of_reminder", "enquiry_status"]
             
-            # Get the actual document values
-            doc = frappe.get_doc(stage, docinfo.name)
-            for field in fields_to_fetch:
-                if hasattr(doc, field):
-                    extra_meta[field] = doc.get(field)
+            # Only query fields that exist on the specific doctype to avoid SQL errors
+            meta = frappe.get_meta(stage)
+            valid_fields = [f for f in fields_to_fetch if meta.has_field(f)]
+            extra_meta = frappe.db.get_value(stage, docinfo.name, valid_fields, as_dict=True) or {}
 
             timeline.append({
                 "stage": stage,
@@ -211,11 +208,10 @@ def get_case_stage_counts(case_id):
     result = {}
 
     for dt in dams_doctypes:
-        records = frappe.get_all(
-            dt,
-            filters={"case_id": case_id},
-            fields=["name"],
-            order_by="creation asc"
+        records = frappe.db.sql(
+            f"""SELECT name FROM `tab{dt}` WHERE case_id = %s ORDER BY creation ASC""",
+            case_id,
+            as_dict=1
         )
 
         result[dt] = {
