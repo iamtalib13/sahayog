@@ -16,6 +16,7 @@
   "restrict_inward",
   "notification",
   "branch_access",
+  "create_stockio_request",
   "agent_setting_tab",
   "agent_automation_days",
   "create_agents",
@@ -148,13 +149,19 @@
    "fieldname": "branch_access",
    "fieldtype": "Small Text",
    "label": "Branch Access"
+  },
+  {
+   "default": "0",
+   "fieldname": "create_stockio_request",
+   "fieldtype": "Check",
+   "label": "Create Stockio Request"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-24 16:19:39.206825",
+ "modified": "2026-07-13 13:46:05.701830",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
