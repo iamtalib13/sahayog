@@ -235,20 +235,24 @@
    "submit": 1,
    "write": 1
   },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Support Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  }
- ],
+   {
+    "create": 1,
+    "delete": 1,
+    "email": 1,
+    "export": 1,
+    "print": 1,
+    "read": 1,
+    "report": 1,
+    "role": "HR Support Manager",
+    "share": 1,
+    "submit": 1,
+    "write": 1
+   },
+   {
+    "read": 1,
+    "role": "Employee"
+   }
+  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
