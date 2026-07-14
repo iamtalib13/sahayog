@@ -263,7 +263,7 @@ def create_support_staff(data):
     }
 
 @frappe.whitelist()
-def bulk_import_employees(rows):
+def bulk_import_employees(rows, mode="insert"):
     import json
 
     # ── Permission check ──────────────────────────────────────────────────────
@@ -276,14 +276,11 @@ def bulk_import_employees(rows):
 
     # ── Logger setup (writes to frappe.log / Error Log) ──────────────────────
     logger = frappe.logger("bulk_employee_import", allow_site=True, max_size=5, file_count=3)
-    logger.info(f"[BulkImport] Started — {len(rows)} row(s) received by user: {frappe.session.user}")
+    logger.info(f"[BulkImport] Started — {len(rows)} row(s) received by user: {frappe.session.user}, mode: {mode}")
 
-    results = {"created": 0, "failed": 0, "skipped": 0, "errors": []}
+    results = {"created": 0, "failed": 0, "skipped": 0, "updated": 0, "errors": []}
 
     # ── Only these fields are validated as mandatory during import ────────────
-    # NOTE: We intentionally do NOT enforce Employee-master mandatory fields
-    # like zone/region/district here — they are auto-filled from sol_id where
-    # possible, and the import uses ignore_mandatory=True so Frappe won't block.
     MANDATORY_FIELDS = {
         "first_name": "First Name",
         "last_name": "Last Name",
@@ -296,11 +293,10 @@ def bulk_import_employees(rows):
     # ── Fetch table columns ONCE outside the loop ─────────────────────────────
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
 
-    # ── Tell Frappe this is a bulk import — bypasses User creation throttle ───
-    # frappe.throttle_user_creation() skips itself when frappe.flags.in_import=True
+    # ── Tell Frappe this is a bulk import ─────────────────────────────────────
     frappe.flags.in_import = True
 
-    for i, row in enumerate(rows, start=2):  # row 1 = CSV header
+    for i, row in enumerate(rows, start=2):
         emp_label = (
             (row.get("first_name") or "") + " " + (row.get("last_name") or "")
         ).strip() or f"Row {i}"
@@ -319,48 +315,179 @@ def bulk_import_employees(rows):
                 continue
 
             # ── 2. Duplicate checks (strongest ID first) ──────────────────────
-            # Check by UHID
+            existing_employee = None
+
             if row.get("uhid_number"):
-                if frappe.db.exists("Employee", {"custom_uhid_number": row["uhid_number"]}):
-                    reason = f"Already exists — UHID '{row['uhid_number']}' already imported"
-                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
-                    results["skipped"] += 1
-                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
-                    continue
+                dup = frappe.db.exists("Employee", {"custom_uhid_number": row["uhid_number"]})
+                if dup:
+                    existing_employee = dup
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by UHID '{row['uhid_number']}' -> {dup}")
 
-            # Check by PAN
-            if row.get("pan_number"):
-                if frappe.db.exists("Employee", {"custom_pan_number": row["pan_number"]}):
-                    reason = f"Already exists — PAN '{row['pan_number']}' already imported"
-                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
-                    results["skipped"] += 1
-                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
-                    continue
+            if not existing_employee and row.get("pan_number"):
+                dup = frappe.db.exists("Employee", {"custom_pan_number": row["pan_number"]})
+                if dup:
+                    existing_employee = dup
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by PAN '{row['pan_number']}' -> {dup}")
 
-            # Check by Aadhaar
-            if row.get("aadhaar_card_number"):
-                if frappe.db.exists("Employee", {"custom_aadhar_number": row["aadhaar_card_number"]}):
-                    reason = f"Already exists — Aadhaar '{row['aadhaar_card_number']}' already imported"
-                    logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
-                    results["skipped"] += 1
-                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
-                    continue
+            if not existing_employee and row.get("aadhaar_card_number"):
+                dup = frappe.db.exists("Employee", {"custom_aadhar_number": row["aadhaar_card_number"]})
+                if dup:
+                    existing_employee = dup
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by Aadhaar '{row['aadhaar_card_number']}' -> {dup}")
 
             # Name-based duplicate check — always runs regardless of IDs
-            # Matches: same first_name + last_name + date_of_joining + support staff flag
-            full_name = f"{(row.get('first_name') or '').strip()} {(row.get('last_name') or '').strip()}".strip()
-            doj_val = _parse_date(row.get("date_of_joining"))
-            if full_name and doj_val:
-                name_dup = frappe.db.exists("Employee", {
-                    "employee_name": full_name,
-                    "date_of_joining": doj_val,
-                    "custom_is_support_staff": 1
-                })
-                if name_dup:
-                    reason = f"Already exists — Name '{full_name}' + DOJ '{doj_val}' already imported (Employee: {name_dup})"
+            if not existing_employee:
+                parts = [
+                    (row.get('first_name') or '').strip(),
+                    (row.get('middle_name') or '').strip(),
+                    (row.get('last_name') or '').strip()
+                ]
+                parts = [p for p in parts if p]
+                full_name = " ".join(parts)
+                doj_val = _parse_date(row.get("date_of_joining"))
+
+                if not doj_val:
+                    logger.warning(f"[BulkImport] Row {i} ({emp_label}) — could not parse DOJ '{row.get('date_of_joining')}', trying name-only match")
+
+                if full_name:
+                    # Primary: exact match
+                    filters = {
+                        "employee_name": full_name,
+                        "custom_is_support_staff": 1
+                    }
+                    if doj_val:
+                        filters["date_of_joining"] = doj_val
+
+                    name_dup = frappe.db.exists("Employee", filters)
+                    if name_dup:
+                        existing_employee = name_dup
+                        logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by Name+DOJ -> {name_dup}")
+                    else:
+                        # Fallback: compare removing all spaces, case-insensitive
+                        sql = "SELECT name FROM `tabEmployee` WHERE REPLACE(UPPER(employee_name), ' ', '') = REPLACE(UPPER(%s), ' ', '')"
+                        params = [full_name]
+                        if doj_val:
+                            sql += " AND date_of_joining = %s"
+                            params.append(doj_val)
+                        sql += " AND custom_is_support_staff = 1 LIMIT 1"
+                        dup_name = frappe.db.sql(sql, params)
+                        if dup_name:
+                            existing_employee = dup_name[0][0]
+                            logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by Name+DOJ (fallback) -> {existing_employee}")
+
+                    # Final fallback: name-only match (for records with NULL DOJ in DB)
+                    if not existing_employee and doj_val:
+                        sql_no_doj = """
+                            SELECT name FROM `tabEmployee`
+                            WHERE REPLACE(UPPER(employee_name), ' ', '') = REPLACE(UPPER(%s), ' ', '')
+                            AND custom_is_support_staff = 1
+                            ORDER BY creation ASC
+                            LIMIT 1
+                        """
+                        dup_by_name = frappe.db.sql(sql_no_doj, [full_name])
+                        if dup_by_name:
+                            existing_employee = dup_by_name[0][0]
+                            logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by Name-only (DOJ was NULL in DB) -> {existing_employee}")
+
+            if existing_employee:
+                if mode == "insert":
+                    reason = f"Already exists — {existing_employee}"
                     logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
                     results["skipped"] += 1
                     results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    continue
+                else:
+                    # ── Update mode: fill missing fields using direct SQL ──────
+                    logger.info(f"[BulkImport] Row {i} ({emp_label}) — updating existing {existing_employee}")
+                    emp = frappe.db.get_value("Employee", existing_employee, "*", as_dict=True)
+                    updated_fields = []
+
+                    field_map = {
+                        "first_name": ("first_name", lambda v: v.strip()),
+                        "middle_name": ("middle_name", lambda v: v.strip()),
+                        "last_name": ("last_name", lambda v: v.strip()),
+                        "gender": ("gender", lambda v: v.strip()),
+                        "date_of_birth": ("date_of_birth", lambda v: _parse_date(v)),
+                        "date_of_joining": ("date_of_joining", lambda v: _parse_date(v)),
+                        "final_confirmation_date": ("final_confirmation_date", lambda v: _parse_date(v)),
+                        "relieving_date": ("relieving_date", lambda v: _parse_date(v)),
+                        "resignation_letter_date": ("resignation_letter_date", lambda v: _parse_date(v)),
+                        "designation": ("designation", lambda v: v.strip()),
+                        "department": ("department", lambda v: v.strip()),
+                        "branch": ("branch", lambda v: v.strip()),
+                        "sol_id": ("sol_id", lambda v: v.strip()),
+                        "sahayog_branch": ("sahayog_branch", lambda v: v.strip()),
+                        "mobile_number": ("cell_number", lambda v: v.strip()),
+                        "personal_email": ("personal_email", lambda v: v.strip()),
+                        "bank_name": ("bank_name", lambda v: v.strip()),
+                        "bank_account_number": ("bank_ac_no", lambda v: v.strip()),
+                        "marital_status": ("marital_status", lambda v: v.strip()),
+                        "blood_group": ("blood_group", lambda v: v.strip()),
+                        "permanent_address": ("permanent_address", lambda v: v.strip()),
+                        "shift": ("default_shift", lambda v: v.strip()),
+                        "employment_type": ("employment_type", lambda v: v.strip()),
+                    }
+
+                    update_dict = {}
+                    for csv_key, (doc_field, transform) in field_map.items():
+                        csv_val = row.get(csv_key)
+                        if csv_val:
+                            parsed = transform(csv_val)
+                            if parsed is not None and parsed != "" and not emp.get(doc_field):
+                                update_dict[doc_field] = parsed
+                                updated_fields.append(doc_field)
+
+                    custom_map = {
+                        "pan_number": "custom_pan_number",
+                        "aadhaar_card_number": "custom_aadhar_number",
+                        "uhid_number": "custom_uhid_number",
+                    }
+                    for csv_key, doc_field in custom_map.items():
+                        csv_val = row.get(csv_key)
+                        if csv_val and not emp.get(doc_field):
+                            update_dict[doc_field] = csv_val
+                            updated_fields.append(doc_field)
+
+                    if update_dict:
+                        frappe.db.set_value("Employee", existing_employee, update_dict)
+                        results["updated"] += 1
+                        logger.info(f"[BulkImport] Row {i} ({emp_label}) — updated fields: {', '.join(updated_fields)}")
+
+                        # Also update SQL-level fields if needed
+                        col_map = {}
+                        if row.get("monthly_gross_salary") and not emp.get("ctc"):
+                            col_map["ctc"] = row.get("monthly_gross_salary")
+
+                        sol_id = row.get("sol_id")
+                        if sol_id:
+                            clean_sol = sol_id.strip().replace(" ", "")
+                            branch = frappe.db.sql("""
+                                SELECT name FROM `tabSahayog Branch`
+                                WHERE REPLACE(name, ' ', '') = %s
+                                LIMIT 1
+                            """, clean_sol)
+                            if branch:
+                                if not emp.get("sahayog_branch"):
+                                    col_map["sahayog_branch"] = branch[0][0]
+                                branch_doc = frappe.db.get_value(
+                                    "Sahayog Branch", branch[0][0],
+                                    ["zone", "region", "district"], as_dict=True
+                                )
+                                for col in ("custom_zone", "custom_region", "custom_district"):
+                                    if not emp.get(col):
+                                        col_map[col] = branch_doc.get(col.replace("custom_", ""))
+
+                        for col, val in col_map.items():
+                            if val and col in existing_cols:
+                                frappe.db.sql(
+                                    f"UPDATE `tabEmployee` SET `{col}`=%s WHERE name=%s",
+                                    (val, existing_employee)
+                                )
+
+                        frappe.db.commit()
+                    else:
+                        logger.info(f"[BulkImport] Row {i} ({emp_label}) — no empty fields to update")
+                        results["skipped"] += 1
                     continue
 
             # ── 3. Date range validation ───────────────────────────────────────
@@ -411,7 +538,6 @@ def bulk_import_employees(rows):
                 "department": row.get("department"),
                 "designation": row.get("designation"),
                 "branch": row.get("branch"),
-                "sahayog_branch": row.get("sol_id"),
                 "sol_id": row.get("sol_id"),
                 "reports_to": reports_to,
                 "cell_number": row.get("mobile_number"),
@@ -440,26 +566,40 @@ def bulk_import_employees(rows):
             if row.get("monthly_gross_salary"):
                 col_map["ctc"] = row.get("monthly_gross_salary")
 
-            if row.get("sol_id") and frappe.db.exists("Sahayog Branch", row.get("sol_id")):
-                branch_doc = frappe.db.get_value(
-                    "Sahayog Branch", row.get("sol_id"),
-                    ["zone", "region", "district"], as_dict=True
-                )
-                col_map["custom_zone"]     = branch_doc.get("zone")
-                col_map["custom_region"]   = branch_doc.get("region")
-                col_map["custom_district"] = branch_doc.get("district")
-                logger.info(
-                    f"[BulkImport] Row {i} ({emp_label}) — mapped zone/region/district from Sahayog Branch '{row.get('sol_id')}'"
-                )
+            sol_id = row.get("sol_id")
+            if sol_id:
+                clean_sol = sol_id.strip().replace(" ", "")
+                branch = frappe.db.sql("""
+                    SELECT name FROM `tabSahayog Branch`
+                    WHERE REPLACE(name, ' ', '') = %s
+                    LIMIT 1
+                """, clean_sol)
+                if branch:
+                    branch_doc = frappe.db.get_value(
+                        "Sahayog Branch", branch[0][0],
+                        ["zone", "region", "district"], as_dict=True
+                    )
+                    col_map["sahayog_branch"]  = branch[0][0]
+                    col_map["custom_zone"]     = branch_doc.get("zone")
+                    col_map["custom_region"]   = branch_doc.get("region")
+                    col_map["custom_district"] = branch_doc.get("district")
+                    logger.info(
+                        f"[BulkImport] Row {i} ({emp_label}) — mapped zone/region/district from Sahayog Branch '{branch[0][0]}'"
+                    )
+                else:
+                    # Fallback: use whatever was in the CSV row
+                    col_map["sahayog_branch"]  = sol_id
+                    col_map["custom_zone"]     = row.get("zone")
+                    col_map["custom_region"]   = row.get("region")
+                    col_map["custom_district"] = row.get("district_name")
+                    logger.warning(
+                        f"[BulkImport] Row {i} ({emp_label}) — sol_id '{sol_id}' not found in Sahayog Branch, using CSV values for zone/region/district"
+                    )
             else:
-                # Fallback: use whatever was in the CSV row
+                col_map["sahayog_branch"]  = row.get("sol_id")
                 col_map["custom_zone"]     = row.get("zone")
                 col_map["custom_region"]   = row.get("region")
                 col_map["custom_district"] = row.get("district_name")
-                if row.get("sol_id"):
-                    logger.warning(
-                        f"[BulkImport] Row {i} ({emp_label}) — sol_id '{row.get('sol_id')}' not found in Sahayog Branch, using CSV values for zone/region/district"
-                    )
 
             for col, val in col_map.items():
                 if val and col in existing_cols:
@@ -490,6 +630,7 @@ def bulk_import_employees(rows):
 
     logger.info(
         f"[BulkImport] Finished — Created: {results['created']}, "
+        f"Updated: {results['updated']}, "
         f"Failed: {results['failed']}, Skipped: {results['skipped']}"
     )
 
