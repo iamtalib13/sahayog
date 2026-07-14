@@ -1267,7 +1267,7 @@
             >
               <div class="spinner"></div>
             </div>
-            <div class="card-head" style="border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+            <div id="directoryCardHead" class="card-head" style="border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
               <h3>Staff List &amp; Directory</h3>
               <div style="display:flex; gap:8px;">
                 <button 
@@ -1293,6 +1293,14 @@
                   onclick="openImportModal()"
                 >
                   ⬆ Import
+                </button>
+                <button
+                  id="btnUpdateEmployees"
+                  class="btn-clear"
+                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"
+                  onclick="openUpdateModal()"
+                >
+                  ✏️ Update
                 </button>
               </div>
             </div>
@@ -1346,6 +1354,40 @@
                 placeholder="🔍 Search by name, employee ID (P1, P2...) or designation..."
                 onkeyup="handleSearch()"
               />
+            </div>
+
+            <!-- EMPLOYEE STATUS FILTER TABS (HR only: Active / Inactive / All) -->
+            <div
+              id="empStatusFilters"
+              style="
+                display: none;
+                padding: 8px 16px;
+                border-bottom: 1px solid var(--border);
+                background: #f8fafc;
+                gap: 6px;
+              "
+            >
+              <button
+                class="ftab active"
+                id="statusFilterActive"
+                onclick="switchEmployeeStatus('Active', this)"
+              >
+                ● Active (<span id="countActive">0</span>)
+              </button>
+              <button
+                class="ftab"
+                id="statusFilterLeft"
+                onclick="switchEmployeeStatus('Left', this)"
+              >
+                ○ Inactive (<span id="countLeft">0</span>)
+              </button>
+              <button
+                class="ftab"
+                id="statusFilterAll"
+                onclick="switchEmployeeStatus('all', this)"
+              >
+                ○ All (<span id="countAll">0</span>)
+              </button>
             </div>
 
             <!-- HR DASHBOARD CONTENT (Hidden by default) -->
@@ -1628,6 +1670,37 @@
 
                 <!-- Results -->
                 <div id="importResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
+              </div>
+            </div>
+
+            <!-- UPDATE EMPLOYEES MODAL -->
+            <div id="updateEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
+                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:#15803d; margin:0;">Update Employees</h3>
+                  <button onclick="closeUpdateModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+
+                <!-- Step 1: Download Template -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 1 — Download Update Template</div>
+                  <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Fill missing fields for existing employees using this CSV template. <strong>Only empty fields will be filled; existing data will not be overwritten.</strong></div>
+                  <div style="font-size:11px; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:8px 10px; margin-bottom:10px; color:#15803d;">
+                    <strong>Mandatory columns:</strong> first_name, last_name, gender, date_of_joining, designation, department<br>
+                    <span style="font-weight:400; color:#6b7280;">All other columns are optional. Duplicate employees (same name + DOJ, or same UHID/PAN/Aadhaar) will have their <strong>missing fields updated</strong>. New employees will be created.</span>
+                  </div>
+                  <button onclick="downloadUpdateTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:#15803d; border:none;">⬇ Download Template</button>
+                </div>
+
+                <!-- Step 2: Upload CSV -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
+                  <input type="file" id="updateCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
+                  <button onclick="submitUpdate()" id="btnSubmitUpdate" class="btn-in" style="width:100%; padding:10px; font-weight:700; background:#15803d;">Update Employees</button>
+                </div>
+
+                <!-- Results -->
+                <div id="updateResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
               </div>
             </div>
 
@@ -2845,6 +2918,7 @@
       let currentFilter = "all";
       let searchQuery = "";
       let selectedIds = new Set();
+      let employeeStatusFilter = "Active";
       const now = new Date();
       let calYear = now.getFullYear();
       let calMonth = now.getMonth();
@@ -2974,6 +3048,8 @@
         const calPanel = document.querySelector(".cal-panel");
         const mainGrid = document.querySelector(".main-grid");
         const subTabs = document.getElementById("approvalSubTabs");
+        const empStatusFilters = document.getElementById("empStatusFilters");
+        const dirCardHead = document.getElementById("directoryCardHead");
 
         // Global Resets
         if (hrFilters) hrFilters.style.display = "none";
@@ -2981,6 +3057,8 @@
         if (empList) empList.style.display = "block";
         if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
         if (subTabs) subTabs.style.display = "none";
+        if (empStatusFilters) empStatusFilters.style.display = "none";
+        if (dirCardHead) dirCardHead.style.display = "none";
 
         // Calendar Visibility Logic for HR
         if (isHR()) {
@@ -2988,7 +3066,9 @@
             const btnExitEmployee = document.getElementById("btnExitEmployee");
             if (btnExitEmployee) btnExitEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
             const btnImportEmployees = document.getElementById("btnImportEmployees");
+            const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
             if (btnImportEmployees) btnImportEmployees.style.display = (tab === 'attendance') ? "inline-block" : "none";
+            if (btnUpdateEmployees) btnUpdateEmployees.style.display = (tab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -3002,6 +3082,18 @@
           if (controls) controls.style.display = isHR() ? "none" : "flex";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
+          if (dirCardHead) dirCardHead.style.display = "flex";
+          const empStatusFilters = document.getElementById("empStatusFilters");
+          if (empStatusFilters) {
+            empStatusFilters.style.display = isHR() ? "flex" : "none";
+            // Reset to Active when switching to attendance tab
+            if (isHR() && employeeStatusFilter !== "Active") {
+              employeeStatusFilter = "Active";
+              document.querySelectorAll("#empStatusFilters .ftab").forEach(b => b.classList.remove("active"));
+              const activeBtn = document.getElementById("statusFilterActive");
+              if (activeBtn) activeBtn.classList.add("active");
+            }
+          }
           fetchTeamData();
         } else if (tab === "hr_dashboard") {
           if (controls) controls.style.display = "none";
@@ -3332,7 +3424,7 @@
         document.getElementById("teamListLoading").style.display = "flex";
         const data = await callAPI(
           "get_team_attendance_data",
-          {},
+          { employee_status: employeeStatusFilter },
           "attendance",
         );
         document.getElementById("teamListLoading").style.display = "none";
@@ -3344,6 +3436,12 @@
             color: COLORS[idx % COLORS.length],
           }));
           dashboardSummary = data.summary;
+          // Update status counts in filter tabs
+          if (data.status_counts) {
+            document.getElementById("countActive").textContent = data.status_counts.Active || 0;
+            document.getElementById("countLeft").textContent = data.status_counts.Left || 0;
+            document.getElementById("countAll").textContent = data.status_counts.All || 0;
+          }
           renderAll(data.current_user);
           populateSelect();
           updateTabVisibility();
@@ -3374,7 +3472,9 @@
           const btnExitEmployee = document.getElementById("btnExitEmployee");
           if (btnExitEmployee) btnExitEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           const btnImportEmployees = document.getElementById("btnImportEmployees");
+          const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
           if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          if (btnUpdateEmployees) btnUpdateEmployees.style.display = (currentTab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Approvals";
@@ -3390,6 +3490,12 @@
           if (payrollTab) payrollTab.style.display = "flex";
           if (bulkBar)
             bulkBar.style.setProperty("display", "none", "important");
+
+          // Show/hide employee status filter tabs based on current tab
+          const empStatusFilters = document.getElementById("empStatusFilters");
+          if (empStatusFilters) {
+            empStatusFilters.style.display = (currentTab === 'attendance') ? "flex" : "none";
+          }
 
           // Set HR Dashboard as default on first load
           if (isFirstLoad) {
@@ -3427,6 +3533,29 @@
         f_vals.desig = "";
         f_vals.status = document.getElementById("f_status").value;
         renderEmpList();
+      }
+
+      function switchEmployeeStatus(status, btn) {
+        if (status === employeeStatusFilter) return;
+        employeeStatusFilter = status;
+        document.querySelectorAll("#empStatusFilters .ftab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        // Reset selection when switching away from Active
+        selectedMemberId = null;
+        selectedIds.clear();
+        document.getElementById("calEmptyState").style.display = "flex";
+        document.getElementById("calDetail").style.display = "none";
+        document.getElementById("memberSelect").value = "";
+
+        // Hide attendance status filter when not viewing Active employees
+        const fStatus = document.getElementById("f_status");
+        if (fStatus) {
+          fStatus.style.display = (status === "Active") ? "inline-block" : "none";
+          fStatus.value = ""; // reset
+        }
+
+        fetchTeamData();
       }
 
       function filterBranchTable() {
@@ -3735,18 +3864,21 @@
         let visibleIds = [];
 
         staff.forEach((s) => {
+          const isLeft = s.status === "Left";
           const status = s.attendance_status || "Not Marked";
 
           // Enterprise Filters
           if (f_vals.branch && s.sahayog_branch !== f_vals.branch) return;
           if (f_vals.dept && s.department !== f_vals.dept) return;
           if (f_vals.desig && s.designation !== f_vals.desig) return;
-          if (f_vals.status && status !== f_vals.status) return;
+          if (f_vals.status && !isLeft && status !== f_vals.status) return;
 
           // Filters combined with Live Search
-          if (currentFilter === "present" && status !== "Present") return;
-          if (currentFilter === "absent" && status !== "Absent") return;
-          if (currentFilter === "pending" && status === "Present") return; // If status exists, it's not pending for marking
+          if (!isLeft) {
+            if (currentFilter === "present" && status !== "Present") return;
+            if (currentFilter === "absent" && status !== "Absent") return;
+            if (currentFilter === "pending" && status === "Present") return;
+          }
 
           if (
             searchQuery &&
@@ -3773,60 +3905,79 @@
           row.onmouseleave = () => hideEmpTooltip();
 
           let pillHtml = "";
-          if (status === "Present")
-            pillHtml = `<span class="status-pill pill-present">✓ Present</span>`;
-          else if (status === "Absent")
-            pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
-          else if (status === "Half Day")
-            pillHtml = `<span class="status-pill pill-halfday">🕒 Half Day</span>`;
-          else if (status === "On Leave")
-            pillHtml = `<span class="status-pill pill-leave">On Leave</span>`;
-          else
-            pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
-
           let actionsHtml = "";
-          if (isHR()) {
-            actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
-          } else {
-            // Logic for Branch Manager (manage others) or Employee (manage self)
-            const canManage = isBranchManager() || s.is_self;
+          let timeInfo = "";
+          let extraInfo = "";
 
-            if (canManage) {
-              if (status === "On Leave" || status === "Half Day") {
-                actionsHtml = ""; // Show status pill only
-              } else if (!status || status === "Not Marked") {
-                actionsHtml = `
-                  <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
-                  <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
-                  <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
-              } else if (status === "Present" && !s.check_out) {
-                actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+          if (isLeft) {
+            // Left employee — show exit info, no attendance controls
+            const exitDate = s.relieving_date
+              ? new Date(s.relieving_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+              : (s.resignation_letter_date
+                ? new Date(s.resignation_letter_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                : "N/A");
+            const reason = s.reason_for_leaving || "";
+            extraInfo = `<div style="font-size:10px;color:#dc2626;margin-top:2px;">Exited on: ${exitDate}</div>`;
+            if (reason) extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
+            if (isHR()) {
+              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            }
+          } else {
+            // Active employee — normal rendering
+            if (status === "Present")
+              pillHtml = `<span class="status-pill pill-present">✓ Present</span>`;
+            else if (status === "Absent")
+              pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
+            else if (status === "Half Day")
+              pillHtml = `<span class="status-pill pill-halfday">🕒 Half Day</span>`;
+            else if (status === "On Leave")
+              pillHtml = `<span class="status-pill pill-leave">On Leave</span>`;
+            else
+              pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
+
+            if (isHR()) {
+              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            } else {
+              const canManage = isBranchManager() || s.is_self;
+              if (canManage) {
+                if (status === "On Leave" || status === "Half Day") {
+                  actionsHtml = "";
+                } else if (!status || status === "Not Marked") {
+                  actionsHtml = `
+                    <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+                    <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+                } else if (status === "Present" && !s.check_out) {
+                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                }
               }
             }
+
+            if (s.check_in) timeInfo = `In: ${s.check_in}`;
+            if (s.check_out) timeInfo += ` | Out: ${s.check_out}`;
           }
 
-          let timeInfo = "";
-          if (s.check_in) timeInfo = `In: ${s.check_in}`;
-          if (s.check_out) timeInfo += ` | Out: ${s.check_out}`;
-
-          const checkboxHtml = isBranchManager()
+          const checkboxHtml = (!isLeft && isBranchManager())
             ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
             : "";
+
+          const ringColor = isLeft ? "#9ca3af" : (status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db");
 
           row.innerHTML = `
             ${checkboxHtml}
             <div class="emp-av" style="background:${s.color}; display:flex; align-items:center; justify-content:center;" onclick="selectMember('${s.name}')">
                 ${s.image ? `<img src="${s.image}">` : s.employee_name.charAt(0)}
-                <div class="status-ring" style="background:${status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db"}"></div>
+                <div class="status-ring" style="background:${ringColor}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
                 <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
+                ${extraInfo}
             </div>
             <div class="emp-actions">
-                ${actionsHtml ? actionsHtml : pillHtml}
+                ${actionsHtml ? actionsHtml : (isLeft ? "" : pillHtml)}
             </div>
           `;
           list.appendChild(row);
@@ -4378,7 +4529,7 @@
         `;
       }
 
-      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
+      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address","relieving_date","resignation_letter_date"];
 
       function openImportModal() {
         document.getElementById("importResults").style.display = "none";
@@ -4390,10 +4541,31 @@
         document.getElementById("importEmployeesModal").style.display = "none";
       }
 
+      function openUpdateModal() {
+        document.getElementById("updateResults").style.display = "none";
+        document.getElementById("updateCsvFile").value = "";
+        document.getElementById("updateEmployeesModal").style.display = "flex";
+      }
+
+      function closeUpdateModal() {
+        document.getElementById("updateEmployeesModal").style.display = "none";
+      }
+
+      function downloadUpdateTemplate() {
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
+        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
+        const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "employee_update_template.csv";
+        a.click();
+      }
+
       function downloadImportTemplate() {
-        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
         // Add a note row indicating mandatory fields
-        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
+        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
         const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
@@ -4533,6 +4705,101 @@
         resultsDiv.innerHTML = html;
 
         if (totalCreated > 0) fetchTeamData();
+      }
+
+      async function submitUpdate() {
+        const file = document.getElementById("updateCsvFile").files[0];
+        if (!file) { showToast("Please select a CSV file"); return; }
+
+        const btn = document.getElementById("btnSubmitUpdate");
+        btn.disabled = true; btn.textContent = "Updating...";
+
+        const text = await file.text();
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        const SKIP_MARKERS = ["*mandatory*", "optional", "*optional*"];
+        const dataLines = lines.slice(1).filter(l => {
+          const firstCell = l.split(",")[0].trim().replace(/^"|"$/g, "").toLowerCase();
+          return l.trim() && !SKIP_MARKERS.includes(firstCell);
+        });
+
+        const rows = dataLines.map((line, idx) => {
+          const vals = [];
+          let cur = "", inQ = false;
+          for (let c of line) {
+            if (c === '"') { inQ = !inQ; }
+            else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
+            else { cur += c; }
+          }
+          vals.push(cur.trim());
+
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
+          obj["custom_is_support_staff"] = 1;
+          obj["custom_medical_deduction"] = 100;
+          return obj;
+        });
+
+        if (rows.length === 0) {
+          showToast("No data rows found in CSV");
+          btn.disabled = false; btn.textContent = "Update Employees";
+          return;
+        }
+
+        const BATCH_SIZE = 50;
+        const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+        let totalCreated = 0, totalUpdated = 0, totalFailed = 0, allErrors = [];
+
+        const resultsDiv = document.getElementById("updateResults");
+        resultsDiv.style.display = "block";
+
+        for (let b = 0; b < totalBatches; b++) {
+          const batch = rows.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+          btn.textContent = `Updating... (Batch ${b + 1}/${totalBatches})`;
+          resultsDiv.innerHTML = `<div style="font-size:13px; font-weight:600; color:var(--muted);">⏳ Processing batch ${b + 1} of ${totalBatches}... (${totalUpdated} updated, ${totalCreated} new)</div>`;
+
+          let res = null;
+          try {
+            res = await callAPI("bulk_import_employees", { rows: batch, mode: "update" }, "employee");
+          } catch (apiErr) {
+            allErrors.push({ row: "Batch " + (b + 1), name: "API Error", error: String(apiErr) });
+            totalFailed += batch.length;
+            continue;
+          }
+
+          if (res) {
+            totalUpdated += res.updated || 0;
+            totalCreated += res.created || 0;
+            totalFailed  += res.failed  || 0;
+            allErrors     = allErrors.concat(res.errors || []);
+          }
+
+          if (b < totalBatches - 1) {
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+
+        btn.disabled = false; btn.textContent = "Update Employees";
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
+          ✏️ Updated: <span style="color:#15803d">${totalUpdated}</span>
+          &nbsp;✅ Created (new): <span style="color:var(--success)">${totalCreated}</span>
+          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        </div>`;
+
+        if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
+          html += allErrors.map(e => {
+            return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
+              ❌ <b>Row ${e.row} — ${e.name}:</b> ${e.error}
+            </div>`;
+          }).join("");
+        }
+
+        resultsDiv.innerHTML = html;
+
+        if (totalUpdated > 0 || totalCreated > 0) fetchTeamData();
       }
 
       async function openExitEmployeeModal() {
@@ -4719,8 +4986,30 @@
         `;
       }
 
+      function showConfirmDialog(message) {
+        return new Promise((resolve) => {
+          const overlay = document.createElement("div");
+          overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);";
+          overlay.onclick = () => { overlay.remove(); resolve(false); };
+          const box = document.createElement("div");
+          box.style.cssText = "background:#fff;padding:24px;border-radius:20px;width:90%;max-width:420px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);";
+          box.onclick = (e) => e.stopPropagation();
+          box.innerHTML = `
+            <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, '<br>')}</div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
+              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">Cancel</button>
+              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">OK</button>
+            </div>
+          `;
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+          box.querySelector("#confirmOkBtn").onclick = () => { overlay.remove(); resolve(true); };
+          box.querySelector("#confirmCancelBtn").onclick = () => { overlay.remove(); resolve(false); };
+        });
+      }
+
       async function generatePayroll(month) {
-        if (!confirm(`Generate payslips for ${month}?\\n\\nThis will create salary registers for all active support staff.`)) return;
+        if (!await showConfirmDialog(`Generate payslips for ${month}?\n\nThis will create salary registers for all active support staff.`)) return;
         showToast("Creating payroll run...");
         const createRes = await callAPI("create_payroll_run", { payroll_month: month }, "payroll");
         if (!createRes || !createRes.success) return;
@@ -4841,7 +5130,7 @@
       }
 
       async function submitPayroll(payrollRunId, month) {
-        if (!confirm(`Submit payroll for ${month}?\\n\\nThis will lock the payroll. No further edits will be allowed.\\n\\nAre you sure all salary registers are reviewed and correct?`)) {
+        if (!await showConfirmDialog(`Submit payroll for ${month}?\n\nThis will lock the payroll. No further edits will be allowed.\n\nAre you sure all salary registers are reviewed and correct?`)) {
           return;
         }
         
@@ -4856,7 +5145,7 @@
       }
 
       async function markPayrollPaid(payrollRunId, month) {
-        if (!confirm(`Mark payroll as PAID for ${month}?\\n\\nConfirm that bank transfer has been completed for all employees.\\n\\nThis action records the payment completion.`)) {
+        if (!await showConfirmDialog(`Mark payroll as PAID for ${month}?\n\nConfirm that bank transfer has been completed for all employees.\n\nThis action records the payment completion.`)) {
           return;
         }
         
