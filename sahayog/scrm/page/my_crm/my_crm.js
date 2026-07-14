@@ -3316,6 +3316,7 @@ renderWhatsAppCard(item) {
 createLead() {
     let productsData = [];
     let existingContact = null;
+    let lastCheckedMobile = null;
 
     const validateIndianPhone = (phone) => {
       const phoneRegex = /^[6-9]\d{9}$/;
@@ -3344,6 +3345,7 @@ createLead() {
             if (!phone || phone.length < 10) {
                 dialog.set_value("first_name", "");
                 existingContact = null;
+                lastCheckedMobile = null;
                 if (!phone) return;
             }
             if (phone.length === 10) {
@@ -3356,6 +3358,31 @@ createLead() {
               frappe.show_alert({ message: __("Mobile number cannot exceed 10 digits"), indicator: "red" }, 3);
               return;
             } else { return; }
+
+            // Same number hai jo pehle check ho chuka hai — skip
+            if (phone === lastCheckedMobile) return;
+            lastCheckedMobile = phone;
+
+            // Check localStorage cache first
+            const cacheKey = `crm_contact_${phone}`;
+            try {
+              const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+              if (cached && (Date.now() - cached.ts < 15 * 60 * 1000)) {
+                if (cached.found) {
+                  existingContact = cached.data;
+                  $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
+                  $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
+                  dialog.set_value("first_name", existingContact.full_name);
+                  dialog.set_df_property("first_name", "read_only", 1);
+                } else {
+                  existingContact = null;
+                  dialog.set_value("first_name", "");
+                  dialog.set_df_property("first_name", "read_only", 0);
+                }
+                return;
+              }
+            } catch (e) { }
+
             try {
               const contactRes = await frappe.call({
                 method: "frappe.client.get_list",
@@ -3368,12 +3395,14 @@ createLead() {
               });
               if (contactRes.message && contactRes.message.length > 0) {
                 existingContact = contactRes.message[0];
+                localStorage.setItem(cacheKey, JSON.stringify({ found: true, data: existingContact, ts: Date.now() }));
                 $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
                 $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
                 dialog.set_value("first_name", existingContact.full_name);
                 dialog.set_df_property("first_name", "read_only", 1);
               } else {
                 existingContact = null;
+                localStorage.setItem(cacheKey, JSON.stringify({ found: false, ts: Date.now() }));
                 dialog.set_value("first_name", "");
                 dialog.set_df_property("first_name", "read_only", 0);
               }
@@ -3525,18 +3554,20 @@ createLead() {
 
     dialog.show();
     
-    // 🛡️ Phone Number Input Validation (Numeric only & Max 10 digits)
+    // Phone Number Input Validation (Numeric only & Max 10 digits)
     const $mobileInput = dialog.get_field("mobile_no").$input;
     $mobileInput.on("input", function() {
         let val = $(this).val();
-        // Remove non-numeric characters
         val = val.replace(/\D/g, "");
-        // Limit to 10 digits
         if (val.length > 10) {
             val = val.slice(0, 10);
         }
         $(this).val(val);
-        dialog.set_value("mobile_no", val);
+        // Sirf tab set_value karo jab value actually change ho — onchange avoid
+        const currentVal = dialog.get_value("mobile_no");
+        if (val !== currentVal) {
+            dialog.set_value("mobile_no", val);
+        }
     });
 
     renderProductTable();
