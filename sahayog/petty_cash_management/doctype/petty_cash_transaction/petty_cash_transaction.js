@@ -144,10 +144,6 @@ frappe.ui.form.on('Petty Cash Transaction', {
     },
 
 
-//     setup: function(frm) {
-//     // Add Download Report button to List View
-//     // This will be available in the list view toolbar
-// },
 
     setup: function(frm) {
         // --- CUSTOM FILE UPLOADER OVERRIDE ---
@@ -238,14 +234,6 @@ frappe.ui.form.on('Petty Cash Transaction', {
         console.log("Is Manager?", frappe.user.has_role('HO Petty Cash Manager'));
         // ---------------------
 
-        // // Standard Read-Only Logic
-        // if (!frappe.user.has_role('HO Petty Cash Manager')) {
-        //     frm.set_df_property('transaction_type', 'read_only', 1);
-        //     frm.set_df_property('branch', 'read_only', 1);
-        // } else {
-        //     frm.set_df_property('transaction_type', 'read_only', 0);
-        //     frm.set_df_property('branch', 'read_only', 0);
-        // }
 
         // Lock if Attempted (flag is set) OR Submitted
         // We fetch the value from DB to be sure, or trust frm.doc
@@ -309,13 +297,6 @@ frappe.ui.form.on('Petty Cash Transaction', {
         }
 
 
-        
-
-        // const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount', 'transaction_type', 'branch'];
-        // fields_to_lock.forEach(field => {
-        //     frm.set_df_property(field, 'read_only', is_locked ? 1 : 0);
-        // });
-
          const fields_to_lock = ['is_bulk_allocation', 'target_scope', 'source_bank_account', 'amount']; // Removed 'transaction_type', 'branch'
         
         fields_to_lock.forEach(field => {
@@ -324,55 +305,10 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
         // --- NEW LOGIC: DOWNLOAD BUTTONS ---
-        
-        // 1. Check Permissions (Admin or HO Petty Cash Manager)
-        // if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
-            
-        //     // 2. Check Status (Must be Verified)
-        //     if (frm.doc.approval_status === 'Verified') {
-                
-        //         // Add a Group Button "Download TTUM"
-        //         frm.add_custom_button(__('Excel Report'), function() {
-        //             window.open(
-        //                 frappe.request.url + 
-        //                 '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_excel' +
-        //                 '&name=' + frm.doc.name
-        //             );
-        //         }, __("Download TTUM"));
-
-        //         frm.add_custom_button(__('TXT File (Finacle)'), function() {
-        //            window.open(
-        //                 frappe.request.url + 
-        //                 '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_txt' +
-        //                 '&name=' + frm.doc.name
-        //             );
-        //         }, __("Download TTUM"));
-        //     }
-        // }
-
-
-        // --- NEW LOGIC: DOWNLOAD BUTTONS ---
         // if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager')) {
         // Added Verifier Role
         if (frappe.session.user === 'Administrator' || frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('HO Petty Cash Verifier')) {
             if (frm.doc.approval_status === 'Verified') {
-                
-                // Add Group Button
-                // frm.add_custom_button(__('Excel Report'), function() {
-                //     let url = frappe.urllib.get_full_url(
-                //         "/api/method/sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_excel?" +
-                //         "name=" + encodeURIComponent(frm.doc.name)
-                //     );
-                //     window.open(url);
-                // }, __("Download Files"));
-
-                // frm.add_custom_button(__('TXT File (Finacle)'), function() {
-                //     let url = frappe.urllib.get_full_url(
-                //         "/api/method/sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_txt?" +
-                //         "name=" + encodeURIComponent(frm.doc.name)
-                //     );
-                //     window.open(url);
-                // }, __("Download Files"));
                 frm.add_custom_button(__('Excel Report'), function() {
                     window.open(
                         frappe.request.url + 
@@ -396,14 +332,7 @@ frappe.ui.form.on('Petty Cash Transaction', {
         if (!frm.is_new()) {
             frm.page.menu_btn_group.hide();
         }
-        
 
-         // Hide Cancel button if status is Verified
-        // if (frm.doc.approval_status === 'Verified') {
-        //     frm.page.clear_secondary_action();  // Removes Cancel button
-        //     // Or use this more specific approach:
-        //     // frm.page.btn_secondary.hide();
-        // }
 
         // Hide Cancel button if limit exceedance is already approved or fully verified
         if (["Approved", "Verified"].includes(frm.doc.approval_status)) {
@@ -611,22 +540,6 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
         }
     },
 
-    // bill_date: function(frm, cdt, cdn) {
-    //     var row = locals[cdt][cdn];
-    //     if (row.bill_date) {
-    //         var today_str = frappe.datetime.get_today();
-    //         if (frappe.datetime.get_diff(today_str, row.bill_date) < 0) {
-    //              frappe.msgprint({
-    //                 title: __('Invalid Date'),
-    //                 indicator: 'red',
-    //                 message: __('Bill Date <b>{0}</b> cannot be in the future.', [row.bill_date])
-    //             });
-    //             frappe.model.set_value(cdt, cdn, 'bill_date', '');
-    //         }
-    //     }
-    // },
-
-    
 
     expense_category: function(frm, cdt, cdn) {
         var row = locals[cdt][cdn];
@@ -727,15 +640,7 @@ function set_description_maxlength(frm) {
     }, 300);
 }
 
-// function get_approval_status_color(status) {
-//     if (status === 'Draft') return 'grey';
-//     if (status === 'Pending Approval') return 'orange';
-//     if (status === 'Approved') return 'blue';
-//     if (status === 'Verified') return 'green';
-//     if (status === 'Posted') return 'purple';
-//     if (status === 'Canceled') return 'red';
-//     return 'grey';
-// }
+
 function get_approval_status_color(status) {
     const color_map = {
         'Draft': 'grey',
@@ -749,11 +654,7 @@ function get_approval_status_color(status) {
     return color_map[status] || 'grey';
 }
 
-// function set_custom_business_status(frm) {
-//     const status = frm.doc.approval_status || 'Draft';
-//     frm.page.clear_indicator();
-//     frm.page.set_indicator(__(status), get_approval_status_color(status));
-// }
+
 
 function set_custom_business_status(frm) {
     const status = frm.doc.approval_status || 'Draft';
