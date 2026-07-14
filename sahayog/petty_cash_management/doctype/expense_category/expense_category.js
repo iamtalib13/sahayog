@@ -1,36 +1,3 @@
-// // Copyright (c) 2026, Developer Team and contributors
-// // For license information, please see license.txt
-
-// frappe.ui.form.on("Expense Category", {
-//     refresh(frm) {
-        
-//         // 1. Check Role (Administrator or HO Petty Cash Manager)
-//         let is_manager = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
-
-//         // 2. Handle Limits (Metro & Non-Metro)
-//         // If Manager -> Editable (read_only = 0)
-//         // If Not Manager -> Read Only (read_only = 1)
-//         frm.set_df_property('metro_limit', 'read_only', is_manager ? 0 : 1);
-//         frm.set_df_property('non_metro_limit', 'read_only', is_manager ? 0 : 1);
-
-
-//         // 3. Handle Finacle GL Code
-//         // Condition: User is Manager AND Category Name is 'Other Expenses'
-//         // We check the 'category_name' field which is auto-set by your Python code
-//         let is_other_expenses = (frm.doc.category_name === 'Other Expenses');
-
-//         if (is_manager && is_other_expenses) {
-//             // Editable
-//             frm.set_df_property('finacle_gl_code', 'read_only', 0);
-//         } else {
-//             // Locked for everyone else (or if category is not Other Expenses)
-//             frm.set_df_property('finacle_gl_code', 'read_only', 1);
-//         }
-
-//     },
-// });
-
-
 frappe.ui.form.on("Expense Category", {
     refresh(frm) {
         
