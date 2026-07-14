@@ -3,8 +3,9 @@ from frappe import _
 from frappe.utils import nowdate, nowtime, getdate, add_days
 
 @frappe.whitelist(allow_guest=False)
-def get_team_attendance_data():
-    """Fetch all employees reporting to the logged-in user and their today's attendance status in bulk."""
+def get_team_attendance_data(employee_status="Active"):
+    """Fetch all employees reporting to the logged-in user and their today's attendance status in bulk.
+    employee_status: 'Active', 'Left', or 'all' (HR only)."""
     user = frappe.session.user
     
     # Ensure only logged in users can access
@@ -25,9 +26,31 @@ def get_team_attendance_data():
     if not manager and user != "Administrator":
         return {"error": True, "message": "Manager Employee record not found."}
 
+    status_counts = {}
+
     if "HR Manager" in roles or "HR User" in roles or user == "Administrator":
         # HR/Admin gets everything except themselves
-        filters = {"status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
+        base_filter = {"user_id": ["!=", user], "custom_is_support_staff": 1}
+        # Status counts for filter tabs — use SQL for reliability
+        count_result = frappe.db.sql("""
+            SELECT 
+                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'Left' THEN 1 ELSE 0 END) as left_count,
+                COUNT(*) as all_count
+            FROM `tabEmployee`
+            WHERE (user_id != %s OR user_id IS NULL) AND custom_is_support_staff = 1
+        """, (user,), as_dict=True)
+        if count_result:
+            status_counts = {
+                "Active": count_result[0].active,
+                "Left": count_result[0].left_count,
+                "All": count_result[0].all_count,
+            }
+        # Apply requested status filter
+        if employee_status == "all":
+            filters = base_filter
+        else:
+            filters = {**base_filter, "status": employee_status}
     elif "Branch Manager" in roles:
         # Branch Managers manage all active staff in their branch (using sahayog_branch/sol_id)
         branch_id = manager.sahayog_branch or manager.sol_id
@@ -46,52 +69,56 @@ def get_team_attendance_data():
         fields=[
             "name", "employee_name", "designation", "branch", "sahayog_branch", "sol_id", "status", 
             "gender", "image", "department", "date_of_joining", 
-            "reports_to", "cell_number", "company_email"
+            "reports_to", "cell_number", "company_email",
+            "relieving_date", "resignation_letter_date", "reason_for_leaving"
         ],
         order_by="modified desc"
     )
     
     if not team:
-        return {"team": [], "summary": {"total": 0, "present": 0, "absent": 0, "half_day": 0, "pending": 0, "on_leave": 0}, "current_user": manager}
+        return {"team": [], "summary": {"total": 0, "present": 0, "absent": 0, "half_day": 0, "pending": 0, "on_leave": 0}, "current_user": manager, "roles": roles, "status_counts": status_counts}
 
     emp_names = [emp.name for emp in team]
     today = nowdate()
     
-    # 1. Bulk Fetch Attendance
-    attendances = frappe.get_all("Attendance",
-        filters={"employee": ["in", emp_names], "attendance_date": today},
-        fields=["employee", "status"]
-    )
-    attendance_map = {att.employee: att.status for att in attendances}
-    
-    # 2. Bulk Fetch Check-ins
-    checkins = frappe.get_all("Employee Checkin",
-        filters={"employee": ["in", emp_names], "time": ["between", [today + " 00:00:00", today + " 23:59:59"]]},
-        fields=["employee", "time", "log_type"],
-        order_by="time asc"
-    )
-    # Map to first IN and last OUT
+    attendance_map = {}
     checkin_map = {}
-    for c in checkins:
-        if c.employee not in checkin_map:
-            checkin_map[c.employee] = {"in": None, "out": None}
-            
-        if c.log_type == "IN" and not checkin_map[c.employee]["in"]:
-            checkin_map[c.employee]["in"] = frappe.utils.format_time(c.time, "HH:mm")
-        elif c.log_type == "OUT":
-            checkin_map[c.employee]["out"] = frappe.utils.format_time(c.time, "HH:mm")
+    on_leave_emps = set()
 
-    # 3. Bulk Fetch Approved Leaves
-    leaves = frappe.get_all("Leave Application",
-        filters={
-            "employee": ["in", emp_names],
-            "status": "Approved",
-            "from_date": ["<=", today],
-            "to_date": [">=", today]
-        },
-        fields=["employee"]
-    )
-    on_leave_emps = set(l.employee for l in leaves)
+    # Only fetch attendance/checkin data for Active employees
+    if employee_status in ("Active", "all"):
+        # 1. Bulk Fetch Attendance
+        attendances = frappe.get_all("Attendance",
+            filters={"employee": ["in", emp_names], "attendance_date": today},
+            fields=["employee", "status"]
+        )
+        attendance_map = {att.employee: att.status for att in attendances}
+        
+        # 2. Bulk Fetch Check-ins
+        checkins = frappe.get_all("Employee Checkin",
+            filters={"employee": ["in", emp_names], "time": ["between", [today + " 00:00:00", today + " 23:59:59"]]},
+            fields=["employee", "time", "log_type"],
+            order_by="time asc"
+        )
+        for c in checkins:
+            if c.employee not in checkin_map:
+                checkin_map[c.employee] = {"in": None, "out": None}
+            if c.log_type == "IN" and not checkin_map[c.employee]["in"]:
+                checkin_map[c.employee]["in"] = frappe.utils.format_time(c.time, "HH:mm")
+            elif c.log_type == "OUT":
+                checkin_map[c.employee]["out"] = frappe.utils.format_time(c.time, "HH:mm")
+
+        # 3. Bulk Fetch Approved Leaves
+        leaves = frappe.get_all("Leave Application",
+            filters={
+                "employee": ["in", emp_names],
+                "status": "Approved",
+                "from_date": ["<=", today],
+                "to_date": [">=", today]
+            },
+            fields=["employee"]
+        )
+        on_leave_emps = set(l.employee for l in leaves)
 
     # 4. Fetch supervisor names
     supervisor_ids = list(set([emp.reports_to for emp in team if emp.reports_to]))
@@ -109,26 +136,31 @@ def get_team_attendance_data():
         emp.reports_to_name = supervisor_map.get(emp.reports_to)
         emp.is_self = (emp.name == manager.name) if manager else False
         
-        # Determine Status
-        status = attendance_map.get(emp.name)
-        c_logs = checkin_map.get(emp.name)
-        
-        emp.check_in = c_logs["in"] if c_logs else None
-        emp.check_out = c_logs["out"] if c_logs else None
-        
-        if not status and c_logs and c_logs["in"]:
-            status = "Present"
-        
-        if not status and emp.name in on_leave_emps:
-            status = "On Leave"
+        if emp.status == "Left":
+            emp.attendance_status = None
+            emp.check_in = None
+            emp.check_out = None
+        else:
+            # Determine Status
+            status = attendance_map.get(emp.name)
+            c_logs = checkin_map.get(emp.name)
             
-        emp.attendance_status = status
-        
-        if status == "Present": present_count += 1
-        elif status == "Absent": absent_count += 1
-        elif status == "Half Day": half_day_count += 1
-        elif status == "On Leave": on_leave_count += 1
-        else: pending_count += 1
+            emp.check_in = c_logs["in"] if c_logs else None
+            emp.check_out = c_logs["out"] if c_logs else None
+            
+            if not status and c_logs and c_logs["in"]:
+                status = "Present"
+            
+            if not status and emp.name in on_leave_emps:
+                status = "On Leave"
+                
+            emp.attendance_status = status
+            
+            if status == "Present": present_count += 1
+            elif status == "Absent": absent_count += 1
+            elif status == "Half Day": half_day_count += 1
+            elif status == "On Leave": on_leave_count += 1
+            else: pending_count += 1
 
     return {
         "team": team,
@@ -141,7 +173,8 @@ def get_team_attendance_data():
             "on_leave": on_leave_count
         },
         "current_user": manager,
-        "roles": roles
+        "roles": roles,
+        "status_counts": status_counts
     }
 
 @frappe.whitelist()
