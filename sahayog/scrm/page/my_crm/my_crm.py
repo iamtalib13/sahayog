@@ -189,7 +189,7 @@ def check_rate_limit(action, max_calls=30, per_seconds=60):
 
 @frappe.whitelist()
 def get_crm_data(section: str, limit: int = 20, cursor: str = "0", search_term: str = None, since: str = None):
-    """CRM data fetching with server-side cache (30s TTL) + rate limiting + incremental sync."""
+    """CRM data fetching with server-side cache (60s TTL) + rate limiting + incremental sync."""
     if not check_rate_limit("get_crm_data", max_calls=30, per_seconds=60):
         frappe.throw(title="Too Many Requests", msg="Rate limit exceeded. Please slow down.", http_status=429)
 
@@ -233,7 +233,7 @@ def get_crm_data(section: str, limit: int = 20, cursor: str = "0", search_term: 
         })
 
     if not since:
-        frappe.cache().set_value(cache_key, response, expires_in_sec=30)
+        frappe.cache().set_value(cache_key, response, expires_in_sec=60)
     return response
 
 def _get_lead_data(limit, offset, search_term, since=None):

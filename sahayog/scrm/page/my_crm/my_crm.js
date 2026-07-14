@@ -27,18 +27,6 @@ function unfreezeScreen() {
   setTimeout(() => { frappe.dom.unfreeze(); _freezeStartTime = null; }, remaining);
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 function getLocalCRMData(section) {
   try {
     const raw = localStorage.getItem(`crm_local_${section}_${frappe.session.user}`);
@@ -1003,7 +991,6 @@ class MyCRM {
       this.updateCacheIndicator(false, null);
 
     } catch (error) {
-      console.error(`❌ Error fetching ${this.state.section}:`, error);
       frappe.msgprint({
         title: "Error",
         indicator: "red",
@@ -1705,30 +1692,15 @@ async fetchAssignedLeads() {
         }
     }
 
-    // 🛡️ Duplicate check — freeze se pehle
-    if (input_mobile && productsData.length > 0) {
-        try {
-            const dupCheck = await frappe.call({
-                method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
-                args: { mobile_no: input_mobile, products: productsData, current_lead: name }
-            });
-            if (dupCheck.message && dupCheck.message.duplicate) {
-                btn.prop('disabled', true).css("opacity", "0.5");
-                return showError(__(`A lead for Product (${dupCheck.message.product}) already exists for this number within the last 7 days.`));
-            }
-        } catch (e) { }
-    }
+    // Backend validate hook (validate_duplicate_lead) duplicate check karega
 
-    // No duplicate — ab freeze + save
+    // Save
     btn.prop('disabled', true);
-    freezeScreen("Updating Lead...");
 
     try {
-        // 🛡️ Optional: Create Appointment if time is provided
+        // Optional: Create Appointment if time is provided
         if (input_appt_time) {
-            // Server-side validate hook (validate_duplicate_appointment) duplicate check karega
-
-            await frappe.call({
+            const apptRes = await frappe.call({
                 method: "frappe.client.insert",
                 args: {
                     doc: {
@@ -1744,10 +1716,15 @@ async fetchAssignedLeads() {
                     }
                 }
             });
+            if (apptRes.exc) {
+                btn.prop('disabled', false);
+                frappe.msgprint({ title: "Error", indicator: "red", message: apptRes._error_message || "Something went wrong" });
+                return;
+            }
         }
 
         // Call save logic for Lead
-        await frappe.call({
+        const leadRes = await frappe.call({
             method: "frappe.client.set_value",
             args: {
                 doctype: "Lead",
@@ -1757,19 +1734,21 @@ async fetchAssignedLeads() {
                     custom_product_table: productsData,
                 },
             },
-            callback: (r) => {
-                if (!r.exc) {
-                    frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
-                    d.hide();
-                    me.fetchData();
-                }
-            },
         });
+        if (leadRes.exc) {
+            btn.prop('disabled', false);
+            frappe.msgprint({ title: "Error", indicator: "red", message: leadRes._error_message || "Something went wrong" });
+            return;
+        }
+        freezeScreen("Updating Lead...");
+        frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
+        d.hide();
+        me.fetchData();
+        setTimeout(unfreezeScreen, 2000);
     } catch (e) {
-        console.error(e);
-        btn.prop('disabled', false);
-    } finally {
         unfreezeScreen();
+        btn.prop('disabled', false);
+        frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
     }
 },
       });
@@ -1977,8 +1956,6 @@ async editAppointment(name) {
             primary_action: async (values) => {
                 const btn = d.get_primary_btn();
                 btn.prop('disabled', true);
-                freezeScreen("Updating Appointment...");
-
                 const final_values = {
                     scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
                     status: d.$wrapper.find("#appt_status_edit").val(),
@@ -1986,7 +1963,7 @@ async editAppointment(name) {
                 };
 
                 try {
-                    await frappe.call({
+                    const apptRes = await frappe.call({
                         method: "frappe.client.set_value",
                         args: {
                             doctype: "Appointment",
@@ -1994,14 +1971,19 @@ async editAppointment(name) {
                             fieldname: final_values,
                         },
                     });
+                    if (apptRes.exc) {
+                        btn.prop('disabled', false);
+                        frappe.msgprint({ title: "Error", indicator: "red", message: apptRes._error_message || "Something went wrong" });
+                        return;
+                    }
+                    freezeScreen("Updating Appointment...");
                     frappe.show_alert({ message: __("Appointment Updated"), indicator: "green" });
                     d.hide();
                     me.fetchData();
+                    setTimeout(unfreezeScreen, 2000);
                 } catch (e) {
-                    console.error(e);
                     btn.prop('disabled', false);
-                } finally {
-                    unfreezeScreen();
+                    frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
                 }
             },
         });
@@ -2248,7 +2230,7 @@ renderWhatsAppCard(item) {
     }
 
     // 50 records fetch karo — Load More ke liye localStorage mein data rahe
-    await this.fetchData(false, 50);
+    await this.fetchData(false, 100);
     this.showLocalData();
     $("#mycrm-list-container").scrollTop(0);
     frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
@@ -2305,7 +2287,7 @@ renderWhatsAppCard(item) {
       const loaded = this.showLocalData();
       // Sirf tab fetch karo jab localStorage mein data na ho — pehle load pe 50 records fetch karo
       if (!loaded) {
-        await this.fetchData(false, 50);
+        await this.fetchData(false, 100);
         // Fetch ke baad sirf first page load karo — baaki localStorage mein hai
         this.showLocalData();
       }
@@ -3334,39 +3316,12 @@ renderWhatsAppCard(item) {
 createLead() {
     let productsData = [];
     let existingContact = null;
-    let _dupAbort = null;
+    let lastCheckedMobile = null;
 
     const validateIndianPhone = (phone) => {
       const phoneRegex = /^[6-9]\d{9}$/;
       return phoneRegex.test(phone);
     };
-
-    const checkDuplicate = async () => {
-      const mobile = dialog.get_value("mobile_no");
-      const btn = dialog.get_primary_btn();
-      if (!mobile || mobile.length < 10 || productsData.length === 0) {
-        btn.prop("disabled", false).css("opacity", "1");
-        return;
-      }
-      if (_dupAbort) _dupAbort.abort();
-      _dupAbort = new AbortController();
-      try {
-        const res = await frappe.call({
-          method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
-          args: { mobile_no: mobile, products: productsData },
-          signal: _dupAbort.signal,
-        });
-        if (res.message && res.message.duplicate) {
-          btn.prop("disabled", true).css("opacity", "0.5");
-          frappe.show_alert({ message: __("Duplicate: Product ({0}) with this amount already exists within 7 days.", [res.message.product]), indicator: "red" }, 5);
-        } else {
-          btn.prop("disabled", false).css("opacity", "1");
-        }
-      } catch (e) {
-        if (e.name !== "AbortError") btn.prop("disabled", false).css("opacity", "1");
-      }
-    };
-    const checkDuplicateDebounced = debounce(checkDuplicate, 800);
 
     const dialog = new frappe.ui.Dialog({
       title: "Create New Lead",
@@ -3390,7 +3345,7 @@ createLead() {
             if (!phone || phone.length < 10) {
                 dialog.set_value("first_name", "");
                 existingContact = null;
-                checkDuplicateDebounced();
+                lastCheckedMobile = null;
                 if (!phone) return;
             }
             if (phone.length === 10) {
@@ -3403,6 +3358,31 @@ createLead() {
               frappe.show_alert({ message: __("Mobile number cannot exceed 10 digits"), indicator: "red" }, 3);
               return;
             } else { return; }
+
+            // Same number hai jo pehle check ho chuka hai — skip
+            if (phone === lastCheckedMobile) return;
+            lastCheckedMobile = phone;
+
+            // Check localStorage cache first
+            const cacheKey = `crm_contact_${phone}`;
+            try {
+              const cached = JSON.parse(localStorage.getItem(cacheKey) || "null");
+              if (cached && (Date.now() - cached.ts < 15 * 60 * 1000)) {
+                if (cached.found) {
+                  existingContact = cached.data;
+                  $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
+                  $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
+                  dialog.set_value("first_name", existingContact.full_name);
+                  dialog.set_df_property("first_name", "read_only", 1);
+                } else {
+                  existingContact = null;
+                  dialog.set_value("first_name", "");
+                  dialog.set_df_property("first_name", "read_only", 0);
+                }
+                return;
+              }
+            } catch (e) { }
+
             try {
               const contactRes = await frappe.call({
                 method: "frappe.client.get_list",
@@ -3415,16 +3395,17 @@ createLead() {
               });
               if (contactRes.message && contactRes.message.length > 0) {
                 existingContact = contactRes.message[0];
+                localStorage.setItem(cacheKey, JSON.stringify({ found: true, data: existingContact, ts: Date.now() }));
                 $("#customer-info-text").html(`<strong>${existingContact.full_name}</strong> • ${existingContact.mobile_no}`);
                 $("#customer-info-banner").css({ background: "#ecfdf5", "border-left-color": "#10b981" }).show();
                 dialog.set_value("first_name", existingContact.full_name);
                 dialog.set_df_property("first_name", "read_only", 1);
               } else {
                 existingContact = null;
+                localStorage.setItem(cacheKey, JSON.stringify({ found: false, ts: Date.now() }));
                 dialog.set_value("first_name", "");
                 dialog.set_df_property("first_name", "read_only", 0);
               }
-              checkDuplicateDebounced();
             } catch (error) { }
           },
         },
@@ -3467,32 +3448,16 @@ createLead() {
           return;
         }
 
-        // 🛡️ Duplicate check — freeze se pehle, agar duplicate toh btn disable
-        try {
-          const dupRes = await frappe.call({
-            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate",
-            args: { mobile_no: values.mobile_no, products: productsData },
-          });
-          if (dupRes.message && dupRes.message.duplicate) {
-            btn.prop('disabled', true).css("opacity", "0.5");
-            frappe.msgprint({
-              title: __("Duplicate Detected"),
-              indicator: "red",
-              message: __(`A lead for Product (${dupRes.message.product}) already exists for this number within the last 7 days.`)
-            });
-            return;
-          }
-        } catch (e) { }
+        // Backend validate hook (validate_duplicate_lead) duplicate check karega
 
-        // No duplicate — ab freeze + save
+        // Save
         btn.prop('disabled', true);
-        freezeScreen("Creating Lead...");
 
         try {
           const leadDoc = {
             doctype: "Lead",
             lead_owner: this.currentUser,
-            status: values.status, 
+            status: values.status,
             source: values.source,
             first_name: values.first_name,
             mobile_no: values.mobile_no,
@@ -3502,19 +3467,21 @@ createLead() {
             method: "frappe.client.insert",
             args: { doc: leadDoc },
           });
-          if (!response.exc) {
-              frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
-              dialog.hide();
-              this.invalidateCache("lead");
-              this.invalidateCache("appointment");
-              this.refresh(); 
+          if (response.exc) {
+              btn.prop('disabled', false);
+              frappe.msgprint({ title: "Error", indicator: "red", message: response._error_message || "Something went wrong" });
+              return;
           }
+          freezeScreen("Creating Lead...");
+          frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
+          dialog.hide();
+          this.invalidateCache("lead");
+          this.invalidateCache("appointment");
+          this.refresh();
+          setTimeout(unfreezeScreen, 2000);
         } catch (error) {
-          console.error(error);
-          frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
-        } finally {
-          unfreezeScreen();
+          frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
         }
       },
     });
@@ -3556,7 +3523,6 @@ createLead() {
               onchange: function () {
                 const val = this.get_value();
                 productsData[index].product = val;
-                checkDuplicateDebounced();
               },
             },
             parent: tr.find(`.product-link-wrapper-${index}`),
@@ -3568,12 +3534,10 @@ createLead() {
             if (val < 0) val = 0;
             $(this).val(val);
             productsData[index].product_amount = val;
-            checkDuplicateDebounced();
           });
           tr.find(".lead-product-del-btn").on("click", function () {
             productsData.splice(index, 1);
             renderRows();
-            checkDuplicateDebounced();
           });
         });
       };
@@ -3590,18 +3554,20 @@ createLead() {
 
     dialog.show();
     
-    // 🛡️ Phone Number Input Validation (Numeric only & Max 10 digits)
+    // Phone Number Input Validation (Numeric only & Max 10 digits)
     const $mobileInput = dialog.get_field("mobile_no").$input;
     $mobileInput.on("input", function() {
         let val = $(this).val();
-        // Remove non-numeric characters
         val = val.replace(/\D/g, "");
-        // Limit to 10 digits
         if (val.length > 10) {
             val = val.slice(0, 10);
         }
         $(this).val(val);
-        dialog.set_value("mobile_no", val);
+        // Sirf tab set_value karo jab value actually change ho — onchange avoid
+        const currentVal = dialog.get_value("mobile_no");
+        if (val !== currentVal) {
+            dialog.set_value("mobile_no", val);
+        }
     });
 
     renderProductTable();
@@ -3726,37 +3692,6 @@ createLead() {
 
   createAppointment() {
     const me = this;
-    let _apptDupAbort = null;
-
-    const checkApptDuplicate = async () => {
-      const d_ref = me._apptDialog;
-      if (!d_ref) return;
-      const btn = d_ref.get_primary_btn();
-      const party = d_ref.$wrapper.find("#create_appt_lead").val();
-      const time = d_ref.$wrapper.find("#create_appt_time").val();
-      if (!party || !time) {
-        btn.prop("disabled", false).css("opacity", "1");
-        return;
-      }
-      if (_apptDupAbort) _apptDupAbort.abort();
-      _apptDupAbort = new AbortController();
-      try {
-        const res = await frappe.call({
-          method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
-          args: { party: party, scheduled_time: time },
-          signal: _apptDupAbort.signal,
-        });
-        if (res.message && res.message.duplicate) {
-          btn.prop("disabled", true).css("opacity", "0.5");
-          frappe.show_alert({ message: __("Duplicate: An appointment already exists for this Lead at the selected time."), indicator: "red" }, 5);
-        } else {
-          btn.prop("disabled", false).css("opacity", "1");
-        }
-      } catch (e) {
-        if (e.name !== "AbortError") btn.prop("disabled", false).css("opacity", "1");
-      }
-    };
-    const checkApptDuplicateDebounced = debounce(checkApptDuplicate, 800);
 
     const d = new frappe.ui.Dialog({
       title: "Create New Appointment",
@@ -3781,29 +3716,13 @@ createLead() {
         if (!party) return frappe.msgprint("Please select a Lead");
         if (!time) return frappe.msgprint("Please select Date & Time");
 
-        // 🛡️ Duplicate check — freeze se pehle
-        try {
-          const dupRes = await frappe.call({
-            method: "sahayog.scrm.page.my_crm.my_crm.check_duplicate_appointment",
-            args: { party: party, scheduled_time: time }
-          });
-          if (dupRes.message && dupRes.message.duplicate) {
-            btn.prop('disabled', true).css("opacity", "0.5");
-            frappe.msgprint({
-              title: __("Duplicate Detected"),
-              indicator: "red",
-              message: __("An appointment already exists for this Lead at the selected time.")
-            });
-            return;
-          }
-        } catch (e) { }
+        // Backend validate hook (validate_duplicate_appointment) duplicate check karega
 
-        // No duplicate — ab freeze + save
+        // Save
         btn.prop('disabled', true);
-        freezeScreen("Creating Appointment...");
 
         try {
-          await frappe.call({
+          const response = await frappe.call({
             method: "frappe.client.insert",
             args: {
               doc: {
@@ -3820,15 +3739,21 @@ createLead() {
             },
           });
 
-          frappe.show_alert({ message: "✅ Appointment created", indicator: "green" }, 3);
+          if (response.exc) {
+            btn.prop('disabled', false);
+            frappe.msgprint({ title: "Error", indicator: "red", message: response._error_message || "Something went wrong" });
+            return;
+          }
+
+          freezeScreen("Creating Appointment...");
+          frappe.show_alert({ message: "Appointment created", indicator: "green" }, 3);
           d.hide();
           this.invalidateCache("appointment");
           this.refresh();
+          setTimeout(unfreezeScreen, 2000);
         } catch (error) {
-          frappe.msgprint({ title: "Error", indicator: "red", message: error.message });
           btn.prop('disabled', false);
-        } finally {
-          unfreezeScreen();
+          frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
         }
       },
     });
@@ -3931,10 +3856,6 @@ createLead() {
     d.show();
     d.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
     renderCreateTab();
-
-    // Field change pe duplicate check
-    d.$wrapper.find("#create_appt_lead").on("change", checkApptDuplicateDebounced);
-    d.$wrapper.find("#create_appt_time").on("change", checkApptDuplicateDebounced);
 }
 
   exportData() {
