@@ -1294,6 +1294,14 @@
                 >
                   ⬆ Import
                 </button>
+                <button
+                  id="btnUpdateEmployees"
+                  class="btn-clear"
+                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"
+                  onclick="openUpdateModal()"
+                >
+                  ✏️ Update
+                </button>
               </div>
             </div>
 
@@ -1662,6 +1670,37 @@
 
                 <!-- Results -->
                 <div id="importResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
+              </div>
+            </div>
+
+            <!-- UPDATE EMPLOYEES MODAL -->
+            <div id="updateEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
+                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:#15803d; margin:0;">Update Employees</h3>
+                  <button onclick="closeUpdateModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+                </div>
+
+                <!-- Step 1: Download Template -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 1 — Download Update Template</div>
+                  <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Fill missing fields for existing employees using this CSV template. <strong>Only empty fields will be filled; existing data will not be overwritten.</strong></div>
+                  <div style="font-size:11px; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:8px 10px; margin-bottom:10px; color:#15803d;">
+                    <strong>Mandatory columns:</strong> first_name, last_name, gender, date_of_joining, designation, department<br>
+                    <span style="font-weight:400; color:#6b7280;">All other columns are optional. Duplicate employees (same name + DOJ, or same UHID/PAN/Aadhaar) will have their <strong>missing fields updated</strong>. New employees will be created.</span>
+                  </div>
+                  <button onclick="downloadUpdateTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:#15803d; border:none;">⬇ Download Template</button>
+                </div>
+
+                <!-- Step 2: Upload CSV -->
+                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
+                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
+                  <input type="file" id="updateCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
+                  <button onclick="submitUpdate()" id="btnSubmitUpdate" class="btn-in" style="width:100%; padding:10px; font-weight:700; background:#15803d;">Update Employees</button>
+                </div>
+
+                <!-- Results -->
+                <div id="updateResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
               </div>
             </div>
 
@@ -3027,7 +3066,9 @@
             const btnExitEmployee = document.getElementById("btnExitEmployee");
             if (btnExitEmployee) btnExitEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
             const btnImportEmployees = document.getElementById("btnImportEmployees");
+            const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
             if (btnImportEmployees) btnImportEmployees.style.display = (tab === 'attendance') ? "inline-block" : "none";
+            if (btnUpdateEmployees) btnUpdateEmployees.style.display = (tab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
             if (tab === "attendance") {
                 if (calPanel) calPanel.style.display = "block";
                 if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -3431,7 +3472,9 @@
           const btnExitEmployee = document.getElementById("btnExitEmployee");
           if (btnExitEmployee) btnExitEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
           const btnImportEmployees = document.getElementById("btnImportEmployees");
+          const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
           if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          if (btnUpdateEmployees) btnUpdateEmployees.style.display = (currentTab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Approvals";
@@ -4486,7 +4529,7 @@
         `;
       }
 
-      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address"];
+      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address","relieving_date","resignation_letter_date"];
 
       function openImportModal() {
         document.getElementById("importResults").style.display = "none";
@@ -4498,10 +4541,31 @@
         document.getElementById("importEmployeesModal").style.display = "none";
       }
 
+      function openUpdateModal() {
+        document.getElementById("updateResults").style.display = "none";
+        document.getElementById("updateCsvFile").value = "";
+        document.getElementById("updateEmployeesModal").style.display = "flex";
+      }
+
+      function closeUpdateModal() {
+        document.getElementById("updateEmployeesModal").style.display = "none";
+      }
+
+      function downloadUpdateTemplate() {
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
+        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
+        const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "employee_update_template.csv";
+        a.click();
+      }
+
       function downloadImportTemplate() {
-        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune"];
+        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
         // Add a note row indicating mandatory fields
-        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
+        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
         const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
@@ -4641,6 +4705,101 @@
         resultsDiv.innerHTML = html;
 
         if (totalCreated > 0) fetchTeamData();
+      }
+
+      async function submitUpdate() {
+        const file = document.getElementById("updateCsvFile").files[0];
+        if (!file) { showToast("Please select a CSV file"); return; }
+
+        const btn = document.getElementById("btnSubmitUpdate");
+        btn.disabled = true; btn.textContent = "Updating...";
+
+        const text = await file.text();
+        const lines = text.trim().split("\n");
+        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+
+        const SKIP_MARKERS = ["*mandatory*", "optional", "*optional*"];
+        const dataLines = lines.slice(1).filter(l => {
+          const firstCell = l.split(",")[0].trim().replace(/^"|"$/g, "").toLowerCase();
+          return l.trim() && !SKIP_MARKERS.includes(firstCell);
+        });
+
+        const rows = dataLines.map((line, idx) => {
+          const vals = [];
+          let cur = "", inQ = false;
+          for (let c of line) {
+            if (c === '"') { inQ = !inQ; }
+            else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
+            else { cur += c; }
+          }
+          vals.push(cur.trim());
+
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
+          obj["custom_is_support_staff"] = 1;
+          obj["custom_medical_deduction"] = 100;
+          return obj;
+        });
+
+        if (rows.length === 0) {
+          showToast("No data rows found in CSV");
+          btn.disabled = false; btn.textContent = "Update Employees";
+          return;
+        }
+
+        const BATCH_SIZE = 50;
+        const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
+        let totalCreated = 0, totalUpdated = 0, totalFailed = 0, allErrors = [];
+
+        const resultsDiv = document.getElementById("updateResults");
+        resultsDiv.style.display = "block";
+
+        for (let b = 0; b < totalBatches; b++) {
+          const batch = rows.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+          btn.textContent = `Updating... (Batch ${b + 1}/${totalBatches})`;
+          resultsDiv.innerHTML = `<div style="font-size:13px; font-weight:600; color:var(--muted);">⏳ Processing batch ${b + 1} of ${totalBatches}... (${totalUpdated} updated, ${totalCreated} new)</div>`;
+
+          let res = null;
+          try {
+            res = await callAPI("bulk_import_employees", { rows: batch, mode: "update" }, "employee");
+          } catch (apiErr) {
+            allErrors.push({ row: "Batch " + (b + 1), name: "API Error", error: String(apiErr) });
+            totalFailed += batch.length;
+            continue;
+          }
+
+          if (res) {
+            totalUpdated += res.updated || 0;
+            totalCreated += res.created || 0;
+            totalFailed  += res.failed  || 0;
+            allErrors     = allErrors.concat(res.errors || []);
+          }
+
+          if (b < totalBatches - 1) {
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+
+        btn.disabled = false; btn.textContent = "Update Employees";
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
+          ✏️ Updated: <span style="color:#15803d">${totalUpdated}</span>
+          &nbsp;✅ Created (new): <span style="color:var(--success)">${totalCreated}</span>
+          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        </div>`;
+
+        if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
+          html += allErrors.map(e => {
+            return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
+              ❌ <b>Row ${e.row} — ${e.name}:</b> ${e.error}
+            </div>`;
+          }).join("");
+        }
+
+        resultsDiv.innerHTML = html;
+
+        if (totalUpdated > 0 || totalCreated > 0) fetchTeamData();
       }
 
       async function openExitEmployeeModal() {
