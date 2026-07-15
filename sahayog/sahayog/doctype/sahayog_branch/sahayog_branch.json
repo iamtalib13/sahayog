@@ -156,6 +156,7 @@
    "options": "\n9001\n9002"
   },
   {
+   "default": "RRCDM",
    "fieldname": "entity_type",
    "fieldtype": "Select",
    "label": "Entity Type",
@@ -165,7 +166,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-15 10:59:35.956123",
+ "modified": "2026-07-15 11:05:44.619400",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
