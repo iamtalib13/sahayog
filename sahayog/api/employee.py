@@ -169,17 +169,23 @@ def create_support_staff(data):
         import json
         data = json.loads(data)
 
+    # Fetch existing columns and resolve custom field name aliases
+    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    _pan_col = "custom_pan_number" if "custom_pan_number" in _emp_cols else "pan_number" if "pan_number" in _emp_cols else None
+    _aadhaar_col = "custom_aadhar_number" if "custom_aadhar_number" in _emp_cols else None
+    _uhid_col = "custom_uhid_number" if "custom_uhid_number" in _emp_cols else "uhid_number" if "uhid_number" in _emp_cols else None
+
     # Validations
     if data.get("employee_number") and frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
         frappe.throw(_("Employee Code {0} already exists").format(data.get("employee_number")))
 
-    if data.get("pan_number") and frappe.db.exists("Employee", {"custom_pan_number": data.get("pan_number")}):
+    if data.get("pan_number") and _pan_col and frappe.db.exists("Employee", {_pan_col: data.get("pan_number")}):
         frappe.throw(_("PAN Number {0} is already registered with another employee").format(data.get("pan_number")))
 
-    if data.get("aadhaar_card_number") and frappe.db.exists("Employee", {"custom_aadhar_number": data.get("aadhaar_card_number")}):
+    if data.get("aadhaar_card_number") and _aadhaar_col and frappe.db.exists("Employee", {_aadhaar_col: data.get("aadhaar_card_number")}):
         frappe.throw(_("Aadhaar Number is already registered with another employee"))
 
-    if data.get("uhid_number") and frappe.db.exists("Employee", {"custom_uhid_number": data.get("uhid_number")}):
+    if data.get("uhid_number") and _uhid_col and frappe.db.exists("Employee", {_uhid_col: data.get("uhid_number")}):
         frappe.throw(_("UHID Number {0} is already registered with another employee").format(data.get("uhid_number")))
     
     # Date Validations
@@ -194,7 +200,7 @@ def create_support_staff(data):
 
     # Prepare Employee Doc
     # Map incoming data to standard Frappe/HRMS fields
-    new_emp = frappe.get_doc({
+    emp_data = {
         "doctype": "Employee",
         "employee_number": data.get("employee_number"),
         "first_name": data.get("first_name"),
@@ -224,15 +230,18 @@ def create_support_staff(data):
         "resignation_letter_date": data.get("resignation_letter_date"),
         "default_shift": data.get("shift"),
         "employment_type": data.get("employment_type"),
-        
-        # Custom Fields
+
         "custom_is_support_staff": 1,
         "custom_medical_deduction": 100,
-        "custom_pan_number": data.get("pan_number"),
-        "custom_aadhar_number": data.get("aadhaar_card_number"),
-        "custom_uhid_number": data.get("uhid_number"),
-    })
+    }
+    if _pan_col:
+        emp_data[_pan_col] = data.get("pan_number")
+    if _aadhaar_col:
+        emp_data[_aadhaar_col] = data.get("aadhaar_card_number")
+    if _uhid_col:
+        emp_data[_uhid_col] = data.get("uhid_number")
 
+    new_emp = frappe.get_doc(emp_data)
     new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
 
     # Set optional custom fields via raw SQL to bypass meta validation
@@ -314,23 +323,28 @@ def bulk_import_employees(rows, mode="insert"):
                 results["errors"].append({"row": i, "name": emp_label, "error": reason})
                 continue
 
+            # ── Resolve custom field column names for this DB ──────────────────
+            _pan_col = "custom_pan_number" if "custom_pan_number" in existing_cols else "pan_number" if "pan_number" in existing_cols else None
+            _aadhaar_col = "custom_aadhar_number" if "custom_aadhar_number" in existing_cols else "aadhar_number" if "aadhar_number" in existing_cols else None
+            _uhid_col = "custom_uhid_number" if "custom_uhid_number" in existing_cols else "uhid_number" if "uhid_number" in existing_cols else None
+
             # ── 2. Duplicate checks (strongest ID first) ──────────────────────
             existing_employee = None
 
-            if row.get("uhid_number"):
-                dup = frappe.db.exists("Employee", {"custom_uhid_number": row["uhid_number"]})
+            if row.get("uhid_number") and _uhid_col:
+                dup = frappe.db.exists("Employee", {_uhid_col: row["uhid_number"]})
                 if dup:
                     existing_employee = dup
                     logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by UHID '{row['uhid_number']}' -> {dup}")
 
-            if not existing_employee and row.get("pan_number"):
-                dup = frappe.db.exists("Employee", {"custom_pan_number": row["pan_number"]})
+            if not existing_employee and row.get("pan_number") and _pan_col:
+                dup = frappe.db.exists("Employee", {_pan_col: row["pan_number"]})
                 if dup:
                     existing_employee = dup
                     logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by PAN '{row['pan_number']}' -> {dup}")
 
-            if not existing_employee and row.get("aadhaar_card_number"):
-                dup = frappe.db.exists("Employee", {"custom_aadhar_number": row["aadhaar_card_number"]})
+            if not existing_employee and row.get("aadhaar_card_number") and _aadhaar_col:
+                dup = frappe.db.exists("Employee", {_aadhaar_col: row["aadhaar_card_number"]})
                 if dup:
                     existing_employee = dup
                     logger.info(f"[BulkImport] Row {i} ({emp_label}) — matched existing by Aadhaar '{row['aadhaar_card_number']}' -> {dup}")
@@ -437,11 +451,13 @@ def bulk_import_employees(rows, mode="insert"):
                                 update_dict[doc_field] = parsed
                                 updated_fields.append(doc_field)
 
-                    custom_map = {
-                        "pan_number": "custom_pan_number",
-                        "aadhaar_card_number": "custom_aadhar_number",
-                        "uhid_number": "custom_uhid_number",
-                    }
+                    custom_map = {}
+                    if _pan_col:
+                        custom_map["pan_number"] = _pan_col
+                    if _aadhaar_col:
+                        custom_map["aadhaar_card_number"] = _aadhaar_col
+                    if _uhid_col:
+                        custom_map["uhid_number"] = _uhid_col
                     for csv_key, doc_field in custom_map.items():
                         csv_val = row.get(csv_key)
                         if csv_val and not emp.get(doc_field):
@@ -524,7 +540,7 @@ def bulk_import_employees(rows, mode="insert"):
 
             # ── 5. Create Employee document ───────────────────────────────────
             logger.info(f"[BulkImport] Row {i} ({emp_label}) — creating employee...")
-            new_emp = frappe.get_doc({
+            emp_data = {
                 "doctype": "Employee",
                 "first_name": row.get("first_name"),
                 "middle_name": row.get("middle_name"),
@@ -550,13 +566,16 @@ def bulk_import_employees(rows, mode="insert"):
                 "default_shift": row.get("shift"),
                 "employment_type": row.get("employment_type"),
 
-                # Custom Fields
                 "custom_is_support_staff": 1,
                 "custom_medical_deduction": 100,
-                "custom_pan_number": row.get("pan_number"),
-                "custom_aadhar_number": row.get("aadhaar_card_number"),
-                "custom_uhid_number": row.get("uhid_number"),
-            })
+            }
+            if _pan_col:
+                emp_data[_pan_col] = row.get("pan_number")
+            if _aadhaar_col:
+                emp_data[_aadhaar_col] = row.get("aadhaar_card_number")
+            if _uhid_col:
+                emp_data[_uhid_col] = row.get("uhid_number")
+            new_emp = frappe.get_doc(emp_data)
             # ignore_mandatory=True because zone/region/district are filled via SQL below
             new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
 
@@ -678,19 +697,38 @@ def update_employee_profile(employee, data):
         import json
         data = json.loads(data)
 
+    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+
     allowed_fields = [
         "cell_number", "personal_email", "permanent_address",
         "designation", "department", "branch", "reports_to",
         "bank_name", "bank_ac_no", "blood_group", "marital_status",
-        "employment_type", "custom_pan_number", "custom_aadhar_number",
-        "custom_uhid_number",
+        "employment_type",
     ]
     # salary & loan only for HR Manager / Admin
     if any(r in roles for r in ["HR Manager", "Administrator"]):
         allowed_fields.append("ctc")
         allowed_fields.append("custom_staff_loan_emi")
 
-    update = {k: data[k] for k in allowed_fields if k in data}
+    # Map frontend keys (custom_pan_number) to actual DB column names
+    _col_map = {}
+    if "pan_number" in _emp_cols:
+        _col_map["custom_pan_number"] = "pan_number"
+    elif "custom_pan_number" in _emp_cols:
+        allowed_fields.append("custom_pan_number")
+    if "custom_aadhar_number" in _emp_cols:
+        allowed_fields.append("custom_aadhar_number")
+    if "custom_uhid_number" in _emp_cols:
+        allowed_fields.append("custom_uhid_number")
+
+    update = {}
+    for k in allowed_fields:
+        if k in data:
+            update[k] = data[k]
+    # Remap frontend key to actual DB column
+    for frontend_key, db_col in _col_map.items():
+        if frontend_key in data:
+            update[db_col] = data[frontend_key]
     if not update:
         frappe.throw(_("No valid fields to update"))
 
@@ -704,19 +742,32 @@ def get_employee_profile(employee):
     if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
 
-    e = frappe.db.get_value("Employee", employee, [
+    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    _profile_fields = [
         "name", "employee_name", "gender", "date_of_birth", "date_of_joining",
         "final_confirmation_date", "status", "relieving_date", "resignation_letter_date",
         "designation", "department", "employment_type", "branch", "sahayog_branch",
         "custom_zone", "custom_region", "custom_district",
         "cell_number", "personal_email", "permanent_address",
-        "custom_pan_number", "custom_aadhar_number", "custom_uhid_number",
         "bank_name", "bank_ac_no", "reports_to",
-        "marital_status", "blood_group", "ctc", "custom_staff_loan_emi"
-    ], as_dict=True)
+        "marital_status", "blood_group", "ctc", "custom_staff_loan_emi",
+    ]
+    for f in ("custom_pan_number", "pan_number", "custom_aadhar_number", "custom_uhid_number"):
+        if f in _emp_cols:
+            _profile_fields.append(f)
+
+    e = frappe.db.get_value("Employee", employee, _profile_fields, as_dict=True)
 
     if not e:
         frappe.throw(_("Employee not found"))
+
+    # Normalize field keys so frontend always reads custom_pan_number / custom_aadhar_number
+    if "pan_number" in e and "custom_pan_number" not in e:
+        e["custom_pan_number"] = e["pan_number"]
+    if "aadhar_number" in e and "custom_aadhar_number" not in e:
+        e["custom_aadhar_number"] = e["aadhar_number"]
+    if "uhid_number" in e and "custom_uhid_number" not in e:
+        e["custom_uhid_number"] = e["uhid_number"]
 
     # fetch reporting manager name
     if e.get("reports_to"):
