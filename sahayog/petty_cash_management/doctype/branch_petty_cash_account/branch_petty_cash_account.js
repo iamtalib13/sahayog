@@ -112,9 +112,39 @@ frappe.ui.form.on('Branch Petty Cash Account', {
     //     }
     // }
 
+
+    // skip creating GL code for branch petty cash account
+    // branch: function (frm) {
+    //     if (frm.doc.branch) {
+    //         frappe.db.get_value('Sahayog Branch', frm.doc.branch, 'branch_type')
+    //             .then(r => {
+    //                 if (r && r.message) {
+    //                     let b_type = r.message.branch_type;
+
+    //                     if (!frm.doc.monthly_limit || frm.doc.monthly_limit == 0) {
+    //                         if (b_type === "Metro") {
+    //                             frm.set_value('monthly_limit', 30000);
+    //                         } else {
+    //                             frm.set_value('monthly_limit', 25000);
+    //                         }
+    //                     }
+
+    //                     if (b_type === "Zonal") {
+    //                         frm.set_value('gl_sub_code', '');
+    //                     } else {
+    //                         frm.trigger('generate_gl_code');
+    //                     }
+    //                 }
+    //             });
+    //     } else {
+    //         frm.set_value('gl_sub_code', '');
+    //     }
+    // },
+
+
     branch: function (frm) {
         if (frm.doc.branch) {
-            frappe.db.get_value('Sahayog Branch', frm.doc.branch, 'branch_type')
+            frappe.db.get_value('Sahayog Branch', frm.doc.branch, ['branch_type', 'entity_id', 'entity_type'])
                 .then(r => {
                     if (r && r.message) {
                         let b_type = r.message.branch_type;
@@ -129,13 +159,19 @@ frappe.ui.form.on('Branch Petty Cash Account', {
 
                         if (b_type === "Zonal") {
                             frm.set_value('gl_sub_code', '');
+                            frm.set_value('entity_id', r.message.entity_id || '');
+                            frm.set_value('entity_type', r.message.entity_type || '');
                         } else {
+                            frm.set_value('entity_id', '');
+                            frm.set_value('entity_type', '');
                             frm.trigger('generate_gl_code');
                         }
                     }
                 });
         } else {
             frm.set_value('gl_sub_code', '');
+            frm.set_value('entity_id', '');
+            frm.set_value('entity_type', '');
         }
     },
 

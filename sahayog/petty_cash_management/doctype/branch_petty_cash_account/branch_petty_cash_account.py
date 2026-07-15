@@ -24,9 +24,44 @@ class BranchPettyCashAccount(Document):
             if not frappe.utils.has_common(["HO Petty Cash Manager"], frappe.get_roles()):
                 frappe.throw(_("You are not allowed to change Fund Source."))
 
-        # [NEW] Validation
-        actual_branch_type = frappe.db.get_value(
-            "Sahayog Branch", self.branch, "branch_type")
+        # # [NEW] Validation
+        # actual_branch_type = frappe.db.get_value(
+        #     "Sahayog Branch", self.branch, "branch_type")
+
+        # if not self.monthly_limit:
+        #     if actual_branch_type == "Metro":
+        #         self.monthly_limit = 30000
+        #     else:
+        #         self.monthly_limit = 25000
+
+        # # 1. Auto-generate GL Sub Code
+        # # if self.branch:
+        # #     account_suffix = "01390200001"
+        # #     self.gl_sub_code = f"{self.branch}{account_suffix}"
+
+        # # 1. Auto-generate GL Sub Code only for non-Zonal branches
+        # if self.branch:
+        #     actual_branch_type = frappe.db.get_value(
+        #         "Sahayog Branch", self.branch, "branch_type"
+        #     )
+
+        #     if actual_branch_type == "Zonal":
+        #         if frappe.session.user == "Administrator":
+        #             self.gl_sub_code = self.gl_sub_code or ""
+        #         else:
+        #             self.gl_sub_code = ""
+        #     else:
+        #         account_suffix = "01390200001"
+        #         self.gl_sub_code = f"{self.branch}{account_suffix}"
+
+        branch_values = frappe.db.get_value(
+            "Sahayog Branch",
+            self.branch,
+            ["branch_type", "entity_id", "entity_type"],
+            as_dict=True
+        )
+
+        actual_branch_type = branch_values.branch_type if branch_values else None
 
         if not self.monthly_limit:
             if actual_branch_type == "Metro":
@@ -34,23 +69,19 @@ class BranchPettyCashAccount(Document):
             else:
                 self.monthly_limit = 25000
 
-        # 1. Auto-generate GL Sub Code
-        # if self.branch:
-        #     account_suffix = "01390200001"
-        #     self.gl_sub_code = f"{self.branch}{account_suffix}"
-
-        # 1. Auto-generate GL Sub Code only for non-Zonal branches
         if self.branch:
-            actual_branch_type = frappe.db.get_value(
-                "Sahayog Branch", self.branch, "branch_type"
-            )
-
             if actual_branch_type == "Zonal":
+                self.entity_id = branch_values.entity_id if branch_values else ""
+                self.entity_type = branch_values.entity_type if branch_values else ""
+
                 if frappe.session.user == "Administrator":
                     self.gl_sub_code = self.gl_sub_code or ""
                 else:
                     self.gl_sub_code = ""
             else:
+                self.entity_id = ""
+                self.entity_type = ""
+                self.branch_type = actual_branch_type
                 account_suffix = "01390200001"
                 self.gl_sub_code = f"{self.branch}{account_suffix}"
 
