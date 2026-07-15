@@ -120,12 +120,14 @@ def validate_appointment_party(doc, method):
 
 def validate_appointment_time(doc, method):
     """Validate Appointment scheduled time is not in the past."""
-    from frappe.utils import now_datetime
-    if doc.scheduled_time and doc.scheduled_time < now_datetime():
-        frappe.throw(
-            title="Invalid Date & Time",
-            msg="Scheduled time cannot be in the past."
-        )
+    from frappe.utils import now_datetime, get_datetime
+    if doc.scheduled_time:
+        scheduled = get_datetime(doc.scheduled_time)
+        if scheduled < now_datetime():
+            frappe.throw(
+                title="Invalid Date & Time",
+                msg="Scheduled time cannot be in the past."
+            )
 
 
 def validate_required_employee_fields(doc, method):
