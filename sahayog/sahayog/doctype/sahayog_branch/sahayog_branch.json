@@ -23,6 +23,9 @@
   "email_details_section",
   "email",
   "branch_type",
+  "column_break_equn",
+  "entity_id",
+  "entity_type",
   "section_break_zjir",
   "branch_details"
  ],
@@ -141,12 +144,28 @@
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
+  },
+  {
+   "fieldname": "column_break_equn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "entity_id",
+   "fieldtype": "Select",
+   "label": "Entity ID",
+   "options": "\n9001\n9002"
+  },
+  {
+   "fieldname": "entity_type",
+   "fieldtype": "Select",
+   "label": "Entity Type",
+   "options": "\nRRCDM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-15 10:56:54.457943",
+ "modified": "2026-07-15 10:59:35.956123",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
