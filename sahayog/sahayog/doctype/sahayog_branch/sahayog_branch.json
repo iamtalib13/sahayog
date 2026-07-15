@@ -133,7 +133,7 @@
   },
   {
    "fieldname": "branch_type",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Branch Type",
    "options": "\nMetro\nNon Metro\nZonal"
   },
@@ -146,7 +146,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-15 10:41:38.970420",
+ "modified": "2026-07-15 10:56:54.457943",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
