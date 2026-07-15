@@ -150,23 +150,27 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
    "fieldname": "entity_id",
    "fieldtype": "Select",
    "label": "Entity ID",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
    "options": "\n9001\n9002"
   },
   {
    "default": "RRCDM",
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
    "fieldname": "entity_type",
    "fieldtype": "Select",
    "label": "Entity Type",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
    "options": "\nRRCDM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-15 11:05:44.619400",
+ "modified": "2026-07-15 12:10:45.459314",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
