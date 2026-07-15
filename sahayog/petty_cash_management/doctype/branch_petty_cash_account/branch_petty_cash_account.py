@@ -35,9 +35,24 @@ class BranchPettyCashAccount(Document):
                 self.monthly_limit = 25000
 
         # 1. Auto-generate GL Sub Code
+        # if self.branch:
+        #     account_suffix = "01390200001"
+        #     self.gl_sub_code = f"{self.branch}{account_suffix}"
+
+        # 1. Auto-generate GL Sub Code only for non-Zonal branches
         if self.branch:
-            account_suffix = "01390200001"
-            self.gl_sub_code = f"{self.branch}{account_suffix}"
+            actual_branch_type = frappe.db.get_value(
+                "Sahayog Branch", self.branch, "branch_type"
+            )
+
+            if actual_branch_type == "Zonal":
+                if frappe.session.user == "Administrator":
+                    self.gl_sub_code = self.gl_sub_code or ""
+                else:
+                    self.gl_sub_code = ""
+            else:
+                account_suffix = "01390200001"
+                self.gl_sub_code = f"{self.branch}{account_suffix}"
 
         # 2. [IMPORTANT] Create the Account in Chart of Accounts
         self.create_ledger_account()

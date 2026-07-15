@@ -1,13 +1,13 @@
 frappe.ui.form.on('Branch Petty Cash Account', {
-    refresh: function(frm) {
+    refresh: function (frm) {
         frm.trigger('toggle_unsettled_cash_field');
 
         // const is_admin = ;
         if (frappe.session.user === 'Administrator') {
             frm.set_df_property('current_balance', 'read_only', 0);
-        } 
+        }
         // frm.set_df_property('current_balance', 'read_only', !is_admin,);
-        
+
 
 
         const can_edit = (frappe.user_roles || []).includes('HO Petty Cash Manager');
@@ -29,7 +29,7 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         }
 
         if (!frm.is_new() && frm.doc.gl_sub_code) {
-            frm.add_custom_button(__('Sync Finacle Balance'), function() {
+            frm.add_custom_button(__('Sync Finacle Balance'), function () {
                 frm.trigger('get_finacle_balance');
             });
         }
@@ -45,16 +45,16 @@ frappe.ui.form.on('Branch Petty Cash Account', {
 
         frm.trigger('toggle_unsettled_cash_field');
 
-        
+
     },
 
-    toggle_unsettled_cash_field: function(frm) {
+    toggle_unsettled_cash_field: function (frm) {
         frappe.db.get_single_value('Sahayog Settings', 'enable_unsettled_cash_flow')
             .then((value) => {
                 frm.set_df_property('go_live_date', 'read_only', 1);
 
-                if (frappe.session.user === 'Administrator'){
-                frm.set_df_property('go_live_date', 'read_only', 0);
+                if (frappe.session.user === 'Administrator') {
+                    frm.set_df_property('go_live_date', 'read_only', 0);
                 }
                 // const show_unsettled_cash = cint(value) === 1;
                 const show_unsettled_cash = Number(value) === 1;
@@ -62,7 +62,7 @@ frappe.ui.form.on('Branch Petty Cash Account', {
             });
     },
 
-    get_finacle_balance: function(frm) {
+    get_finacle_balance: function (frm) {
         frappe.call({
             method: "sahayog.petty_cash_management.api.branch_petty_cash_account_balance_fetch.fetch_finacle_balance",
             args: {
@@ -70,7 +70,7 @@ frappe.ui.form.on('Branch Petty Cash Account', {
             },
             freeze: true,
             freeze_message: __("Syncing with Finacle..."),
-            callback: function(r) {
+            callback: function (r) {
                 if (r.message != null) {
                     frm.reload_doc();
                     frappe.msgprint({
@@ -83,7 +83,36 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         });
     },
 
-    branch: function(frm) {
+    // branch: function(frm) {
+    //     if (frm.doc.branch) {
+    //         frappe.db.get_value('Sahayog Branch', frm.doc.branch, 'branch_type')
+    //             .then(r => {
+    //                 if (r && r.message) {
+    //                     let b_type = r.message.branch_type;
+
+    //                     if (!frm.doc.monthly_limit || frm.doc.monthly_limit == 0) {
+    //                         if (b_type === "Metro") {
+    //                             frm.set_value('monthly_limit', 30000);
+    //                         } else {
+    //                             frm.set_value('monthly_limit', 25000);
+    //                         }
+    //                     }
+    //                 }
+    //             });
+
+    //         frm.trigger('generate_gl_code');
+    //     }
+    // },
+
+    // generate_gl_code: function(frm) {
+    //     if (frm.doc.branch) {
+    //         let account_suffix = "01390200001";
+    //         let full_code = frm.doc.branch + account_suffix;
+    //         frm.set_value('gl_sub_code', full_code);
+    //     }
+    // }
+
+    branch: function (frm) {
         if (frm.doc.branch) {
             frappe.db.get_value('Sahayog Branch', frm.doc.branch, 'branch_type')
                 .then(r => {
@@ -97,18 +126,32 @@ frappe.ui.form.on('Branch Petty Cash Account', {
                                 frm.set_value('monthly_limit', 25000);
                             }
                         }
+
+                        if (b_type === "Zonal") {
+                            frm.set_value('gl_sub_code', '');
+                        } else {
+                            frm.trigger('generate_gl_code');
+                        }
                     }
                 });
-
-            frm.trigger('generate_gl_code');
+        } else {
+            frm.set_value('gl_sub_code', '');
         }
     },
 
-    generate_gl_code: function(frm) {
-        if (frm.doc.branch) {
-            let account_suffix = "01390200001";
-            let full_code = frm.doc.branch + account_suffix;
-            frm.set_value('gl_sub_code', full_code);
+    generate_gl_code: function (frm) {
+        if (!frm.doc.branch) {
+            frm.set_value('gl_sub_code', '');
+            return;
         }
+
+        if (frm.doc.branch_type === "Zonal") {
+            frm.set_value('gl_sub_code', '');
+            return;
+        }
+
+        let account_suffix = "01390200001";
+        let full_code = frm.doc.branch + account_suffix;
+        frm.set_value('gl_sub_code', full_code);
     }
 });

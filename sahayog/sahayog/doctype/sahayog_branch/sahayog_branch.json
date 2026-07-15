@@ -29,7 +29,7 @@
  "fields": [
   {
    "fieldname": "sol_id",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "SOL ID",
    "non_negative": 1,
    "reqd": 1,
@@ -134,7 +134,8 @@
   {
    "fieldname": "branch_type",
    "fieldtype": "Data",
-   "label": "Branch Type"
+   "label": "Branch Type",
+   "options": "\nMetro\nNon Metro\nZonal"
   },
   {
    "fieldname": "branch_code",
@@ -145,7 +146,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-23 13:39:07.816369",
+ "modified": "2026-07-15 10:41:38.970420",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
