@@ -103,7 +103,7 @@
       }
       .stat-card {
         background: var(--card);
-        border-radius: var(--radius);
+        border-radius: 12px;
         padding: 14px 16px;
         box-shadow: var(--shadow);
         display: flex;
@@ -111,24 +111,26 @@
         gap: 12px;
       }
       .stat-icon {
-        width: 42px;
-        height: 42px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 16px;
         flex-shrink: 0;
       }
       .stat-val {
         font-size: 22px;
-        font-weight: 700;
+        font-weight: 800;
         line-height: 1;
       }
       .stat-lbl {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--muted);
         margin-top: 2px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
 
       /* MAIN GRID */
@@ -866,9 +868,9 @@
 
       /* DASHBOARD DRAWER REDESIGN */
       .dash-section {
-        margin-bottom: 24px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid var(--border);
+        margin-bottom: 14px;
+        padding-bottom: 0;
+        border-bottom: none;
       }
       .dash-section:last-child {
         border-bottom: none;
@@ -876,7 +878,7 @@
       .dash-sec-title {
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         color: var(--muted);
         font-weight: 700;
         margin-bottom: 12px;
@@ -885,7 +887,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         font-size: 13px;
       }
       .dash-lbl {
@@ -3577,58 +3579,59 @@
 
         let html = `
             <!-- Month Selector -->
-            <div style="background:#fff; padding:12px 18px; border-radius:14px; border:1px solid #f1f5f9; margin-bottom: 18px; display:flex; align-items:center; gap:12px; box-shadow: var(--shadow);">
-                <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">View Report For:</span>
+            <div style="background:#fff; padding:12px 18px; border-radius:12px; border:1px solid #f1f5f9; margin-bottom: 16px; display:flex; align-items:center; gap:12px; box-shadow: var(--shadow);">
+                <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Report:</span>
                 <input 
                     type="month" 
                     id="dashMonth" 
                     value="${data.month}" 
                     onchange="loadHRDashboard(this.value)"
-                    style="border:1.5px solid var(--border); border-radius:8px; padding:6px 12px; font-size:13px; font-family:inherit; outline:none; cursor:pointer;"
+                    style="border:1.5px solid var(--border); border-radius:6px; padding:6px 12px; font-size:13px; font-family:inherit; outline:none; cursor:pointer;"
                 >
-                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical Analysis Mode</span>' : ''}
+                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical</span>' : ''}
             </div>
 
             <!-- 1. Global Metrics (6 Cards) -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px;">
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px;">
                 <div class="stat-card" style="border: 1px solid #e0e7ff; background: #fff; position: relative;">
                     <div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">👥</div>
-                    <div><div class="stat-val">${data.headcount}</div><div class="stat-lbl">Total Staff</div></div>
+                    <div style="min-width:0;"><div class="stat-val">${data.headcount}</div><div class="stat-lbl">Total Staff</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #dcfce7; background: #fff;">
                     <div class="stat-icon" style="background: #dcfce7; color: #15803d;">✅</div>
-                    <div><div class="stat-val" style="color:#15803d;">${data.attendance.summary.Present}</div><div class="stat-lbl">${timeLabel} Present</div></div>
+                    <div style="min-width:0;"><div class="stat-val" style="color:#15803d;">${data.attendance.summary.Present}</div><div class="stat-lbl">${timeLabel} Present</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fee2e2; background: #fff;">
                     <div class="stat-icon" style="background: #fee2e2; color: #b91c1c;">❌</div>
-                    <div><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">${timeLabel} Absent</div></div>
+                    <div style="min-width:0;"><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">${timeLabel} Absent</div></div>
+                </div>
+                <div class="stat-card" style="border: 1px solid #f8fafc; background: #fff;">
+                    <div class="stat-icon" style="background: #f8fafc; color: #64748b;">⏳</div>
+                    <div style="min-width:0;"><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">Pending</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fdf4ff; background: #fff; cursor: pointer;" onclick="switchTab('leave', document.getElementById('tabLeaveRequests'))">
                     <div class="stat-icon" style="background: #fdf4ff; color: #a21caf;">📩</div>
-                    <div>
+                    <div style="min-width:0;">
                         <div class="stat-val" style="color:#a21caf;">${data.pending_requests.leaves}</div>
-                        <div class="stat-lbl">Pending Leaves ↗</div>
+                        <div class="stat-lbl">Pending Leaves</div>
                     </div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fff7ed; background: #fff; cursor: pointer;" onclick="switchTab('corrections', document.getElementById('tabCorrApproval'))">
                     <div class="stat-icon" style="background: #fff7ed; color: #c2410c;">🛠️</div>
-                    <div>
+                    <div style="min-width:0;">
                         <div class="stat-val" style="color:#c2410c;">${data.pending_requests.corrections}</div>
-                        <div class="stat-lbl">Pending Corrections ↗</div>
+                        <div class="stat-lbl">Pending Corrections</div>
                     </div>
-                </div>
-                <div class="stat-card" style="border: 1px solid #f8fafc; background: #fff;">
-                    <div class="stat-icon" style="background: #f8fafc; color: #64748b;">⏳</div>
-                    <div><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">${timeLabel} Pending</div></div>
                 </div>
             </div>
 
-            <!-- 2. Attendance & Lifecycle Metrics -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
-                    <div class="dash-sec-title">${isCurrent ? "Today's" : "Monthly Avg."} Attendance Status</div>
+            <!-- 2. Attendance, Lifecycle & Leave in one row -->
+            <div style="display: grid; grid-template-columns: 1.2fr 0.9fr 1.9fr; gap: 16px; margin-bottom: 16px;">
+                <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">${isCurrent ? "Today's" : "Monthly Avg."} Attendance Status</div>
                     <div class="stat-pill-box">
                         ${Object.entries(data.attendance.summary)
+                          .filter(([status]) => status !== "Work From Home")
                           .map(
                             ([status, count]) => `
                             <div class="dash-row">
@@ -3638,9 +3641,9 @@
                         `,
                           )
                           .join("")}
-                        <div class="dash-row" style="margin-top:10px; padding-top:10px; border-top:1.5px dashed #f1f5f9;">
+                        <div class="dash-row" style="margin-top:8px; padding-top:8px; border-top:1.5px dashed #f1f5f9;">
                             <span class="dash-lbl" style="font-weight:700;">${isCurrent ? 'Global' : 'Monthly Avg'} Attendance %</span>
-                            <span class="dash-val" style="font-size:20px; color:var(--brand2);">${data.attendance.percentage}%</span>
+                            <span class="dash-val" style="font-size:18px; color:var(--brand2);">${data.attendance.percentage}%</span>
                         </div>
                         <div style="background:#f1f5f9; height:8px; border-radius:10px; margin-top:8px; overflow:hidden;">
                             <div style="background:var(--brand2); width:${data.attendance.percentage}%; height:100%; border-radius:10px; transition: 1s ease-in-out;"></div>
@@ -3648,97 +3651,79 @@
                     </div>
                 </div>
 
-                <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
-                    <div class="dash-sec-title">Monthly Lifecycle</div>
+                <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">Monthly Lifecycle</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div style="background:#f8fafc; padding:10px; border-radius:10px;">
+                        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
                             <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">New</div>
                             <div style="font-size:16px; font-weight:700; color:var(--success);">+${data.lifecycle.new_joinees}</div>
                         </div>
-                        <div style="background:#f8fafc; padding:10px; border-radius:10px;">
+                        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
                             <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Exit</div>
                             <div style="font-size:16px; font-weight:700; color:var(--danger);">${data.lifecycle.resigned}</div>
                         </div>
-                        <div style="background:#f8fafc; padding:10px; border-radius:10px;">
+                        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
                             <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Probation</div>
                             <div style="font-size:16px; font-weight:700; color:var(--brand2);">${data.lifecycle.probation}</div>
                         </div>
-                        <div style="background:#f8fafc; padding:10px; border-radius:10px;">
-                            <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Retired</div>
-                            <div style="font-size:16px; font-weight:700; color:var(--muted);">${data.lifecycle.retired}</div>
+                        <div style="background:#f8fafc; padding:10px; border-radius:8px;">
+                            <div style="font-size:10px; color:var(--muted); text-transform:uppercase;">Permanent</div>
+                            <div style="font-size:16px; font-weight:700; color:var(--brand);">${data.lifecycle.permanent}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">Leave Analytics (${data.month})</div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+                        <div style="background:#f0fdf4; padding:8px; border-radius:8px; text-align:center; border:1px solid #bbf7d0;">
+                            <span style="display:block; font-size:18px; font-weight:800; color:#15803d;">${data.leaves.Approved}</span>
+                            <span style="font-size:10px; font-weight:700; color:#166534; text-transform:uppercase;">Approved</span>
+                        </div>
+                        <div style="background:#fff7ed; padding:8px; border-radius:8px; text-align:center; border:1px solid #fed7aa;">
+                            <span style="display:block; font-size:18px; font-weight:800; color:#c2410c;">${data.leaves.Open}</span>
+                            <span style="font-size:10px; font-weight:700; color:#9a3412; text-transform:uppercase;">Pending</span>
+                        </div>
+                        <div style="background:#fef2f2; padding:8px; border-radius:8px; text-align:center; border:1px solid #fecaca;">
+                            <span style="display:block; font-size:18px; font-weight:800; color:#b91c1c;">${data.leaves.Rejected}</span>
+                            <span style="font-size:10px; font-weight:700; color:#991b1b; text-transform:uppercase;">Rejected</span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div>
+                            <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:8px; text-transform:uppercase;">By Leave Type</div>
+                            ${data.leaves.by_type
+                              .map(
+                                (lt) => `
+                                <div class="dash-row" style="font-size:12px; margin-bottom:4px;">
+                                    <span class="dash-lbl">${lt.leave_type}</span>
+                                    <span class="dash-val" style="font-weight:600;">${lt.count}</span>
+                                </div>
+                            `,
+                              )
+                              .join("")}
+                        </div>
+                        <div>
+                            <div style="font-size:10px; font-weight:700; color:var(--muted); margin-bottom:8px; text-transform:uppercase;">By Branch (Top 5)</div>
+                            ${data.leaves.by_branch
+                              .slice(0, 5)
+                              .map(
+                                (lb) => `
+                                <div class="dash-row" style="font-size:12px; margin-bottom:4px;">
+                                    <span class="dash-lbl">${lb.branch || "Not Set"}</span>
+                                    <span class="dash-val" style="font-weight:600;">${lb.count}</span>
+                                </div>
+                            `,
+                              )
+                              .join("")}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. Leave Summary -->
-            <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; margin-bottom: 24px; box-shadow: var(--shadow);">
-                <div class="dash-sec-title">Leave Analytics (${data.month})</div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px;">
-                    <div style="background:#f0fdf4; padding:12px; border-radius:12px; text-align:center; border:1px solid #bbf7d0;">
-                        <span style="display:block; font-size:20px; font-weight:800; color:#15803d;">${data.leaves.Approved}</span>
-                        <span style="font-size:11px; font-weight:700; color:#166534; text-transform:uppercase;">Approved</span>
-                    </div>
-                    <div style="background:#fff7ed; padding:12px; border-radius:12px; text-align:center; border:1px solid #fed7aa;">
-                        <span style="display:block; font-size:20px; font-weight:800; color:#c2410c;">${data.leaves.Open}</span>
-                        <span style="font-size:11px; font-weight:700; color:#9a3412; text-transform:uppercase;">Pending</span>
-                    </div>
-                    <div style="background:#fef2f2; padding:12px; border-radius:12px; text-align:center; border:1px solid #fecaca;">
-                        <span style="display:block; font-size:20px; font-weight:800; color:#b91c1c;">${data.leaves.Rejected}</span>
-                        <span style="font-size:11px; font-weight:700; color:#991b1b; text-transform:uppercase;">Rejected</span>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                    <div>
-                        <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">By Leave Type</div>
-                        ${data.leaves.by_type
-                          .map(
-                            (lt) => `
-                            <div class="dash-row" style="font-size:13px; margin-bottom:6px;">
-                                <span class="dash-lbl">${lt.leave_type}</span>
-                                <span class="dash-val" style="font-weight:600;">${lt.count}</span>
-                            </div>
-                        `,
-                          )
-                          .join("")}
-                    </div>
-                    <div>
-                        <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">By Branch (Top 5)</div>
-                        ${data.leaves.by_branch
-                          .slice(0, 5)
-                          .map(
-                            (lb) => `
-                            <div class="dash-row" style="font-size:13px; margin-bottom:6px;">
-                                <span class="dash-lbl">${lb.branch || "Not Set"}</span>
-                                <span class="dash-val" style="font-weight:600;">${lb.count}</span>
-                            </div>
-                        `,
-                          )
-                          .join("")}
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. Actionable List (Alerts) -->
-            <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #fee2e2; margin-bottom: 24px; box-shadow: var(--shadow);">
-                <div class="dash-sec-title" style="color:#b91c1c;">${data.alert_title}</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                    ${data.alert_list && data.alert_list.length > 0 ? data.alert_list.map(emp => `
-                        <div style="background:#fef2f2; padding:10px; border-radius:10px; border:1px solid #fee2e2; display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <div style="font-size:12px; font-weight:700; color:#b91c1c;">${emp.employee_name}</div>
-                                <div style="font-size:10px; color:#991b1b;">${emp.designation || 'Staff'} • ${emp.sahayog_branch || 'No Branch'}</div>
-                            </div>
-                            ${!isCurrent ? `<div style="background:#b91c1c; color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">${emp.absent_count} Abs</div>` : ''}
-                        </div>
-                    `).join('') : `<div style="grid-column: 1/-1; text-align:center; padding:10px; color:var(--success); font-weight:600;">${isCurrent ? 'Everyone has marked attendance.' : 'No frequent absentees found.'}</div>`}
-                </div>
-            </div>
-
-            <!-- 5. Branch-wise Detailed Table -->
-            <div class="dash-section" style="background:#fff; padding:18px; border-radius:14px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <!-- 3. Branch-wise Detailed Table -->
+            <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                     <div class="dash-sec-title" style="margin:0;">Branch-wise Performance (${isCurrent ? 'Today' : 'Monthly Avg.'})</div>
                     <input 
                       type="text" 
@@ -3748,13 +3733,13 @@
                       style="padding:5px 12px; font-size:12px; border:1px solid var(--border); border-radius:20px; outline:none;"
                     >
                 </div>
-                <table style="width:100%; border-collapse: collapse; font-size: 14px;">
+                <table style="width:100%; border-collapse: collapse; font-size: 14px; table-layout: fixed;">
                     <thead>
                         <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted); font-size:12px; text-transform:uppercase;">
-                            <th style="padding: 12px 0;">Branch Name</th>
-                            <th style="padding: 12px 0; text-align: center;">Total Staff</th>
-                            <th style="padding: 12px 0; text-align: center;">${isCurrent ? 'Present' : 'Avg. Pres.'}</th>
-                            <th style="padding: 12px 0; text-align: center;">Att. %</th>
+                            <th style="padding: 10px 0; width:25%;">Branch Name</th>
+                            <th style="padding: 10px 0; text-align: center; width:25%;">Staff</th>
+                            <th style="padding: 10px 0; text-align: center; width:25%;">${isCurrent ? 'Present' : 'Avg. Pres.'}</th>
+                            <th style="padding: 10px 0; text-align: center; width:25%;">Att. %</th>
                         </tr>
                     </thead>
                     <tbody id="branchTableBody">
@@ -3762,10 +3747,10 @@
                           .map(
                             (b) => `
                             <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 14px 0; font-weight: 600; color: var(--brand);">${b.branch || "Not Set"}</td>
-                                <td style="padding: 14px 0; text-align: center;">${b.total}</td>
-                                <td style="padding: 14px 0; text-align: center; color:var(--success); font-weight:600;">${b.present}</td>
-                                <td style="padding: 14px 0; text-align: center;"><span style="background:#f5f3ff; color:var(--brand2); padding:4px 8px; border-radius:6px; font-weight:700; font-size:12px;">${b.att_pc}%</span></td>
+                                <td style="padding: 10px 0; font-weight: 600; color: var(--brand); font-size:13px;">${b.branch_name ? `${b.branch_name} (${b.branch})` : (b.branch || "Not Set")}</td>
+                                <td style="padding: 10px 0; text-align: center; font-size:13px;">${b.total}</td>
+                                <td style="padding: 10px 0; text-align: center; color:var(--success); font-weight:600; font-size:13px;">${b.present}</td>
+                                <td style="padding: 10px 0; text-align: center;"><span style="background:#f5f3ff; color:var(--brand2); padding:4px 8px; border-radius:6px; font-weight:700; font-size:12px;">${b.att_pc}%</span></td>
                             </tr>
                         `,
                           )
