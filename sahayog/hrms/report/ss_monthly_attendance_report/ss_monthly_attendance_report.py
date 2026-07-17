@@ -27,7 +27,6 @@ def execute(filters=None):
         {"label": "Absent", "fieldname": "absent", "fieldtype": "Int", "width": 80},
         {"label": "Half Day", "fieldname": "half_day", "fieldtype": "Int", "width": 90},
         {"label": "On Leave", "fieldname": "on_leave", "fieldtype": "Int", "width": 90},
-        {"label": "Work From Home", "fieldname": "work_from_home", "fieldtype": "Int", "width": 120},
         {"label": "Total Marked", "fieldname": "total_marked", "fieldtype": "Int", "width": 110},
     ]
 
@@ -56,7 +55,6 @@ def execute(filters=None):
             SUM(CASE WHEN a.status = 'Absent' THEN 1 ELSE 0 END) AS absent,
             SUM(CASE WHEN a.status = 'Half Day' THEN 1 ELSE 0 END) AS half_day,
             SUM(CASE WHEN a.status = 'On Leave' THEN 1 ELSE 0 END) AS on_leave,
-            SUM(CASE WHEN a.status = 'Work From Home' THEN 1 ELSE 0 END) AS work_from_home,
             COUNT(a.name) AS total_marked
         FROM `tabAttendance` a
         INNER JOIN `tabEmployee` e ON e.name = a.employee

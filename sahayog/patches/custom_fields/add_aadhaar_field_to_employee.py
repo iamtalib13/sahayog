@@ -12,7 +12,7 @@ def execute():
                 "fieldname": "custom_aadhar_number",
                 "label": "Aadhar Number",
                 "fieldtype": "Data",
-                "insert_after": "custom_pan_number",
+                "insert_after": "pan_number",
                 "reqd": 0,
             }
         ]

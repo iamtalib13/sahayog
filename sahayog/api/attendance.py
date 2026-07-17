@@ -202,13 +202,13 @@ def get_hr_dashboard_data(month=None):
     lifecycle = {
         "new_joinees": frappe.db.count("Employee", {"date_of_joining": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
         "resigned": frappe.db.count("Employee", {"status": ["in", ["Left", "Resigned"]], "relieving_date": ["between", [first_day, last_day]], "custom_is_support_staff": 1}),
-        "retired": frappe.db.count("Employee", {"status": "Retired", "custom_is_support_staff": 1}),
+        "permanent": frappe.db.count("Employee", {"status": "Active", "employment_type": "Permanent", "custom_is_support_staff": 1}),
         "probation": frappe.db.count("Employee", {"status": "Active", "employment_type": "Probation", "custom_is_support_staff": 1})
     }
 
     # 2. Detailed Attendance Summary
     attendance_summary = {
-        "Present": 0, "Absent": 0, "Half Day": 0, "On Leave": 0, "Work From Home": 0
+        "Present": 0, "Absent": 0, "Half Day": 0, "On Leave": 0
     }
     
     if is_current_month:
@@ -222,15 +222,17 @@ def get_hr_dashboard_data(month=None):
             GROUP BY a.status
         """, (today), as_dict=True)
         
+        raw_counts = {}
         for a in att_raw:
+            raw_counts[a.status] = a.count
             if a.status in attendance_summary:
                 attendance_summary[a.status] = a.count
                 
-        total_marked = sum(attendance_summary.values())
+        total_marked = sum(raw_counts.values())
         not_marked = max(0, headcount - total_marked)
         attendance_summary["Not Marked"] = not_marked
         
-        eff_present = attendance_summary["Present"] + (attendance_summary["Half Day"] * 0.5) + attendance_summary["Work From Home"]
+        eff_present = raw_counts.get("Present", 0) + (raw_counts.get("Half Day", 0) * 0.5) + raw_counts.get("Work From Home", 0)
         att_percentage = round((eff_present / headcount * 100), 2) if headcount > 0 else 0
 
         # Actionable: Not marked today
@@ -266,7 +268,7 @@ def get_hr_dashboard_data(month=None):
             if a.status in attendance_summary:
                 attendance_summary[a.status] = round(a.total_count / working_days, 1)
         
-        attendance_summary["Not Marked"] = "N/A" # Hard to calculate monthly avg not marked without complex logic
+        attendance_summary["Not Marked"] = "N/A"
         
         total_eff_present = frappe.db.sql("""
             SELECT SUM(CASE WHEN a.status IN ('Present', 'Work From Home') THEN 1 WHEN a.status = 'Half Day' THEN 0.5 ELSE 0 END)
@@ -333,10 +335,11 @@ def get_hr_dashboard_data(month=None):
 
     # 4. Branch-wise Performance
     branch_data = frappe.db.sql("""
-        SELECT sahayog_branch as branch, count(*) as total 
-        FROM `tabEmployee` 
-        WHERE status = 'Active' AND custom_is_support_staff = 1
-        GROUP BY sahayog_branch
+        SELECT e.sahayog_branch as branch, sb.branch as branch_name, count(*) as total 
+        FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON e.sahayog_branch = CAST(sb.name AS CHAR)
+        WHERE e.status = 'Active' AND e.custom_is_support_staff = 1
+        GROUP BY e.sahayog_branch
     """, as_dict=True)
     
     if is_current_month:
