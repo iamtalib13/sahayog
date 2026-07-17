@@ -660,7 +660,7 @@ def bulk_import_employees(rows, mode="insert"):
 
 
 @frappe.whitelist()
-def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving):
+def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, attachment_url=None):
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
@@ -677,12 +677,17 @@ def process_employee_exit(employee, resignation_letter_date, relieving_date, rea
     if dreliev < dor:
         frappe.throw(_("Relieving date cannot be before Resignation date"))
 
-    frappe.db.set_value("Employee", employee, {
+    update_values = {
         "resignation_letter_date": dor,
         "relieving_date": dreliev,
         "reason_for_leaving": reason_for_leaving,
         "status": "Left"
-    })
+    }
+
+    if attachment_url:
+        update_values["custom_resignation_letter"] = attachment_url
+
+    frappe.db.set_value("Employee", employee, update_values)
 
     return {"success": True, "message": _("Employee {0} has been marked as exited").format(employee)}
 
@@ -755,6 +760,7 @@ def get_employee_profile(employee):
         "cell_number", "personal_email", "permanent_address",
         "bank_name", "bank_ac_no", "reports_to",
         "marital_status", "blood_group", "ctc", "custom_staff_loan_emi",
+        "custom_resignation_letter",
     ]
     for f in ("custom_pan_number", "pan_number", "custom_aadhar_number", "custom_uhid_number"):
         if f in _emp_cols:
