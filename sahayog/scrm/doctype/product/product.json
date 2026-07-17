@@ -14,7 +14,8 @@
   "exclude",
   "column_break_ngig",
   "group_name",
-  "group_subname"
+  "group_subname",
+  "group_subname_category"
  ],
  "fields": [
   {
@@ -52,6 +53,7 @@
    "label": "Exclude"
   },
   {
+   "description": "1st Level",
    "fieldname": "group_name",
    "fieldtype": "Select",
    "label": "Group Name",
@@ -62,16 +64,24 @@
    "fieldtype": "Column Break"
   },
   {
+   "description": "2nd Level",
    "fieldname": "group_subname",
    "fieldtype": "Select",
    "label": "Group Subname",
-   "options": "\nSA\nCA\nTASC"
+   "options": "\nSA\nCA\nTASC\nJLL RD\nSKBG"
+  },
+  {
+   "description": "3rd Level",
+   "fieldname": "group_subname_category",
+   "fieldtype": "Select",
+   "label": "Group Subname Category",
+   "options": "\nTASKSILVER\nTASKWEALTH\nSAVSIL\nCUGOLD\nCUWEALTH"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-10 12:45:05.802390",
+ "modified": "2026-07-17 10:49:40.129531",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
