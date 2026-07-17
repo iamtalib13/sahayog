@@ -52,6 +52,7 @@ def get_available_assets():
         "Asset",
         filters={"docstatus": ["in", [0, 1]], "status": ["!=", "Scrapped"]},
         fields=["name", "serial_no", "item_code", "location", "zone"],
+        limit_page_length=0,
         ignore_permissions=True
     )
     used_serials = [a.serial_no for a in all_assets if a.serial_no]
@@ -80,6 +81,7 @@ def get_available_assets():
     movement_items = frappe.db.get_all(
         "Asset Movement Item",
         fields=["asset", "source_location", "from_employee"],
+        limit_page_length=0,
         ignore_permissions=True
     )
     
