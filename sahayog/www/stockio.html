@@ -8248,10 +8248,10 @@
               <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
                 <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" @click="openAssetAvailability(item)" style="padding: 16px; flex-direction: column; align-items: flex-start; cursor: pointer;">
                     <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
-                    <div class="card-value" style="font-size: 1.5rem;" :style="item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">[[ item.count ]]</div>
+                    <div class="card-value" style="font-size: 1.5rem;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">[[ item.count ]]</div>
                     <div class="card-label" style="font-size: 0.8rem;">
                       [[ assetStatusFilter ]] Asset
-                      <span v-if="item.unmatched > 0" style="color: #ef4444; font-weight: 600;"> ([[ item.unmatched ]] unmapped)</span>
+                      <span v-if="isAdmin && item.unmatched > 0" style="color: #ef4444; font-weight: 600;"> ([[ item.unmatched ]] unmapped)</span>
                     </div>
                 </div>
               </div>
@@ -8260,9 +8260,9 @@
               <div v-else class="rows-list" style="margin-top: 16px;">
                  <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" @click="openAssetAvailability(item)" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                      <div style="font-weight: 600;">[[ item.item_name ]]</div>
-                     <div style="font-weight: 700;" :style="item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">
+                     <div style="font-weight: 700;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">
                        [[ item.count ]] [[ assetStatusFilter ]]
-                       <span v-if="item.unmatched > 0" style="font-weight: 600;"> ([[ item.unmatched ]])</span>
+                       <span v-if="isAdmin && item.unmatched > 0" style="font-weight: 600;"> ([[ item.unmatched ]])</span>
                      </div>
                  </div>
               </div>
@@ -13516,7 +13516,7 @@
             });
           }
           
-          this.assetAvailability = Object.values(summaryMap);
+          this.assetAvailability = Object.values(summaryMap).filter(item => this.isAdmin || item.unmatched < item.count);
         } catch (e) {
           console.error("Error fetching asset availability:", e);
         }
