@@ -13346,7 +13346,8 @@
             args: {
               doctype: "Item",
               filters: { disabled: 0, is_fixed_asset: 1 },
-              fields: ["name", "item_name", "item_group", "stock_uom", "custom_item_department"]
+              fields: ["name", "item_name", "item_group", "stock_uom", "custom_item_department"],
+              limit_page_length: 0
             }
           });
           const fixedAssetItems = itemsRes.message || [];
@@ -13357,7 +13358,8 @@
                method: "frappe.client.get_list",
                args: {
                  doctype: "Sahayog Branch",
-                 fields: ["name", "branch", "zone", "region"]
+                 fields: ["name", "branch", "zone", "region"],
+                 limit_page_length: 0
                }
              });
              branches = branchRes.message || [];
