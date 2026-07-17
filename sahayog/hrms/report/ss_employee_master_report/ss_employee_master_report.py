@@ -74,12 +74,21 @@ def execute(filters=None):
     if filters.get("to_relieving_date"):
         conditions += " AND e.relieving_date <= %(to_relieving_date)s"
 
+    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    _pan_col = "custom_pan_number" if "custom_pan_number" in _emp_cols else "pan_number" if "pan_number" in _emp_cols else None
+    _aadhaar_col = "custom_aadhar_number" if "custom_aadhar_number" in _emp_cols else "aadhar_number" if "aadhar_number" in _emp_cols else None
+    _uhid_col = "custom_uhid_number" if "custom_uhid_number" in _emp_cols else "uhid_number" if "uhid_number" in _emp_cols else None
+
+    _pan_select = f"e.{_pan_col} as custom_pan_number" if _pan_col else "NULL as custom_pan_number"
+    _aadhaar_select = f"e.{_aadhaar_col} as custom_aadhar_number" if _aadhaar_col else "NULL as custom_aadhar_number"
+    _uhid_select = f"e.{_uhid_col} as custom_uhid_number" if _uhid_col else "NULL as custom_uhid_number"
+
     data = frappe.db.sql(f"""
         SELECT
             e.name, e.employee_name, e.gender, e.date_of_birth, e.date_of_joining,
             e.final_confirmation_date, e.department, e.designation, e.employment_type,
             e.branch, e.sahayog_branch, e.custom_zone, e.custom_region, e.custom_district,
-            e.cell_number, e.custom_pan_number, e.custom_aadhar_number, e.custom_uhid_number,
+            e.cell_number, {_pan_select}, {_aadhaar_select}, {_uhid_select},
             e.bank_name, e.bank_ac_no, e.reports_to, e.status, e.relieving_date
         FROM `tabEmployee` e
         {conditions}
