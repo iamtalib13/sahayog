@@ -49,4 +49,5 @@ sahayog.patches.custom_fields.add_payroll_fields_to_employee
 sahayog.patches.custom_fields.add_uhid_number_to_employee
 sahayog.patches.custom_fields.add_aadhaar_field_to_employee
 sahayog.patches.set_support_staff_status_left
+sahayog.patches.custom_fields.add_resignation_letter_field_to_employee
 sahayog.patches.set_employee_branch_from_sol_id
