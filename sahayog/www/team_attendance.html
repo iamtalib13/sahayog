@@ -698,25 +698,26 @@
         line-height: 1.1;
       }
       .lb-label {
-        font-size: 10px;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.85);
-        margin-top: 3px;
+        font-size: 14px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        margin-top: 4px;
       }
       .lb-sub {
-        font-size: 9px;
-        color: rgba(255, 255, 255, 0.65);
-        margin-top: 1px;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.95);
+        margin-top: 4px;
       }
 
       .lb-cl {
-        background: linear-gradient(135deg, #06b6d4, #0891b2);
+        background: linear-gradient(135deg, #22d3ee, #06b6d4);
       }
       .lb-sl {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        background: linear-gradient(135deg, #60a5fa, #3b82f6);
       }
       .lb-el {
-        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        background: linear-gradient(135deg, #a78bfa, #8b5cf6);
       }
 
       .loading-overlay {
@@ -1006,7 +1007,7 @@
   </head>
   <body>
     <!-- TOP BAR -->
-    <nav class="topbar" style="position:sticky; top:0; z-index:100;">
+    <nav class="topbar" style="position: sticky; top: 0; z-index: 100">
       <div class="topbar-left">
         <button
           class="menu-btn"
@@ -1038,7 +1039,15 @@
         <span class="topbar-title">Sahayog Attendance Portal</span>
       </div>
       <div class="topbar-right">
-        <span id="todayDate" style="color: rgba(255,255,255,0.85); font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif;"></span>
+        <span
+          id="todayDate"
+          style="
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 14px;
+            font-weight: 700;
+            font-family: &quot;DM Sans&quot;, sans-serif;
+          "
+        ></span>
         <div class="av">BM</div>
       </div>
     </nav>
@@ -1128,32 +1137,31 @@
       >
         ⏳ Pending Requests
       </button>
-      <button
-        class="ftab"
-        id="subTabHistory"
-        onclick="switchSubTab('history')"
-      >
+      <button class="ftab" id="subTabHistory" onclick="switchSubTab('history')">
         📜 Approval History
       </button>
 
       <!-- History Search & Filter (visible only in history sub-tab) -->
-      <div id="historySearchWrap" style="display: none; margin-left: auto; flex: 1; max-width: 450px;">
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input 
-            type="month" 
-            id="historyMonth" 
-            class="search-input" 
+      <div
+        id="historySearchWrap"
+        style="display: none; margin-left: auto; flex: 1; max-width: 450px"
+      >
+        <div style="display: flex; gap: 8px; align-items: center">
+          <input
+            type="month"
+            id="historyMonth"
+            class="search-input"
             onchange="renderApprovals()"
-            style="width: 140px; height: 32px; border-radius: 6px;"
-          >
-          <input 
-            type="text" 
-            id="historySearch" 
-            class="search-input" 
-            placeholder="🔍 Name or ID..." 
+            style="width: 140px; height: 32px; border-radius: 6px"
+          />
+          <input
+            type="text"
+            id="historySearch"
+            class="search-input"
+            placeholder="🔍 Name or ID..."
             onkeyup="renderApprovals()"
-            style="flex: 1; height: 32px; border-radius: 6px;"
-          >
+            style="flex: 1; height: 32px; border-radius: 6px"
+          />
         </div>
       </div>
     </div>
@@ -1183,17 +1191,38 @@
         color: var(--brand);
       }
       #globalNav {
-          overflow-x: auto;
-          white-space: nowrap;
-          flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap;
       }
-      .hr-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
-      .hr-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+      .hr-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 24px;
+      }
+      .hr-section-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
       @media (max-width: 768px) {
-          #globalNav { gap: 0; padding: 0 10px; }
-          .nav-tab { font-size: 12px; padding: 0 12px; }
-          .hr-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
-          .hr-section-grid { grid-template-columns: 1fr !important; }
+        #globalNav {
+          gap: 0;
+          padding: 0 10px;
+        }
+        .nav-tab {
+          font-size: 12px;
+          padding: 0 12px;
+        }
+        .hr-stats-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 8px;
+        }
+        .hr-section-grid {
+          grid-template-columns: 1fr !important;
+        }
       }
     </style>
 
@@ -1269,21 +1298,43 @@
             >
               <div class="spinner"></div>
             </div>
-            <div id="directoryCardHead" class="card-head" style="border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+            <div
+              id="directoryCardHead"
+              class="card-head"
+              style="
+                border-bottom: none;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+              "
+            >
               <h3>Staff List &amp; Directory</h3>
-              <div style="display:flex; gap:8px;">
-                <button 
-                  id="btnCreateEmployee" 
-                  class="btn-in" 
-                  style="display: none; padding: 6px 14px; background: var(--brand2); color: #fff; border: none; font-size: 11px; font-weight: 700;"
+              <div style="display: flex; gap: 8px">
+                <button
+                  id="btnCreateEmployee"
+                  class="btn-in"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    background: var(--brand2);
+                    color: #fff;
+                    border: none;
+                    font-size: 11px;
+                    font-weight: 700;
+                  "
                   onclick="openCreateEmployeeModal()"
                 >
                   + Create Employee
                 </button>
-                <button 
-                  id="btnExitEmployee" 
-                  class="btn-out" 
-                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700;"
+                <button
+                  id="btnExitEmployee"
+                  class="btn-out"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                  "
                   onclick="openExitEmployeeModal()"
                 >
                   Exit Employee
@@ -1291,7 +1342,12 @@
                 <button
                   id="btnImportEmployees"
                   class="btn-clear"
-                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700;"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                  "
                   onclick="openImportModal()"
                 >
                   ⬆ Import
@@ -1299,7 +1355,15 @@
                 <button
                   id="btnUpdateEmployees"
                   class="btn-clear"
-                  style="display: none; padding: 6px 14px; font-size: 11px; font-weight: 700; background: #f0fdf4; color: #15803d; border: 1px solid #86efac;"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    background: #f0fdf4;
+                    color: #15803d;
+                    border: 1px solid #86efac;
+                  "
                   onclick="openUpdateModal()"
                 >
                   ✏️ Update
@@ -1558,185 +1622,1088 @@
                   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
                 "
               >
-                <form id="createEmployeeForm" onsubmit="event.preventDefault(); submitCreateEmployee();">
-                  <div style="position: sticky; top: 0; z-index: 10; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; border-bottom: 2px solid #f1f5f9;">
-                    <h3 style="font-family: 'Syne', sans-serif; font-weight: 800; color: var(--brand); margin: 0;">Create Support Staff</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                      <button type="button" class="btn-clear" onclick="closeCreateEmployeeModal()" style="padding: 8px 20px; font-size: 12px;">Cancel</button>
-                      <button type="submit" id="btnSubmitEmployee" class="btn-in" style="padding: 8px 20px; font-size: 12px; font-weight: 700;">Create Employee</button>
+                <form
+                  id="createEmployeeForm"
+                  onsubmit="
+                    event.preventDefault();
+                    submitCreateEmployee();
+                  "
+                >
+                  <div
+                    style="
+                      position: sticky;
+                      top: 0;
+                      z-index: 10;
+                      background: #fff;
+                      display: flex;
+                      justify-content: space-between;
+                      align-items: center;
+                      padding: 15px 30px;
+                      border-bottom: 2px solid #f1f5f9;
+                    "
+                  >
+                    <h3
+                      style="
+                        font-family: &quot;Syne&quot;, sans-serif;
+                        font-weight: 800;
+                        color: var(--brand);
+                        margin: 0;
+                      "
+                    >
+                      Create Support Staff
+                    </h3>
+                    <div style="display: flex; gap: 10px; align-items: center">
+                      <button
+                        type="button"
+                        class="btn-clear"
+                        onclick="closeCreateEmployeeModal()"
+                        style="padding: 8px 20px; font-size: 12px"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        id="btnSubmitEmployee"
+                        class="btn-in"
+                        style="
+                          padding: 8px 20px;
+                          font-size: 12px;
+                          font-weight: 700;
+                        "
+                      >
+                        Create Employee
+                      </button>
                     </div>
                   </div>
 
-                  <div style="padding: 0 30px 30px 30px;">
-                  <!-- Section 1: Basic Details -->
-                  <div style="margin-bottom:25px;">
-                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Basic Information</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>First Name *</label><input type="text" name="first_name" class="member-select" required oninput="this.value=this.value.replace(/[^a-zA-Z\s.\-']/g,'')"></div>
-                      <div><label>Middle Name</label><input type="text" name="middle_name" class="member-select" oninput="this.value=this.value.replace(/[^a-zA-Z\s.\-']/g,'')"></div>
-                      <div><label>Last Name *</label><input type="text" name="last_name" class="member-select" required oninput="this.value=this.value.replace(/[^a-zA-Z\s.\-']/g,'')"></div>
-                      <div><label>Gender *</label><select name="gender" class="member-select" required><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
-                      <div><label>Date of Birth *</label><input type="date" name="date_of_birth" id="new_emp_dob" class="member-select" required></div>
-                      <div><label>Marital Status</label><select name="marital_status" class="member-select"><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>
-                      <div><label>Blood Group</label><select name="blood_group" class="member-select"><option value="">Select Blood Group</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="AB+">AB+</option><option value="AB-">AB-</option><option value="O+">O+</option><option value="O-">O-</option></select></div>
-                    </div>
-                  </div>
-
-                  <!-- Section 2: Professional Details -->
-                  <div style="margin-bottom:25px;">
-                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Professional Details</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Date of Joining *</label><input type="date" name="date_of_joining" id="new_emp_doj" class="member-select" required onchange="calculateConfirmationDate(this.value)"></div>
-                      <div><label>Date of Confirmation</label><input type="date" name="final_confirmation_date" id="new_emp_confirmation_date" class="member-select" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></div>
-                      <div><label>Employment Type</label><select name="employment_type" id="new_emp_employment_type" class="member-select"><option value="">Select Type</option></select></div>
-                      <div><label>Designation *</label><select name="designation" id="new_emp_designation" class="member-select" required><option value="">Select Designation</option></select></div>
-                      <div><label>Department *</label><select name="department" id="new_emp_department" class="member-select" required><option value="">Select Department</option></select></div>
-                      <div><label>Reporting Manager *</label>
-                        <div style="position:relative;">
-                          <input type="text" id="new_emp_reports_to_input" class="member-select" placeholder="Type to search..." autocomplete="off" required onfocus="showReportingDropdown()" oninput="filterReportingManager(this.value)" onblur="setTimeout(()=>hideReportingDropdown(),200)">
-                          <input type="hidden" name="reports_to" id="new_emp_reports_to">
-                          <div id="new_emp_reports_to_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
+                  <div style="padding: 0 30px 30px 30px">
+                    <!-- Section 1: Basic Details -->
+                    <div style="margin-bottom: 25px">
+                      <h4
+                        style="
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          color: var(--brand2);
+                          letter-spacing: 1px;
+                          margin-bottom: 15px;
+                          border-left: 4px solid var(--brand2);
+                          padding-left: 10px;
+                        "
+                      >
+                        Basic Information
+                      </h4>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(
+                            auto-fit,
+                            minmax(200px, 1fr)
+                          );
+                          gap: 15px;
+                        "
+                      >
+                        <div>
+                          <label>First Name *</label
+                          ><input
+                            type="text"
+                            name="first_name"
+                            class="member-select"
+                            required
+                            oninput="
+                              this.value = this.value.replace(
+                                /[^a-zA-Z\s.\-']/g,
+                                '',
+                              )
+                            "
+                          />
+                        </div>
+                        <div>
+                          <label>Middle Name</label
+                          ><input
+                            type="text"
+                            name="middle_name"
+                            class="member-select"
+                            oninput="
+                              this.value = this.value.replace(
+                                /[^a-zA-Z\s.\-']/g,
+                                '',
+                              )
+                            "
+                          />
+                        </div>
+                        <div>
+                          <label>Last Name *</label
+                          ><input
+                            type="text"
+                            name="last_name"
+                            class="member-select"
+                            required
+                            oninput="
+                              this.value = this.value.replace(
+                                /[^a-zA-Z\s.\-']/g,
+                                '',
+                              )
+                            "
+                          />
+                        </div>
+                        <div>
+                          <label>Gender *</label
+                          ><select name="gender" class="member-select" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Date of Birth *</label
+                          ><input
+                            type="date"
+                            name="date_of_birth"
+                            id="new_emp_dob"
+                            class="member-select"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label>Marital Status</label
+                          ><select name="marital_status" class="member-select">
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Divorced">Divorced</option>
+                            <option value="Widowed">Widowed</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Blood Group</label
+                          ><select name="blood_group" class="member-select">
+                            <option value="">Select Blood Group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                          </select>
                         </div>
                       </div>
-                      <div><label>Shift</label><select name="shift" id="new_emp_shift" class="member-select"><option value="">Select Shift</option></select></div>
                     </div>
-                  </div>
 
-                  <div style="margin-bottom:25px;">
-                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Branch & Hierarchy</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Branch Code (SOL ID) *</label><select name="sol_id" id="new_emp_sol_id" class="member-select" onchange="handleBranchCodeChange(this.value)" required><option value="">Select Branch Code</option></select></div>
-                      <div><label>Branch Name</label><input type="text" name="branch" id="new_emp_branch_name" class="member-select" readonly></div>
-                      <div><label>Zone</label><input type="text" name="zone" id="new_emp_zone" class="member-select" readonly></div>
-                      <div><label>Region</label><input type="text" name="region" id="new_emp_region" class="member-select" readonly></div>
-                      <div><label>District</label><input type="text" name="district_name" id="new_emp_district" class="member-select" readonly></div>
-                      <div><label>Division</label><select name="division" id="new_emp_division" class="member-select"><option value="">Select Division</option></select></div>
+                    <!-- Section 2: Professional Details -->
+                    <div style="margin-bottom: 25px">
+                      <h4
+                        style="
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          color: var(--brand2);
+                          letter-spacing: 1px;
+                          margin-bottom: 15px;
+                          border-left: 4px solid var(--brand2);
+                          padding-left: 10px;
+                        "
+                      >
+                        Professional Details
+                      </h4>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(
+                            auto-fit,
+                            minmax(200px, 1fr)
+                          );
+                          gap: 15px;
+                        "
+                      >
+                        <div>
+                          <label>Date of Joining *</label
+                          ><input
+                            type="date"
+                            name="date_of_joining"
+                            id="new_emp_doj"
+                            class="member-select"
+                            required
+                            onchange="calculateConfirmationDate(this.value)"
+                          />
+                        </div>
+                        <div>
+                          <label>Date of Confirmation</label
+                          ><input
+                            type="date"
+                            name="final_confirmation_date"
+                            id="new_emp_confirmation_date"
+                            class="member-select"
+                            readonly
+                            style="
+                              background-color: #f1f5f9;
+                              cursor: not-allowed;
+                            "
+                          />
+                        </div>
+                        <div>
+                          <label>Employment Type</label
+                          ><select
+                            name="employment_type"
+                            id="new_emp_employment_type"
+                            class="member-select"
+                          >
+                            <option value="">Select Type</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Designation *</label
+                          ><select
+                            name="designation"
+                            id="new_emp_designation"
+                            class="member-select"
+                            required
+                          >
+                            <option value="">Select Designation</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Department *</label
+                          ><select
+                            name="department"
+                            id="new_emp_department"
+                            class="member-select"
+                            required
+                          >
+                            <option value="">Select Department</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Reporting Manager *</label>
+                          <div style="position: relative">
+                            <input
+                              type="text"
+                              id="new_emp_reports_to_input"
+                              class="member-select"
+                              placeholder="Type to search..."
+                              autocomplete="off"
+                              required
+                              onfocus="showReportingDropdown()"
+                              oninput="filterReportingManager(this.value)"
+                              onblur="
+                                setTimeout(() => hideReportingDropdown(), 200)
+                              "
+                            />
+                            <input
+                              type="hidden"
+                              name="reports_to"
+                              id="new_emp_reports_to"
+                            />
+                            <div
+                              id="new_emp_reports_to_dropdown"
+                              style="
+                                display: none;
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                width: 100%;
+                                background: #fff;
+                                border: 1px solid #e5e7eb;
+                                max-height: 200px;
+                                overflow-y: auto;
+                                z-index: 20;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                              "
+                            ></div>
+                          </div>
+                        </div>
+                        <div>
+                          <label>Shift</label
+                          ><select
+                            name="shift"
+                            id="new_emp_shift"
+                            class="member-select"
+                          >
+                            <option value="">Select Shift</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <!-- Section 4: Contact & Identity -->
-                  <div style="margin-bottom:25px;">
-                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Contact & Identity</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Mobile Number</label><input type="text" name="mobile_number" class="member-select"></div>
-                      <div><label>Personal Email</label><input type="email" name="personal_email" class="member-select"></div>
-                      <div><label>PAN Number</label><input type="text" name="pan_number" class="member-select" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
-                      <div><label>Aadhaar Number</label><input type="text" name="aadhaar_card_number" class="member-select"></div>
-                      <div><label>UHID Number</label><input type="text" name="uhid_number" class="member-select" placeholder="e.g. ABHA-1234-5678-9012"></div>
+                    <div style="margin-bottom: 25px">
+                      <h4
+                        style="
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          color: var(--brand2);
+                          letter-spacing: 1px;
+                          margin-bottom: 15px;
+                          border-left: 4px solid var(--brand2);
+                          padding-left: 10px;
+                        "
+                      >
+                        Branch & Hierarchy
+                      </h4>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(
+                            auto-fit,
+                            minmax(200px, 1fr)
+                          );
+                          gap: 15px;
+                        "
+                      >
+                        <div>
+                          <label>Branch Code (SOL ID) *</label
+                          ><select
+                            name="sol_id"
+                            id="new_emp_sol_id"
+                            class="member-select"
+                            onchange="handleBranchCodeChange(this.value)"
+                            required
+                          >
+                            <option value="">Select Branch Code</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label>Branch Name</label
+                          ><input
+                            type="text"
+                            name="branch"
+                            id="new_emp_branch_name"
+                            class="member-select"
+                            readonly
+                          />
+                        </div>
+                        <div>
+                          <label>Zone</label
+                          ><input
+                            type="text"
+                            name="zone"
+                            id="new_emp_zone"
+                            class="member-select"
+                            readonly
+                          />
+                        </div>
+                        <div>
+                          <label>Region</label
+                          ><input
+                            type="text"
+                            name="region"
+                            id="new_emp_region"
+                            class="member-select"
+                            readonly
+                          />
+                        </div>
+                        <div>
+                          <label>District</label
+                          ><input
+                            type="text"
+                            name="district_name"
+                            id="new_emp_district"
+                            class="member-select"
+                            readonly
+                          />
+                        </div>
+                        <div>
+                          <label>Division</label
+                          ><select
+                            name="division"
+                            id="new_emp_division"
+                            class="member-select"
+                          >
+                            <option value="">Select Division</option>
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <div style="margin-top:15px;">
-                      <label>Permanent Address</label>
-                      <textarea name="permanent_address" class="member-select" rows="2"></textarea>
-                    </div>
-                  </div>
 
-                  <!-- Section 5: Banking & Salary -->
-                  <div style="margin-bottom:30px;">
-                    <h4 style="font-size:12px; text-transform:uppercase; color:var(--brand2); letter-spacing:1px; margin-bottom:15px; border-left:4px solid var(--brand2); padding-left:10px;">Banking & Salary</h4>
-                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:15px;">
-                      <div><label>Bank Name *</label><input type="text" name="bank_name" class="member-select" required></div>
-                      <div><label>Bank Account Number *</label><input type="text" name="bank_account_number" class="member-select" required></div>
-                      <div><label>Monthly Gross Salary *</label><input type="number" name="monthly_gross_salary" class="member-select" required></div>
+                    <!-- Section 4: Contact & Identity -->
+                    <div style="margin-bottom: 25px">
+                      <h4
+                        style="
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          color: var(--brand2);
+                          letter-spacing: 1px;
+                          margin-bottom: 15px;
+                          border-left: 4px solid var(--brand2);
+                          padding-left: 10px;
+                        "
+                      >
+                        Contact & Identity
+                      </h4>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(
+                            auto-fit,
+                            minmax(200px, 1fr)
+                          );
+                          gap: 15px;
+                        "
+                      >
+                        <div>
+                          <label>Mobile Number</label
+                          ><input
+                            type="text"
+                            name="mobile_number"
+                            class="member-select"
+                          />
+                        </div>
+                        <div>
+                          <label>Personal Email</label
+                          ><input
+                            type="email"
+                            name="personal_email"
+                            class="member-select"
+                          />
+                        </div>
+                        <div>
+                          <label>PAN Number</label
+                          ><input
+                            type="text"
+                            name="pan_number"
+                            class="member-select"
+                            style="text-transform: uppercase"
+                            oninput="this.value = this.value.toUpperCase()"
+                          />
+                        </div>
+                        <div>
+                          <label>Aadhaar Number</label
+                          ><input
+                            type="text"
+                            name="aadhaar_card_number"
+                            class="member-select"
+                          />
+                        </div>
+                        <div>
+                          <label>UHID Number</label
+                          ><input
+                            type="text"
+                            name="uhid_number"
+                            class="member-select"
+                            placeholder="e.g. ABHA-1234-5678-9012"
+                          />
+                        </div>
+                      </div>
+                      <div style="margin-top: 15px">
+                        <label>Permanent Address</label>
+                        <textarea
+                          name="permanent_address"
+                          class="member-select"
+                          rows="2"
+                        ></textarea>
+                      </div>
                     </div>
-                  </div>
+
+                    <!-- Section 5: Banking & Salary -->
+                    <div style="margin-bottom: 30px">
+                      <h4
+                        style="
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          color: var(--brand2);
+                          letter-spacing: 1px;
+                          margin-bottom: 15px;
+                          border-left: 4px solid var(--brand2);
+                          padding-left: 10px;
+                        "
+                      >
+                        Banking & Salary
+                      </h4>
+                      <div
+                        style="
+                          display: grid;
+                          grid-template-columns: repeat(
+                            auto-fit,
+                            minmax(200px, 1fr)
+                          );
+                          gap: 15px;
+                        "
+                      >
+                        <div>
+                          <label>Bank Name *</label
+                          ><input
+                            type="text"
+                            name="bank_name"
+                            class="member-select"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label>Bank Account Number *</label
+                          ><input
+                            type="text"
+                            name="bank_account_number"
+                            class="member-select"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label>Monthly Gross Salary *</label
+                          ><input
+                            type="number"
+                            name="monthly_gross_salary"
+                            class="member-select"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </form>
               </div>
             </div>
 
             <!-- IMPORT EMPLOYEES MODAL -->
-            <div id="importEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
-                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:var(--brand); margin:0;">Import Employees</h3>
-                  <button onclick="closeImportModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            <div
+              id="importEmployeesModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 5000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+              "
+            >
+              <div
+                style="
+                  background: #fff;
+                  padding: 28px;
+                  border-radius: 20px;
+                  width: 95%;
+                  max-width: 520px;
+                  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 14px;
+                  "
+                >
+                  <h3
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-weight: 800;
+                      color: var(--brand);
+                      margin: 0;
+                    "
+                  >
+                    Import Employees
+                  </h3>
+                  <button
+                    onclick="closeImportModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      cursor: pointer;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
                 </div>
 
                 <!-- Step 1: Download Template -->
-                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
-                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 1 — Download Sample Template</div>
-                  <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Fill in employee data using this CSV template. You can <strong>remove optional columns</strong> but <strong>do not remove mandatory columns</strong>.</div>
-                  <div style="font-size:11px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px 10px; margin-bottom:10px; color:#856404;">
-                    <strong>Mandatory columns:</strong> first_name, last_name, gender, date_of_joining, designation, department<br>
-                    <span style="font-weight:400; color:#6b7280;">All other columns are optional. Duplicate employees (same name + DOJ, or same UHID/PAN/Aadhaar) will be skipped automatically.</span>
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 16px;
+                    border: 1px solid #e2e8f0;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: var(--brand2);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Step 1 — Download Sample Template
                   </div>
-                  <button onclick="downloadImportTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:var(--brand2); border:none;">⬇ Download Template</button>
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: var(--muted);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Fill in employee data using this CSV template. You can
+                    <strong>remove optional columns</strong> but
+                    <strong>do not remove mandatory columns</strong>.
+                  </div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      background: #fff3cd;
+                      border: 1px solid #ffc107;
+                      border-radius: 6px;
+                      padding: 8px 10px;
+                      margin-bottom: 10px;
+                      color: #856404;
+                    "
+                  >
+                    <strong>Mandatory columns:</strong> first_name, last_name,
+                    gender, date_of_joining, designation, department<br />
+                    <span style="font-weight: 400; color: #6b7280"
+                      >All other columns are optional. Duplicate employees (same
+                      name + DOJ, or same UHID/PAN/Aadhaar) will be skipped
+                      automatically.</span
+                    >
+                  </div>
+                  <button
+                    onclick="downloadImportTemplate()"
+                    class="btn-in"
+                    style="
+                      font-size: 11px;
+                      padding: 7px 16px;
+                      background: var(--brand2);
+                      border: none;
+                    "
+                  >
+                    ⬇ Download Template
+                  </button>
                 </div>
 
                 <!-- Step 2: Upload CSV -->
-                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
-                  <div style="font-size:12px; font-weight:700; color:var(--brand2); margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
-                  <input type="file" id="importCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
-                  <button onclick="submitImport()" id="btnSubmitImport" class="btn-in" style="width:100%; padding:10px; font-weight:700;">Import Employees</button>
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 14px;
+                    border: 1px solid #e2e8f0;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: var(--brand2);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Step 2 — Upload Filled CSV
+                  </div>
+                  <input
+                    type="file"
+                    id="importCsvFile"
+                    accept=".csv"
+                    class="member-select"
+                    style="padding: 6px; font-size: 12px; margin-bottom: 10px"
+                  />
+                  <button
+                    onclick="submitImport()"
+                    id="btnSubmitImport"
+                    class="btn-in"
+                    style="width: 100%; padding: 10px; font-weight: 700"
+                  >
+                    Import Employees
+                  </button>
                 </div>
 
                 <!-- Results -->
-                <div id="importResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
+                <div
+                  id="importResults"
+                  style="
+                    display: none;
+                    margin-top: 16px;
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    background: #f8fafc;
+                    max-height: 200px;
+                    overflow-y: auto;
+                  "
+                ></div>
               </div>
             </div>
 
             <!-- UPDATE EMPLOYEES MODAL -->
-            <div id="updateEmployeesModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:520px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
-                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:#15803d; margin:0;">Update Employees</h3>
-                  <button onclick="closeUpdateModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            <div
+              id="updateEmployeesModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 5000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+              "
+            >
+              <div
+                style="
+                  background: #fff;
+                  padding: 28px;
+                  border-radius: 20px;
+                  width: 95%;
+                  max-width: 520px;
+                  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 14px;
+                  "
+                >
+                  <h3
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-weight: 800;
+                      color: #15803d;
+                      margin: 0;
+                    "
+                  >
+                    Update Employees
+                  </h3>
+                  <button
+                    onclick="closeUpdateModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      cursor: pointer;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
                 </div>
 
                 <!-- Step 1: Download Template -->
-                <div style="background:#f8fafc; border-radius:12px; padding:14px; margin-bottom:16px; border:1px solid #e2e8f0;">
-                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 1 — Download Update Template</div>
-                  <div style="font-size:11px; color:var(--muted); margin-bottom:6px;">Fill missing fields for existing employees using this CSV template. <strong>Only empty fields will be filled; existing data will not be overwritten.</strong></div>
-                  <div style="font-size:11px; background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:8px 10px; margin-bottom:10px; color:#15803d;">
-                    <strong>Mandatory columns:</strong> first_name, last_name, gender, date_of_joining, designation, department<br>
-                    <span style="font-weight:400; color:#6b7280;">All other columns are optional. Duplicate employees (same name + DOJ, or same UHID/PAN/Aadhaar) will have their <strong>missing fields updated</strong>. New employees will be created.</span>
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 14px;
+                    margin-bottom: 16px;
+                    border: 1px solid #e2e8f0;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #15803d;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Step 1 — Download Update Template
                   </div>
-                  <button onclick="downloadUpdateTemplate()" class="btn-in" style="font-size:11px; padding:7px 16px; background:#15803d; border:none;">⬇ Download Template</button>
+                  <div
+                    style="
+                      font-size: 11px;
+                      color: var(--muted);
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Fill missing fields for existing employees using this CSV
+                    template.
+                    <strong
+                      >Only empty fields will be filled; existing data will not
+                      be overwritten.</strong
+                    >
+                  </div>
+                  <div
+                    style="
+                      font-size: 11px;
+                      background: #f0fdf4;
+                      border: 1px solid #86efac;
+                      border-radius: 6px;
+                      padding: 8px 10px;
+                      margin-bottom: 10px;
+                      color: #15803d;
+                    "
+                  >
+                    <strong>Mandatory columns:</strong> first_name, last_name,
+                    gender, date_of_joining, designation, department<br />
+                    <span style="font-weight: 400; color: #6b7280"
+                      >All other columns are optional. Duplicate employees (same
+                      name + DOJ, or same UHID/PAN/Aadhaar) will have their
+                      <strong>missing fields updated</strong>. New employees
+                      will be created.</span
+                    >
+                  </div>
+                  <button
+                    onclick="downloadUpdateTemplate()"
+                    class="btn-in"
+                    style="
+                      font-size: 11px;
+                      padding: 7px 16px;
+                      background: #15803d;
+                      border: none;
+                    "
+                  >
+                    ⬇ Download Template
+                  </button>
                 </div>
 
                 <!-- Step 2: Upload CSV -->
-                <div style="background:#f8fafc; border-radius:12px; padding:14px; border:1px solid #e2e8f0;">
-                  <div style="font-size:12px; font-weight:700; color:#15803d; margin-bottom:6px;">Step 2 — Upload Filled CSV</div>
-                  <input type="file" id="updateCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px;">
-                  <button onclick="submitUpdate()" id="btnSubmitUpdate" class="btn-in" style="width:100%; padding:10px; font-weight:700; background:#15803d;">Update Employees</button>
+                <div
+                  style="
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 14px;
+                    border: 1px solid #e2e8f0;
+                  "
+                >
+                  <div
+                    style="
+                      font-size: 12px;
+                      font-weight: 700;
+                      color: #15803d;
+                      margin-bottom: 6px;
+                    "
+                  >
+                    Step 2 — Upload Filled CSV
+                  </div>
+                  <input
+                    type="file"
+                    id="updateCsvFile"
+                    accept=".csv"
+                    class="member-select"
+                    style="padding: 6px; font-size: 12px; margin-bottom: 10px"
+                  />
+                  <button
+                    onclick="submitUpdate()"
+                    id="btnSubmitUpdate"
+                    class="btn-in"
+                    style="
+                      width: 100%;
+                      padding: 10px;
+                      font-weight: 700;
+                      background: #15803d;
+                    "
+                  >
+                    Update Employees
+                  </button>
                 </div>
 
                 <!-- Results -->
-                <div id="updateResults" style="display:none; margin-top:16px; padding:14px; border-radius:12px; border:1px solid #e2e8f0; background:#f8fafc; max-height:200px; overflow-y:auto;"></div>
+                <div
+                  id="updateResults"
+                  style="
+                    display: none;
+                    margin-top: 16px;
+                    padding: 14px;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                    background: #f8fafc;
+                    max-height: 200px;
+                    overflow-y: auto;
+                  "
+                ></div>
               </div>
             </div>
 
             <!-- EXIT EMPLOYEE MODAL -->
-            <div id="exitEmployeeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-              <div style="background:#fff; padding:28px; border-radius:20px; width:95%; max-width:460px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #f1f5f9; padding-bottom:14px;">
-                  <h3 style="font-family:'Syne',sans-serif; font-weight:800; color:var(--danger); margin:0;">Exit Employee</h3>
-                  <button onclick="closeExitEmployeeModal()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            <div
+              id="exitEmployeeModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 5000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+              "
+            >
+              <div
+                style="
+                  background: #fff;
+                  padding: 28px;
+                  border-radius: 20px;
+                  width: 95%;
+                  max-width: 460px;
+                  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 14px;
+                  "
+                >
+                  <h3
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-weight: 800;
+                      color: var(--danger);
+                      margin: 0;
+                    "
+                  >
+                    Exit Employee
+                  </h3>
+                  <button
+                    onclick="closeExitEmployeeModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      cursor: pointer;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
                 </div>
-                <form id="exitEmployeeForm" onsubmit="event.preventDefault(); submitExitEmployee();">
-                  <div style="margin-bottom:14px;">
-                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Select Employee *</label>
-                    <div style="position:relative;">
-                      <input type="text" id="exit_emp_search_input" class="member-select" placeholder="Type to search..." autocomplete="off" required onfocus="showExitEmpDropdown()" oninput="filterExitEmp(this.value)" onblur="setTimeout(()=>hideExitEmpDropdown(),200)">
-                      <input type="hidden" id="exit_emp_select">
-                      <div id="exit_emp_dropdown" style="display:none; position:absolute; top:100%; left:0; width:100%; background:#fff; border:1px solid #e5e7eb; max-height:200px; overflow-y:auto; z-index:20; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"></div>
+                <form
+                  id="exitEmployeeForm"
+                  onsubmit="
+                    event.preventDefault();
+                    submitExitEmployee();
+                  "
+                >
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Select Employee *</label
+                    >
+                    <div style="position: relative">
+                      <input
+                        type="text"
+                        id="exit_emp_search_input"
+                        class="member-select"
+                        placeholder="Type to search..."
+                        autocomplete="off"
+                        required
+                        onfocus="showExitEmpDropdown()"
+                        oninput="filterExitEmp(this.value)"
+                        onblur="setTimeout(() => hideExitEmpDropdown(), 200)"
+                      />
+                      <input type="hidden" id="exit_emp_select" />
+                      <div
+                        id="exit_emp_dropdown"
+                        style="
+                          display: none;
+                          position: absolute;
+                          top: 100%;
+                          left: 0;
+                          width: 100%;
+                          background: #fff;
+                          border: 1px solid #e5e7eb;
+                          max-height: 200px;
+                          overflow-y: auto;
+                          z-index: 20;
+                          border-radius: 8px;
+                          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        "
+                      ></div>
                     </div>
                   </div>
-                  <div style="margin-bottom:14px;">
-                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Resignation Letter Date *</label>
-                    <input type="date" id="exit_resignation_date" class="member-select" required>
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Resignation Letter Date *</label
+                    >
+                    <input
+                      type="date"
+                      id="exit_resignation_date"
+                      class="member-select"
+                      required
+                    />
                   </div>
-                  <div style="margin-bottom:14px;">
-                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Relieving Date *</label>
-                    <input type="date" id="exit_relieving_date" class="member-select" required>
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Relieving Date *</label
+                    >
+                    <input
+                      type="date"
+                      id="exit_relieving_date"
+                      class="member-select"
+                      required
+                    />
                   </div>
-                  <div style="margin-bottom:20px;">
-                    <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason for Leaving *</label>
-                    <textarea id="exit_reason" class="member-select" rows="3" required placeholder="e.g. Personal reasons, better opportunity..."></textarea>
+                  <div style="margin-bottom: 20px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Reason for Leaving *</label
+                    >
+                    <textarea
+                      id="exit_reason"
+                      class="member-select"
+                      rows="3"
+                      required
+                      placeholder="e.g. Personal reasons, better opportunity..."
+                    ></textarea>
                   </div>
-                  <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
-                    <button type="button" class="btn-clear" onclick="closeExitEmployeeModal()" style="padding:9px 20px;">Cancel</button>
-                    <button type="submit" id="btnSubmitExit" class="btn-out" style="padding:9px 24px; font-weight:700;">Confirm Exit</button>
+                  <div
+                    style="
+                      display: flex;
+                      gap: 10px;
+                      justify-content: flex-end;
+                      border-top: 1px solid #f1f5f9;
+                      padding-top: 16px;
+                    "
+                  >
+                    <button
+                      type="button"
+                      class="btn-clear"
+                      onclick="closeExitEmployeeModal()"
+                      style="padding: 9px 20px"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      id="btnSubmitExit"
+                      class="btn-out"
+                      style="padding: 9px 24px; font-weight: 700"
+                    >
+                      Confirm Exit
+                    </button>
                   </div>
                 </form>
               </div>
@@ -2209,8 +3176,24 @@
     <div class="dashboard-drawer" id="dashboardDrawer">
       <div class="drawer-header">
         <span>Attendance Insights</span>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button id="drawerEditBtn" style="display:none;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;" onclick="toggleEmployeeEditMode()">✏️ Edit</button>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <button
+            id="drawerEditBtn"
+            style="
+              display: none;
+              background: rgba(255, 255, 255, 0.15);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              color: #fff;
+              padding: 5px 12px;
+              border-radius: 6px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+            onclick="toggleEmployeeEditMode()"
+          >
+            ✏️ Edit
+          </button>
           <button onclick="closeDashboardDrawer()">✕</button>
         </div>
       </div>
@@ -2227,7 +3210,12 @@
     ></div>
 
     <script>
-      document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+      document.getElementById("todayDate").textContent =
+        new Date().toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
       // ── CONFIG & STATE ──────────────────────────────────────
       const COLORS = [
         "#6366f1",
@@ -2257,7 +3245,8 @@
         document.getElementById("dashboardDrawer").classList.add("open");
         document.getElementById("drawerOverlay").classList.add("show");
         document.getElementById("drawerEditBtn").style.display = "none";
-        document.querySelector(".drawer-header span").textContent = "Attendance Insights";
+        document.querySelector(".drawer-header span").textContent =
+          "Attendance Insights";
         if (selectedMemberId) {
           loadAttendanceDashboard(selectedMemberId);
         }
@@ -2593,28 +3582,45 @@
         const shiftSel = document.getElementById("new_emp_shift");
         const empTypeSel = document.getElementById("new_emp_employment_type");
         if (!window._empList) {
-          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
+          window._empList = await callAPI(
+            "get_employees_for_reporting",
+            {},
+            "employee",
+          );
         }
 
-        if (window._empList && !document.getElementById("new_emp_reports_to_dropdown").hasChildNodes()) {
+        if (
+          window._empList &&
+          !document
+            .getElementById("new_emp_reports_to_dropdown")
+            .hasChildNodes()
+        ) {
           const dd = document.getElementById("new_emp_reports_to_dropdown");
-          window._empList.forEach(e => {
+          window._empList.forEach((e) => {
             const item = document.createElement("div");
             item.className = "reporting-mgr-item";
             item.dataset.value = e.name;
             item.textContent = e.employee_name + " (" + e.name + ")";
-            item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
-            item.onmouseover = () => item.style.background = "#f0f2f8";
-            item.onmouseout = () => item.style.background = "";
-            item.onmousedown = (ev) => { ev.preventDefault(); selectReportingManager(e.name, item.textContent); };
+            item.style.cssText =
+              "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => (item.style.background = "#f0f2f8");
+            item.onmouseout = () => (item.style.background = "");
+            item.onmousedown = (ev) => {
+              ev.preventDefault();
+              selectReportingManager(e.name, item.textContent);
+            };
             dd.appendChild(item);
           });
         }
 
         if (desigSel.options.length <= 1) {
-          const designations = await callAPI("get_designations", {}, "employee");
+          const designations = await callAPI(
+            "get_designations",
+            {},
+            "employee",
+          );
           if (designations) {
-            designations.forEach(d => {
+            designations.forEach((d) => {
               const opt = document.createElement("option");
               opt.value = d.name;
               opt.textContent = d.name;
@@ -2626,7 +3632,7 @@
         if (deptSel.options.length <= 1) {
           const departments = await callAPI("get_departments", {}, "employee");
           if (departments) {
-            departments.forEach(d => {
+            departments.forEach((d) => {
               const opt = document.createElement("option");
               opt.value = d.name;
               opt.textContent = d.name;
@@ -2638,7 +3644,7 @@
         if (divSel && divSel.options.length <= 1) {
           const divisions = await callAPI("get_divisions", {}, "employee");
           if (divisions) {
-            divisions.forEach(d => {
+            divisions.forEach((d) => {
               const opt = document.createElement("option");
               opt.value = d.name;
               opt.textContent = d.name;
@@ -2646,11 +3652,11 @@
             });
           }
         }
-        
+
         if (shiftSel && shiftSel.options.length <= 1) {
           const shifts = await callAPI("get_shifts", {}, "employee");
           if (shifts) {
-            shifts.forEach(s => {
+            shifts.forEach((s) => {
               const opt = document.createElement("option");
               opt.value = s.name;
               opt.textContent = s.name;
@@ -2662,7 +3668,7 @@
         if (empTypeSel && empTypeSel.options.length <= 1) {
           const types = await callAPI("get_employment_types", {}, "employee");
           if (types) {
-            types.forEach(t => {
+            types.forEach((t) => {
               const opt = document.createElement("option");
               opt.value = t.name;
               opt.textContent = t.name;
@@ -2672,9 +3678,13 @@
         }
 
         if (solIdSel && solIdSel.options.length <= 1) {
-          const branches = await callAPI("get_sahayog_branches", {}, "employee");
+          const branches = await callAPI(
+            "get_sahayog_branches",
+            {},
+            "employee",
+          );
           if (branches) {
-            branches.forEach(b => {
+            branches.forEach((b) => {
               const opt = document.createElement("option");
               opt.value = b.name;
               opt.textContent = b.name;
@@ -2688,23 +3698,29 @@
         const dd = document.getElementById("new_emp_reports_to_dropdown");
         const items = dd.querySelectorAll(".reporting-mgr-item");
         const q = query.toLowerCase();
-        items.forEach(item => {
-          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        items.forEach((item) => {
+          item.style.display = item.textContent.toLowerCase().includes(q)
+            ? ""
+            : "none";
         });
       }
 
       function showReportingDropdown() {
         const dd = document.getElementById("new_emp_reports_to_dropdown");
         if (!dd.hasChildNodes() && window._empList) {
-          window._empList.forEach(e => {
+          window._empList.forEach((e) => {
             const item = document.createElement("div");
             item.className = "reporting-mgr-item";
             item.dataset.value = e.name;
             item.textContent = e.employee_name + " (" + e.name + ")";
-            item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
-            item.onmouseover = () => item.style.background = "#f0f2f8";
-            item.onmouseout = () => item.style.background = "";
-            item.onmousedown = (ev) => { ev.preventDefault(); selectReportingManager(e.name, item.textContent); };
+            item.style.cssText =
+              "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => (item.style.background = "#f0f2f8");
+            item.onmouseout = () => (item.style.background = "");
+            item.onmousedown = (ev) => {
+              ev.preventDefault();
+              selectReportingManager(e.name, item.textContent);
+            };
             dd.appendChild(item);
           });
         }
@@ -2712,7 +3728,8 @@
       }
 
       function hideReportingDropdown() {
-        document.getElementById("new_emp_reports_to_dropdown").style.display = "none";
+        document.getElementById("new_emp_reports_to_dropdown").style.display =
+          "none";
       }
 
       function selectReportingManager(value, label) {
@@ -2725,8 +3742,10 @@
         const dd = document.getElementById("exit_emp_dropdown");
         const items = dd.querySelectorAll(".exit-emp-item");
         const q = query.toLowerCase();
-        items.forEach(item => {
-          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        items.forEach((item) => {
+          item.style.display = item.textContent.toLowerCase().includes(q)
+            ? ""
+            : "none";
         });
       }
       function showExitEmpDropdown() {
@@ -2777,14 +3796,20 @@
         if (dob && doj) {
           const birthDate = new Date(dob);
           const joiningDate = new Date(doj);
-          let ageAtJoining = joiningDate.getFullYear() - birthDate.getFullYear();
+          let ageAtJoining =
+            joiningDate.getFullYear() - birthDate.getFullYear();
           const m = joiningDate.getMonth() - birthDate.getMonth();
-          if (m < 0 || (m === 0 && joiningDate.getDate() < birthDate.getDate())) {
+          if (
+            m < 0 ||
+            (m === 0 && joiningDate.getDate() < birthDate.getDate())
+          ) {
             ageAtJoining--;
           }
 
           if (ageAtJoining < 18) {
-            showToast("Date of Joining must be at least 18 years after Date of Birth");
+            showToast(
+              "Date of Joining must be at least 18 years after Date of Birth",
+            );
             return;
           }
         }
@@ -2798,7 +3823,9 @@
 
         const pan = formData.get("pan_number")?.toUpperCase().trim();
         if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-          showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F).");
+          showToast(
+            "PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F).",
+          );
           return;
         }
         if (pan) formData.set("pan_number", pan);
@@ -2838,7 +3865,11 @@
         data.sol_id = document.getElementById("new_emp_sol_id").value;
         data.custom_medical_deduction = 100;
 
-        const res = await callAPI("create_support_staff", { data: data }, "employee");
+        const res = await callAPI(
+          "create_support_staff",
+          { data: data },
+          "employee",
+        );
 
         btn.disabled = false;
         btn.textContent = originalText;
@@ -2854,13 +3885,24 @@
         if (!sol_id) return;
 
         // Fetch branch details based on sol_id
-        const details = await callAPI("get_branch_details_by_sol_id", { sol_id: sol_id }, "employee");
+        const details = await callAPI(
+          "get_branch_details_by_sol_id",
+          { sol_id: sol_id },
+          "employee",
+        );
         if (details) {
-          if (details.branch) document.getElementById("new_emp_branch_name").value = details.branch;
-          if (details.zone) document.getElementById("new_emp_zone").value = details.zone;
-          if (details.region) document.getElementById("new_emp_region").value = details.region;
-          if (details.district) document.getElementById("new_emp_district").value = details.district;
-          if (details.state) document.getElementById("new_emp_state").value = details.state;
+          if (details.branch)
+            document.getElementById("new_emp_branch_name").value =
+              details.branch;
+          if (details.zone)
+            document.getElementById("new_emp_zone").value = details.zone;
+          if (details.region)
+            document.getElementById("new_emp_region").value = details.region;
+          if (details.district)
+            document.getElementById("new_emp_district").value =
+              details.district;
+          if (details.state)
+            document.getElementById("new_emp_state").value = details.state;
         }
       }
 
@@ -3014,7 +4056,10 @@
       // ── TABS LOGIC ──────────────────────────────────────
       let currentTab = "attendance";
       let currentSubTab = "pending";
-      let approvalData = { leave: { pending: [], history: [] }, corrections: { pending: [], history: [] } };
+      let approvalData = {
+        leave: { pending: [], history: [] },
+        corrections: { pending: [], history: [] },
+      };
 
       function switchTab(tab, btn) {
         if (
@@ -3029,7 +4074,7 @@
 
         currentTab = tab;
         currentSubTab = "pending"; // Reset sub-tab when switching main tabs
-        
+
         // Update sub-tab active state
         document.getElementById("subTabPending").classList.add("active");
         document.getElementById("subTabHistory").classList.remove("active");
@@ -3064,20 +4109,32 @@
 
         // Calendar Visibility Logic for HR
         if (isHR()) {
-            if (btnCreateEmployee) btnCreateEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
-            const btnExitEmployee = document.getElementById("btnExitEmployee");
-            if (btnExitEmployee) btnExitEmployee.style.display = (tab === 'attendance') ? "inline-block" : "none";
-            const btnImportEmployees = document.getElementById("btnImportEmployees");
-            const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
-            if (btnImportEmployees) btnImportEmployees.style.display = (tab === 'attendance') ? "inline-block" : "none";
-            if (btnUpdateEmployees) btnUpdateEmployees.style.display = (tab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
-            if (tab === "attendance") {
-                if (calPanel) calPanel.style.display = "block";
-                if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
-            } else {
-                if (calPanel) calPanel.style.display = "none";
-                if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
-            }
+          if (btnCreateEmployee)
+            btnCreateEmployee.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          const btnImportEmployees =
+            document.getElementById("btnImportEmployees");
+          const btnUpdateEmployees =
+            document.getElementById("btnUpdateEmployees");
+          if (btnImportEmployees)
+            btnImportEmployees.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          if (btnUpdateEmployees)
+            btnUpdateEmployees.style.display =
+              tab === "attendance" && userRoles.includes("Administrator")
+                ? "inline-block"
+                : "none";
+          if (tab === "attendance") {
+            if (calPanel) calPanel.style.display = "block";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+          } else {
+            if (calPanel) calPanel.style.display = "none";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
+          }
         }
 
         if (tab === "attendance") {
@@ -3091,7 +4148,9 @@
             // Reset to Active when switching to attendance tab
             if (isHR() && employeeStatusFilter !== "Active") {
               employeeStatusFilter = "Active";
-              document.querySelectorAll("#empStatusFilters .ftab").forEach(b => b.classList.remove("active"));
+              document
+                .querySelectorAll("#empStatusFilters .ftab")
+                .forEach((b) => b.classList.remove("active"));
               const activeBtn = document.getElementById("statusFilterActive");
               if (activeBtn) activeBtn.classList.add("active");
             }
@@ -3109,7 +4168,7 @@
           if (bulkBar) bulkBar.classList.remove("visible");
           if (searchWrap) searchWrap.style.display = "none";
           if (subTabs) subTabs.style.display = "flex";
-          
+
           // Set default month for history filter (YYYY-MM)
           const monthInput = document.getElementById("historyMonth");
           if (monthInput && !monthInput.value) {
@@ -3137,13 +4196,19 @@
 
       function switchSubTab(subTab) {
         currentSubTab = subTab;
-        document.getElementById("subTabPending").classList.toggle("active", subTab === "pending");
-        document.getElementById("subTabHistory").classList.toggle("active", subTab === "history");
-        
+        document
+          .getElementById("subTabPending")
+          .classList.toggle("active", subTab === "pending");
+        document
+          .getElementById("subTabHistory")
+          .classList.toggle("active", subTab === "history");
+
         // Show/Hide history search
         const hSearch = document.getElementById("historySearchWrap");
-        if (hSearch) hSearch.style.display = subTab === "history" ? "block" : "none";
-        if (subTab === "pending") document.getElementById("historySearch").value = "";
+        if (hSearch)
+          hSearch.style.display = subTab === "history" ? "block" : "none";
+        if (subTab === "pending")
+          document.getElementById("historySearch").value = "";
 
         renderApprovals();
       }
@@ -3177,17 +4242,22 @@
 
         // Apply Search & Month Filter for history
         if (currentSubTab === "history") {
-          const q = document.getElementById("historySearch").value.toLowerCase();
+          const q = document
+            .getElementById("historySearch")
+            .value.toLowerCase();
           const month = document.getElementById("historyMonth").value; // YYYY-MM
-          
+
           if (q) {
-            data = data.filter(c => 
-              c.employee_name.toLowerCase().includes(q) || 
-              c.employee.toLowerCase().includes(q)
+            data = data.filter(
+              (c) =>
+                c.employee_name.toLowerCase().includes(q) ||
+                c.employee.toLowerCase().includes(q),
             );
           }
           if (month) {
-            data = data.filter(c => c.attendance_date && c.attendance_date.startsWith(month));
+            data = data.filter(
+              (c) => c.attendance_date && c.attendance_date.startsWith(month),
+            );
           }
         }
 
@@ -3206,7 +4276,8 @@
                   <button class="btn-out" onclick="updateCorrectionStatus('${c.name}', 'Rejected')">Reject</button>
                 </div>`;
             } else {
-              const statusClass = c.status === "Approved" ? "pill-present" : "pill-absent";
+              const statusClass =
+                c.status === "Approved" ? "pill-present" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
             }
 
@@ -3257,15 +4328,24 @@
       // ── CALENDAR NAVIGATION FIX ────────────────────────────
       function changeMonth(direction) {
         if (direction < 0 && selectedMemberId) {
-          const emp = staff.find(x => x.name === selectedMemberId);
+          const emp = staff.find((x) => x.name === selectedMemberId);
           if (emp && emp.date_of_joining) {
             const doj = new Date(emp.date_of_joining);
             const targetMonth = calMonth + direction;
             let tYear = calYear;
             let tMonth = targetMonth;
-            if (tMonth > 11) { tMonth = 0; tYear++; }
-            else if (tMonth < 0) { tMonth = 11; tYear--; }
-            if (tYear < doj.getFullYear() || (tYear === doj.getFullYear() && tMonth < doj.getMonth())) return;
+            if (tMonth > 11) {
+              tMonth = 0;
+              tYear++;
+            } else if (tMonth < 0) {
+              tMonth = 11;
+              tYear--;
+            }
+            if (
+              tYear < doj.getFullYear() ||
+              (tYear === doj.getFullYear() && tMonth < doj.getMonth())
+            )
+              return;
           }
         }
         calMonth += direction;
@@ -3300,17 +4380,22 @@
 
         // Apply Search & Month Filter for history
         if (currentSubTab === "history") {
-          const q = document.getElementById("historySearch").value.toLowerCase();
+          const q = document
+            .getElementById("historySearch")
+            .value.toLowerCase();
           const month = document.getElementById("historyMonth").value; // YYYY-MM
-          
+
           if (q) {
-            data = data.filter(l => 
-              l.employee_name.toLowerCase().includes(q) || 
-              l.employee.toLowerCase().includes(q)
+            data = data.filter(
+              (l) =>
+                l.employee_name.toLowerCase().includes(q) ||
+                l.employee.toLowerCase().includes(q),
             );
           }
           if (month) {
-            data = data.filter(l => l.from_date && l.from_date.startsWith(month));
+            data = data.filter(
+              (l) => l.from_date && l.from_date.startsWith(month),
+            );
           }
         }
 
@@ -3344,7 +4429,8 @@
                   <button class="btn-out" onclick="rejectLeave('${l.name}')">Reject</button>
                 </div>`;
             } else {
-              const statusClass = l.status === "Approved" ? "pill-present" : "pill-absent";
+              const statusClass =
+                l.status === "Approved" ? "pill-present" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
             }
 
@@ -3440,9 +4526,12 @@
           dashboardSummary = data.summary;
           // Update status counts in filter tabs
           if (data.status_counts) {
-            document.getElementById("countActive").textContent = data.status_counts.Active || 0;
-            document.getElementById("countLeft").textContent = data.status_counts.Left || 0;
-            document.getElementById("countAll").textContent = data.status_counts.All || 0;
+            document.getElementById("countActive").textContent =
+              data.status_counts.Active || 0;
+            document.getElementById("countLeft").textContent =
+              data.status_counts.Left || 0;
+            document.getElementById("countAll").textContent =
+              data.status_counts.All || 0;
           }
           renderAll(data.current_user);
           populateSelect();
@@ -3467,16 +4556,29 @@
         const btnCreateEmployee = document.getElementById("btnCreateEmployee");
 
         if (isHR()) {
-          if (attendanceTab) attendanceTab.textContent = "👤 Employee Directory";
+          if (attendanceTab)
+            attendanceTab.textContent = "👤 Employee Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "none";
           // Button will be managed inside switchTab based on tab context
-          if (btnCreateEmployee) btnCreateEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
+          if (btnCreateEmployee)
+            btnCreateEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
           const btnExitEmployee = document.getElementById("btnExitEmployee");
-          if (btnExitEmployee) btnExitEmployee.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
-          const btnImportEmployees = document.getElementById("btnImportEmployees");
-          const btnUpdateEmployees = document.getElementById("btnUpdateEmployees");
-          if (btnImportEmployees) btnImportEmployees.style.display = (currentTab === 'attendance') ? "inline-block" : "none";
-          if (btnUpdateEmployees) btnUpdateEmployees.style.display = (currentTab === 'attendance' && userRoles.includes("Administrator")) ? "inline-block" : "none";
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
+          const btnImportEmployees =
+            document.getElementById("btnImportEmployees");
+          const btnUpdateEmployees =
+            document.getElementById("btnUpdateEmployees");
+          if (btnImportEmployees)
+            btnImportEmployees.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
+          if (btnUpdateEmployees)
+            btnUpdateEmployees.style.display =
+              currentTab === "attendance" && userRoles.includes("Administrator")
+                ? "inline-block"
+                : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Approvals";
@@ -3496,7 +4598,8 @@
           // Show/hide employee status filter tabs based on current tab
           const empStatusFilters = document.getElementById("empStatusFilters");
           if (empStatusFilters) {
-            empStatusFilters.style.display = (currentTab === 'attendance') ? "flex" : "none";
+            empStatusFilters.style.display =
+              currentTab === "attendance" ? "flex" : "none";
           }
 
           // Set HR Dashboard as default on first load
@@ -3540,7 +4643,9 @@
       function switchEmployeeStatus(status, btn) {
         if (status === employeeStatusFilter) return;
         employeeStatusFilter = status;
-        document.querySelectorAll("#empStatusFilters .ftab").forEach(b => b.classList.remove("active"));
+        document
+          .querySelectorAll("#empStatusFilters .ftab")
+          .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
 
         // Reset selection when switching away from Active
@@ -3553,7 +4658,7 @@
         // Hide attendance status filter when not viewing Active employees
         const fStatus = document.getElementById("f_status");
         if (fStatus) {
-          fStatus.style.display = (status === "Active") ? "inline-block" : "none";
+          fStatus.style.display = status === "Active" ? "inline-block" : "none";
           fStatus.value = ""; // reset
         }
 
@@ -3561,7 +4666,9 @@
       }
 
       function filterBranchTable() {
-        const q = document.getElementById("branchTableSearch").value.toLowerCase();
+        const q = document
+          .getElementById("branchTableSearch")
+          .value.toLowerCase();
         const rows = document.querySelectorAll("#branchTableBody tr");
         rows.forEach((row) => {
           const text = row.cells[0].textContent.toLowerCase();
@@ -3570,7 +4677,11 @@
       }
 
       async function loadHRDashboard(month) {
-        const data = await callAPI("get_hr_dashboard_data", { month: month }, "attendance");
+        const data = await callAPI(
+          "get_hr_dashboard_data",
+          { month: month },
+          "attendance",
+        );
         if (!data) return;
 
         const dashContent = document.getElementById("hrDashboardContent");
@@ -3588,7 +4699,7 @@
                     onchange="loadHRDashboard(this.value)"
                     style="border:1.5px solid var(--border); border-radius:6px; padding:6px 12px; font-size:13px; font-family:inherit; outline:none; cursor:pointer;"
                 >
-                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical</span>' : ''}
+                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical</span>' : ""}
             </div>
 
             <!-- 1. Global Metrics (6 Cards) -->
@@ -3642,7 +4753,7 @@
                           )
                           .join("")}
                         <div class="dash-row" style="margin-top:8px; padding-top:8px; border-top:1.5px dashed #f1f5f9;">
-                            <span class="dash-lbl" style="font-weight:700;">${isCurrent ? 'Global' : 'Monthly Avg'} Attendance %</span>
+                            <span class="dash-lbl" style="font-weight:700;">${isCurrent ? "Global" : "Monthly Avg"} Attendance %</span>
                             <span class="dash-val" style="font-size:18px; color:var(--brand2);">${data.attendance.percentage}%</span>
                         </div>
                         <div style="background:#f1f5f9; height:8px; border-radius:10px; margin-top:8px; overflow:hidden;">
@@ -3724,7 +4835,7 @@
             <!-- 3. Branch-wise Detailed Table -->
             <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                    <div class="dash-sec-title" style="margin:0;">Branch-wise Performance (${isCurrent ? 'Today' : 'Monthly Avg.'})</div>
+                    <div class="dash-sec-title" style="margin:0;">Branch-wise Performance (${isCurrent ? "Today" : "Monthly Avg."})</div>
                     <input 
                       type="text" 
                       id="branchTableSearch" 
@@ -3738,7 +4849,7 @@
                         <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted); font-size:12px; text-transform:uppercase;">
                             <th style="padding: 10px 0; width:25%;">Branch Name</th>
                             <th style="padding: 10px 0; text-align: center; width:25%;">Staff</th>
-                            <th style="padding: 10px 0; text-align: center; width:25%;">${isCurrent ? 'Present' : 'Avg. Pres.'}</th>
+                            <th style="padding: 10px 0; text-align: center; width:25%;">${isCurrent ? "Present" : "Avg. Pres."}</th>
                             <th style="padding: 10px 0; text-align: center; width:25%;">Att. %</th>
                         </tr>
                     </thead>
@@ -3747,7 +4858,7 @@
                           .map(
                             (b) => `
                             <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 10px 0; font-weight: 600; color: var(--brand); font-size:13px;">${b.branch_name ? `${b.branch_name} (${b.branch})` : (b.branch || "Not Set")}</td>
+                                <td style="padding: 10px 0; font-weight: 600; color: var(--brand); font-size:13px;">${b.branch_name ? `${b.branch_name} (${b.branch})` : b.branch || "Not Set"}</td>
                                 <td style="padding: 10px 0; text-align: center; font-size:13px;">${b.total}</td>
                                 <td style="padding: 10px 0; text-align: center; color:var(--success); font-weight:600; font-size:13px;">${b.present}</td>
                                 <td style="padding: 10px 0; text-align: center;"><span style="background:#f5f3ff; color:var(--brand2); padding:4px 8px; border-radius:6px; font-weight:700; font-size:12px;">${b.att_pc}%</span></td>
@@ -3806,11 +4917,12 @@
       }
 
       function updateLeaveCard(key, data) {
-        document.getElementById(`lb-${key}-bal`).textContent = data.unused_leaves;
+        document.getElementById(`lb-${key}-bal`).textContent =
+          data.unused_leaves;
         const opening = data.carry_forwarded_leaves_count || 0;
         const used = data.total_leaves_allocated - data.unused_leaves;
         document.getElementById(`lb-${key}-sub`).textContent =
-          `Opening: ${opening} | Used: ${used} / ${data.total_leaves_allocated}`;
+          `${used} / ${data.total_leaves_allocated}`;
       }
 
       async function loadCalendarHistory() {
@@ -3897,13 +5009,21 @@
           if (isLeft) {
             // Left employee — show exit info, no attendance controls
             const exitDate = s.relieving_date
-              ? new Date(s.relieving_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-              : (s.resignation_letter_date
-                ? new Date(s.resignation_letter_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                : "N/A");
+              ? new Date(s.relieving_date).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })
+              : s.resignation_letter_date
+                ? new Date(s.resignation_letter_date).toLocaleDateString(
+                    "en-IN",
+                    { day: "numeric", month: "short", year: "numeric" },
+                  )
+                : "N/A";
             const reason = s.reason_for_leaving || "";
             extraInfo = `<div style="font-size:10px;color:#dc2626;margin-top:2px;">Exited on: ${exitDate}</div>`;
-            if (reason) extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
+            if (reason)
+              extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
             if (isHR()) {
               actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
             }
@@ -3942,11 +5062,18 @@
             if (s.check_out) timeInfo += ` | Out: ${s.check_out}`;
           }
 
-          const checkboxHtml = (!isLeft && isBranchManager())
-            ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
-            : "";
+          const checkboxHtml =
+            !isLeft && isBranchManager()
+              ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
+              : "";
 
-          const ringColor = isLeft ? "#9ca3af" : (status === "Present" ? "#22c55e" : status === "Absent" ? "#ef4444" : "#d1d5db");
+          const ringColor = isLeft
+            ? "#9ca3af"
+            : status === "Present"
+              ? "#22c55e"
+              : status === "Absent"
+                ? "#ef4444"
+                : "#d1d5db";
 
           row.innerHTML = `
             ${checkboxHtml}
@@ -3962,7 +5089,7 @@
                 ${extraInfo}
             </div>
             <div class="emp-actions">
-                ${actionsHtml ? actionsHtml : (isLeft ? "" : pillHtml)}
+                ${actionsHtml ? actionsHtml : isLeft ? "" : pillHtml}
             </div>
           `;
           list.appendChild(row);
@@ -3991,7 +5118,7 @@
 
       function renderCalendar() {
         const grid = document.getElementById("calDays");
-        const emp = staff.find(x => x.name === selectedMemberId);
+        const emp = staff.find((x) => x.name === selectedMemberId);
         const doj = emp ? new Date(emp.date_of_joining) : null;
         const months = [
           "January",
@@ -4045,7 +5172,10 @@
           cell.title = histStatus || key;
 
           // Disable dates before employee's date of joining
-          const isBeforeDoj = doj && new Date(key) < new Date(doj.getFullYear(), doj.getMonth(), doj.getDate());
+          const isBeforeDoj =
+            doj &&
+            new Date(key) <
+              new Date(doj.getFullYear(), doj.getMonth(), doj.getDate());
 
           if (isBeforeDoj) {
             cls += " before-doj";
@@ -4216,16 +5346,17 @@
         renderStats();
         renderEmpList();
 
-        const attendanceControls = document.getElementById("attendanceControls");
+        const attendanceControls =
+          document.getElementById("attendanceControls");
         const searchBoxWrap = document.getElementById("searchBoxWrap");
         const isMgr = isBranchManager();
         const isHrUser = isHR();
-        
+
         if (attendanceControls) {
           attendanceControls.style.display = isMgr ? "flex" : "none";
         }
         if (searchBoxWrap) {
-          searchBoxWrap.style.display = (isMgr || isHrUser) ? "flex" : "none";
+          searchBoxWrap.style.display = isMgr || isHrUser ? "flex" : "none";
         }
 
         if (currentUser) {
@@ -4273,7 +5404,10 @@
               searchQuery &&
               !s.employee_name.toLowerCase().includes(searchQuery) &&
               !s.name.toLowerCase().includes(searchQuery) &&
-              !(s.designation && s.designation.toLowerCase().includes(searchQuery))
+              !(
+                s.designation &&
+                s.designation.toLowerCase().includes(searchQuery)
+              )
             )
               return false;
             return true;
@@ -4352,12 +5486,13 @@
         if (!doj) return;
         const date = new Date(doj);
         date.setDate(date.getDate() + 90);
-        
+
         const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        
-        document.getElementById("new_emp_confirmation_date").value = `${yyyy}-${mm}-${dd}`;
+        const mm = String(date.getMonth() + 1).padStart(2, "0");
+        const dd = String(date.getDate()).padStart(2, "0");
+
+        document.getElementById("new_emp_confirmation_date").value =
+          `${yyyy}-${mm}-${dd}`;
       }
 
       let _currentProfileEmployee = null;
@@ -4367,31 +5502,47 @@
         _currentProfileEmployee = empId;
         const drawer = document.getElementById("dashboardDrawer");
         const content = document.getElementById("dashboardContent");
-        document.querySelector(".drawer-header span").textContent = "Employee Profile";
+        document.querySelector(".drawer-header span").textContent =
+          "Employee Profile";
         document.getElementById("drawerEditBtn").style.display = "inline-block";
-        content.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+        content.innerHTML =
+          '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
         document.getElementById("drawerOverlay").classList.add("show");
 
-        const e = await callAPI("get_employee_profile", { employee: empId }, "employee");
+        const e = await callAPI(
+          "get_employee_profile",
+          { employee: empId },
+          "employee",
+        );
         if (!e) return;
         _currentProfileData = e;
         renderEmployeeProfileView(e);
       }
 
       function renderEmployeeProfileView(e) {
-        const fmt = d => d ? new Date(d).toLocaleDateString("en-IN", {day:"2-digit", month:"short", year:"numeric"}) : "—";
-        const val = v => v || "—";
-        const row = (label, value) => value && value !== "—" ? `
+        const fmt = (d) =>
+          d
+            ? new Date(d).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "—";
+        const val = (v) => v || "—";
+        const row = (label, value) =>
+          value && value !== "—"
+            ? `
           <div class="dash-row"><span class="dash-lbl">${label}</span>
-          <span class="dash-val" style="text-align:right;max-width:60%;word-break:break-word;">${value}</span></div>` : "";
+          <span class="dash-val" style="text-align:right;max-width:60%;word-break:break-word;">${value}</span></div>`
+            : "";
 
         document.getElementById("dashboardContent").innerHTML = `
           <div class="emp-header-card">
             <div style="width:56px;height:56px;border-radius:50%;background:var(--brand2);color:#fff;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">${e.employee_name.charAt(0)}</div>
             <div class="emp-h-name">${e.employee_name}</div>
             <div class="emp-h-sub">${val(e.designation)} ${e.department ? "· " + e.department : ""}</div>
-            <div style="margin-top:6px;"><span style="background:${e.status==='Active'?'#dcfce7':'#fee2e2'};color:${e.status==='Active'?'#16a34a':'#dc2626'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${val(e.status)}</span></div>
+            <div style="margin-top:6px;"><span style="background:${e.status === "Active" ? "#dcfce7" : "#fee2e2"};color:${e.status === "Active" ? "#16a34a" : "#dc2626"};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${val(e.status)}</span></div>
           </div>
           <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
             ${row("Employee Code", e.name)} ${row("Gender", e.gender)} ${row("Date of Birth", fmt(e.date_of_birth))} ${row("Marital Status", e.marital_status)} ${row("Blood Group", e.blood_group)}
@@ -4400,8 +5551,8 @@
             ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)}
             ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", e.custom_zone)} ${row("Region", e.custom_region)} ${row("District", e.custom_district)}
             ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
-            ${e.status==="Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
-            ${e.status==="Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
+            ${e.status === "Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
+            ${e.status === "Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
             ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("UHID Number", e.custom_uhid_number)} ${row("Permanent Address", e.permanent_address)}
@@ -4416,8 +5567,11 @@
       function toggleEmployeeEditMode() {
         const e = _currentProfileData;
         if (!e) return;
-        const isHRMgr = userRoles.includes("HR Manager") || userRoles.includes("Administrator");
-        const inp = (name, value, type="text") => `<input name="${name}" value="${value||""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+        const isHRMgr =
+          userRoles.includes("HR Manager") ||
+          userRoles.includes("Administrator");
+        const inp = (name, value, type = "text") =>
+          `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
 
         document.getElementById("drawerEditBtn").style.display = "none";
         document.getElementById("dashboardContent").innerHTML = `
@@ -4433,7 +5587,7 @@
                 <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address||""}</textarea></div>
+                <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
             </div>
             <div class="dash-section"><div class="dash-sec-title">Employment</div>
@@ -4451,10 +5605,14 @@
                 <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
               </div>
             </div>
-            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Loan <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+            ${
+              isHRMgr
+                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Loan <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
               <div style="margin-top:10px;"><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
-            </div>` : ""}
+            </div>`
+                : ""
+            }
             <div style="display:flex;gap:10px;padding-top:10px;">
               <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
               <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
@@ -4467,29 +5625,63 @@
         const form = document.getElementById("empEditForm");
         const fd = new FormData(form);
         const data = {};
-        fd.forEach((v, k) => data[k] = v);
+        fd.forEach((v, k) => (data[k] = v));
 
         const btn = document.getElementById("btnSaveProfile");
-        btn.disabled = true; btn.textContent = "Saving...";
+        btn.disabled = true;
+        btn.textContent = "Saving...";
 
-        const res = await callAPI("update_employee_profile", { employee: _currentProfileEmployee, data }, "employee");
-        btn.disabled = false; btn.textContent = "Save Changes";
+        const res = await callAPI(
+          "update_employee_profile",
+          { employee: _currentProfileEmployee, data },
+          "employee",
+        );
+        btn.disabled = false;
+        btn.textContent = "Save Changes";
 
         if (res && res.success) {
           showToast(res.message);
-          const updated = await callAPI("get_employee_profile", { employee: _currentProfileEmployee }, "employee");
-          if (updated) { _currentProfileData = updated; renderEmployeeProfileView(updated); }
-          document.getElementById("drawerEditBtn").style.display = "inline-block";
+          const updated = await callAPI(
+            "get_employee_profile",
+            { employee: _currentProfileEmployee },
+            "employee",
+          );
+          if (updated) {
+            _currentProfileData = updated;
+            renderEmployeeProfileView(updated);
+          }
+          document.getElementById("drawerEditBtn").style.display =
+            "inline-block";
         }
       }
 
       function renderReportsTab() {
         const reports = [
-          { name: "SS Employee Master Report", desc: "Active & inactive support staff with all master data", icon: "👥" },
-          { name: "SS Monthly Attendance Report", desc: "Month-wise attendance summary per employee", icon: "📅" },
-          { name: "SS Branch-wise Attendance Report", desc: "Branch-level attendance statistics for a month", icon: "🏢" },
-          { name: "SS Leave Balance Report", desc: "Current leave balance (CL, SL, EL) per employee", icon: "🌿" },
-          { name: "SS Salary Register", desc: "Monthly gross salary register for active support staff", icon: "💰" },
+          {
+            name: "SS Employee Master Report",
+            desc: "Active & inactive support staff with all master data",
+            icon: "👥",
+          },
+          {
+            name: "SS Monthly Attendance Report",
+            desc: "Month-wise attendance summary per employee",
+            icon: "📅",
+          },
+          {
+            name: "SS Branch-wise Attendance Report",
+            desc: "Branch-level attendance statistics for a month",
+            icon: "🏢",
+          },
+          {
+            name: "SS Leave Balance Report",
+            desc: "Current leave balance (CL, SL, EL) per employee",
+            icon: "🌿",
+          },
+          {
+            name: "SS Salary Register",
+            desc: "Monthly gross salary register for active support staff",
+            icon: "💰",
+          },
         ];
 
         document.getElementById("hrDashboardContent").innerHTML = `
@@ -4497,7 +5689,9 @@
             <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin-bottom:6px;">MIS Reports</h3>
             <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">Support Staff Reports — Click to open in Frappe Report view with filters & Excel download.</p>
             <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px;">
-              ${reports.map(r => `
+              ${reports
+                .map(
+                  (r) => `
                 <a href="/app/query-report/${encodeURIComponent(r.name)}" target="_blank" style="text-decoration:none;">
                   <div style="background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:18px; display:flex; gap:14px; align-items:flex-start; box-shadow:var(--shadow); transition:0.15s; cursor:pointer;"
                     onmouseover="this.style.borderColor='var(--brand2)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -4508,13 +5702,39 @@
                     </div>
                   </div>
                 </a>
-              `).join("")}
+              `,
+                )
+                .join("")}
             </div>
           </div>
         `;
       }
 
-      const IMPORT_COLUMNS = ["first_name","middle_name","last_name","gender","date_of_birth","date_of_joining","designation","department","sol_id","mobile_number","pan_number","aadhaar_card_number","uhid_number","bank_name","bank_account_number","monthly_gross_salary","reports_to","employment_type","marital_status","blood_group","permanent_address","relieving_date","resignation_letter_date"];
+      const IMPORT_COLUMNS = [
+        "first_name",
+        "middle_name",
+        "last_name",
+        "gender",
+        "date_of_birth",
+        "date_of_joining",
+        "designation",
+        "department",
+        "sol_id",
+        "mobile_number",
+        "pan_number",
+        "aadhaar_card_number",
+        "uhid_number",
+        "bank_name",
+        "bank_account_number",
+        "monthly_gross_salary",
+        "reports_to",
+        "employment_type",
+        "marital_status",
+        "blood_group",
+        "permanent_address",
+        "relieving_date",
+        "resignation_letter_date",
+      ];
 
       function openImportModal() {
         document.getElementById("importResults").style.display = "none";
@@ -4537,9 +5757,61 @@
       }
 
       function downloadUpdateTemplate() {
-        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
-        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
-        const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
+        const sampleRow = [
+          "John",
+          "Kumar",
+          "Doe",
+          "Male",
+          "21-08-1990",
+          "01-06-2024",
+          "Peon",
+          "Support Staff",
+          "SOL001",
+          "9876543210",
+          "ABCDE1234F",
+          "123456789012",
+          "",
+          "State Bank",
+          "1234567890",
+          "15000",
+          "MGR001",
+          "Permanent",
+          "Married",
+          "O+",
+          "123 Main Street Pune",
+          "",
+          "",
+        ];
+        const noteRow = [
+          "*Mandatory*",
+          "Optional",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+        ];
+        const csv = [
+          IMPORT_COLUMNS.join(","),
+          noteRow.join(","),
+          sampleRow.join(","),
+        ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -4548,10 +5820,62 @@
       }
 
       function downloadImportTemplate() {
-        const sampleRow = ["John","Kumar","Doe","Male","21-08-1990","01-06-2024","Peon","Support Staff","SOL001","9876543210","ABCDE1234F","123456789012","","State Bank","1234567890","15000","MGR001","Permanent","Married","O+","123 Main Street Pune","",""];
+        const sampleRow = [
+          "John",
+          "Kumar",
+          "Doe",
+          "Male",
+          "21-08-1990",
+          "01-06-2024",
+          "Peon",
+          "Support Staff",
+          "SOL001",
+          "9876543210",
+          "ABCDE1234F",
+          "123456789012",
+          "",
+          "State Bank",
+          "1234567890",
+          "15000",
+          "MGR001",
+          "Permanent",
+          "Married",
+          "O+",
+          "123 Main Street Pune",
+          "",
+          "",
+        ];
         // Add a note row indicating mandatory fields
-        const noteRow = ["*Mandatory*","Optional","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","*Mandatory*","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional","Optional"];
-        const csv = [IMPORT_COLUMNS.join(","), noteRow.join(","), sampleRow.join(",")].join("\n");
+        const noteRow = [
+          "*Mandatory*",
+          "Optional",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "*Mandatory*",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+          "Optional",
+        ];
+        const csv = [
+          IMPORT_COLUMNS.join(","),
+          noteRow.join(","),
+          sampleRow.join(","),
+        ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -4561,41 +5885,61 @@
 
       async function submitImport() {
         const file = document.getElementById("importCsvFile").files[0];
-        if (!file) { showToast("Please select a CSV file"); return; }
+        if (!file) {
+          showToast("Please select a CSV file");
+          return;
+        }
 
         const btn = document.getElementById("btnSubmitImport");
-        btn.disabled = true; btn.textContent = "Importing...";
+        btn.disabled = true;
+        btn.textContent = "Importing...";
 
         console.log("[ImportEmployees] Starting import process...");
 
         // ── Parse CSV ────────────────────────────────────────────────────────
         const text = await file.text();
         const lines = text.trim().split("\n");
-        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/^"|"$/g, ""));
         console.log("[ImportEmployees] CSV headers detected:", headers);
 
         // Skip any note/annotation rows (row 2 in template is the *Mandatory*/*Optional* row)
         const SKIP_MARKERS = ["*mandatory*", "optional", "*optional*"];
-        const dataLines = lines.slice(1).filter(l => {
-          const firstCell = l.split(",")[0].trim().replace(/^"|"$/g, "").toLowerCase();
+        const dataLines = lines.slice(1).filter((l) => {
+          const firstCell = l
+            .split(",")[0]
+            .trim()
+            .replace(/^"|"$/g, "")
+            .toLowerCase();
           return l.trim() && !SKIP_MARKERS.includes(firstCell);
         });
 
-        console.log(`[ImportEmployees] Total data rows after filtering: ${dataLines.length}`);
+        console.log(
+          `[ImportEmployees] Total data rows after filtering: ${dataLines.length}`,
+        );
 
         const rows = dataLines.map((line, idx) => {
           // Proper CSV split: handle quoted values that may contain commas
           const vals = [];
-          let cur = "", inQ = false;
+          let cur = "",
+            inQ = false;
           for (let c of line) {
-            if (c === '"') { inQ = !inQ; }
-            else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
-            else { cur += c; }
+            if (c === '"') {
+              inQ = !inQ;
+            } else if (c === "," && !inQ) {
+              vals.push(cur.trim());
+              cur = "";
+            } else {
+              cur += c;
+            }
           }
           vals.push(cur.trim());
 
           const obj = {};
-          headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
+          headers.forEach((h, i) => {
+            obj[h] = (vals[i] || "").replace(/^"|"$/g, "");
+          });
           obj["custom_is_support_staff"] = 1;
           obj["custom_medical_deduction"] = 100;
           console.log(`[ImportEmployees] Parsed row ${idx + 2}:`, obj);
@@ -4605,64 +5949,92 @@
         if (rows.length === 0) {
           console.warn("[ImportEmployees] No data rows found in the CSV.");
           showToast("No data rows found in CSV");
-          btn.disabled = false; btn.textContent = "Import Employees";
+          btn.disabled = false;
+          btn.textContent = "Import Employees";
           return;
         }
 
         // ── Send in batches ──────────────────────────────────────────────────
         const BATCH_SIZE = 50;
         const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
-        let totalCreated = 0, totalFailed = 0, totalSkipped = 0, allErrors = [];
+        let totalCreated = 0,
+          totalFailed = 0,
+          totalSkipped = 0,
+          allErrors = [];
 
         const resultsDiv = document.getElementById("importResults");
         resultsDiv.style.display = "block";
 
-        console.log(`[ImportEmployees] Sending ${rows.length} rows in ${totalBatches} batch(es) of ${BATCH_SIZE}`);
+        console.log(
+          `[ImportEmployees] Sending ${rows.length} rows in ${totalBatches} batch(es) of ${BATCH_SIZE}`,
+        );
 
         for (let b = 0; b < totalBatches; b++) {
           const batch = rows.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
           btn.textContent = `Importing... (Batch ${b + 1}/${totalBatches})`;
           resultsDiv.innerHTML = `<div style="font-size:13px; font-weight:600; color:var(--muted);">⏳ Processing batch ${b + 1} of ${totalBatches}... (${totalCreated} created so far)</div>`;
 
-          console.log(`[ImportEmployees] Sending batch ${b + 1}/${totalBatches} (${batch.length} rows)...`);
+          console.log(
+            `[ImportEmployees] Sending batch ${b + 1}/${totalBatches} (${batch.length} rows)...`,
+          );
 
           let res = null;
           try {
-            res = await callAPI("bulk_import_employees", { rows: batch }, "employee");
+            res = await callAPI(
+              "bulk_import_employees",
+              { rows: batch },
+              "employee",
+            );
           } catch (apiErr) {
-            console.error(`[ImportEmployees] Batch ${b + 1} API call failed:`, apiErr);
-            allErrors.push({ row: "Batch " + (b + 1), name: "API Error", error: String(apiErr) });
+            console.error(
+              `[ImportEmployees] Batch ${b + 1} API call failed:`,
+              apiErr,
+            );
+            allErrors.push({
+              row: "Batch " + (b + 1),
+              name: "API Error",
+              error: String(apiErr),
+            });
             totalFailed += batch.length;
             continue;
           }
 
           if (res) {
             console.log(`[ImportEmployees] Batch ${b + 1} response:`, res);
-            totalCreated  += res.created  || 0;
-            totalFailed   += res.failed   || 0;
-            totalSkipped  += res.skipped  || 0;
-            allErrors      = allErrors.concat(res.errors || []);
+            totalCreated += res.created || 0;
+            totalFailed += res.failed || 0;
+            totalSkipped += res.skipped || 0;
+            allErrors = allErrors.concat(res.errors || []);
 
             // Log each error/skip to console for easy debugging
-            (res.errors || []).forEach(e => {
-              console.warn(`[ImportEmployees] Row ${e.row} (${e.name}): ${e.error}`);
+            (res.errors || []).forEach((e) => {
+              console.warn(
+                `[ImportEmployees] Row ${e.row} (${e.name}): ${e.error}`,
+              );
             });
           } else {
-            console.warn(`[ImportEmployees] Batch ${b + 1} returned null/empty response`);
+            console.warn(
+              `[ImportEmployees] Batch ${b + 1} returned null/empty response`,
+            );
           }
 
           // Small delay between batches to prevent throttling
           if (b < totalBatches - 1) {
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise((r) => setTimeout(r, 500));
           }
         }
 
-        btn.disabled = false; btn.textContent = "Import Employees";
+        btn.disabled = false;
+        btn.textContent = "Import Employees";
 
-        console.log(`[ImportEmployees] Done — Created: ${totalCreated}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`);
+        console.log(
+          `[ImportEmployees] Done — Created: ${totalCreated}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`,
+        );
         if (allErrors.length > 0) {
           console.group("[ImportEmployees] All errors/skips:");
-          allErrors.forEach(e => console.warn(`Row ${e.row} (${e.name}): ${e.error}`));
+          allErrors.forEach((e) =>
+            console.warn(`Row ${e.row} (${e.name}): ${e.error}`),
+          );
           console.groupEnd();
         }
 
@@ -4675,16 +6047,19 @@
 
         if (allErrors.length > 0) {
           html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details (check browser console for full log):</div>`;
-          html += allErrors.map(e => {
-            // Distinguish skipped (duplicates) vs actual failures by error text
-            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
-            const bg    = isSkip ? "#fffbeb" : "#fff1f2";
-            const bc    = isSkip ? "#fde68a" : "#fecaca";
-            const icon  = isSkip ? "⏭" : "❌";
-            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+          html += allErrors
+            .map((e) => {
+              // Distinguish skipped (duplicates) vs actual failures by error text
+              const isSkip =
+                e.error && e.error.toLowerCase().includes("already exist");
+              const bg = isSkip ? "#fffbeb" : "#fff1f2";
+              const bc = isSkip ? "#fde68a" : "#fecaca";
+              const icon = isSkip ? "⏭" : "❌";
+              return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
               ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-          }).join("");
+            })
+            .join("");
         }
 
         resultsDiv.innerHTML = html;
@@ -4694,33 +6069,51 @@
 
       async function submitUpdate() {
         const file = document.getElementById("updateCsvFile").files[0];
-        if (!file) { showToast("Please select a CSV file"); return; }
+        if (!file) {
+          showToast("Please select a CSV file");
+          return;
+        }
 
         const btn = document.getElementById("btnSubmitUpdate");
-        btn.disabled = true; btn.textContent = "Updating...";
+        btn.disabled = true;
+        btn.textContent = "Updating...";
 
         const text = await file.text();
         const lines = text.trim().split("\n");
-        const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ""));
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/^"|"$/g, ""));
 
         const SKIP_MARKERS = ["*mandatory*", "optional", "*optional*"];
-        const dataLines = lines.slice(1).filter(l => {
-          const firstCell = l.split(",")[0].trim().replace(/^"|"$/g, "").toLowerCase();
+        const dataLines = lines.slice(1).filter((l) => {
+          const firstCell = l
+            .split(",")[0]
+            .trim()
+            .replace(/^"|"$/g, "")
+            .toLowerCase();
           return l.trim() && !SKIP_MARKERS.includes(firstCell);
         });
 
         const rows = dataLines.map((line, idx) => {
           const vals = [];
-          let cur = "", inQ = false;
+          let cur = "",
+            inQ = false;
           for (let c of line) {
-            if (c === '"') { inQ = !inQ; }
-            else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ""; }
-            else { cur += c; }
+            if (c === '"') {
+              inQ = !inQ;
+            } else if (c === "," && !inQ) {
+              vals.push(cur.trim());
+              cur = "";
+            } else {
+              cur += c;
+            }
           }
           vals.push(cur.trim());
 
           const obj = {};
-          headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
+          headers.forEach((h, i) => {
+            obj[h] = (vals[i] || "").replace(/^"|"$/g, "");
+          });
           obj["custom_is_support_staff"] = 1;
           obj["custom_medical_deduction"] = 100;
           return obj;
@@ -4728,13 +6121,17 @@
 
         if (rows.length === 0) {
           showToast("No data rows found in CSV");
-          btn.disabled = false; btn.textContent = "Update Employees";
+          btn.disabled = false;
+          btn.textContent = "Update Employees";
           return;
         }
 
         const BATCH_SIZE = 50;
         const totalBatches = Math.ceil(rows.length / BATCH_SIZE);
-        let totalCreated = 0, totalUpdated = 0, totalFailed = 0, allErrors = [];
+        let totalCreated = 0,
+          totalUpdated = 0,
+          totalFailed = 0,
+          allErrors = [];
 
         const resultsDiv = document.getElementById("updateResults");
         resultsDiv.style.display = "block";
@@ -4746,9 +6143,17 @@
 
           let res = null;
           try {
-            res = await callAPI("bulk_import_employees", { rows: batch, mode: "update" }, "employee");
+            res = await callAPI(
+              "bulk_import_employees",
+              { rows: batch, mode: "update" },
+              "employee",
+            );
           } catch (apiErr) {
-            allErrors.push({ row: "Batch " + (b + 1), name: "API Error", error: String(apiErr) });
+            allErrors.push({
+              row: "Batch " + (b + 1),
+              name: "API Error",
+              error: String(apiErr),
+            });
             totalFailed += batch.length;
             continue;
           }
@@ -4756,16 +6161,17 @@
           if (res) {
             totalUpdated += res.updated || 0;
             totalCreated += res.created || 0;
-            totalFailed  += res.failed  || 0;
-            allErrors     = allErrors.concat(res.errors || []);
+            totalFailed += res.failed || 0;
+            allErrors = allErrors.concat(res.errors || []);
           }
 
           if (b < totalBatches - 1) {
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise((r) => setTimeout(r, 500));
           }
         }
 
-        btn.disabled = false; btn.textContent = "Update Employees";
+        btn.disabled = false;
+        btn.textContent = "Update Employees";
 
         let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
           ✏️ Updated: <span style="color:#15803d">${totalUpdated}</span>
@@ -4775,11 +6181,13 @@
 
         if (allErrors.length > 0) {
           html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
-          html += allErrors.map(e => {
-            return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
+          html += allErrors
+            .map((e) => {
+              return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
               ❌ <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-          }).join("");
+            })
+            .join("");
         }
 
         resultsDiv.innerHTML = html;
@@ -4792,17 +6200,25 @@
         document.getElementById("exit_emp_select").value = "";
         const dd = document.getElementById("exit_emp_dropdown");
         dd.innerHTML = "";
-        const employees = await callAPI("get_active_support_staff", {}, "employee");
+        const employees = await callAPI(
+          "get_active_support_staff",
+          {},
+          "employee",
+        );
         if (employees) {
-          employees.forEach(e => {
+          employees.forEach((e) => {
             const item = document.createElement("div");
             item.className = "exit-emp-item";
             item.dataset.value = e.name;
-            item.textContent = `${e.employee_name} (${e.name})${e.designation ? ' — ' + e.designation : ''}`;
-            item.style.cssText = "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
-            item.onmouseover = () => item.style.background = "#f0f2f8";
-            item.onmouseout = () => item.style.background = "";
-            item.onmousedown = (ev) => { ev.preventDefault(); selectExitEmp(e.name, item.textContent); };
+            item.textContent = `${e.employee_name} (${e.name})${e.designation ? " — " + e.designation : ""}`;
+            item.style.cssText =
+              "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => (item.style.background = "#f0f2f8");
+            item.onmouseout = () => (item.style.background = "");
+            item.onmousedown = (ev) => {
+              ev.preventDefault();
+              selectExitEmp(e.name, item.textContent);
+            };
             dd.appendChild(item);
           });
         }
@@ -4818,12 +6234,23 @@
 
       async function submitExitEmployee() {
         const employee = document.getElementById("exit_emp_select").value;
-        if (!employee) { showToast("Please select an employee"); return; }
-        const resignation_date = document.getElementById("exit_resignation_date").value;
-        const relieving_date = document.getElementById("exit_relieving_date").value;
+        if (!employee) {
+          showToast("Please select an employee");
+          return;
+        }
+        const resignation_date = document.getElementById(
+          "exit_resignation_date",
+        ).value;
+        const relieving_date = document.getElementById(
+          "exit_relieving_date",
+        ).value;
         const reason = document.getElementById("exit_reason").value;
 
-        if (resignation_date && relieving_date && relieving_date < resignation_date) {
+        if (
+          resignation_date &&
+          relieving_date &&
+          relieving_date < resignation_date
+        ) {
           showToast("Relieving date cannot be before Resignation date");
           return;
         }
@@ -4832,12 +6259,16 @@
         btn.disabled = true;
         btn.textContent = "Processing...";
 
-        const res = await callAPI("process_employee_exit", {
-          employee,
-          resignation_letter_date: resignation_date,
-          relieving_date,
-          reason_for_leaving: reason,
-        }, "employee");
+        const res = await callAPI(
+          "process_employee_exit",
+          {
+            employee,
+            resignation_letter_date: resignation_date,
+            relieving_date,
+            reason_for_leaving: reason,
+          },
+          "employee",
+        );
 
         btn.disabled = false;
         btn.textContent = "Confirm Exit";
@@ -4851,84 +6282,118 @@
 
       // ── PAYROLL MANAGEMENT ───────────────────────────────
       async function loadPayrollDashboard() {
-        const month = document.getElementById("payrollMonthSelector")?.value || 
-                      new Date().toISOString().substring(0, 7);
-        
+        const month =
+          document.getElementById("payrollMonthSelector")?.value ||
+          new Date().toISOString().substring(0, 7);
+
         const container = document.getElementById("hrDashboardContent");
-        container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
-        
-        const data = await callAPI("get_salary_register_list", { payroll_month: month }, "payroll");
+        container.innerHTML =
+          '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+        const data = await callAPI(
+          "get_salary_register_list",
+          { payroll_month: month },
+          "payroll",
+        );
         if (!data) return;
-        
-        const hasPayrollRun = data.payroll_run && data.payroll_run.status !== "Draft";
-        const canGenerate = !data.payroll_run || data.payroll_run.status === "Draft";
-        const canSubmit = data.payroll_run && data.payroll_run.status === "Generated";
-        const canMarkPaid = data.payroll_run && data.payroll_run.status === "Submitted";
-        const canEdit = data.payroll_run && (data.payroll_run.status === "Generated" || data.payroll_run.status === "Draft");
-        const showPaymentReport = data.payroll_run && data.payroll_run.status !== "Draft";
-        
+
+        const hasPayrollRun =
+          data.payroll_run && data.payroll_run.status !== "Draft";
+        const canGenerate =
+          !data.payroll_run || data.payroll_run.status === "Draft";
+        const canSubmit =
+          data.payroll_run && data.payroll_run.status === "Generated";
+        const canMarkPaid =
+          data.payroll_run && data.payroll_run.status === "Submitted";
+        const canEdit =
+          data.payroll_run &&
+          (data.payroll_run.status === "Generated" ||
+            data.payroll_run.status === "Draft");
+        const showPaymentReport =
+          data.payroll_run && data.payroll_run.status !== "Draft";
+
         container.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">💰 Salary Register - ${month}</h3>
             <div style="display:flex; gap:10px; align-items:center;">
               <input type="month" id="payrollMonthSelector" value="${month}" onchange="loadPayrollDashboard()" 
                 style="padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px;">
-              ${canGenerate ? `
+              ${
+                canGenerate
+                  ? `
                 <button class="btn-in" onclick="generatePayroll('${month}')" 
                   style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap;">⚡ Generate Payslips</button>
-              ` : ''}
-              ${canSubmit ? `
+              `
+                  : ""
+              }
+              ${
+                canSubmit
+                  ? `
                 <button class="btn-in" onclick="submitPayroll('${data.payroll_run.name}', '${month}')" 
                   style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; background:#10b981; border:none; color:#fff;">✅ Submit Payroll</button>
-              ` : ''}
-              ${canMarkPaid ? `
+              `
+                  : ""
+              }
+              ${
+                canMarkPaid
+                  ? `
                 <button class="btn-in" onclick="markPayrollPaid('${data.payroll_run.name}', '${month}')" 
                   style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; background:#8b5cf6; border:none; color:#fff;">💰 Mark as Paid</button>
-              ` : ''}
-              ${showPaymentReport ? `
+              `
+                  : ""
+              }
+              ${
+                showPaymentReport
+                  ? `
                 <button class="btn-clear" onclick="downloadBankPayment('${month}')" 
                   style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📥 Payment Report</button>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
-          ${data.payroll_run ? `
-            <div style="background:${data.payroll_run.status === 'Generated' ? '#f0fdf4' : data.payroll_run.status === 'Submitted' ? '#eff6ff' : data.payroll_run.status === 'Paid' ? '#f5f3ff' : '#fef3c7'}; padding:12px 16px; border-radius:10px; margin-bottom:20px; border:1px solid ${data.payroll_run.status === 'Generated' ? '#bbf7d0' : data.payroll_run.status === 'Submitted' ? '#bfdbfe' : data.payroll_run.status === 'Paid' ? '#e0e7ff' : '#fde68a'};">
+          ${
+            data.payroll_run
+              ? `
+            <div style="background:${data.payroll_run.status === "Generated" ? "#f0fdf4" : data.payroll_run.status === "Submitted" ? "#eff6ff" : data.payroll_run.status === "Paid" ? "#f5f3ff" : "#fef3c7"}; padding:12px 16px; border-radius:10px; margin-bottom:20px; border:1px solid ${data.payroll_run.status === "Generated" ? "#bbf7d0" : data.payroll_run.status === "Submitted" ? "#bfdbfe" : data.payroll_run.status === "Paid" ? "#e0e7ff" : "#fde68a"};">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:13px; font-weight:600; color:${data.payroll_run.status === 'Generated' ? '#16a34a' : data.payroll_run.status === 'Submitted' ? '#2563eb' : data.payroll_run.status === 'Paid' ? '#7c3aed' : '#d97706'};">
-                  ${data.payroll_run.status === 'Generated' ? '✅' : data.payroll_run.status === 'Submitted' ? '📋' : data.payroll_run.status === 'Paid' ? '💰' : '⏳'} Payroll Run: ${data.payroll_run.name} - ${data.payroll_run.status}
+                <span style="font-size:13px; font-weight:600; color:${data.payroll_run.status === "Generated" ? "#16a34a" : data.payroll_run.status === "Submitted" ? "#2563eb" : data.payroll_run.status === "Paid" ? "#7c3aed" : "#d97706"};">
+                  ${data.payroll_run.status === "Generated" ? "✅" : data.payroll_run.status === "Submitted" ? "📋" : data.payroll_run.status === "Paid" ? "💰" : "⏳"} Payroll Run: ${data.payroll_run.name} - ${data.payroll_run.status}
                 </span>
                 <a href="/app/payroll-run/${data.payroll_run.name}" target="_blank" style="font-size:11px; color:var(--brand2); font-weight:600; text-decoration:none;">View Details →</a>
               </div>
             </div>
-          ` : `
+          `
+              : `
             <div style="background:#fff7ed; padding:16px; border-radius:10px; margin-bottom:20px; border:1px solid #fed7aa; text-align:center;">
               <div style="font-size:14px; font-weight:600; color:#c2410c; margin-bottom:6px;">⚠️ No payroll run found for ${month}</div>
               <div style="font-size:12px; color:#9a3412;">Click "Generate Payslips" to create salary register for this month</div>
             </div>
-          `}
+          `
+          }
           <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px;">
             <div style="background:#f8fafc; padding:14px; border-radius:10px; text-align:center; border:1px solid #e2e8f0;">
               <div style="font-size:20px; font-weight:800; color:var(--brand);">${data.summary.total_employees}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Employees</div>
             </div>
             <div style="background:#f0fdf4; padding:14px; border-radius:10px; text-align:center; border:1px solid #bbf7d0;">
-              <div style="font-size:16px; font-weight:800; color:#16a34a;">₹${Number(data.summary.total_gross).toLocaleString('en-IN')}</div>
+              <div style="font-size:16px; font-weight:800; color:#16a34a;">₹${Number(data.summary.total_gross).toLocaleString("en-IN")}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Gross</div>
             </div>
             <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
-              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_medical).toLocaleString('en-IN')}</div>
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_medical).toLocaleString("en-IN")}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Medical</div>
             </div>
             <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
-              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_loan).toLocaleString('en-IN')}</div>
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_loan).toLocaleString("en-IN")}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Loan EMI</div>
             </div>
             <div style="background:#fef2f2; padding:14px; border-radius:10px; text-align:center; border:1px solid #fecaca;">
-              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_other).toLocaleString('en-IN')}</div>
+              <div style="font-size:16px; font-weight:800; color:#dc2626;">₹${Number(data.summary.total_other).toLocaleString("en-IN")}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Other Ded.</div>
             </div>
             <div style="background:#f5f3ff; padding:14px; border-radius:10px; text-align:center; border:1px solid #e0e7ff;">
-              <div style="font-size:16px; font-weight:800; color:var(--brand2);">₹${Number(data.summary.total_net).toLocaleString('en-IN')}</div>
+              <div style="font-size:16px; font-weight:800; color:var(--brand2);">₹${Number(data.summary.total_net).toLocaleString("en-IN")}</div>
               <div style="font-size:11px; color:var(--muted); text-transform:uppercase; margin-top:4px;">Net Payable</div>
             </div>
           </div>
@@ -4947,24 +6412,28 @@
                 </tr>
               </thead>
               <tbody>
-                ${data.data.map(row => `
+                ${data.data
+                  .map(
+                    (row) => `
                   <tr style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:12px;">
                       <div style="font-weight:600; color:var(--brand);">${row.employee_name}</div>
                       <div style="font-size:10px; color:var(--muted);">${row.employee}</div>
                     </td>
-                    <td style="padding:12px;">${row.branch || '-'}</td>
-                    <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString('en-IN')}</td>
-                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString('en-IN')}</td>
-                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString('en-IN')}</td>
-                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.other_deduction).toLocaleString('en-IN')}</td>
-                    <td style="padding:12px; text-align:right; color:var(--success); font-weight:700;">₹${Number(row.net_salary).toLocaleString('en-IN')}</td>
+                    <td style="padding:12px;">${row.branch || "-"}</td>
+                    <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString("en-IN")}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString("en-IN")}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString("en-IN")}</td>
+                    <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.other_deduction).toLocaleString("en-IN")}</td>
+                    <td style="padding:12px; text-align:right; color:var(--success); font-weight:700;">₹${Number(row.net_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:center;">
                       <button class="btn-clear" style="font-size:10px; padding:4px 8px;" onclick="viewSalarySlip('${row.employee}', '${month}')">👁️ View</button>
-                      ${canEdit ? `<button class="btn-clear" style="font-size:10px; padding:4px 8px; margin-left:4px;" onclick="openEditDeductionModal('${row.name}', '${row.employee_name}', ${row.other_deduction}, '${(row.other_deduction_reason || '').replace(/'/g, "\\'")}')">✏️ Edit</button>` : ''}
+                      ${canEdit ? `<button class="btn-clear" style="font-size:10px; padding:4px 8px; margin-left:4px;" onclick="openEditDeductionModal('${row.name}', '${row.employee_name}', ${row.other_deduction}, '${(row.other_deduction_reason || "").replace(/'/g, "\\'")}')">✏️ Edit</button>` : ""}
                     </td>
                   </tr>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </tbody>
             </table>
           </div>
@@ -4974,13 +6443,18 @@
       function showConfirmDialog(message) {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
-          overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);";
-          overlay.onclick = () => { overlay.remove(); resolve(false); };
+          overlay.style.cssText =
+            "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);";
+          overlay.onclick = () => {
+            overlay.remove();
+            resolve(false);
+          };
           const box = document.createElement("div");
-          box.style.cssText = "background:#fff;padding:24px;border-radius:20px;width:90%;max-width:420px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);";
+          box.style.cssText =
+            "background:#fff;padding:24px;border-radius:20px;width:90%;max-width:420px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);";
           box.onclick = (e) => e.stopPropagation();
           box.innerHTML = `
-            <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, '<br>')}</div>
+            <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, "<br>")}</div>
             <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
               <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">Cancel</button>
               <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">OK</button>
@@ -4988,18 +6462,37 @@
           `;
           overlay.appendChild(box);
           document.body.appendChild(overlay);
-          box.querySelector("#confirmOkBtn").onclick = () => { overlay.remove(); resolve(true); };
-          box.querySelector("#confirmCancelBtn").onclick = () => { overlay.remove(); resolve(false); };
+          box.querySelector("#confirmOkBtn").onclick = () => {
+            overlay.remove();
+            resolve(true);
+          };
+          box.querySelector("#confirmCancelBtn").onclick = () => {
+            overlay.remove();
+            resolve(false);
+          };
         });
       }
 
       async function generatePayroll(month) {
-        if (!await showConfirmDialog(`Generate payslips for ${month}?\n\nThis will create salary registers for all active support staff.`)) return;
+        if (
+          !(await showConfirmDialog(
+            `Generate payslips for ${month}?\n\nThis will create salary registers for all active support staff.`,
+          ))
+        )
+          return;
         showToast("Creating payroll run...");
-        const createRes = await callAPI("create_payroll_run", { payroll_month: month }, "payroll");
+        const createRes = await callAPI(
+          "create_payroll_run",
+          { payroll_month: month },
+          "payroll",
+        );
         if (!createRes || !createRes.success) return;
         showToast("Generating salary registers...");
-        const genRes = await callAPI("generate_salary_register", { payroll_run_id: createRes.payroll_id }, "payroll");
+        const genRes = await callAPI(
+          "generate_salary_register",
+          { payroll_run_id: createRes.payroll_id },
+          "payroll",
+        );
         if (genRes && genRes.success) {
           showToast(`✅ ${genRes.message}`);
           loadPayrollDashboard();
@@ -5007,10 +6500,15 @@
       }
 
       async function viewSalarySlip(employee, month) {
-        const data = await callAPI("get_employee_salary_slip", { employee, payroll_month: month }, "payroll");
+        const data = await callAPI(
+          "get_employee_salary_slip",
+          { employee, payroll_month: month },
+          "payroll",
+        );
         if (!data) return;
-        const modal = document.createElement('div');
-        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        const modal = document.createElement("div");
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
         modal.onclick = () => modal.remove();
         modal.innerHTML = `
           <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto;" class="custom-scroll">
@@ -5025,31 +6523,37 @@
             </div>
             <div style="margin-bottom:16px;">
               <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Earnings</div>
-              ${data.earnings.map(e => `<div style="display:flex; justify-content:space-between; padding:8px; background:#f0fdf4; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${e.component}</span><span style="font-weight:700; color:#16a34a;">₹ ${Number(e.amount).toLocaleString('en-IN')}</span></div>`).join('')}
+              ${data.earnings.map((e) => `<div style="display:flex; justify-content:space-between; padding:8px; background:#f0fdf4; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${e.component}</span><span style="font-weight:700; color:#16a34a;">₹ ${Number(e.amount).toLocaleString("en-IN")}</span></div>`).join("")}
             </div>
             <div style="margin-bottom:16px;">
               <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Deductions</div>
-              ${data.deductions.length > 0 ? data.deductions.map(d => `<div style="display:flex; justify-content:space-between; padding:8px; background:#fef2f2; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${d.component}${d.reason ? ' <span style="font-size:10px;color:var(--muted);">(' + d.reason + ')</span>' : ''}</span><span style="font-weight:700; color:#dc2626;">₹ ${Number(d.amount).toLocaleString('en-IN')}</span></div>`).join('') : '<div style="text-align:center; padding:10px; color:var(--muted); font-size:12px;">No deductions</div>'}
+              ${data.deductions.length > 0 ? data.deductions.map((d) => `<div style="display:flex; justify-content:space-between; padding:8px; background:#fef2f2; border-radius:8px; margin-bottom:4px;"><span style="font-size:13px;">${d.component}${d.reason ? ' <span style="font-size:10px;color:var(--muted);">(' + d.reason + ")</span>" : ""}</span><span style="font-weight:700; color:#dc2626;">₹ ${Number(d.amount).toLocaleString("en-IN")}</span></div>`).join("") : '<div style="text-align:center; padding:10px; color:var(--muted); font-size:12px;">No deductions</div>'}
             </div>
             <div style="padding:16px; background:var(--brand2); color:#fff; border-radius:12px; text-align:center;">
               <div style="font-size:11px; text-transform:uppercase; opacity:0.9; margin-bottom:4px;">Net Salary</div>
-              <div style="font-size:24px; font-weight:800;">₹ ${Number(data.register.net_salary).toLocaleString('en-IN')}</div>
+              <div style="font-size:24px; font-weight:800;">₹ ${Number(data.register.net_salary).toLocaleString("en-IN")}</div>
             </div>
             <div style="margin-top:16px; padding:12px; background:#f8fafc; border-radius:8px; font-size:11px;">
-              <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:var(--muted);">Bank:</span><span style="font-weight:600;">${data.register.bank_name || '-'}</span></div>
-              <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Account:</span><span style="font-weight:600;">${data.register.bank_account_no || '-'}</span></div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:var(--muted);">Bank:</span><span style="font-weight:600;">${data.register.bank_name || "-"}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Account:</span><span style="font-weight:600;">${data.register.bank_account_no || "-"}</span></div>
             </div>
           </div>
         `;
         document.body.appendChild(modal);
       }
 
-      async function openEditDeductionModal(registerId, employeeName, currentAmount, currentReason) {
-        const modal = document.createElement('div');
-        modal.id = 'editDeductionModal';
-        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+      async function openEditDeductionModal(
+        registerId,
+        employeeName,
+        currentAmount,
+        currentReason,
+      ) {
+        const modal = document.createElement("div");
+        modal.id = "editDeductionModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
         modal.onclick = () => modal.remove();
-        
+
         modal.innerHTML = `
           <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:450px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
@@ -5070,7 +6574,7 @@
               
               <div style="margin-bottom:20px;">
                 <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason <span style="color:#dc2626;">*</span></label>
-                <textarea id="otherDeductionReason" class="member-select" rows="3" required placeholder="e.g., Penalty for unauthorized absence, Advance salary recovery, etc.">${currentReason || ''}</textarea>
+                <textarea id="otherDeductionReason" class="member-select" rows="3" required placeholder="e.g., Penalty for unauthorized absence, Advance salary recovery, etc.">${currentReason || ""}</textarea>
               </div>
               
               <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
@@ -5080,49 +6584,63 @@
             </form>
           </div>
         `;
-        
+
         document.body.appendChild(modal);
       }
 
       async function saveOtherDeduction(registerId) {
-        const amount = document.getElementById('otherDeductionAmount').value;
-        const reason = document.getElementById('otherDeductionReason').value.trim();
-        
+        const amount = document.getElementById("otherDeductionAmount").value;
+        const reason = document
+          .getElementById("otherDeductionReason")
+          .value.trim();
+
         if (parseFloat(amount) > 0 && !reason) {
           showToast("Please provide reason for deduction");
           return;
         }
-        
-        const btn = document.getElementById('btnSaveDeduction');
+
+        const btn = document.getElementById("btnSaveDeduction");
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Saving...";
-        
-        const res = await callAPI("update_salary_deduction", {
-          register_id: registerId,
-          other_deduction: amount,
-          reason: reason
-        }, "payroll");
-        
+
+        const res = await callAPI(
+          "update_salary_deduction",
+          {
+            register_id: registerId,
+            other_deduction: amount,
+            reason: reason,
+          },
+          "payroll",
+        );
+
         btn.disabled = false;
         btn.textContent = originalText;
-        
+
         if (res && res.success) {
           showToast("✅ Deduction updated successfully!");
-          document.getElementById('editDeductionModal').remove();
+          document.getElementById("editDeductionModal").remove();
           loadPayrollDashboard(); // Refresh the table
         }
       }
 
       async function submitPayroll(payrollRunId, month) {
-        if (!await showConfirmDialog(`Submit payroll for ${month}?\n\nThis will lock the payroll. No further edits will be allowed.\n\nAre you sure all salary registers are reviewed and correct?`)) {
+        if (
+          !(await showConfirmDialog(
+            `Submit payroll for ${month}?\n\nThis will lock the payroll. No further edits will be allowed.\n\nAre you sure all salary registers are reviewed and correct?`,
+          ))
+        ) {
           return;
         }
-        
+
         showToast("Submitting payroll...");
-        
-        const res = await callAPI("submit_payroll_run", { payroll_run_id: payrollRunId }, "payroll");
-        
+
+        const res = await callAPI(
+          "submit_payroll_run",
+          { payroll_run_id: payrollRunId },
+          "payroll",
+        );
+
         if (res && res.success) {
           showToast(`✅ ${res.message}`);
           loadPayrollDashboard();
@@ -5130,14 +6648,22 @@
       }
 
       async function markPayrollPaid(payrollRunId, month) {
-        if (!await showConfirmDialog(`Mark payroll as PAID for ${month}?\n\nConfirm that bank transfer has been completed for all employees.\n\nThis action records the payment completion.`)) {
+        if (
+          !(await showConfirmDialog(
+            `Mark payroll as PAID for ${month}?\n\nConfirm that bank transfer has been completed for all employees.\n\nThis action records the payment completion.`,
+          ))
+        ) {
           return;
         }
-        
+
         showToast("Marking as paid...");
-        
-        const res = await callAPI("mark_payroll_paid", { payroll_run_id: payrollRunId }, "payroll");
-        
+
+        const res = await callAPI(
+          "mark_payroll_paid",
+          { payroll_run_id: payrollRunId },
+          "payroll",
+        );
+
         if (res && res.success) {
           showToast(`✅ ${res.message}`);
           loadPayrollDashboard();
@@ -5147,15 +6673,23 @@
       async function downloadBankPayment(month) {
         showToast("Generating bank payment file...");
         try {
-          const response = await fetch(`/api/method/sahayog.api.payroll.export_bank_payment_csv`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content },
-            body: JSON.stringify({ payroll_month: month }),
-            credentials: 'include'
-          });
+          const response = await fetch(
+            `/api/method/sahayog.api.payroll.export_bank_payment_csv`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Frappe-CSRF-Token": document.querySelector(
+                  'meta[name="csrf-token"]',
+                )?.content,
+              },
+              body: JSON.stringify({ payroll_month: month }),
+              credentials: "include",
+            },
+          );
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
+          const a = document.createElement("a");
           a.href = url;
           a.download = `salary_payment_${month}.csv`;
           a.click();
