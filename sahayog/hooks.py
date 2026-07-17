@@ -631,7 +631,7 @@ fixtures = [
                     "Sahayog Home",
                     "BDO Performance",
                     "MIS Report List",
-                    "Disciplinary Management",
+                    "Disciplinary Management Dashboard",
                     "Inventory",
                     "Product Type Chart",
                     "DAMS dashboard",
