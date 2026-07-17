@@ -8,7 +8,9 @@
   "enable_email_notifications",
   "cc_settings_sb",
   "unauthorized_absence_cc",
-  "disciplinary_case_cc"
+  "disciplinary_case_cc",
+  "employee_master_section",
+  "employee_master"
  ],
  "fields": [
   {
@@ -31,13 +33,23 @@
    "fieldname": "disciplinary_case_cc",
    "fieldtype": "Small Text",
    "label": "Disciplinary Case CC (Fixed IDs)"
+  },
+  {
+   "fieldname": "employee_master_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Master"
+  },
+  {
+   "fieldname": "employee_master",
+   "fieldtype": "Attach",
+   "label": "Employee Master"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-11-26 13:21:51.639858",
+ "modified": "2026-07-17 15:29:34.445155",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Sahayog HR Setting",
