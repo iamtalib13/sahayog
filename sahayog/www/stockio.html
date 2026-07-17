@@ -6247,14 +6247,14 @@
 
                             <!-- Serial No does not exist view (Adding) -->
                             <div v-if="!detailRecord.serial_no && isAddingSerialInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
-                              <input
-                                type="text"
+                              <select
                                 class="form-input"
                                 style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
                                 v-model="tempSerialNo"
-                                placeholder="Enter Serial No"
-                                @keyup.enter="saveSerialNoInline()"
-                              />
+                              >
+                                <option value="">Select Serial No</option>
+                                <option v-for="s in availableSerialsForAsset" :value="s">[[ s ]]</option>
+                              </select>
                               <button
                                 style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
                                 title="Save Serial No"
@@ -6276,7 +6276,7 @@
                               v-if="!detailRecord.serial_no && !isAddingSerialInline"
                               style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"
                               title="Add Serial No"
-                              @click="isAddingSerialInline = true; tempSerialNo = ''"
+                              @click="isAddingSerialInline = true; tempSerialNo = ''; fetchAvailableSerials();"
                             >
                               <i class="fas fa-plus"></i> Add
                             </button>
@@ -12477,6 +12477,7 @@
       linkedSerialEditing: false,
       isAddingSerialInline: false,
       tempSerialNo: '',
+      availableSerialsForAsset: [],
       configTypes: [
         "MAC Address", "Model Number", "Office Key", "Windows Key", 
         "Operating System", "Processor", "RAM", "Serial Number", 
@@ -17758,6 +17759,49 @@
             message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
             indicator: "red",
           });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async fetchAvailableSerials() {
+        if (!this.detailRecord || !this.detailRecord.item_code) return;
+        this.loading = true;
+        try {
+          // Get all serials currently used by assets
+          const assetRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Asset",
+              filters: {
+                docstatus: ["in", [0, 1]],
+                serial_no: ["!=", ""]
+              },
+              fields: ["serial_no"],
+              limit_page_length: 0
+            }
+          });
+          const usedSerials = (assetRes.message || []).map(a => a.serial_no).filter(Boolean);
+
+          // Get all serials for this item code
+          const serialRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              filters: {
+                item_code: this.detailRecord.item_code
+              },
+              fields: ["name"],
+              limit_page_length: 0
+            }
+          });
+          const allSerialsForItem = (serialRes.message || []).map(s => s.name);
+
+          // Exclude used serials
+          this.availableSerialsForAsset = allSerialsForItem.filter(s => !usedSerials.includes(s));
+        } catch (e) {
+          console.error("Error fetching available serials:", e);
+          this.availableSerialsForAsset = [];
         } finally {
           this.loading = false;
         }
