@@ -172,7 +172,7 @@ def create_support_staff(data):
     # Fetch existing columns and resolve custom field name aliases
     _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
     _pan_col = "custom_pan_number" if "custom_pan_number" in _emp_cols else "pan_number" if "pan_number" in _emp_cols else None
-    _aadhaar_col = "custom_aadhar_number" if "custom_aadhar_number" in _emp_cols else None
+    _aadhaar_col = "custom_aadhar_number" if "custom_aadhar_number" in _emp_cols else "aadhar_number" if "aadhar_number" in _emp_cols else None
     _uhid_col = "custom_uhid_number" if "custom_uhid_number" in _emp_cols else "uhid_number" if "uhid_number" in _emp_cols else None
 
     # Validations
@@ -710,15 +710,19 @@ def update_employee_profile(employee, data):
         allowed_fields.append("ctc")
         allowed_fields.append("custom_staff_loan_emi")
 
-    # Map frontend keys (custom_pan_number) to actual DB column names
+    # Map frontend keys (custom_pan_number / custom_aadhar_number / custom_uhid_number) to actual DB column names
     _col_map = {}
     if "pan_number" in _emp_cols:
         _col_map["custom_pan_number"] = "pan_number"
     elif "custom_pan_number" in _emp_cols:
         allowed_fields.append("custom_pan_number")
-    if "custom_aadhar_number" in _emp_cols:
+    if "aadhar_number" in _emp_cols:
+        _col_map["custom_aadhar_number"] = "aadhar_number"
+    elif "custom_aadhar_number" in _emp_cols:
         allowed_fields.append("custom_aadhar_number")
-    if "custom_uhid_number" in _emp_cols:
+    if "uhid_number" in _emp_cols:
+        _col_map["custom_uhid_number"] = "uhid_number"
+    elif "custom_uhid_number" in _emp_cols:
         allowed_fields.append("custom_uhid_number")
 
     update = {}
