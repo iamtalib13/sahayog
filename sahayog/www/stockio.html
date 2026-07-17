@@ -17811,13 +17811,24 @@
         if (!this.detailRecord || !this.tempSerialNo) return;
         this.loading = true;
         try {
-          this.detailRecord.serial_no = this.tempSerialNo;
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.detailRecord,
-            },
-          });
+          let res;
+          if (this.detailRecord.docstatus === 1) {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.asset_utils.update_submitted_asset_serial_no",
+              args: {
+                asset_name: this.detailRecord.name,
+                serial_no: this.tempSerialNo
+              }
+            });
+          } else {
+            this.detailRecord.serial_no = this.tempSerialNo;
+            res = await frappe.call({
+              method: "frappe.client.save",
+              args: {
+                doc: this.detailRecord,
+              },
+            });
+          }
           if (res.message) {
             this.detailRecord = res.message;
             this.isAddingSerialInline = false;

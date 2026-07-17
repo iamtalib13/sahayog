@@ -131,3 +131,14 @@ def _get_serial_warehouse_map():
             if warehouse:
                 serial_map[e.serial_no] = warehouse
     return serial_map
+
+
+@frappe.whitelist()
+def update_submitted_asset_serial_no(asset_name, serial_no):
+    """
+    Force updates the serial_no field on an Asset (even if submitted)
+    and returns the updated Asset document.
+    """
+    frappe.db.set_value("Asset", asset_name, "serial_no", serial_no)
+    frappe.db.commit()
+    return frappe.get_doc("Asset", asset_name)
