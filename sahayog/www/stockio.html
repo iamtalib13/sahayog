@@ -6224,7 +6224,8 @@
                         <div class="info-content" style="width: 100%;">
                           <span class="info-label">Serial No</span>
                           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
-                            <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                            <!-- Serial No exists view -->
+                            <span class="info-value" v-if="detailRecord.serial_no">[[ detailRecord.serial_no ]]</span>
                             <div v-if="detailRecord.serial_no" style="display: flex; gap: 4px;">
                               <!-- View button -->
                               <button
@@ -6243,6 +6244,42 @@
                                 <i class="fas fa-pencil-alt"></i>
                               </button>
                             </div>
+
+                            <!-- Serial No does not exist view (Adding) -->
+                            <div v-if="!detailRecord.serial_no && isAddingSerialInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+                              <input
+                                type="text"
+                                class="form-input"
+                                style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
+                                v-model="tempSerialNo"
+                                placeholder="Enter Serial No"
+                                @keyup.enter="saveSerialNoInline()"
+                              />
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Save Serial No"
+                                @click="saveSerialNoInline()"
+                              >
+                                <i class="fas fa-check"></i>
+                              </button>
+                              <button
+                                style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Cancel"
+                                @click="isAddingSerialInline = false"
+                              >
+                                <i class="fas fa-times"></i>
+                              </button>
+                            </div>
+
+                            <!-- Serial No does not exist view (Add Button) -->
+                            <button
+                              v-if="!detailRecord.serial_no && !isAddingSerialInline"
+                              style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"
+                              title="Add Serial No"
+                              @click="isAddingSerialInline = true; tempSerialNo = ''"
+                            >
+                              <i class="fas fa-plus"></i> Add
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -12438,6 +12475,8 @@
       isEditing: false,
       linkedSerialRecord: null,
       linkedSerialEditing: false,
+      isAddingSerialInline: false,
+      tempSerialNo: '',
       configTypes: [
         "MAC Address", "Model Number", "Office Key", "Windows Key", 
         "Operating System", "Processor", "RAM", "Serial Number", 
@@ -17583,6 +17622,8 @@
         this.showDispatchHistory = false;
         this.linkedSerialRecord = null;
         this.linkedSerialEditing = false;
+        this.isAddingSerialInline = false;
+        this.tempSerialNo = '';
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -17715,6 +17756,38 @@
           console.error("Failed to save linked Serial No:", e);
           frappe.show_alert({
             message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async saveSerialNoInline() {
+        if (!this.detailRecord || !this.tempSerialNo) return;
+        this.loading = true;
+        try {
+          this.detailRecord.serial_no = this.tempSerialNo;
+          const res = await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: this.detailRecord,
+            },
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isAddingSerialInline = false;
+            this.tempSerialNo = '';
+            frappe.show_alert({
+              message: "Serial No added successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({
+            message: "Error saving Serial No: " + (e.message || e.exc || "unknown error"),
             indicator: "red",
           });
         } finally {
