@@ -1852,14 +1852,18 @@
                         </div>
                         <div>
                           <label>Designation *</label
-                          ><select
+                          ><input
                             name="designation"
                             id="new_emp_designation"
                             class="member-select"
+                            list="designation-list"
+                            placeholder="Select or type designation"
                             required
-                          >
-                            <option value="">Select Designation</option>
-                          </select>
+                          />
+                          <datalist id="designation-list">
+                            <option value="Peon"></option>
+                            <option value="Office Boy"></option>
+                          </datalist>
                         </div>
                         <div>
                           <label>Department *</label
@@ -2002,13 +2006,13 @@
                           />
                         </div>
                         <div>
-                          <label>Division</label
+                          <label>Business Unit</label
                           ><select
                             name="division"
                             id="new_emp_division"
                             class="member-select"
                           >
-                            <option value="">Select Division</option>
+                            <option value="">Select Business Unit</option>
                           </select>
                         </div>
                       </div>
@@ -2678,6 +2682,24 @@
                       required
                       placeholder="e.g. Personal reasons, better opportunity..."
                     ></textarea>
+                  </div>
+                  <div style="margin-bottom: 20px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Resignation Letter</label
+                    >
+                    <input
+                      type="file"
+                      id="exit_attachment"
+                      class="member-select"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    />
                   </div>
                   <div
                     style="
@@ -3575,7 +3597,6 @@
       }
 
       async function populateEmployeeFormOptions() {
-        const desigSel = document.getElementById("new_emp_designation");
         const deptSel = document.getElementById("new_emp_department");
         const solIdSel = document.getElementById("new_emp_sol_id");
         const divSel = document.getElementById("new_emp_division");
@@ -3613,22 +3634,6 @@
           });
         }
 
-        if (desigSel.options.length <= 1) {
-          const designations = await callAPI(
-            "get_designations",
-            {},
-            "employee",
-          );
-          if (designations) {
-            designations.forEach((d) => {
-              const opt = document.createElement("option");
-              opt.value = d.name;
-              opt.textContent = d.name;
-              desigSel.appendChild(opt);
-            });
-          }
-        }
-
         if (deptSel.options.length <= 1) {
           const departments = await callAPI("get_departments", {}, "employee");
           if (departments) {
@@ -3638,6 +3643,7 @@
               opt.textContent = d.name;
               deptSel.appendChild(opt);
             });
+            deptSel.value = "Housekeeping";
           }
         }
 
@@ -5553,6 +5559,7 @@
             ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
             ${e.status === "Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
             ${e.status === "Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
+            ${e.custom_resignation_letter ? row("Resignation Letter", `<a href="${e.custom_resignation_letter}" target="_blank" style="color:var(--brand2);font-weight:600;">👁 View</a>`) : ""}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
             ${row("Mobile", e.cell_number)} ${row("Personal Email", e.personal_email)} ${row("PAN Number", e.custom_pan_number)} ${row("Aadhaar Number", e.custom_aadhar_number)} ${row("UHID Number", e.custom_uhid_number)} ${row("Permanent Address", e.permanent_address)}
@@ -6259,6 +6266,37 @@
         btn.disabled = true;
         btn.textContent = "Processing...";
 
+        let attachment_url = "";
+
+        const fileInput = document.getElementById("exit_attachment");
+        if (fileInput && fileInput.files.length > 0) {
+          const formData = new FormData();
+          formData.append("file", fileInput.files[0]);
+          formData.append("doctype", "Employee");
+          formData.append("docname", employee);
+          formData.append("is_private", 1);
+
+          const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]',
+          )?.content;
+
+          const uploadRes = await fetch("/api/method/upload_file", {
+            method: "POST",
+            headers: csrfToken ? { "X-Frappe-CSRF-Token": csrfToken } : {},
+            body: formData,
+            credentials: "include",
+          });
+          const uploadData = await uploadRes.json();
+          if (uploadData.message) {
+            attachment_url = uploadData.message.file_url || "";
+          } else if (uploadData._server_messages) {
+            showToast("File upload failed");
+            btn.disabled = false;
+            btn.textContent = "Confirm Exit";
+            return;
+          }
+        }
+
         const res = await callAPI(
           "process_employee_exit",
           {
@@ -6266,6 +6304,7 @@
             resignation_letter_date: resignation_date,
             relieving_date,
             reason_for_leaving: reason,
+            attachment_url,
           },
           "employee",
         );
