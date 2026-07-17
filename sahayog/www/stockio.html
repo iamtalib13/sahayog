@@ -6247,14 +6247,16 @@
 
                             <!-- Serial No does not exist view (Adding) -->
                             <div v-if="!detailRecord.serial_no && isAddingSerialInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
-                              <select
+                              <input
+                                list="available-serials"
                                 class="form-input"
                                 style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
                                 v-model="tempSerialNo"
-                              >
-                                <option value="">Select Serial No</option>
+                                placeholder="Search or Enter Serial No"
+                              />
+                              <datalist id="available-serials">
                                 <option v-for="s in availableSerialsForAsset" :value="s">[[ s ]]</option>
-                              </select>
+                              </datalist>
                               <button
                                 style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
                                 title="Save Serial No"
@@ -17811,24 +17813,13 @@
         if (!this.detailRecord || !this.tempSerialNo) return;
         this.loading = true;
         try {
-          let res;
-          if (this.detailRecord.docstatus === 1) {
-            res = await frappe.call({
-              method: "sahayog.procurement.api.asset_utils.update_submitted_asset_serial_no",
-              args: {
-                asset_name: this.detailRecord.name,
-                serial_no: this.tempSerialNo
-              }
-            });
-          } else {
-            this.detailRecord.serial_no = this.tempSerialNo;
-            res = await frappe.call({
-              method: "frappe.client.save",
-              args: {
-                doc: this.detailRecord,
-              },
-            });
-          }
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_utils.update_asset_serial_no",
+            args: {
+              asset_name: this.detailRecord.name,
+              serial_no: this.tempSerialNo
+            }
+          });
           if (res.message) {
             this.detailRecord = res.message;
             this.isAddingSerialInline = false;

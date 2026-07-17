@@ -134,11 +134,21 @@ def _get_serial_warehouse_map():
 
 
 @frappe.whitelist()
-def update_submitted_asset_serial_no(asset_name, serial_no):
+def update_asset_serial_no(asset_name, serial_no):
     """
-    Force updates the serial_no field on an Asset (even if submitted)
-    and returns the updated Asset document.
+    Updates the serial_no field on an Asset (works for draft and submitted).
+    Creates the Serial No document if it does not exist.
+    Returns the updated Asset document.
     """
+    if not frappe.db.exists("Serial No", serial_no):
+        item_code = frappe.db.get_value("Asset", asset_name, "item_code")
+        sn = frappe.get_doc({
+            "doctype": "Serial No",
+            "serial_no": serial_no,
+            "item_code": item_code
+        })
+        sn.insert(ignore_permissions=True)
+
     frappe.db.set_value("Asset", asset_name, "serial_no", serial_no)
     frappe.db.commit()
     return frappe.get_doc("Asset", asset_name)
