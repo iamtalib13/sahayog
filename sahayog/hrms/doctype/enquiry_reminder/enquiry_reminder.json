@@ -9,6 +9,7 @@
   "domestic_enquiry",
   "place_of_enquiry",
   "remarks",
+  "enquiry_report",
   "previous_record",
   "column_break_yybn",
   "status_of_response",
@@ -160,6 +161,11 @@
    "label": "Remarks"
   },
   {
+   "fieldname": "enquiry_report",
+   "fieldtype": "Attach",
+   "label": "Enquiry Report"
+  },
+  {
    "fieldname": "date_of_2nd_enquiry",
    "fieldtype": "Date",
    "in_list_view": 1,
@@ -216,7 +222,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-27 16:36:27.669744",
+ "modified": "2026-07-11 08:21:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Enquiry Reminder",

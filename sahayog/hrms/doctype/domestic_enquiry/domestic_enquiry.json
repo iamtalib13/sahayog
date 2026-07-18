@@ -9,6 +9,7 @@
   "domestic_enquiry",
   "place_of_enquiry",
   "remarks",
+  "enquiry_report",
   "column_break_wdmq",
   "status_of_response",
   "date_of_enquiry",
@@ -163,6 +164,11 @@
    "reqd": 1
   },
   {
+   "fieldname": "enquiry_report",
+   "fieldtype": "Attach",
+   "label": "Enquiry Report"
+  },
+  {
    "fieldname": "section_break_ddef",
    "fieldtype": "Section Break",
    "label": "Enquiry Details"
@@ -206,7 +212,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-27 15:07:57.194506",
+ "modified": "2026-07-11 08:21:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",

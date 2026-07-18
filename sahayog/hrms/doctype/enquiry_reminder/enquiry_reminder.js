@@ -237,7 +237,7 @@ frappe.ui.form.on("Enquiry Reminder", {
       frm.trigger("show_print_button");
     });
     if (!frm.is_new()) {
-      load_case_timeline(frm);
+      setTimeout(() => load_case_timeline(frm), 0);
     }
   },
 
@@ -343,6 +343,7 @@ function load_case_timeline(frm) {
     { doctype: "Response to SCN", label: "Response to SCN", allow_multiple: true },
     { doctype: "Domestic Enquiry", label: "Domestic Enquiry", allow_multiple: true },
     { doctype: "Enquiry Reminder", label: "Enquiry Reminder", allow_multiple: true },
+    { doctype: "Ex Parte Enquiry", label: "Ex Parte Enquiry", allow_multiple: true },
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
@@ -353,7 +354,7 @@ function load_case_timeline(frm) {
     { doctype: "Case Closure", label: "Case Closure" },
   ];
 
-  const is_ua = String(case_id).startsWith("UA") || (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" || frm.doctype === "Unauthorized Absence" || frm.doctype === "Reminder Of Unauthorized Absence" || frm.doctype === "Ex Parte Enquiry";
+  const is_ua = String(case_id).startsWith("UA") || (frm.doc.case_type || "").toLowerCase() === "unauthorized absence" || frm.doctype === "Unauthorized Absence" || frm.doctype === "Reminder Of Unauthorized Absence";
 
   const stage_defs = (is_ua ? ua_stages : standard_stages).map((stage, index) => ({
     ...stage,
@@ -408,7 +409,8 @@ function load_case_timeline(frm) {
         else if (dt === "Suspension Process") next_doctype = "Response to SCN";
         else if (dt === "Response to SCN") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Domestic Enquiry";
         else if (dt === "Domestic Enquiry") next_doctype = (String(meta.status_of_response).toLowerCase() === "satisfactory") ? "Case Closure" : "Enquiry Reminder";
-        else if (dt === "Enquiry Reminder") next_doctype = "Case Closure";
+        else if (dt === "Enquiry Reminder") next_doctype = (String(meta.enquiry_status).toLowerCase() === "attended") ? "Case Closure" : "Ex Parte Enquiry";
+        else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
         else if (dt === "Unauthorized Absence") next_doctype = (String(meta.response_of_ua).toLowerCase() === "yes") ? "Case Closure" : "Reminder Of Unauthorized Absence";
         else if (dt === "Reminder Of Unauthorized Absence") next_doctype = (String(meta.response_of_reminder).toLowerCase() === "no") ? "Ex Parte Enquiry" : "Case Closure";
         else if (dt === "Ex Parte Enquiry") next_doctype = "Case Closure";
@@ -441,7 +443,7 @@ function load_case_timeline(frm) {
   };
 
   const load_record_summaries = () => {
-    return Promise.all(stage_defs.map((stage) => frappe.db.get_list(stage.doctype, { filters: { case_id }, fields: ["name"], order_by: "creation asc", limit_page_length: 500 }).then((records) => ({ doctype: stage.doctype, count: (records || []).length, names: (records || []).map((row) => row.name) })).catch(() => ({ doctype: stage.doctype, count: 0, names: [] }))));
+    return frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stage_counts", { case_id }).then((counts) => stage_defs.map((stage) => ({ doctype: stage.doctype, count: (counts[stage.doctype] || {}).count || 0, names: (counts[stage.doctype] || {}).names || [] }))).catch(() => stage_defs.map((stage) => ({ doctype: stage.doctype, count: 0, names: [] })));
   };
 
   const load_timeline = () => frappe.xcall("sahayog.hrms.doctype.disciplinary_case.disciplinary_case.get_case_stages", { case_id });

@@ -17,6 +17,7 @@
   "remarks",
   "document_upload",
   "previous_record",
+  "previous_record_doctype",
   "case_details_section",
   "case_id",
   "employee_id",
@@ -74,54 +75,48 @@
   },
   {
    "fieldname": "case_id",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "label": "Case ID",
-   "options": "Unauthorized Absence"
+   "read_only": 1,
+   "search_index": 1
   },
   {
-   "fetch_from": "case_id.employee_id",
    "fieldname": "employee_id",
    "fieldtype": "Data",
    "label": "Employee ID",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "label": "Employee Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.designation",
    "fieldname": "designation",
    "fieldtype": "Data",
    "label": "Designation",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.branch_id",
    "fieldname": "branch_id",
    "fieldtype": "Data",
    "label": "Branch ID",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.branch_name",
    "fieldname": "branch_name",
    "fieldtype": "Data",
    "label": "Branch Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.zone_name",
    "fieldname": "zone_name",
    "fieldtype": "Data",
    "label": "Zone Name",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_occurrence_date",
    "fieldname": "issue_occurrence_date",
    "fieldtype": "Date",
    "label": "Issue Occurrence Date",
@@ -132,28 +127,24 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "case_id.issue_reported_to_hr",
    "fieldname": "issue_reported_to_hr",
    "fieldtype": "Date",
    "label": "Date of issue Reported to hr",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.issue_in_details",
    "fieldname": "issue_in_details",
    "fieldtype": "Small Text",
    "label": "Issue in Details",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.status",
    "fieldname": "status",
    "fieldtype": "Data",
    "label": "Case Status",
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.date_of_1st_letter",
    "fieldname": "date_of_1st_letter",
    "fieldtype": "Date",
    "label": "Date of Unauthorized Absence letter",
@@ -167,7 +158,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "case_id.amount_of_fraud",
    "fieldname": "amount_of_fraud",
    "fieldtype": "Data",
    "label": "Fraud amount",
@@ -197,17 +187,23 @@
   },
   {
    "fieldname": "previous_record",
-   "fieldtype": "Link",
+   "fieldtype": "Dynamic Link",
    "hidden": 1,
    "label": "Previous Record",
-   "options": "Reminder Of Unauthorized Absence"
+   "options": "previous_record_doctype"
+  },
+  {
+   "fieldname": "previous_record_doctype",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Previous Record DocType"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-03 10:48:20.802588",
+ "modified": "2026-07-11 08:21:00.000000",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",
@@ -239,20 +235,24 @@
    "submit": 1,
    "write": 1
   },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Support Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  }
- ],
+   {
+    "create": 1,
+    "delete": 1,
+    "email": 1,
+    "export": 1,
+    "print": 1,
+    "read": 1,
+    "report": 1,
+    "role": "HR Support Manager",
+    "share": 1,
+    "submit": 1,
+    "write": 1
+   },
+   {
+    "read": 1,
+    "role": "Employee"
+   }
+  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
