@@ -15,6 +15,22 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("approved_loan_amount", frm.doc.status !== "Draft");
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
+
+		// Show "Create Loan Application" button only when Approved
+		if (frm.doc.status === "Approved") {
+			frm.add_custom_button(__('Create Loan Application'), function() {
+				frappe.call({
+					method: 'create_loan_application',
+					doc: frm.doc,
+					callback: function(r) {
+						if (r.message) {
+							frappe.msgprint(__('Loan Application {0} created successfully', [r.message]));
+							frappe.set_route('Form', 'Loan Application', r.message);
+						}
+					}
+				});
+			}).addClass('btn-primary');
+		}
 	},
 
 	mobile_number(frm) {
