@@ -163,3 +163,19 @@ def update_asset_varient(asset_name, varient):
     frappe.db.set_value("Asset", asset_name, "varient", varient)
     frappe.db.commit()
     return frappe.get_doc("Asset", asset_name)
+
+
+@frappe.whitelist()
+def update_asset_status_assigned(asset_names):
+    """
+    Force updates the status and workflow_state of given assets to 'Assigned'.
+    """
+    import json
+    if isinstance(asset_names, str):
+        asset_names = json.loads(asset_names)
+    for name in asset_names:
+        frappe.db.set_value("Asset", name, {
+            "status": "Assigned",
+            "workflow_state": "Assigned"
+        }, update_modified=False)
+    frappe.db.commit()

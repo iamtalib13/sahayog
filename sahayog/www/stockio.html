@@ -16104,6 +16104,17 @@
             }
           }
 
+          // Force set status and workflow_state to 'Assigned' for all created/moved assets
+          if (validItems.length > 0) {
+            const assetNames = validItems.map(i => i.asset).filter(Boolean);
+            await frappe.call({
+              method: "sahayog.procurement.api.asset_utils.update_asset_status_assigned",
+              args: {
+                asset_names: assetNames
+              }
+            });
+          }
+
           // 3. ALWAYS UPDATE EMR ITEM STATUS
           if (
             this.movementForm.custom_reference_doctype === "Employee Material Request" &&
