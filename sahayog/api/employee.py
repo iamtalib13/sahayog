@@ -176,6 +176,40 @@ def create_support_staff(data):
     _uhid_col = "custom_uhid_number" if "custom_uhid_number" in _emp_cols else "uhid_number" if "uhid_number" in _emp_cols else None
 
     # Validations
+    first = (data.get("first_name") or "").strip()
+    middle = (data.get("middle_name") or "").strip()
+    last = (data.get("last_name") or "").strip()
+
+    # Check 1: full name (first + middle + last) — exact duplicate
+    parts = [p for p in [first, middle, last] if p]
+    full_name = " ".join(parts)
+    if full_name:
+        existing_full = frappe.db.sql("""
+            SELECT name, employee_name FROM `tabEmployee`
+            WHERE TRIM(UPPER(employee_name)) = TRIM(UPPER(%s))
+              AND status != 'Left'
+              AND custom_is_support_staff = 1
+            LIMIT 1
+        """, (full_name,), as_dict=True)
+        if existing_full:
+            frappe.throw(_("An employee with the name '{0}' already exists. Duplicate names are not allowed.").format(full_name))
+
+    # Check 2: first_name + last_name (without middle) — catches variations
+    if first and last:
+        existing = frappe.db.sql("""
+            SELECT name, employee_name FROM `tabEmployee`
+            WHERE TRIM(UPPER(first_name)) = TRIM(UPPER(%s))
+              AND TRIM(UPPER(last_name)) = TRIM(UPPER(%s))
+              AND status != 'Left'
+              AND custom_is_support_staff = 1
+            LIMIT 1
+        """, (first, last), as_dict=True)
+        if existing:
+            # Skip if already caught by check 1 (avoid duplicate error)
+            if existing[0].employee_name != full_name:
+                frappe.throw(_("An employee with name '{0}' (similar to '{1}') already exists. Duplicate names are not allowed.").format(
+                    existing[0].employee_name, f"{first} {last}"))
+
     if data.get("employee_number") and frappe.db.exists("Employee", {"employee_number": data.get("employee_number")}):
         frappe.throw(_("Employee Code {0} already exists").format(data.get("employee_number")))
 
