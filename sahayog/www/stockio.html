@@ -3692,6 +3692,18 @@
                   </div>
                 </div>
 
+                <!-- Varient -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Varient</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.varient"
+                    placeholder="Enter varient"
+                  />
+                </div>
+
                 <!-- Asset Name -->
                 <div class="form-group" v-if="createAssetForm.item_code" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Name <span class="form-required">*</span></label>
@@ -6224,7 +6236,8 @@
                         <div class="info-content" style="width: 100%;">
                           <span class="info-label">Serial No</span>
                           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
-                            <span class="info-value">[[ detailRecord.serial_no || '-' ]]</span>
+                            <!-- Serial No exists view -->
+                            <span class="info-value" v-if="detailRecord.serial_no">[[ detailRecord.serial_no ]]</span>
                             <div v-if="detailRecord.serial_no" style="display: flex; gap: 4px;">
                               <!-- View button -->
                               <button
@@ -6243,6 +6256,44 @@
                                 <i class="fas fa-pencil-alt"></i>
                               </button>
                             </div>
+
+                            <!-- Serial No does not exist view (Adding) -->
+                            <div v-if="!detailRecord.serial_no && isAddingSerialInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+                              <input
+                                list="available-serials"
+                                class="form-input"
+                                style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
+                                v-model="tempSerialNo"
+                                placeholder="Search or Enter Serial No"
+                              />
+                              <datalist id="available-serials">
+                                <option v-for="s in availableSerialsForAsset" :value="s">[[ s ]]</option>
+                              </datalist>
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Save Serial No"
+                                @click="saveSerialNoInline()"
+                              >
+                                <i class="fas fa-check"></i>
+                              </button>
+                              <button
+                                style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Cancel"
+                                @click="isAddingSerialInline = false"
+                              >
+                                <i class="fas fa-times"></i>
+                              </button>
+                            </div>
+
+                            <!-- Serial No does not exist view (Add Button) -->
+                            <button
+                              v-if="!detailRecord.serial_no && !isAddingSerialInline"
+                              style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"
+                              title="Add Serial No"
+                              @click="isAddingSerialInline = true; tempSerialNo = ''; fetchAvailableSerials();"
+                            >
+                              <i class="fas fa-plus"></i> Add
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -6252,6 +6303,52 @@
                         <div class="info-content">
                           <span class="info-label">Item Code</span>
                           <span class="info-value" style="color: #369696;">[[ detailRecord.item_code || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-tag"></i></div>
+                        <div class="info-content" style="width: 100%;">
+                          <span class="info-label">Varient</span>
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                            <span class="info-value" v-if="detailRecord.varient">[[ detailRecord.varient ]]</span>
+                            
+                            <!-- Varient does not exist view (Adding) -->
+                            <div v-if="!detailRecord.varient && isAddingVarientInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+                              <input
+                                type="text"
+                                class="form-input"
+                                style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
+                                v-model="tempVarient"
+                                placeholder="Enter varient"
+                                @keyup.enter="saveVarientInline()"
+                              />
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Save Varient"
+                                @click="saveVarientInline()"
+                              >
+                                <i class="fas fa-check"></i>
+                              </button>
+                              <button
+                                style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Cancel"
+                                @click="isAddingVarientInline = false"
+                              >
+                                <i class="fas fa-times"></i>
+                              </button>
+                            </div>
+
+                            <!-- Varient does not exist view (Add Button) -->
+                            <button
+                              v-if="!detailRecord.varient && !isAddingVarientInline"
+                              style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"
+                              title="Add Varient"
+                              @click="isAddingVarientInline = true; tempVarient = '';"
+                            >
+                              <i class="fas fa-plus"></i> Add
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -9322,7 +9419,7 @@
           </div>
           <button
             class="btn-create-inline"
-            @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})"
+            @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:'', brand:'', brand_display:'', serial_no:'', varient:''})"
             style="font-size: 10px; padding: 4px 10px"
           >
             <i class="fas fa-plus"></i> Add Asset
@@ -9387,6 +9484,16 @@
                   "
                 >
                   Serial No
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Varient
                 </th>
                 <th
                   style="
@@ -9550,6 +9657,15 @@
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <input
+                        type="text"
+                        class="form-input"
+                        style="width: 120px; padding: 5px;"
+                        v-model="item.varient"
+                        placeholder="Varient"
+                      />
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
                       <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length)">
@@ -12438,6 +12554,11 @@
       isEditing: false,
       linkedSerialRecord: null,
       linkedSerialEditing: false,
+      isAddingSerialInline: false,
+      tempSerialNo: '',
+      availableSerialsForAsset: [],
+      isAddingVarientInline: false,
+      tempVarient: '',
       configTypes: [
         "MAC Address", "Model Number", "Office Key", "Windows Key", 
         "Operating System", "Processor", "RAM", "Serial Number", 
@@ -13208,6 +13329,7 @@
         is_existing_asset: true,
         is_composite_asset: false,
         remark: "",
+        varient: "",
       },
       movementForm: {
         transaction_date: "",
@@ -13222,6 +13344,7 @@
           target_location_display: "",
           to_employee: "",
           to_employee_display: "",
+          varient: "",
         },
       ],
       assetsList: [],
@@ -15267,6 +15390,7 @@
               brand: "",
               brand_display: "",
               serial_no: "",
+              varient: "",
             },
           ];
           return;
@@ -15593,6 +15717,7 @@
           state: this.createAssetForm.state,
           division: this.createAssetForm.division,
           brand: this.createAssetForm.brand,
+          varient: this.createAssetForm.varient,
           custom_invoice_number: this.createAssetForm.custom_invoice_number,
           purchase_date:
             this.createAssetForm.purchase_date || frappe.datetime.now_date(),
@@ -15655,6 +15780,7 @@
           target_location_display: "",
           to_employee: "",
           to_employee_display: "",
+          varient: "",
         });
       },
 
@@ -15875,6 +16001,7 @@
                 division: fullDivision, // Use original Division
                 brand: item.brand,
                 serial_no: item.serial_no,
+                varient: item.varient,
                 custom_invoice_number: this.movementForm.custom_invoice_number || invoiceNo,
                 custom_emr: this.movementForm.custom_reference_name,
                 purchase_date: this.movementForm.custom_invoice_date || frappe.datetime.now_date(),
@@ -15975,6 +16102,17 @@
                 }
                 finalMovementName = finalDoc.name;
             }
+          }
+
+          // Force set status and workflow_state to 'Assigned' for all created/moved assets
+          if (validItems.length > 0) {
+            const assetNames = validItems.map(i => i.asset).filter(Boolean);
+            await frappe.call({
+              method: "sahayog.procurement.api.asset_utils.update_asset_status_assigned",
+              args: {
+                asset_names: assetNames
+              }
+            });
           }
 
           // 3. ALWAYS UPDATE EMR ITEM STATUS
@@ -16526,6 +16664,7 @@
               brand: "",
               brand_display: "",
               serial_no: "",
+              varient: "",
             }));
 
           if (this.movementItems.length === 0) {
@@ -16542,6 +16681,7 @@
                 brand: "",
                 brand_display: "",
                 serial_no: "",
+                varient: "",
                 },
                 ];
           }
@@ -17583,6 +17723,10 @@
         this.showDispatchHistory = false;
         this.linkedSerialRecord = null;
         this.linkedSerialEditing = false;
+        this.isAddingSerialInline = false;
+        this.tempSerialNo = '';
+        this.isAddingVarientInline = false;
+        this.tempVarient = '';
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -17715,6 +17859,113 @@
           console.error("Failed to save linked Serial No:", e);
           frappe.show_alert({
             message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async fetchAvailableSerials() {
+        if (!this.detailRecord || !this.detailRecord.item_code) return;
+        this.loading = true;
+        try {
+          // Get all serials currently used by assets
+          const assetRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Asset",
+              filters: {
+                docstatus: ["in", [0, 1]],
+                serial_no: ["!=", ""]
+              },
+              fields: ["serial_no"],
+              limit_page_length: 0
+            }
+          });
+          const usedSerials = (assetRes.message || []).map(a => a.serial_no).filter(Boolean);
+
+          // Get all serials for this item code
+          const serialRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Serial No",
+              filters: {
+                item_code: this.detailRecord.item_code
+              },
+              fields: ["name"],
+              limit_page_length: 0
+            }
+          });
+          const allSerialsForItem = (serialRes.message || []).map(s => s.name);
+
+          // Exclude used serials
+          this.availableSerialsForAsset = allSerialsForItem.filter(s => !usedSerials.includes(s));
+        } catch (e) {
+          console.error("Error fetching available serials:", e);
+          this.availableSerialsForAsset = [];
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async saveSerialNoInline() {
+        if (!this.detailRecord || !this.tempSerialNo) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_utils.update_asset_serial_no",
+            args: {
+              asset_name: this.detailRecord.name,
+              serial_no: this.tempSerialNo
+            }
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isAddingSerialInline = false;
+            this.tempSerialNo = '';
+            frappe.show_alert({
+              message: "Serial No added successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({
+            message: "Error saving Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async saveVarientInline() {
+        if (!this.detailRecord || !this.tempVarient) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_utils.update_asset_varient",
+            args: {
+              asset_name: this.detailRecord.name,
+              varient: this.tempVarient
+            }
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isAddingVarientInline = false;
+            this.tempVarient = '';
+            frappe.show_alert({
+              message: "Varient added successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({
+            message: "Error saving Varient: " + (e.message || e.exc || "unknown error"),
             indicator: "red",
           });
         } finally {
