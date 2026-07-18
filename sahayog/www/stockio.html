@@ -3692,6 +3692,18 @@
                   </div>
                 </div>
 
+                <!-- Varient -->
+                <div class="form-group" style="margin-bottom: 16px !important;">
+                  <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Varient</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    style="padding: 12px 16px !important;"
+                    v-model="createAssetForm.varient"
+                    placeholder="Enter varient"
+                  />
+                </div>
+
                 <!-- Asset Name -->
                 <div class="form-group" v-if="createAssetForm.item_code" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Asset Name <span class="form-required">*</span></label>
@@ -6291,6 +6303,14 @@
                         <div class="info-content">
                           <span class="info-label">Item Code</span>
                           <span class="info-value" style="color: #369696;">[[ detailRecord.item_code || '-' ]]</span>
+                        </div>
+                      </div>
+
+                      <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-tag"></i></div>
+                        <div class="info-content">
+                          <span class="info-label">Varient</span>
+                          <span class="info-value">[[ detailRecord.varient || '-' ]]</span>
                         </div>
                       </div>
 
@@ -13250,6 +13270,7 @@
         is_existing_asset: true,
         is_composite_asset: false,
         remark: "",
+        varient: "",
       },
       movementForm: {
         transaction_date: "",
@@ -15635,6 +15656,7 @@
           state: this.createAssetForm.state,
           division: this.createAssetForm.division,
           brand: this.createAssetForm.brand,
+          varient: this.createAssetForm.varient,
           custom_invoice_number: this.createAssetForm.custom_invoice_number,
           purchase_date:
             this.createAssetForm.purchase_date || frappe.datetime.now_date(),
