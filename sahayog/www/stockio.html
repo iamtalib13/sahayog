@@ -9419,7 +9419,7 @@
           </div>
           <button
             class="btn-create-inline"
-            @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:''})"
+            @click="movementItems.push({asset:'', asset_display:'', item_code:'', item_name:'', target_location:'', target_location_display:'', to_employee:'', to_employee_display:'', brand:'', brand_display:'', serial_no:'', varient:''})"
             style="font-size: 10px; padding: 4px 10px"
           >
             <i class="fas fa-plus"></i> Add Asset
@@ -9484,6 +9484,16 @@
                   "
                 >
                   Serial No
+                </th>
+                <th
+                  style="
+                    font-size: 10px;
+                    padding: 10px;
+                    text-align: left;
+                    font-weight: 700;
+                  "
+                >
+                  Varient
                 </th>
                 <th
                   style="
@@ -9647,6 +9657,15 @@
                           </div>
                         </div>
                       </div>
+                    </td>
+                    <td style="padding: 10px; font-size: 11px;">
+                      <input
+                        type="text"
+                        class="form-input"
+                        style="width: 120px; padding: 5px;"
+                        v-model="item.varient"
+                        placeholder="Varient"
+                      />
                     </td>
                     <td style="padding: 10px; font-size: 11px;">
                       <div style="font-weight: 600; color: #369696; text-align: center;" :title="'Available Serial Nos: ' + (serial_nos.filter(s => s.item_code === item.item_code && (invoice_serial_nos.length === 0 || invoice_serial_nos.includes(s.name))).length)">
@@ -13325,6 +13344,7 @@
           target_location_display: "",
           to_employee: "",
           to_employee_display: "",
+          varient: "",
         },
       ],
       assetsList: [],
@@ -15370,6 +15390,7 @@
               brand: "",
               brand_display: "",
               serial_no: "",
+              varient: "",
             },
           ];
           return;
@@ -15759,6 +15780,7 @@
           target_location_display: "",
           to_employee: "",
           to_employee_display: "",
+          varient: "",
         });
       },
 
@@ -15979,6 +16001,7 @@
                 division: fullDivision, // Use original Division
                 brand: item.brand,
                 serial_no: item.serial_no,
+                varient: item.varient,
                 custom_invoice_number: this.movementForm.custom_invoice_number || invoiceNo,
                 custom_emr: this.movementForm.custom_reference_name,
                 purchase_date: this.movementForm.custom_invoice_date || frappe.datetime.now_date(),
@@ -16630,6 +16653,7 @@
               brand: "",
               brand_display: "",
               serial_no: "",
+              varient: "",
             }));
 
           if (this.movementItems.length === 0) {
@@ -16646,6 +16670,7 @@
                 brand: "",
                 brand_display: "",
                 serial_no: "",
+                varient: "",
                 },
                 ];
           }
