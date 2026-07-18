@@ -2,12 +2,12 @@ import frappe
 from datetime import date
 
 def execute():
-    # 1. Fetch all assets in draft (docstatus=0) that are not scrapped
+    # 1. Fetch all assets in draft (docstatus=0) that have status = 'Draft'
     assets = frappe.get_all(
         "Asset",
         filters={
             "docstatus": 0,
-            "status": ["!=", "Scrapped"]
+            "status": "Draft"
         },
         fields=["name", "custodian", "location", "status", "company"]
     )
