@@ -176,7 +176,8 @@ after_migrate = [
     "sahayog.patches.custom_fields.add_custom_emr_stock_entry_connection_fields.execute",
     "sahayog.patches.custom_fields.add_naming_controls_to_asset.execute",
     "sahayog.patches.set_asset_status_options.execute",
-    "sahayog.patches.custom_fields.add_asset_emr_link_fields.execute"
+    "sahayog.patches.custom_fields.add_asset_emr_link_fields.execute",
+    # "sahayog.patches.custom_fields.add_varient_field_to_asset.execute",
 ]
 # Uninstallation
 # ------------
