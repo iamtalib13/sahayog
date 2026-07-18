@@ -152,3 +152,14 @@ def update_asset_serial_no(asset_name, serial_no):
     frappe.db.set_value("Asset", asset_name, "serial_no", serial_no)
     frappe.db.commit()
     return frappe.get_doc("Asset", asset_name)
+
+
+@frappe.whitelist()
+def update_asset_varient(asset_name, varient):
+    """
+    Force updates the varient field on an Asset (works for draft and submitted).
+    Returns the updated Asset document.
+    """
+    frappe.db.set_value("Asset", asset_name, "varient", varient)
+    frappe.db.commit()
+    return frappe.get_doc("Asset", asset_name)

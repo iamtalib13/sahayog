@@ -6308,9 +6308,47 @@
 
                       <div class="info-item">
                         <div class="info-icon"><i class="fas fa-tag"></i></div>
-                        <div class="info-content">
+                        <div class="info-content" style="width: 100%;">
                           <span class="info-label">Varient</span>
-                          <span class="info-value">[[ detailRecord.varient || '-' ]]</span>
+                          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;">
+                            <span class="info-value" v-if="detailRecord.varient">[[ detailRecord.varient ]]</span>
+                            
+                            <!-- Varient does not exist view (Adding) -->
+                            <div v-if="!detailRecord.varient && isAddingVarientInline" style="display: flex; align-items: center; gap: 4px; width: 100%;">
+                              <input
+                                type="text"
+                                class="form-input"
+                                style="padding: 4px 8px !important; height: 30px; font-size: 0.85rem; flex: 1; min-width: 0;"
+                                v-model="tempVarient"
+                                placeholder="Enter varient"
+                                @keyup.enter="saveVarientInline()"
+                              />
+                              <button
+                                style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Save Varient"
+                                @click="saveVarientInline()"
+                              >
+                                <i class="fas fa-check"></i>
+                              </button>
+                              <button
+                                style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 2px; font-size: 0.85rem;"
+                                title="Cancel"
+                                @click="isAddingVarientInline = false"
+                              >
+                                <i class="fas fa-times"></i>
+                              </button>
+                            </div>
+
+                            <!-- Varient does not exist view (Add Button) -->
+                            <button
+                              v-if="!detailRecord.varient && !isAddingVarientInline"
+                              style="background: transparent; border: none; color: #369696; cursor: pointer; padding: 0; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"
+                              title="Add Varient"
+                              @click="isAddingVarientInline = true; tempVarient = '';"
+                            >
+                              <i class="fas fa-plus"></i> Add
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -12500,6 +12538,8 @@
       isAddingSerialInline: false,
       tempSerialNo: '',
       availableSerialsForAsset: [],
+      isAddingVarientInline: false,
+      tempVarient: '',
       configTypes: [
         "MAC Address", "Model Number", "Office Key", "Windows Key", 
         "Operating System", "Processor", "RAM", "Serial Number", 
@@ -17649,6 +17689,8 @@
         this.linkedSerialEditing = false;
         this.isAddingSerialInline = false;
         this.tempSerialNo = '';
+        this.isAddingVarientInline = false;
+        this.tempVarient = '';
         // Show detail view inline for Requests
         if (this.currentView.detailFields) {
           this.showDetailView = true;
@@ -17856,6 +17898,38 @@
           console.error("Save error:", e);
           frappe.show_alert({
             message: "Error saving Serial No: " + (e.message || e.exc || "unknown error"),
+            indicator: "red",
+          });
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async saveVarientInline() {
+        if (!this.detailRecord || !this.tempVarient) return;
+        this.loading = true;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_utils.update_asset_varient",
+            args: {
+              asset_name: this.detailRecord.name,
+              varient: this.tempVarient
+            }
+          });
+          if (res.message) {
+            this.detailRecord = res.message;
+            this.isAddingVarientInline = false;
+            this.tempVarient = '';
+            frappe.show_alert({
+              message: "Varient added successfully",
+              indicator: "green",
+            });
+            await this.fetchData(this.currentView.doctype);
+          }
+        } catch (e) {
+          console.error("Save error:", e);
+          frappe.show_alert({
+            message: "Error saving Varient: " + (e.message || e.exc || "unknown error"),
             indicator: "red",
           });
         } finally {
