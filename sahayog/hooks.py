@@ -268,6 +268,15 @@ doc_events = {
             "sahayog.doc_events.create_user_from_employee.create_user",
             # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
+        "validate": [
+            "sahayog.doc_events.employee.split_name_sync",
+            "sahayog.doc_events.employee.custom_division_sync",
+            "sahayog.doc_events.employee.custom_zone_sync",
+            "sahayog.doc_events.employee.custom_region_sync",
+            "sahayog.doc_events.employee.branch_sync",
+            "sahayog.doc_events.employee.designation_sync",
+            "sahayog.doc_events.employee.department_sync",
+        ],
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
             "sahayog.doc_events.employee.set_confirmation_date",

@@ -1,9 +1,22 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from functools import wraps
 
 class SahayogHRSetting(Document):
     pass
+
+
+@frappe.whitelist()
+def insert_employees():
+    from sahayog.api.employee_master_import import import_employee_master
+    return import_employee_master(mode="insert")
+
+
+@frappe.whitelist()
+def update_employees():
+    from sahayog.api.employee_master_import import import_employee_master
+    return import_employee_master(mode="update")
 
 
 # -----------------------------

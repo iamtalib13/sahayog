@@ -8,7 +8,12 @@
   "enable_email_notifications",
   "cc_settings_sb",
   "unauthorized_absence_cc",
-  "disciplinary_case_cc"
+  "disciplinary_case_cc",
+  "employee_master_section",
+  "employee_master",
+  "field_mapping_sb",
+  "field_mappings",
+  "employee_import_summary"
  ],
  "fields": [
   {
@@ -31,13 +36,44 @@
    "fieldname": "disciplinary_case_cc",
    "fieldtype": "Small Text",
    "label": "Disciplinary Case CC (Fixed IDs)"
+  },
+  {
+   "fieldname": "employee_master_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Master"
+  },
+  {
+   "fieldname": "employee_master",
+   "fieldtype": "Attach",
+   "label": "Employee Master"
+  },
+  {
+   "depends_on": "employee_master",
+   "fieldname": "field_mapping_sb",
+   "fieldtype": "Section Break",
+   "label": "Field Mapping"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "depends_on": "eval:doc.employee_master",
+   "fieldname": "field_mappings",
+   "fieldtype": "Table",
+   "label": "Field Mappings",
+   "options": "Employee Field Mapping"
+  },
+  {
+   "depends_on": "eval:doc.employee_master",
+   "fieldname": "employee_import_summary",
+   "fieldtype": "Small Text",
+   "label": "Employee Import Summary",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-11-26 13:21:51.639858",
+ "modified": "2026-07-19 20:57:49.067256",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Sahayog HR Setting",
