@@ -3,6 +3,86 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, add_days
 
+
+def _ensure_link(doc, fieldname, target_doctype, label_field, name_prefix=None):
+    val = doc.get(fieldname)
+    if not val:
+        return
+    val = val.strip()
+    if not val:
+        return
+    clean = val.replace(" ", "").upper()
+    if name_prefix and not clean.startswith(name_prefix):
+        clean = name_prefix + clean
+    if not frappe.db.exists(target_doctype, clean):
+        frappe.get_doc({
+            "doctype": target_doctype,
+            label_field: clean,
+        }).insert(ignore_permissions=True)
+    doc.set(fieldname, clean)
+
+
+def custom_division_sync(doc, method):
+    _ensure_link(doc, "custom_division", "Division", "division")
+
+
+def custom_zone_sync(doc, method):
+    _ensure_link(doc, "custom_zone", "Zone", "zone", "ZONE-")
+
+
+def custom_region_sync(doc, method):
+    _ensure_link(doc, "custom_region", "Region", "region", "REGION-")
+
+
+def branch_sync(doc, method):
+    _ensure_link(doc, "branch", "Branch", "branch")
+
+
+def split_name_sync(doc, method):
+    fn = doc.get("first_name")
+    mn = doc.get("middle_name")
+    ln = doc.get("last_name")
+    if not fn:
+        return
+    parts = [p for p in fn.strip().split() if p]
+    if len(parts) == 1:
+        return
+    if mn or ln:
+        return
+    if len(parts) == 2:
+        doc.first_name = parts[0]
+        doc.last_name = parts[1]
+    elif len(parts) == 3:
+        doc.first_name = parts[0]
+        doc.middle_name = parts[1]
+        doc.last_name = parts[2]
+    elif len(parts) == 4:
+        doc.first_name = " ".join(parts[:3])
+        doc.last_name = parts[3]
+
+
+def designation_sync(doc, method):
+    _ensure_link(doc, "designation", "Designation", "designation_name")
+
+
+def department_sync(doc, method):
+    val = doc.get("department")
+    if not val:
+        return
+    val = val.strip()
+    if not val:
+        return
+    existing = frappe.db.get_value("Department", {"department_name": val}, "name")
+    if existing:
+        doc.department = existing
+    else:
+        new = frappe.get_doc({
+            "doctype": "Department",
+            "department_name": val.upper(),
+        }).insert(ignore_permissions=True)
+        doc.department = new.name
+
+
 def set_confirmation_date(doc, method):
     """Automatically set final_confirmation_date to 90 days after date_of_joining if empty."""
     if doc.date_of_joining and not doc.final_confirmation_date:
