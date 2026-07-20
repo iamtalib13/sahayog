@@ -16,3 +16,23 @@ class LoanRequest(Document):
 			self.vintage_complete_days = date_diff(getdate(), getdate(self.deposit_date))
 		else:
 			self.vintage_complete_days = 0
+
+	@frappe.whitelist()
+	def create_loan_application(self):
+		"""Create Loan Application from approved Loan Request"""
+		if self.status != "Approved":
+			frappe.throw("Loan Application can only be created from Approved Loan Request")
+
+		loan_application = frappe.get_doc({
+			"doctype": "Loan Application",
+			"loan_type": self.loan_type,
+			"branch_code": self.branch,
+			"customer_name": self.customer,
+			"mobile_number": self.mobile_number,
+			"loan_amount": self.approved_loan_amount or self.required_loan_amount,
+			"purpose_of_loan": self.purpose_of_loan,
+		})
+		loan_application.insert()
+		frappe.db.commit()
+
+		return loan_application.name
