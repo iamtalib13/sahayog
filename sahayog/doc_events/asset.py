@@ -121,3 +121,152 @@ def custom_asset_autoname(doc, method):
 
     next_number = str(last_number + 1).zfill(3)
     doc.name = f"{naming_prefix}{next_number}"
+
+
+@frappe.whitelist()
+def remove_serial_numbers(assets):
+    import json
+    if isinstance(assets, str):
+        assets = json.loads(assets)
+
+    for asset_name in assets:
+        if frappe.db.exists("Asset", asset_name):
+            frappe.db.set_value("Asset", asset_name, "serial_no", "")
+
+    return {"success": True}
+
+
+@frappe.whitelist()
+def update_serial_number(asset, serial_no):
+    if frappe.db.exists("Asset", asset):
+        frappe.db.set_value("Asset", asset, "serial_no", serial_no)
+        return {"success": True}
+    return {"success": False, "error": "Asset not found"}
+
+
+def _resolve_filepath(file_url):
+    import os
+    site_path = os.path.abspath(frappe.get_site_path())
+    if file_url.startswith("/private/"):
+        return site_path + file_url
+    return site_path + "/public" + file_url
+
+
+def parse_file(file_url):
+    import os
+    from frappe.utils.csvutils import read_csv_content
+    from frappe.utils.xlsxutils import read_xlsx_file_from_attached_file
+
+    if file_url.lower().endswith(".xlsx"):
+        try:
+            return read_xlsx_file_from_attached_file(file_url=file_url) or []
+        except Exception:
+            return read_xlsx_file_from_attached_file(filepath=_resolve_filepath(file_url)) or []
+    elif file_url.lower().endswith(".csv"):
+        try:
+            file_doc = frappe.get_doc("File", {"file_url": file_url})
+            content = file_doc.get_content()
+        except Exception:
+            with open(_resolve_filepath(file_url), "rb") as f:
+                content = f.read()
+
+        if isinstance(content, bytes):
+            content = content.decode("utf-8", errors="ignore")
+        return read_csv_content(content) or []
+    else:
+        frappe.throw(_("Unsupported file format. Please upload a CSV or XLSX file"))
+
+
+@frappe.whitelist()
+def remove_serial_by_file(file_url):
+    try:
+        rows = parse_file(file_url)
+        if not rows:
+            return {"success": False, "error": "The uploaded file is empty."}
+
+        # Check if first row is header
+        start_row = 0
+        first_cell = str(rows[0][0]).lower().strip()
+        if "asset" in first_cell or "code" in first_cell:
+            start_row = 1
+
+        updated_count = 0
+        errors = []
+        for i in range(start_row, len(rows)):
+            row = rows[i]
+            if not row or len(row) < 1:
+                continue
+
+            asset_code = str(row[0]).strip()
+            if not asset_code or asset_code.lower() in ["none", "null", "nan", ""]:
+                continue
+
+            # Strip decimal if Excel parsed it as a float (e.g., SMCCSL/.../001.0)
+            if asset_code.endswith(".0"):
+                asset_code = asset_code[:-2]
+
+            if frappe.db.exists("Asset", asset_code):
+                frappe.db.set_value("Asset", asset_code, "serial_no", "")
+                updated_count += 1
+            else:
+                errors.append(_("Row {0}: Asset Code '{1}' not found.").format(i + 1, asset_code))
+
+        return {"success": True, "updated_count": updated_count, "errors": errors}
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="Remove Serial File Upload Error")
+        return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def update_serial_by_file(file_url):
+    try:
+        rows = parse_file(file_url)
+        if not rows:
+            return {"success": False, "error": "The uploaded file is empty."}
+
+        # Check if first row is header
+        start_row = 0
+        first_cell = str(rows[0][0]).lower().strip()
+        if "asset" in first_cell or "code" in first_cell:
+            start_row = 1
+
+        updated_count = 0
+        errors = []
+        for i in range(start_row, len(rows)):
+            row = rows[i]
+            if not row or len(row) < 1:
+                continue
+
+            asset_code = str(row[0]).strip()
+            if not asset_code or asset_code.lower() in ["none", "null", "nan", ""]:
+                continue
+
+            # Strip decimal if Excel parsed it as a float
+            if asset_code.endswith(".0"):
+                asset_code = asset_code[:-2]
+
+            serial_no = ""
+            if len(row) > 1 and row[1] is not None:
+                val = row[1]
+                if isinstance(val, float) and val.is_integer():
+                    serial_no = str(int(val)).strip()
+                else:
+                    serial_no = str(val).strip()
+                    if serial_no.endswith(".0"):
+                        serial_no = serial_no[:-2]
+                    if serial_no.lower() in ["none", "null", "nan"]:
+                        serial_no = ""
+
+            if frappe.db.exists("Asset", asset_code):
+                frappe.db.set_value("Asset", asset_code, "serial_no", serial_no)
+                updated_count += 1
+            else:
+                errors.append(_("Row {0}: Asset Code '{1}' not found.").format(i + 1, asset_code))
+
+        return {"success": True, "updated_count": updated_count, "errors": errors}
+    except Exception as e:
+        frappe.log_error(message=frappe.get_traceback(), title="Update Serial File Upload Error")
+        return {"success": False, "error": str(e)}
+
+
+
