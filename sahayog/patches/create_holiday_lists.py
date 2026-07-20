@@ -180,9 +180,9 @@ def execute():
     for state, holidays in HOLIDAYS_DATA.items():
         name = f"{state} - 2026"
 
-        dates = [getdate(h[1]) for h in holidays]
-        from_date = min(dates)
-        to_date = max(dates)
+        year = getdate(holidays[0][1]).year
+        from_date = f"{year}-01-01"
+        to_date = f"{year}-12-31"
 
         if frappe.db.exists("Holiday List", name):
             print(f"Skipping {name} — already exists")
