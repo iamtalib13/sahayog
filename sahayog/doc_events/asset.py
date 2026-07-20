@@ -205,6 +205,15 @@ def remove_serial_by_file(file_url):
             if asset_code.endswith(".0"):
                 asset_code = asset_code[:-2]
 
+            # Read the Serial No column
+            serial_no_val = ""
+            if len(row) > 1 and row[1] is not None:
+                serial_no_val = str(row[1]).strip()
+
+            if serial_no_val.upper() != "N/A":
+                errors.append(_("Row {0}: Serial No is '{1}' instead of 'N/A'. Skipped.").format(i + 1, serial_no_val))
+                continue
+
             if frappe.db.exists("Asset", asset_code):
                 frappe.db.set_value("Asset", asset_code, "serial_no", "")
                 updated_count += 1
@@ -257,16 +266,42 @@ def update_serial_by_file(file_url):
                     if serial_no.lower() in ["none", "null", "nan"]:
                         serial_no = ""
 
-            if frappe.db.exists("Asset", asset_code):
-                frappe.db.set_value("Asset", asset_code, "serial_no", serial_no)
-                updated_count += 1
-            else:
+            if not frappe.db.exists("Asset", asset_code):
                 errors.append(_("Row {0}: Asset Code '{1}' not found.").format(i + 1, asset_code))
+                continue
+
+            # If Serial No is N/A or empty, we clear the asset serial_no
+            if not serial_no or serial_no.upper() == "N/A":
+                frappe.db.set_value("Asset", asset_code, "serial_no", "")
+                updated_count += 1
+                continue
+
+            # Ensure Serial No record exists in "Serial No" DocType
+            if not frappe.db.exists("Serial No", serial_no):
+                try:
+                    asset_doc = frappe.get_doc("Asset", asset_code)
+                    
+                    serial_doc = frappe.get_doc({
+                        "doctype": "Serial No",
+                        "serial_no": serial_no,
+                        "item_code": asset_doc.item_code,
+                        "company": asset_doc.company,
+                        "status": "Active"
+                    })
+                    serial_doc.insert(ignore_permissions=True)
+                except Exception as ex:
+                    errors.append(_("Row {0}: Failed to create Serial No '{1}' - {2}").format(i + 1, serial_no, str(ex)))
+                    continue
+
+            # Set serial_no on Asset
+            frappe.db.set_value("Asset", asset_code, "serial_no", serial_no)
+            updated_count += 1
 
         return {"success": True, "updated_count": updated_count, "errors": errors}
     except Exception as e:
         frappe.log_error(message=frappe.get_traceback(), title="Update Serial File Upload Error")
         return {"success": False, "error": str(e)}
+
 
 
 

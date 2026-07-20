@@ -13,9 +13,9 @@ frappe.listview_settings["Asset"] = {
 								<strong>File Template Instructions:</strong>
 								<ul style="margin: 5px 0 0 20px; padding: 0;">
 									<li>Upload a <code>.csv</code> or <code>.xlsx</code> file.</li>
-									<li>Column 1 Header: <strong>Asset Code</strong></li>
-									<li>Column 2 Header: <strong>Serial No</strong></li>
-									<li>This action will clear/remove serial numbers of assets listed in the file.</li>
+									<li>Column 1 Header: <strong>Asset Code</strong> (Asset name/ID)</li>
+									<li>Column 2 Header: <strong>Serial No</strong> (Must be exactly <code>N/A</code> to clear)</li>
+									<li>This action will only clear the serial number of assets where the second column has the value <strong>N/A</strong>.</li>
 								</ul>
 							</div>
 						`
@@ -40,7 +40,7 @@ frappe.listview_settings["Asset"] = {
 							if (r.message && r.message.success) {
 								let msg = __("Serial numbers removed from {0} assets successfully.", [r.message.updated_count]);
 								if (r.message.errors && r.message.errors.length > 0) {
-									msg += "<br><br><strong style='color:red;'>Errors:</strong><div style='max-height: 150px; overflow-y: auto; border: 1px solid #dcdcdc; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 11px; background-color: #f9f9f9;'>" + r.message.errors.join("<br>") + "</div>";
+									msg += "<br><br><strong style='color:red;'>Errors / Warnings:</strong><div style='max-height: 150px; overflow-y: auto; border: 1px solid #dcdcdc; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 11px; background-color: #f9f9f9;'>" + r.message.errors.join("<br>") + "</div>";
 								}
 								frappe.msgprint({
 									title: __("Process Completed"),
@@ -76,9 +76,10 @@ frappe.listview_settings["Asset"] = {
 								<strong>File Template Instructions:</strong>
 								<ul style="margin: 5px 0 0 20px; padding: 0;">
 									<li>Upload a <code>.csv</code> or <code>.xlsx</code> file.</li>
-									<li>Column 1 Header: <strong>Asset Code</strong></li>
-									<li>Column 2 Header: <strong>Serial No</strong></li>
-									<li>This action will update matching assets with the provided serial numbers.</li>
+									<li>Column 1 Header: <strong>Asset Code</strong> (Asset name/ID)</li>
+									<li>Column 2 Header: <strong>Serial No</strong> (New serial number value)</li>
+									<li>If the serial number does not exist in the <strong>Serial No</strong> DocType, it will be automatically created first.</li>
+									<li>If the Serial No column contains <strong>N/A</strong> or is empty, the serial number for that asset will be cleared.</li>
 								</ul>
 							</div>
 						`
@@ -103,7 +104,7 @@ frappe.listview_settings["Asset"] = {
 							if (r.message && r.message.success) {
 								let msg = __("Updated {0} assets successfully.", [r.message.updated_count]);
 								if (r.message.errors && r.message.errors.length > 0) {
-									msg += "<br><br><strong style='color:red;'>Errors:</strong><div style='max-height: 150px; overflow-y: auto; border: 1px solid #dcdcdc; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 11px; background-color: #f9f9f9;'>" + r.message.errors.join("<br>") + "</div>";
+									msg += "<br><br><strong style='color:red;'>Errors / Warnings:</strong><div style='max-height: 150px; overflow-y: auto; border: 1px solid #dcdcdc; padding: 8px; margin-top: 5px; font-family: monospace; font-size: 11px; background-color: #f9f9f9;'>" + r.message.errors.join("<br>") + "</div>";
 								}
 								frappe.msgprint({
 									title: __("Process Completed"),
