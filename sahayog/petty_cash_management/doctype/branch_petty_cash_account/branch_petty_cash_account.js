@@ -1,5 +1,6 @@
 frappe.ui.form.on('Branch Petty Cash Account', {
     refresh: function (frm) {
+        toggle_entity_fields(frm);
         frm.trigger('toggle_unsettled_cash_field');
 
         // const is_admin = ;
@@ -46,6 +47,10 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         frm.trigger('toggle_unsettled_cash_field');
 
 
+    },
+
+    onload: function (frm) {
+        toggle_entity_fields(frm);
     },
 
     toggle_unsettled_cash_field: function (frm) {
@@ -191,3 +196,11 @@ frappe.ui.form.on('Branch Petty Cash Account', {
         frm.set_value('gl_sub_code', full_code);
     }
 });
+
+
+function toggle_entity_fields(frm) {
+    const is_admin = frappe.session.user === 'Administrator';
+
+    frm.set_df_property('entity_id', 'read_only', is_admin ? 0 : 1);
+    frm.set_df_property('entity_type', 'read_only', is_admin ? 0 : 1);
+}
