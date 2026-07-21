@@ -56,6 +56,8 @@ def execute(filters=None):
 
     data = frappe.db.sql(f"""
         SELECT
+            dc.name,
+            dc.case_id,
             dc.employee_id,
             dc.employee_name,
             dc.designation,
