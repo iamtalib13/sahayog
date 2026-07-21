@@ -34,7 +34,7 @@ frappe.query_reports["Unauthorized Cases"] = {
     // On Load (Add Clear Filters & New Case Button renamed to Initiate Case)
     // ---------------------------
     onload: function (report) {
-        const btn = report.page.add_inner_button(__('Initiate Case'), () => frappe.new_doc('Disciplinary Case'));
+        const btn = report.page.add_inner_button(__('Unauthorized Case'), () => frappe.new_doc('Unauthorized Absence'));
         $(btn).css({ background: '#000', color: '#fff', borderRadius: '6px', transition: '0.2s',})
 		.hover(
           function () { $(this).css('background', '#444'); },
