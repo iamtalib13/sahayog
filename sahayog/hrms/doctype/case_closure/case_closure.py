@@ -288,33 +288,14 @@ class CaseClosure(Document):
 # ✅ ONLY ADDITION — existing logic untouched
     def on_submit(self):
         """
-        Auto-send Case Closure email on submit.
-        [DISABLED TEMPORARILY]
+        Close all linked documents when Case Closure is submitted.
         """
-        return
         try:
-            emp = frappe.get_doc("Employee", self.employee_id)
-
-            # Do not block submit if email missing
-            if not emp.company_email:
-                frappe.msgprint(
-                    "Case Closure submitted successfully, but email was not sent because employee email is missing.",
-                    indicator="orange"
-                )
-                return
-
-            send_case_closure_email(self.name)
-
-            frappe.msgprint(
-                "Case Closure submitted successfully and email sent to employee.",
-                indicator="green"
-            )
-
+            close_linked_case(self.case_id)
         except Exception:
-            # Never block submit
             frappe.log_error(
                 frappe.get_traceback(),
-                "Auto Case Closure Email Failed on Submit"
+                "Close Linked Case Failed on Case Closure Submit"
             )
 
 
@@ -438,16 +419,13 @@ def close_linked_case(case_id):
         )
 
         for d in docs:
-            doc = frappe.get_doc(doctype, d.name)
-
             # Do not touch cancelled documents
-            if doc.docstatus == 2:
+            if d.docstatus == 2:
                 continue
 
-             # Update status safely
-            if hasattr(doc, "status"):
-                doc.status = "Closed"
-                doc.save(ignore_permissions=True)
+            # Use db_set to bypass workflow/submission restrictions
+            if frappe.db.has_column(doctype, "status"):
+                frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=False)
 
     frappe.db.commit()
 

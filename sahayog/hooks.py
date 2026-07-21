@@ -697,7 +697,18 @@ fixtures = [
     # Print Format fixture
     {
         "dt": "Print Format",
-        "filters": [["name", "in", ["Reminder Unauthorized absence"]]]
+        "filters": [["name", "in", [
+            "Reminder Unauthorized absence",
+            "Disciplinary Case Notice",
+            "Caution Letter",
+            "Warning Letter",
+            "Suspension Order",
+            "Domestic Enquiry",
+            "Ex Parte Enquiry",
+            "Reminder Notice Of Enquiry",
+            "Office Order Termination of Services",
+            "Termination due to abandonment"
+        ]]]
     },
 
 ]

@@ -102,26 +102,21 @@ frappe.ui.form.on("Ex Parte Enquiry", {
                 }
 
                 html, body {
-                    margin:0 !important;
-                    padding:0 !important;
-                    width:210mm !important;
-                    height:297mm !important;
-                    overflow:hidden !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
                 }
 
                 .print-page {
-                    position:relative;
-                    width:210mm; height:297mm;
-                    overflow:hidden;
+                    position: relative;
+                    width: 210mm;
+                    min-height: 297mm;
                 }
 
                 .print-body {
                     padding: 145px 30px 40px 30px;
-                    height:100%;
-                    box-sizing:border-box;
-                    page-break-inside: avoid;
+                    box-sizing: border-box;
                 }
           `;
               doc.head.appendChild(style);

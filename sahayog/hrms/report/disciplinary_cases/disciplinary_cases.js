@@ -46,7 +46,7 @@ frappe.query_reports["Disciplinary Cases"] = {
     },
 
     // ---------------------------
-    // Custom Formatter for Status Column
+    // Custom Formatter for Status & Opened/Closed Columns
     // ---------------------------
     formatter: function (value, row, column, data, default_formatter) {
         value = default_formatter(value, row, column, data);
@@ -62,6 +62,15 @@ frappe.query_reports["Disciplinary Cases"] = {
                 value = `<span style="color: #4caf50; font-weight: 600;">${value}</span>`;
             }
         }
+
+        if (column.fieldname === "opened_vs_closed") {
+            if (value === "CLOSED") {
+                value = `<span style="color: #4caf50; font-weight: 700;">${value}</span>`;
+            } else if (value === "OPEN") {
+                value = `<span style="color: #FF0000; font-weight: 700;">${value}</span>`;
+            }
+        }
+
         return value;
     }
 };
