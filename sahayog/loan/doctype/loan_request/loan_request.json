@@ -163,7 +163,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nPending Approval\nApproved\nRejected\nSent Back"
+   "options": "\nDraft\nPending Credit Review\nApproved\nRejected\nSent Back"
   }
  ],
  "grid_page_length": 50,
