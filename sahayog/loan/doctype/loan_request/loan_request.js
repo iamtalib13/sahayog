@@ -16,7 +16,71 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
 
-		// Show "Create Loan Application" button only when Approved
+		// Branch Loan User buttons
+		if (frm.doc.status === "Draft") {
+			frm.add_custom_button(__('Send to Credit Team'), function() {
+				frappe.confirm(
+					__('Send this Loan Request to Credit Team for review?'),
+					function() {
+						frm.set_value("status", "Pending Credit Review");
+						frm.save();
+						frappe.show_alert({
+							message: __("Loan Request sent to Credit Team"),
+							indicator: "green"
+						}, 3);
+					}
+				);
+			}).addClass('btn-primary');
+		}
+
+		// Credit Loan User buttons (dropdown)
+		if (frm.doc.status === "Pending Credit Review") {
+			let dropdown = frm.add_custom_button(__('Credit Team Actions'), null);
+			
+			frm.add_custom_button(__('Approve'), function() {
+				frappe.confirm(
+					__('Approve this Loan Request?'),
+					function() {
+						frm.set_value("status", "Approved");
+						frm.save();
+						frappe.show_alert({
+							message: __("Loan Request Approved"),
+							indicator: "green"
+						}, 3);
+					}
+				);
+			}, dropdown);
+
+			frm.add_custom_button(__('Reject'), function() {
+				frappe.confirm(
+					__('Reject this Loan Request?'),
+					function() {
+						frm.set_value("status", "Rejected");
+						frm.save();
+						frappe.show_alert({
+							message: __("Loan Request Rejected"),
+							indicator: "red"
+						}, 3);
+					}
+				);
+			}, dropdown);
+
+			frm.add_custom_button(__('Send Back'), function() {
+				frappe.confirm(
+					__('Send this Loan Request back to Branch User?'),
+					function() {
+						frm.set_value("status", "Sent Back");
+						frm.save();
+						frappe.show_alert({
+							message: __("Loan Request sent back to Branch User"),
+							indicator: "orange"
+						}, 3);
+					}
+				);
+			}, dropdown);
+		}
+
+		// Approved - Create Loan Application button
 		if (frm.doc.status === "Approved") {
 			frm.add_custom_button(__('Create Loan Application'), function() {
 				frappe.call({
@@ -29,6 +93,18 @@ frappe.ui.form.on("Loan Request", {
 						}
 					}
 				});
+			}).addClass('btn-primary');
+		}
+
+		// Rejected/Sent Back - Revise button
+		if (frm.doc.status === "Rejected" || frm.doc.status === "Sent Back") {
+			frm.add_custom_button(__('Revise'), function() {
+				frm.set_value("status", "Draft");
+				frm.save();
+				frappe.show_alert({
+					message: __("Loan Request moved to Draft. You can now edit and resend."),
+					indicator: "blue"
+				}, 3);
 			}).addClass('btn-primary');
 		}
 	},
