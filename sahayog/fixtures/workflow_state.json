@@ -112,9 +112,9 @@
    "doctype": "Workflow State",
    "icon": "",
    "modified": "2026-07-09 10:00:00.000000",
-   "name": "Pending Approval",
+   "name": "Pending Credit Review",
    "style": "Warning",
-   "workflow_state_name": "Pending Approval"
+   "workflow_state_name": "Pending Credit Review"
   },
   {
    "docstatus": 0,
