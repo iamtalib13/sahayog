@@ -680,7 +680,7 @@ def send_email_for_review(case_id=None, approvers=None):
         # "attachment": closure_doc.enquiry_report_upload or "No attachment found",
 
         # CASE HISTORY REPORT LINK (CORRECT)
-        "case_history_link": f"{get_url()}/app/query-report/Case History?case_id={parent_case.name}"
+        "case_history_link": f"{get_url()}/app/sahayog-home"
     }
     context = {"doc": doc_context}
 

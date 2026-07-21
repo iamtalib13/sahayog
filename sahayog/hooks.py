@@ -75,6 +75,7 @@ doctype_list_js = {
     "Share Transfer": "public/js/share_transfer_list.js",
     "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
     "Lead": "public/js/lead_list.js",
+    "Asset": "public/js/asset_list.js",
 }
 # app_include_js = "/assets/frappe/js/frappe-web.min.js"
 app_include_js = ["/assets/sahayog/js/assignmate.js",
@@ -269,13 +270,13 @@ doc_events = {
             # "sahayog.doc_events.employee_warehouse.create_employee_warehouse"
         ],
         "validate": [
-            "sahayog.doc_events.employee.split_name_sync",
-            "sahayog.doc_events.employee.custom_division_sync",
-            "sahayog.doc_events.employee.custom_zone_sync",
-            "sahayog.doc_events.employee.custom_region_sync",
-            "sahayog.doc_events.employee.branch_sync",
-            "sahayog.doc_events.employee.designation_sync",
-            "sahayog.doc_events.employee.department_sync",
+            # "sahayog.doc_events.employee.split_name_sync",
+            # "sahayog.doc_events.employee.custom_division_sync",
+            # "sahayog.doc_events.employee.custom_zone_sync",
+            # "sahayog.doc_events.employee.custom_region_sync",
+            # "sahayog.doc_events.employee.branch_sync",
+            # "sahayog.doc_events.employee.designation_sync",
+            # "sahayog.doc_events.employee.department_sync",
         ],
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
