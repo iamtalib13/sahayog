@@ -88,8 +88,7 @@ frappe.ui.form.on("Loan Request", {
 					doc: frm.doc,
 					callback: function(r) {
 						if (r.message) {
-							frappe.msgprint(__('Loan Application {0} created successfully', [r.message]));
-							frappe.set_route('Form', 'Loan Application', r.message);
+							frappe.new_doc("Loan Application", r.message);
 						}
 					}
 				});
