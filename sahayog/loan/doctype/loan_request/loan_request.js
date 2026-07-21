@@ -80,8 +80,8 @@ frappe.ui.form.on("Loan Request", {
 			}, dropdown);
 		}
 
-		// Approved - Create Loan Application button
-		if (frm.doc.status === "Approved") {
+		// Approved - Create Loan Application button (Branch Loan User only)
+		if (frm.doc.status === "Approved" && frappe.user_roles.includes("Branch Loan User")) {
 			frm.add_custom_button(__('Create Loan Application'), function() {
 				frappe.call({
 					method: 'create_loan_application',
