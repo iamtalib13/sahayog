@@ -1105,7 +1105,11 @@ class PettyCashTransaction(Document):
         from frappe.utils import getdate
         date_obj = getdate(self.transaction_date)
         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-        currency_str = f"INR{self.branch}"
+        # currency_str = f"INR{self.branch}"
+        if self.branch_type == "Zonal":
+            currency_str = f"INR1000"
+        else:
+            currency_str = f"INR{self.branch}"
 
         narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
         debitDescription = ""
@@ -1662,7 +1666,11 @@ def download_consolidated_txt_api(transaction_date=None):
 
         date_obj = getdate(doc.finacle_tran_date)
         ttum_date = date_obj.strftime("%b%y").upper()
-        currency_str = f"INR{doc.branch}"
+        # currency_str = f"INR{doc.branch}"
+        if doc.branch_type == "Zonal":
+            currency_str = f"INR1000"
+        else:
+            currency_str = f"INR{doc.branch}"
 
         narrative_suffix = (
             doc.custom_ttum_remarks
