@@ -1,5 +1,6 @@
 import frappe
 import re
+from frappe import _
 
 def custom_asset_autoname(doc, method):
     # Prefix 1: Hardcoded
