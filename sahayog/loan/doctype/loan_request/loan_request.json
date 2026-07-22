@@ -121,18 +121,19 @@
   {
    "fieldname": "head_office_approval_section",
    "fieldtype": "Section Break",
-   "label": "Head Office Approval"
+   "label": "Credit team Approval"
   },
   {
    "fieldname": "scheme_code",
    "fieldtype": "Data",
    "label": "Scheme Code"
   },
-  {
-   "fieldname": "approved_loan_amount",
-   "fieldtype": "Currency",
-   "label": "Approved Loan Amount"
-  },
+   {
+    "default": "",
+    "fieldname": "approved_loan_amount",
+    "fieldtype": "Data",
+    "label": "Approved Loan Amount"
+   },
   {
    "fieldname": "column_break_ho",
    "fieldtype": "Column Break"

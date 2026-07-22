@@ -18,6 +18,17 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
 
+		// Make scheme_code and approved_loan_amount mandatory for Credit Team / HO review
+		if (frm.doc.status === "Pending Credit Review") {
+			frm.toggle_reqd("scheme_code");
+			frm.toggle_reqd("approved_loan_amount", true);
+
+			// Clear default/old values so mandatory check works
+			if (frm.doc.approved_loan_amount === "0.000000000" || frm.doc.approved_loan_amount === "0" || frm.doc.approved_loan_amount === "0.00") {
+				frm.set_value("approved_loan_amount", "");
+			}
+		}
+
 		// Branch Loan User buttons - only show if doc is saved and status is Draft
 		if (frm.doc.status === "Draft" && !frm.is_new()) {
 			frm.add_custom_button(__('Send to Credit Team'), function() {
@@ -25,6 +36,8 @@ frappe.ui.form.on("Loan Request", {
 					__('Send this Loan Request to Credit Team for review?'),
 					function() {
 						frm.set_value("status", "Pending Credit Review");
+						frm.set_value("approved_loan_amount", "");
+						frm.set_value("scheme_code", "");
 						frm.save().then(function() {
 							frm.reload_doc();
 							frappe.show_alert({
@@ -42,6 +55,14 @@ frappe.ui.form.on("Loan Request", {
 			let dropdown = frm.add_custom_button(__('Credit Team Actions'), null);
 			
 			frm.add_custom_button(__('Approve'), function() {
+				if (!frm.doc.scheme_code) {
+					frappe.msgprint(__('Scheme Code is required before approving'));
+					return;
+				}
+				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0 || frm.doc.approved_loan_amount === "0.000000000") {
+					frappe.msgprint(__('Approved Loan Amount is required and cannot be zero'));
+					return;
+				}
 				frappe.confirm(
 					__('Approve this Loan Request?'),
 					function() {

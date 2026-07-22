@@ -10,6 +10,13 @@ class LoanRequest(Document):
 	def validate(self):
 		self.calculate_vintage()
 
+	def before_save(self):
+		if self.status == "Pending Credit Review":
+			if not self.scheme_code:
+				self.scheme_code = ""
+			if not self.approved_loan_amount:
+				self.approved_loan_amount = ""
+
 	def calculate_vintage(self):
 		"""Auto-calculate vintage/complete days from deposit_date"""
 		if self.deposit_date:
