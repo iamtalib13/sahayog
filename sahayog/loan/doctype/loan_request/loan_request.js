@@ -9,6 +9,8 @@ function validateIndianPhone(phone) {
 
 frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
+		frm.clear_custom_buttons();
+
 		// Hide Head Office Approval section when status is Draft
 		frm.toggle_display("head_office_approval_section", frm.doc.status !== "Draft");
 		frm.toggle_display("scheme_code", frm.doc.status !== "Draft");
@@ -16,18 +18,20 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
 
-		// Branch Loan User buttons
-		if (frm.doc.status === "Draft") {
+		// Branch Loan User buttons - only show if doc is saved and status is Draft
+		if (frm.doc.status === "Draft" && !frm.is_new()) {
 			frm.add_custom_button(__('Send to Credit Team'), function() {
 				frappe.confirm(
 					__('Send this Loan Request to Credit Team for review?'),
 					function() {
 						frm.set_value("status", "Pending Credit Review");
-						frm.save();
-						frappe.show_alert({
-							message: __("Loan Request sent to Credit Team"),
-							indicator: "green"
-						}, 3);
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request sent to Credit Team"),
+								indicator: "green"
+							}, 3);
+						});
 					}
 				);
 			}).addClass('btn-primary');
@@ -42,11 +46,13 @@ frappe.ui.form.on("Loan Request", {
 					__('Approve this Loan Request?'),
 					function() {
 						frm.set_value("status", "Approved");
-						frm.save();
-						frappe.show_alert({
-							message: __("Loan Request Approved"),
-							indicator: "green"
-						}, 3);
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request Approved"),
+								indicator: "green"
+							}, 3);
+						});
 					}
 				);
 			}, dropdown);
@@ -56,11 +62,13 @@ frappe.ui.form.on("Loan Request", {
 					__('Reject this Loan Request?'),
 					function() {
 						frm.set_value("status", "Rejected");
-						frm.save();
-						frappe.show_alert({
-							message: __("Loan Request Rejected"),
-							indicator: "red"
-						}, 3);
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request Rejected"),
+								indicator: "red"
+							}, 3);
+						});
 					}
 				);
 			}, dropdown);
@@ -70,11 +78,13 @@ frappe.ui.form.on("Loan Request", {
 					__('Send this Loan Request back to Branch User?'),
 					function() {
 						frm.set_value("status", "Sent Back");
-						frm.save();
-						frappe.show_alert({
-							message: __("Loan Request sent back to Branch User"),
-							indicator: "orange"
-						}, 3);
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request sent back to Branch User"),
+								indicator: "orange"
+							}, 3);
+						});
 					}
 				);
 			}, dropdown);
@@ -96,14 +106,16 @@ frappe.ui.form.on("Loan Request", {
 		}
 
 		// Rejected/Sent Back - Revise button
-		if (frm.doc.status === "Rejected" || frm.doc.status === "Sent Back") {
+		if ((frm.doc.status === "Rejected" || frm.doc.status === "Sent Back") && !frm.is_new()) {
 			frm.add_custom_button(__('Revise'), function() {
 				frm.set_value("status", "Draft");
-				frm.save();
-				frappe.show_alert({
-					message: __("Loan Request moved to Draft. You can now edit and resend."),
-					indicator: "blue"
-				}, 3);
+				frm.save().then(function() {
+					frm.reload_doc();
+					frappe.show_alert({
+						message: __("Loan Request moved to Draft. You can now edit and resend."),
+						indicator: "blue"
+					}, 3);
+				});
 			}).addClass('btn-primary');
 		}
 	},
