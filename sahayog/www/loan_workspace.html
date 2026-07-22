@@ -69,7 +69,7 @@
                         </button>
                     </div>
                     <button class="lw-chip lw-chip-primary" type="button" v-if="canCreate" @click="openNewApplication()">
-                        + New Application
+                        + New Loan Request
                     </button>
                 </div>
             </div>
@@ -107,6 +107,38 @@
 
             <section class="lw-card-view" v-if="activeView === 'cards'">
                 <section class="lw-filter-grid">
+                    <!-- Loan Request Card (Branch Loan User only) -->
+                    <article
+                        v-if="userRoles.includes('Branch Loan User') && branchLoanRequestCounts.total > 0"
+                        class="lw-status-card lw-status-card-loan-request"
+                        :class="{ selected: activeFilter === 'Branch Loan Requests', 'zero-count': branchLoanRequestCounts.total === 0 }"
+                        @click="setFilter('Branch Loan Requests')"
+                        tabindex="0"
+                        role="button"
+                    >
+                        <div class="lw-status-card-head">
+                            <span class="lw-status-label">Loan Requests</span>
+                            <span class="lw-status-count">[[ branchLoanRequestCounts.total ]]</span>
+                        </div>
+                        <span class="lw-status-note">Your loan requests</span>
+                    </article>
+
+                    <!-- Loan Request Card (Credit Loan User only) -->
+                    <article
+                        v-if="userRoles.includes('Credit Loan User') && loanRequestCounts.pending > 0"
+                        class="lw-status-card lw-status-card-loan-request"
+                        :class="{ selected: activeFilter === 'Loan Requests', 'zero-count': loanRequestCounts.pending === 0 }"
+                        @click="setFilter('Loan Requests')"
+                        tabindex="0"
+                        role="button"
+                    >
+                        <div class="lw-status-card-head">
+                            <span class="lw-status-label">Loan Requests</span>
+                            <span class="lw-status-count">[[ loanRequestCounts.pending ]]</span>
+                        </div>
+                        <span class="lw-status-note">Pending credit review</span>
+                    </article>
+
                     <article
                         v-for="card in statusCards()"
                         :key="card.key"
@@ -134,12 +166,94 @@
                 <div class="lw-section-separator"></div>
 
                 <div class="lw-card-section-head">
-                    <h3>Loan Applications - [[ activeSelectionLabel() ]] - [[ loading ? '...' : filteredApplications().length ]]</h3>
+                    <h3 v-if="activeFilter === 'Branch Loan Requests'">Loan Requests - [[ branchLoanRequests.length ]]</h3>
+                    <h3 v-else-if="activeFilter === 'Loan Requests'">Loan Requests - Pending Review - [[ loanRequests.length ]]</h3>
+                    <h3 v-else>Loan Applications - [[ activeSelectionLabel() ]] - [[ loading ? '...' : filteredApplications().length ]]</h3>
                 </div>
 
                 <section class="lw-card-grid">
-                    <article
-                        v-for="app in filteredApplications()"
+                    <!-- Branch Loan Requests (when filter is Branch Loan Requests) -->
+                    <div v-if="activeFilter === 'Branch Loan Requests'" style="display: contents;">
+                        <article
+                            v-for="req in branchLoanRequests"
+                            :key="req.name"
+                            class="lw-card lw-card-loan-request"
+                            tabindex="0"
+                            role="link"
+                            @click="openLoanRequest(req)"
+                            @keydown.enter.prevent="openLoanRequest(req)"
+                            @keydown.space.prevent="openLoanRequest(req)"
+                        >
+                            <div class="lw-card-top">
+                                <div class="lw-card-head-copy">
+                                    <div class="lw-card-title-row">
+                                        <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                        <div class="lw-card-title-copy">
+                                            <span class="lw-card-id">[[ req.name || 'Untitled' ]]</span>
+                                            <h4>[[ req.customer || 'Unnamed applicant' ]]</h4>
+                                            <span class="lw-card-mobile">[[ req.mobile_number || 'No mobile' ]]</span>
+                                            <p class="lw-card-amount">[[ formatCurrency(req.required_loan_amount) ]]</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lw-card-status-stack">
+                                    <span class="lw-status-pill" :class="loanRequestToneClass(req.status)">
+                                        [[ req.status || 'Draft' ]]
+                                    </span>
+                                    <p class="lw-card-product">[[ req.loan_type || 'Loan product not set' ]]</p>
+                                    <span class="lw-card-branch-name">[[ req.branch || 'Branch not set' ]]</span>
+                                </div>
+                            </div>
+                        </article>
+                        <article v-if="!loading && branchLoanRequests.length === 0" class="lw-empty">
+                            <strong>No loan requests found</strong>
+                            <span>You haven't created any loan requests yet.</span>
+                        </article>
+                    </div>
+
+                    <!-- Credit Loan Requests (when filter is Loan Requests) -->
+                    <div v-else-if="activeFilter === 'Loan Requests'" style="display: contents;">
+                        <article
+                            v-for="req in loanRequests"
+                            :key="req.name"
+                            class="lw-card lw-card-loan-request"
+                            tabindex="0"
+                            role="link"
+                            @click="openLoanRequest(req)"
+                            @keydown.enter.prevent="openLoanRequest(req)"
+                            @keydown.space.prevent="openLoanRequest(req)"
+                        >
+                            <div class="lw-card-top">
+                                <div class="lw-card-head-copy">
+                                    <div class="lw-card-title-row">
+                                        <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
+                                        <div class="lw-card-title-copy">
+                                            <span class="lw-card-id">[[ req.name || 'Untitled' ]]</span>
+                                            <h4>[[ req.customer || 'Unnamed applicant' ]]</h4>
+                                            <span class="lw-card-mobile">[[ req.mobile_number || 'No mobile' ]]</span>
+                                            <p class="lw-card-amount">[[ formatCurrency(req.required_loan_amount) ]]</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="lw-card-status-stack">
+                                    <span class="lw-status-pill tone-pending-credit-review">
+                                        [[ req.status || 'Pending Credit Review' ]]
+                                    </span>
+                                    <p class="lw-card-product">[[ req.loan_type || 'Loan product not set' ]]</p>
+                                    <span class="lw-card-branch-name">[[ req.branch || 'Branch not set' ]]</span>
+                                </div>
+                            </div>
+                        </article>
+                        <article v-if="!loading && loanRequests.length === 0" class="lw-empty">
+                            <strong>No pending loan requests</strong>
+                            <span>There are no loan requests pending credit review.</span>
+                        </article>
+                    </div>
+
+                    <!-- Loan Applications (existing logic) -->
+                    <div v-else style="display: contents;">
+                        <article
+                            v-for="app in filteredApplications()"
                         :key="app.name"
                         class="lw-card"
                         :class="cardToneClass(app.status)"
@@ -180,6 +294,7 @@
                         <strong>Loading applications...</strong>
                         <span>Please wait while the workspace pulls the latest loan files.</span>
                     </article>
+                    </div>
                 </section>
 
                 <nav class="lw-bottom-filter-nav" aria-label="Loan application filters">
@@ -261,7 +376,7 @@
 
     <div class="lw-mobile-action-bar">
         <button type="button" class="lw-mobile-action lw-mobile-action-primary" @click="openNewApplication()">
-            + New Application
+            + New Loan Request
         </button>
         <button type="button" class="lw-mobile-action lw-mobile-action-secondary" @click="setView(activeView === 'calendar' ? 'cards' : 'calendar')">
             [[ activeView === 'calendar' ? 'View Applications' : 'View Calendar' ]]
@@ -1572,6 +1687,44 @@
         border-color: var(--lw-rejected-border);
     }
 
+    .tone-pending-credit-review {
+        background: #fff4e6;
+        color: #b35c00;
+        border-color: #f5c98f;
+    }
+
+    .lw-status-card-loan-request {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 2px solid #fcd34d;
+        border-left: 4px solid #f59e0b;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+        transition: all 0.2s ease;
+    }
+
+    .lw-status-card-loan-request:hover {
+        border-left-color: #d97706;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        transform: translateY(-2px);
+    }
+
+    .lw-status-card-loan-request.selected {
+        border-color: #f59e0b;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+
+    .lw-card-loan-request {
+        border-left: 4px solid #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+        transition: all 0.2s ease;
+    }
+
+    .lw-card-loan-request:hover {
+        border-left-color: #d97706;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+        transform: translateY(-2px);
+    }
+
     .lw-card-amount {
         margin: 0;
         font-size: clamp(1.05rem, 1.8vw, 1.3rem);
@@ -2242,6 +2395,10 @@
             searchText: "",
             loading: true,
             applications: [],
+            loanRequests: [],
+            branchLoanRequests: [],
+            loanRequestCounts: { pending: 0 },
+            branchLoanRequestCounts: { total: 0 },
             counts: { All: 0 },
             errorText: "",
             calendarMonthCursor: null,
@@ -2463,17 +2620,28 @@
                 this.errorText = "";
 
                 try {
-                    const [counts, applications] = await Promise.all([
+                    const promises = [
                         this.fetchCounts(),
                         this.fetchApplications()
-                    ]);
+                    ];
 
-                    this.counts = counts;
-                    this.applications = await this.enrichApplicationsWithBranchNames(Array.isArray(applications) ? applications : []);
+                    if (this.userRoles.includes("Credit Loan User")) {
+                        promises.push(this.fetchLoanRequests());
+                    }
+                    if (this.userRoles.includes("Branch Loan User")) {
+                        promises.push(this.fetchBranchLoanRequests());
+                    }
+
+                    const results = await Promise.all(promises);
+
+                    this.counts = results[0] || { All: 0 };
+                    this.applications = await this.enrichApplicationsWithBranchNames(Array.isArray(results[1]) ? results[1] : []);
                 } catch (error) {
                     console.error("Loan workspace load failed", error);
                     this.errorText = "Workspace failed to load";
                     this.applications = [];
+                    this.loanRequests = [];
+                    this.branchLoanRequests = [];
                     this.counts = { All: 0 };
                 } finally {
                     this.loading = false;
@@ -2662,12 +2830,17 @@
             },
 
             openNewApplication() {
-                this.navigateTo("/app/loan-application/new-loan-application-1");
+                this.navigateTo("/app/loan-request/new");
             },
 
             openApplication(app) {
                 if (!app || !app.name) return;
                 this.navigateTo(`/app/loan-application/${encodeURIComponent(app.name)}`);
+            },
+
+            openLoanRequest(req) {
+                if (!req || !req.name) return;
+                this.navigateTo(`/app/loan-request/${encodeURIComponent(req.name)}`);
             },
 
             navigateTo(route) {
@@ -2712,6 +2885,46 @@
                     order_by: "modified desc",
                     limit_page_length: 30
                 });
+            },
+
+            async fetchLoanRequests() {
+                try {
+                    const requests = await this.apiCall("frappe.client.get_list", {
+                        doctype: "Loan Request",
+                        filters: { status: "Pending Credit Review" },
+                        fields: ["name", "customer", "mobile_number", "branch", "loan_type", "required_loan_amount", "status", "modified"],
+                        order_by: "modified desc",
+                        limit_page_length: 30
+                    });
+                    this.loanRequests = Array.isArray(requests) ? requests : [];
+                    this.loanRequestCounts.pending = this.loanRequests.length;
+                    return this.loanRequests;
+                } catch (error) {
+                    console.error("Failed to fetch loan requests", error);
+                    this.loanRequests = [];
+                    this.loanRequestCounts.pending = 0;
+                    return [];
+                }
+            },
+
+            async fetchBranchLoanRequests() {
+                try {
+                    const requests = await this.apiCall("frappe.client.get_list", {
+                        doctype: "Loan Request",
+                        filters: [["owner", "=", frappe.session.user]],
+                        fields: ["name", "customer", "mobile_number", "branch", "loan_type", "required_loan_amount", "status", "modified"],
+                        order_by: "modified desc",
+                        limit_page_length: 50
+                    });
+                    this.branchLoanRequests = Array.isArray(requests) ? requests : [];
+                    this.branchLoanRequestCounts.total = this.branchLoanRequests.length;
+                    return this.branchLoanRequests;
+                } catch (error) {
+                    console.error("Failed to fetch branch loan requests", error);
+                    this.branchLoanRequests = [];
+                    this.branchLoanRequestCounts.total = 0;
+                    return [];
+                }
             },
 
             normalizeBranchCode(value) {
@@ -2903,6 +3116,15 @@
                 if (status === "Approved") return "card-tone-approved";
                 if (status === "Rejected") return "card-tone-rejected";
                 return "card-tone-neutral";
+            },
+
+            loanRequestToneClass(status) {
+                if (status === "Draft") return "tone-draft";
+                if (status === "Pending Credit Review") return "tone-pending-credit-review";
+                if (status === "Approved") return "tone-approved";
+                if (status === "Rejected") return "tone-rejected";
+                if (status === "Sent Back") return "tone-valuation";
+                return "tone-neutral";
             },
 
             formatCurrency(value) {

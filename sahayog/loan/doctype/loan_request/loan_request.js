@@ -9,6 +9,8 @@ function validateIndianPhone(phone) {
 
 frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
+		frm.clear_custom_buttons();
+
 		// Hide Head Office Approval section when status is Draft
 		frm.toggle_display("head_office_approval_section", frm.doc.status !== "Draft");
 		frm.toggle_display("scheme_code", frm.doc.status !== "Draft");
@@ -16,18 +18,124 @@ frappe.ui.form.on("Loan Request", {
 		frm.toggle_display("column_break_ho", frm.doc.status !== "Draft");
 		frm.toggle_display("remark", frm.doc.status !== "Draft");
 
-		// Show "Create Loan Application" button only when Approved
-		if (frm.doc.status === "Approved") {
+		// Make scheme_code and approved_loan_amount mandatory for Credit Team / HO review
+		if (frm.doc.status === "Pending Credit Review") {
+			frm.toggle_reqd("scheme_code");
+			frm.toggle_reqd("approved_loan_amount", true);
+
+			// Clear default/old values so mandatory check works
+			if (frm.doc.approved_loan_amount === "0.000000000" || frm.doc.approved_loan_amount === "0" || frm.doc.approved_loan_amount === "0.00") {
+				frm.set_value("approved_loan_amount", "");
+			}
+		}
+
+		// Branch Loan User buttons - only show if doc is saved and status is Draft
+		if (frm.doc.status === "Draft" && !frm.is_new()) {
+			frm.add_custom_button(__('Send to Credit Team'), function() {
+				frappe.confirm(
+					__('Send this Loan Request to Credit Team for review?'),
+					function() {
+						frm.set_value("status", "Pending Credit Review");
+						frm.set_value("approved_loan_amount", "");
+						frm.set_value("scheme_code", "");
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request sent to Credit Team"),
+								indicator: "green"
+							}, 3);
+						});
+					}
+				);
+			}).addClass('btn-primary');
+		}
+
+		// Credit Loan User buttons (dropdown)
+		if (frm.doc.status === "Pending Credit Review") {
+			let dropdown = frm.add_custom_button(__('Credit Team Actions'), null);
+			
+			frm.add_custom_button(__('Approve'), function() {
+				if (!frm.doc.scheme_code) {
+					frappe.msgprint(__('Scheme Code is required before approving'));
+					return;
+				}
+				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0 || frm.doc.approved_loan_amount === "0.000000000") {
+					frappe.msgprint(__('Approved Loan Amount is required and cannot be zero'));
+					return;
+				}
+				frappe.confirm(
+					__('Approve this Loan Request?'),
+					function() {
+						frm.set_value("status", "Approved");
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request Approved"),
+								indicator: "green"
+							}, 3);
+						});
+					}
+				);
+			}, dropdown);
+
+			frm.add_custom_button(__('Reject'), function() {
+				frappe.confirm(
+					__('Reject this Loan Request?'),
+					function() {
+						frm.set_value("status", "Rejected");
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request Rejected"),
+								indicator: "red"
+							}, 3);
+						});
+					}
+				);
+			}, dropdown);
+
+			frm.add_custom_button(__('Send Back'), function() {
+				frappe.confirm(
+					__('Send this Loan Request back to Branch User?'),
+					function() {
+						frm.set_value("status", "Sent Back");
+						frm.save().then(function() {
+							frm.reload_doc();
+							frappe.show_alert({
+								message: __("Loan Request sent back to Branch User"),
+								indicator: "orange"
+							}, 3);
+						});
+					}
+				);
+			}, dropdown);
+		}
+
+		// Approved - Create Loan Application button (Branch Loan User only)
+		if (frm.doc.status === "Approved" && frappe.user_roles.includes("Branch Loan User")) {
 			frm.add_custom_button(__('Create Loan Application'), function() {
 				frappe.call({
 					method: 'create_loan_application',
 					doc: frm.doc,
 					callback: function(r) {
 						if (r.message) {
-							frappe.msgprint(__('Loan Application {0} created successfully', [r.message]));
-							frappe.set_route('Form', 'Loan Application', r.message);
+							frappe.new_doc("Loan Application", r.message);
 						}
 					}
+				});
+			}).addClass('btn-primary');
+		}
+
+		// Rejected/Sent Back - Revise button
+		if ((frm.doc.status === "Rejected" || frm.doc.status === "Sent Back") && !frm.is_new()) {
+			frm.add_custom_button(__('Revise'), function() {
+				frm.set_value("status", "Draft");
+				frm.save().then(function() {
+					frm.reload_doc();
+					frappe.show_alert({
+						message: __("Loan Request moved to Draft. You can now edit and resend."),
+						indicator: "blue"
+					}, 3);
 				});
 			}).addClass('btn-primary');
 		}
