@@ -5,16 +5,17 @@ def execute():
     # ── Fix existing Leave Types ──
     fixes = {
         "Casual Leave": {
-            "max_leaves_allowed": 3,
+            "max_leaves_allowed": 0,
             "earned_leave_frequency": None,
             "allocate_on_day": None,
         },
         "Sick Leave": {
+            "max_leaves_allowed": 0,
             "earned_leave_frequency": None,
             "allocate_on_day": None,
         },
         "Earned Leave": {
-            "max_leaves_allowed": 15,
+            "max_leaves_allowed": 0,
         },
     }
 
