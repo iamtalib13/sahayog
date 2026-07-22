@@ -52,3 +52,4 @@ sahayog.patches.set_support_staff_status_left
 sahayog.patches.custom_fields.add_resignation_letter_field_to_employee
 sahayog.patches.set_employee_branch_from_sol_id
 sahayog.patches.create_holiday_lists
+sahayog.patches.create_asset_movement_for_assigned_assets
