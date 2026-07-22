@@ -193,6 +193,8 @@ def remove_serial_by_file(file_url):
 
         total_rows = 0
         serial_cleared_count = 0
+        serial_not_na_count = 0
+        asset_not_found_count = 0
         errors = []
         for i in range(start_row, len(rows)):
             row = rows[i]
@@ -215,6 +217,7 @@ def remove_serial_by_file(file_url):
                 serial_no_val = str(row[1]).strip()
 
             if serial_no_val.upper() != "N/A":
+                serial_not_na_count += 1
                 errors.append({
                     "row": i + 1,
                     "asset": asset_code,
@@ -227,6 +230,7 @@ def remove_serial_by_file(file_url):
                 frappe.db.set_value("Asset", asset_code, "serial_no", "")
                 serial_cleared_count += 1
             else:
+                asset_not_found_count += 1
                 errors.append({
                     "row": i + 1,
                     "asset": asset_code,
@@ -239,6 +243,8 @@ def remove_serial_by_file(file_url):
             "success": True,
             "total_rows": total_rows,
             "serial_cleared_count": serial_cleared_count,
+            "serial_not_na_count": serial_not_na_count,
+            "asset_not_found_count": asset_not_found_count,
             "error_count": error_count,
             "errors": errors
         }
@@ -263,6 +269,7 @@ def update_serial_by_file(file_url):
         total_rows = 0
         serial_set_count = 0
         serial_cleared_count = 0
+        asset_not_found_count = 0
         errors = []
         for i in range(start_row, len(rows)):
             row = rows[i]
@@ -292,6 +299,7 @@ def update_serial_by_file(file_url):
                         serial_no = ""
 
             if not frappe.db.exists("Asset", asset_code):
+                asset_not_found_count += 1
                 errors.append({
                     "row": i + 1,
                     "asset": asset_code,
@@ -339,6 +347,7 @@ def update_serial_by_file(file_url):
             "total_rows": total_rows,
             "serial_set_count": serial_set_count,
             "serial_cleared_count": serial_cleared_count,
+            "asset_not_found_count": asset_not_found_count,
             "updated_count": updated_count,
             "error_count": error_count,
             "errors": errors
