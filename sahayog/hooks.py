@@ -431,7 +431,17 @@ scheduler_events = {
         # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
         "0 23 * * *": [
             "sahayog.sahayog.api.eod.check_and_notify_inactive_teams"
-        ]
+        ],
+
+        # Run at midnight on 1st of every month — credit monthly leave
+        "0 0 1 * *": [
+            "sahayog.tasks.monthly_leave_credit"
+        ],
+
+        # Run daily at 3:00 AM — auto-setup leave allocation for new support staff
+        "0 3 * * *": [
+            "sahayog.tasks.auto_setup_new_employee_leave"
+        ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
