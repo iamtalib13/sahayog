@@ -27,7 +27,7 @@ frappe.ui.form.on("Sahayog HR Setting", {
 
 function run_batch_import(frm, mode) {
 	const action_label = mode === "insert" ? __("Insert") : __("Update");
-	const batch_size = 250;
+	const batch_size = 500;
 
 	frappe.call({
 		method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.init_import",
