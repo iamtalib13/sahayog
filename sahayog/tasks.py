@@ -234,6 +234,33 @@ def sync_district_state():
             doc.insert(ignore_permissions=True)
 
 
+def auto_approve_leave_applications():
+    """Auto-approve all pending (Open/Draft) leave applications for support staff."""
+    pending = frappe.get_all(
+        "Leave Application",
+        filters={"status": "Open", "docstatus": 0},
+        fields=["name"],
+    )
+
+    for la in pending:
+        try:
+            doc = frappe.get_doc("Leave Application", la.name)
+            if not frappe.db.get_value("Employee", doc.employee, "custom_is_support_staff"):
+                continue
+            doc.status = "Approved"
+            doc.flags.ignore_permissions = True
+            doc.save()
+            doc.submit()
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(
+                f"Failed to auto-approve Leave Application {la.name}: {e}",
+                "Auto Leave Approval",
+            )
+
+    return f"Processed {len(pending)} leave applications."
+
+
 def auto_approve_attendance_corrections():
     """Auto-approve all pending attendance correction requests."""
     pending_corrections = frappe.get_all(

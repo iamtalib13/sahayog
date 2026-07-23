@@ -457,7 +457,8 @@ scheduler_events = {
     #     "sahayog.tasks.all"
     # ],
     "hourly": [
-        "sahayog.tasks.auto_approve_attendance_corrections"
+        "sahayog.tasks.auto_approve_attendance_corrections",
+        "sahayog.tasks.auto_approve_leave_applications",
     ],
 
     # "weekly": [
