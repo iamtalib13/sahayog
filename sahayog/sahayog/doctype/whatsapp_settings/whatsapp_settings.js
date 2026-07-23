@@ -12,7 +12,7 @@ frappe.ui.form.on("Whatsapp Settings", {
 						fieldtype: "Data",
 						label: __("Mobile Number"),
 						reqd: 1,
-						description: __("Enter with country code (e.g., 919876543210)")
+						description: __("Enter 10-digit mobile number (e.g., 9876543210)")
 					},
 					{
 						fieldname: "message_text",
@@ -23,11 +23,23 @@ frappe.ui.form.on("Whatsapp Settings", {
 				],
 				primary_action_label: __("Send"),
 				primary_action(values) {
+					let phone = (values.phone_number || "").trim().replace(/\D/g, "");
+					if (phone.length !== 10) {
+						frappe.msgprint({
+							title: __("Validation Error"),
+							message: __("Please enter a valid 10-digit mobile number."),
+							indicator: "orange"
+						});
+						return;
+					}
+
+					let formatted_phone = "91" + phone;
+
 					dialog.disable_primary_action();
 					frappe.call({
 						method: "sahayog.api.whatsapp_integration.send_whatsapp_message",
 						args: {
-							phone_number: values.phone_number,
+							phone_number: formatted_phone,
 							message_text: values.message_text
 						},
 						callback: function(r) {

@@ -24,6 +24,15 @@ def send_whatsapp_message(phone_number, message_text):
 
         url = f"{gateway_url.rstrip('/')}/api/sessions/{session_id}/messages/send-text"
         
+        # Sanitize and format the phone number for India prefix (91)
+        phone_number = "".join(filter(str.isdigit, str(phone_number)))
+        if len(phone_number) == 10:
+            phone_number = "91" + phone_number
+        elif len(phone_number) == 12 and phone_number.startswith("91"):
+            pass
+        elif len(phone_number) > 10 and phone_number.startswith("0"):
+            phone_number = "91" + phone_number[1:]
+
         # Construct the payload with proper WhatsApp chatId formatting
         payload = {
             "chatId": f"{phone_number}@c.us",
