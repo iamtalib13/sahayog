@@ -15,12 +15,12 @@ def send_whatsapp_message(phone_number, message_text):
     """
     try:
         # Fetch configurations from the single DocType "Whatsapp Settings"
-        session_id = frappe.db.get_single_value("Whatsapp Settings", "session_id") or "my-bot"
-        gateway_url = frappe.db.get_single_value("Whatsapp Settings", "gateway_url") or "http://localhost:2785"
+        session_id = frappe.db.get_single_value("Whatsapp Settings", "session_id")
+        gateway_url = frappe.db.get_single_value("Whatsapp Settings", "gateway_url")
         
         # Securely get password/API Key in Frappe using get_password()
         settings = frappe.get_doc("Whatsapp Settings")
-        api_key = settings.get_password("api_key") or "owa_k1_284f085d0f83e4d5b9f105e4db8894cb20db92c1f3a45c259d1c6399770e355c"
+        api_key = settings.get_password("api_key")
 
         url = f"{gateway_url.rstrip('/')}/api/sessions/{session_id}/messages/send-text"
         
