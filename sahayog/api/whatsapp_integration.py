@@ -1,0 +1,49 @@
+import frappe
+
+@frappe.whitelist(allow_guest=False)
+def send_whatsapp_message(phone_number, message_text):
+    """
+    Sends a WhatsApp text message using the OpenWA API gateway.
+    
+    Args:
+        phone_number (str): Recipient's phone number with country code (e.g., '919876543210').
+        message_text (str): The body of the message to send.
+        
+    Returns:
+        dict: Status and response from the OpenWA gateway or error details.
+    """
+    # Define the OpenWA API endpoint (replace 'my-bot' with your actual session name/ID)
+    url = "http://localhost:2785/api/sessions/my-bot/messages/send-text"
+    
+    # Your OpenWA API key generated during setup
+    api_key = "YAHAN_APNI_API_KEY_DAALEIN"
+    
+    # Construct the payload with proper WhatsApp chatId formatting
+    payload = {
+        "chatId": f"{phone_number}@c.us",
+        "text": message_text
+    }
+    
+    # Set up request headers
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-Key": api_key
+    }
+    
+    try:
+        # Send the HTTP POST request using Frappe's safe URL opener
+        response = frappe.safe_urlopen(
+            url, 
+            data=frappe.as_json(payload).encode("utf-8"), 
+            headers=headers, 
+            method="POST"
+        )
+        
+        # Parse and return the successful response
+        result = frappe.parse_json(response.read().decode("utf-8"))
+        return {"status": "success", "response": result}
+        
+    except Exception as e:
+        # Log the error in Frappe Error Log and return failure status
+        frappe.log_error(message=str(e), title="WhatsApp API Integration Error")
+        return {"status": "error", "message": str(e)}
