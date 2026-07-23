@@ -5,13 +5,26 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "session_id"
+  "session_id",
+  "gateway_url",
+  "api_key"
  ],
  "fields": [
   {
    "fieldname": "session_id",
    "fieldtype": "Data",
    "label": "Session ID"
+  },
+  {
+   "fieldname": "gateway_url",
+   "fieldtype": "Data",
+   "label": "Gateway URL",
+   "default": "http://localhost:2785"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key"
   }
  ],
  "grid_page_length": 50,
