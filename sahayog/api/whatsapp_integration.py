@@ -16,7 +16,7 @@ def send_whatsapp_message(phone_number, message_text):
     url = "http://localhost:2785/api/sessions/my-bot/messages/send-text"
     
     # Your OpenWA API key generated during setup
-    api_key = "YAHAN_APNI_API_KEY_DAALEIN"
+    api_key = "owa_k1_284f085d0f83e4d5b9f105e4db8894cb20db92c1f3a45c259d1c6399770e355c"
     
     # Construct the payload with proper WhatsApp chatId formatting
     payload = {
