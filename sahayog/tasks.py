@@ -1,4 +1,5 @@
 import frappe
+from calendar import monthrange
 from frappe.utils import getdate, today, add_months, date_diff, flt
 from frappe import _
 
@@ -31,17 +32,20 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
         return alloc
 
     # No active allocation → create one for the whole current year
+    rate = LEAVE_MONTHLY_RATES[lt_name]
     from_date = year_start
     if emp.date_of_joining and emp.date_of_joining > year_start:
         from_date = emp.date_of_joining
 
+    # Set new_leaves_allocated to monthly rate so total_leaves_allocated > 0
+    # (HRMS requires total_leaves_allocated > 0 for non-earned leave types)
     doc = frappe.get_doc({
         "doctype": "Leave Allocation",
         "employee": emp.name,
         "leave_type": lt_name,
         "from_date": from_date,
         "to_date": year_end,
-        "new_leaves_allocated": 0,
+        "new_leaves_allocated": rate,
         "carry_forward": 0,
     })
     try:
@@ -61,6 +65,9 @@ def monthly_leave_credit():
 
     Auto-creates the yearly allocation envelope if missing (handles year-end renewal
     automatically — e.g. Jan 2027 will create fresh Jan-Dec 2027 allocations).
+
+    Skips crediting if the allocation was just created this month (new_leaves_allocated
+    already covers the first month's credit).
     """
     from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
 
@@ -74,7 +81,7 @@ def monthly_leave_credit():
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active", "custom_is_support_staff": 1},
-        fields=["name", "employee_name", "date_of_joining", "date_of_confirmation"],
+        fields=["name", "employee_name", "date_of_joining", "final_confirmation_date"],
     )
 
     for emp in employees:
@@ -82,12 +89,15 @@ def monthly_leave_credit():
             continue
 
         for lt_name, rate in LEAVE_MONTHLY_RATES.items():
-            if lt_name == "Earned Leave":
-                if not emp.date_of_confirmation or getdate(emp.date_of_confirmation) > today_date:
-                    continue
-
             alloc = _get_or_create_yearly_allocation(emp, lt_name, today_date)
             if not alloc:
+                continue
+
+            # Skip if allocation was created this month (new_leaves_allocated covers it)
+            if (
+                getdate(alloc.from_date).year == today_date.year
+                and getdate(alloc.from_date).month == today_date.month
+            ):
                 continue
 
             already_credited = frappe.db.exists(
@@ -123,20 +133,17 @@ def monthly_leave_credit():
 def auto_setup_new_employee_leave():
     """Create initial Leave Allocation for support staff without any allocation.
 
-    Creates allocation with new_leaves_allocated = 0 (all crediting happens via
-    ledger entries), then immediately credits the current month's pro-rata so the
-    employee doesn't miss the month they joined in.  After this, monthly_leave_credit
-    handles everything going forward — including auto-renewal at year end.
+    Sets new_leaves_allocated to the pro-rata (joining month) or full monthly rate.
+    After this, monthly_leave_credit handles everything going forward — including
+    auto-renewal at year end.
     """
-    from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
-
     today_date = getdate(today())
     year_end = getdate(f"{today_date.year}-12-31")
 
     employees = frappe.get_all(
         "Employee",
         filters={"status": "Active", "custom_is_support_staff": 1},
-        fields=["name", "employee_name", "date_of_joining", "date_of_confirmation"],
+        fields=["name", "employee_name", "date_of_joining", "final_confirmation_date"],
     )
 
     for emp in employees:
@@ -151,11 +158,19 @@ def auto_setup_new_employee_leave():
             continue
 
         for lt_name, rate in LEAVE_MONTHLY_RATES.items():
-            if lt_name == "Earned Leave":
-                if not emp.date_of_confirmation or getdate(emp.date_of_confirmation) > today_date:
-                    continue
-
             from_date = max(emp.date_of_joining, getdate(f"{today_date.year}-01-01"))
+
+            # Pro-rata if joining this month, else full monthly rate
+            if (
+                emp.date_of_joining.year == today_date.year
+                and emp.date_of_joining.month == today_date.month
+            ):
+                month_days = monthrange(today_date.year, today_date.month)[1]
+                days_employed = month_days - emp.date_of_joining.day + 1
+                factor = flt(days_employed / month_days, 4)
+                new_leaves = flt(rate * factor, 2)
+            else:
+                new_leaves = rate
 
             alloc = frappe.get_doc({
                 "doctype": "Leave Allocation",
@@ -163,7 +178,7 @@ def auto_setup_new_employee_leave():
                 "leave_type": lt_name,
                 "from_date": from_date,
                 "to_date": year_end,
-                "new_leaves_allocated": 0,
+                "new_leaves_allocated": new_leaves,
                 "carry_forward": 0,
             })
             try:
@@ -172,26 +187,6 @@ def auto_setup_new_employee_leave():
             except Exception as e:
                 frappe.log_error(
                     f"Failed to create initial {lt_name} allocation for {emp.employee_name}: {e}",
-                    "Auto Leave Setup",
-                )
-                continue
-
-            # Credit current month's pro-rata for the joining month
-            first_of_month = getdate(f"{today_date.year}-{today_date.month:02d}-01")
-            frappe.db.commit()
-            args = frappe._dict(
-                leaves=rate,
-                from_date=first_of_month,
-                to_date=year_end,
-                is_carry_forward=0,
-                is_expired=0,
-                is_lwp=0,
-            )
-            try:
-                create_leave_ledger_entry(alloc, args, submit=True)
-            except Exception as e:
-                frappe.log_error(
-                    f"Failed to credit initial {lt_name} for {emp.employee_name}: {e}",
                     "Auto Leave Setup",
                 )
 

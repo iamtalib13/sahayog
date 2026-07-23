@@ -394,6 +394,9 @@ doc_events = {
     },
     "Asset": {
         "autoname": "sahayog.doc_events.asset.custom_asset_autoname"
+    },
+    "Leave Application": {
+        "validate": "sahayog.doc_events.leave_application.validate"
     }
 }
 
