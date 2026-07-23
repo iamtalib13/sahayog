@@ -33,7 +33,7 @@ function run_batch_import(frm, mode) {
 		method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.init_import",
 		args: { mode: mode, batch_size: batch_size },
 		freeze: true,
-		freeze_message: __("Reading file and calculating batches..."),
+		freeze_message: __("Reading file and preparing import..."),
 		callback: async (res) => {
 			if (!res.message) return;
 			const { total_rows, total_batches } = res.message;
@@ -63,7 +63,7 @@ function run_batch_import(frm, mode) {
 					progress_title,
 					pct,
 					100,
-					__("Processing batch {0} of {1} ({2}/{3} rows)...", [b + 1, total_batches, current_row_count, total_rows])
+					__("Processing record {0} of {1}...", [current_row_count, total_rows])
 				);
 
 				try {
@@ -106,7 +106,7 @@ function run_batch_import(frm, mode) {
 							err_msg = JSON.stringify(err);
 						}
 					}
-					aggregated.errors.push(`Batch ${b + 1} failed after retries: ${err_msg}`);
+					aggregated.errors.push(`Record range ${b * batch_size + 1} to ${current_row_count} failed after retries: ${err_msg}`);
 				}
 			}
 
