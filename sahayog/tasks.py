@@ -1,4 +1,194 @@
 import frappe
+from calendar import monthrange
+from frappe.utils import getdate, today, add_months, date_diff, flt
+from frappe import _
+
+
+LEAVE_MONTHLY_RATES = {
+    "Sick Leave": 0.5,
+    "Casual Leave": 0.25,
+    "Earned Leave": 1.25,
+}
+
+
+def _get_or_create_yearly_allocation(emp, lt_name, today_date):
+    """Return active allocation for current year; create one if missing (auto-renewal)."""
+    year_start = getdate(f"{today_date.year}-01-01")
+    year_end = getdate(f"{today_date.year}-12-31")
+
+    alloc = frappe.db.get_value(
+        "Leave Allocation",
+        {
+            "employee": emp.name,
+            "leave_type": lt_name,
+            "docstatus": 1,
+            "from_date": ("<=", today_date),
+            "to_date": (">=", today_date),
+        },
+        ["name", "from_date", "to_date"],
+        as_dict=1,
+    )
+    if alloc:
+        return alloc
+
+    # No active allocation → create one for the whole current year
+    rate = LEAVE_MONTHLY_RATES[lt_name]
+    from_date = year_start
+    if emp.date_of_joining and emp.date_of_joining > year_start:
+        from_date = emp.date_of_joining
+
+    # Set new_leaves_allocated to monthly rate so total_leaves_allocated > 0
+    # (HRMS requires total_leaves_allocated > 0 for non-earned leave types)
+    doc = frappe.get_doc({
+        "doctype": "Leave Allocation",
+        "employee": emp.name,
+        "leave_type": lt_name,
+        "from_date": from_date,
+        "to_date": year_end,
+        "new_leaves_allocated": rate,
+        "carry_forward": 0,
+    })
+    try:
+        doc.insert(ignore_permissions=True)
+        doc.submit()
+        return {"name": doc.name, "from_date": doc.from_date, "to_date": doc.to_date}
+    except Exception as e:
+        frappe.log_error(
+            f"Failed to create yearly {lt_name} allocation for {emp.employee_name}: {e}",
+            "Leave Auto-Renewal",
+        )
+        return None
+
+
+def monthly_leave_credit():
+    """Run on 1st of each month — credit monthly SL/CL/EL to active support staff.
+
+    Auto-creates the yearly allocation envelope if missing (handles year-end renewal
+    automatically — e.g. Jan 2027 will create fresh Jan-Dec 2027 allocations).
+
+    Skips crediting if the allocation was just created this month (new_leaves_allocated
+    already covers the first month's credit).
+    """
+    from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+
+    today_date = getdate(today())
+    if today_date.day != 1:
+        return
+
+    first_of_month = today_date
+    year_end = getdate(f"{today_date.year}-12-31")
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active", "custom_is_support_staff": 1},
+        fields=["name", "employee_name", "date_of_joining", "final_confirmation_date"],
+    )
+
+    for emp in employees:
+        if not emp.date_of_joining or emp.date_of_joining > today_date:
+            continue
+
+        for lt_name, rate in LEAVE_MONTHLY_RATES.items():
+            alloc = _get_or_create_yearly_allocation(emp, lt_name, today_date)
+            if not alloc:
+                continue
+
+            # Skip if allocation was created this month (new_leaves_allocated covers it)
+            if (
+                getdate(alloc.from_date).year == today_date.year
+                and getdate(alloc.from_date).month == today_date.month
+            ):
+                continue
+
+            already_credited = frappe.db.exists(
+                "Leave Ledger Entry",
+                {
+                    "employee": emp.name,
+                    "leave_type": lt_name,
+                    "transaction_name": alloc.name,
+                    "from_date": first_of_month,
+                    "docstatus": 1,
+                },
+            )
+            if already_credited:
+                continue
+
+            args = frappe._dict(
+                leaves=rate,
+                from_date=first_of_month,
+                to_date=year_end,
+                is_carry_forward=0,
+                is_expired=0,
+                is_lwp=0,
+            )
+            try:
+                create_leave_ledger_entry(frappe.get_doc("Leave Allocation", alloc.name), args, submit=True)
+            except Exception as e:
+                frappe.log_error(
+                    f"Failed to credit {lt_name} for {emp.employee_name}: {e}",
+                    "Monthly Leave Credit",
+                )
+
+
+def auto_setup_new_employee_leave():
+    """Create initial Leave Allocation for support staff without any allocation.
+
+    Sets new_leaves_allocated to the pro-rata (joining month) or full monthly rate.
+    After this, monthly_leave_credit handles everything going forward — including
+    auto-renewal at year end.
+    """
+    today_date = getdate(today())
+    year_end = getdate(f"{today_date.year}-12-31")
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active", "custom_is_support_staff": 1},
+        fields=["name", "employee_name", "date_of_joining", "final_confirmation_date"],
+    )
+
+    for emp in employees:
+        if not emp.date_of_joining or emp.date_of_joining > today_date:
+            continue
+
+        has_any_alloc = frappe.db.exists(
+            "Leave Allocation",
+            {"employee": emp.name, "docstatus": 1, "leave_type": ("in", ("Sick Leave", "Casual Leave", "Earned Leave"))},
+        )
+        if has_any_alloc:
+            continue
+
+        for lt_name, rate in LEAVE_MONTHLY_RATES.items():
+            from_date = max(emp.date_of_joining, getdate(f"{today_date.year}-01-01"))
+
+            # Pro-rata if joining this month, else full monthly rate
+            if (
+                emp.date_of_joining.year == today_date.year
+                and emp.date_of_joining.month == today_date.month
+            ):
+                month_days = monthrange(today_date.year, today_date.month)[1]
+                days_employed = month_days - emp.date_of_joining.day + 1
+                factor = flt(days_employed / month_days, 4)
+                new_leaves = flt(rate * factor, 2)
+            else:
+                new_leaves = rate
+
+            alloc = frappe.get_doc({
+                "doctype": "Leave Allocation",
+                "employee": emp.name,
+                "leave_type": lt_name,
+                "from_date": from_date,
+                "to_date": year_end,
+                "new_leaves_allocated": new_leaves,
+                "carry_forward": 0,
+            })
+            try:
+                alloc.insert(ignore_permissions=True)
+                alloc.submit()
+            except Exception as e:
+                frappe.log_error(
+                    f"Failed to create initial {lt_name} allocation for {emp.employee_name}: {e}",
+                    "Auto Leave Setup",
+                )
 
 
 def reset_auto_prepared_reports():
@@ -42,6 +232,33 @@ def sync_district_state():
             doc.state = state          # link to state
             doc.name = district        # required for naming series = field: district
             doc.insert(ignore_permissions=True)
+
+
+def auto_approve_leave_applications():
+    """Auto-approve all pending (Open/Draft) leave applications for support staff."""
+    pending = frappe.get_all(
+        "Leave Application",
+        filters={"status": "Open", "docstatus": 0},
+        fields=["name"],
+    )
+
+    for la in pending:
+        try:
+            doc = frappe.get_doc("Leave Application", la.name)
+            if not frappe.db.get_value("Employee", doc.employee, "custom_is_support_staff"):
+                continue
+            doc.status = "Approved"
+            doc.flags.ignore_permissions = True
+            doc.save()
+            doc.submit()
+            frappe.db.commit()
+        except Exception as e:
+            frappe.log_error(
+                f"Failed to auto-approve Leave Application {la.name}: {e}",
+                "Auto Leave Approval",
+            )
+
+    return f"Processed {len(pending)} leave applications."
 
 
 def auto_approve_attendance_corrections():

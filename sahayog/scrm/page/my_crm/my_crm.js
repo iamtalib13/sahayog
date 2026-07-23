@@ -1696,6 +1696,7 @@ async fetchAssignedLeads() {
 
     // Save
     btn.prop('disabled', true);
+    freezeScreen("Updating Lead...");
 
     try {
         // Optional: Create Appointment if time is provided
@@ -1717,7 +1718,6 @@ async fetchAssignedLeads() {
                 }
             });
             if (apptRes.exc) {
-                btn.prop('disabled', false);
                 frappe.msgprint({ title: "Error", indicator: "red", message: apptRes._error_message || "Something went wrong" });
                 return;
             }
@@ -1736,19 +1736,17 @@ async fetchAssignedLeads() {
             },
         });
         if (leadRes.exc) {
-            btn.prop('disabled', false);
             frappe.msgprint({ title: "Error", indicator: "red", message: leadRes._error_message || "Something went wrong" });
             return;
         }
-        freezeScreen("Updating Lead...");
         frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
         d.hide();
-        me.fetchData();
-        setTimeout(unfreezeScreen, 2000);
+        await me.fetchData();
     } catch (e) {
+        frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
+    } finally {
         unfreezeScreen();
         btn.prop('disabled', false);
-        frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
     }
 },
       });
@@ -1956,6 +1954,7 @@ async editAppointment(name) {
             primary_action: async (values) => {
                 const btn = d.get_primary_btn();
                 btn.prop('disabled', true);
+                freezeScreen("Updating Appointment...");
                 const final_values = {
                     scheduled_time: d.$wrapper.find("#appt_time_edit").val(),
                     status: d.$wrapper.find("#appt_status_edit").val(),
@@ -1972,18 +1971,17 @@ async editAppointment(name) {
                         },
                     });
                     if (apptRes.exc) {
-                        btn.prop('disabled', false);
                         frappe.msgprint({ title: "Error", indicator: "red", message: apptRes._error_message || "Something went wrong" });
                         return;
                     }
-                    freezeScreen("Updating Appointment...");
                     frappe.show_alert({ message: __("Appointment Updated"), indicator: "green" });
                     d.hide();
-                    me.fetchData();
-                    setTimeout(unfreezeScreen, 2000);
+                    await me.fetchData();
                 } catch (e) {
-                    btn.prop('disabled', false);
                     frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
+                } finally {
+                    unfreezeScreen();
+                    btn.prop('disabled', false);
                 }
             },
         });
@@ -2219,21 +2217,23 @@ renderWhatsAppCard(item) {
   }
 
   async refresh() {
-    this.invalidateCache(this.state.section);
-    // localStorage bhi clear for fresh sync
-    localStorage.removeItem(`crm_local_${this.state.section}_${frappe.session.user}`);
+    try {
+      this.invalidateCache(this.state.section);
+      localStorage.removeItem(`crm_local_${this.state.section}_${frappe.session.user}`);
 
-    if (this.state.section === "lead") {
-        this.state.leadCursor = null;
-    } else if (this.state.section === "appointment") {
-        this.state.appointmentCursor = null;
+      if (this.state.section === "lead") {
+          this.state.leadCursor = null;
+      } else if (this.state.section === "appointment") {
+          this.state.appointmentCursor = null;
+      }
+
+      await this.fetchData(false, 100);
+      this.showLocalData();
+      $("#mycrm-list-container").scrollTop(0);
+    } catch (e) {
+      console.error("CRM Refresh Error:", e);
+      this.hideLoading();
     }
-
-    // 50 records fetch karo — Load More ke liye localStorage mein data rahe
-    await this.fetchData(false, 100);
-    this.showLocalData();
-    $("#mycrm-list-container").scrollTop(0);
-    frappe.show_alert({ message: "Refreshed", indicator: "green" }, 2);
   }
 // section switcher
   async switchSection(section) {
@@ -3452,6 +3452,7 @@ createLead() {
 
         // Save
         btn.prop('disabled', true);
+        freezeScreen("Creating Lead...");
 
         try {
           const leadDoc = {
@@ -3468,20 +3469,19 @@ createLead() {
             args: { doc: leadDoc },
           });
           if (response.exc) {
-              btn.prop('disabled', false);
               frappe.msgprint({ title: "Error", indicator: "red", message: response._error_message || "Something went wrong" });
               return;
           }
-          freezeScreen("Creating Lead...");
           frappe.show_alert({ message: "Lead Created Successfully!", indicator: "green" });
           dialog.hide();
           this.invalidateCache("lead");
           this.invalidateCache("appointment");
-          this.refresh();
-          setTimeout(unfreezeScreen, 2000);
+          await this.refresh();
         } catch (error) {
-          btn.prop('disabled', false);
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
+        } finally {
+          unfreezeScreen();
+          btn.prop('disabled', false);
         }
       },
     });
@@ -3720,6 +3720,7 @@ createLead() {
 
         // Save
         btn.prop('disabled', true);
+        freezeScreen("Creating Appointment...");
 
         try {
           const response = await frappe.call({
@@ -3740,20 +3741,19 @@ createLead() {
           });
 
           if (response.exc) {
-            btn.prop('disabled', false);
             frappe.msgprint({ title: "Error", indicator: "red", message: response._error_message || "Something went wrong" });
             return;
           }
 
-          freezeScreen("Creating Appointment...");
           frappe.show_alert({ message: "Appointment created", indicator: "green" }, 3);
           d.hide();
           this.invalidateCache("appointment");
-          this.refresh();
-          setTimeout(unfreezeScreen, 2000);
+          await this.refresh();
         } catch (error) {
-          btn.prop('disabled', false);
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
+        } finally {
+          unfreezeScreen();
+          btn.prop('disabled', false);
         }
       },
     });
@@ -3882,9 +3882,9 @@ createLead() {
 
   setupRealtime() {
     let _lastRefresh = 0;
-    const THROTTLE_MS = 10000; // 10 seconds minimum between refreshes
+    const THROTTLE_MS = 3000;
 
-    frappe.realtime.on("doc_update", (data) => {
+    const handleDocChange = (data) => {
       if (data.doctype === "Lead" || data.doctype === "Appointment") {
         this.invalidateCache(data.doctype.toLowerCase());
         const now = Date.now();
@@ -3893,7 +3893,10 @@ createLead() {
           this.refresh();
         }
       }
-    });
+    };
+
+    frappe.realtime.on("doc_update", handleDocChange);
+    frappe.realtime.on("doc_delete", handleDocChange);
   }
 
   setupPWA() {

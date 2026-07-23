@@ -51,13 +51,35 @@ DEFAULT_MANDATORY = [
 ]
 
 
+import math
+
+
 @frappe.whitelist()
-def import_employee_master(mode="insert"):
+def init_import_session(mode="insert", batch_size=500):
     setting = frappe.get_doc("Sahayog HR Setting")
     file_url = setting.get("employee_master")
-    print(f"\n===== Employee Master Import [{mode}] =====")
-    print(f"File URL: {file_url}")
+    if not file_url:
+        frappe.throw(_("Please upload an Employee Master file first"))
 
+    rows = _parse_file(file_url)
+    if not rows or len(rows) < 2:
+        frappe.throw(_("File has no data rows"))
+
+    total_rows = len(rows) - 1
+    batch_size = max(1, int(batch_size))
+    total_batches = math.ceil(total_rows / batch_size)
+
+    return {
+        "total_rows": total_rows,
+        "batch_size": batch_size,
+        "total_batches": total_batches,
+    }
+
+
+@frappe.whitelist()
+def process_import_batch(mode="insert", batch_index=0, batch_size=500):
+    setting = frappe.get_doc("Sahayog HR Setting")
+    file_url = setting.get("employee_master")
     if not file_url:
         frappe.throw(_("Please upload an Employee Master file first"))
 
@@ -70,14 +92,17 @@ def import_employee_master(mode="insert"):
 
     headers = [h.strip().lower().replace(" ", "_") for h in rows[0]]
     data_rows = rows[1:]
-    print(f"Headers ({len(headers)}): {headers}")
-    print(f"Data rows: {len(data_rows)}")
 
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
     valid_field_map = _build_field_map(headers, existing_cols, table_mappings)
-    print(f"Field map ({len(valid_field_map)}): {valid_field_map}")
-
     header_for = {v: k for k, v in valid_field_map.items()}
+
+    batch_index = int(batch_index)
+    batch_size = int(batch_size)
+
+    start_idx = batch_index * batch_size
+    end_idx = min((batch_index + 1) * batch_size, len(data_rows))
+    batch_rows = data_rows[start_idx:end_idx]
 
     result = {
         "inserted": 0,
@@ -89,16 +114,18 @@ def import_employee_master(mode="insert"):
         "updated_numbers": [],
     }
 
+    lookup_cache = _load_lookup_cache()
     frappe.flags.in_import = True
 
-    for i, row in enumerate(data_rows, start=2):
+    for offset, row in enumerate(batch_rows):
+        i = start_idx + offset + 2
         row_dict = _row_to_dict(headers, row)
         emp_number = row_dict.get(header_for.get("employee_number", "employee_number"), "").strip()
         emp_label = row_dict.get(header_for.get("first_name", "first_name"), "") or f"Row {i}"
 
+        frappe.db.savepoint("emp_row")
         try:
             if not emp_number:
-                print(f"  Row {i}: SKIP - no employee_number")
                 result["failed"] += 1
                 result["errors"].append(f"Row {i}: {emp_label} - employee_number is missing")
                 continue
@@ -106,55 +133,82 @@ def import_employee_master(mode="insert"):
             for f in mandatory_fields:
                 csv_key = header_for.get(f, f)
                 if not row_dict.get(csv_key):
-                    print(f"  Row {i} [{emp_number}]: FAIL - {f} is required")
                     result["failed"] += 1
                     result["errors"].append(f"Row {i}: {emp_number} - {f} is required")
                     raise _StopRow()
 
-            existing_emp_name = frappe.db.exists("Employee", {"employee_number": emp_number})
+            existing_emp_name = emp_number if emp_number in lookup_cache["Employee"] else frappe.db.exists("Employee", {"employee_number": emp_number})
 
             if mode == "insert":
                 if existing_emp_name:
-                    print(f"  Row {i} [{emp_number}]: SKIP - already exists as {existing_emp_name}")
                     result["skipped"] += 1
                 else:
-                    _create_employee(row_dict, valid_field_map)
-                    print(f"  Row {i} [{emp_number}]: INSERTED")
+                    _create_employee(row_dict, valid_field_map, cache=lookup_cache)
                     result["inserted"] += 1
                     result["inserted_numbers"].append(emp_number)
+                    lookup_cache["Employee"].add(emp_number)
 
             elif mode == "update":
                 if not existing_emp_name:
-                    print(f"  Row {i} [{emp_number}]: SKIP - not found")
                     result["skipped"] += 1
                 else:
-                    _update_employee(existing_emp_name, row_dict, valid_field_map)
-                    print(f"  Row {i} [{emp_number}]: UPDATED")
+                    _update_employee(existing_emp_name, row_dict, valid_field_map, cache=lookup_cache)
                     result["updated"] += 1
                     result["updated_numbers"].append(emp_number)
 
         except _StopRow:
+            frappe.db.rollback(save_point="emp_row")
             continue
         except Exception as e:
-            frappe.db.rollback()
-            print(f"  Row {i} [{emp_number or emp_label}]: EXCEPTION - {e}")
+            frappe.db.rollback(save_point="emp_row")
             result["failed"] += 1
             result["errors"].append(f"Row {i}: {emp_number or emp_label} - {str(e)}")
 
     frappe.flags.in_import = False
+    frappe.db.commit()
 
-    print(f"\n----- Result -----")
-    print(f"  Inserted: {result['inserted']}")
-    print(f"  Updated:  {result['updated']}")
-    print(f"  Skipped:  {result['skipped']}")
-    print(f"  Failed:   {result['failed']}")
-    print(f"==================\n")
+    return result
 
-    summary = _build_summary(result, mode)
+
+@frappe.whitelist()
+def finish_import_session(summary_data, mode="insert"):
+    if isinstance(summary_data, str):
+        import json
+        summary_data = json.loads(summary_data)
+
+    summary = _build_summary(summary_data, mode)
     frappe.db.set_value("Sahayog HR Setting", None, "employee_import_summary", summary)
     frappe.db.commit()
 
     return summary
+
+
+@frappe.whitelist()
+def import_employee_master(mode="insert"):
+    init_res = init_import_session(mode=mode, batch_size=500)
+    total_batches = init_res["total_batches"]
+
+    aggregated = {
+        "inserted": 0,
+        "updated": 0,
+        "skipped": 0,
+        "failed": 0,
+        "errors": [],
+        "inserted_numbers": [],
+        "updated_numbers": [],
+    }
+
+    for b in range(total_batches):
+        batch_res = process_import_batch(mode=mode, batch_index=b, batch_size=500)
+        aggregated["inserted"] += batch_res.get("inserted", 0)
+        aggregated["updated"] += batch_res.get("updated", 0)
+        aggregated["skipped"] += batch_res.get("skipped", 0)
+        aggregated["failed"] += batch_res.get("failed", 0)
+        aggregated["errors"].extend(batch_res.get("errors", []))
+        aggregated["inserted_numbers"].extend(batch_res.get("inserted_numbers", []))
+        aggregated["updated_numbers"].extend(batch_res.get("updated_numbers", []))
+
+    return finish_import_session(aggregated, mode=mode)
 
 
 def _resolve_filepath(file_url):
@@ -231,10 +285,63 @@ def _row_to_dict(headers, row):
     return d
 
 
-def _ensure_link(val, target_doctype, label_field, name_prefix=None):
+def _load_lookup_cache():
+    cache = {
+        "Division": {},
+        "Zone": {},
+        "Region": {},
+        "Branch": {},
+        "Designation": {},
+        "Department": {},
+        "Sahayog Branch": {},
+        "Employee": set(),
+    }
+
+    for d in frappe.db.get_all("Division", fields=["name", "division"]):
+        if d.division:
+            cache["Division"][d.division.strip().title()] = d.name
+        cache["Division"][d.name] = d.name
+
+    for z in frappe.db.get_all("Zone", fields=["name", "zone"]):
+        if z.zone:
+            cache["Zone"][z.zone.strip().upper()] = z.name
+        cache["Zone"][z.name] = z.name
+
+    for r in frappe.db.get_all("Region", fields=["name", "region"]):
+        if r.region:
+            cache["Region"][r.region.strip().upper()] = r.name
+        cache["Region"][r.name] = r.name
+
+    for b in frappe.db.get_all("Branch", fields=["name", "branch"]):
+        if b.branch:
+            cache["Branch"][b.branch.strip().title()] = b.name
+        cache["Branch"][b.name] = b.name
+
+    for d in frappe.db.get_all("Designation", fields=["name", "designation_name"]):
+        if d.designation_name:
+            cache["Designation"][d.designation_name.strip().title()] = d.name
+        cache["Designation"][d.name] = d.name
+
+    for dep in frappe.db.get_all("Department", fields=["name", "department_name"]):
+        if dep.department_name:
+            cache["Department"][dep.department_name.strip().title()] = dep.name
+            cache["Department"][dep.department_name.strip()] = dep.name
+        cache["Department"][dep.name] = dep.name
+
+    for sb in frappe.db.get_all("Sahayog Branch", fields=["name", "zone", "region", "district"]):
+        clean_key = sb.name.replace(" ", "")
+        cache["Sahayog Branch"][clean_key] = sb
+
+    for emp in frappe.db.get_all("Employee", fields=["name"]):
+        cache["Employee"].add(emp.name)
+
+    return cache
+
+
+def _ensure_link(val, target_doctype, label_field, name_prefix=None, cache=None):
     if not val:
         return val
-    val = val.strip()
+    val = str(val).strip()
     if not val:
         return val
 
@@ -245,16 +352,53 @@ def _ensure_link(val, target_doctype, label_field, name_prefix=None):
     else:
         clean = val.title()
 
-    existing = frappe.db.get_value(target_doctype, {label_field: clean}, "name")
-    if existing:
-        return existing
+    if cache and target_doctype in cache:
+        if clean in cache[target_doctype]:
+            return cache[target_doctype][clean]
 
-    if not frappe.db.exists(target_doctype, clean):
-        frappe.get_doc({
+    existing = frappe.db.get_value(target_doctype, {label_field: clean}, "name")
+    if not existing and not frappe.db.exists(target_doctype, clean):
+        new_doc = frappe.get_doc({
             "doctype": target_doctype,
             label_field: clean,
         }).insert(ignore_permissions=True)
-    return clean
+        existing = new_doc.name
+
+    res_name = existing or clean
+    if cache and target_doctype in cache:
+        cache[target_doctype][clean] = res_name
+        cache[target_doctype][res_name] = res_name
+    return res_name
+
+
+def _ensure_department(dep_val, cache=None):
+    if not dep_val:
+        return dep_val
+    dep_val = str(dep_val).strip()
+    if not dep_val:
+        return dep_val
+
+    title_dep = dep_val.title()
+    if cache and "Department" in cache:
+        if title_dep in cache["Department"]:
+            return cache["Department"][title_dep]
+        if dep_val in cache["Department"]:
+            return cache["Department"][dep_val]
+
+    existing = frappe.db.get_value("Department", {"department_name": title_dep}, "name") or frappe.db.get_value("Department", {"department_name": dep_val}, "name")
+    if not existing:
+        company = frappe.defaults.get_global_default("company")
+        new_doc = frappe.get_doc({
+            "doctype": "Department",
+            "department_name": title_dep,
+            "company": company,
+        }).insert(ignore_permissions=True)
+        existing = new_doc.name
+
+    if cache and "Department" in cache:
+        cache["Department"][title_dep] = existing
+        cache["Department"][dep_val] = existing
+    return existing
 
 
 def _split_name(first_name, middle_name=None, last_name=None):
@@ -274,7 +418,7 @@ def _split_name(first_name, middle_name=None, last_name=None):
     return first_name, middle_name, last_name
 
 
-def _create_employee(row_dict, field_map):
+def _create_employee(row_dict, field_map, cache=None):
     parsed = _prepare_employee_data(row_dict, field_map)
 
     fn = parsed.get("first_name")
@@ -302,7 +446,7 @@ def _create_employee(row_dict, field_map):
     for field, doctype, label, prefix in link_fields:
         val = parsed.get(field)
         if val:
-            parsed[field] = _ensure_link(val, doctype, label, prefix)
+            parsed[field] = _ensure_link(val, doctype, label, prefix, cache=cache)
 
     sb_val = parsed.get("sahayog_branch")
     if sb_val and not frappe.db.exists("Sahayog Branch", sb_val):
@@ -310,17 +454,7 @@ def _create_employee(row_dict, field_map):
 
     dep_val = parsed.get("department")
     if dep_val:
-        existing = frappe.db.get_value("Department", {"department_name": dep_val}, "name")
-        if existing:
-            parsed["department"] = existing
-        else:
-            company = frappe.defaults.get_global_default("company")
-            new = frappe.get_doc({
-                "doctype": "Department",
-                "department_name": dep_val.title(),
-                "company": company,
-            }).insert(ignore_permissions=True)
-            parsed["department"] = new.name
+        parsed["department"] = _ensure_department(dep_val, cache=cache)
 
     rt_val = parsed.get("reports_to")
     if rt_val and not frappe.db.exists("Employee", rt_val):
@@ -336,11 +470,11 @@ def _create_employee(row_dict, field_map):
 
     doc = frappe.get_doc(parsed)
     doc.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
-    _set_sol_fields(doc, row_dict)
+    _set_sol_fields(doc, row_dict, cache=cache)
     frappe.db.commit()
 
 
-def _update_employee(emp_name, row_dict, field_map):
+def _update_employee(emp_name, row_dict, field_map, cache=None):
     doc = frappe.get_doc("Employee", emp_name)
     header_for = {v: k for k, v in field_map.items()}
 
@@ -378,22 +512,12 @@ def _update_employee(emp_name, row_dict, field_map):
                 pass
         elif doc_field in link_map:
             doctype, label, prefix = link_map[doc_field]
-            setattr(doc, doc_field, _ensure_link(csv_val, doctype, label, prefix))
+            setattr(doc, doc_field, _ensure_link(csv_val, doctype, label, prefix, cache=cache))
         elif doc_field == "sahayog_branch":
             if frappe.db.exists("Sahayog Branch", csv_val):
                 doc.sahayog_branch = csv_val
         elif doc_field == "department":
-            existing = frappe.db.get_value("Department", {"department_name": csv_val}, "name")
-            if existing:
-                doc.department = existing
-            else:
-                company = frappe.defaults.get_global_default("company")
-                new = frappe.get_doc({
-                    "doctype": "Department",
-                    "department_name": csv_val.title(),
-                    "company": company,
-                }).insert(ignore_permissions=True)
-                doc.department = new.name
+            doc.department = _ensure_department(csv_val, cache=cache)
         elif doc_field == "reports_to":
             if frappe.db.exists("Employee", csv_val):
                 doc.reports_to = csv_val
@@ -416,8 +540,7 @@ def _update_employee(emp_name, row_dict, field_map):
         if ln and ln != doc.last_name:
             doc.last_name = ln
 
-    _set_sol_fields(doc, row_dict)
-    doc.save(ignore_permissions=True, ignore_mandatory=True)
+    _set_sol_fields(doc, row_dict, cache=cache)
 
     relieving = doc.relieving_date
     if relieving and getdate(relieving) <= getdate(today()):
@@ -426,35 +549,53 @@ def _update_employee(emp_name, row_dict, field_map):
             user = frappe.get_doc("User", doc.user_id)
             user.enabled = 0
             user.save(ignore_permissions=True)
-        doc.save(ignore_permissions=True, ignore_mandatory=True)
 
+    doc.flags.ignore_mandatory = True
+    doc.save(ignore_permissions=True)
     frappe.db.commit()
 
 
-def _set_sol_fields(doc, row_dict):
+def _set_sol_fields(doc, row_dict, cache=None):
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
 
     sol_id = row_dict.get("sol_id")
     if sol_id:
         clean_sol = sol_id.strip().replace(" ", "")
-        branch = frappe.db.sql(
-            """SELECT name FROM `tabSahayog Branch`
-               WHERE REPLACE(name, ' ', '') = %s LIMIT 1""",
-            clean_sol,
-        )
-        if branch:
-            branch_doc = frappe.db.get_value(
-                "Sahayog Branch", branch[0][0],
-                ["zone", "region", "district"], as_dict=True
+        branch_info = None
+
+        if cache and "Sahayog Branch" in cache:
+            branch_info = cache["Sahayog Branch"].get(clean_sol)
+
+        if not branch_info:
+            branch = frappe.db.sql(
+                """SELECT name FROM `tabSahayog Branch`
+                   WHERE REPLACE(name, ' ', '') = %s LIMIT 1""",
+                clean_sol,
             )
+            if branch:
+                branch_info = frappe.db.get_value(
+                    "Sahayog Branch", branch[0][0],
+                    ["name", "zone", "region", "district"], as_dict=True
+                )
+                if cache and "Sahayog Branch" in cache:
+                    cache["Sahayog Branch"][clean_sol] = branch_info
+
+        if branch_info:
+            b_name = branch_info.get("name") if isinstance(branch_info, dict) else branch_info
             if "sahayog_branch" in existing_cols and not doc.get("sahayog_branch"):
-                doc.sahayog_branch = branch[0][0]
+                doc.sahayog_branch = b_name
             if "custom_zone" in existing_cols and not doc.get("custom_zone"):
-                doc.custom_zone = branch_doc.get("zone")
+                z_val = branch_info.get("zone") if isinstance(branch_info, dict) else None
+                if z_val:
+                    doc.custom_zone = _ensure_link(z_val, "Zone", "zone", "ZONE-", cache=cache)
             if "custom_region" in existing_cols and not doc.get("custom_region"):
-                doc.custom_region = branch_doc.get("region")
+                r_val = branch_info.get("region") if isinstance(branch_info, dict) else None
+                if r_val:
+                    doc.custom_region = _ensure_link(r_val, "Region", "region", "REGION-", cache=cache)
             if "custom_district" in existing_cols and not doc.get("custom_district"):
-                doc.custom_district = branch_doc.get("district")
+                d_val = branch_info.get("district") if isinstance(branch_info, dict) else None
+                if d_val:
+                    doc.custom_district = d_val
 
     monthly_sal = row_dict.get("monthly_gross_salary")
     if monthly_sal:
