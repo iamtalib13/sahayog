@@ -500,9 +500,13 @@ def _set_sol_fields(doc, row_dict):
             if "sahayog_branch" in existing_cols and not doc.get("sahayog_branch"):
                 doc.sahayog_branch = branch[0][0]
             if "custom_zone" in existing_cols and not doc.get("custom_zone"):
-                doc.custom_zone = branch_doc.get("zone")
+                z_val = branch_doc.get("zone")
+                if z_val:
+                    doc.custom_zone = _ensure_link(z_val, "Zone", "zone", "ZONE-")
             if "custom_region" in existing_cols and not doc.get("custom_region"):
-                doc.custom_region = branch_doc.get("region")
+                r_val = branch_doc.get("region")
+                if r_val:
+                    doc.custom_region = _ensure_link(r_val, "Region", "region", "REGION-")
             if "custom_district" in existing_cols and not doc.get("custom_district"):
                 doc.custom_district = branch_doc.get("district")
 
