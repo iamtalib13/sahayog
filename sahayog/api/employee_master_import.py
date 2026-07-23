@@ -362,14 +362,15 @@ def _create_employee(row_dict, field_map):
 
     dep_val = parsed.get("department")
     if dep_val:
-        existing = frappe.db.get_value("Department", {"department_name": dep_val}, "name")
+        title_dep = dep_val.strip().title()
+        existing = frappe.db.get_value("Department", {"department_name": title_dep}, "name") or frappe.db.get_value("Department", {"department_name": dep_val}, "name")
         if existing:
             parsed["department"] = existing
         else:
             company = frappe.defaults.get_global_default("company")
             new = frappe.get_doc({
                 "doctype": "Department",
-                "department_name": dep_val.title(),
+                "department_name": title_dep,
                 "company": company,
             }).insert(ignore_permissions=True)
             parsed["department"] = new.name
@@ -435,14 +436,15 @@ def _update_employee(emp_name, row_dict, field_map):
             if frappe.db.exists("Sahayog Branch", csv_val):
                 doc.sahayog_branch = csv_val
         elif doc_field == "department":
-            existing = frappe.db.get_value("Department", {"department_name": csv_val}, "name")
+            title_dep = csv_val.strip().title()
+            existing = frappe.db.get_value("Department", {"department_name": title_dep}, "name") or frappe.db.get_value("Department", {"department_name": csv_val}, "name")
             if existing:
                 doc.department = existing
             else:
                 company = frappe.defaults.get_global_default("company")
                 new = frappe.get_doc({
                     "doctype": "Department",
-                    "department_name": csv_val.title(),
+                    "department_name": title_dep,
                     "company": company,
                 }).insert(ignore_permissions=True)
                 doc.department = new.name
