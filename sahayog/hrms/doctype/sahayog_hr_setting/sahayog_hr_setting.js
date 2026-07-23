@@ -91,7 +91,22 @@ function run_batch_import(frm, mode) {
 				} catch (err) {
 					console.error("Error in batch " + (b + 1), err);
 					aggregated.failed += batch_size;
-					aggregated.errors.push(`Batch ${b + 1} failed: ${err.message || err}`);
+					let err_msg = "Unknown error";
+					if (err) {
+						if (typeof err === "string") err_msg = err;
+						else if (err.message) err_msg = err.message;
+						else if (err._server_messages) {
+							try {
+								const msgs = JSON.parse(err._server_messages);
+								err_msg = msgs.map((m) => JSON.parse(m).message).join("; ");
+							} catch (e) {
+								err_msg = err._server_messages;
+							}
+						} else {
+							err_msg = JSON.stringify(err);
+						}
+					}
+					aggregated.errors.push(`Batch ${b + 1} failed: ${err_msg}`);
 				}
 			}
 

@@ -122,6 +122,7 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
         emp_number = row_dict.get(header_for.get("employee_number", "employee_number"), "").strip()
         emp_label = row_dict.get(header_for.get("first_name", "first_name"), "") or f"Row {i}"
 
+        frappe.db.savepoint("emp_row")
         try:
             if not emp_number:
                 result["failed"] += 1
@@ -154,9 +155,10 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
                     result["updated_numbers"].append(emp_number)
 
         except _StopRow:
+            frappe.db.rollback(save_point="emp_row")
             continue
         except Exception as e:
-            frappe.db.rollback()
+            frappe.db.rollback(save_point="emp_row")
             result["failed"] += 1
             result["errors"].append(f"Row {i}: {emp_number or emp_label} - {str(e)}")
 
