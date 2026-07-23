@@ -1,4 +1,5 @@
 import frappe
+import requests
 
 @frappe.whitelist(allow_guest=False)
 def send_whatsapp_message(phone_number, message_text):
@@ -31,16 +32,11 @@ def send_whatsapp_message(phone_number, message_text):
     }
     
     try:
-        # Send the HTTP POST request using Frappe's safe URL opener
-        response = frappe.safe_urlopen(
-            url, 
-            data=frappe.as_json(payload).encode("utf-8"), 
-            headers=headers, 
-            method="POST"
-        )
+        # Send the HTTP POST request using requests library
+        response = requests.post(url, json=payload, headers=headers)
         
-        # Parse and return the successful response
-        result = frappe.parse_json(response.read().decode("utf-8"))
+        # Parse and return the response
+        result = response.json()
         return {"status": "success", "response": result}
         
     except Exception as e:
