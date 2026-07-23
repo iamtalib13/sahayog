@@ -328,7 +328,7 @@ def _load_lookup_cache():
             cache["Department"][dep.department_name.strip()] = dep.name
         cache["Department"][dep.name] = dep.name
 
-    for sb in frappe.db.get_all("Sahayog Branch", fields=["name", "zone", "region", "district"], as_dict=True):
+    for sb in frappe.db.get_all("Sahayog Branch", fields=["name", "zone", "region", "district"]):
         clean_key = sb.name.replace(" ", "")
         cache["Sahayog Branch"][clean_key] = sb
 
