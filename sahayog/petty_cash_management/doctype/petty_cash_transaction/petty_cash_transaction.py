@@ -2075,6 +2075,235 @@ def download_consolidated_excel_api(transaction_date=None):
     }
 
 
+# @frappe.whitelist()
+# def download_detailed_report_by_date_range(from_date=None, to_date=None):
+#     """
+#     Download detailed Excel report for all Petty Cash Transactions
+#     between from_date and to_date based on transaction_date.
+#     Each child item is expanded as a separate row.
+#     """
+#     import base64
+#     import tempfile
+#     import os
+#     import openpyxl
+#     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+#     from openpyxl.utils import get_column_letter
+#     from frappe.utils import getdate, flt
+#     from datetime import datetime
+
+#     if not from_date or not to_date:
+#         frappe.throw("Start Date and End Date are required.")
+
+#     from_date = getdate(from_date)
+#     to_date = getdate(to_date)
+
+#     if from_date > to_date:
+#         frappe.throw("Start Date cannot be greater than End Date.")
+
+#     transaction_names = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters=[
+#             ["transaction_date", ">=", from_date],
+#             ["transaction_date", "<=", to_date]
+#         ],
+#         pluck="name",
+#         order_by="transaction_date asc, creation asc"
+#     )
+
+#     if not transaction_names:
+#         frappe.throw(f"No records found between {from_date} and {to_date}.")
+
+#     wb = openpyxl.Workbook()
+#     ws = wb.active
+#     ws.title = "Detailed Petty Cash Report"
+
+#     header_fill = PatternFill(start_color="1F4E78",
+#                               end_color="1F4E78", fill_type="solid")
+#     header_font = Font(bold=True, color="FFFFFF", size=11)
+#     border = Border(
+#         left=Side(style="thin"),
+#         right=Side(style="thin"),
+#         top=Side(style="thin"),
+#         bottom=Side(style="thin")
+#     )
+
+#     headers = [
+#         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
+#         "Total Amount", "Wallet Balance", "Cash in Hand",
+#         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
+#         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
+#         "Expense Category", "Vendor", "Bill No", "Bill Date", "Item Amount",
+#         "Description", "Expense GL Code", "Bill Attachment",
+#         "Posted To Finacle", "Finacle Txn ID", "Finacle Date",
+#         "Remarks", "Doc Status", "Created On", "Modified On", "Created By", "Modified By"
+#     ]
+
+#     for colnum, header in enumerate(headers, 1):
+#         cell = ws.cell(row=1, column=colnum)
+#         cell.value = header
+#         cell.fill = header_fill
+#         cell.font = header_font
+#         cell.alignment = Alignment(horizontal="center", vertical="center")
+#         cell.border = border
+
+#     def fmt(val):
+#         return flt(val) if val else 0.0
+
+#     excel_row = 2
+#     status_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
+
+#     for txn_name in transaction_names:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+#         wallet_gl_code = frappe.db.get_value(
+#             "Branch Petty Cash Account",
+#             {"branch": doc.branch},
+#             "gl_sub_code"
+#         ) or ""
+
+#         category_ids = [
+#             row.expense_category for row in doc.items if row.expense_category]
+#         category_map = {}
+
+#         if category_ids:
+#             categories = frappe.get_all(
+#                 "Expense Category",
+#                 filters={"name": ["in", category_ids]},
+#                 fields=["name", "category_name"]
+#             )
+#             for cat in categories:
+#                 category_map[cat.name] = cat.category_name
+
+#         if doc.items:
+#             for row in doc.items:
+#                 cat_name = category_map.get(
+#                     row.expense_category, row.expense_category)
+
+#                 row_data = [
+#                     doc.name,
+#                     doc.branch,
+#                     doc.branch_name,
+#                     doc.transaction_date.strftime(
+#                         "%d-%m-%Y") if doc.transaction_date else "",
+#                     doc.transaction_type,
+#                     fmt(doc.amount),
+#                     fmt(doc.current_branch_balance),
+#                     fmt(doc.current_unsettled_cash),
+#                     doc.approval_status,
+#                     fmt(doc.amount_within_limit),
+#                     fmt(doc.amount_exceeding_limit),
+#                     fmt(doc.amount_deducted),
+#                     doc.approved_by,
+#                     doc.custom_ttum_remarks,
+#                     doc.finacle_tran_particular,
+#                     wallet_gl_code,
+#                     cat_name,
+#                     row.vendor_name,
+#                     row.bill_number,
+#                     row.bill_date.strftime(
+#                         "%d-%m-%Y") if row.bill_date else "",
+#                     fmt(row.amount),
+#                     row.description,
+#                     row.finacle_gl_code,
+#                     row.bill_attachment,
+#                     doc.posted_to_finacle,
+#                     doc.finacle_tran_id,
+#                     doc.finacle_tran_date.strftime(
+#                         "%d-%m-%Y") if doc.finacle_tran_date else "",
+#                     doc.remarks,
+#                     status_map.get(doc.docstatus, "Unknown"),
+#                     doc.creation.strftime(
+#                         "%d-%m-%Y %H:%M") if doc.creation else "",
+#                     doc.modified.strftime(
+#                         "%d-%m-%Y %H:%M") if doc.modified else "",
+#                     doc.owner,
+#                     doc.modified_by
+#                 ]
+
+#                 for colnum, value in enumerate(row_data, 1):
+#                     cell = ws.cell(row=excel_row, column=colnum)
+#                     cell.value = value
+#                     cell.border = border
+
+#                     if colnum in [6, 7, 8, 10, 11, 12, 21]:
+#                         cell.number_format = '#,##0.00'
+#                         cell.alignment = Alignment(horizontal="right")
+#                     else:
+#                         cell.alignment = Alignment(vertical="top")
+
+#                 excel_row += 1
+#         else:
+#             row_data = [
+#                 doc.name,
+#                 doc.branch,
+#                 doc.branch_name,
+#                 doc.transaction_date.strftime(
+#                     "%d-%m-%Y") if doc.transaction_date else "",
+#                 doc.transaction_type,
+#                 fmt(doc.amount),
+#                 fmt(doc.current_branch_balance),
+#                 fmt(doc.current_unsettled_cash),
+#                 doc.approval_status,
+#                 fmt(doc.amount_within_limit),
+#                 fmt(doc.amount_exceeding_limit),
+#                 fmt(doc.amount_deducted),
+#                 doc.approved_by,
+#                 doc.custom_ttum_remarks,
+#                 doc.finacle_tran_particular,
+#                 wallet_gl_code,
+#                 "", "", "", "", 0.0, "", "", "",
+#                 doc.posted_to_finacle,
+#                 doc.finacle_tran_id,
+#                 doc.finacle_tran_date.strftime(
+#                     "%d-%m-%Y") if doc.finacle_tran_date else "",
+#                 doc.remarks,
+#                 status_map.get(doc.docstatus, "Unknown"),
+#                 doc.creation.strftime(
+#                     "%d-%m-%Y %H:%M") if doc.creation else "",
+#                 doc.modified.strftime(
+#                     "%d-%m-%Y %H:%M") if doc.modified else "",
+#                 doc.owner,
+#                 doc.modified_by
+#             ]
+
+#             for colnum, value in enumerate(row_data, 1):
+#                 cell = ws.cell(row=excel_row, column=colnum)
+#                 cell.value = value
+#                 cell.border = border
+#             excel_row += 1
+
+#     for colnum in range(1, len(headers) + 1):
+#         column_letter = get_column_letter(colnum)
+#         max_length = 0
+#         for cell in ws[column_letter]:
+#             try:
+#                 if cell.value:
+#                     max_length = max(max_length, len(str(cell.value)))
+#             except Exception:
+#                 pass
+#         ws.column_dimensions[column_letter].width = min(max_length + 2, 40)
+
+#     ws.freeze_panes = "A2"
+
+#     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+#     wb.save(tmp.name)
+#     tmp.close()
+
+#     with open(tmp.name, "rb") as f:
+#         content = f.read()
+
+#     os.unlink(tmp.name)
+
+#     filedata = base64.b64encode(content).decode("utf-8")
+#     filename = f"Petty_Cash_Detailed_Report_{from_date}_to_{to_date}.xlsx"
+
+#     return {
+#         "filename": filename,
+#         "filecontent": filedata,
+#         "recordcount": len(transaction_names)
+#     }
+
+
 @frappe.whitelist()
 def download_detailed_report_by_date_range(from_date=None, to_date=None):
     """
@@ -2100,12 +2329,28 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
     if from_date > to_date:
         frappe.throw("Start Date cannot be greater than End Date.")
 
+    filters = [
+        ["transaction_date", ">=", from_date],
+        ["transaction_date", "<=", to_date]
+    ]
+
+    user_roles = frappe.get_roles(frappe.session.user)
+    if "Branch User" in user_roles:
+        user_branch = frappe.db.get_value(
+            "Employee",
+            {"user_id": frappe.session.user, "status": "Active"},
+            "sahayog_branch"
+        )
+
+        if not user_branch:
+            frappe.throw(
+                "No active Employee record with Sahayog Branch found for the current user.")
+
+        filters.append(["branch", "=", user_branch])
+
     transaction_names = frappe.get_all(
         "Petty Cash Transaction",
-        filters=[
-            ["transaction_date", ">=", from_date],
-            ["transaction_date", "<=", to_date]
-        ],
+        filters=filters,
         pluck="name",
         order_by="transaction_date asc, creation asc"
     )
