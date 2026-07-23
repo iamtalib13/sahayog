@@ -40,6 +40,9 @@ FIELD_MAP = {
     "aadhaar_card_number": "aadhaar_card_number",
     "uhid_number": "uhid_number",
     "monthly_gross_salary": "ctc",
+    "zone": "custom_zone",
+    "region": "custom_region",
+    "district": "custom_district",
 }
 
 DEFAULT_MANDATORY = [
@@ -662,10 +665,7 @@ def _set_sol_fields(doc, row_dict, cache=None, existing_cols=None):
                 clean_sol,
             )
             if branch:
-                branch_info = frappe.db.get_value(
-                    "Sahayog Branch", branch[0][0],
-                    ["name", "zone", "region", "district"], as_dict=True
-                )
+                branch_info = branch[0][0]
                 if cache and "Sahayog Branch" in cache:
                     cache["Sahayog Branch"][clean_sol] = branch_info
 
@@ -673,18 +673,6 @@ def _set_sol_fields(doc, row_dict, cache=None, existing_cols=None):
             b_name = branch_info.get("name") if isinstance(branch_info, dict) else branch_info
             if "sahayog_branch" in existing_cols:
                 doc.sahayog_branch = b_name
-            if "custom_zone" in existing_cols:
-                z_val = branch_info.get("zone") if isinstance(branch_info, dict) else None
-                if z_val:
-                    doc.custom_zone = _ensure_link(z_val, "Zone", "zone", "ZONE-", cache=cache)
-            if "custom_region" in existing_cols:
-                r_val = branch_info.get("region") if isinstance(branch_info, dict) else None
-                if r_val:
-                    doc.custom_region = _ensure_link(r_val, "Region", "region", "REGION-", cache=cache)
-            if "custom_district" in existing_cols:
-                d_val = branch_info.get("district") if isinstance(branch_info, dict) else None
-                if d_val:
-                    doc.custom_district = d_val
 
     monthly_sal = row_dict.get("monthly_gross_salary")
     if monthly_sal:
