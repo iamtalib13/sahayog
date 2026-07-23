@@ -1720,6 +1720,105 @@ def download_txt_api(name):     # <--- Renamed
     doc.download_transaction_txt()
 
 
+# @frappe.whitelist()
+# def download_consolidated_txt_api(transaction_date=None):
+#     """Generates a Consolidated TTUM Text file for all Verified transactions of the selected date."""
+#     from frappe.utils import nowdate, getdate
+
+#     user_roles = frappe.get_roles()
+#     if frappe.session.user != "Administrator" and not set(
+#         ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+#     ).intersection(user_roles):
+#         frappe.throw(
+#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+#         )
+
+#     selected_date = str(getdate(transaction_date)
+#                         ) if transaction_date else nowdate()
+
+#     transactions = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters={
+#             "finacle_tran_date": selected_date,
+#             "approval_status": "Verified"
+#         },
+#         pluck="name",
+#         order_by="creation ASC"
+#     )
+
+#     if not transactions:
+#         return {
+#             "status": "no_data",
+#             "message": f"No verified transactions found for {selected_date}."
+#         }
+
+#     content = []
+
+#     for txn_name in transactions:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+#         date_obj = getdate(doc.finacle_tran_date)
+#         ttum_date = date_obj.strftime("%b%y").upper()
+#         # currency_str = f"INR{doc.branch}"
+#         if doc.branch_type == "Zonal":
+#             currency_str = f"INR1000"
+#         else:
+#             currency_str = f"INR{doc.branch}"
+
+#         narrative_suffix = (
+#             doc.custom_ttum_remarks
+#             if doc.custom_ttum_remarks
+#             else f"{ttum_date} {doc.name}"
+#         )
+
+#         total_debit = 0.0
+
+#         for row in doc.items:
+#             if not row.finacle_gl_code:
+#                 frappe.throw(
+#                     f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
+
+#             amount_str = "{:.2f}".format(row.amount)
+#             total_debit += row.amount
+
+#             raw_desc = row.description if row.description else narrative_suffix
+#             debit_description = raw_desc[:30]
+
+#             padding_count = 17 - len(amount_str)
+#             if padding_count < 10:
+#                 padding_count = 10
+#             space_str = " " * padding_count
+
+#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debit_description}"
+#             content.append(line)
+
+#         wallet_gl = frappe.db.get_value(
+#             "Branch Petty Cash Account",
+#             {"branch": doc.branch},
+#             "gl_sub_code"
+#         )
+#         if not wallet_gl:
+#             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+
+#         total_amount_str = "{:.2f}".format(total_debit)
+#         padding_count = 17 - len(total_amount_str)
+#         if padding_count < 10:
+#             padding_count = 10
+#         space_str = " " * padding_count
+#         credit_description = narrative_suffix[:30]
+
+#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+#         content.append(credit_line)
+
+#     final_txt = "\n".join(content)
+
+#     return {
+#         "status": "success",
+#         "filename": f"Consolidated_TTUM_{selected_date}.txt",
+#         "filecontent": final_txt
+#     }
+
+
 @frappe.whitelist()
 def download_consolidated_txt_api(transaction_date=None):
     """Generates a Consolidated TTUM Text file for all Verified transactions of the selected date."""
@@ -1759,7 +1858,7 @@ def download_consolidated_txt_api(transaction_date=None):
 
         date_obj = getdate(doc.finacle_tran_date)
         ttum_date = date_obj.strftime("%b%y").upper()
-        # currency_str = f"INR{doc.branch}"
+
         if doc.branch_type == "Zonal":
             currency_str = f"INR1000"
         else:
@@ -1805,9 +1904,36 @@ def download_consolidated_txt_api(transaction_date=None):
         if padding_count < 10:
             padding_count = 10
         space_str = " " * padding_count
-        credit_description = narrative_suffix[:30]
+
+        credit_description = narrative_suffix[:30].ljust(30)
 
         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+
+        if doc.branch_type == "Zonal":
+            entity_id = str(doc.entity_id or "").strip()
+            entity_type = str(doc.entity_type or "").strip()
+
+            if entity_id:
+                extra_spaces_after_desc = " " * 852
+
+                if len(entity_id) == 4:
+                    entity_id_padding = " " * 12
+                elif len(entity_id) == 5:
+                    entity_id_padding = " " * 11
+                else:
+                    entity_id_padding = ""
+
+                entity_type_padding = " " * 5
+
+                credit_line = (
+                    f"{credit_line}"
+                    f"{extra_spaces_after_desc}"
+                    f"{entity_id}"
+                    f"{entity_id_padding}"
+                    f"{entity_type}"
+                    f"{entity_type_padding}"
+                )
+
         content.append(credit_line)
 
     final_txt = "\n".join(content)
