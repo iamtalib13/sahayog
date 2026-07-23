@@ -16,7 +16,7 @@ frappe.ui.form.on("Whatsapp Settings", {
 					},
 					{
 						fieldname: "message_text",
-						fieldtype: "Text Editor",
+						fieldtype: "Small Text",
 						label: __("Message Text"),
 						reqd: 1
 					}
