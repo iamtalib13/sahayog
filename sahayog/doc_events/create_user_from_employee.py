@@ -3,6 +3,9 @@ import frappe
 from frappe import _
 
 def create_user(doc, method):
+    if frappe.flags.in_import:
+        return
+
     if doc.custom_skip_auto_creation != 0:
         return  # Skip if flagged
 

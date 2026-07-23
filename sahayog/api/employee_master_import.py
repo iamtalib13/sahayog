@@ -54,6 +54,35 @@ DEFAULT_MANDATORY = [
 import math
 
 
+CACHE_KEY = "emp_import_session:{user}"
+
+
+def _get_or_build_session_cache(setting, force=False):
+    key = CACHE_KEY.format(user=frappe.session.user)
+    cached = frappe.cache().get_value(key)
+    file_url = setting.get("employee_master")
+
+    if cached and not force:
+        if cached.get("file_url") == file_url:
+            return cached
+
+    rows = _parse_file(file_url)
+    if not rows or len(rows) < 2:
+        frappe.throw(_("File has no data rows"))
+
+    lookup_cache = _load_lookup_cache()
+    existing_cols = list(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
+
+    data = {
+        "rows": rows,
+        "lookup_cache": lookup_cache,
+        "existing_cols": existing_cols,
+        "file_url": file_url,
+    }
+    frappe.cache().set_value(key, data, expires_in_sec=3600)
+    return data
+
+
 @frappe.whitelist()
 def init_import_session(mode="insert", batch_size=500):
     setting = frappe.get_doc("Sahayog HR Setting")
@@ -61,9 +90,8 @@ def init_import_session(mode="insert", batch_size=500):
     if not file_url:
         frappe.throw(_("Please upload an Employee Master file first"))
 
-    rows = _parse_file(file_url)
-    if not rows or len(rows) < 2:
-        frappe.throw(_("File has no data rows"))
+    cached_data = _get_or_build_session_cache(setting, force=True)
+    rows = cached_data["rows"]
 
     total_rows = len(rows) - 1
     batch_size = max(1, int(batch_size))
@@ -83,17 +111,17 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
     if not file_url:
         frappe.throw(_("Please upload an Employee Master file first"))
 
+    cached_data = _get_or_build_session_cache(setting)
+    rows = cached_data["rows"]
+    lookup_cache = cached_data["lookup_cache"]
+    existing_cols = cached_data["existing_cols"]
+
     table_mappings = _load_table_mappings(setting)
     mandatory_fields = _get_mandatory_fields(table_mappings)
-
-    rows = _parse_file(file_url)
-    if not rows or len(rows) < 2:
-        frappe.throw(_("File has no data rows"))
 
     headers = [h.strip().lower().replace(" ", "_") for h in rows[0]]
     data_rows = rows[1:]
 
-    existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
     valid_field_map = _build_field_map(headers, existing_cols, table_mappings)
     header_for = {v: k for k, v in valid_field_map.items()}
 
@@ -114,7 +142,6 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
         "updated_numbers": [],
     }
 
-    lookup_cache = _load_lookup_cache()
     frappe.flags.in_import = True
 
     for offset, row in enumerate(batch_rows):
@@ -137,22 +164,26 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
                     result["errors"].append(f"Row {i}: {emp_number} - {f} is required")
                     raise _StopRow()
 
-            existing_emp_name = emp_number if emp_number in lookup_cache["Employee"] else frappe.db.exists("Employee", {"employee_number": emp_number})
+            existing_emp_name = lookup_cache["Employee"].get(emp_number)
+            if not existing_emp_name:
+                existing_emp_name = frappe.db.exists("Employee", {"employee_number": emp_number})
+                if existing_emp_name:
+                    lookup_cache["Employee"][emp_number] = existing_emp_name
 
             if mode == "insert":
                 if existing_emp_name:
                     result["skipped"] += 1
                 else:
-                    _create_employee(row_dict, valid_field_map, cache=lookup_cache)
+                    emp_name = _create_employee(row_dict, valid_field_map, cache=lookup_cache, existing_cols=existing_cols)
                     result["inserted"] += 1
                     result["inserted_numbers"].append(emp_number)
-                    lookup_cache["Employee"].add(emp_number)
+                    lookup_cache["Employee"][emp_number] = emp_name
 
             elif mode == "update":
                 if not existing_emp_name:
                     result["skipped"] += 1
                 else:
-                    _update_employee(existing_emp_name, row_dict, valid_field_map, cache=lookup_cache)
+                    _update_employee(existing_emp_name, row_dict, valid_field_map, cache=lookup_cache, existing_cols=existing_cols)
                     result["updated"] += 1
                     result["updated_numbers"].append(emp_number)
 
@@ -166,6 +197,11 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
 
     frappe.flags.in_import = False
     frappe.db.commit()
+
+    # Save updated lookup_cache back into session cache
+    key = CACHE_KEY.format(user=frappe.session.user)
+    cached_data["lookup_cache"] = lookup_cache
+    frappe.cache().set_value(key, cached_data, expires_in_sec=3600)
 
     return result
 
@@ -294,7 +330,7 @@ def _load_lookup_cache():
         "Designation": {},
         "Department": {},
         "Sahayog Branch": {},
-        "Employee": set(),
+        "Employee": {},
     }
 
     for d in frappe.db.get_all("Division", fields=["name", "division"]):
@@ -332,8 +368,9 @@ def _load_lookup_cache():
         clean_key = sb.name.replace(" ", "")
         cache["Sahayog Branch"][clean_key] = sb
 
-    for emp in frappe.db.get_all("Employee", fields=["name"]):
-        cache["Employee"].add(emp.name)
+    for emp in frappe.db.get_all("Employee", fields=["name", "employee_number"]):
+        if emp.employee_number:
+            cache["Employee"][emp.employee_number.strip()] = emp.name
 
     return cache
 
@@ -418,7 +455,7 @@ def _split_name(first_name, middle_name=None, last_name=None):
     return first_name, middle_name, last_name
 
 
-def _create_employee(row_dict, field_map, cache=None):
+def _create_employee(row_dict, field_map, cache=None, existing_cols=None):
     parsed = _prepare_employee_data(row_dict, field_map)
 
     fn = parsed.get("first_name")
@@ -449,16 +486,42 @@ def _create_employee(row_dict, field_map, cache=None):
             parsed[field] = _ensure_link(val, doctype, label, prefix, cache=cache)
 
     sb_val = parsed.get("sahayog_branch")
-    if sb_val and not frappe.db.exists("Sahayog Branch", sb_val):
-        del parsed["sahayog_branch"]
+    if sb_val:
+        clean_sb = sb_val.replace(" ", "")
+        branch_info = cache["Sahayog Branch"].get(clean_sb) if cache else None
+        if not branch_info:
+            branch = frappe.db.sql(
+                """SELECT name FROM `tabSahayog Branch`
+                   WHERE REPLACE(name, ' ', '') = %s LIMIT 1""",
+                clean_sb,
+            )
+            if branch:
+                branch_info = frappe.db.get_value(
+                    "Sahayog Branch", branch[0][0],
+                    ["name", "zone", "region", "district"], as_dict=True
+                )
+                if cache and "Sahayog Branch" in cache:
+                    cache["Sahayog Branch"][clean_sb] = branch_info
+        if branch_info:
+            parsed["sahayog_branch"] = branch_info.get("name") if isinstance(branch_info, dict) else branch_info
+        else:
+            del parsed["sahayog_branch"]
 
     dep_val = parsed.get("department")
     if dep_val:
         parsed["department"] = _ensure_department(dep_val, cache=cache)
 
     rt_val = parsed.get("reports_to")
-    if rt_val and not frappe.db.exists("Employee", rt_val):
-        del parsed["reports_to"]
+    if rt_val:
+        emp_name = cache["Employee"].get(rt_val) if cache else None
+        if not emp_name:
+            emp_name = rt_val if frappe.db.exists("Employee", rt_val) else frappe.db.get_value("Employee", {"employee_number": rt_val}, "name")
+            if emp_name and cache:
+                cache["Employee"][rt_val] = emp_name
+        if emp_name:
+            parsed["reports_to"] = emp_name
+        else:
+            del parsed["reports_to"]
 
     parsed["custom_is_support_staff"] = 1
     parsed["custom_medical_deduction"] = 100
@@ -469,12 +532,14 @@ def _create_employee(row_dict, field_map, cache=None):
         parsed["company"] = frappe.defaults.get_global_default("company")
 
     doc = frappe.get_doc(parsed)
-    doc.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
-    _set_sol_fields(doc, row_dict, cache=cache)
-    frappe.db.commit()
+    doc.flags.ignore_links = True
+    doc.flags.ignore_version = True
+    doc.insert(ignore_permissions=True, ignore_mandatory=True)
+    _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
+    return doc.name
 
 
-def _update_employee(emp_name, row_dict, field_map, cache=None):
+def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=None):
     doc = frappe.get_doc("Employee", emp_name)
     header_for = {v: k for k, v in field_map.items()}
 
@@ -514,13 +579,33 @@ def _update_employee(emp_name, row_dict, field_map, cache=None):
             doctype, label, prefix = link_map[doc_field]
             setattr(doc, doc_field, _ensure_link(csv_val, doctype, label, prefix, cache=cache))
         elif doc_field == "sahayog_branch":
-            if frappe.db.exists("Sahayog Branch", csv_val):
-                doc.sahayog_branch = csv_val
+            clean_sb = csv_val.replace(" ", "")
+            branch_info = cache["Sahayog Branch"].get(clean_sb) if cache else None
+            if not branch_info:
+                branch = frappe.db.sql(
+                    """SELECT name FROM `tabSahayog Branch`
+                       WHERE REPLACE(name, ' ', '') = %s LIMIT 1""",
+                    clean_sb,
+                )
+                if branch:
+                    branch_info = frappe.db.get_value(
+                        "Sahayog Branch", branch[0][0],
+                        ["name", "zone", "region", "district"], as_dict=True
+                    )
+                    if cache and "Sahayog Branch" in cache:
+                        cache["Sahayog Branch"][clean_sb] = branch_info
+            if branch_info:
+                doc.sahayog_branch = branch_info.get("name") if isinstance(branch_info, dict) else branch_info
         elif doc_field == "department":
             doc.department = _ensure_department(csv_val, cache=cache)
         elif doc_field == "reports_to":
-            if frappe.db.exists("Employee", csv_val):
-                doc.reports_to = csv_val
+            emp_name = cache["Employee"].get(csv_val) if cache else None
+            if not emp_name:
+                emp_name = csv_val if frappe.db.exists("Employee", csv_val) else frappe.db.get_value("Employee", {"employee_number": csv_val}, "name")
+                if emp_name and cache:
+                    cache["Employee"][csv_val] = emp_name
+            if emp_name:
+                doc.reports_to = emp_name
         else:
             setattr(doc, doc_field, csv_val)
 
@@ -540,7 +625,7 @@ def _update_employee(emp_name, row_dict, field_map, cache=None):
         if ln and ln != doc.last_name:
             doc.last_name = ln
 
-    _set_sol_fields(doc, row_dict, cache=cache)
+    _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
 
     relieving = doc.relieving_date
     if relieving and getdate(relieving) <= getdate(today()):
@@ -551,12 +636,16 @@ def _update_employee(emp_name, row_dict, field_map, cache=None):
             user.save(ignore_permissions=True)
 
     doc.flags.ignore_mandatory = True
+    doc.flags.ignore_links = True
+    doc.flags.ignore_version = True
     doc.save(ignore_permissions=True)
-    frappe.db.commit()
 
 
-def _set_sol_fields(doc, row_dict, cache=None):
-    existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
+def _set_sol_fields(doc, row_dict, cache=None, existing_cols=None):
+    if existing_cols is None:
+        existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
+    else:
+        existing_cols = set(existing_cols)
 
     sol_id = row_dict.get("sol_id")
     if sol_id:
