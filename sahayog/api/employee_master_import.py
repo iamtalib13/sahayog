@@ -153,7 +153,6 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
         emp_number = row_dict.get(header_for.get("employee_number", "employee_number"), "").strip()
         emp_label = row_dict.get(header_for.get("first_name", "first_name"), "") or f"Row {i}"
 
-        frappe.db.savepoint("emp_row")
         try:
             if not emp_number:
                 result["failed"] += 1
@@ -181,6 +180,7 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
                     result["inserted"] += 1
                     result["inserted_numbers"].append(emp_number)
                     lookup_cache["Employee"][emp_number] = emp_name
+                    frappe.db.commit()
 
             elif mode == "update":
                 if not existing_emp_name:
@@ -189,17 +189,17 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
                     _update_employee(existing_emp_name, row_dict, valid_field_map, cache=lookup_cache, existing_cols=existing_cols)
                     result["updated"] += 1
                     result["updated_numbers"].append(emp_number)
+                    frappe.db.commit()
 
         except _StopRow:
-            frappe.db.rollback(save_point="emp_row")
+            frappe.db.rollback()
             continue
         except Exception as e:
-            frappe.db.rollback(save_point="emp_row")
+            frappe.db.rollback()
             result["failed"] += 1
             result["errors"].append(f"Row {i}: {emp_number or emp_label} - {str(e)}")
 
     frappe.flags.in_import = False
-    frappe.db.commit()
 
     # Save updated lookup_cache back into session cache
     key = CACHE_KEY.format(user=frappe.session.user)
