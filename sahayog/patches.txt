@@ -54,3 +54,4 @@ sahayog.patches.set_employee_branch_from_sol_id
 sahayog.patches.create_holiday_lists
 sahayog.patches.setup_leave_types
 sahayog.patches.import_employee_leave_balances
+sahayog.patches.create_asset_movement_for_assigned_assets

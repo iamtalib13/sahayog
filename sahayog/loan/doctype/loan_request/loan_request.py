@@ -10,6 +10,13 @@ class LoanRequest(Document):
 	def validate(self):
 		self.calculate_vintage()
 
+	def before_save(self):
+		if self.status == "Pending Credit Review":
+			if not self.scheme_code:
+				self.scheme_code = ""
+			if not self.approved_loan_amount:
+				self.approved_loan_amount = ""
+
 	def calculate_vintage(self):
 		"""Auto-calculate vintage/complete days from deposit_date"""
 		if self.deposit_date:
@@ -19,20 +26,15 @@ class LoanRequest(Document):
 
 	@frappe.whitelist()
 	def create_loan_application(self):
-		"""Create Loan Application from approved Loan Request"""
+		"""Return mapped fields for Loan Application creation"""
 		if self.status != "Approved":
 			frappe.throw("Loan Application can only be created from Approved Loan Request")
 
-		loan_application = frappe.get_doc({
-			"doctype": "Loan Application",
+		return {
 			"loan_type": self.loan_type,
 			"branch_code": self.branch,
 			"customer_name": self.customer,
 			"mobile_number": self.mobile_number,
 			"loan_amount": self.approved_loan_amount or self.required_loan_amount,
 			"purpose_of_loan": self.purpose_of_loan,
-		})
-		loan_application.insert()
-		frappe.db.commit()
-
-		return loan_application.name
+		}
