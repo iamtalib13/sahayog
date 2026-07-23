@@ -3,9 +3,6 @@ import frappe
 from frappe import _
 
 def create_user(doc, method):
-    if frappe.flags.in_import:
-        return
-
     if doc.custom_skip_auto_creation != 0:
         return  # Skip if flagged
 
@@ -39,12 +36,11 @@ def create_user(doc, method):
 
         user_doc.insert(ignore_permissions=True)
 
-        # Link User to Employee
+        # Link User to Employee without triggering recursive validations
         doc.user_id = user_doc.name
-        doc.save()
+        doc.db_set("user_id", user_doc.name)
 
         frappe.msgprint(f"Employee record updated with user_id: {user_doc.name}")
-        frappe.db.commit()
 
     except frappe.exceptions.ValidationError as e:
         frappe.throw(_("Validation Error: ") + str(e))
