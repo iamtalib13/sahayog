@@ -541,8 +541,6 @@ def _update_employee(emp_name, row_dict, field_map, cache=None):
             doc.last_name = ln
 
     _set_sol_fields(doc, row_dict, cache=cache)
-    doc.flags.ignore_mandatory = True
-    doc.save(ignore_permissions=True)
 
     relieving = doc.relieving_date
     if relieving and getdate(relieving) <= getdate(today()):
@@ -551,9 +549,9 @@ def _update_employee(emp_name, row_dict, field_map, cache=None):
             user = frappe.get_doc("User", doc.user_id)
             user.enabled = 0
             user.save(ignore_permissions=True)
-        doc.flags.ignore_mandatory = True
-        doc.save(ignore_permissions=True)
 
+    doc.flags.ignore_mandatory = True
+    doc.save(ignore_permissions=True)
     frappe.db.commit()
 
 
