@@ -155,7 +155,7 @@
    "fieldtype": "Select",
    "label": "Entity ID",
    "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
-   "options": "\n9001\n9002"
+   "options": "\n9001\n9002\n90033"
   },
   {
    "default": "RRCDM",
@@ -170,7 +170,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-15 12:10:45.459314",
+ "modified": "2026-07-23 12:15:26.680795",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
