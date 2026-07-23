@@ -51,13 +51,35 @@ DEFAULT_MANDATORY = [
 ]
 
 
+import math
+
+
 @frappe.whitelist()
-def import_employee_master(mode="insert"):
+def init_import_session(mode="insert", batch_size=500):
     setting = frappe.get_doc("Sahayog HR Setting")
     file_url = setting.get("employee_master")
-    print(f"\n===== Employee Master Import [{mode}] =====")
-    print(f"File URL: {file_url}")
+    if not file_url:
+        frappe.throw(_("Please upload an Employee Master file first"))
 
+    rows = _parse_file(file_url)
+    if not rows or len(rows) < 2:
+        frappe.throw(_("File has no data rows"))
+
+    total_rows = len(rows) - 1
+    batch_size = max(1, int(batch_size))
+    total_batches = math.ceil(total_rows / batch_size)
+
+    return {
+        "total_rows": total_rows,
+        "batch_size": batch_size,
+        "total_batches": total_batches,
+    }
+
+
+@frappe.whitelist()
+def process_import_batch(mode="insert", batch_index=0, batch_size=500):
+    setting = frappe.get_doc("Sahayog HR Setting")
+    file_url = setting.get("employee_master")
     if not file_url:
         frappe.throw(_("Please upload an Employee Master file first"))
 
@@ -70,14 +92,17 @@ def import_employee_master(mode="insert"):
 
     headers = [h.strip().lower().replace(" ", "_") for h in rows[0]]
     data_rows = rows[1:]
-    print(f"Headers ({len(headers)}): {headers}")
-    print(f"Data rows: {len(data_rows)}")
 
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
     valid_field_map = _build_field_map(headers, existing_cols, table_mappings)
-    print(f"Field map ({len(valid_field_map)}): {valid_field_map}")
-
     header_for = {v: k for k, v in valid_field_map.items()}
+
+    batch_index = int(batch_index)
+    batch_size = int(batch_size)
+
+    start_idx = batch_index * batch_size
+    end_idx = min((batch_index + 1) * batch_size, len(data_rows))
+    batch_rows = data_rows[start_idx:end_idx]
 
     result = {
         "inserted": 0,
@@ -91,14 +116,14 @@ def import_employee_master(mode="insert"):
 
     frappe.flags.in_import = True
 
-    for i, row in enumerate(data_rows, start=2):
+    for offset, row in enumerate(batch_rows):
+        i = start_idx + offset + 2
         row_dict = _row_to_dict(headers, row)
         emp_number = row_dict.get(header_for.get("employee_number", "employee_number"), "").strip()
         emp_label = row_dict.get(header_for.get("first_name", "first_name"), "") or f"Row {i}"
 
         try:
             if not emp_number:
-                print(f"  Row {i}: SKIP - no employee_number")
                 result["failed"] += 1
                 result["errors"].append(f"Row {i}: {emp_label} - employee_number is missing")
                 continue
@@ -106,7 +131,6 @@ def import_employee_master(mode="insert"):
             for f in mandatory_fields:
                 csv_key = header_for.get(f, f)
                 if not row_dict.get(csv_key):
-                    print(f"  Row {i} [{emp_number}]: FAIL - {f} is required")
                     result["failed"] += 1
                     result["errors"].append(f"Row {i}: {emp_number} - {f} is required")
                     raise _StopRow()
@@ -115,21 +139,17 @@ def import_employee_master(mode="insert"):
 
             if mode == "insert":
                 if existing_emp_name:
-                    print(f"  Row {i} [{emp_number}]: SKIP - already exists as {existing_emp_name}")
                     result["skipped"] += 1
                 else:
                     _create_employee(row_dict, valid_field_map)
-                    print(f"  Row {i} [{emp_number}]: INSERTED")
                     result["inserted"] += 1
                     result["inserted_numbers"].append(emp_number)
 
             elif mode == "update":
                 if not existing_emp_name:
-                    print(f"  Row {i} [{emp_number}]: SKIP - not found")
                     result["skipped"] += 1
                 else:
                     _update_employee(existing_emp_name, row_dict, valid_field_map)
-                    print(f"  Row {i} [{emp_number}]: UPDATED")
                     result["updated"] += 1
                     result["updated_numbers"].append(emp_number)
 
@@ -137,24 +157,54 @@ def import_employee_master(mode="insert"):
             continue
         except Exception as e:
             frappe.db.rollback()
-            print(f"  Row {i} [{emp_number or emp_label}]: EXCEPTION - {e}")
             result["failed"] += 1
             result["errors"].append(f"Row {i}: {emp_number or emp_label} - {str(e)}")
 
     frappe.flags.in_import = False
+    frappe.db.commit()
 
-    print(f"\n----- Result -----")
-    print(f"  Inserted: {result['inserted']}")
-    print(f"  Updated:  {result['updated']}")
-    print(f"  Skipped:  {result['skipped']}")
-    print(f"  Failed:   {result['failed']}")
-    print(f"==================\n")
+    return result
 
-    summary = _build_summary(result, mode)
+
+@frappe.whitelist()
+def finish_import_session(summary_data, mode="insert"):
+    if isinstance(summary_data, str):
+        import json
+        summary_data = json.loads(summary_data)
+
+    summary = _build_summary(summary_data, mode)
     frappe.db.set_value("Sahayog HR Setting", None, "employee_import_summary", summary)
     frappe.db.commit()
 
     return summary
+
+
+@frappe.whitelist()
+def import_employee_master(mode="insert"):
+    init_res = init_import_session(mode=mode, batch_size=500)
+    total_batches = init_res["total_batches"]
+
+    aggregated = {
+        "inserted": 0,
+        "updated": 0,
+        "skipped": 0,
+        "failed": 0,
+        "errors": [],
+        "inserted_numbers": [],
+        "updated_numbers": [],
+    }
+
+    for b in range(total_batches):
+        batch_res = process_import_batch(mode=mode, batch_index=b, batch_size=500)
+        aggregated["inserted"] += batch_res.get("inserted", 0)
+        aggregated["updated"] += batch_res.get("updated", 0)
+        aggregated["skipped"] += batch_res.get("skipped", 0)
+        aggregated["failed"] += batch_res.get("failed", 0)
+        aggregated["errors"].extend(batch_res.get("errors", []))
+        aggregated["inserted_numbers"].extend(batch_res.get("inserted_numbers", []))
+        aggregated["updated_numbers"].extend(batch_res.get("updated_numbers", []))
+
+    return finish_import_session(aggregated, mode=mode)
 
 
 def _resolve_filepath(file_url):
