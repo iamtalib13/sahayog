@@ -298,19 +298,27 @@ def _get_mandatory_fields(table_mappings):
 
 def _build_field_map(headers, existing_cols, table_mappings=None):
     mapping = {}
-    if table_mappings:
-        for m in table_mappings:
-            src = m.get("source_column", "").strip().lower().replace(" ", "_")
-            tgt = m.get("target_field", "").strip()
-            if src and tgt and tgt in existing_cols and src in headers:
-                mapping[src] = tgt
-        return mapping
 
+    # 1. Start with default FIELD_MAP for any columns present in headers
     for h in headers:
         clean = h.strip().lower().replace(" ", "_")
         doc_field = FIELD_MAP.get(clean, clean)
         if doc_field in existing_cols:
             mapping[clean] = doc_field
+        elif f"custom_{doc_field}" in existing_cols:
+            mapping[clean] = f"custom_{doc_field}"
+
+    # 2. Overwrite/supplement with explicit table_mappings from settings child table
+    if table_mappings:
+        for m in table_mappings:
+            src = m.get("source_column", "").strip().lower().replace(" ", "_")
+            tgt = m.get("target_field", "").strip()
+            if src and tgt and src in headers:
+                if tgt in existing_cols:
+                    mapping[src] = tgt
+                elif f"custom_{tgt}" in existing_cols:
+                    mapping[src] = f"custom_{tgt}"
+
     return mapping
 
 
