@@ -27,7 +27,7 @@ frappe.ui.form.on("Sahayog HR Setting", {
 
 function run_batch_import(frm, mode) {
 	const action_label = mode === "insert" ? __("Insert") : __("Update");
-	const batch_size = 500;
+	const batch_size = 250;
 
 	frappe.call({
 		method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.init_import",
@@ -67,10 +67,7 @@ function run_batch_import(frm, mode) {
 				);
 
 				try {
-					const batch_res = await frappe.call({
-						method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.process_batch",
-						args: { mode: mode, batch_index: b, batch_size: batch_size },
-					});
+					const batch_res = await call_batch_with_retry(mode, b, batch_size, 3);
 
 					if (batch_res && batch_res.message) {
 						const m = batch_res.message;
@@ -90,11 +87,14 @@ function run_batch_import(frm, mode) {
 					}
 				} catch (err) {
 					console.error("Error in batch " + (b + 1), err);
-					aggregated.failed += batch_size;
-					let err_msg = "Unknown error";
+					const rows_in_batch = Math.min(batch_size, total_rows - b * batch_size);
+					aggregated.failed += rows_in_batch;
+
+					let err_msg = "Network or server connection error";
 					if (err) {
 						if (typeof err === "string") err_msg = err;
 						else if (err.message) err_msg = err.message;
+						else if (err.statusText && err.status === 0) err_msg = "Network request failed (status 0)";
 						else if (err._server_messages) {
 							try {
 								const msgs = JSON.parse(err._server_messages);
@@ -106,7 +106,7 @@ function run_batch_import(frm, mode) {
 							err_msg = JSON.stringify(err);
 						}
 					}
-					aggregated.errors.push(`Batch ${b + 1} failed: ${err_msg}`);
+					aggregated.errors.push(`Batch ${b + 1} failed after retries: ${err_msg}`);
 				}
 			}
 
@@ -129,4 +129,23 @@ function run_batch_import(frm, mode) {
 			});
 		},
 	});
+}
+
+async function call_batch_with_retry(mode, batch_index, batch_size, max_retries = 3) {
+	for (let attempt = 1; attempt <= max_retries; attempt++) {
+		try {
+			const res = await frappe.call({
+				method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.process_batch",
+				args: { mode: mode, batch_index: batch_index, batch_size: batch_size },
+			});
+			return res;
+		} catch (err) {
+			console.warn(`Batch ${batch_index + 1} attempt ${attempt} failed:`, err);
+			if (attempt === max_retries) {
+				throw err;
+			}
+			// Wait 1.5s before retrying
+			await new Promise((resolve) => setTimeout(resolve, 1500));
+		}
+	}
 }
