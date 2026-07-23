@@ -33,6 +33,29 @@ def send_whatsapp_message(phone_number, message_text):
         elif len(phone_number) > 10 and phone_number.startswith("0"):
             phone_number = "91" + phone_number[1:]
 
+        # Clean and format message_text if it contains HTML (e.g., from Text Editor)
+        if message_text:
+            import re
+            from html import unescape
+            from frappe.utils import strip_html
+
+            # Replace tags with newlines to preserve spacing
+            cleaned_text = re.sub(r'<br\s*/?>', '\n', str(message_text))
+            cleaned_text = re.sub(r'</p\s*>', '\n', cleaned_text)
+            cleaned_text = re.sub(r'</div\s*>', '\n', cleaned_text)
+            cleaned_text = re.sub(r'</li>\s*', '\n', cleaned_text)
+
+            # Strip remaining HTML tags
+            cleaned_text = strip_html(cleaned_text)
+
+            # Unescape HTML entities (like &amp;, &lt;, &gt;, &nbsp;)
+            cleaned_text = unescape(cleaned_text).replace('\xa0', ' ')
+
+            # Replace consecutive multiple newlines with at most 2 newlines
+            cleaned_text = re.sub(r'\n{3,}', '\n\n', cleaned_text)
+            
+            message_text = cleaned_text.strip()
+
         # Construct the payload with proper WhatsApp chatId formatting
         payload = {
             "chatId": f"{phone_number}@c.us",
