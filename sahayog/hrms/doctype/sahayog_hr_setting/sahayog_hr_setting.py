@@ -19,6 +19,24 @@ def update_employees():
     return import_employee_master(mode="update")
 
 
+@frappe.whitelist()
+def init_import(mode="insert", batch_size=500):
+    from sahayog.api.employee_master_import import init_import_session
+    return init_import_session(mode=mode, batch_size=batch_size)
+
+
+@frappe.whitelist()
+def process_batch(mode="insert", batch_index=0, batch_size=500):
+    from sahayog.api.employee_master_import import process_import_batch
+    return process_import_batch(mode=mode, batch_index=batch_index, batch_size=batch_size)
+
+
+@frappe.whitelist()
+def finish_import(mode="insert", summary_data=None):
+    from sahayog.api.employee_master_import import finish_import_session
+    return finish_import_session(summary_data=summary_data, mode=mode)
+
+
 # -----------------------------
 # Email Notification Decorator
 # -----------------------------

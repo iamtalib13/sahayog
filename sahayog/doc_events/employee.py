@@ -72,13 +72,14 @@ def department_sync(doc, method):
     val = val.strip()
     if not val:
         return
-    existing = frappe.db.get_value("Department", {"department_name": val}, "name")
+    title_dep = val.title()
+    existing = frappe.db.get_value("Department", {"department_name": title_dep}, "name") or frappe.db.get_value("Department", {"department_name": val}, "name")
     if existing:
         doc.department = existing
     else:
         new = frappe.get_doc({
             "doctype": "Department",
-            "department_name": val.upper(),
+            "department_name": title_dep,
         }).insert(ignore_permissions=True)
         doc.department = new.name
 
