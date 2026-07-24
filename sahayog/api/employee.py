@@ -785,8 +785,14 @@ def update_employee_profile(employee, data):
     for k in allowed_fields:
         if k in data:
             val = data[k]
+            if isinstance(val, str):
+                val = val.strip()
+            
             if val == "" or val is None:
-                update[k] = None
+                if k in ["ctc", "custom_staff_loan_emi"]:
+                    update[k] = 0.0
+                else:
+                    update[k] = None
             else:
                 update[k] = val
     # Remap frontend key to actual DB column
