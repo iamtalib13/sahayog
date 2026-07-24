@@ -286,7 +286,7 @@
         </button>
         <div class="dropdown-menu active-users-dropdown-menu dropdown-menu-right" role="menu">
           <div class="active-users-header">
-            <span class="active-users-header-title">Online Team Members</span>
+            <span class="active-users-header-title">Online Users</span>
             <span class="active-users-header-dot" id="active-users-header-dot">0 Online</span>
           </div>
           <div class="active-users-body-list" id="active-users-body-list">
