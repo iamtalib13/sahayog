@@ -13363,6 +13363,7 @@
       showAssetIdPopup: false,
       showAssetIdDetail: false,
       editedAssetId: '',
+      assetIdEdited: false,
       showSkipModal: false,
       currentApprovalStage: "",
       reassignForm: {
@@ -13980,6 +13981,7 @@
       editAssetId() {
         if (!this.projectedAssetId) return;
         this.editedAssetId = this.projectedAssetId.full_id;
+        this.assetIdEdited = true;
         this.showAssetIdPopup = true;
       },
       closeAssetIdPopup() {
@@ -13996,6 +13998,7 @@
           if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
           if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
           if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
+          this.createAssetForm.asset_name = this.editedAssetId;
         }
         this.showAssetIdPopup = false;
       },
@@ -14013,6 +14016,7 @@
         if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
         if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
         if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
+        this.createAssetForm.asset_name = this.editedAssetId;
       },
       copyAssetId(text) {
         navigator.clipboard.writeText(text).then(() => {
@@ -15869,6 +15873,7 @@
               indicator: "green",
             });
             this.showAssetCreateView = false;
+            this.assetIdEdited = false;
             await this.fetchData("Asset");
           }
         } catch (e) {
@@ -17193,10 +17198,14 @@
         };
 
         // Create Stock Entry
-        const res = await frappe.call({
-          method: "frappe.client.insert",
-          args: { doc: stockEntry },
-        });
+          const res = await frappe.call({
+            method: this.assetIdEdited
+              ? "sahayog.doc_events.asset.create_asset_ignore_links"
+              : "frappe.client.insert",
+            args: this.assetIdEdited
+              ? { doc_data: doc }
+              : { doc },
+          });
 
         if (res.message) {
           // Submit the Stock Entry
@@ -17588,9 +17597,15 @@
             })),
           };
 
+          const insertMethod = this.assetIdEdited
+            ? "sahayog.doc_events.asset.create_asset_ignore_links"
+            : "frappe.client.insert";
+          const insertArgs = this.assetIdEdited
+            ? { doc_data: doc }
+            : { doc };
           const res = await frappe.call({
-            method: "frappe.client.insert",
-            args: { doc: emrDoc },
+            method: insertMethod,
+            args: insertArgs,
           });
 
           if (res.message && res.message.name) {

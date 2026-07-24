@@ -125,6 +125,21 @@ def custom_asset_autoname(doc, method):
 
 
 @frappe.whitelist()
+def create_asset_ignore_links(doc_data):
+    import json
+    if isinstance(doc_data, str):
+        doc_data = json.loads(doc_data)
+
+    doc = frappe.new_doc("Asset")
+    for key, value in doc_data.items():
+        doc.set(key, value)
+
+    doc.insert(ignore_permissions=True, ignore_links=True)
+    frappe.db.commit()
+    return {"name": doc.name}
+
+
+@frappe.whitelist()
 def remove_serial_numbers(assets):
     import json
     if isinstance(assets, str):
