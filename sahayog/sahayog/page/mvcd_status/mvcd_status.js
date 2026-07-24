@@ -467,11 +467,15 @@ h4 {
   function fetchBatches() {
     frappe.call({
       method: "sahayog.sahayog.page.mvcd_status.mvcd.get_batch_data",
+      btn: $("#manual-refresh"),
       callback: (r) => {
         batchData = r.message || {};
         renderBatchButtons();
         applyFilter();
       },
+      error: (err) => {
+        frappe.show_alert({ message: __('Failed to load batch wise progress data'), indicator: 'red' }, 5);
+      }
     });
   }
 
@@ -637,7 +641,7 @@ h4 {
       onMVCDDataLoaded(mvcdDummy);
       onTransactionDataLoaded(transDummy);
       updateLastRefreshTime();
-      frappe.show_alert(__('Dashboard loaded successfully'), 5);
+      frappe.show_alert({ message: __('Dashboard loaded successfully'), indicator: 'green' }, 5);
     } else {
       let completedRequests = 0;
       let hasError = false;
@@ -648,9 +652,9 @@ h4 {
           if (!hasError) {
             updateLastRefreshTime();
             if (force) {
-              frappe.show_alert(__('Dashboard refreshed successfully'), 5);
+              frappe.show_alert({ message: __('Dashboard refreshed successfully'), indicator: 'green' }, 5);
             } else {
-              frappe.show_alert(__('Dashboard loaded successfully'), 5);
+              frappe.show_alert({ message: __('Dashboard loaded successfully'), indicator: 'green' }, 5);
             }
           }
         }
@@ -660,13 +664,19 @@ h4 {
       frappe.call({
         method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
         args: { force: force },
+        btn: force ? $("#manual-refresh") : null,
         callback: (r) => {
           if (r.message && r.message.status === "success") {
             onMVCDDataLoaded(r.message.data || []);
           } else {
             hasError = true;
-            frappe.show_alert(__('Error fetching MVCD status'), 5);
+            frappe.show_alert({ message: __('Error fetching MVCD status'), indicator: 'red' }, 5);
           }
+          onRequestCompleted();
+        },
+        error: (err) => {
+          hasError = true;
+          frappe.show_alert({ message: __('Connection Error: Failed to fetch MVCD status'), indicator: 'red' }, 5);
           onRequestCompleted();
         }
       });
@@ -675,13 +685,19 @@ h4 {
       frappe.call({
         method: "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
         args: { force: force },
+        btn: force ? $("#manual-refresh") : null,
         callback: (r) => {
           if (r.message && r.message.status === "success") {
             onTransactionDataLoaded(r.message.data || []);
           } else {
             hasError = true;
-            frappe.show_alert(__('Error fetching pending transactions'), 5);
+            frappe.show_alert({ message: __('Error fetching pending transactions'), indicator: 'red' }, 5);
           }
+          onRequestCompleted();
+        },
+        error: (err) => {
+          hasError = true;
+          frappe.show_alert({ message: __('Connection Error: Failed to fetch pending transactions'), indicator: 'red' }, 5);
           onRequestCompleted();
         }
       });
