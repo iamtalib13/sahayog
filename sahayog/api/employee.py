@@ -754,6 +754,7 @@ def update_employee_profile(employee, data):
     if any(r in roles for r in ["HR Manager", "Administrator"]):
         allowed_fields.append("ctc")
         allowed_fields.append("custom_staff_loan_emi")
+        allowed_fields.append("custom_medical_deduction")
 
     # Map frontend keys (custom_pan_number / custom_aadhar_number / custom_uhid_number) to actual DB column names
     _col_map = {}
@@ -789,7 +790,7 @@ def update_employee_profile(employee, data):
                 val = val.strip()
             
             if val == "" or val is None:
-                if k in ["ctc", "custom_staff_loan_emi"]:
+                if k in ["ctc", "custom_staff_loan_emi", "custom_medical_deduction"]:
                     update[k] = 0.0
                 else:
                     update[k] = None
@@ -831,7 +832,7 @@ def get_employee_profile(employee):
         "cell_number", "personal_email", "permanent_address", "current_address",
         "bank_name", "bank_ac_no", "reports_to",
         "marital_status", "blood_group", "ctc", "custom_staff_loan_emi",
-        "custom_resignation_letter", "default_shift", "custom_division",
+        "custom_medical_deduction", "custom_resignation_letter", "default_shift", "custom_division",
         "company",
     ]
     for f in ("custom_pan_number", "pan_number", "custom_aadhar_number", "custom_uhid_number"):
@@ -858,6 +859,8 @@ def get_employee_profile(employee):
     # hide salary from HR User (only HR Manager sees it)
     if "HR Manager" not in roles and "Administrator" not in roles:
         e["ctc"] = None
+        e["custom_staff_loan_emi"] = None
+        e["custom_medical_deduction"] = None
 
     return e
 

@@ -5567,7 +5567,7 @@
           <div class="dash-section"><div class="dash-sec-title">Banking</div>
             ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
           </div>
-          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}</div>` : ""}
+          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}${row("Staff Loan EMI", "₹ " + Number(e.custom_staff_loan_emi || 0).toLocaleString("en-IN"))}${row("Medical Deduction", "₹ " + Number(e.custom_medical_deduction || 0).toLocaleString("en-IN"))}</div>` : ""}
         `;
       }
 
@@ -5648,10 +5648,11 @@
             </div>
             ${
               isHRMgr
-                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Loan <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Medical Deduction</label>${inp("custom_medical_deduction", e.custom_medical_deduction, "number")}</div>
               </div>
             </div>`
                 : ""
