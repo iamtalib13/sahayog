@@ -228,7 +228,7 @@ def get_currently_logged_in_users():
     Accessible to all logged-in desk users.
     """
     try:
-        # Fetch active sessions excluding Guest
+        # Fetch active sessions active today, excluding Guest
         sessions = frappe.db.sql("""
             SELECT DISTINCT
                 s.user as email,
@@ -241,6 +241,7 @@ def get_currently_logged_in_users():
                 `tabUser` u ON s.user = u.name
             WHERE 
                 s.user NOT IN ('Guest')
+                AND s.lastupdate >= CURDATE()
             ORDER BY 
                 s.lastupdate DESC
         """, as_dict=True)
