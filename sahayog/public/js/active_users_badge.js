@@ -7,19 +7,31 @@
   // Inject Styles
   const style = document.createElement("style");
   style.innerHTML = `
+    .active-users-svg-icon {
+      stroke: currentColor !important;
+      fill: none !important;
+      stroke-width: 2.2px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
     .active-users-count-badge {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 700;
       background-color: var(--green-500, #28a745);
       color: #fff;
-      padding: 1px 5px;
+      padding: 1px 4px;
       border-radius: 10px;
       position: absolute;
-      top: 4px;
-      right: -2px;
+      top: 6px;
+      right: 4px;
       line-height: 1;
       border: 1.5px solid var(--card-bg, #fff);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
       transition: transform 0.2s ease-in-out;
     }
     
@@ -262,16 +274,14 @@
   function injectBadge(navbarNav) {
     const badgeHTML = `
       <li class="nav-item dropdown dropdown-active-users dropdown-mobile" style="position: relative;">
-        <button class="btn-reset nav-link active-users-icon text-muted" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Active Users">
-          <div style="position: relative; display: inline-block;">
-            <svg class="es-icon icon-sm" style="stroke: currentColor; fill: none; vertical-align: middle;" viewBox="0 0 24 24" width="18" height="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <span class="active-users-pulse"></span>
-          </div>
+        <button class="btn-reset nav-link active-users-icon text-muted" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Active Users" style="position: relative; display: flex; align-items: center; justify-content: center; height: 40px; width: 40px; padding: 0;">
+          <svg class="active-users-svg-icon" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span class="active-users-pulse"></span>
           <span class="active-users-count-badge" id="active-users-count-badge">0</span>
         </button>
         <div class="dropdown-menu active-users-dropdown-menu dropdown-menu-right" role="menu">
