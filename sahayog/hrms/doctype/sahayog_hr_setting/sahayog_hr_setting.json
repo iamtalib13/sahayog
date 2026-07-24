@@ -4,17 +4,20 @@
  "creation": "2025-11-26 13:15:12.566907",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
-  "enable_email_notifications",
-  "cc_settings_sb",
-  "unauthorized_absence_cc",
-  "disciplinary_case_cc",
-  "employee_master_section",
-  "employee_master",
-  "field_mapping_sb",
-  "field_mappings",
-  "employee_import_summary"
- ],
+  "field_order": [
+   "enable_email_notifications",
+   "cc_settings_sb",
+   "unauthorized_absence_cc",
+   "disciplinary_case_cc",
+   "stamp_settings_sb",
+   "common_hr_stamp",
+   "ex_parte_enquiry_stamp",
+   "employee_master_section",
+   "employee_master",
+   "field_mapping_sb",
+   "field_mappings",
+   "employee_import_summary"
+  ],
  "fields": [
   {
    "default": "0",
@@ -32,13 +35,28 @@
    "fieldtype": "Small Text",
    "label": "Unauthorized Absence CC (Fixed IDs)"
   },
-  {
-   "fieldname": "disciplinary_case_cc",
-   "fieldtype": "Small Text",
-   "label": "Disciplinary Case CC (Fixed IDs)"
-  },
-  {
-   "fieldname": "employee_master_section",
+   {
+    "fieldname": "disciplinary_case_cc",
+    "fieldtype": "Small Text",
+    "label": "Disciplinary Case CC (Fixed IDs)"
+   },
+   {
+    "fieldname": "stamp_settings_sb",
+    "fieldtype": "Section Break",
+    "label": "Stamp Settings"
+   },
+   {
+    "fieldname": "common_hr_stamp",
+    "fieldtype": "Attach Image",
+    "label": "Common HR Stamp"
+   },
+   {
+    "fieldname": "ex_parte_enquiry_stamp",
+    "fieldtype": "Attach Image",
+    "label": "Ex-Parte Enquiry Stamp"
+   },
+   {
+    "fieldname": "employee_master_section",
    "fieldtype": "Section Break",
    "label": "Employee Master"
   },
