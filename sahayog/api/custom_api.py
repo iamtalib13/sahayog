@@ -221,13 +221,33 @@ def get_assigned_task_count(user=None):
         frappe.log_error(f"Error getting assigned task count: {str(e)}")
         return 0
 
+def has_cxo_access(user):
+    """
+    Checks if a user is authorized to view active sessions.
+    Only Administrator or Employees with 'cxo_level' checked are allowed.
+    """
+    if user == "Administrator":
+        return True
+    return bool(frappe.db.get_value("Employee", {"user_id": user, "cxo_level": 1}))
+
+@frappe.whitelist()
+def check_cxo_access():
+    """
+    Whitelisted endpoint to check if the current session user has CXO level access.
+    """
+    return {"has_access": has_cxo_access(frappe.session.user)}
+
 @frappe.whitelist()
 def get_currently_logged_in_users():
     """
     Returns active logged-in users list and count.
-    Accessible to all logged-in desk users.
+    Accessible to all logged-in desk users who have CXO level access.
     """
     try:
+        # Check authorization
+        if not has_cxo_access(frappe.session.user):
+            frappe.throw(_("You are not authorized to view active sessions."), frappe.PermissionError)
+
         # Fetch active sessions in the last 15 minutes, excluding Guest
         sessions = frappe.db.sql("""
             SELECT DISTINCT

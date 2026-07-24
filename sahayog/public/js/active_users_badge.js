@@ -385,6 +385,13 @@
 
   // Initialize
   $(document).ready(() => {
-    setupActiveUsersBadge();
+    frappe.call({
+      method: "sahayog.api.custom_api.check_cxo_access",
+      callback: function (r) {
+        if (r.message && r.message.has_access) {
+          setupActiveUsersBadge();
+        }
+      }
+    });
   });
 })();
