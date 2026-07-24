@@ -2,7 +2,7 @@ import frappe
 
 
 def execute():
-    from frappe.utils import getdate
+    from frappe.utils import getdate, today
 
     updated = 0
     not_found = []
@@ -34,6 +34,15 @@ def execute():
         frappe.db.set_value("Employee", emp.name, "date_of_joining", new_doj)
         updated += 1
         print(f"UPDATED: {emp.employee_name} - DOJ {old_doj} -> {new_doj}")
+
+        allocs = frappe.db.get_all(
+            "Leave Allocation",
+            {"employee": emp.name, "docstatus": 1, "from_date": [">", today()]},
+            ["name", "leave_type", "from_date"],
+        )
+        for al in allocs:
+            frappe.db.set_value("Leave Allocation", al.name, "from_date", new_doj, update_modified=False)
+            print(f"  ALLOC FIXED: {al.leave_type} from_date {al.from_date} -> {new_doj}")
 
     print(f"\nDone! Updated: {updated}")
     if not_found:
