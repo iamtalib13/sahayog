@@ -639,22 +639,50 @@ h4 {
       updateLastRefreshTime();
       frappe.show_alert(__('Dashboard loaded successfully'), 5);
     } else {
-      frappe.call({
-        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_dashboard_data",
-        args: { force: force },
-        callback: (r) => {
-          if (r.message && r.message.status === "success") {
-            onMVCDDataLoaded(r.message.mvcd_data || []);
-            onTransactionDataLoaded(r.message.trans_data || []);
+      let completedRequests = 0;
+      let hasError = false;
+
+      const onRequestCompleted = () => {
+        completedRequests++;
+        if (completedRequests === 2) {
+          if (!hasError) {
             updateLastRefreshTime();
             if (force) {
               frappe.show_alert(__('Dashboard refreshed successfully'), 5);
             } else {
               frappe.show_alert(__('Dashboard loaded successfully'), 5);
             }
-          } else if (r.message && r.message.status === "error") {
-            frappe.show_alert(__('Error fetching dashboard data: {0}', [r.message.message]), 5);
           }
+        }
+      };
+
+      // 1. Fetch MVCD Status
+      frappe.call({
+        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
+        args: { force: force },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            onMVCDDataLoaded(r.message.data || []);
+          } else {
+            hasError = true;
+            frappe.show_alert(__('Error fetching MVCD status'), 5);
+          }
+          onRequestCompleted();
+        }
+      });
+
+      // 2. Fetch Pending Transactions
+      frappe.call({
+        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
+        args: { force: force },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            onTransactionDataLoaded(r.message.data || []);
+          } else {
+            hasError = true;
+            frappe.show_alert(__('Error fetching pending transactions'), 5);
+          }
+          onRequestCompleted();
         }
       });
     }
