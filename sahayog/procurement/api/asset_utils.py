@@ -92,10 +92,13 @@ def get_available_assets():
         if asset_id not in asset_movement_map:
             asset_movement_map[asset_id] = mv
     
-    # 6. Filter available assets (exclude Assigned and Available - they have their own boards)
+    # 6. Filter available assets (exclude Assigned - they have their own board)
     available_assets = []
     for asset in all_assets:
-        if asset.status in ("Assigned", "Available"):
+        if asset.status == "Assigned":
+            continue
+        if asset.status == "Available":
+            available_assets.append(asset)
             continue
         mv = asset_movement_map.get(asset.name)
         if not mv:
