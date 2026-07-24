@@ -286,10 +286,10 @@
       </li>
     `;
 
-    // Try to insert before notification dropdown or append
+    // Try to insert after notification dropdown or append
     const notificationsDropdown = navbarNav.querySelector(".dropdown-notifications");
     if (notificationsDropdown) {
-      notificationsDropdown.insertAdjacentHTML("beforebegin", badgeHTML);
+      notificationsDropdown.insertAdjacentHTML("afterend", badgeHTML);
     } else {
       navbarNav.insertAdjacentHTML("beforeend", badgeHTML);
     }
