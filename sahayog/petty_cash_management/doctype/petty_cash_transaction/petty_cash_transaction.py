@@ -279,6 +279,8 @@ class PettyCashTransaction(Document):
             self.source_bank_account = account_name[0][0]
 
     def validate(self):
+        # Validate Active Expense Categories
+        self.validate_active_expense_categories()
 
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
@@ -1269,6 +1271,22 @@ class PettyCashTransaction(Document):
                 frappe.throw(
                     f"Row #{row.idx}: Description cannot be more than 30 characters including spaces."
                 )
+
+    def validate_active_expense_categories(self):
+        for row in self.items:
+            if row.expense_category:
+                is_active = frappe.db.get_value(
+                    "Expense Category",
+                    row.expense_category,
+                    "is_active"
+                )
+
+                if not cint(is_active):
+                    frappe.throw(
+                        _("Row #{0}: Expense Category {1} is inactive and cannot be used.").format(
+                            row.idx, row.expense_category
+                        )
+                    )
 
     def is_legacy_unsettled_cash_flow_enabled(self):
         return cint(
