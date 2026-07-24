@@ -13969,9 +13969,12 @@
         let brand_name = (this.createAssetForm.brand || '').toUpperCase();
         parts.push(brand_name || '[BRAND]');
 
+        let serial = this.createAssetForm.serial_no || '[SERIAL NO]';
+        parts.push(serial);
+
         return {
           parts: parts,
-          full_id: parts.join('/') + '/[SERIAL NO]'
+          full_id: parts.join('/')
         };
       },
       editAssetId() {
