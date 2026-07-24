@@ -324,7 +324,7 @@
       method: "sahayog.api.custom_api.get_currently_logged_in_users",
       callback: function (r) {
         if (r.message && r.message.status === "success") {
-          updateUI(r.message.total_logged_in_users, r.message.users);
+          updateUI(r.message.total_logged_in_users, r.message.users, r.message.has_cxo_access);
         }
       },
       error: function () {
@@ -334,7 +334,7 @@
   }
 
   // Update UI Elements
-  function updateUI(count, users) {
+  function updateUI(count, users, hasCxoAccess) {
     const badge = document.getElementById("active-users-count-badge");
     const headerDot = document.getElementById("active-users-header-dot");
     const bodyList = document.getElementById("active-users-body-list");
@@ -343,6 +343,21 @@
     if (headerDot) headerDot.innerText = `${count} Online`;
 
     if (!bodyList) return;
+
+    // Check if user is not authorized for details
+    if (!hasCxoAccess) {
+      bodyList.innerHTML = `
+        <div class="active-users-empty-state" style="padding: 24px 16px; text-align: center;">
+          <svg class="es-icon icon-md mb-2" style="width: 24px; height: 24px; stroke: var(--text-muted, #64748b); fill: none;" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-color, #1e293b);">Access Restricted</div>
+          <div style="font-size: 10.5px; color: var(--text-muted, #64748b); margin-top: 4px; line-height: 1.4;">Only CXO level users can view active member details.</div>
+        </div>
+      `;
+      return;
+    }
 
     if (!users || users.length === 0) {
       bodyList.innerHTML = `
@@ -385,13 +400,6 @@
 
   // Initialize
   $(document).ready(() => {
-    frappe.call({
-      method: "sahayog.api.custom_api.check_cxo_access",
-      callback: function (r) {
-        if (r.message && r.message.has_access) {
-          setupActiveUsersBadge();
-        }
-      }
-    });
+    setupActiveUsersBadge();
   });
 })();

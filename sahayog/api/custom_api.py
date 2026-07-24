@@ -241,13 +241,10 @@ def check_cxo_access():
 def get_currently_logged_in_users():
     """
     Returns active logged-in users list and count.
-    Accessible to all logged-in desk users who have CXO level access.
+    Count is accessible to all logged-in desk users.
+    Detail list is restricted to CXO level users and Administrator.
     """
     try:
-        # Check authorization
-        if not has_cxo_access(frappe.session.user):
-            frappe.throw(_("You are not authorized to view active sessions."), frappe.PermissionError)
-
         # Fetch active sessions in the last 15 minutes, excluding Guest
         sessions = frappe.db.sql("""
             SELECT DISTINCT
@@ -288,11 +285,16 @@ def get_currently_logged_in_users():
                 }
         
         users_list = list(unique_users.values())
+        total_count = len(users_list)
+        
+        # Check authorization for details
+        is_cxo = has_cxo_access(frappe.session.user)
         
         return {
             "status": "success",
-            "total_logged_in_users": len(users_list),
-            "users": users_list
+            "total_logged_in_users": total_count,
+            "has_cxo_access": is_cxo,
+            "users": users_list if is_cxo else []
         }
     except Exception as e:
         frappe.log_error(f"Error in get_currently_logged_in_users: {str(e)}")
