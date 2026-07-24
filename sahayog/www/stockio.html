@@ -1374,6 +1374,64 @@
   </aside>
 
   <!-- Custom Asset Action Modal -->
+  <!-- Asset ID Popup -->
+  <div v-if="showAssetIdPopup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center;" @click.self="closeAssetIdPopup">
+    <div style="background: white; padding: 28px 32px; border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
+      <button @click="closeAssetIdPopup" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer; color: #999;">&times;</button>
+      <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #1e293b;">Edit Asset ID</h3>
+      <div style="font-family: monospace; font-size: 13px; color: #64748b; margin-bottom: 18px; word-break: break-all;">
+        [[ projectedAssetId.full_id ]]
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Zone</label>
+          <input type="text" class="form-input" v-model="createAssetForm.zone" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">State</label>
+          <input type="text" class="form-input" v-model="createAssetForm.state" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Location / Branch</label>
+          <input type="text" class="form-input" v-model="createAssetForm.branch_name" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Division</label>
+          <input type="text" class="form-input" v-model="createAssetForm.division" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Asset Code (Item)</label>
+          <input type="text" class="form-input" :value="createAssetForm.item_name || createAssetForm.item_code" @input="createAssetForm.item_name = $event.target.value" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Brand</label>
+          <input type="text" class="form-input" v-model="createAssetForm.brand" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+        <div style="grid-column: 1 / -1;">
+          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Serial No</label>
+          <input type="text" class="form-input" v-model="createAssetForm.serial_no" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; padding: 12px 16px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #2980b9;">
+        <span style="font-size: 12px; color: #64748b; font-weight: 600;">Preview:</span>
+        <div style="font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; margin-top: 4px; word-break: break-all;">
+          [[ projectedAssetId.full_id ]]
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; justify-content: space-between;">
+        <button @click="copyAssetId(projectedAssetId.full_id)" style="padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+          <i class="fas fa-copy" style="margin-right: 6px;"></i> Copy
+        </button>
+        <button @click="closeAssetIdPopup" style="padding: 8px 20px; background: #2980b9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="showAssetActionModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
     <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
@@ -13302,6 +13360,7 @@
       assetActionFields: [],
       assetActionData: {},
       showMovementCreateView: false,
+      showAssetIdPopup: false,
       showSkipModal: false,
       currentApprovalStage: "",
       reassignForm: {
@@ -13912,6 +13971,18 @@
           parts: parts,
           full_id: parts.join('/') + '/[SERIAL NO]'
         };
+      },
+      editAssetId() {
+        if (!this.projectedAssetId) return;
+        this.showAssetIdPopup = true;
+      },
+      closeAssetIdPopup() {
+        this.showAssetIdPopup = false;
+      },
+      copyAssetId(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
+        });
       },
       get filteredWarehouses() {
         let q = "";
