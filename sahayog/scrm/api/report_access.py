@@ -66,7 +66,11 @@ def get_branch_map(sol_ids):
 
 def get_employee_map(lead_owners):
     if not lead_owners: return {}
-    employees = frappe.get_all("Employee", filters={"user_id": ["in", lead_owners]}, fields=["employee_name", "employee_number", "designation", "user_id"])
+    employees = frappe.get_all(
+        "Employee",
+        filters={"user_id": ["in", lead_owners], "status": "Active"},
+        fields=["employee_name", "employee_number", "designation", "user_id"]
+    )
     return {e.user_id: e for e in employees}
 
 def empty_stats():
