@@ -220,3 +220,62 @@ def get_assigned_task_count(user=None):
     except Exception as e:
         frappe.log_error(f"Error getting assigned task count: {str(e)}")
         return 0
+
+@frappe.whitelist()
+def get_currently_logged_in_users():
+    """
+    Returns active logged-in users list and count.
+    Accessible to all logged-in desk users.
+    """
+    try:
+        # Fetch active sessions excluding Guest
+        sessions = frappe.db.sql("""
+            SELECT DISTINCT
+                s.user as email,
+                u.full_name,
+                s.ipaddress,
+                s.lastupdate
+            FROM 
+                `tabSessions` s
+            LEFT JOIN 
+                `tabUser` u ON s.user = u.name
+            WHERE 
+                s.user NOT IN ('Guest')
+            ORDER BY 
+                s.lastupdate DESC
+        """, as_dict=True)
+        
+        # Unique list of logged in users
+        unique_users = {}
+        for session in sessions:
+            email = session.get("email")
+            if not email:
+                continue
+            if email not in unique_users:
+                lastupdate_str = ""
+                if session.get("lastupdate"):
+                    try:
+                        lastupdate_str = frappe.utils.format_datetime(session.get("lastupdate"), "hh:mm a")
+                    except Exception:
+                        pass
+                
+                unique_users[email] = {
+                    "email": email,
+                    "full_name": session.get("full_name") or email,
+                    "ipaddress": session.get("ipaddress") or "",
+                    "lastupdate": lastupdate_str
+                }
+        
+        users_list = list(unique_users.values())
+        
+        return {
+            "status": "success",
+            "total_logged_in_users": len(users_list),
+            "users": users_list
+        }
+    except Exception as e:
+        frappe.log_error(f"Error in get_currently_logged_in_users: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
