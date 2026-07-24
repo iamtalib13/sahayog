@@ -220,3 +220,85 @@ def get_assigned_task_count(user=None):
     except Exception as e:
         frappe.log_error(f"Error getting assigned task count: {str(e)}")
         return 0
+
+def has_cxo_access(user):
+    """
+    Checks if a user is authorized to view active sessions.
+    Only Administrator or Employees with 'cxo_level' checked are allowed.
+    """
+    if user == "Administrator":
+        return True
+    return bool(frappe.db.get_value("Employee", {"user_id": user, "cxo_level": 1}))
+
+@frappe.whitelist()
+def check_cxo_access():
+    """
+    Whitelisted endpoint to check if the current session user has CXO level access.
+    """
+    return {"has_access": has_cxo_access(frappe.session.user)}
+
+@frappe.whitelist()
+def get_currently_logged_in_users():
+    """
+    Returns active logged-in users list and count.
+    Count is accessible to all logged-in desk users.
+    Detail list is restricted to CXO level users and Administrator.
+    """
+    try:
+        # Fetch active sessions in the last 15 minutes, excluding Guest
+        sessions = frappe.db.sql("""
+            SELECT DISTINCT
+                s.user as email,
+                u.full_name,
+                s.ipaddress,
+                s.lastupdate
+            FROM 
+                `tabSessions` s
+            LEFT JOIN 
+                `tabUser` u ON s.user = u.name
+            WHERE 
+                s.user NOT IN ('Guest')
+                AND s.lastupdate >= NOW() - INTERVAL 15 MINUTE
+            ORDER BY 
+                s.lastupdate DESC
+        """, as_dict=True)
+        
+        # Unique list of logged in users
+        unique_users = {}
+        for session in sessions:
+            email = session.get("email")
+            if not email:
+                continue
+            if email not in unique_users:
+                lastupdate_str = ""
+                if session.get("lastupdate"):
+                    try:
+                        lastupdate_str = frappe.utils.format_datetime(session.get("lastupdate"), "hh:mm a")
+                    except Exception:
+                        pass
+                
+                unique_users[email] = {
+                    "email": email,
+                    "full_name": session.get("full_name") or email,
+                    "ipaddress": session.get("ipaddress") or "",
+                    "lastupdate": lastupdate_str
+                }
+        
+        users_list = list(unique_users.values())
+        total_count = len(users_list)
+        
+        # Check authorization for details
+        is_cxo = has_cxo_access(frappe.session.user)
+        
+        return {
+            "status": "success",
+            "total_logged_in_users": total_count,
+            "has_cxo_access": is_cxo,
+            "users": users_list if is_cxo else []
+        }
+    except Exception as e:
+        frappe.log_error(f"Error in get_currently_logged_in_users: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
