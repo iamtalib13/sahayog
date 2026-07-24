@@ -282,7 +282,12 @@ h4 {
 </div>
 
 <!-- Filter applied message -->
-<div id="filter-message" style="text-align:center; font-size:0.8rem; color:#256a69; margin-bottom:12px;">
+<div id="filter-message" style="text-align:center; font-size:0.8rem; color:#256a69; margin-bottom:4px;">
+</div>
+
+<!-- Last Refreshed Time -->
+<div id="last-refresh-time" style="text-align:center; font-size:0.75rem; color:#6b7280; margin-bottom:12px; font-weight: 500;">
+  Last Refreshed: --:-- --
 </div>
 
 <div class="container-flex">
@@ -615,10 +620,23 @@ h4 {
     updateTransactionCount(currentTransData.length);
   }
 
+  function updateLastRefreshTime() {
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const hoursStr = String(hours).padStart(2, "0");
+    const timeStr = `${hoursStr}:${minutes} ${ampm}`;
+    $("#last-refresh-time").html(`<span style="color: #6b7280;">Last Refreshed:</span> <span style="font-weight: 600; color: #256a69;">${timeStr}</span>`);
+  }
+
   function fetchDashboardData(force = false) {
     if (DEBUG) {
       onMVCDDataLoaded(mvcdDummy);
       onTransactionDataLoaded(transDummy);
+      updateLastRefreshTime();
     } else {
       frappe.call({
         method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_dashboard_data",
@@ -627,6 +645,7 @@ h4 {
           if (r.message && r.message.status === "success") {
             onMVCDDataLoaded(r.message.mvcd_data || []);
             onTransactionDataLoaded(r.message.trans_data || []);
+            updateLastRefreshTime();
           } else if (r.message && r.message.status === "error") {
             frappe.msgprint(__("Error fetching dashboard data: {0}", [r.message.message]));
           }
