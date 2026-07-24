@@ -1374,6 +1374,64 @@
   </aside>
 
   <!-- Custom Asset Action Modal -->
+  <!-- Asset ID Popup -->
+  <div v-if="showAssetIdPopup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center;" @click.self="closeAssetIdPopup">
+    <div style="background: white; padding: 28px 32px; border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
+      <button @click="closeAssetIdPopup" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer; color: #999;">&times;</button>
+      <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">Edit Asset ID</h3>
+      <input type="text" v-model="editedAssetId" @input="onAssetIdInput" style="width: 100%; font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; padding: 12px 16px; background: #eff6ff; border: 2px solid #2980b9; border-radius: 8px; outline: none; box-sizing: border-box; word-break: break-all;" />
+
+      <!-- Collapsible Detail -->
+      <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <button @click="showAssetIdDetail = !showAssetIdDetail" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border: none; cursor: pointer; font-size: 13px; font-weight: 600; color: #475569;">
+          <span>Details</span>
+          <i :class="showAssetIdDetail ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" style="font-size: 12px; color: #94a3b8;"></i>
+        </button>
+        <div v-if="showAssetIdDetail" style="padding: 14px; border-top: 1px solid #e2e8f0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Zone</label>
+              <input type="text" class="form-input" v-model="createAssetForm.zone" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">State</label>
+              <input type="text" class="form-input" v-model="createAssetForm.state" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Location / Branch</label>
+              <input type="text" class="form-input" v-model="createAssetForm.branch_name" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Division</label>
+              <input type="text" class="form-input" v-model="createAssetForm.division" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Asset Code (Item)</label>
+              <input type="text" class="form-input" :value="createAssetForm.item_name || createAssetForm.item_code" @input="createAssetForm.item_name = $event.target.value" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Brand</label>
+              <input type="text" class="form-input" v-model="createAssetForm.brand" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Serial No</label>
+              <input type="text" class="form-input" v-model="createAssetForm.serial_no" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; justify-content: space-between;">
+        <button @click="copyAssetId(projectedAssetId.full_id)" style="padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+          <i class="fas fa-copy" style="margin-right: 6px;"></i> Copy
+        </button>
+        <button @click="closeAssetIdPopup" style="padding: 8px 20px; background: #2980b9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="showAssetActionModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
     <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
@@ -1551,7 +1609,7 @@
           ">
               <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
               <span style="font-weight: 600; color: #2980b9;">
-                  [[ projectedAssetId.parts.slice(0, -1).join('/') + '/' ]]
+                  [[ projectedAssetId.parts.slice(0, -2).join('/') + '/' ]]
                   <span :style="{ color: createAssetForm.brand ? 'inherit' : '#ef4444' }">
                       [[ createAssetForm.brand ? createAssetForm.brand.toUpperCase() : '[BRAND]' ]]
                   </span>
@@ -1561,6 +1619,9 @@
                   </span>
               </span>
           </div>
+          <button v-if="showAssetCreateView && projectedAssetId" @click="editAssetId" style="background: none; border: none; cursor: pointer; margin-left: 8px; color: #64748b; font-size: 14px;" title="Edit Asset ID">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
           
 <!-- Inventory Flow Display -->
 <div
@@ -13299,6 +13360,10 @@
       assetActionFields: [],
       assetActionData: {},
       showMovementCreateView: false,
+      showAssetIdPopup: false,
+      showAssetIdDetail: false,
+      editedAssetId: '',
+      assetIdEdited: false,
       showSkipModal: false,
       currentApprovalStage: "",
       reassignForm: {
@@ -13905,10 +13970,58 @@
         let brand_name = (this.createAssetForm.brand || '').toUpperCase();
         parts.push(brand_name || '[BRAND]');
 
+        let serial = this.createAssetForm.serial_no || '[SERIAL NO]';
+        parts.push(serial);
+
         return {
           parts: parts,
-          full_id: parts.join('/') + '/[SERIAL NO]'
+          full_id: parts.join('/')
         };
+      },
+      editAssetId() {
+        if (!this.projectedAssetId) return;
+        this.editedAssetId = this.projectedAssetId.full_id;
+        this.assetIdEdited = true;
+        this.showAssetIdPopup = true;
+      },
+      closeAssetIdPopup() {
+        if (this.editedAssetId) {
+          const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
+          if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
+          if (parts.length >= 3) {
+            const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
+            const stateCode = parts[2].toUpperCase();
+            this.createAssetForm.state = stateMap[stateCode] || parts[2];
+          }
+          if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
+          if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
+          if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
+          if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
+          if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
+          this.createAssetForm.asset_name = this.editedAssetId;
+        }
+        this.showAssetIdPopup = false;
+      },
+      onAssetIdInput() {
+        if (!this.editedAssetId) return;
+        const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
+        if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
+        if (parts.length >= 3) {
+          const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
+          const stateCode = parts[2].toUpperCase();
+          this.createAssetForm.state = stateMap[stateCode] || parts[2];
+        }
+        if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
+        if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
+        if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
+        if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
+        if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
+        this.createAssetForm.asset_name = this.editedAssetId;
+      },
+      copyAssetId(text) {
+        navigator.clipboard.writeText(text).then(() => {
+          frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
+        });
       },
       get filteredWarehouses() {
         let q = "";
@@ -15760,6 +15873,7 @@
               indicator: "green",
             });
             this.showAssetCreateView = false;
+            this.assetIdEdited = false;
             await this.fetchData("Asset");
           }
         } catch (e) {
@@ -17084,10 +17198,14 @@
         };
 
         // Create Stock Entry
-        const res = await frappe.call({
-          method: "frappe.client.insert",
-          args: { doc: stockEntry },
-        });
+          const res = await frappe.call({
+            method: this.assetIdEdited
+              ? "sahayog.doc_events.asset.create_asset_ignore_links"
+              : "frappe.client.insert",
+            args: this.assetIdEdited
+              ? { doc_data: doc }
+              : { doc },
+          });
 
         if (res.message) {
           // Submit the Stock Entry
@@ -17479,9 +17597,15 @@
             })),
           };
 
+          const insertMethod = this.assetIdEdited
+            ? "sahayog.doc_events.asset.create_asset_ignore_links"
+            : "frappe.client.insert";
+          const insertArgs = this.assetIdEdited
+            ? { doc_data: doc }
+            : { doc };
           const res = await frappe.call({
-            method: "frappe.client.insert",
-            args: { doc: emrDoc },
+            method: insertMethod,
+            args: insertArgs,
           });
 
           if (res.message && res.message.name) {
