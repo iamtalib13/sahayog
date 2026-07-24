@@ -1451,6 +1451,12 @@ def get_category_limit_status(branch, category, transaction_date, docname=None):
         limit = category_doc.metro_limit
     elif branch_type == "Zonal":
         limit = category_doc.zonal_limit
+        # if category_doc.zonal_limit != 0:
+        #     limit = category_doc.zonal_limit
+        # else:
+        #     frappe.db.set_value("Expense Category",
+        #                         category, "zonal_limit", 10)
+        #     limit = category_doc.zonal_limit
     else:
         limit = category_doc.non_metro_limit
 
