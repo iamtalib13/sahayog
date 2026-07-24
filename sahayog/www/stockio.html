@@ -1561,6 +1561,9 @@
                   </span>
               </span>
           </div>
+          <button v-if="showAssetCreateView && projectedAssetId" @click="editAssetId" style="background: none; border: none; cursor: pointer; margin-left: 8px; color: #64748b; font-size: 14px;" title="Edit Asset ID">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
           
 <!-- Inventory Flow Display -->
 <div
