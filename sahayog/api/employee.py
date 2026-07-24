@@ -743,6 +743,12 @@ def update_employee_profile(employee, data):
         "designation", "department", "branch", "reports_to",
         "bank_name", "bank_ac_no", "blood_group", "marital_status",
         "employment_type",
+        "first_name", "middle_name", "last_name", "employee_name",
+        "gender", "date_of_birth", "date_of_joining",
+        "final_confirmation_date", "status",
+        "sahayog_branch", "custom_zone", "custom_region", "custom_district",
+        "relieving_date", "resignation_letter_date",
+        "default_shift", "custom_division", "company", "current_address",
     ]
     # salary & loan only for HR Manager / Admin
     if any(r in roles for r in ["HR Manager", "Administrator"]):
@@ -764,19 +770,42 @@ def update_employee_profile(employee, data):
     elif "custom_uhid_number" in _emp_cols:
         allowed_fields.append("custom_uhid_number")
 
+    # Handle employee code change
+    if "employee_number" in data and data["employee_number"] != employee:
+        from frappe.utils import now
+        new_code = data["employee_number"].strip()
+        if not new_code:
+            frappe.throw(_("Employee code cannot be empty"))
+        if frappe.db.exists("Employee", new_code):
+            frappe.throw(_("Employee code {0} already exists").format(new_code))
+        frappe.rename_doc("Employee", employee, new_code, force=True)
+        employee = new_code
+
     update = {}
     for k in allowed_fields:
         if k in data:
-            update[k] = data[k]
+            val = data[k]
+            if val == "" or val is None:
+                update[k] = None
+            else:
+                update[k] = val
     # Remap frontend key to actual DB column
     for frontend_key, db_col in _col_map.items():
         if frontend_key in data:
-            update[db_col] = data[frontend_key]
+            update[db_col] = data[frontend_key] or None
     if not update:
-        frappe.throw(_("No valid fields to update"))
+        return {"success": True, "message": _("No changes")}
 
     frappe.db.set_value("Employee", employee, update)
-    return {"success": True, "message": _("Employee {0} updated successfully").format(employee)}
+
+    # Update user full name if employee_name changed
+    if "employee_name" in update:
+        user = frappe.db.get_value("Employee", employee, "user_id")
+        if user:
+            frappe.db.set_value("User", user, "full_name", update["employee_name"])
+
+    msg = _("Employee {0} updated successfully").format(employee)
+    return {"success": True, "message": msg, "employee": employee}
 
 
 @frappe.whitelist()
@@ -787,14 +816,17 @@ def get_employee_profile(employee):
 
     _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
     _profile_fields = [
-        "name", "employee_name", "gender", "date_of_birth", "date_of_joining",
+        "name", "employee_number", "employee_name",
+        "first_name", "middle_name", "last_name",
+        "gender", "date_of_birth", "date_of_joining",
         "final_confirmation_date", "status", "relieving_date", "resignation_letter_date",
         "designation", "department", "employment_type", "branch", "sahayog_branch",
         "custom_zone", "custom_region", "custom_district",
-        "cell_number", "personal_email", "permanent_address",
+        "cell_number", "personal_email", "permanent_address", "current_address",
         "bank_name", "bank_ac_no", "reports_to",
         "marital_status", "blood_group", "ctc", "custom_staff_loan_emi",
-        "custom_resignation_letter",
+        "custom_resignation_letter", "default_shift", "custom_division",
+        "company",
     ]
     for f in ("custom_pan_number", "pan_number", "custom_aadhar_number", "custom_uhid_number"):
         if f in _emp_cols:
