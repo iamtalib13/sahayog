@@ -80,108 +80,91 @@ def test_db_connection():
     
 
 @frappe.whitelist(allow_guest=False)
-def get_mvcd_status(tran_date=None):
+def get_mvcd_dashboard_data(tran_date=None, force=False):
     """
-    Fetch MVCD Status for the given date (default: today)
-    """
-    try:
-        if not tran_date:
-            tran_date = date.today().strftime("%Y-%m-%d")
-        
-        conn = db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        sql = """
-            SELECT DISTINCT tran_id, a.dth_init_sol_id, b.sol_desc, tran_type, tran_sub_type, entry_user_id
-            FROM tbaadm.dtd a, tbaadm.sol b
-            WHERE pstd_flg ='N'
-              AND a.del_flg ='N'
-              AND a.dth_init_sol_id = b.sol_id
-              AND tran_date = %s
-        """
-        cursor.execute(sql, (tran_date,))
-        rows = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        return {"status": "success", "data": rows}
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "MVCD Status Query Error")
-        return {"status": "error", "message": str(e)}
-
-
-
-
-@frappe.whitelist(allow_guest=False)
-def get_pending_transactions(tran_date=None):
-    """
-    Fetch MVCD Status for the given date (default: today).
-    Returns default data if no records found.
+    Fetch both MVCD status and pending transactions in a single DB connection,
+    caching results to avoid database connection overload.
     """
     try:
         if not tran_date:
             tran_date = date.today().strftime("%Y-%m-%d")
             
+        cache_key = f"mvcd_dashboard_data:{tran_date}"
         
+        # Check cache unless forced to refresh
+        if not frappe.parse_json(force):
+            cached_data = frappe.cache().get_value(cache_key)
+            if cached_data:
+                return cached_data
+                
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         
-        sql = """
-            SELECT DISTINCT tran_id, a.dth_init_sol_id, b.sol_desc, tran_type, tran_sub_type, entry_user_id
-            FROM tbaadm.dtd a, tbaadm.sol b
-            WHERE pstd_flg ='N'
-              AND a.del_flg ='N'
-              AND a.dth_init_sol_id = b.sol_id
-              AND tran_date = %s
-        """
-        cursor.execute(sql, (tran_date,))
-        rows = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        
-        return {"status": "success", "data": rows}
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "MVCD Status Query Error")
-        return {"status": "error", "message": str(e)}
-
-
-
-
-
-@frappe.whitelist(allow_guest=False)
-def get_mvcd_status():
-    """
-    Fetch Pending Transactions where clr_bal_amt != 0 and bacid in specific list
-    """
-    try:
+        # Query 1: MVCD Status (gam table)
         bacid_list = (
             '11002001','11002002','11002003','11002004',
             '11002005','11002006','11002007','11002008'
         )
-
-        conn = db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        
-        sql = """
+        mvcd_sql = """
             SELECT a.sol_id, b.sol_desc, a.acct_name, a.foracid, a.clr_bal_amt
             FROM tbaadm.gam a, tbaadm.sol b
             WHERE a.bacid IN %s
               AND a.clr_bal_amt != '0'
               AND a.sol_id = b.sol_id
         """
-        cursor.execute(sql, (bacid_list,))
-        rows = cursor.fetchall()
+        cursor.execute(mvcd_sql, (bacid_list,))
+        mvcd_data = cursor.fetchall()
+        
+        # Query 2: Pending Transactions (dtd table)
+        trans_sql = """
+            SELECT DISTINCT tran_id, a.dth_init_sol_id, b.sol_desc, tran_type, tran_sub_type, entry_user_id
+            FROM tbaadm.dtd a, tbaadm.sol b
+            WHERE pstd_flg ='N'
+              AND a.del_flg ='N'
+              AND a.dth_init_sol_id = b.sol_id
+              AND tran_date = %s
+        """
+        cursor.execute(trans_sql, (tran_date,))
+        trans_data = cursor.fetchall()
         
         cursor.close()
         conn.close()
         
-        return {"status": "success", "data": rows}
+        result = {
+            "status": "success",
+            "mvcd_data": mvcd_data,
+            "trans_data": trans_data
+        }
+        
+        # Cache results for 10 seconds to throttle concurrent request storm
+        frappe.cache().set_value(cache_key, result, expires_in_sec=10)
+        
+        return result
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Pending Transactions Query Error")
+        frappe.log_error(frappe.get_traceback(), "MVCD Dashboard Data Query Error")
         return {"status": "error", "message": str(e)}
+
+
+@frappe.whitelist(allow_guest=False)
+def get_mvcd_status(tran_date=None):
+    """
+    Backward-compatible wrapper to fetch MVCD Status.
+    """
+    res = get_mvcd_dashboard_data(tran_date=tran_date)
+    if res.get("status") == "success":
+        return {"status": "success", "data": res.get("mvcd_data", [])}
+    return res
+
+
+@frappe.whitelist(allow_guest=False)
+def get_pending_transactions(tran_date=None):
+    """
+    Backward-compatible wrapper to fetch Pending Transactions.
+    """
+    res = get_mvcd_dashboard_data(tran_date=tran_date)
+    if res.get("status") == "success":
+        return {"status": "success", "data": res.get("trans_data", [])}
+    return res
 
 @frappe.whitelist()
 def get_batch_data():

@@ -36,23 +36,31 @@ body, .page-container {background: #fafbfc !important;}
 }
 
 .custom-card {
-    height: 32px;
+    height: 48px;
     margin-bottom: 0px;
-    padding: 0 1rem;
-    border-radius: 9px;
+    padding: 0 1.5rem;
+    border-radius: 12px;
     color: #256a69;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
-    font-size: 2.5rem;
+    font-weight: 700;
+    font-size: 2.8rem;
     cursor: default;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     width: fit-content;
     max-width: 320px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.custom-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 106, 105, 0.1);
 }
 
 h4 {
@@ -66,35 +74,40 @@ h4 {
 .table-wrap {
     width: 100%;
     background: #fff;
-    border-radius: 9px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     margin-bottom: 24px;
-    border: 1px solid #ececec;
-    overflow-x: hidden;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
 }
 .table {
     font-size: 0.61rem;
     border-collapse: separate;
     background: #fff;
-    border-radius: 0 0 9px 9px;
+    border-radius: 0 0 12px 12px;
     width: 100%;
     min-width: 180px;
     table-layout: fixed;
 }
 .table thead th {
     font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
     background: #256a69;
     color: #fff;
     position: sticky;
     top: 0;
     z-index: 10;
-    padding: 7px 4px;
+    padding: 10px 8px;
 }
 .table th, .table td {
-    padding: 5px;
+    padding: 8px;
     word-wrap: break-word;
     text-overflow: ellipsis;
     max-width: 120px;
+}
+.table td {
+    color: #374151;
 }
 .table tbody {
     display: block;
@@ -105,6 +118,12 @@ h4 {
     scroll-behavior: smooth;
 }
 .table thead, .table tbody tr {display: table; width: 100%; table-layout: fixed;}
+.table tbody tr {
+    transition: background-color 0.2s;
+}
+.table tbody tr:hover {
+    background-color: rgba(37, 106, 105, 0.05) !important;
+}
 .table tbody tr:nth-child(odd) {background-color: #f5f8f7;}
 .table tbody tr:nth-child(even) {background-color: #eaf1f0;}
 .no-data {padding: 13px;text-align: center;color: #555;font-size: 0.8rem;}
@@ -122,7 +141,7 @@ h4 {
   white-space: nowrap;
 }
 
-/* Keyframe animation for counting */
+/* Keyframe animations */
 @keyframes count-to {
   0% {
     transform: scale(0.9);
@@ -134,9 +153,29 @@ h4 {
   }
 }
 
+@keyframes liquid-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--glow-color);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+.status-badge-liquid {
+  transition: all 0.2s ease-in-out;
+}
+.status-badge-liquid:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--glow-color);
+}
+
 .counter {
   display: inline-block;
-  font-size: 2.5rem; /* Adjust this based on your design */
+  font-size: 2.5rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-weight: 600;
   color: #256a69;
@@ -145,6 +184,74 @@ h4 {
 
 .page-head.flex {
   display: none !important;
+}
+
+/* Glassmorphism for Dialog Modals */
+.modal-content {
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 10px 40px 0 rgba(37, 106, 105, 0.15) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+.modal-backdrop.show {
+  background-color: rgba(37, 106, 105, 0.2) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  transition: all 0.3s ease;
+}
+
+/* Filter Input and Action Buttons */
+#sol-filter {
+  padding: 8px 14px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  width: 200px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+  outline: none !important;
+}
+#sol-filter:focus {
+  border-color: #256a69 !important;
+  box-shadow: 0 0 0 3px rgba(37, 106, 105, 0.15) !important;
+}
+#apply-filter, #manual-refresh {
+  margin-left: 6px !important;
+  padding: 8px 16px !important;
+  background: #256a69 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s, transform 0.1s !important;
+}
+#apply-filter:hover, #manual-refresh:hover {
+  background-color: #1e5554 !important;
+}
+#apply-filter:active, #manual-refresh:active {
+  transform: scale(0.96) !important;
+}
+#clear-filter {
+  margin-left: 6px !important;
+  padding: 8px 16px !important;
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s, color 0.2s, transform 0.1s !important;
+}
+#clear-filter:hover {
+  background-color: #e5e7eb !important;
+  color: #1f2937 !important;
+}
+#clear-filter:active {
+  transform: scale(0.96) !important;
 }
 </style>
 
@@ -491,8 +598,7 @@ h4 {
   });
 
   $("#manual-refresh").on("click", function () {
-    fetchRenderMVCD();
-    fetchRenderTransaction();
+    fetchDashboardData(true);
     fetchBatches();
   });
 
@@ -509,36 +615,28 @@ h4 {
     updateTransactionCount(currentTransData.length);
   }
 
-  function fetchRenderMVCD() {
+  function fetchDashboardData(force = false) {
     if (DEBUG) {
       onMVCDDataLoaded(mvcdDummy);
-    } else {
-      frappe.call({
-        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_status",
-        args: {},
-        callback: (r) => onMVCDDataLoaded(r.message?.data || []),
-      });
-    }
-  }
-
-  function fetchRenderTransaction() {
-    if (DEBUG) {
       onTransactionDataLoaded(transDummy);
     } else {
       frappe.call({
-        method:
-          "sahayog.sahayog.page.mvcd_status.mvcd.get_pending_transactions",
-        args: {},
-        callback: (r) => onTransactionDataLoaded(r.message?.data || []),
+        method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_dashboard_data",
+        args: { force: force },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            onMVCDDataLoaded(r.message.mvcd_data || []);
+            onTransactionDataLoaded(r.message.trans_data || []);
+          } else if (r.message && r.message.status === "error") {
+            frappe.msgprint(__("Error fetching dashboard data: {0}", [r.message.message]));
+          }
+        }
       });
     }
   }
 
-  fetchRenderMVCD();
-  fetchRenderTransaction();
+  fetchDashboardData();
   fetchBatches();
-  setInterval(fetchRenderMVCD, 10000);
-  setInterval(fetchRenderTransaction, 10000);
 
   applyFilter();
 
