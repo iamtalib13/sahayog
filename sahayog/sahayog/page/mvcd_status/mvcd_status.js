@@ -637,6 +637,7 @@ h4 {
       onMVCDDataLoaded(mvcdDummy);
       onTransactionDataLoaded(transDummy);
       updateLastRefreshTime();
+      frappe.show_alert(__('Dashboard loaded successfully'), 5);
     } else {
       frappe.call({
         method: "sahayog.sahayog.page.mvcd_status.mvcd.get_mvcd_dashboard_data",
@@ -646,8 +647,13 @@ h4 {
             onMVCDDataLoaded(r.message.mvcd_data || []);
             onTransactionDataLoaded(r.message.trans_data || []);
             updateLastRefreshTime();
+            if (force) {
+              frappe.show_alert(__('Dashboard refreshed successfully'), 5);
+            } else {
+              frappe.show_alert(__('Dashboard loaded successfully'), 5);
+            }
           } else if (r.message && r.message.status === "error") {
-            frappe.msgprint(__("Error fetching dashboard data: {0}", [r.message.message]));
+            frappe.show_alert(__('Error fetching dashboard data: {0}', [r.message.message]), 5);
           }
         }
       });
