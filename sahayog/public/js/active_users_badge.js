@@ -311,11 +311,6 @@
 
     // Run first load
     fetchActiveUsers(false);
-
-    // Setup periodic polling every 45 seconds
-    setInterval(() => {
-      fetchActiveUsers(false);
-    }, 45000);
   }
 
   // Fetch active users list
