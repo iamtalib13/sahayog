@@ -1378,46 +1378,48 @@
   <div v-if="showAssetIdPopup" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center;" @click.self="closeAssetIdPopup">
     <div style="background: white; padding: 28px 32px; border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
       <button @click="closeAssetIdPopup" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer; color: #999;">&times;</button>
-      <h3 style="margin: 0 0 6px 0; font-size: 16px; color: #1e293b;">Edit Asset ID</h3>
-      <div style="font-family: monospace; font-size: 13px; color: #64748b; margin-bottom: 18px; word-break: break-all;">
+      <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">Edit Asset ID</h3>
+      <div style="font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; padding: 12px 16px; background: #eff6ff; border-radius: 8px; border-left: 4px solid #2980b9; word-break: break-all; margin-bottom: 16px;">
         [[ projectedAssetId.full_id ]]
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Zone</label>
-          <input type="text" class="form-input" v-model="createAssetForm.zone" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">State</label>
-          <input type="text" class="form-input" v-model="createAssetForm.state" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Location / Branch</label>
-          <input type="text" class="form-input" v-model="createAssetForm.branch_name" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Division</label>
-          <input type="text" class="form-input" v-model="createAssetForm.division" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Asset Code (Item)</label>
-          <input type="text" class="form-input" :value="createAssetForm.item_name || createAssetForm.item_code" @input="createAssetForm.item_name = $event.target.value" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div>
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Brand</label>
-          <input type="text" class="form-input" v-model="createAssetForm.brand" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-        <div style="grid-column: 1 / -1;">
-          <label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Serial No</label>
-          <input type="text" class="form-input" v-model="createAssetForm.serial_no" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
-        </div>
-      </div>
-
-      <div style="margin-top: 18px; padding: 12px 16px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #2980b9;">
-        <span style="font-size: 12px; color: #64748b; font-weight: 600;">Preview:</span>
-        <div style="font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; margin-top: 4px; word-break: break-all;">
-          [[ projectedAssetId.full_id ]]
+      <!-- Collapsible Detail -->
+      <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        <button @click="showAssetIdDetail = !showAssetIdDetail" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; border: none; cursor: pointer; font-size: 13px; font-weight: 600; color: #475569;">
+          <span>Details</span>
+          <i :class="showAssetIdDetail ? 'fas fa-chevron-up' : 'fas fa-chevron-down'" style="font-size: 12px; color: #94a3b8;"></i>
+        </button>
+        <div v-if="showAssetIdDetail" style="padding: 14px; border-top: 1px solid #e2e8f0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Zone</label>
+              <input type="text" class="form-input" v-model="createAssetForm.zone" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">State</label>
+              <input type="text" class="form-input" v-model="createAssetForm.state" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Location / Branch</label>
+              <input type="text" class="form-input" v-model="createAssetForm.branch_name" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Division</label>
+              <input type="text" class="form-input" v-model="createAssetForm.division" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Asset Code (Item)</label>
+              <input type="text" class="form-input" :value="createAssetForm.item_name || createAssetForm.item_code" @input="createAssetForm.item_name = $event.target.value" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Brand</label>
+              <input type="text" class="form-input" v-model="createAssetForm.brand" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+            <div style="grid-column: 1 / -1;">
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; text-transform: uppercase;">Serial No</label>
+              <input type="text" class="form-input" v-model="createAssetForm.serial_no" style="width: 100%; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -13361,6 +13363,7 @@
       assetActionData: {},
       showMovementCreateView: false,
       showAssetIdPopup: false,
+      showAssetIdDetail: false,
       showSkipModal: false,
       currentApprovalStage: "",
       reassignForm: {
