@@ -1379,7 +1379,7 @@
     <div style="background: white; padding: 28px 32px; border-radius: 12px; width: 560px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative;">
       <button @click="closeAssetIdPopup" style="position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer; color: #999;">&times;</button>
       <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">Edit Asset ID</h3>
-      <input type="text" v-model="editedAssetId" style="width: 100%; font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; padding: 12px 16px; background: #eff6ff; border: 2px solid #2980b9; border-radius: 8px; outline: none; box-sizing: border-box; word-break: break-all;" />
+      <input type="text" v-model="editedAssetId" @input="onAssetIdInput" style="width: 100%; font-family: monospace; font-size: 14px; font-weight: 600; color: #1e40af; padding: 12px 16px; background: #eff6ff; border: 2px solid #2980b9; border-radius: 8px; outline: none; box-sizing: border-box; word-break: break-all;" />
 
       <!-- Collapsible Detail -->
       <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
@@ -1609,7 +1609,7 @@
           ">
               <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
               <span style="font-weight: 600; color: #2980b9;">
-                  [[ projectedAssetId.parts.slice(0, -1).join('/') + '/' ]]
+                  [[ projectedAssetId.parts.slice(0, -2).join('/') + '/' ]]
                   <span :style="{ color: createAssetForm.brand ? 'inherit' : '#ef4444' }">
                       [[ createAssetForm.brand ? createAssetForm.brand.toUpperCase() : '[BRAND]' ]]
                   </span>
@@ -13983,7 +13983,36 @@
         this.showAssetIdPopup = true;
       },
       closeAssetIdPopup() {
+        if (this.editedAssetId) {
+          const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
+          if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
+          if (parts.length >= 3) {
+            const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
+            const stateCode = parts[2].toUpperCase();
+            this.createAssetForm.state = stateMap[stateCode] || parts[2];
+          }
+          if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
+          if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
+          if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
+          if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
+          if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
+        }
         this.showAssetIdPopup = false;
+      },
+      onAssetIdInput() {
+        if (!this.editedAssetId) return;
+        const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
+        if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
+        if (parts.length >= 3) {
+          const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
+          const stateCode = parts[2].toUpperCase();
+          this.createAssetForm.state = stateMap[stateCode] || parts[2];
+        }
+        if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
+        if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
+        if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
+        if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
+        if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
       },
       copyAssetId(text) {
         navigator.clipboard.writeText(text).then(() => {
