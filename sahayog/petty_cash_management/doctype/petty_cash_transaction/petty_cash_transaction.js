@@ -432,24 +432,46 @@ frappe.ui.form.on('Petty Cash Transaction', {
         });
     },
 
+    // onload: function (frm) {
+    //     if (frm.is_new()) {
+    //         frm.set_value('transaction_date', frappe.datetime.get_today());
+    //         frm.set_value('amount', 0);
+
+    //         // Fetch Branch from Employee
+    //         frappe.db.get_value('Employee',
+    //             { user_id: frappe.session.user, status: 'Active' },
+    //             'sahayog_branch'
+    //         ).then(r => {
+    //             if (r && r.message && r.message.sahayog_branch) {
+    //                 let user_branch = r.message.sahayog_branch;
+    //                 frm.set_value('branch', user_branch);
+    //                 frm.trigger('fetch_balance');
+    //             }
+    //         });
+    //     }
+    // },
+
     onload: function (frm) {
         if (frm.is_new()) {
             frm.set_value('transaction_date', frappe.datetime.get_today());
             frm.set_value('amount', 0);
 
-            // Fetch Branch from Employee
-            frappe.db.get_value('Employee',
+            frappe.db.get_value(
+                'Employee',
                 { user_id: frappe.session.user, status: 'Active' },
                 'sahayog_branch'
             ).then(r => {
                 if (r && r.message && r.message.sahayog_branch) {
-                    let user_branch = r.message.sahayog_branch;
-                    frm.set_value('branch', user_branch);
+                    frm.set_value('branch', r.message.sahayog_branch);
                     frm.trigger('fetch_balance');
+                    check_branch_wallet_status(frm);
                 }
             });
         }
+
+        check_branch_wallet_status(frm);
     },
+
 
     branch: function (frm) {
         frm.trigger('fetch_balance');
@@ -672,4 +694,30 @@ function set_custom_business_status(frm) {
 
     frm.page.clear_indicator();
     frm.page.set_indicator(__(status), color);
+}
+
+function check_branch_wallet_status(frm) {
+    if (!frm.doc.branch) return;
+
+    frappe.call({
+        method: "sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.check_branch_wallet_active",
+        args: {
+            branch: frm.doc.branch
+        },
+        callback: function (res) {
+            if (res.message && ["inactive", "not_found"].includes(res.message.status)) {
+                frappe.msgprint({
+                    title: __('Branch Validation'),
+                    indicator: 'red',
+                    message: __(res.message.message)
+                });
+
+                if (frm.is_new()) {
+                    frm.set_value('branch', '');
+                    frm.set_value('current_branch_balance', 0);
+                    frm.set_value('current_unsettled_cash', 0);
+                }
+            }
+        }
+    });
 }

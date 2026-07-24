@@ -282,6 +282,8 @@ class PettyCashTransaction(Document):
         # Validate Active Expense Categories
         self.validate_active_expense_categories()
 
+        self.validate_branch_wallet_status()
+
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
 
@@ -1287,6 +1289,29 @@ class PettyCashTransaction(Document):
                             row.idx, row.expense_category
                         )
                     )
+
+    def validate_branch_wallet_status(self):
+        if not self.branch:
+            return
+
+        wallet_status = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": self.branch},
+            "status"
+        )
+
+        if not wallet_status:
+            frappe.throw(
+                _("Branch Petty Cash Account for branch '{0}' not found.").format(
+                    self.branch)
+            )
+
+        if wallet_status != "Active":
+            frappe.throw(
+                _("Cannot create Petty Cash Transaction for branch '{0}' because Branch Petty Cash Account status is '{1}', not Active.").format(
+                    self.branch, wallet_status
+                )
+            )
 
     def is_legacy_unsettled_cash_flow_enabled(self):
         return cint(
@@ -2571,3 +2596,29 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
         "filecontent": filedata,
         "recordcount": len(transaction_names)
     }
+
+
+@frappe.whitelist()
+def check_branch_wallet_active(branch):
+    if not branch:
+        return {"status": "missing"}
+
+    wallet_status = frappe.db.get_value(
+        "Branch Petty Cash Account",
+        {"branch": branch},
+        "status"
+    )
+
+    if not wallet_status:
+        return {
+            "status": "not_found",
+            "message": _("Branch Petty Cash Account not found for branch {0}.").format(branch)
+        }
+
+    if wallet_status != "Active":
+        return {
+            "status": "inactive",
+            "message": _("Branch Petty Cash Account for branch {0} is {1}. Transactions are not allowed.").format(branch, wallet_status)
+        }
+
+    return {"status": "active"}
