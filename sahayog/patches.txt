@@ -56,4 +56,5 @@ sahayog.patches.setup_leave_types
 sahayog.patches.import_employee_leave_balances
 sahayog.patches.create_asset_movement_for_assigned_assets
 sahayog.patches.rename_region_to_uppercase
+sahayog.patches.update_employee_date_of_joining
 
