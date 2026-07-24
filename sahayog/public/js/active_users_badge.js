@@ -247,7 +247,7 @@
   function setupActiveUsersBadge() {
     // Wait until .navbar-nav exists and isn't already customized
     const checkInterval = setInterval(() => {
-      const navbarNav = document.querySelector(".navbar-nav");
+      const navbarNav = document.querySelector(".navbar-collapse .navbar-nav");
       if (navbarNav && !document.querySelector(".dropdown-active-users")) {
         clearInterval(checkInterval);
         injectBadge(navbarNav);
