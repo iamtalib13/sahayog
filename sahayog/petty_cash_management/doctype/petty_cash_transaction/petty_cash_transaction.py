@@ -1032,7 +1032,7 @@ class PettyCashTransaction(Document):
         # 2. Define CSV Headers
         headers = [
             "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-            "Total Amount", "Wallet Balance", "Cash in Hand",
+            "Total Amount", "Wallet Balance",  # "Cash in Hand",
             "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
             "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
             # Child Item Fields
@@ -1059,7 +1059,7 @@ class PettyCashTransaction(Document):
                 self.transaction_type,
                 fmt(self.amount),
                 fmt(self.current_branch_balance),
-                fmt(self.current_unsettled_cash),
+                # fmt(self.current_unsettled_cash),
                 self.approval_status,
                 fmt(self.amount_within_limit),
                 fmt(self.amount_exceeding_limit),
@@ -1995,7 +1995,7 @@ def download_consolidated_excel_api(transaction_date=None):
         "Type",
         "Total Amount",
         "Wallet Balance",
-        "Cash in Hand",
+        # "Cash in Hand",
         "Approval Status",
         "Within Limit",
         "Exceeding Limit",
@@ -2047,7 +2047,7 @@ def download_consolidated_excel_api(transaction_date=None):
                 doc.transaction_type,
                 "{:.2f}".format(doc.amount or 0),
                 "{:.2f}".format(doc.current_branch_balance or 0),
-                "{:.2f}".format(doc.current_unsettled_cash or 0),
+                # "{:.2f}".format(doc.current_unsettled_cash or 0),
                 doc.approval_status,
                 "{:.2f}".format(doc.amount_within_limit or 0),
                 "{:.2f}".format(doc.amount_exceeding_limit or 0),
@@ -2374,7 +2374,7 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
 
     headers = [
         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-        "Total Amount", "Wallet Balance", "Cash in Hand",
+        "Total Amount", "Wallet Balance",  # "Cash in Hand",
         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
         "Expense Category", "Vendor", "Bill No", "Bill Date", "Item Amount",
@@ -2433,7 +2433,7 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
                     doc.transaction_type,
                     fmt(doc.amount),
                     fmt(doc.current_branch_balance),
-                    fmt(doc.current_unsettled_cash),
+                    # fmt(doc.current_unsettled_cash),
                     doc.approval_status,
                     fmt(doc.amount_within_limit),
                     fmt(doc.amount_exceeding_limit),
