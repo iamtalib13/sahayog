@@ -51,7 +51,7 @@ def get_available_assets():
     all_assets = frappe.db.get_all(
         "Asset",
         filters={"docstatus": ["in", [0, 1]], "status": ["!=", "Scrapped"]},
-        fields=["name", "serial_no", "item_code", "location", "zone"],
+        fields=["name", "serial_no", "item_code", "location", "zone", "status"],
         limit_page_length=0,
         ignore_permissions=True
     )
@@ -80,7 +80,7 @@ def get_available_assets():
     # 4. Get all Asset Movement Items to check movements
     movement_items = frappe.db.get_all(
         "Asset Movement Item",
-        fields=["asset", "source_location", "from_employee"],
+        fields=["asset", "source_location", "from_employee", "to_employee"],
         limit_page_length=0,
         ignore_permissions=True
     )
@@ -92,13 +92,15 @@ def get_available_assets():
         if asset_id not in asset_movement_map:
             asset_movement_map[asset_id] = mv
     
-    # 6. Filter available assets
+    # 6. Filter available assets (exclude Assigned and Available - they have their own boards)
     available_assets = []
     for asset in all_assets:
+        if asset.status in ("Assigned", "Available"):
+            continue
         mv = asset_movement_map.get(asset.name)
         if not mv:
             available_assets.append(asset)
-        elif not mv.source_location and not mv.from_employee:
+        elif not mv.source_location and not mv.from_employee and not mv.to_employee:
             available_assets.append(asset)
     
     return {
