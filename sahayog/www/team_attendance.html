@@ -5551,10 +5551,10 @@
             <div style="margin-top:6px;"><span style="background:${e.status === "Active" ? "#dcfce7" : "#fee2e2"};color:${e.status === "Active" ? "#16a34a" : "#dc2626"};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${val(e.status)}</span></div>
           </div>
           <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
-            ${row("Employee Code", e.name)} ${row("Gender", e.gender)} ${row("Date of Birth", fmt(e.date_of_birth))} ${row("Marital Status", e.marital_status)} ${row("Blood Group", e.blood_group)}
+            ${row("Employee Code", e.name)} ${row("First Name", e.first_name)} ${row("Middle Name", e.middle_name)} ${row("Last Name", e.last_name)} ${row("Gender", e.gender)} ${row("Date of Birth", fmt(e.date_of_birth))} ${row("Marital Status", e.marital_status)} ${row("Blood Group", e.blood_group)}
           </div>
           <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
-            ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)}
+            ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)} ${row("Shift", e.default_shift)} ${row("Business Unit", e.custom_division)}
             ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", e.custom_zone)} ${row("Region", e.custom_region)} ${row("District", e.custom_district)}
             ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
             ${e.status === "Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
@@ -5579,6 +5579,14 @@
           userRoles.includes("Administrator");
         const inp = (name, value, type = "text") =>
           `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+        const sel = (name, value, options) => {
+          let opts = options.map(o => `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`).join("");
+          return `<select name="${name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">${opts}</select>`;
+        };
+        const dt = (name, value) =>
+          `<input name="${name}" value="${value || ""}" type="date" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+
+        const fmtDate = (d) => d ? new Date(d).toISOString().split("T")[0] : "";
 
         document.getElementById("drawerEditBtn").style.display = "none";
         document.getElementById("dashboardContent").innerHTML = `
@@ -5587,6 +5595,41 @@
             <div class="emp-h-sub">${e.name}</div>
           </div>
           <form id="empEditForm" onsubmit="event.preventDefault(); saveEmployeeProfile();">
+            <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Employee Code</label><input value="${e.employee_number || e.name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
+                <div><label style="font-size:11px;color:var(--muted);">First Name</label>${inp("first_name", e.first_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${inp("middle_name", e.middle_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Last Name</label>${inp("last_name", e.last_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employee Name (Full)</label>${inp("employee_name", e.employee_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Gender</label>${sel("gender", e.gender, ["", "Male", "Female", "Other"])}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Date of Birth</label>${dt("date_of_birth", fmtDate(e.date_of_birth))}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Marital Status</label>${sel("marital_status", e.marital_status, ["", "Single", "Married", "Divorced", "Widowed"])}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Blood Group</label>${sel("blood_group", e.blood_group, ["", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"])}</div>
+              </div>
+            </div>
+            <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Branch Code (Sahayog Branch)</label>${inp("sahayog_branch", e.sahayog_branch)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Zone</label>${inp("custom_zone", e.custom_zone)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Region</label>${inp("custom_region", e.custom_region)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">District</label>${inp("custom_district", e.custom_district)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Shift</label>${inp("default_shift", e.default_shift)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${inp("custom_division", e.custom_division)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Date of Joining</label>${dt("date_of_joining", fmtDate(e.date_of_joining))}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Date of Confirmation</label>${dt("final_confirmation_date", fmtDate(e.final_confirmation_date))}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Status</label>${sel("status", e.status, ["Active", "Left"])}</div>
+                <div id="leftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
+                  <div><label style="font-size:11px;color:var(--muted);">Resignation Date</label>${dt("resignation_letter_date", fmtDate(e.resignation_letter_date))}</div>
+                  <div><label style="font-size:11px;color:var(--muted);">Relieving Date</label>${dt("relieving_date", fmtDate(e.relieving_date))}</div>
+                </div>
+              </div>
+            </div>
             <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Mobile</label>${inp("cell_number", e.cell_number)}</div>
@@ -5595,15 +5638,6 @@
                 <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
-              </div>
-            </div>
-            <div class="dash-section"><div class="dash-sec-title">Employment</div>
-              <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
               </div>
             </div>
             <div class="dash-section"><div class="dash-sec-title">Banking</div>
@@ -5615,8 +5649,10 @@
             ${
               isHRMgr
                 ? `<div class="dash-section"><div class="dash-sec-title">Salary & Loan <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
-              <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
-              <div style="margin-top:10px;"><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
+              <div style="display:grid;gap:10px;">
+                <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
+              </div>
             </div>`
                 : ""
             }
@@ -5626,6 +5662,13 @@
             </div>
           </form>
         `;
+        // Toggle Left fields based on Status dropdown
+        const statusSel = document.querySelector("select[name='status']");
+        if (statusSel) {
+          statusSel.addEventListener("change", function() {
+            document.getElementById("leftFields").style.display = this.value === "Left" ? "grid" : "none";
+          });
+        }
       }
 
       async function saveEmployeeProfile() {
@@ -5638,22 +5681,25 @@
         btn.disabled = true;
         btn.textContent = "Saving...";
 
+        let employeeId = _currentProfileEmployee;
         const res = await callAPI(
           "update_employee_profile",
-          { employee: _currentProfileEmployee, data },
+          { employee: employeeId, data },
           "employee",
         );
         btn.disabled = false;
         btn.textContent = "Save Changes";
 
         if (res && res.success) {
+          if (res.employee) employeeId = res.employee;
           showToast(res.message);
           const updated = await callAPI(
             "get_employee_profile",
-            { employee: _currentProfileEmployee },
+            { employee: employeeId },
             "employee",
           );
           if (updated) {
+            _currentProfileEmployee = employeeId;
             _currentProfileData = updated;
             renderEmployeeProfileView(updated);
           }
