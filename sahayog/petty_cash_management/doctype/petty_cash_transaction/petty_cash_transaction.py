@@ -1613,7 +1613,7 @@ def download_transaction_report(filters=None):
         "entity_id",
         "amount",
         "current_branch_balance",
-        "current_unsettled_cash",
+        # "current_unsettled_cash",
         "approval_status",
         "amount_within_limit",
         "amount_exceeding_limit",
@@ -1660,7 +1660,9 @@ def download_transaction_report(filters=None):
     headers = [
         "Transaction ID", "Transaction Type", "Date", "Branch Code", "Branch Name",
         "Branch Type", "Entity Type", "Entity ID",
-        "Amount (₹)", "Balance (₹)", "Cash in Hand (₹)", "Approval Status",
+        "Amount (₹)", "Balance (₹)",
+        #   "Cash in Hand (₹)",
+        "Approval Status",
         "Within Limit (₹)", "Exceeding Limit (₹)", "Amount Deducted (₹)",
         "Approved By", "Finacle Txn ID", "Finacle Date", "Remarks",
         "Status", "Created On", "Modified On", "Created By", "Modified By"
@@ -1692,7 +1694,7 @@ def download_transaction_report(filters=None):
             txn.get('entity_id'),
             txn.get('amount', 0),
             txn.get('current_branch_balance', 0),
-            txn.get('current_unsettled_cash', 0),
+            # txn.get('current_unsettled_cash', 0),
             txn.get('approval_status'),
             txn.get('amount_within_limit', 0),
             txn.get('amount_exceeding_limit', 0),
@@ -1718,7 +1720,8 @@ def download_transaction_report(filters=None):
 
             # Format currency columns
             # if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
-            if col_num in [9, 10, 11, 13, 14, 15]:
+            # if col_num in [9, 10, 11, 13, 14, 15]:
+            if col_num in [9, 10,  13, 14, 15]:
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal='right')
 
