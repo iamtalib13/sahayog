@@ -17601,8 +17601,8 @@
             ? "sahayog.doc_events.asset.create_asset_ignore_links"
             : "frappe.client.insert";
           const insertArgs = this.assetIdEdited
-            ? { doc_data: doc }
-            : { doc };
+            ? { doc_data: emrDoc }
+            : { doc: emrDoc };
           const res = await frappe.call({
             method: insertMethod,
             args: insertArgs,
