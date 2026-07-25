@@ -16098,9 +16098,22 @@
           return;
         }
 
-        // 1. AUTOMATED ASSET CREATION
+        // 1. AUTO-CREATE SERIAL NO RECORDS IF MISSING
         this.creatingMovement = true;
         try {
+          for (let item of this.movementItems) {
+            if (item.serial_no && item.item_code) {
+              const snRes = await frappe.call({
+                method: "sahayog.procurement.api.asset_utils.ensure_serial_no_exists",
+                args: { serial_no: item.serial_no, item_code: item.item_code },
+              });
+              if (snRes.message) {
+                console.log(`Auto-created Serial No: ${item.serial_no}`);
+              }
+            }
+          }
+
+          // 2. AUTOMATED ASSET CREATION
           for (let item of this.movementItems) {
             // If asset is NOT linked, create it
             if (!item.asset && item.item_code) {
