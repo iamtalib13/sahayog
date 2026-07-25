@@ -139,6 +139,24 @@ def _get_serial_warehouse_map():
 
 
 @frappe.whitelist()
+def ensure_serial_no_exists(serial_no, item_code):
+    """
+    Creates a Serial No record if it doesn't already exists.
+    Returns True if created, False if already exists.
+    """
+    if not frappe.db.exists("Serial No", serial_no):
+        sn = frappe.get_doc({
+            "doctype": "Serial No",
+            "serial_no": serial_no,
+            "item_code": item_code,
+        })
+        sn.insert(ignore_permissions=True)
+        frappe.db.commit()
+        return True
+    return False
+
+
+@frappe.whitelist()
 def update_asset_serial_no(asset_name, serial_no):
     """
     Updates the serial_no field on an Asset (works for draft and submitted).
