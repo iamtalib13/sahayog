@@ -1608,6 +1608,9 @@ def download_transaction_report(filters=None):
         "transaction_date",
         "branch",
         "branch_name",
+        "branch_type",
+        "entity_type",
+        "entity_id",
         "amount",
         "current_branch_balance",
         "current_unsettled_cash",
@@ -1656,6 +1659,7 @@ def download_transaction_report(filters=None):
     # Headers
     headers = [
         "Transaction ID", "Transaction Type", "Date", "Branch Code", "Branch Name",
+        "Branch Type", "Entity Type", "Entity ID",
         "Amount (₹)", "Balance (₹)", "Cash in Hand (₹)", "Approval Status",
         "Within Limit (₹)", "Exceeding Limit (₹)", "Amount Deducted (₹)",
         "Approved By", "Finacle Txn ID", "Finacle Date", "Remarks",
@@ -1683,6 +1687,9 @@ def download_transaction_report(filters=None):
                 '%d-%m-%Y') if txn.get('transaction_date') else '',
             txn.get('branch'),
             txn.get('branch_name'),
+            txn.get('branch_type'),
+            txn.get('entity_type'),
+            txn.get('entity_id'),
             txn.get('amount', 0),
             txn.get('current_branch_balance', 0),
             txn.get('current_unsettled_cash', 0),
@@ -1710,7 +1717,8 @@ def download_transaction_report(filters=None):
             cell.border = border
 
             # Format currency columns
-            if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
+            # if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
+            if col_num in [9, 10, 11, 13, 14, 15]:
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal='right')
 
@@ -2040,6 +2048,9 @@ def download_consolidated_excel_api(transaction_date=None):
         "Transaction ID",
         "Branch Code",
         "Branch Name",
+        "Branch Type",
+        "Entity Type",
+        "Entity ID",
         "Date",
         "Type",
         "Total Amount",
@@ -2092,6 +2103,9 @@ def download_consolidated_excel_api(transaction_date=None):
                 doc.name,
                 doc.branch,
                 doc.branch_name,
+                doc.branch_type,
+                doc.entity_type,
+                doc.entity_id,
                 doc.transaction_date,
                 doc.transaction_type,
                 "{:.2f}".format(doc.amount or 0),
@@ -2422,7 +2436,9 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
     )
 
     headers = [
-        "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
+        "Transaction ID", "Branch Code", "Branch Name", "Branch Type",
+        "Entity Type",
+        "Entity ID", "Date", "Type",
         "Total Amount", "Wallet Balance",  # "Cash in Hand",
         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
@@ -2477,6 +2493,9 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
                     doc.name,
                     doc.branch,
                     doc.branch_name,
+                    doc.branch_type,
+                    doc.entity_type,
+                    doc.entity_id,
                     doc.transaction_date.strftime(
                         "%d-%m-%Y") if doc.transaction_date else "",
                     doc.transaction_type,
@@ -2531,6 +2550,9 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
                 doc.name,
                 doc.branch,
                 doc.branch_name,
+                doc.branch_type,
+                doc.entity_type,
+                doc.entity_id,
                 doc.transaction_date.strftime(
                     "%d-%m-%Y") if doc.transaction_date else "",
                 doc.transaction_type,
