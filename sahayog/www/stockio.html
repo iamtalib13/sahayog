@@ -16591,26 +16591,27 @@
         this.loading = true;
         this.showWorkflowModal = false;
         try {
-          // If HO approval, update the approved quantities in detailRecord first
+          // If HO approval, update the approved quantities via custom method (bypasses validation)
           if (this.workflowActionData.items.length > 0) {
-            const itemMap = {};
-            this.workflowActionData.items.forEach((i) => {
-              itemMap[i.name] = i.approved_quantity;
-            });
-
-            this.detailRecord.items.forEach((i) => {
-              if (itemMap[i.name] !== undefined) {
-                i.approved_quantity = itemMap[i.name];
-                if (action === "Approve") {
-                  i.status = "Approved";
-                }
+            const itemsToUpdate = this.workflowActionData.items.map((item) => {
+              const fields = { name: item.name, approved_quantity: item.approved_quantity };
+              if (action === "Approve") {
+                fields.status = "Approved";
               }
+              // Also update local detailRecord
+              const localItem = this.detailRecord.items.find(i => i.name === item.name);
+              if (localItem) {
+                localItem.approved_quantity = item.approved_quantity;
+                if (action === "Approve") localItem.status = "Approved";
+              }
+              return fields;
             });
-
-            // Explicitly save the doc first to sync quantities
             await frappe.call({
-              method: "frappe.client.save",
-              args: { doc: this.detailRecord },
+              method: "sahayog.procurement.doctype.employee_material_request.employee_material_request.update_approved_items",
+              args: {
+                docname: this.detailRecord.name,
+                items_json: itemsToUpdate,
+              },
             });
           }
 
