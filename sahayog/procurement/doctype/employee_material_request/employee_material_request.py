@@ -817,6 +817,20 @@ def workflow_action_update_status(docname, action, remark=None):
         frappe.db.commit()
 
 @frappe.whitelist()
+def update_approved_items(docname, items_json):
+    """Update approved quantities and statuses on child items without triggering full validation."""
+    import json
+    items = json.loads(items_json) if isinstance(items_json, str) else items_json
+    for item_data in items:
+        if item_data.get("name"):
+            update_fields = {"approved_quantity": item_data.get("approved_quantity", 0)}
+            if item_data.get("status"):
+                update_fields["status"] = item_data["status"]
+            frappe.db.set_value("Material Request Items", item_data["name"], update_fields)
+    frappe.db.commit()
+
+
+@frappe.whitelist()
 def create_stock_entry_from_request(material_request):
     mr = frappe.get_doc("Employee Material Request", material_request)
     if mr.docstatus != 1: frappe.throw(_("Only approved requests can be processed"))
