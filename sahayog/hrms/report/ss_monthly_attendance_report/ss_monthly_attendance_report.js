@@ -1,21 +1,40 @@
-// Copyright (c) 2024, Sahayog and contributors
-// For license information, please see license.txt
-
 frappe.query_reports["SS Monthly Attendance Report"] = {
 	"filters": [
+		{
+			"fieldname": "month",
+			"label": __("Attendance Month"),
+			"fieldtype": "Select",
+			"options": [
+				{ "label": __("January"), "value": 1 },
+				{ "label": __("February"), "value": 2 },
+				{ "label": __("March"), "value": 3 },
+				{ "label": __("April"), "value": 4 },
+				{ "label": __("May"), "value": 5 },
+				{ "label": __("June"), "value": 6 },
+				{ "label": __("July"), "value": 7 },
+				{ "label": __("August"), "value": 8 },
+				{ "label": __("September"), "value": 9 },
+				{ "label": __("October"), "value": 10 },
+				{ "label": __("November"), "value": 11 },
+				{ "label": __("December"), "value": 12 },
+			],
+		},
+		{
+			"fieldname": "year",
+			"label": __("Year"),
+			"fieldtype": "Int",
+		},
 		{
 			"fieldname": "from_date",
 			"label": __("From Date"),
 			"fieldtype": "Date",
-			"default": frappe.datetime.month_start(),
-			"reqd": 1
+			"hidden": 1,
 		},
 		{
 			"fieldname": "to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date",
-			"default": frappe.datetime.month_end(),
-			"reqd": 1
+			"hidden": 1,
 		},
 		{
 			"fieldname": "employee",
@@ -43,49 +62,74 @@ frappe.query_reports["SS Monthly Attendance Report"] = {
 			"fieldtype": "Link",
 			"options": "Department"
 		},
-		{
-			"fieldname": "designation",
-			"label": __("Designation"),
-			"fieldtype": "Link",
-			"options": "Designation"
-		}
 	],
-	
+
 	"formatter": function(value, row, column, data, default_formatter) {
 		value = default_formatter(value, row, column, data);
-		
-		// Color code attendance columns
-		if (column.fieldname == "present" && value > 0) {
-			value = `<span style="color: #16a34a; font-weight: 600;">${value}</span>`;
-		} else if (column.fieldname == "absent" && value > 0) {
-			value = `<span style="color: #dc2626; font-weight: 600;">${value}</span>`;
-		} else if (column.fieldname == "half_day" && value > 0) {
-			value = `<span style="color: #4338ca; font-weight: 600;">${value}</span>`;
-		} else if (column.fieldname == "on_leave" && value > 0) {
-			value = `<span style="color: #d97706; font-weight: 600;">${value}</span>`;
+
+		if (!column.fieldname || !column.fieldname.includes("_")) {
+			return value;
 		}
-		
+
+		var color_map = {
+			"P": "#16a34a",
+			"WO-P": "#059669",
+			"H-P": "#059669",
+			"A": "#dc2626",
+			"HD": "#4338ca",
+			"CL": "#d97706",
+			"SiL": "#d97706",
+			"EL": "#d97706",
+			"CO": "#d97706",
+			"MatL": "#d97706",
+			"PatL": "#d97706",
+			"LWP": "#ef4444",
+			"L": "#d97706",
+			"H": "#3b82f6",
+			"WO": "#6b7280",
+		};
+		var color = color_map[value];
+		if (color) {
+			value = `<span style="color:${color}; font-weight:600;" title="${getCodeTitle(value)}">${value}</span>`;
+		}
 		return value;
 	},
-	
+
 	"onload": function(report) {
-		// Add custom button for date shortcuts
-		report.page.add_inner_button(__("This Month"), function() {
-			frappe.query_report.set_filter_value("from_date", frappe.datetime.month_start());
-			frappe.query_report.set_filter_value("to_date", frappe.datetime.month_end());
-		});
-		
-		report.page.add_inner_button(__("Last Month"), function() {
-			let last_month_start = frappe.datetime.add_months(frappe.datetime.month_start(), -1);
-			let last_month_end = frappe.datetime.add_days(frappe.datetime.month_start(), -1);
-			frappe.query_report.set_filter_value("from_date", last_month_start);
-			frappe.query_report.set_filter_value("to_date", last_month_end);
-		});
-		
-		report.page.add_inner_button(__("Last 3 Months"), function() {
-			let three_months_ago = frappe.datetime.add_months(frappe.datetime.month_start(), -2);
-			frappe.query_report.set_filter_value("from_date", three_months_ago);
-			frappe.query_report.set_filter_value("to_date", frappe.datetime.month_end());
+		var today = new Date();
+		var m = today.getMonth() + 1;
+		var y = today.getFullYear();
+		// If today is 26th or later, attendance cycle is NEXT month
+		if (today.getDate() >= 26) {
+			m += 1;
+			if (m > 12) { m = 1; y += 1; }
+		}
+		frappe.query_report.set_filter_value("month", m);
+		frappe.query_report.set_filter_value("year", y);
+
+		report.page.add_inner_button(__("Attendance Cycle (26th\u201325th)"), function() {
+			frappe.query_report.refresh();
 		});
 	}
 };
+
+function getCodeTitle(code) {
+	var titles = {
+		"P": "Present",
+		"A": "Absent",
+		"WO": "Weekly Off",
+		"H": "Holiday",
+		"WO-P": "Weekly Off - Worked (Present)",
+		"H-P": "Holiday - Worked (Present)",
+		"CL": "Casual Leave",
+		"SiL": "Sick Leave",
+		"EL": "Earned Leave",
+		"CO": "Compensatory Off",
+		"LWP": "Leave Without Pay",
+		"MatL": "Maternity Leave",
+		"PatL": "Paternity Leave",
+		"HD": "Half Day",
+		"L": "Leave (Other)",
+	};
+	return titles[code] || code;
+}
