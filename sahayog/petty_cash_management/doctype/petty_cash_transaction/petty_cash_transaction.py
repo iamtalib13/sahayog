@@ -1274,19 +1274,38 @@ class PettyCashTransaction(Document):
                     f"Row #{row.idx}: Description cannot be more than 30 characters including spaces."
                 )
 
+    # def validate_active_expense_categories(self):
+    #     for row in self.items:
+    #         if row.expense_category:
+    #             is_active = frappe.db.get_value(
+    #                 "Expense Category",
+    #                 row.expense_category,
+    #                 "is_active",
+    #             )
+
+    #             if not cint(is_active):
+    #                 frappe.throw(
+    #                     _("Row #{0}: Expense Category {1} is inactive and cannot be used.").format(
+    #                         row.idx, row.expense_category
+    #                     )
+    #                 )
+
     def validate_active_expense_categories(self):
         for row in self.items:
             if row.expense_category:
-                is_active = frappe.db.get_value(
+                category_values = frappe.db.get_value(
                     "Expense Category",
                     row.expense_category,
-                    "is_active"
+                    ["is_active", "category_name"],
+                    as_dict=True
                 )
 
-                if not cint(is_active):
+                if category_values and not cint(category_values.is_active):
+                    display_name = category_values.category_name or row.expense_category
+
                     frappe.throw(
                         _("Row #{0}: Expense Category {1} is inactive and cannot be used.").format(
-                            row.idx, row.expense_category
+                            row.idx, display_name
                         )
                     )
 
