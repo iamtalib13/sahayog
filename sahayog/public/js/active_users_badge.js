@@ -303,7 +303,7 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
           <span class="sahayog-au-pulse"></span>
-          <span class="sahayog-au-count-badge" id="active-users-count-badge">0</span>
+          <span class="sahayog-au-count-badge" id="active-users-count-badge" style="display: none;">0</span>
         </button>
         <div class="dropdown-menu sahayog-au-dropdown-menu dropdown-menu-right" role="menu">
           <div class="sahayog-au-header">
@@ -328,9 +328,6 @@
     }
 
     $(document).on("show.bs.dropdown", ".dropdown-active-users", () => fetchActiveUsers());
-
-    // First load
-    fetchActiveUsers();
   }
 
   // Fetch active users list and CPU usage
@@ -358,7 +355,10 @@
     const bodyList = document.getElementById("active-users-body-list");
     const cpuBadge = document.getElementById("server-status-cpu-badge");
 
-    if (badge) badge.innerText = count;
+    if (badge) {
+      badge.innerText = count;
+      badge.style.display = "inline-block";
+    }
     if (headerDot) headerDot.innerText = `${count} Online`;
 
     // Update CPU Badge as rounded integer
