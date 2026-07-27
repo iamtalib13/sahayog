@@ -1,11 +1,6 @@
 {
- "charts": [
-  {
-   "chart_name": "Month-wise Cases",
-   "label": "Month-wise Cases"
-  }
- ],
- "content": "[{\"id\":\"Jb2f6yK0vU\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h1\\\">Disciplinary Action Management System</span>\",\"col\":12}},{\"id\":\"JbDgMKcS6x\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Quick Actions</b></span>\",\"col\":12}},{\"id\":\"ylA8xOov3g\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Initiate Case\",\"col\":3}},{\"id\":\"JZ6G2RFrSL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Unauthorized Absence Case\",\"col\":3}},{\"id\":\"KJMK-BSKnd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}},{\"id\":\"tBPL4S6t9C\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Disciplinary Cases\",\"col\":3}},{\"id\":\"mTH2sQ4hB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"HR Wise Cases\",\"col\":3}},{\"id\":\"sNSJce52j7\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Case History\",\"col\":3}},{\"id\":\"OIv5KxhC1i\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Zone Wise Cases\",\"col\":3}},{\"id\":\"4Zoi95InFa\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Settings\",\"col\":3}},{\"id\":\"ZWU29bjI1A\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Month Wise Cases</b></span>\",\"col\":12}},{\"id\":\"vtUJcBFrGI\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Month-wise Cases\",\"col\":12}}]",
+ "charts": [],
+ "content": "[{\"id\":\"qDl5U9__zE\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Disciplinary Management Dashboard\",\"col\":12}}]",
  "creation": "2025-09-13 11:17:55.133668",
  "custom_blocks": [
   {
@@ -22,7 +17,7 @@
  "is_hidden": 0,
  "label": "Disciplinary Management",
  "links": [],
- "modified": "2026-07-20 17:00:42.049745",
+ "modified": "2026-07-27 17:06:24.603948",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Disciplinary Management",
@@ -40,69 +35,6 @@
   }
  ],
  "sequence_id": 86.0,
- "shortcuts": [
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Settings",
-   "link_to": "Sahayog HR Setting",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "New",
-   "label": "Unauthorized Absence Case",
-   "link_to": "Unauthorized Absence",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Dashboard",
-   "link_to": "Disciplinary Cases Dashboard",
-   "type": "Dashboard"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Disciplinary Cases",
-   "link_to": "Disciplinary Cases",
-   "report_ref_doctype": "Disciplinary Case",
-   "type": "Report"
-  },
-  {
-   "color": "Green",
-   "doc_view": "New",
-   "label": "Initiate Case",
-   "link_to": "Disciplinary Case",
-   "stats_filter": "[]",
-   "type": "DocType"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Case History",
-   "link_to": "Case History",
-   "report_ref_doctype": "Disciplinary Case",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "Zone Wise Cases",
-   "link_to": "Zone Wise Cases",
-   "report_ref_doctype": "Disciplinary Case",
-   "type": "Report"
-  },
-  {
-   "color": "Grey",
-   "doc_view": "List",
-   "label": "HR Wise Cases",
-   "link_to": "HR Wise Cases",
-   "report_ref_doctype": "Disciplinary Case",
-   "type": "Report"
-  }
- ],
+ "shortcuts": [],
  "title": "Disciplinary Management"
 }
