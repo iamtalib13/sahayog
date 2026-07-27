@@ -4,10 +4,10 @@
   // Prevent running for Guests
   if (typeof frappe === "undefined" || frappe.session.user === "Guest") return;
 
-  // Inject Styles
+  // Inject Isolated Styles with 'sahayog-au-' prefix
   const style = document.createElement("style");
   style.innerHTML = `
-    .active-users-svg-icon {
+    .sahayog-au-svg-icon {
       stroke: currentColor !important;
       fill: none !important;
       stroke-width: 2.2px;
@@ -19,7 +19,7 @@
       vertical-align: middle;
     }
 
-    .active-users-count-badge {
+    .sahayog-au-count-badge {
       font-size: 9px;
       font-weight: 700;
       background-color: var(--green-500, #28a745);
@@ -35,7 +35,7 @@
       transition: transform 0.2s ease-in-out;
     }
     
-    .active-users-pulse {
+    .sahayog-au-pulse {
       display: inline-block;
       width: 6px;
       height: 6px;
@@ -45,11 +45,11 @@
       bottom: 0px;
       right: -1px;
       box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-      animation: active-users-pulse-anim 1.8s infinite;
+      animation: sahayog-au-pulse-anim 1.8s infinite;
       border: 1px solid var(--card-bg, #fff);
     }
     
-    @keyframes active-users-pulse-anim {
+    @keyframes sahayog-au-pulse-anim {
       0% {
         box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
       }
@@ -61,7 +61,7 @@
       }
     }
     
-    .active-users-dropdown-menu {
+    .sahayog-au-dropdown-menu {
       min-width: 320px;
       max-width: 360px;
       padding: 16px;
@@ -73,10 +73,10 @@
       backdrop-filter: blur(8px);
       background-color: rgba(var(--card-bg-rgb, 255, 255, 255), 0.95);
       transform-origin: top right;
-      animation: active-users-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: sahayog-au-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     
-    @keyframes active-users-fade-in {
+    @keyframes sahayog-au-fade-in {
       from {
         opacity: 0;
         transform: scale(0.95) translateY(-8px);
@@ -87,7 +87,7 @@
       }
     }
     
-    .active-users-header {
+    .sahayog-au-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -96,13 +96,13 @@
       margin-bottom: 12px;
     }
     
-    .active-users-header-title {
+    .sahayog-au-header-title {
       font-weight: 600;
       font-size: 14px;
       color: var(--text-color, #1e293b);
     }
     
-    .active-users-header-dot {
+    .sahayog-au-header-dot {
       font-size: 11px;
       font-weight: 600;
       color: var(--green-600, #166534);
@@ -114,7 +114,7 @@
       gap: 5px;
     }
     
-    .active-users-header-dot::before {
+    .sahayog-au-header-dot::before {
       content: "";
       display: inline-block;
       width: 6px;
@@ -122,24 +122,49 @@
       background-color: var(--green-500, #28a745);
       border-radius: 50%;
     }
+
+    .sahayog-au-cpu-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
     
-    .active-users-body-list {
+    .sahayog-au-cpu-badge.low {
+      color: var(--green-600, #166534);
+      background-color: var(--green-50, #f0fdf4);
+    }
+    
+    .sahayog-au-cpu-badge.medium {
+      color: var(--orange-600, #9a3412);
+      background-color: var(--orange-50, #fff7ed);
+    }
+    
+    .sahayog-au-cpu-badge.high {
+      color: var(--red-600, #991b1b);
+      background-color: var(--red-50, #fef2f2);
+    }
+    
+    .sahayog-au-body-list {
       max-height: 280px;
       overflow-y: auto;
       scrollbar-width: thin;
       scrollbar-color: var(--border-color, #cbd5e1) transparent;
     }
     
-    .active-users-body-list::-webkit-scrollbar {
+    .sahayog-au-body-list::-webkit-scrollbar {
       width: 4px;
     }
     
-    .active-users-body-list::-webkit-scrollbar-thumb {
+    .sahayog-au-body-list::-webkit-scrollbar-thumb {
       background-color: var(--border-color, #cbd5e1);
       border-radius: 4px;
     }
     
-    .active-user-item {
+    .sahayog-au-item {
       display: flex;
       align-items: center;
       gap: 12px;
@@ -149,12 +174,12 @@
       margin-bottom: 4px;
     }
     
-    .active-user-item:hover {
+    .sahayog-au-item:hover {
       background-color: var(--bg-color, #f8fafc);
       cursor: pointer;
     }
     
-    .active-user-avatar {
+    .sahayog-au-avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
@@ -170,7 +195,7 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     
-    .active-user-avatar-indicator {
+    .sahayog-au-avatar-indicator {
       position: absolute;
       bottom: 0;
       right: 0;
@@ -181,14 +206,14 @@
       border-radius: 50%;
     }
     
-    .active-user-info {
+    .sahayog-au-info {
       display: flex;
       flex-direction: column;
       flex: 1;
       min-width: 0;
     }
     
-    .active-user-name {
+    .sahayog-au-name {
       font-weight: 500;
       font-size: 13px;
       color: var(--text-color, #1e293b);
@@ -197,7 +222,7 @@
       text-overflow: ellipsis;
     }
     
-    .active-user-email {
+    .sahayog-au-email {
       font-size: 11px;
       color: var(--text-muted, #64748b);
       white-space: nowrap;
@@ -205,7 +230,7 @@
       text-overflow: ellipsis;
     }
     
-    .active-user-meta {
+    .sahayog-au-meta {
       display: flex;
       flex-direction: column;
       align-items: flex-end;
@@ -214,17 +239,17 @@
       min-width: 60px;
     }
     
-    .active-user-time {
+    .sahayog-au-time {
       font-weight: 500;
     }
     
-    .active-user-ip {
+    .sahayog-au-ip {
       opacity: 0.8;
       font-size: 9px;
       font-family: monospace;
     }
     
-    .active-users-empty-state {
+    .sahayog-au-empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -235,29 +260,26 @@
   `;
   document.head.appendChild(style);
 
-  // Helper: Get random HSL color based on string hash
+  // Helper: Get avatar background color using HSL string hashing
   function getAvatarColor(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const h = Math.abs(hash % 360);
-    return `hsl(${h}, 60%, 45%)`;
+    return `hsl(${Math.abs(hash % 360)}, 60%, 45%)`;
   }
 
-  // Helper: Get Initials
+  // Helper: Get Initials from full name
   function getInitials(name) {
     if (!name) return "?";
     const parts = name.split(" ");
-    if (parts.length > 1 && parts[0] && parts[1]) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name[0].toUpperCase();
+    return parts.length > 1 && parts[0] && parts[1]
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : name[0].toUpperCase();
   }
 
   // Setup Navbar Badge
   function setupActiveUsersBadge() {
-    // Wait until .navbar-nav exists and isn't already customized
     const checkInterval = setInterval(() => {
       const navbarNav = document.querySelector(".navbar-collapse .navbar-nav");
       if (navbarNav && !document.querySelector(".dropdown-active-users")) {
@@ -266,37 +288,38 @@
       }
     }, 100);
 
-    // Timeout check after 10 seconds to prevent infinite polling if navbar doesn't exist
     setTimeout(() => clearInterval(checkInterval), 10000);
   }
 
-  // Inject Badge into Navbar
+  // Inject Badge and Dropdown into Navbar
   function injectBadge(navbarNav) {
     const badgeHTML = `
       <li class="nav-item dropdown dropdown-active-users dropdown-mobile" style="position: relative;">
         <button class="btn-reset nav-link active-users-icon text-muted" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Active Users" style="position: relative; display: flex; align-items: center; justify-content: center; height: 40px; width: 40px; padding: 0;">
-          <svg class="active-users-svg-icon" viewBox="0 0 24 24">
+          <svg class="sahayog-au-svg-icon" viewBox="0 0 24 24">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span class="active-users-pulse"></span>
-          <span class="active-users-count-badge" id="active-users-count-badge">0</span>
+          <span class="sahayog-au-pulse"></span>
+          <span class="sahayog-au-count-badge" id="active-users-count-badge">0</span>
         </button>
-        <div class="dropdown-menu active-users-dropdown-menu dropdown-menu-right" role="menu">
-          <div class="active-users-header">
-            <span class="active-users-header-title">Online Users</span>
-            <span class="active-users-header-dot" id="active-users-header-dot">0 Online</span>
+        <div class="dropdown-menu sahayog-au-dropdown-menu dropdown-menu-right" role="menu">
+          <div class="sahayog-au-header">
+            <span class="sahayog-au-header-title">Online Users</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <span class="sahayog-au-header-dot" id="active-users-header-dot">0 Online</span>
+              <span class="sahayog-au-cpu-badge low" id="server-status-cpu-badge">CPU: 0%</span>
+            </div>
           </div>
-          <div class="active-users-body-list" id="active-users-body-list">
+          <div class="sahayog-au-body-list" id="active-users-body-list">
             <div class="text-center text-muted py-3" style="font-size: 12px;">Loading active users...</div>
           </div>
         </div>
       </li>
     `;
 
-    // Try to insert after notification dropdown or append
     const notificationsDropdown = navbarNav.querySelector(".dropdown-notifications");
     if (notificationsDropdown) {
       notificationsDropdown.insertAdjacentHTML("afterend", badgeHTML);
@@ -304,45 +327,61 @@
       navbarNav.insertAdjacentHTML("beforeend", badgeHTML);
     }
 
-    // Bind dropdown click event to refresh list immediately
-    $(document).on("show.bs.dropdown", ".dropdown-active-users", function () {
-      fetchActiveUsers(true);
-    });
+    $(document).on("show.bs.dropdown", ".dropdown-active-users", () => fetchActiveUsers());
 
-    // Run first load
-    fetchActiveUsers(false);
+    // First load
+    fetchActiveUsers();
   }
 
-  // Fetch active users list
-  function fetchActiveUsers(openDropdown = false) {
+  // Fetch active users list and CPU usage
+  function fetchActiveUsers() {
     frappe.call({
       method: "sahayog.api.custom_api.get_currently_logged_in_users",
-      callback: function (r) {
+      callback: (r) => {
         if (r.message && r.message.status === "success") {
-          updateUI(r.message.total_logged_in_users, r.message.users, r.message.has_cxo_access);
+          updateUI(
+            r.message.total_logged_in_users,
+            r.message.users,
+            r.message.has_cxo_access,
+            r.message.cpu_usage
+          );
         }
       },
-      error: function () {
-        console.error("Failed to fetch logged-in users.");
-      }
+      error: () => console.error("Failed to fetch logged-in users.")
     });
   }
 
-  // Update UI Elements
-  function updateUI(count, users, hasCxoAccess) {
+  // Update UI Elements with scoped updates
+  function updateUI(count, users, hasCxoAccess, cpuUsage = 0) {
     const badge = document.getElementById("active-users-count-badge");
     const headerDot = document.getElementById("active-users-header-dot");
     const bodyList = document.getElementById("active-users-body-list");
+    const cpuBadge = document.getElementById("server-status-cpu-badge");
 
     if (badge) badge.innerText = count;
     if (headerDot) headerDot.innerText = `${count} Online`;
 
+    // Update CPU Badge as rounded integer
+    if (cpuBadge) {
+      const roundedCpu = Math.round(cpuUsage);
+      cpuBadge.innerText = `CPU: ${roundedCpu}%`;
+      cpuBadge.className = "sahayog-au-cpu-badge"; // Reset classes
+
+      if (roundedCpu < 60) {
+        cpuBadge.classList.add("low");
+      } else if (roundedCpu < 85) {
+        cpuBadge.classList.add("medium");
+      } else {
+        cpuBadge.classList.add("high");
+      }
+    }
+
     if (!bodyList) return;
 
-    // Check if user is not authorized for details
+    // Restricted access handling
     if (!hasCxoAccess) {
       bodyList.innerHTML = `
-        <div class="active-users-empty-state" style="padding: 24px 16px; text-align: center;">
+        <div class="sahayog-au-empty-state" style="padding: 24px 16px; text-align: center;">
           <svg class="es-icon icon-md mb-2" style="width: 24px; height: 24px; stroke: var(--text-muted, #64748b); fill: none;" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -356,7 +395,7 @@
 
     if (!users || users.length === 0) {
       bodyList.innerHTML = `
-        <div class="active-users-empty-state">
+        <div class="sahayog-au-empty-state">
           <svg class="es-icon icon-md text-muted mb-2" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -373,18 +412,18 @@
       const initials = getInitials(user.full_name);
       const avatarColor = getAvatarColor(user.email);
       listHTML += `
-        <div class="active-user-item" title="Last active at: ${user.lastupdate || 'N/A'}">
-          <div class="active-user-avatar" style="background-color: ${avatarColor};">
+        <div class="sahayog-au-item" title="Last active at: ${user.lastupdate || 'N/A'}">
+          <div class="sahayog-au-avatar" style="background-color: ${avatarColor};">
             ${initials}
-            <span class="active-user-avatar-indicator"></span>
+            <span class="sahayog-au-avatar-indicator"></span>
           </div>
-          <div class="active-user-info">
-            <span class="active-user-name">${user.full_name}</span>
-            <span class="active-user-email">${user.email}</span>
+          <div class="sahayog-au-info">
+            <span class="sahayog-au-name">${user.full_name}</span>
+            <span class="sahayog-au-email">${user.email}</span>
           </div>
-          <div class="active-user-meta">
-            <span class="active-user-time">${user.lastupdate || ""}</span>
-            <span class="active-user-ip text-muted">${user.ipaddress || ""}</span>
+          <div class="sahayog-au-meta">
+            <span class="sahayog-au-time">${user.lastupdate || ""}</span>
+            <span class="sahayog-au-ip text-muted">${user.ipaddress || ""}</span>
           </div>
         </div>
       `;
@@ -394,7 +433,5 @@
   }
 
   // Initialize
-  $(document).ready(() => {
-    setupActiveUsersBadge();
-  });
+  $(document).ready(() => setupActiveUsersBadge());
 })();
