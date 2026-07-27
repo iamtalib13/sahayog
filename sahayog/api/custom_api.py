@@ -297,9 +297,41 @@ def get_raw_active_users_data():
     # Format CPU usage as integer
     cpu_usage = int(round(max(0.0, min(100.0, cpu_usage))))
     
+    # Calculate unique users today (accessed the system)
+    today_unique_users = 0
+    try:
+        today_str = frappe.utils.today()
+        
+        # 1. From Activity Log (successful logins today)
+        logged_in_users = frappe.get_all(
+            "Activity Log",
+            filters={
+                "operation": "Login",
+                "status": "Success",
+                "creation": (">=", today_str + " 00:00:00")
+            },
+            pluck="user"
+        )
+        
+        # 2. From Sessions (active/modified sessions today)
+        active_session_users = frappe.db.sql("""
+            select distinct user from `tabSessions`
+            where lastupdate >= %s
+        """, (today_str + " 00:00:00",), as_dict=False)
+        active_session_users = [u[0] for u in active_session_users if u[0] and u[0] != "Guest"]
+
+        all_unique_users = set(logged_in_users) | set(active_session_users)
+        if "Guest" in all_unique_users:
+            all_unique_users.remove("Guest")
+            
+        today_unique_users = len(all_unique_users)
+    except Exception as ex:
+        frappe.log_error(f"Error calculating unique users today: {str(ex)}")
+    
     return {
         "users": users_list,
-        "cpu_usage": cpu_usage
+        "cpu_usage": cpu_usage,
+        "today_unique_users": today_unique_users
     }
 
 
@@ -319,13 +351,15 @@ def get_currently_logged_in_users():
         users_list = raw_data.get("users", [])
         total_count = len(users_list)
         cpu_usage = raw_data.get("cpu_usage", 0)
+        today_unique_users = raw_data.get("today_unique_users", 0)
 
         return {
             "status": "success",
             "total_logged_in_users": total_count,
             "has_cxo_access": is_cxo,
             "users": users_list if is_cxo else [],
-            "cpu_usage": cpu_usage
+            "cpu_usage": cpu_usage,
+            "today_unique_users": today_unique_users
         }
     except Exception as e:
         frappe.log_error(f"Error in get_currently_logged_in_users: {str(e)}")

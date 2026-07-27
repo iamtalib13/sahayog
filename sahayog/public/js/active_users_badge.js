@@ -62,8 +62,8 @@
     }
     
     .sahayog-au-dropdown-menu {
-      min-width: 320px;
-      max-width: 360px;
+      min-width: 340px;
+      max-width: 380px;
       padding: 16px;
       border-radius: 12px;
       box-shadow: var(--shadow-lg, 0 10px 30px -10px rgba(0, 0, 0, 0.15));
@@ -146,6 +146,18 @@
     .sahayog-au-cpu-badge.high {
       color: var(--red-600, #991b1b);
       background-color: var(--red-50, #fef2f2);
+    }
+    
+    .sahayog-au-today-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      color: var(--blue-600, #2563eb);
+      background-color: var(--blue-50, #eff6ff);
+      transition: all 0.3s ease;
     }
     
     .sahayog-au-body-list {
@@ -311,6 +323,7 @@
             <div style="display: flex; gap: 6px; align-items: center;">
               <span class="sahayog-au-header-dot" id="active-users-header-dot">0 Online</span>
               <span class="sahayog-au-cpu-badge low" id="server-status-cpu-badge">CPU: 0%</span>
+              <span class="sahayog-au-today-badge" id="server-status-today-badge">Today: 0</span>
             </div>
           </div>
           <div class="sahayog-au-body-list" id="active-users-body-list">
@@ -340,7 +353,8 @@
             r.message.total_logged_in_users,
             r.message.users,
             r.message.has_cxo_access,
-            r.message.cpu_usage
+            r.message.cpu_usage,
+            r.message.today_unique_users
           );
         }
       },
@@ -349,11 +363,12 @@
   }
 
   // Update UI Elements with scoped updates
-  function updateUI(count, users, hasCxoAccess, cpuUsage = 0) {
+  function updateUI(count, users, hasCxoAccess, cpuUsage = 0, todayUniqueUsers = 0) {
     const badge = document.getElementById("active-users-count-badge");
     const headerDot = document.getElementById("active-users-header-dot");
     const bodyList = document.getElementById("active-users-body-list");
     const cpuBadge = document.getElementById("server-status-cpu-badge");
+    const todayBadge = document.getElementById("server-status-today-badge");
 
     if (badge) {
       badge.innerText = count;
@@ -374,6 +389,10 @@
       } else {
         cpuBadge.classList.add("high");
       }
+    }
+
+    if (todayBadge) {
+      todayBadge.innerText = `Today: ${todayUniqueUsers}`;
     }
 
     if (!bodyList) return;
