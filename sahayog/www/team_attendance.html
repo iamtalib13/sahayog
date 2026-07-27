@@ -487,6 +487,11 @@
       .cal-d.woff {
         color: #d1d5db;
       }
+      .cal-d.holiday-d {
+        background: #fdf2f8;
+        color: #be185d;
+        font-weight: 600;
+      }
       .cal-d.before-doj {
         color: #e5e7eb;
         cursor: not-allowed;
@@ -745,6 +750,10 @@
         100% {
           transform: rotate(360deg);
         }
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
 
       /* TOOLTIP */
@@ -3168,6 +3177,10 @@
                   Weekly Off
                 </div>
                 <div class="cl-item">
+                  <div class="cl-dot" style="background: #db2777"></div>
+                  Holiday
+                </div>
+                <div class="cl-item">
                   <div
                     class="cl-dot"
                     style="background: #fffbeb; border: 1px dashed #d97706"
@@ -3259,6 +3272,9 @@
           userRoles.includes("HR User") ||
           userRoles.includes("Administrator")
         );
+      }
+      function isAdmin() {
+        return userRoles.includes("Administrator");
       }
       function isBranchManager() {
         return userRoles.includes("Branch Manager");
@@ -4879,15 +4895,26 @@
         dashContent.innerHTML = html;
       }
 
-      async function markAttendance(emp_id, status, log_type = "IN") {
+      async function markAttendance(emp_id, status, log_type = "IN", force = false) {
         const btn = event?.target;
         if (btn) btn.disabled = true;
 
         const res = await callAPI(
           "mark_attendance",
-          { employee: emp_id, status: status, log_type: log_type },
+          { employee: emp_id, status: status, log_type: log_type, force: force },
           "attendance",
         );
+
+        // Holiday warning — show confirmation dialog
+        if (res && res.is_holiday) {
+          if (btn) btn.disabled = false;
+          showHolidayConfirm(
+            res.holiday_name,
+            () => markAttendance(emp_id, status, log_type, true)
+          );
+          return;
+        }
+
         if (res && res.success) {
           showToast(res.message);
           await fetchTeamData();
@@ -5170,12 +5197,25 @@
           else if (histStatus === "Absent") cls += " absent-d";
           else if (histStatus === "Half Day") cls += " half-d";
           else if (histStatus === "On Leave") cls += " leave-d";
+          else if (histStatus && histStatus.startsWith("Holiday"))
+            cls += " holiday-d";
           else if (histStatus && histStatus.includes("Pending Correction"))
             cls += " pending-corr-d";
           else if (isWeekend) cls += " woff";
 
           cell.textContent = d;
-          cell.title = histStatus || key;
+          if (histStatus && histStatus.startsWith("Holiday")) {
+            cell.title = histStatus;
+          } else {
+            const titleMap = {
+              Present: "Present",
+              Absent: "Absent",
+              "Half Day": "Half Day",
+              "On Leave": "On Leave",
+            };
+            cell.title =
+              titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
+          }
 
           // Disable dates before employee's date of joining
           const isBeforeDoj =
@@ -5185,7 +5225,11 @@
 
           if (isBeforeDoj) {
             cls += " before-doj";
-          } else if (new Date(key) <= new Date(todayKey)) {
+          } else if (
+            new Date(key) <= new Date(todayKey) &&
+            histStatus !== "Holiday" &&
+            (!histStatus || !histStatus.startsWith("Holiday"))
+          ) {
             cell.onclick = () =>
               openCorrectionModal(key, histStatus || "Not Marked");
             cell.style.cursor = "pointer";
@@ -5290,7 +5334,7 @@
         document.getElementById("leaveModal").style.display = "none";
       }
 
-      async function submitLeave() {
+      async function submitLeave(force = false) {
         const employee = selectedMemberId;
         const leave_type = document.getElementById("leaveTypeSel").value;
         const from_date = document.getElementById("fromDate").value;
@@ -5315,14 +5359,26 @@
             from_date,
             to_date,
             reason,
+            force: force,
           },
           "leave",
         );
 
+        // Holiday warning — show confirmation dialog
+        if (res && res.is_holiday) {
+          const names = res.holiday_names ? res.holiday_names.join(", ") : res.holiday_dates.join(", ");
+          showHolidayConfirm(
+            "Leave period includes holidays: " + names,
+            () => submitLeave(true),
+            "Apply Anyway"
+          );
+          return;
+        }
+
         if (res && res.success) {
           showToast(res.message);
           closeLeaveModal();
-        } else {
+        } else if (res) {
           showToast("Error while applying leave");
         }
       }
@@ -5346,6 +5402,65 @@
         t.textContent = msg;
         t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2800);
+      }
+
+      function showHolidayConfirm(holidayDesc, onConfirm, confirmLabel = "Mark Anyway") {
+        // Remove any existing holiday confirm dialog
+        const existing = document.getElementById("holidayConfirmModal");
+        if (existing) existing.remove();
+
+        const modal = document.createElement("div");
+        modal.id = "holidayConfirmModal";
+        modal.style.cssText = `
+          position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+          z-index: 99999; display: flex; align-items: center; justify-content: center;
+          backdrop-filter: blur(3px);
+        `;
+        modal.innerHTML = `
+          <div style="
+            background: #fff; border-radius: 16px; padding: 28px 28px 22px;
+            max-width: 400px; width: 92%; box-shadow: 0 20px 50px rgba(45,32,96,0.2);
+            animation: fadeInUp 0.2s ease;
+          ">
+            <div style="display:flex; align-items:flex-start; gap:14px; margin-bottom:18px;">
+              <div style="
+                width:40px; height:40px; border-radius:50%; background:#fef3c7;
+                display:flex; align-items:center; justify-content:center;
+                font-size:20px; flex-shrink:0; margin-top:2px;
+              ">🏖️</div>
+              <div>
+                <div style="font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:#1e1b4b; margin-bottom:6px;">
+                  Holiday Alert
+                </div>
+                <div style="font-size:13px; color:#6b7280; line-height:1.5;">
+                  <strong style="color:#d97706;">${holidayDesc}</strong><br>
+                  Do you still want to proceed?
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
+              <button id="holidayConfirmCancel" style="
+                background:#f1f5f9; border:none; border-radius:8px; padding:9px 20px;
+                font-size:13px; font-weight:600; color:#6b7280; cursor:pointer;
+                font-family:'DM Sans',sans-serif;
+              ">Cancel</button>
+              <button id="holidayConfirmOk" style="
+                background:#d97706; border:none; border-radius:8px; padding:9px 22px;
+                font-size:13px; font-weight:700; color:#fff; cursor:pointer;
+                font-family:'DM Sans',sans-serif;
+              ">${confirmLabel}</button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        document.getElementById("holidayConfirmCancel").onclick = () => modal.remove();
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        document.getElementById("holidayConfirmOk").onclick = () => {
+          modal.remove();
+          onConfirm();
+        };
       }
 
       function renderAll(currentUser) {
@@ -5580,13 +5695,19 @@
         const inp = (name, value, type = "text") =>
           `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
         const sel = (name, value, options) => {
-          let opts = options.map(o => `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`).join("");
+          let opts = options
+            .map(
+              (o) =>
+                `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`,
+            )
+            .join("");
           return `<select name="${name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">${opts}</select>`;
         };
         const dt = (name, value) =>
           `<input name="${name}" value="${value || ""}" type="date" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
 
-        const fmtDate = (d) => d ? new Date(d).toISOString().split("T")[0] : "";
+        const fmtDate = (d) =>
+          d ? new Date(d).toISOString().split("T")[0] : "";
 
         document.getElementById("drawerEditBtn").style.display = "none";
         document.getElementById("dashboardContent").innerHTML = `
@@ -5666,8 +5787,9 @@
         // Toggle Left fields based on Status dropdown
         const statusSel = document.querySelector("select[name='status']");
         if (statusSel) {
-          statusSel.addEventListener("change", function() {
-            document.getElementById("leftFields").style.display = this.value === "Left" ? "grid" : "none";
+          statusSel.addEventListener("change", function () {
+            document.getElementById("leftFields").style.display =
+              this.value === "Left" ? "grid" : "none";
           });
         }
       }
@@ -5710,33 +5832,66 @@
       }
 
       function renderReportsTab() {
-        const reports = [
+        const allReports = [
           {
             name: "SS Employee Master Report",
             desc: "Active & inactive support staff with all master data",
             icon: "👥",
+            adminOnly: false,
           },
           {
             name: "SS Monthly Attendance Report",
-            desc: "Month-wise attendance summary per employee",
+            desc: "Day-wise attendance matrix with codes (P/A/CL/SL/EL/CO/Maternity/Paternity/LWP/H/WO) per attendance cycle (26th–25th)",
             icon: "📅",
+            adminOnly: false,
           },
           {
             name: "SS Branch-wise Attendance Report",
             desc: "Branch-level attendance statistics for a month",
             icon: "🏢",
+            adminOnly: false,
           },
           {
             name: "SS Leave Balance Report",
             desc: "Current leave balance (CL, SL, EL) per employee",
             icon: "🌿",
+            adminOnly: false,
           },
           {
             name: "SS Salary Register",
             desc: "Monthly gross salary register for active support staff",
             icon: "💰",
+            adminOnly: false,
+          },
+          {
+            name: "SS Attendance Regularization and In Out Report",
+            desc: "Daily punch in/out times, attendance status & correction request status",
+            icon: "⏱️",
+            adminOnly: true,
+          },
+          {
+            name: "SS Leave Transaction Report",
+            desc: "Leave ledger: opening balance, credited, availed, closing balance per leave type",
+            icon: "📋",
+            adminOnly: true,
           },
         ];
+
+        // Filter reports based on role
+        const reports = allReports.filter(r => !r.adminOnly || isAdmin());
+
+        const uploadSection = isAdmin() ? `
+          <div style="margin-top:24px; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; box-shadow:var(--shadow);">
+            <h4 style="font-family:'Syne',sans-serif; font-size:14px; color:var(--brand); margin:0 0 6px;">📥 Upload Leave Allocation</h4>
+            <p style="font-size:11px; color:var(--muted); margin:0 0 14px;">Upload CSV/Excel file with columns: <strong>Employee Code, Leave Type, New Leaves, From Date, To Date</strong></p>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <input type="file" id="leaveAllocUpload" accept=".csv,.xlsx,.xls" style="flex:1; min-width:200px; padding:8px; font-size:12px; border:1px solid var(--border); border-radius:8px;">
+              <button class="btn-in" style="padding:8px 20px; font-size:12px; font-weight:700;" onclick="uploadLeaveAllocation()">Upload</button>
+              <button class="btn-clear" style="padding:8px 16px; font-size:11px;" onclick="downloadLeaveAllocTemplate()">📄 Template</button>
+            </div>
+            <div id="leaveAllocResult" style="margin-top:10px; font-size:12px;"></div>
+          </div>
+        ` : "";
 
         document.getElementById("hrDashboardContent").innerHTML = `
           <div style="padding:4px 0 20px;">
@@ -5761,7 +5916,61 @@
                 .join("")}
             </div>
           </div>
+          ${uploadSection}
         `;
+      }
+
+      function uploadLeaveAllocation() {
+        const fileInput = document.getElementById("leaveAllocUpload");
+        const resultDiv = document.getElementById("leaveAllocResult");
+        if (!fileInput.files.length) {
+          resultDiv.innerHTML =
+            '<span style="color:#dc2626;">Please select a file first.</span>';
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        resultDiv.innerHTML =
+          '<span style="color:var(--muted);">Uploading... ⏳</span>';
+        fetch("/api/method/sahayog.api.attendance.upload_leave_allocations", {
+          method: "POST",
+          body: formData,
+          headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
+        })
+          .then((r) => r.json())
+          .then((res) => {
+            if (res.message && res.message.success) {
+              const d = res.message.details;
+              let html = `<span style="color:#16a34a; font-weight:600;">✅ ${res.message.message}</span>`;
+              if (d.errors && d.errors.length) {
+                html +=
+                  '<div style="margin-top:6px; max-height:150px; overflow-y:auto; font-size:11px; color:#dc2626;">';
+                d.errors.slice(0, 20).forEach((e) => {
+                  html += `<div>⚠ ${e}</div>`;
+                });
+                if (d.errors.length > 20)
+                  html += `<div>...and ${d.errors.length - 20} more errors</div>`;
+                html += "</div>";
+              }
+              resultDiv.innerHTML = html;
+            } else {
+              resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Upload failed: ${JSON.stringify(res)}</span>`;
+            }
+          })
+          .catch((err) => {
+            resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
+          });
+      }
+
+      function downloadLeaveAllocTemplate() {
+        const csv =
+          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,2026-04-01,2026-03-31\nEMP001,Sick Leave,6,2026-04-01,2026-03-31\nEMP001,Earned Leave,15,2026-04-01,2026-03-31";
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "leave_allocation_template.csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
       }
 
       const IMPORT_COLUMNS = [
