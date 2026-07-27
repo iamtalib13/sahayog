@@ -9,9 +9,15 @@ def get_leave_types():
 from sahayog.api.attendance import get_leave_balances
 
 @frappe.whitelist(allow_guest=False)
-def apply_leave(employee, leave_type, from_date, to_date, reason=None):
+def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False):
+    from frappe.utils import date_diff, getdate
+
     if not employee or not leave_type:
         frappe.throw(_("Employee and Leave Type are required"))
+
+    # Normalize force param (comes as string from API call)
+    if isinstance(force, str):
+        force = force.lower() in ("true", "1", "yes")
 
     # Check Balance
     balances = get_leave_balances(employee)
@@ -21,7 +27,6 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None):
         frappe.throw(_("No leave allocation found for {0}").format(leave_type))
         
     # Calculate requested days
-    from frappe.utils import date_diff, getdate
     requested_days = date_diff(getdate(to_date), getdate(from_date)) + 1
     
     if leave_bal.unused_leaves < requested_days:
@@ -33,6 +38,25 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None):
         company = frappe.db.get_value("Employee", employee, "company")
         if company:
             holiday_list = frappe.db.get_value("Company", company, "default_holiday_list")
+
+    # Check if any date in range is a holiday — warn instead of hard block
+    if holiday_list and not force:
+        holidays = frappe.db.sql("""
+            SELECT holiday_date, description FROM `tabHoliday`
+            WHERE parent = %(hl)s
+              AND holiday_date BETWEEN %(from)s AND %(to)s
+              AND weekly_off = 0
+        """, {"hl": holiday_list, "from": from_date, "to": to_date}, as_dict=True)
+        if holidays:
+            holiday_dates = [str(h.holiday_date) for h in holidays]
+            holiday_names = ["{0} ({1})".format(str(h.holiday_date), h.description or "Holiday") for h in holidays]
+            return {
+                "success": False,
+                "is_holiday": True,
+                "holiday_dates": holiday_dates,
+                "holiday_names": holiday_names,
+                "message": "Leave period includes holidays: {0}".format(", ".join(holiday_names))
+            }
 
     doc_data = {
         "doctype": "Leave Application",
