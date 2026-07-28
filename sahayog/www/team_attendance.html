@@ -4582,7 +4582,7 @@
         if (isHR()) {
           if (attendanceTab)
             attendanceTab.textContent = "👤 Employee Directory";
-          if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          if (btnApplyLeave) btnApplyLeave.style.display = allowHrToMarkAttendance ? "inline-block" : "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee)
             btnCreateEmployee.style.display =
