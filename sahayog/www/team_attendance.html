@@ -2771,7 +2771,11 @@
                   Apply Leave
                 </h3>
                 <div style="margin-bottom: 10px">
-                  <label>Leave Type</label>
+                  <label>Employee *</label>
+                  <select id="leaveEmpSel" class="member-select"></select>
+                </div>
+                <div style="margin-bottom: 10px">
+                  <label>Leave Type *</label>
                   <select id="leaveTypeSel" class="member-select"></select>
                 </div>
                 <div
@@ -5328,6 +5332,18 @@
       }
 
       async function openLeaveModal() {
+        const empSel = document.getElementById("leaveEmpSel");
+        empSel.innerHTML = '<option value="">— Select Employee —</option>';
+        staff.filter(s => s.status === "Active").forEach((s) => {
+          const opt = document.createElement("option");
+          opt.value = s.name;
+          opt.textContent = `${s.employee_name} (${s.name})`;
+          empSel.appendChild(opt);
+        });
+        if (selectedMemberId) {
+          empSel.value = selectedMemberId;
+        }
+
         const leaveTypes = await callAPI("get_leave_types", {}, "leave");
         const sel = document.getElementById("leaveTypeSel");
         sel.innerHTML = '<option value="">— Select Leave Type —</option>';
@@ -5350,7 +5366,7 @@
       }
 
       async function submitLeave(force = false) {
-        const employee = selectedMemberId;
+        const employee = document.getElementById("leaveEmpSel").value;
         const leave_type = document.getElementById("leaveTypeSel").value;
         const from_date = document.getElementById("fromDate").value;
         const to_date = document.getElementById("toDate").value;
