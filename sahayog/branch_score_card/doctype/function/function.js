@@ -9,298 +9,443 @@ frappe.ui.form.on("Function", {
 		const wrapper = frm.get_field("function_widget").$wrapper;
 		wrapper.empty();
 
-		// ── Styles ────────────────────────────────────────────────────────────
+		// ── Styles ─────────────────────────────────────────────────────────────
 		if (!document.getElementById("tw-styles")) {
 			const s = document.createElement("style");
 			s.id = "tw-styles";
 			s.textContent = `
+			@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+			.tw-root * { box-sizing: border-box; }
 			.tw-root {
-				font-family: var(--font-stack, 'Inter', sans-serif);
+				font-family: 'Inter', var(--font-stack, sans-serif);
 				font-size: 13px;
-				margin: 6px 0 16px;
-				user-select: none;
+				margin: 8px 0 20px;
 			}
 
-			/* ── Tree container ── */
-			.tw-tree {
+			/* ── Card shell ── */
+			.tw-card {
 				border: 1px solid var(--border-color);
-				border-radius: 6px;
+				border-radius: 10px;
 				background: var(--card-bg, #fff);
-				padding: 12px 16px 16px;
+				box-shadow: 0 1px 6px rgba(0,0,0,0.06);
 				overflow: hidden;
 			}
 
-			/* ── Generic node row ── */
-			.tw-node {
+			/* ── Card header ── */
+			.tw-header {
 				display: flex;
 				align-items: center;
-				position: relative;
-				min-height: 30px;
-				padding: 2px 0;
+				justify-content: space-between;
+				padding: 12px 16px;
+				border-bottom: 1px solid var(--border-color);
+				background: var(--subtle-fg, #fafafa);
+				gap: 10px;
 			}
-
-			/* ── Tree lines via pseudo-elements ── */
-			.tw-children {
-				margin-left: 18px;
-				position: relative;
+			.tw-header-left {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				flex: 1;
+				min-width: 0;
 			}
-			/* Vertical trunk */
-			.tw-children::before {
-				content: '';
-				position: absolute;
-				left: 8px;
-				top: 0;
-				bottom: 14px;
-				width: 1px;
-				background: var(--border-color);
-			}
-			/* Horizontal branch per child */
-			.tw-child-wrap {
-				position: relative;
-				padding-left: 22px;
-			}
-			.tw-child-wrap::before {
-				content: '';
-				position: absolute;
-				left: 8px;
-				top: 16px;
-				width: 14px;
-				height: 1px;
-				background: var(--border-color);
-			}
-
-			/* ── Toggle chevron ── */
-			.tw-toggle {
-				width: 18px;
-				height: 18px;
+			.tw-toggle-btn {
+				width: 22px;
+				height: 22px;
+				border-radius: 5px;
+				border: 1px solid var(--border-color);
+				background: var(--card-bg, #fff);
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				cursor: pointer;
+				transition: background 0.15s, border-color 0.15s;
+				flex-shrink: 0;
 				color: var(--text-muted);
-				flex-shrink: 0;
-				border-radius: 3px;
-				transition: background 0.12s, color 0.12s;
-				margin-right: 4px;
-			}
-			.tw-toggle:hover {
-				background: var(--highlight-color, #eef0f8);
-				color: var(--text-color);
-			}
-			.tw-toggle i {
 				font-size: 10px;
-				transition: transform 0.18s;
 			}
-			.tw-toggle.collapsed i { transform: rotate(-90deg); }
-
-			/* ── Node icon ── */
-			.tw-icon {
-				font-size: 13px;
-				margin-right: 6px;
-				flex-shrink: 0;
+			.tw-toggle-btn:hover {
+				background: var(--primary-light, #e8f4ff);
+				border-color: var(--primary, #0176d3);
+				color: var(--primary, #0176d3);
 			}
-			.tw-icon.root  { color: var(--primary, #0176d3); }
-			.tw-icon.leaf  { color: var(--text-muted); }
+			.tw-toggle-btn i { transition: transform 0.2s ease; }
+			.tw-toggle-btn.collapsed i { transform: rotate(-90deg); }
 
-			/* ── Node label ── */
-			.tw-label {
-				flex: 1;
-				display: flex;
-				align-items: center;
-				gap: 6px;
-				cursor: default;
-				border-radius: 4px;
-				padding: 3px 6px;
-				transition: background 0.12s;
-				min-width: 0;
+			.tw-header-info { min-width: 0; }
+			.tw-header-label {
+				font-size: 10px;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.07em;
+				color: var(--text-muted);
+				margin-bottom: 1px;
 			}
-			.tw-label:hover { background: var(--highlight-color, #f0f4ff); }
-			.tw-label.selected { background: var(--primary-light, #e8f4ff); }
-
-			.tw-label-text {
-				font-weight: 500;
+			.tw-header-name {
+				font-size: 14px;
+				font-weight: 700;
 				color: var(--text-color);
 				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
 			}
-			.tw-label-text.root-text {
-				font-weight: 700;
-				font-size: 14px;
+			.tw-header-right {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				flex-shrink: 0;
 			}
-			.tw-label-sub {
-				font-size: 11px;
-				color: var(--text-muted);
-				font-weight: 400;
-			}
-
-			/* ── Count badge ── */
-			.tw-badge {
+			.tw-count-pill {
 				font-size: 11px;
 				font-weight: 600;
 				color: var(--text-muted);
 				background: var(--border-color);
-				border-radius: 10px;
-				padding: 1px 7px;
-				flex-shrink: 0;
+				border-radius: 20px;
+				padding: 2px 9px;
+				min-width: 24px;
+				text-align: center;
+				transition: background 0.2s, color 0.2s;
 			}
-
-			/* ── Action buttons (appear on hover) ── */
-			.tw-actions {
-				display: flex;
-				gap: 2px;
-				margin-left: 4px;
-				opacity: 0;
-				transition: opacity 0.15s;
+			.tw-count-pill.has-items {
+				background: var(--primary-light, #dceeff);
+				color: var(--primary, #0176d3);
 			}
-			.tw-label:hover + .tw-actions,
-			.tw-actions:hover { opacity: 1; }
-			.tw-node:hover .tw-actions { opacity: 1; }
-			.tw-root-node .tw-actions { opacity: 1; }
-
-			.tw-btn {
-				border: none;
-				background: transparent;
-				cursor: pointer;
-				border-radius: 4px;
-				padding: 3px 7px;
-				font-size: 11px;
-				font-weight: 600;
-				color: var(--text-muted);
-				transition: background 0.12s, color 0.12s;
+			.tw-add-btn {
 				display: flex;
 				align-items: center;
-				gap: 3px;
-				white-space: nowrap;
-			}
-			.tw-btn:hover { background: var(--highlight-color, #eef0f8); color: var(--text-color); }
-			.tw-btn.add   { color: var(--primary, #0176d3); }
-			.tw-btn.add:hover { background: #e8f4ff; color: var(--primary, #0176d3); }
-			.tw-btn.del:hover { background: #fff0f0; color: #c0392b; }
-
-			/* ── Inline edit form ── */
-			.tw-form-wrap {
-				padding: 8px 0 4px 0;
-			}
-			.tw-form {
-				display: flex;
-				align-items: center;
-				gap: 6px;
-				padding: 7px 10px;
-				border: 1px solid var(--primary, #0176d3);
-				border-radius: 5px;
-				background: var(--card-bg, #fff);
-				box-shadow: 0 0 0 3px rgba(1,118,211,0.08);
-			}
-			.tw-form-icon { color: var(--primary, #0176d3); font-size: 12px; flex-shrink: 0; }
-			.tw-input {
-				flex: 1;
-				border: none;
-				outline: none;
-				font-size: 13px;
-				font-weight: 500;
-				color: var(--text-color);
-				background: transparent;
-				min-width: 160px;
-			}
-			.tw-input::placeholder { color: var(--text-muted); font-weight: 400; }
-			.tw-form-save {
+				gap: 5px;
 				background: var(--primary, #0176d3);
 				color: #fff;
 				border: none;
-				border-radius: 4px;
-				padding: 4px 12px;
+				border-radius: 6px;
+				padding: 6px 13px;
 				font-size: 12px;
 				font-weight: 600;
 				cursor: pointer;
-				transition: filter 0.12s;
-				white-space: nowrap;
+				transition: filter 0.15s, transform 0.1s;
+				letter-spacing: 0.01em;
+				font-family: inherit;
 			}
-			.tw-form-save:hover { filter: brightness(1.1); }
-			.tw-form-cancel {
-				background: transparent;
-				color: var(--text-muted);
-				border: 1px solid var(--border-color);
-				border-radius: 4px;
-				padding: 4px 10px;
-				font-size: 12px;
-				cursor: pointer;
-				transition: color 0.12s;
-				white-space: nowrap;
-			}
-			.tw-form-cancel:hover { color: var(--text-color); }
+			.tw-add-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+			.tw-add-btn:active { transform: translateY(0); filter: brightness(0.97); }
 
-			/* ── Row editing state ── */
-			.tw-node.tw-row-editing .tw-label {
-				background: transparent;
-				flex: 1;
-				padding: 0;
+			/* ── Tree body ── */
+			.tw-body {
+				padding: 8px 0 4px;
+				transition: all 0.2s ease;
 			}
+
+			/* ── Empty state ── */
+			.tw-empty-state {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				padding: 36px 24px;
+				gap: 8px;
+				text-align: center;
+			}
+			.tw-empty-icon {
+				width: 44px;
+				height: 44px;
+				background: var(--subtle-fg, #f3f4f6);
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: var(--text-muted);
+				font-size: 18px;
+				margin-bottom: 4px;
+			}
+			.tw-empty-title {
+				font-size: 13px;
+				font-weight: 600;
+				color: var(--text-color);
+			}
+			.tw-empty-sub {
+				font-size: 12px;
+				color: var(--text-muted);
+				line-height: 1.5;
+			}
+			.tw-empty-cta {
+				margin-top: 6px;
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				background: transparent;
+				color: var(--primary, #0176d3);
+				border: 1.5px dashed var(--primary, #0176d3);
+				border-radius: 6px;
+				padding: 6px 16px;
+				font-size: 12px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: background 0.15s;
+				font-family: inherit;
+			}
+			.tw-empty-cta:hover { background: var(--primary-light, #e8f4ff); }
+
+			/* ── Tree lines + rows ── */
+			.tw-tree-list { padding: 0 12px 8px; }
+			.tw-tree-item {
+				display: flex;
+				flex-direction: column;
+				position: relative;
+				padding-left: 20px;
+				margin-bottom: 1px;
+			}
+			/* Vertical trunk line */
+			.tw-tree-item:not(:last-child)::before {
+				content: '';
+				position: absolute;
+				left: 7px;
+				top: 28px;
+				bottom: -1px;
+				width: 1.5px;
+				background: var(--border-color);
+				border-radius: 1px;
+			}
+			/* Horizontal branch line */
+			.tw-tree-item::after {
+				content: '';
+				position: absolute;
+				left: 7px;
+				top: 18px;
+				width: 13px;
+				height: 1.5px;
+				background: var(--border-color);
+				border-radius: 1px;
+			}
+
+			/* ── Parameter row ── */
+			.tw-param-row {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 7px 10px;
+				border-radius: 7px;
+				cursor: default;
+				transition: background 0.12s;
+				border: 1.5px solid transparent;
+			}
+			.tw-param-row:hover { background: var(--highlight-color, #f0f5ff); }
+			.tw-param-row.is-editing {
+				background: #fffbf0;
+				border-color: #f0c040;
+				border-radius: 7px;
+			}
+
+			.tw-param-dot {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: var(--border-color);
+				flex-shrink: 0;
+				border: 1.5px solid var(--text-muted);
+				transition: border-color 0.15s, background 0.15s;
+			}
+			.tw-param-row:hover .tw-param-dot { border-color: var(--primary, #0176d3); }
+			.tw-param-row.is-editing .tw-param-dot { border-color: #e0a800; background: #ffe08a; }
+
+			.tw-param-name {
+				flex: 1;
+				font-weight: 500;
+				color: var(--text-color);
+				font-size: 13px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			/* ── Row actions ── */
+			.tw-row-actions {
+				display: flex;
+				gap: 2px;
+				opacity: 0;
+				transition: opacity 0.15s;
+				flex-shrink: 0;
+			}
+			.tw-param-row:hover .tw-row-actions,
+			.tw-param-row.is-editing .tw-row-actions { opacity: 1; }
+
+			.tw-icon-btn {
+				width: 26px;
+				height: 26px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border: none;
+				background: transparent;
+				border-radius: 5px;
+				cursor: pointer;
+				color: var(--text-muted);
+				font-size: 12px;
+				transition: background 0.12s, color 0.12s;
+				font-family: inherit;
+			}
+			.tw-icon-btn:hover { background: var(--border-color); color: var(--text-color); }
+			.tw-icon-btn.del:hover { background: #ffe5e5; color: #c0392b; }
+
+			/* ── Inline row edit ── */
 			.tw-row-input {
 				flex: 1;
-				height: 26px;
-				border: 1px solid var(--primary, #0176d3);
-				border-radius: 4px;
-				padding: 0 8px;
+				height: 28px;
+				border: 1.5px solid var(--primary, #0176d3);
+				border-radius: 5px;
+				padding: 0 9px;
 				font-size: 13px;
 				font-weight: 500;
 				color: var(--text-color);
 				background: var(--card-bg, #fff);
 				outline: none;
-				box-shadow: 0 0 0 2px rgba(1,118,211,0.12);
-				min-width: 120px;
+				box-shadow: 0 0 0 3px rgba(1,118,211,0.10);
+				font-family: inherit;
+				min-width: 0;
 			}
 			.tw-row-save {
 				height: 26px;
-				padding: 0 10px;
+				padding: 0 11px;
 				background: var(--primary, #0176d3);
 				color: #fff;
 				border: none;
-				border-radius: 4px;
+				border-radius: 5px;
 				font-size: 11px;
 				font-weight: 600;
 				cursor: pointer;
+				font-family: inherit;
 				white-space: nowrap;
 				transition: filter 0.12s;
 			}
 			.tw-row-save:hover { filter: brightness(1.1); }
 			.tw-row-cancel {
 				height: 26px;
-				padding: 0 8px;
+				padding: 0 9px;
 				background: transparent;
 				color: var(--text-muted);
 				border: 1px solid var(--border-color);
-				border-radius: 4px;
+				border-radius: 5px;
 				font-size: 11px;
+				font-weight: 600;
 				cursor: pointer;
+				font-family: inherit;
 				white-space: nowrap;
-				transition: color 0.12s;
+				transition: border-color 0.12s, color 0.12s;
 			}
-			.tw-row-cancel:hover { color: var(--text-color); }
+			.tw-row-cancel:hover { color: var(--text-color); border-color: var(--text-muted); }
 
-			/* ── Loading / empty ── */
-			.tw-empty {
-				padding: 20px 8px;
-				color: var(--text-muted);
-				font-size: 12px;
-				display: flex;
+			/* ── Add-param inline form (new row) ── */
+			.tw-add-row {
+				display: none;
 				align-items: center;
 				gap: 8px;
+				padding: 7px 10px;
+				border-radius: 7px;
+				border: 1.5px dashed var(--primary, #0176d3);
+				background: var(--primary-light, #f0f7ff);
+				margin: 4px 12px 8px;
+				animation: tw-fade-in 0.15s ease;
 			}
-			.tw-spinner { animation: tw-spin 0.8s linear infinite; display: inline-block; }
-			@keyframes tw-spin { to { transform: rotate(360deg); } }
+			.tw-add-row.visible { display: flex; }
+			.tw-add-row-icon { color: var(--primary, #0176d3); font-size: 11px; flex-shrink: 0; }
+			.tw-add-input {
+				flex: 1;
+				height: 28px;
+				border: 1.5px solid var(--primary, #0176d3);
+				border-radius: 5px;
+				padding: 0 9px;
+				font-size: 13px;
+				font-weight: 500;
+				color: var(--text-color);
+				background: #fff;
+				outline: none;
+				box-shadow: 0 0 0 3px rgba(1,118,211,0.10);
+				font-family: inherit;
+				min-width: 0;
+			}
+			.tw-add-save {
+				height: 26px;
+				padding: 0 12px;
+				background: var(--primary, #0176d3);
+				color: #fff;
+				border: none;
+				border-radius: 5px;
+				font-size: 11px;
+				font-weight: 600;
+				cursor: pointer;
+				font-family: inherit;
+				white-space: nowrap;
+				transition: filter 0.12s;
+			}
+			.tw-add-save:hover { filter: brightness(1.1); }
+			.tw-add-cancel {
+				height: 26px;
+				padding: 0 9px;
+				background: transparent;
+				color: var(--text-muted);
+				border: 1px solid var(--border-color);
+				border-radius: 5px;
+				font-size: 11px;
+				cursor: pointer;
+				font-family: inherit;
+			}
+
+			/* ── Skeleton loading ── */
+			.tw-skeleton-wrap { padding: 8px 12px 12px; }
+			.tw-skeleton-row {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 7px 10px;
+				margin-bottom: 2px;
+			}
+			.tw-skel {
+				border-radius: 4px;
+				background: linear-gradient(90deg, var(--border-color) 25%, var(--subtle-fg, #f0f0f0) 50%, var(--border-color) 75%);
+				background-size: 200% 100%;
+				animation: tw-shimmer 1.3s infinite;
+			}
+			.tw-skel-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+			.tw-skel-line { height: 12px; }
+			@keyframes tw-shimmer { to { background-position: -200% 0; } }
+			@keyframes tw-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+			.tw-tree-item { animation: tw-fade-in 0.18s ease both; }
+
+			/* ── Keyboard hint ── */
+			.tw-kbd-hint {
+				font-size: 10px;
+				color: var(--text-muted);
+				padding: 4px 16px 10px;
+				display: none;
+				gap: 10px;
+				align-items: center;
+			}
+			.tw-add-row.visible ~ .tw-kbd-hint,
+			.tw-kbd-hint.visible { display: flex; }
+			.tw-kbd {
+				display: inline-flex;
+				align-items: center;
+				background: var(--subtle-fg, #f3f3f3);
+				border: 1px solid var(--border-color);
+				border-radius: 3px;
+				padding: 0 5px;
+				font-size: 10px;
+				font-weight: 600;
+				color: var(--text-muted);
+				height: 16px;
+			}
 			`;
 			document.head.appendChild(s);
 		}
 
-		// ── Not saved guard ───────────────────────────────────────────────────
+		// ── Guard: unsaved ──────────────────────────────────────────────────────
 		if (frm.is_new()) {
 			wrapper.html(`
 				<div class="tw-root">
-					<div class="tw-tree">
-						<div class="tw-empty">
-							<i class="fa fa-info-circle"></i>
-							Save the Function first to manage Parameters.
+					<div class="tw-card">
+						<div class="tw-empty-state">
+							<div class="tw-empty-icon"><i class="fa fa-save"></i></div>
+							<div class="tw-empty-title">Save first</div>
+							<div class="tw-empty-sub">Save this Function to start managing Parameters.</div>
 						</div>
 					</div>
 				</div>
@@ -308,178 +453,150 @@ frappe.ui.form.on("Function", {
 			return;
 		}
 
-		const funcName = frm.doc.function || frm.doc.name;
-		let treeOpen  = true;  // root expanded state
-		let params    = [];    // current params list
+		const funcName = frappe.utils.escape_html(frm.doc.function || frm.doc.name);
+		let params    = [];
+		let treeOpen  = true;
 
-		// ── Build full tree DOM ───────────────────────────────────────────────
-		function buildTree() {
-			const root = $(`<div class="tw-root"><div class="tw-tree"></div></div>`);
-			const tree = root.find(".tw-tree");
+		// ── Build DOM ───────────────────────────────────────────────────────────
+		function buildUI() {
+			return $(`
+				<div class="tw-root">
+					<div class="tw-card">
 
-			// ── Root node ────────────────────────────────────────────────────
-			const rootNode = $(`
-				<div class="tw-node tw-root-node">
-					<div class="tw-toggle ${treeOpen ? "" : "collapsed"}" id="tw-root-toggle">
-						<i class="fa fa-chevron-down"></i>
-					</div>
-					<i class="fa fa-cube tw-icon root"></i>
-					<div class="tw-label" id="tw-root-label">
-						<span class="tw-label-text root-text">${frappe.utils.escape_html(funcName)}</span>
-						<span class="tw-label-sub">Function</span>
-						<span class="tw-badge" id="tw-badge">${params.length}</span>
-					</div>
-					<div class="tw-actions">
-						<button class="tw-btn add" id="tw-add-root">
-							<i class="fa fa-plus"></i> Add Parameter
-						</button>
+						<!-- Header -->
+						<div class="tw-header">
+							<div class="tw-header-left">
+								<button class="tw-toggle-btn" id="tw-toggle">
+									<i class="fa fa-chevron-down"></i>
+								</button>
+								<div class="tw-header-info">
+									<div class="tw-header-label">Function</div>
+									<div class="tw-header-name">${funcName}</div>
+								</div>
+							</div>
+							<div class="tw-header-right">
+								<span class="tw-count-pill" id="tw-count">–</span>
+								<button class="tw-add-btn" id="tw-add-btn">
+									<i class="fa fa-plus"></i> Add Parameter
+								</button>
+							</div>
+						</div>
+
+						<!-- Body -->
+						<div class="tw-body" id="tw-body">
+							<!-- skeleton -->
+							<div class="tw-skeleton-wrap" id="tw-skeleton">
+								${[70,50,85].map(w => `
+									<div class="tw-skeleton-row">
+										<div class="tw-skel tw-skel-dot"></div>
+										<div class="tw-skel tw-skel-line" style="width:${w}%"></div>
+									</div>
+								`).join("")}
+							</div>
+							<!-- list -->
+							<div class="tw-tree-list" id="tw-list" style="display:none"></div>
+							<!-- add row -->
+							<div class="tw-add-row" id="tw-add-row">
+								<i class="fa fa-tag tw-add-row-icon"></i>
+								<input class="tw-add-input" id="tw-add-input" type="text" placeholder="Enter parameter name…" autocomplete="off" />
+								<button class="tw-add-save" id="tw-add-save">Save</button>
+								<button class="tw-add-cancel" id="tw-add-cancel">Cancel</button>
+							</div>
+							<div class="tw-kbd-hint" id="tw-kbd-hint">
+								<span><span class="tw-kbd">↵ Enter</span> to save</span>
+								<span><span class="tw-kbd">Esc</span> to cancel</span>
+							</div>
+						</div>
+
 					</div>
 				</div>
 			`);
-			tree.append(rootNode);
+		}
 
-			// ── Children container ────────────────────────────────────────────
-			const childrenWrap = $(`<div class="tw-children" id="tw-children"></div>`);
-			if (!treeOpen) childrenWrap.hide();
-			tree.append(childrenWrap);
+		// ── Render list ──────────────────────────────────────────────────────────
+		function renderList() {
+			const list    = widget.find("#tw-list");
+			const count   = widget.find("#tw-count");
+			const skeleton = widget.find("#tw-skeleton");
+
+			skeleton.hide();
+			list.show().empty();
+
+			count.text(params.length);
+			count.toggleClass("has-items", params.length > 0);
 
 			if (!params.length) {
-				childrenWrap.append(`
-					<div class="tw-child-wrap">
-						<div class="tw-empty">
-							<i class="fa fa-tag" style="opacity:.4"></i>
-							No parameters yet.
-						</div>
+				list.html(`
+					<div class="tw-empty-state">
+						<div class="tw-empty-icon"><i class="fa fa-tags"></i></div>
+						<div class="tw-empty-title">No parameters yet</div>
+						<div class="tw-empty-sub">Parameters help define measurable criteria<br>for this Function.</div>
+						<button class="tw-empty-cta" id="tw-empty-add">
+							<i class="fa fa-plus"></i> Add first parameter
+						</button>
 					</div>
 				`);
-			} else {
-				params.forEach((p, i) => {
-					const isLast = (i === params.length - 1);
-					const childWrap = $(`<div class="tw-child-wrap" data-name="${p.name}"></div>`);
+				list.find("#tw-empty-add").on("click", () => showAddRow());
+				return;
+			}
 
-					if (isLast) {
-						// Last child: shorten the vertical trunk
-						childWrap.css({ position: "relative" });
-					}
-
-					const leafNode = $(`
-						<div class="tw-node">
-							<i class="fa fa-tag tw-icon leaf"></i>
-							<div class="tw-label tw-leaf-label">
-								<span class="tw-label-text">
-									${frappe.utils.escape_html(p.parameter)}
-								</span>
-							</div>
-							<div class="tw-actions">
-								<button class="tw-btn add tw-edit-btn"
+			params.forEach((p, i) => {
+				const item = $(`
+					<div class="tw-tree-item" style="animation-delay:${i * 0.04}s">
+						<div class="tw-param-row" data-name="${p.name}">
+							<div class="tw-param-dot"></div>
+							<div class="tw-param-name">${frappe.utils.escape_html(p.parameter)}</div>
+							<div class="tw-row-actions">
+								<button class="tw-icon-btn edit-btn" title="Edit"
 									data-name="${p.name}"
 									data-value="${frappe.utils.escape_html(p.parameter)}">
-									<i class="fa fa-pencil"></i> Edit
+									<i class="fa fa-pencil"></i>
 								</button>
-								<button class="tw-btn del tw-del-btn" data-name="${p.name}">
+								<button class="tw-icon-btn del" title="Delete" data-name="${p.name}">
 									<i class="fa fa-trash-o"></i>
 								</button>
 							</div>
 						</div>
-					`);
-					childWrap.append(leafNode);
-					childrenWrap.append(childWrap);
-				});
-			}
-
-			// ── Add-form slot (appended inside children) ───────────────────
-			const formSlot = $(`<div class="tw-child-wrap tw-form-slot" style="display:none"></div>`);
-			childrenWrap.append(formSlot);
-
-			return root;
-		}
-
-		// ── Render ────────────────────────────────────────────────────────────
-		function render() {
-			wrapper.empty();
-			const tree = buildTree();
-			wrapper.append(tree);
-			bindEvents();
-		}
-
-		// ── Inline form ───────────────────────────────────────────────────────
-		function showAddForm() {
-			// Remove any open form
-			wrapper.find(".tw-form-wrap").remove();
-
-			// Make sure children visible
-			wrapper.find("#tw-children").show();
-			treeOpen = true;
-			wrapper.find("#tw-root-toggle").removeClass("collapsed");
-
-			const slot = wrapper.find(".tw-form-slot");
-			slot.show();
-			slot.html(`
-				<div class="tw-form-wrap">
-					<div class="tw-form">
-						<i class="fa fa-tag tw-form-icon"></i>
-						<input class="tw-input tw-add-input" type="text" placeholder="Parameter name…" />
-						<button class="tw-form-save tw-add-save">Save</button>
-						<button class="tw-form-cancel tw-add-cancel">Cancel</button>
 					</div>
-				</div>
-			`);
-			slot.find(".tw-add-input").focus();
-
-			slot.find(".tw-add-save").on("click", () => {
-				const val = slot.find(".tw-add-input").val().trim();
-				if (!val) { frappe.show_alert({ message: "Name cannot be empty.", indicator: "red" }); return; }
-				doCreate(val);
+				`);
+				list.append(item);
 			});
-			slot.find(".tw-add-input").on("keydown", e => {
-				if (e.key === "Enter")  slot.find(".tw-add-save").trigger("click");
-				if (e.key === "Escape") { slot.hide().empty(); }
-			});
-			slot.find(".tw-add-cancel").on("click", () => slot.hide().empty());
 		}
 
-		function showEditForm(editBtn, name, current) {
-			// Restore any previously editing row first
-			wrapper.find(".tw-node.tw-row-editing").each(function () {
+		// ── Inline row edit ──────────────────────────────────────────────────────
+		function showRowEdit(btn) {
+			// Cancel any open row edit
+			widget.find(".tw-param-row.is-editing").each(function () {
 				cancelRowEdit($(this));
 			});
+			// Close add row if open
+			hideAddRow();
 
-			const node    = editBtn.closest(".tw-node");
-			const label   = node.find(".tw-label");
-			const actions = node.find(".tw-actions");
+			const row     = btn.closest(".tw-param-row");
+			const name    = btn.data("name");
+			const current = btn.data("value");
+			const nameDiv = row.find(".tw-param-name");
+			const actions = row.find(".tw-row-actions");
 
-			// Store original label HTML to restore on cancel
-			node.addClass("tw-row-editing");
-			node.data("orig-label", label.html());
-			node.data("orig-actions", actions.html());
+			row.addClass("is-editing");
+			row.data("orig-name", nameDiv.html());
+			row.data("orig-actions", actions.html());
 
-			// Replace label content with input
-			label.html(`
-				<input
-					class="tw-row-input"
-					type="text"
-					value="${frappe.utils.escape_html(current)}"
-				/>
-			`);
-
-			// Replace action buttons with Save / Cancel
-			actions.css("opacity", "1").html(`
+			nameDiv.html(`<input class="tw-row-input" type="text" value="${frappe.utils.escape_html(current)}" autocomplete="off" />`);
+			actions.css("opacity","1").html(`
 				<button class="tw-row-save">Save</button>
 				<button class="tw-row-cancel">Cancel</button>
 			`);
 
-			const input = label.find(".tw-row-input");
+			const input = nameDiv.find(".tw-row-input");
 			input.focus().select();
 
-			// Save
 			const doSave = () => {
 				const val = input.val().trim();
 				if (!val) { frappe.show_alert({ message: "Name cannot be empty.", indicator: "red" }); return; }
 				doUpdate(name, val);
 			};
-
-			// Cancel — restore original
-			const doCancel = () => cancelRowEdit(node);
+			const doCancel = () => cancelRowEdit(row);
 
 			actions.find(".tw-row-save").on("click", doSave);
 			actions.find(".tw-row-cancel").on("click", doCancel);
@@ -489,24 +606,53 @@ frappe.ui.form.on("Function", {
 			});
 		}
 
-		function cancelRowEdit(node) {
-			const label   = node.find(".tw-label");
-			const actions = node.find(".tw-actions");
-			label.html(node.data("orig-label"));
-			actions.css("opacity", "").html(node.data("orig-actions"));
-			node.removeClass("tw-row-editing");
+		function cancelRowEdit(row) {
+			row.find(".tw-param-name").html(row.data("orig-name"));
+			row.find(".tw-row-actions").css("opacity","").html(row.data("orig-actions"));
+			row.removeClass("is-editing");
 		}
 
-		// ── API ───────────────────────────────────────────────────────────────
+		// ── Add row ──────────────────────────────────────────────────────────────
+		function showAddRow() {
+			// Cancel any editing
+			widget.find(".tw-param-row.is-editing").each(function () {
+				cancelRowEdit($(this));
+			});
+
+			const addRow  = widget.find("#tw-add-row");
+			const hint    = widget.find("#tw-kbd-hint");
+			const input   = widget.find("#tw-add-input");
+
+			// Expand tree if collapsed
+			if (!treeOpen) toggleTree();
+
+			addRow.addClass("visible");
+			hint.addClass("visible");
+			input.val("").focus();
+		}
+
+		function hideAddRow() {
+			widget.find("#tw-add-row").removeClass("visible");
+			widget.find("#tw-kbd-hint").removeClass("visible");
+			widget.find("#tw-add-input").val("");
+		}
+
+		// ── Collapse / expand ────────────────────────────────────────────────────
+		function toggleTree() {
+			treeOpen = !treeOpen;
+			const btn  = widget.find("#tw-toggle");
+			const body = widget.find("#tw-body");
+			btn.toggleClass("collapsed", !treeOpen);
+			if (treeOpen) {
+				body.slideDown(180);
+			} else {
+				hideAddRow();
+				body.slideUp(180);
+			}
+		}
+
+		// ── API ──────────────────────────────────────────────────────────────────
 		function loadList() {
-			wrapper.empty();
-			wrapper.html(`
-				<div class="tw-root"><div class="tw-tree">
-					<div class="tw-empty">
-						<i class="fa fa-circle-o-notch tw-spinner"></i> Loading…
-					</div>
-				</div></div>
-			`);
 			frappe.call({
 				method: "frappe.client.get_list",
 				args: {
@@ -518,7 +664,7 @@ frappe.ui.form.on("Function", {
 				},
 				callback(r) {
 					params = r.message || [];
-					render();
+					renderList();
 				},
 			});
 		}
@@ -529,7 +675,8 @@ frappe.ui.form.on("Function", {
 				args: { doc: { doctype: "Parameter", function: frm.doc.name, parameter: val } },
 				callback(r) {
 					if (!r.exc) {
-						frappe.show_alert({ message: `"${val}" added.`, indicator: "green" });
+						hideAddRow();
+						frappe.show_alert({ message: `<b>${val}</b> added.`, indicator: "green" });
 						loadList();
 					}
 				},
@@ -542,7 +689,7 @@ frappe.ui.form.on("Function", {
 				args: { doctype: "Parameter", name, fieldname: "parameter", value: val },
 				callback(r) {
 					if (!r.exc) {
-						frappe.show_alert({ message: "Updated.", indicator: "green" });
+						frappe.show_alert({ message: "Parameter updated.", indicator: "green" });
 						loadList();
 					}
 				},
@@ -556,7 +703,7 @@ frappe.ui.form.on("Function", {
 					args: { doctype: "Parameter", name },
 					callback(r) {
 						if (!r.exc) {
-							frappe.show_alert({ message: `"${label}" deleted.`, indicator: "orange" });
+							frappe.show_alert({ message: `<b>${label}</b> deleted.`, indicator: "orange" });
 							loadList();
 						}
 					},
@@ -564,34 +711,45 @@ frappe.ui.form.on("Function", {
 			});
 		}
 
-		// ── Event binding ─────────────────────────────────────────────────────
+		// ── Wire up events ───────────────────────────────────────────────────────
 		function bindEvents() {
-			// Toggle expand/collapse
-			wrapper.find("#tw-root-toggle").on("click", function () {
-				treeOpen = !treeOpen;
-				$(this).toggleClass("collapsed", !treeOpen);
-				wrapper.find("#tw-children").toggle(treeOpen);
+			// Expand / collapse
+			widget.find("#tw-toggle").on("click", toggleTree);
+
+			// Header add button
+			widget.find("#tw-add-btn").on("click", () => showAddRow());
+
+			// Add row: save
+			widget.find("#tw-add-save").on("click", () => {
+				const val = widget.find("#tw-add-input").val().trim();
+				if (!val) { frappe.show_alert({ message: "Name cannot be empty.", indicator: "red" }); return; }
+				doCreate(val);
+			});
+			// Add row: cancel
+			widget.find("#tw-add-cancel").on("click", () => hideAddRow());
+			// Add row: keyboard
+			widget.find("#tw-add-input").on("keydown", e => {
+				if (e.key === "Enter")  widget.find("#tw-add-save").trigger("click");
+				if (e.key === "Escape") hideAddRow();
 			});
 
-			// Add parameter
-			wrapper.find("#tw-add-root").on("click", () => showAddForm());
-
-			// Edit — inline within same row
-			wrapper.on("click", ".tw-edit-btn", function () {
-				const name    = $(this).data("name");
-				const current = $(this).data("value");
-				showEditForm($(this), name, current);
+			// Edit button (delegated)
+			widget.on("click", ".edit-btn", function () {
+				showRowEdit($(this));
 			});
 
-			// Delete
-			wrapper.on("click", ".tw-del-btn", function () {
+			// Delete button (delegated)
+			widget.on("click", ".tw-icon-btn.del", function () {
 				const name  = $(this).data("name");
-				const label = $(this).closest(".tw-node").find(".tw-label-text").text().trim();
+				const label = $(this).closest(".tw-param-row").find(".tw-param-name").text().trim();
 				doDelete(name, label);
 			});
 		}
 
-		// ── Boot ──────────────────────────────────────────────────────────────
+		// ── Mount ─────────────────────────────────────────────────────────────────
+		const widget = buildUI();
+		wrapper.append(widget);
+		bindEvents();
 		loadList();
 	},
 });
