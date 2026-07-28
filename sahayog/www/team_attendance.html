@@ -3264,6 +3264,7 @@
       ];
       let staff = [];
       let userRoles = [];
+      let allowHrToMarkAttendance = false;
 
       // ── ROLE CHECK HELPERS ────────────────────────────────
       function isHR() {
@@ -4124,7 +4125,7 @@
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
-        if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
+        if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
         if (subTabs) subTabs.style.display = "none";
         if (empStatusFilters) empStatusFilters.style.display = "none";
         if (dirCardHead) dirCardHead.style.display = "none";
@@ -4160,7 +4161,7 @@
         }
 
         if (tab === "attendance") {
-          if (controls) controls.style.display = isHR() ? "none" : "flex";
+          if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
           if (dirCardHead) dirCardHead.style.display = "flex";
@@ -4541,11 +4542,7 @@
 
         if (data && data.team) {
           userRoles = data.roles || [];
-          const hrRoles = ["HR Manager", "HR User", "Administrator"];
-          const hasHrRole = userRoles.some(r => hrRoles.includes(r));
-          if (hasHrRole && data.allow_hr_to_mark_attendance) {
-            console.log(true);
-          }
+          allowHrToMarkAttendance = !!data.allow_hr_to_mark_attendance;
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],
@@ -4619,7 +4616,7 @@
           if (reportsTab) reportsTab.style.display = "flex";
           const payrollTab = document.getElementById("tabPayroll");
           if (payrollTab) payrollTab.style.display = "flex";
-          if (bulkBar)
+          if (bulkBar && !allowHrToMarkAttendance)
             bulkBar.style.setProperty("display", "none", "important");
 
           // Show/hide employee status filter tabs based on current tab
@@ -5078,10 +5075,10 @@
             else
               pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
-            if (isHR()) {
+            if (isHR() && !allowHrToMarkAttendance) {
               actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
             } else {
-              const canManage = isBranchManager() || s.is_self;
+              const canManage = isBranchManager() || isHR() || s.is_self;
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
                   actionsHtml = "";
@@ -5101,7 +5098,7 @@
           }
 
           const checkboxHtml =
-            !isLeft && isBranchManager()
+            !isLeft && (isBranchManager() || (isHR() && allowHrToMarkAttendance))
               ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
               : "";
 
