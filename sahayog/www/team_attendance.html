@@ -5075,10 +5075,23 @@
             else
               pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
-            if (isHR() && !allowHrToMarkAttendance) {
-              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            if (isHR()) {
+              if (allowHrToMarkAttendance) {
+                if (status === "On Leave" || status === "Half Day") {
+                  actionsHtml = "";
+                } else if (!status || status === "Not Marked") {
+                  actionsHtml = `
+                    <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+                    <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+                } else if (status === "Present" && !s.check_out) {
+                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                }
+              } else {
+                actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+              }
             } else {
-              const canManage = isBranchManager() || isHR() || s.is_self;
+              const canManage = isBranchManager() || s.is_self;
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
                   actionsHtml = "";
@@ -5098,7 +5111,7 @@
           }
 
           const checkboxHtml =
-            !isLeft && (isBranchManager() || (isHR() && allowHrToMarkAttendance))
+            !isLeft && ((isHR() && allowHrToMarkAttendance) || (!isHR() && isBranchManager()))
               ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
               : "";
 
