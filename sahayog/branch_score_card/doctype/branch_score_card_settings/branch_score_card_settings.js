@@ -589,10 +589,11 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		// ── Render one function group ────────────────────────────────────────────
 		function renderFuncGroup(f, fi, container) {
 			const paramCount = (f.params || []).length;
-			const groupId    = `mw-group-${f.name.replace(/\s/g, "_")}`;
+			// Index-based safe key — avoids special chars (/, spaces, etc.) breaking selectors
+			const safeKey = `fn${fi}`;
 
 			const group = $(`
-				<div class="mw-func-group ${f.open ? "open" : ""}" id="${groupId}" style="animation-delay:${fi * 0.05}s">
+				<div class="mw-func-group ${f.open ? "open" : ""}" data-safe-key="${safeKey}" style="animation-delay:${fi * 0.05}s">
 					<!-- Function header -->
 					<div class="mw-func-header">
 						<i class="fa fa-chevron-right mw-func-chevron"></i>
@@ -613,7 +614,7 @@ frappe.ui.form.on("Branch Score Card Settings", {
 
 					<!-- Parameters panel -->
 					<div class="mw-param-body" style="${f.open ? "" : "display:none"}">
-						<div class="mw-param-list" id="mw-params-${f.name.replace(/\s/g,"_")}">
+						<div class="mw-param-list" data-param-key="${safeKey}">
 							${(f.params || []).length === 0 ? `
 								<div style="padding:10px 8px;color:var(--text-muted);font-size:12px;display:flex;align-items:center;gap:6px;">
 									<i class="fa fa-info-circle" style="opacity:.5"></i>
@@ -621,7 +622,7 @@ frappe.ui.form.on("Branch Score Card Settings", {
 								</div>
 							` : ""}
 						</div>
-						<div class="mw-add-param-row" id="mw-add-param-row-${f.name.replace(/\s/g,"_")}">
+						<div class="mw-add-param-row" data-add-key="${safeKey}">
 							<i class="fa fa-tag" style="color:var(--primary);font-size:11px;flex-shrink:0"></i>
 							<input class="mw-add-param-input" type="text" placeholder="Parameter name…" autocomplete="off" />
 							<button class="mw-add-param-save">Save</button>
@@ -631,9 +632,7 @@ frappe.ui.form.on("Branch Score Card Settings", {
 							<span><span class="mw-kbd">↵</span> save</span>
 							<span><span class="mw-kbd">Esc</span> cancel</span>
 						</div>
-						<button class="mw-add-param-btn"
-							data-func-name="${f.name}"
-							data-func-key="${f.name.replace(/\s/g,"_")}">
+						<button class="mw-add-param-btn" data-func-name="${f.name}">
 							<i class="fa fa-plus"></i> Add Parameter
 						</button>
 					</div>
@@ -641,20 +640,20 @@ frappe.ui.form.on("Branch Score Card Settings", {
 			`);
 
 			// Render existing params
-			const paramListEl = group.find(`#mw-params-${f.name.replace(/\s/g,"_")}`);
+			const paramListEl = group.find(`.mw-param-list[data-param-key="${safeKey}"]`);
 			if (f.params && f.params.length) {
 				paramListEl.empty();
 				f.params.forEach((p, pi) => {
-					paramListEl.append(buildParamItem(p, pi, f.params.length));
+					paramListEl.append(buildParamItem(p, pi));
 				});
 			}
 
 			container.append(group);
-			bindGroupEvents(group, f);
+			bindGroupEvents(group, f, safeKey);
 		}
 
 		// ── Build a single param item DOM ────────────────────────────────────────
-		function buildParamItem(p, pi, total) {
+		function buildParamItem(p, pi) {
 			return $(`
 				<div class="mw-param-item" style="animation-delay:${pi * 0.04}s">
 					<div class="mw-param-row" data-name="${p.name}">
@@ -677,8 +676,7 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		}
 
 		// ── Bind events per group ────────────────────────────────────────────────
-		function bindGroupEvents(group, f) {
-			const key = f.name.replace(/\s/g, "_");
+		function bindGroupEvents(group, f, safeKey) {
 
 			// Toggle open/close
 			group.find(".mw-func-header").on("click", function (e) {
@@ -737,9 +735,8 @@ frappe.ui.form.on("Branch Score Card Settings", {
 
 			// ── Add Parameter ──
 			group.find(".mw-add-param-btn").on("click", function () {
-				const addRow = group.find(`#mw-add-param-row-${key}`);
+				const addRow = group.find(`.mw-add-param-row[data-add-key="${safeKey}"]`);
 				const hint   = group.find(".mw-kbd-hint");
-				// Close any open editing first
 				group.find(".mw-param-row.is-editing").each(function () { cancelParamEdit($(this)); });
 				addRow.addClass("visible");
 				hint.show();
@@ -747,19 +744,20 @@ frappe.ui.form.on("Branch Score Card Settings", {
 			});
 
 			// Add param: save
-			group.find(`#mw-add-param-row-${key} .mw-add-param-save`).on("click", function () {
-				const val = group.find(`#mw-add-param-row-${key} .mw-add-param-input`).val().trim();
+			const addRow = () => group.find(`.mw-add-param-row[data-add-key="${safeKey}"]`);
+			group.find(`.mw-add-param-row[data-add-key="${safeKey}"] .mw-add-param-save`).on("click", function () {
+				const val = addRow().find(".mw-add-param-input").val().trim();
 				if (!val) { frappe.show_alert({ message: "Name cannot be empty.", indicator: "red" }); return; }
-				createParameter(f.name, val, group, key);
+				createParameter(f.name, val, group, safeKey);
 			});
 			// Add param: cancel
-			group.find(`#mw-add-param-row-${key} .mw-add-param-cancel`).on("click", function () {
-				hideAddParamRow(group, key);
+			group.find(`.mw-add-param-row[data-add-key="${safeKey}"] .mw-add-param-cancel`).on("click", function () {
+				hideAddParamRow(group, safeKey);
 			});
 			// Add param: keyboard
-			group.find(`#mw-add-param-row-${key} .mw-add-param-input`).on("keydown", function (e) {
-				if (e.key === "Enter")  group.find(`#mw-add-param-row-${key} .mw-add-param-save`).trigger("click");
-				if (e.key === "Escape") hideAddParamRow(group, key);
+			group.find(`.mw-add-param-row[data-add-key="${safeKey}"] .mw-add-param-input`).on("keydown", function (e) {
+				if (e.key === "Enter")  addRow().find(".mw-add-param-save").trigger("click");
+				if (e.key === "Escape") hideAddParamRow(group, safeKey);
 			});
 
 			// ── Edit Parameter (inline row) ──
@@ -814,8 +812,8 @@ frappe.ui.form.on("Branch Score Card Settings", {
 			row.find(".mw-param-actions").css("opacity","").html(row.data("orig-actions"));
 			row.removeClass("is-editing");
 		}
-		function hideAddParamRow(group, key) {
-			group.find(`#mw-add-param-row-${key}`).removeClass("visible");
+		function hideAddParamRow(group, safeKey) {
+			group.find(`.mw-add-param-row[data-add-key="${safeKey}"]`).removeClass("visible");
 			group.find(".mw-kbd-hint").hide();
 		}
 
