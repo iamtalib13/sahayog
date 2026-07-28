@@ -61,17 +61,31 @@ def get_user_report_preference_record(user):
 
 def get_branch_map(sol_ids):
     if not sol_ids: return {}
+    sol_ids_key = ",".join(sorted(map(str, sol_ids)))
+    cache_key = f"crm_branch_map:{sol_ids_key}"
+    cached = frappe.cache().get_value(cache_key)
+    if cached is not None:
+        return cached
     branches = frappe.get_all("Sahayog Branch", filters={"sol_id": ["in", sol_ids]}, fields=["sol_id", "branch", "region", "district", "zone"])
-    return {str(b.sol_id): b for b in branches}
+    res = {str(b.sol_id): b for b in branches}
+    frappe.cache().set_value(cache_key, res, expires_in_sec=300)
+    return res
 
 def get_employee_map(lead_owners):
     if not lead_owners: return {}
+    owners_key = ",".join(sorted(map(str, lead_owners)))
+    cache_key = f"crm_employee_map:{owners_key}"
+    cached = frappe.cache().get_value(cache_key)
+    if cached is not None:
+        return cached
     employees = frappe.get_all(
         "Employee",
         filters={"user_id": ["in", lead_owners], "status": "Active"},
         fields=["employee_name", "employee_number", "designation", "user_id"]
     )
-    return {e.user_id: e for e in employees}
+    res = {e.user_id: e for e in employees}
+    frappe.cache().set_value(cache_key, res, expires_in_sec=300)
+    return res
 
 def empty_stats():
     return {
@@ -98,6 +112,12 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             f"User:{user}, From:{from_date}, To:{to_date}, Filters:{filters}"
         )
     
+@frappe.whitelist()
+def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
+    """Centralized helper to fetch and filter base leads. Prevents duplicate DB queries."""
+    from_date, to_date = validate_date_range(from_date, to_date)
+    ui_filters = frappe.parse_json(ui_filters) if ui_filters else {}
+
     # ---------- Preferences ----------
     has_pref = False
     is_all_regions = False 
@@ -105,55 +125,30 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     
     if user != "Administrator":
         pref_res = get_user_report_preference_record(user)
-        
         if pref_res:
             has_pref = True
             p = pref_res[0]
             is_all_regions = p.get("all_regions") 
-            
-            # Extract values from preference objects
             zones_pref = {norm(x) for x in p.get("zone", [])}
             regions_pref = {norm(x) for x in p.get("region", [])}
             sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
-    filters = frappe.parse_json(filters) if filters else {}
-
-    # PRODUCT
-    if "product" in filters:
-        ui_products = {norm(x) for x in filters.get("product", [])}
-        products_pref = ui_products
-
-    # SOURCE
-    if "source" in filters:
-       ui_sources = {norm(x) for x in filters.get("source", [])}
-       sources_pref = ui_sources
-    # ZONE
-    if "zone" in filters:
-        ui_zones = {norm(x) for x in filters.get("zone", [])}
-        if not ui_zones: zones_pref = set()
-        else: zones_pref = zones_pref.intersection(ui_zones)
-
-    # REGION
-    if "region" in filters:
-       ui_regions = {norm(x) for x in filters.get("region", [])}
-       if not ui_regions:
-           regions_pref = set()
-       else:
-           regions_pref = regions_pref.intersection(ui_regions)
-
-    # SOL ID
-    if "sol_id" in filters:
-        ui_sols = {str(x) for x in filters.get("sol_id", [])}
-        if not ui_sols: sol_ids_pref = set()
-        else: sol_ids_pref = sol_ids_pref.intersection(ui_sols)
-
-    frappe.log_error(
-        "CRM FINAL FILTER STATE",
-        f"Products:{products_pref}, Sources:{sources_pref}, Zones:{zones_pref}, Regions:{regions_pref}, SOLs:{sol_ids_pref}"
-    )
+    # Standardize UI filters
+    if "product" in ui_filters:
+        products_pref = {norm(x) for x in ui_filters.get("product", [])}
+    if "source" in ui_filters:
+        sources_pref = {norm(x) for x in ui_filters.get("source", [])}
+    if "zone" in ui_filters:
+        ui_zones = {norm(x) for x in ui_filters.get("zone", [])}
+        zones_pref = zones_pref.intersection(ui_zones) if ui_zones else set()
+    if "region" in ui_filters:
+        ui_regions = {norm(x) for x in ui_filters.get("region", [])}
+        regions_pref = regions_pref.intersection(ui_regions) if ui_regions else set()
+    if "sol_id" in ui_filters:
+        ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
+        sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
 
     # ---------- Fetch Leads ----------
-    # DB-level filters to minimize data fetch before Python preference filtering
     lead_db_filters = [
         ["creation", ">=", f"{from_date} 00:00:00"],
         ["creation", "<=", f"{to_date} 23:59:59"]
@@ -180,12 +175,10 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         leads.extend(batch)
         start += page_length
 
-    frappe.log_error("CRM DEBUG 1", f"Total Raw Leads found in DB for range: {len(leads)}")
-
     if not leads:
-        return {"leads": [], "stats": empty_stats()}
+        return [], {}, {}, {}
 
-    # Pre-fetch details
+    # Pre-fetch lookup details
     lead_names = [l.name for l in leads]
     product_rows = frappe.get_all("Lead Product", filters={"parent": ["in", lead_names]}, fields=["parent", "product", "product_name", "product_amount"])
     product_map = {}
@@ -199,29 +192,22 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     final_leads = []
 
     for l in leads:
-        # 🔥 NEW LOGIC: If NO preference → only own leads
         if user != "Administrator" and not has_pref:
             if l.lead_owner != user:
                 continue
 
         curr_sol = str(l.sol_id) if l.sol_id else ""
-        
-        # 1. SOL Pref Filter Check
         if sol_ids_pref and curr_sol not in sol_ids_pref:
-            skip_reason_sol_pref += 1
             continue
 
         branch = branch_map.get(curr_sol) if curr_sol else None
         
-        # 2. Zone/Region Check
         if branch:
             lead_zone = norm(branch.zone)
             lead_region = norm(branch.region)
-            
             zone_match = not zones_pref or (lead_zone in zones_pref)
             
             region_match = True
-            # If user preference is to include all regions, bypass specific region filtering
             if is_all_regions: 
                 region_match = True
             elif regions_pref:
@@ -231,41 +217,27 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
                 region_match = lead_region in allowed
 
             if not zone_match or not region_match:
-                skip_reason_zone_region_mismatch += 1
                 continue
         else:
-            # Case: Lead has SOL ID but SOL ID not found in Sahayog Branch Doctype
-            if curr_sol:
-                frappe.log_error("CRM DEBUG: Missing Branch Master", f"SOL ID {curr_sol} found in Lead {l.name} but NOT in Sahayog Branch")
-            
             if zones_pref or regions_pref:
-                skip_reason_no_branch += 1
                 continue
 
-        # 3. Source Filter Check
         if sources_pref and norm(l.source) not in sources_pref:
-            skip_reason_source += 1
             continue
 
-        # 4. Product Logic
-        # 4. Product Logic (CORRECTED)
         l_products = product_map.get(l.name, [])
         matched_products = []
         
         if products_pref:
             matched_products = [p for p in l_products if norm(p.product) in products_pref]
             if not matched_products:
-                skip_reason_product += 1
                 continue 
         else:
-            # FIX: Yahan 'l.l_products' galat tha. 
-            # Humein check karna hai ki lead ke paas products hain ya nahi.
             matched_products = l_products if l_products else [{}]
 
         emp = employee_map.get(l.lead_owner)
 
         for p in matched_products:
-            # .get() use karna safe rehta hai jab p ek empty dict {} ho sake
             new_row = l.copy()
             new_row.update({
                 "product_code": p.get("product") or "-",
@@ -279,18 +251,13 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             })
             final_leads.append(new_row)
 
-    # FINAL SUMMARY LOG
-    frappe.log_error(
-        "CRM FILTER SUMMARY", 
-        f"Total DB Leads: {len(leads)}\n"
-        f"Skipped (SOL Pref): {skip_reason_sol_pref}\n"
-        f"Skipped (No Branch/SOL in Master): {skip_reason_no_branch}\n"
-        f"Skipped (Zone/Region Mismatch): {skip_reason_zone_region_mismatch}\n"
-        f"Skipped (Source Filter): {skip_reason_source}\n"
-        f"Skipped (Product Filter): {skip_reason_product}\n"
-        f"Final List Count: {len(final_leads)}"
-    )
+    return final_leads, branch_map, employee_map, product_map
 
+
+@frappe.whitelist()
+def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
+    user = frappe.session.user
+    final_leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user, filters)
     return {
         "leads": final_leads,
         "stats": {
@@ -300,11 +267,14 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
             "not_interested": sum(1 for x in final_leads if x['status'] == "Not Interested"),
         }
     }
+
+
 def validate_date_range(from_date, to_date):
     if not from_date or not to_date: frappe.throw("Dates are required")
     f, t = getdate(from_date), getdate(to_date)
     if f > t: frappe.throw("From Date cannot be after To Date")
     return f, t
+
 
 # sahayog/scrm/api/report_access.py (Ke andar changes)
 
@@ -328,10 +298,8 @@ def queue_leads_export(from_date, to_date, filters=None, format="csv"):
         filters=filters,
         format=format
     )
-    frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
     return {"status": "queued"}
 
-# Baaki Python logic (get_leads etc.) same rahega jo aapne diya hai.
 
 import io
 import csv
@@ -406,8 +374,6 @@ def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
             file_content = csv_content
             filename = f"crm_leads_{from_date}_to_{to_date}.csv"
         
-        frappe.log_error("EXPORT FORMAT DEBUG", f"Format Received: {format}")
-        
         # ---------- SAVE FILE ----------
         file_doc = frappe.get_doc({
             "doctype": "File",
@@ -463,173 +429,42 @@ def notify_user(user, message):
         notification_doc.insert(ignore_permissions=True)
         frappe.db.commit()
     except Exception:
-        # Notification is non-critical — JS polling handles download trigger
         frappe.log_error("Notify User Error", frappe.get_traceback())
+
+
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date, sol_ids=None):
     try:
         user = frappe.session.user
-        from_date, to_date = validate_date_range(from_date, to_date)
-        
-        # Parse sol_ids filter
         active_sol_ids = frappe.parse_json(sol_ids) if sol_ids else None
 
-        # --- Step 1: User ki Report Preference fetch karein ---
-        has_pref = False
-        zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
-
-        if user != "Administrator":
-            pref_res = get_user_report_preference_record(user)
-            if pref_res:
-                has_pref = True
-                p = pref_res[0]
-                zones_pref = {norm(x) for x in p.get("zone", [])}
-                regions_pref = {norm(x) for x in p.get("region", [])}
-                sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
-
-        # Apply active_sol_ids filter if provided
-        if active_sol_ids:
-            if sol_ids_pref:
-                # Intersect with existing preference
-                sol_ids_pref = sol_ids_pref.intersection({str(x) for x in active_sol_ids})
-            else:
-                sol_ids_pref = {str(x) for x in active_sol_ids}
-
         # Redis cache check (120s TTL)
-        _cache_key = f"emp_perf:{user}:{from_date}:{to_date}:{','.join(sorted(sol_ids_pref))}"
+        sol_ids_key = ",".join(sorted(active_sol_ids)) if active_sol_ids else ""
+        _cache_key = f"emp_perf:{user}:{from_date}:{to_date}:{sol_ids_key}"
         _cached = frappe.cache().get_value(_cache_key)
         if _cached is not None:
             return _cached
 
-        # DB-level filters to minimize data fetch
-        _lead_filters = [
-            ["creation", ">=", f"{from_date} 00:00:00"],
-            ["creation", "<=", f"{to_date} 23:59:59"]
-        ]
-        if sol_ids_pref:
-            _lead_filters.append(["sol_id", "in", list(sol_ids_pref)])
-        elif user != "Administrator" and not has_pref:
-            _lead_filters.append(["lead_owner", "=", user])
-
-        leads = frappe.get_all(
-            "Lead",
-            filters=_lead_filters,
-            fields=["lead_owner", "sol_id", "status", "name"]
-        )
-
-        if not leads:
-            return []
-
-        lead_names = [l.name for l in leads]
-
-        product_data = frappe.get_all(
-            "Lead Product",
-            filters={"parent": ["in", lead_names]},
-            fields=["parent", "product_amount"]
-        )
-
-        amt_map = {}
-        for p in product_data:
-            amt_map[p.parent] = amt_map.get(p.parent, 0) + (p.product_amount or 0)
-
-        sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
-        branch_map = get_branch_map(list(sol_ids))
-
-        employee_map = get_employee_map(
-            list({l.lead_owner for l in leads if l.lead_owner})
-        )
+        ui_filters = {"sol_id": active_sol_ids} if active_sol_ids else {}
+        final_leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user, ui_filters)
 
         employee_stats = {}
 
-        DEBUG_USER = "8258@sahayog.com"
-
-        for l in leads:
-
-            if user == DEBUG_USER:
-                frappe.log_error(
-                    title=f"EMP PERF PREF DEBUG - {user}",
-                    message=f"""
-                        User: {user}
-                        Zones Pref: {zones_pref}
-                        Regions Pref: {regions_pref}
-                        SOL Pref: {sol_ids_pref}
-                        Lead: {l.name}
-                        Lead SOL: {l.sol_id}
-                        Lead Owner: {l.lead_owner}
-                        """
-                )
-
-            if user != "Administrator" and not has_pref:
-                if l.lead_owner != user:
-                    continue
-
-            emp = employee_map.get(l.lead_owner)
-
-            if not emp:
+        for row in final_leads:
+            emp_id = row.get("employee_id")
+            if not emp_id or emp_id == "-":
                 continue
 
-            curr_sol = str(l.sol_id) if l.sol_id else ""
-
-            if sol_ids_pref and curr_sol not in sol_ids_pref:
-                if user == DEBUG_USER:
-                    frappe.log_error(
-                        title=f"EMP PERF SOL SKIP - {user}",
-                        message=f"Lead {l.name} skipped. Lead SOL={curr_sol}, Allowed={sol_ids_pref}"
-                    )
-                continue
-
-            branch = branch_map.get(curr_sol)
-
-            if branch:
-                emp_zone = norm(branch.zone)
-                emp_region = norm(branch.region)
-
-                zone_match = not zones_pref or (emp_zone in zones_pref)
-
-                allowed_regions = set(regions_pref)
-
-                for r in list(regions_pref):
-                    if r in REGION_ALIAS_MAP:
-                        allowed_regions |= REGION_ALIAS_MAP[r]
-
-                region_match = not regions_pref or (emp_region in allowed_regions)
-
-                if not zone_match or not region_match:
-
-                    if user == DEBUG_USER:
-                        frappe.log_error(
-                            title=f"EMP PERF BRANCH CHECK - {user}",
-                            message=f"""
-                                Lead: {l.name}
-                                Lead SOL: {curr_sol}
-
-                                Branch Zone: {branch.zone}
-                                Branch Region: {branch.region}
-
-                                Normalized Zone: {emp_zone}
-                                Normalized Region: {emp_region}
-
-                                Zones Pref: {zones_pref}
-                                Regions Pref: {regions_pref}
-
-                                Zone Match: {zone_match}
-                                Region Match: {region_match}
-                                """
-                        )
-
-                    continue
-
-            key = emp.employee_number
-
-            if key not in employee_stats:
-                employee_stats[key] = {
-                    "employee_id": emp.employee_number,
-                    "employee_name": emp.employee_name,
-                    "designation": emp.designation or "-",
-                    "sol_id": curr_sol,
-                    "branch": branch.branch if branch else "-",
-                    "region": branch.region if branch else "-",
-                    "zone": branch.zone if branch else "-",
+            if emp_id not in employee_stats:
+                b = row.get("branch_info", {})
+                employee_stats[emp_id] = {
+                    "employee_id": emp_id,
+                    "employee_name": row.get("employee_name"),
+                    "designation": row.get("designation") or "-",
+                    "sol_id": row.get("sol_id"),
+                    "branch": b.get("branch", "-") if isinstance(b, dict) else "-",
+                    "region": b.get("region", "-") if isinstance(b, dict) else "-",
+                    "zone": b.get("zone", "-") if isinstance(b, dict) else "-",
                     "total_leads": 0,
                     "total_leads_amount": 0,
                     "total_converted": 0,
@@ -640,37 +475,21 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
                     "not_interested_amount": 0,
                 }
 
-            lead_amt = amt_map.get(l.name, 0)
+            stat = employee_stats[emp_id]
+            lead_amt = row.get("amount") or 0
+            stat["total_leads"] += 1
+            stat["total_leads_amount"] += lead_amt
 
-            employee_stats[key]["total_leads"] += 1
-            employee_stats[key]["total_leads_amount"] += lead_amt
-
-            if l.status == "Converted":
-                employee_stats[key]["total_converted"] += 1
-                employee_stats[key]["converted_amount"] += lead_amt
-
-            if l.status == "Follow Up":
-                employee_stats[key]["total_followups"] += 1
-                employee_stats[key]["followup_amount"] += lead_amt
-
-            if l.status == "Not Interested":
-                employee_stats[key]["total_not_interested"] += 1
-                employee_stats[key]["not_interested_amount"] += lead_amt
-
-        if user == DEBUG_USER:
-            frappe.log_error(
-                title=f"EMP PERF FINAL COUNT - {user}",
-                message=f"""
-                    User: {user}
-                    Employees Returned: {len(employee_stats)}
-                    Employee IDs: {list(employee_stats.keys())}
-                    """
-            )
-
-            frappe.log_error(
-                title=f"EMP PERF RETURN DATA - {user}",
-                message=str(list(employee_stats.values())[:10])
-            )
+            status = row.get("status")
+            if status == "Converted":
+                stat["total_converted"] += 1
+                stat["converted_amount"] += lead_amt
+            elif status == "Follow Up":
+                stat["total_followups"] += 1
+                stat["followup_amount"] += lead_amt
+            elif status == "Not Interested":
+                stat["total_not_interested"] += 1
+                stat["not_interested_amount"] += lead_amt
 
         result = list(employee_stats.values())
         frappe.cache().set_value(_cache_key, result, expires_in_sec=120)
@@ -683,15 +502,18 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
         )
         raise
 
+
 @frappe.whitelist()
 def get_all_products_sources():
-
+    cache_key = "crm_all_products_sources"
+    cached = frappe.cache().get_value(cache_key)
+    if cached is not None:
+        return cached
     products = frappe.get_all(
         "Product",
         fields=["name", "product_name", "exclude"],
         order_by="name asc"
     )
-
     sources = frappe.get_all(
         "Lead Source",
         fields=["name"],
@@ -700,8 +522,7 @@ def get_all_products_sources():
         },
         order_by="name asc"
     )
-
-    return {
+    res = {
         "products": [
             {
                 "label": f"{p.name} - {p.product_name or ''}",
@@ -712,128 +533,59 @@ def get_all_products_sources():
         ],
         "sources": [s.name for s in sources]
     }
+    frappe.cache().set_value(cache_key, res, expires_in_sec=600)
+    return res
+
 
 @frappe.whitelist()
 def get_crm_top_analytics(from_date, to_date):
     user = frappe.session.user
-    from_date, to_date = validate_date_range(from_date, to_date)
+    final_leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user)
 
-    # ---------- Preferences ----------
-    has_pref = False
-    zones_pref, regions_pref, sol_ids_pref = set(), set(), set()
-    if user != "Administrator":
-        pref_res = get_user_report_preference_record(user)
-        if pref_res:
-            has_pref = True
-            p = pref_res[0]
-            zones_pref = {norm(x) for x in p.get("zone", [])}
-            regions_pref = {norm(x) for x in p.get("region", [])}
-            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
-            
-    # ---------- Fetch Leads ----------
-    # DB-level filters to minimize data fetch
-    _analytics_filters = [
-        ["creation", ">=", f"{from_date} 00:00:00"],
-        ["creation", "<=", f"{to_date} 23:59:59"]
-    ]
-    if sol_ids_pref:
-        _analytics_filters.append(["sol_id", "in", list(sol_ids_pref)])
-    elif user != "Administrator" and not has_pref:
-        _analytics_filters.append(["lead_owner", "=", user])
-
-    leads = frappe.get_all(
-        "Lead",
-        filters=_analytics_filters,
-        fields=["name", "lead_owner", "sol_id", "status"]
-    )
-
-    if not leads:
+    if not final_leads:
         return {
             "top_branches": [],
             "top_employees": [],
             "lowest_usage_branches": []
         }
 
-    sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
-    branch_map = get_branch_map(list(sol_ids))
-    employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
-
     branch_stats = {}
     employee_stats = {}
 
-    for l in leads:
-        if user != "Administrator" and not has_pref:
-            if l.lead_owner != user:
-                continue
+    for row in final_leads:
+        b = row.get("branch_info", {})
+        branch_key = b.get("branch") if isinstance(b, dict) else None
+        
+        if branch_key and branch_key != "No SOL":
+            if branch_key not in branch_stats:
+                branch_stats[branch_key] = {
+                    "branch": branch_key,
+                    "zone": b.get("zone"),
+                    "region": b.get("region"),
+                    "total_leads": 0,
+                    "converted": 0,
+                    "followups": 0
+                }
+            branch_stats[branch_key]["total_leads"] += 1
+            if row.get("status") == "Converted":
+                branch_stats[branch_key]["converted"] += 1
+            if row.get("status") == "Follow Up":
+                branch_stats[branch_key]["followups"] += 1
 
-        curr_sol = str(l.sol_id) if l.sol_id else ""
-        if sol_ids_pref and curr_sol not in sol_ids_pref:
-            continue   
-        branch = branch_map.get(curr_sol)
-
-        # ----- Preference Filtering -----
-        if branch:
-            lead_zone = norm(branch.zone)
-            lead_region = norm(branch.region)
-
-            zone_match = not zones_pref or (lead_zone in zones_pref)
-
-            allowed_regions = set(regions_pref)
-            for r in list(regions_pref):
-                allowed_regions |= REGION_ALIAS_MAP.get(r, set())
-
-            region_match = not regions_pref or (lead_region in allowed_regions)
-
-            if not zone_match or not region_match:
-                continue
-        else:
-            continue
-
-        # =========================
-        # Branch Aggregation
-        # =========================
-        branch_key = branch.branch
-
-        if branch_key not in branch_stats:
-            branch_stats[branch_key] = {
-                "branch": branch.branch,
-                "zone": branch.zone,
-                "region": branch.region,
-                "total_leads": 0,
-                "converted": 0,
-                "followups": 0
-            }
-
-        branch_stats[branch_key]["total_leads"] += 1
-
-        if l.status == "Converted":
-            branch_stats[branch_key]["converted"] += 1
-
-        if l.status == "Follow Up":
-            branch_stats[branch_key]["followups"] += 1
-
-        # =========================
-        # Employee Aggregation
-        # =========================
-        emp = employee_map.get(l.lead_owner)
-        if emp:
-            emp_key = emp.employee_number
-
-            if emp_key not in employee_stats:
-                employee_stats[emp_key] = {
-                    "employee_id": emp.employee_number,
-                    "employee_name": emp.employee_name,
-                    "designation": emp.designation or "-",
+        emp_id = row.get("employee_id")
+        if emp_id and emp_id != "-":
+            if emp_id not in employee_stats:
+                employee_stats[emp_id] = {
+                    "employee_id": emp_id,
+                    "employee_name": row.get("employee_name"),
+                    "designation": row.get("designation") or "-",
                     "total_leads": 0,
                     "converted": 0
                 }
+            employee_stats[emp_id]["total_leads"] += 1
+            if row.get("status") == "Converted":
+                employee_stats[emp_id]["converted"] += 1
 
-            employee_stats[emp_key]["total_leads"] += 1
-
-            if l.status == "Converted":
-                employee_stats[emp_key]["converted"] += 1
-
-    # ---------- Conversion Rate Add Karein ----------
     for b in branch_stats.values():
         b["conversion_rate"] = round(
             (b["converted"] / b["total_leads"]) * 100, 2
@@ -848,7 +600,6 @@ def get_crm_top_analytics(from_date, to_date):
             (e["converted"] / e["total_leads"]) * 100, 2
         ) if e["total_leads"] else 0
 
-    # ---------- Sorting ----------
     top_branches = sorted(
         branch_stats.values(),
         key=lambda x: x["total_leads"],
