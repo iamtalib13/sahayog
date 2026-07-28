@@ -668,7 +668,6 @@ frappe.ui.form.on("Branch Score Card Settings", {
 				<div class="mw-param-item" style="animation-delay:${pi*0.04}s">
 					<div class="mw-param-row" data-name="${p.name}">
 						<span class="mw-param-sr">${pi + 1}.</span>
-						<div class="mw-param-dot"></div>
 						<div class="mw-param-name">${frappe.utils.escape_html(p.parameter)}</div>
 						<div class="mw-param-actions">
 							<button class="mw-icon-btn js-edit-param" title="Edit"
