@@ -1,17 +1,19 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:BSC-{branch}-{date}-{#####}",
+ "autoname": "format:{branch}-{DD}-{MM}-{YYYY}",
  "creation": "2026-07-28 22:02:21.382705",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "branch_details_section",
   "branch",
-  "date",
   "column_break_1",
-  "month",
-  "year",
-  "section_break_wfdk"
+  "branch_name",
+  "column_break_ydlw",
+  "date",
+  "branch_score_section",
+  "table_cxyy"
  ],
  "fields": [
   {
@@ -22,7 +24,8 @@
    "label": "Branch",
    "options": "Sahayog Branch",
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "date",
@@ -30,38 +33,50 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Date",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_1",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "month",
-   "fieldtype": "Int",
-   "label": "Month",
-   "read_only": 1,
-   "hidden": 1
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
   },
   {
-   "fieldname": "year",
-   "fieldtype": "Int",
-   "label": "Year",
-   "read_only": 1,
-   "hidden": 1
+   "fieldname": "branch_score_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Score"
   },
   {
-   "fieldname": "section_break_wfdk",
-   "fieldtype": "Section Break"
+   "fieldname": "table_cxyy",
+   "fieldtype": "Table",
+   "options": "Branch Score Card Item"
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ydlw",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-28 23:17:00.000000",
+ "modified": "2026-07-28 23:56:03.842092",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Branch Score Card",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -81,5 +96,6 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "branch_name"
 }
