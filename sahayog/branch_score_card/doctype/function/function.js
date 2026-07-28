@@ -156,6 +156,7 @@ frappe.ui.form.on("Function", {
 			.tw-label:hover + .tw-actions,
 			.tw-actions:hover { opacity: 1; }
 			.tw-node:hover .tw-actions { opacity: 1; }
+			.tw-root-node .tw-actions { opacity: 1; }
 
 			.tw-btn {
 				border: none;
