@@ -2771,7 +2771,11 @@
                   Apply Leave
                 </h3>
                 <div style="margin-bottom: 10px">
-                  <label>Leave Type</label>
+                  <label>Employee *</label>
+                  <select id="leaveEmpSel" class="member-select"></select>
+                </div>
+                <div style="margin-bottom: 10px">
+                  <label>Leave Type *</label>
                   <select id="leaveTypeSel" class="member-select"></select>
                 </div>
                 <div
@@ -3264,6 +3268,7 @@
       ];
       let staff = [];
       let userRoles = [];
+      let allowHrToMarkAttendance = false;
 
       // ── ROLE CHECK HELPERS ────────────────────────────────
       function isHR() {
@@ -4124,7 +4129,7 @@
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
-        if (statsRow) statsRow.style.display = isHR() ? "none" : "grid";
+        if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
         if (subTabs) subTabs.style.display = "none";
         if (empStatusFilters) empStatusFilters.style.display = "none";
         if (dirCardHead) dirCardHead.style.display = "none";
@@ -4160,7 +4165,7 @@
         }
 
         if (tab === "attendance") {
-          if (controls) controls.style.display = isHR() ? "none" : "flex";
+          if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
           if (dirCardHead) dirCardHead.style.display = "flex";
@@ -4541,6 +4546,7 @@
 
         if (data && data.team) {
           userRoles = data.roles || [];
+          allowHrToMarkAttendance = !!data.allow_hr_to_mark_attendance;
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],
@@ -4580,7 +4586,7 @@
         if (isHR()) {
           if (attendanceTab)
             attendanceTab.textContent = "👤 Employee Directory";
-          if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          if (btnApplyLeave) btnApplyLeave.style.display = allowHrToMarkAttendance ? "inline-block" : "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee)
             btnCreateEmployee.style.display =
@@ -4614,7 +4620,7 @@
           if (reportsTab) reportsTab.style.display = "flex";
           const payrollTab = document.getElementById("tabPayroll");
           if (payrollTab) payrollTab.style.display = "flex";
-          if (bulkBar)
+          if (bulkBar && !allowHrToMarkAttendance)
             bulkBar.style.setProperty("display", "none", "important");
 
           // Show/hide employee status filter tabs based on current tab
@@ -5074,7 +5080,20 @@
               pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
 
             if (isHR()) {
-              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+              if (allowHrToMarkAttendance) {
+                if (status === "On Leave" || status === "Half Day") {
+                  actionsHtml = "";
+                } else if (!status || status === "Not Marked") {
+                  actionsHtml = `
+                    <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
+                    <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
+                } else if (status === "Present" && !s.check_out) {
+                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                }
+              } else {
+                actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+              }
             } else {
               const canManage = isBranchManager() || s.is_self;
               if (canManage) {
@@ -5096,7 +5115,7 @@
           }
 
           const checkboxHtml =
-            !isLeft && isBranchManager()
+            !isLeft && ((isHR() && allowHrToMarkAttendance) || (!isHR() && isBranchManager()))
               ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
               : "";
 
@@ -5313,6 +5332,18 @@
       }
 
       async function openLeaveModal() {
+        const empSel = document.getElementById("leaveEmpSel");
+        empSel.innerHTML = '<option value="">— Select Employee —</option>';
+        staff.filter(s => s.status === "Active").forEach((s) => {
+          const opt = document.createElement("option");
+          opt.value = s.name;
+          opt.textContent = `${s.employee_name} (${s.name})`;
+          empSel.appendChild(opt);
+        });
+        if (selectedMemberId) {
+          empSel.value = selectedMemberId;
+        }
+
         const leaveTypes = await callAPI("get_leave_types", {}, "leave");
         const sel = document.getElementById("leaveTypeSel");
         sel.innerHTML = '<option value="">— Select Leave Type —</option>';
@@ -5335,7 +5366,7 @@
       }
 
       async function submitLeave(force = false) {
-        const employee = selectedMemberId;
+        const employee = document.getElementById("leaveEmpSel").value;
         const leave_type = document.getElementById("leaveTypeSel").value;
         const from_date = document.getElementById("fromDate").value;
         const to_date = document.getElementById("toDate").value;
