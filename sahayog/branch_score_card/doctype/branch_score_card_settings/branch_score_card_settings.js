@@ -303,6 +303,15 @@ frappe.ui.form.on("Branch Score Card Settings", {
 				background: #fffbf0;
 				border-color: #f0c040;
 			}
+			.mw-param-sr {
+				min-width: 20px;
+				text-align: right;
+				font-size: 11px;
+				font-weight: 600;
+				color: var(--text-muted);
+				flex-shrink: 0;
+				line-height: 1;
+			}
 			.mw-param-dot {
 				width: 6px; height: 6px;
 				border-radius: 50%;
@@ -654,9 +663,11 @@ frappe.ui.form.on("Branch Score Card Settings", {
 
 		// ── Build a single param item DOM ────────────────────────────────────────
 		function buildParamItem(p, pi) {
+			const sr = pi + 1;
 			return $(`
 				<div class="mw-param-item" style="animation-delay:${pi * 0.04}s">
 					<div class="mw-param-row" data-name="${p.name}">
+						<span class="mw-param-sr">${sr}.</span>
 						<div class="mw-param-dot"></div>
 						<div class="mw-param-name">${frappe.utils.escape_html(p.parameter)}</div>
 						<div class="mw-param-actions">
