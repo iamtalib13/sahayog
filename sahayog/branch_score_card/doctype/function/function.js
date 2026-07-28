@@ -229,6 +229,54 @@ frappe.ui.form.on("Function", {
 			}
 			.tw-form-cancel:hover { color: var(--text-color); }
 
+			/* ── Row editing state ── */
+			.tw-node.tw-row-editing .tw-label {
+				background: transparent;
+				flex: 1;
+				padding: 0;
+			}
+			.tw-row-input {
+				flex: 1;
+				height: 26px;
+				border: 1px solid var(--primary, #0176d3);
+				border-radius: 4px;
+				padding: 0 8px;
+				font-size: 13px;
+				font-weight: 500;
+				color: var(--text-color);
+				background: var(--card-bg, #fff);
+				outline: none;
+				box-shadow: 0 0 0 2px rgba(1,118,211,0.12);
+				min-width: 120px;
+			}
+			.tw-row-save {
+				height: 26px;
+				padding: 0 10px;
+				background: var(--primary, #0176d3);
+				color: #fff;
+				border: none;
+				border-radius: 4px;
+				font-size: 11px;
+				font-weight: 600;
+				cursor: pointer;
+				white-space: nowrap;
+				transition: filter 0.12s;
+			}
+			.tw-row-save:hover { filter: brightness(1.1); }
+			.tw-row-cancel {
+				height: 26px;
+				padding: 0 8px;
+				background: transparent;
+				color: var(--text-muted);
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
+				font-size: 11px;
+				cursor: pointer;
+				white-space: nowrap;
+				transition: color 0.12s;
+			}
+			.tw-row-cancel:hover { color: var(--text-color); }
+
 			/* ── Loading / empty ── */
 			.tw-empty {
 				padding: 20px 8px;
@@ -389,33 +437,63 @@ frappe.ui.form.on("Function", {
 			slot.find(".tw-add-cancel").on("click", () => slot.hide().empty());
 		}
 
-		function showEditForm(childWrap, name, current) {
-			// Remove any open form
-			wrapper.find(".tw-form-wrap").remove();
+		function showEditForm(editBtn, name, current) {
+			// Restore any previously editing row first
+			wrapper.find(".tw-node.tw-row-editing").each(function () {
+				cancelRowEdit($(this));
+			});
 
-			const formWrap = $(`
-				<div class="tw-form-wrap">
-					<div class="tw-form">
-						<i class="fa fa-pencil tw-form-icon"></i>
-						<input class="tw-input tw-edit-input" type="text" value="${frappe.utils.escape_html(current)}" />
-						<button class="tw-form-save tw-edit-save">Update</button>
-						<button class="tw-form-cancel tw-edit-cancel">Cancel</button>
-					</div>
-				</div>
+			const node    = editBtn.closest(".tw-node");
+			const label   = node.find(".tw-label");
+			const actions = node.find(".tw-actions");
+
+			// Store original label HTML to restore on cancel
+			node.addClass("tw-row-editing");
+			node.data("orig-label", label.html());
+			node.data("orig-actions", actions.html());
+
+			// Replace label content with input
+			label.html(`
+				<input
+					class="tw-row-input"
+					type="text"
+					value="${frappe.utils.escape_html(current)}"
+				/>
 			`);
-			childWrap.append(formWrap);
-			formWrap.find(".tw-edit-input").focus().select();
 
-			formWrap.find(".tw-edit-save").on("click", () => {
-				const val = formWrap.find(".tw-edit-input").val().trim();
+			// Replace action buttons with Save / Cancel
+			actions.css("opacity", "1").html(`
+				<button class="tw-row-save">Save</button>
+				<button class="tw-row-cancel">Cancel</button>
+			`);
+
+			const input = label.find(".tw-row-input");
+			input.focus().select();
+
+			// Save
+			const doSave = () => {
+				const val = input.val().trim();
 				if (!val) { frappe.show_alert({ message: "Name cannot be empty.", indicator: "red" }); return; }
 				doUpdate(name, val);
+			};
+
+			// Cancel — restore original
+			const doCancel = () => cancelRowEdit(node);
+
+			actions.find(".tw-row-save").on("click", doSave);
+			actions.find(".tw-row-cancel").on("click", doCancel);
+			input.on("keydown", e => {
+				if (e.key === "Enter")  doSave();
+				if (e.key === "Escape") doCancel();
 			});
-			formWrap.find(".tw-edit-input").on("keydown", e => {
-				if (e.key === "Enter")  formWrap.find(".tw-edit-save").trigger("click");
-				if (e.key === "Escape") formWrap.remove();
-			});
-			formWrap.find(".tw-edit-cancel").on("click", () => formWrap.remove());
+		}
+
+		function cancelRowEdit(node) {
+			const label   = node.find(".tw-label");
+			const actions = node.find(".tw-actions");
+			label.html(node.data("orig-label"));
+			actions.css("opacity", "").html(node.data("orig-actions"));
+			node.removeClass("tw-row-editing");
 		}
 
 		// ── API ───────────────────────────────────────────────────────────────
@@ -497,12 +575,11 @@ frappe.ui.form.on("Function", {
 			// Add parameter
 			wrapper.find("#tw-add-root").on("click", () => showAddForm());
 
-			// Edit
+			// Edit — inline within same row
 			wrapper.on("click", ".tw-edit-btn", function () {
 				const name    = $(this).data("name");
 				const current = $(this).data("value");
-				const childWrap = $(this).closest(".tw-child-wrap");
-				showEditForm(childWrap, name, current);
+				showEditForm($(this), name, current);
 			});
 
 			// Delete
