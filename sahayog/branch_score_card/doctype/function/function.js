@@ -33,6 +33,37 @@ frappe.ui.form.on("Function", {
 					font-family: var(--font-stack);
 					margin: 12px 0;
 				}
+				.param-function-title {
+					display: flex;
+					align-items: center;
+					gap: 10px;
+					background: linear-gradient(135deg, var(--primary, #5263ff) 0%, var(--primary-dark, #3a4bcc) 100%);
+					color: #fff;
+					border-radius: 10px;
+					padding: 14px 18px;
+					margin-bottom: 16px;
+					box-shadow: 0 2px 10px rgba(82, 99, 255, 0.25);
+				}
+				.param-function-title-icon {
+					font-size: 22px;
+					opacity: 0.85;
+				}
+				.param-function-title-text {
+					display: flex;
+					flex-direction: column;
+				}
+				.param-function-title-label {
+					font-size: 10px;
+					font-weight: 600;
+					text-transform: uppercase;
+					letter-spacing: 1px;
+					opacity: 0.75;
+				}
+				.param-function-title-name {
+					font-size: 18px;
+					font-weight: 700;
+					letter-spacing: 0.2px;
+				}
 				.param-widget-header {
 					display: flex;
 					align-items: center;
@@ -226,6 +257,13 @@ frappe.ui.form.on("Function", {
 		// Build widget shell
 		const widget = $(`
 			<div class="param-widget-wrap">
+				<div class="param-function-title">
+					<i class="fa fa-cube param-function-title-icon"></i>
+					<div class="param-function-title-text">
+						<span class="param-function-title-label">Function</span>
+						<span class="param-function-title-name">${frappe.utils.escape_html(frm.doc.function || frm.doc.name)}</span>
+					</div>
+				</div>
 				<div class="param-widget-header">
 					<div class="param-widget-title">
 						<i class="fa fa-sitemap"></i>
