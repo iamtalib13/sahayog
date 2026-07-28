@@ -68,7 +68,7 @@ def get_branch_map(sol_ids):
         return cached
     branches = frappe.get_all("Sahayog Branch", filters={"sol_id": ["in", sol_ids]}, fields=["sol_id", "branch", "region", "district", "zone"])
     res = {str(b.sol_id): b for b in branches}
-    frappe.cache().set_value(cache_key, res, expires_in_sec=300)
+    frappe.cache().set_value(cache_key, res, expires_in_sec=86400)
     return res
 
 def get_employee_map(lead_owners):
@@ -84,7 +84,7 @@ def get_employee_map(lead_owners):
         fields=["employee_name", "employee_number", "designation", "user_id"]
     )
     res = {e.user_id: e for e in employees}
-    frappe.cache().set_value(cache_key, res, expires_in_sec=300)
+    frappe.cache().set_value(cache_key, res, expires_in_sec=86400)
     return res
 
 def empty_stats():
@@ -533,7 +533,7 @@ def get_all_products_sources():
         ],
         "sources": [s.name for s in sources]
     }
-    frappe.cache().set_value(cache_key, res, expires_in_sec=600)
+    frappe.cache().set_value(cache_key, res, expires_in_sec=86400)
     return res
 
 
