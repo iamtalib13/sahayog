@@ -1,0 +1,113 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:{branch}-{DD}-{MM}-{YYYY}",
+ "creation": "2026-07-28 22:02:21.382705",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "branch_details_section",
+  "branch",
+  "column_break_1",
+  "branch_name",
+  "column_break_ydlw",
+  "date",
+  "branch_score_section",
+  "branch_score_widget",
+  "score_table_tab",
+  "table_cxyy"
+ ],
+ "fields": [
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch",
+   "reqd": 1,
+   "search_index": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch_details_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Details"
+  },
+  {
+   "fieldname": "branch_score_section",
+   "fieldtype": "Section Break",
+   "label": "Branch Score"
+  },
+  {
+   "fieldname": "table_cxyy",
+   "fieldtype": "Table",
+   "options": "Branch Score Card Item"
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ydlw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch_score_widget",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "score_table_tab",
+   "fieldtype": "Tab Break",
+   "label": "Score Table"
+  }
+ ],
+ "grid_page_length": 50,
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-29 00:11:42.699301",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "Branch Score Card",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "branch_name"
+}
