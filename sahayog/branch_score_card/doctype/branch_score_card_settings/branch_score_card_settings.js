@@ -5,8 +5,21 @@ frappe.ui.form.on("Branch Score Card Settings", {
 	refresh(frm) {
 		frm.trigger("render_master_widget");
 		frm.trigger("add_load_button");
+		frm.trigger("apply_row_colors");
+
+		// Re-apply colors whenever grid re-renders (pagination, scroll)
+		const grid = frm.fields_dict.score_card_settings && frm.fields_dict.score_card_settings.grid;
+		if (grid) {
+			grid.grid_pagination && grid.grid_pagination.on("change", () => frm.trigger("apply_row_colors"));
+			// Hook grid refresh
+			const origRefresh = grid.refresh.bind(grid);
+			grid.refresh = function(...a) { origRefresh(...a); frm.trigger("apply_row_colors"); };
+		}
 	},
-	after_save(frm) { frm.trigger("render_master_widget"); },
+	after_save(frm) {
+		frm.trigger("render_master_widget");
+		frm.trigger("apply_row_colors");
+	},
 
 	add_load_button(frm) {
 		frm.add_custom_button(__("Load Function / Parameter"), function () {
@@ -15,6 +28,98 @@ frappe.ui.form.on("Branch Score Card Settings", {
 				() => frm.trigger("do_load_function_parameter")
 			);
 		}, __("Actions"));
+	},
+
+
+	apply_row_colors(frm) {
+		const grid = frm.fields_dict.score_card_settings && frm.fields_dict.score_card_settings.grid;
+		if (!grid) return;
+
+		const rows = frm.doc.score_card_settings || [];
+		if (!rows.length) return;
+
+		// Soft pastel palette: [bg, left-border]
+		const PALETTE = [
+			["#eff6ff", "#3b82f6"],  // blue
+			["#f0fdf4", "#22c55e"],  // green
+			["#fff7ed", "#f97316"],  // orange
+			["#fdf4ff", "#a855f7"],  // purple
+			["#f0fdfa", "#14b8a6"],  // teal
+			["#fff1f2", "#f43f5e"],  // rose
+			["#fffbeb", "#f59e0b"],  // amber
+			["#f0f9ff", "#0ea5e9"],  // sky
+			["#ecfdf5", "#10b981"],  // emerald
+			["#faf5ff", "#8b5cf6"],  // violet
+		];
+
+		// Build function → color map (stable: sorted by first occurrence)
+		const colorMap = {};
+		let idx = 0;
+		rows.forEach(r => {
+			if (r.function && !colorMap[r.function]) {
+				colorMap[r.function] = PALETTE[idx % PALETTE.length];
+				idx++;
+			}
+		});
+
+		// Inject once-per-page styles
+		if (!document.getElementById("bsc-row-colors")) {
+			const st = document.createElement("style");
+			st.id = "bsc-row-colors";
+			st.textContent = `
+				.bsc-colored-row { transition: background 0.15s; }
+				.bsc-colored-row td:first-child { border-left: 4px solid transparent; }
+				.bsc-row-legend {
+					display: flex; flex-wrap: wrap; gap: 8px;
+					padding: 8px 12px;
+					border-top: 1px solid var(--border-color);
+					margin-top: 4px;
+				}
+				.bsc-legend-item {
+					display: flex; align-items: center; gap: 5px;
+					font-size: 11px; font-weight: 500;
+					color: var(--text-color);
+					padding: 3px 9px; border-radius: 20px;
+					border: 1px solid var(--border-color);
+				}
+				.bsc-legend-dot {
+					width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+				}
+			`;
+			document.head.appendChild(st);
+		}
+
+		// Apply colors after grid renders
+		setTimeout(() => {
+			if (!grid.grid_rows) return;
+			grid.grid_rows.forEach((gridRow, i) => {
+				const doc = rows[i];
+				if (!doc || !doc.function || !colorMap[doc.function]) return;
+				const [bg, border] = colorMap[doc.function];
+				const $tr = gridRow.row;
+				if ($tr && $tr.length) {
+					$tr.addClass("bsc-colored-row");
+					$tr.css({ "background-color": bg });
+					$tr.find("td:first-child").css({ "border-left": `4px solid ${border}` });
+				}
+			});
+
+			// ── Legend below the grid ──
+			const $gridWrap = frm.fields_dict.score_card_settings.$wrapper;
+			$gridWrap.find(".bsc-row-legend").remove();
+			if (Object.keys(colorMap).length > 1) {
+				const $legend = $("<div class='bsc-row-legend'></div>");
+				Object.entries(colorMap).forEach(([fname, [bg, border]]) => {
+					$legend.append(`
+						<span class="bsc-legend-item" style="background:${bg}; border-color:${border}30;">
+							<span class="bsc-legend-dot" style="background:${border}"></span>
+							${frappe.utils.escape_html(fname)}
+						</span>
+					`);
+				});
+				$gridWrap.append($legend);
+			}
+		}, 250);
 	},
 
 	do_load_function_parameter(frm) {
