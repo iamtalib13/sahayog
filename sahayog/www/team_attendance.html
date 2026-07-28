@@ -4541,6 +4541,11 @@
 
         if (data && data.team) {
           userRoles = data.roles || [];
+          const hrRoles = ["HR Manager", "HR User", "Administrator"];
+          const hasHrRole = userRoles.some(r => hrRoles.includes(r));
+          if (hasHrRole && data.allow_hr_to_mark_attendance) {
+            console.log(true);
+          }
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],

@@ -4,20 +4,22 @@
  "creation": "2025-11-26 13:15:12.566907",
  "doctype": "DocType",
  "engine": "InnoDB",
-  "field_order": [
-   "enable_email_notifications",
-   "cc_settings_sb",
-   "unauthorized_absence_cc",
-   "disciplinary_case_cc",
-   "stamp_settings_sb",
-   "common_hr_stamp",
-   "ex_parte_enquiry_stamp",
-   "employee_master_section",
-   "employee_master",
-   "field_mapping_sb",
-   "field_mappings",
-   "employee_import_summary"
-  ],
+ "field_order": [
+  "enable_email_notifications",
+  "column_break_wdpy",
+  "allow_hr_to_mark_attendance",
+  "cc_settings_sb",
+  "unauthorized_absence_cc",
+  "disciplinary_case_cc",
+  "stamp_settings_sb",
+  "common_hr_stamp",
+  "ex_parte_enquiry_stamp",
+  "employee_master_section",
+  "employee_master",
+  "field_mapping_sb",
+  "field_mappings",
+  "employee_import_summary"
+ ],
  "fields": [
   {
    "default": "0",
@@ -35,28 +37,28 @@
    "fieldtype": "Small Text",
    "label": "Unauthorized Absence CC (Fixed IDs)"
   },
-   {
-    "fieldname": "disciplinary_case_cc",
-    "fieldtype": "Small Text",
-    "label": "Disciplinary Case CC (Fixed IDs)"
-   },
-   {
-    "fieldname": "stamp_settings_sb",
-    "fieldtype": "Section Break",
-    "label": "Stamp Settings"
-   },
-   {
-    "fieldname": "common_hr_stamp",
-    "fieldtype": "Attach Image",
-    "label": "Common HR Stamp"
-   },
-   {
-    "fieldname": "ex_parte_enquiry_stamp",
-    "fieldtype": "Attach Image",
-    "label": "Ex-Parte Enquiry Stamp"
-   },
-   {
-    "fieldname": "employee_master_section",
+  {
+   "fieldname": "disciplinary_case_cc",
+   "fieldtype": "Small Text",
+   "label": "Disciplinary Case CC (Fixed IDs)"
+  },
+  {
+   "fieldname": "stamp_settings_sb",
+   "fieldtype": "Section Break",
+   "label": "Stamp Settings"
+  },
+  {
+   "fieldname": "common_hr_stamp",
+   "fieldtype": "Attach Image",
+   "label": "Common HR Stamp"
+  },
+  {
+   "fieldname": "ex_parte_enquiry_stamp",
+   "fieldtype": "Attach Image",
+   "label": "Ex-Parte Enquiry Stamp"
+  },
+  {
+   "fieldname": "employee_master_section",
    "fieldtype": "Section Break",
    "label": "Employee Master"
   },
@@ -85,13 +87,23 @@
    "fieldtype": "Small Text",
    "label": "Employee Import Summary",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_wdpy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_hr_to_mark_attendance",
+   "fieldtype": "Check",
+   "label": "Allow HR To mark Attendance"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-19 20:57:49.067256",
+ "modified": "2026-07-28 14:05:26.035344",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Sahayog HR Setting",

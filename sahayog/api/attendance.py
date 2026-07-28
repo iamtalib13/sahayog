@@ -162,6 +162,8 @@ def get_team_attendance_data(employee_status="Active"):
             elif status == "On Leave": on_leave_count += 1
             else: pending_count += 1
 
+    allow_hr_to_mark = frappe.db.get_single_value("Sahayog HR Setting", "allow_hr_to_mark_attendance") or 0
+
     return {
         "team": team,
         "summary": {
@@ -174,7 +176,8 @@ def get_team_attendance_data(employee_status="Active"):
         },
         "current_user": manager,
         "roles": roles,
-        "status_counts": status_counts
+        "status_counts": status_counts,
+        "allow_hr_to_mark_attendance": allow_hr_to_mark
     }
 
 @frappe.whitelist()
