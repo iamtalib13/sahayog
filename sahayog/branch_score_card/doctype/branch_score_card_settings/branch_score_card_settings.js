@@ -2,8 +2,105 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Branch Score Card Settings", {
-	refresh(frm) { frm.trigger("render_master_widget"); },
+	refresh(frm) {
+		frm.trigger("render_master_widget");
+		frm.trigger("add_load_button");
+	},
 	after_save(frm) { frm.trigger("render_master_widget"); },
+
+	add_load_button(frm) {
+		frm.add_custom_button(__("Load Function / Parameter"), function () {
+			frappe.confirm(
+				__("This will add all Functions & Parameters into the Score Card Settings table (skipping duplicates). Continue?"),
+				() => frm.trigger("do_load_function_parameter")
+			);
+		}, __("Actions"));
+	},
+
+	do_load_function_parameter(frm) {
+		frappe.show_progress(__("Loading…"), 0, 100);
+
+		// Step 1: fetch all Functions
+		frappe.call({
+			method: "frappe.client.get_list",
+			args: {
+				doctype: "Function",
+				fields: ["name", "function"],
+				order_by: "creation asc",
+				limit_page_length: 500,
+			},
+			callback(rFunc) {
+				const functions = rFunc.message || [];
+				if (!functions.length) {
+					frappe.hide_progress();
+					frappe.show_alert({ message: __("No Functions found."), indicator: "orange" });
+					return;
+				}
+
+				// Step 2: fetch Parameters for each Function (parallel)
+				let done = 0;
+				const allRows = [];
+
+				functions.forEach(f => {
+					frappe.call({
+						method: "frappe.client.get_list",
+						args: {
+							doctype: "Parameter",
+							filters: { function: f.name },
+							fields: ["name", "parameter"],
+							order_by: "creation asc",
+							limit_page_length: 500,
+						},
+						callback(rParam) {
+							(rParam.message || []).forEach(p => {
+								allRows.push({ function: f.name, parameter: p.name });
+							});
+							done++;
+							frappe.show_progress(__("Loading…"), Math.round((done / functions.length) * 80), 100);
+
+							if (done === functions.length) {
+								// Step 3: dedup against existing child rows
+								const existing = new Set(
+									(frm.doc.score_card_settings || []).map(
+										r => `${r.function}||${r.parameter}`
+									)
+								);
+
+								let added = 0;
+								allRows.forEach(row => {
+									const key = `${row.function}||${row.parameter}`;
+									if (!existing.has(key)) {
+										frm.add_child("score_card_settings", {
+											function:  row.function,
+											parameter: row.parameter,
+										});
+										existing.add(key);
+										added++;
+									}
+								});
+
+								frappe.hide_progress();
+
+								if (added > 0) {
+									frm.refresh_field("score_card_settings");
+									frappe.show_alert({
+										message: `${added} row${added > 1 ? "s" : ""} added to Score Card Settings.`,
+										indicator: "green",
+									});
+									frm.save();
+								} else {
+									frappe.show_alert({
+										message: __("All combinations already loaded. Nothing new to add."),
+										indicator: "blue",
+									});
+								}
+							}
+						},
+					});
+				});
+			},
+		});
+	},
 
 	render_master_widget(frm) {
 		const wrapper = frm.get_field("function_widget").$wrapper;
