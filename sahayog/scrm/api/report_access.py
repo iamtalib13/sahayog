@@ -153,6 +153,16 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     )
 
     # ---------- Fetch Leads ----------
+    # DB-level filters to minimize data fetch before Python preference filtering
+    lead_db_filters = [
+        ["creation", ">=", f"{from_date} 00:00:00"],
+        ["creation", "<=", f"{to_date} 23:59:59"]
+    ]
+    if sol_ids_pref:
+        lead_db_filters.append(["sol_id", "in", list(sol_ids_pref)])
+    elif user != "Administrator" and not has_pref:
+        lead_db_filters.append(["lead_owner", "=", user])
+
     page_length = 20000
     start = 0
     leads = []
@@ -160,10 +170,7 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     while True:
         batch = frappe.get_all(
             "Lead",
-            filters=[
-                ["creation", ">=", f"{from_date} 00:00:00"],
-                ["creation", "<=", f"{to_date} 23:59:59"]
-            ],
+            filters=lead_db_filters,
             fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
             order_by="creation desc",
             start=start,
@@ -445,10 +452,19 @@ def check_export_status():
     return frappe.cache().get_value(f"export_status_{frappe.session.user}") or {"status": "pending"}
 
 def notify_user(user, message):
-    notification_doc = frappe.new_doc("Notification Log")
-    notification_doc.update({"for_user": user, "subject": "Lead Export Ready", "email_content": message, "type": "Alert", "document_type": "Lead"})
-    notification_doc.insert(ignore_permissions=True)
-    frappe.db.commit()
+    try:
+        notification_doc = frappe.new_doc("Notification Log")
+        notification_doc.update({
+            "for_user": user,
+            "subject": "Lead Export Ready",
+            "type": "Alert",
+            "document_type": "Lead",
+        })
+        notification_doc.insert(ignore_permissions=True)
+        frappe.db.commit()
+    except Exception:
+        # Notification is non-critical — JS polling handles download trigger
+        frappe.log_error("Notify User Error", frappe.get_traceback())
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date, sol_ids=None):
     try:
@@ -479,12 +495,25 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
             else:
                 sol_ids_pref = {str(x) for x in active_sol_ids}
 
+        # Redis cache check (120s TTL)
+        _cache_key = f"emp_perf:{user}:{from_date}:{to_date}:{','.join(sorted(sol_ids_pref))}"
+        _cached = frappe.cache().get_value(_cache_key)
+        if _cached is not None:
+            return _cached
+
+        # DB-level filters to minimize data fetch
+        _lead_filters = [
+            ["creation", ">=", f"{from_date} 00:00:00"],
+            ["creation", "<=", f"{to_date} 23:59:59"]
+        ]
+        if sol_ids_pref:
+            _lead_filters.append(["sol_id", "in", list(sol_ids_pref)])
+        elif user != "Administrator" and not has_pref:
+            _lead_filters.append(["lead_owner", "=", user])
+
         leads = frappe.get_all(
             "Lead",
-            filters=[
-                ["creation", ">=", f"{from_date} 00:00:00"],
-                ["creation", "<=", f"{to_date} 23:59:59"]
-            ],
+            filters=_lead_filters,
             fields=["lead_owner", "sol_id", "status", "name"]
         )
 
@@ -643,7 +672,9 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
                 message=str(list(employee_stats.values())[:10])
             )
 
-        return list(employee_stats.values())
+        result = list(employee_stats.values())
+        frappe.cache().set_value(_cache_key, result, expires_in_sec=120)
+        return result
 
     except Exception:
         frappe.log_error(
@@ -700,12 +731,19 @@ def get_crm_top_analytics(from_date, to_date):
             sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
             
     # ---------- Fetch Leads ----------
+    # DB-level filters to minimize data fetch
+    _analytics_filters = [
+        ["creation", ">=", f"{from_date} 00:00:00"],
+        ["creation", "<=", f"{to_date} 23:59:59"]
+    ]
+    if sol_ids_pref:
+        _analytics_filters.append(["sol_id", "in", list(sol_ids_pref)])
+    elif user != "Administrator" and not has_pref:
+        _analytics_filters.append(["lead_owner", "=", user])
+
     leads = frappe.get_all(
         "Lead",
-        filters=[
-            ["creation", ">=", f"{from_date} 00:00:00"],
-            ["creation", "<=", f"{to_date} 23:59:59"]
-        ],
+        filters=_analytics_filters,
         fields=["name", "lead_owner", "sol_id", "status"]
     )
 
