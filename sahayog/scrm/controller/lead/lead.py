@@ -44,30 +44,42 @@ def validate_duplicate_lead(doc, method):
     from frappe.utils import add_days, nowdate
     seven_days_ago = add_days(nowdate(), -7)
 
-    for row in doc.custom_product_table:
-        if not row.product or not row.product_amount:
-            continue
+    product_pairs = [
+        (row.product, row.product_amount)
+        for row in doc.custom_product_table
+        if row.product and row.product_amount
+    ]
 
-        exists = frappe.db.sql(
-            """
-            SELECT l.name FROM `tabLead` l
-            JOIN `tabLead Product` lp ON lp.parent = l.name
-            WHERE l.mobile_no = %s
-            AND lp.product = %s
-            AND lp.product_amount = %s
-            AND l.creation >= %s
-            AND l.name != %s
-            LIMIT 1
-            """,
-            (doc.mobile_no, row.product, row.product_amount, seven_days_ago, doc.name or ""),
-            pluck=True,
+    if not product_pairs:
+        return
+
+    conditions = " OR ".join(
+        ["(lp.product = %s AND lp.product_amount = %s)"] * len(product_pairs)
+    )
+    params = [doc.mobile_no, seven_days_ago, doc.name or ""]
+    for product, amount in product_pairs:
+        params.extend([product, amount])
+
+    duplicates = frappe.db.sql(
+        f"""
+        SELECT l.name, lp.product, lp.product_amount FROM `tabLead` l
+        JOIN `tabLead Product` lp ON lp.parent = l.name
+        WHERE l.mobile_no = %s
+        AND l.creation >= %s
+        AND l.name != %s
+        AND ({conditions})
+        LIMIT 1
+        """,
+        tuple(params),
+        as_dict=True,
+    )
+
+    if duplicates:
+        d = duplicates[0]
+        frappe.throw(
+            title="Duplicate Lead",
+            msg=f"A lead for Product <b>{d.product}</b> with amount <b>{d.product_amount}</b> already exists for this number within the last 7 days. (Lead: {d.name})"
         )
-
-        if exists:
-            frappe.throw(
-                title="Duplicate Lead",
-                msg=f"A lead for Product <b>{row.product}</b> with amount <b>{row.product_amount}</b> already exists for this number within the last 7 days. (Lead: {exists[0]})"
-            )
 
 
 def validate_duplicate_appointment(doc, method):

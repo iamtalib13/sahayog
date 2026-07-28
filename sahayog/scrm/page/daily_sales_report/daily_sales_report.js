@@ -833,11 +833,34 @@ frappe.pages["daily-sales-report"].on_page_load = async function (wrapper) {
     limit: 100,
   });
 
+  // PRE-FETCH: all followup appointments in a single bulk query
+  const followupMap = {};
+  if (leads.length > 0) {
+    const leadNames = leads.map((l) => l.name);
+    const appts = await frappe.db.get_list("Appointment", {
+      filters: {
+        party: ["in", leadNames],
+        appointment_with: "Lead",
+        status: ["!=", "Cancelled"],
+        scheduled_time: [">=", frappe.datetime.now_date()],
+      },
+      fields: ["party", "scheduled_time"],
+      order_by: "scheduled_time asc",
+      limit: leadNames.length * 5,
+    });
+    for (const appt of appts) {
+      // Keep only earliest appointment per lead (already sorted asc)
+      if (!followupMap[appt.party]) {
+        followupMap[appt.party] = frappe.datetime.str_to_user(appt.scheduled_time);
+      }
+    }
+  }
+
   let rows = "";
 
   for (let index = 0; index < leads.length; index++) {
     const l = leads[index];
-    let followup = await getFollowupDate(l.name);
+    const followup = followupMap[l.name] || "-";
     processedLeads.push({
       ...l,
       followup_date: followup,

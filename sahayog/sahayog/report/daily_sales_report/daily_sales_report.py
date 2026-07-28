@@ -79,35 +79,57 @@ def execute(filters=None):
                 remarks_map[emp_no] = row.remark or ""
 
     # =====================================================
+    # PRE-FETCH: branch names (bulk, keyed by sol_id)
+    # =====================================================
+    all_sol_ids = list({emp.sol_id for emp in employees if emp.sol_id})
+    branch_rows = frappe.get_all(
+        "Sahayog Branch",
+        filters={"sol_id": ["in", all_sol_ids]},
+        fields=["sol_id", "branch"],
+    ) if all_sol_ids else []
+    branch_map = {row.sol_id: row.branch for row in branch_rows}
+
+    # PRE-FETCH: leads for all employees on selected_date (single query)
+    all_user_ids = [emp.user_id for emp in employees if emp.user_id]
+    if all_user_ids and all_sol_ids:
+        lead_rows = frappe.db.sql(
+            """
+            SELECT lead_owner, sol_id, status
+            FROM `tabLead`
+            WHERE lead_owner IN ({user_placeholders})
+              AND sol_id IN ({sol_placeholders})
+              AND DATE(creation) = %s
+            """.format(
+                user_placeholders=",".join(["%s"] * len(all_user_ids)),
+                sol_placeholders=",".join(["%s"] * len(all_sol_ids)),
+            ),
+            tuple(all_user_ids) + tuple(all_sol_ids) + (selected_date,),
+            as_dict=True,
+        )
+    else:
+        lead_rows = []
+
+    # Group leads by (lead_owner, sol_id)
+    leads_map = {}
+    for row in lead_rows:
+        key = (row.lead_owner, row.sol_id)
+        leads_map.setdefault(key, []).append(row.status)
+
+    # =====================================================
     # DATA BUILDING
     # =====================================================
     data = []
 
     for emp in employees:
-        branch_name = (
-            frappe.db.get_value(
-                "Sahayog Branch", {"sol_id": emp.sol_id}, "branch"
-            )
-            or "Not Mapped"
-        )
+        branch_name = branch_map.get(emp.sol_id) or "Not Mapped"
 
-        # Accurate per-day leads (today + past)
-        leads = frappe.db.sql(
-            """
-            SELECT status
-            FROM `tabLead`
-            WHERE lead_owner = %s
-              AND sol_id = %s
-              AND DATE(creation) = %s
-            """,
-            (emp.user_id, emp.sol_id, selected_date),
-            as_dict=True,
-        )
+        # Accurate per-day leads (lookup from pre-fetched map)
+        statuses = leads_map.get((emp.user_id, emp.sol_id), [])
 
-        total = len(leads)
-        converted = sum(1 for l in leads if l.status == "Converted")
-        followup = sum(1 for l in leads if l.status == "Follow Up")
-        notint = sum(1 for l in leads if l.status == "Not Interested")
+        total = len(statuses)
+        converted = statuses.count("Converted")
+        followup = statuses.count("Follow Up")
+        notint = statuses.count("Not Interested")
 
         # Rating + color
         if converted >= 1:

@@ -91,7 +91,17 @@ def _get_lead_data(limit, offset, search_term, since=None):
     count_filters = list(filters)
     if or_filters:
         count_filters.insert(0, ["_or"] + or_filters)
-    total_count = frappe.db.count("Lead", filters=count_filters)
+
+    # Cache total_count separately (120s TTL) — only when no search/since for accurate count
+    count_cache_key = None
+    if not since and not search_term:
+        count_cache_key = f"crm_count:{user}"
+        total_count = frappe.cache().get_value(count_cache_key)
+        if total_count is None:
+            total_count = frappe.db.count("Lead", filters=count_filters)
+            frappe.cache().set_value(count_cache_key, total_count, expires_in_sec=120)
+    else:
+        total_count = frappe.db.count("Lead", filters=count_filters)
 
     leads = frappe.get_list(
         "Lead",
@@ -111,6 +121,7 @@ def _get_lead_data(limit, offset, search_term, since=None):
         return [], None, 0
 
     lead_names = [d.get("name") for d in leads]
+
     amounts = frappe.get_all(
         "Lead Product",
         fields=["parent", "SUM(product_amount) as total"],
@@ -143,7 +154,16 @@ def _get_appointment_data(limit, offset, search_term, since=None):
     count_filters = list(filters)
     if or_filters:
         count_filters.insert(0, ["_or"] + or_filters)
-    total_count = frappe.db.count("Appointment", filters=count_filters)
+
+    # Cache total_count separately (120s TTL) — only when no search/since for accurate count
+    if not since and not search_term:
+        count_cache_key = f"crm_appt_count:{user}"
+        total_count = frappe.cache().get_value(count_cache_key)
+        if total_count is None:
+            total_count = frappe.db.count("Appointment", filters=count_filters)
+            frappe.cache().set_value(count_cache_key, total_count, expires_in_sec=120)
+    else:
+        total_count = frappe.db.count("Appointment", filters=count_filters)
 
     appointments = frappe.get_list(
         "Appointment",
@@ -167,3 +187,5 @@ def invalidate_crm_cache(user=None):
     user = user or frappe.session.user
     for key in frappe.cache().get_keys(f"crm_data:{user}:*") or []:
         frappe.cache().delete_key(key)
+    frappe.cache().delete_key(f"crm_count:{user}")
+    frappe.cache().delete_key(f"crm_appt_count:{user}")
