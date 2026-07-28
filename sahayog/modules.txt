@@ -8,3 +8,4 @@ MIS
 HRMS
 Petty Cash Management
 Loan
+Branch Score Card
