@@ -819,11 +819,11 @@ frappe.ui.form.on("Branch Score Card Settings", {
 
 		// ── Add Function form ────────────────────────────────────────────────────
 		function showAddFuncForm() {
-			widget.find("#mw-add-func-form").addClass("visible");
+			widget.find("#mw-add-func-form").addClass("visible").show();
 			widget.find("#mw-add-func-input").val("").focus();
 		}
 		function hideAddFuncForm() {
-			widget.find("#mw-add-func-form").removeClass("visible");
+			widget.find("#mw-add-func-form").removeClass("visible").hide();
 			widget.find("#mw-add-func-input").val("");
 		}
 
