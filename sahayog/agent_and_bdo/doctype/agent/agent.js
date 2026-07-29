@@ -48,92 +48,121 @@ frappe.ui.form.on("Agent", {
     // --- Unallocated: Show Allocate ---
     if (frm.doc.status === "Unallocated") {
 
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Allocate"), () => {
-        frappe.confirm(
-          __("Are you sure you want to request allocation?"),
-          () => {
-            // Get branch managers with multiple designations
-            frm.call({
-              method: "get_branch_managers",
-              args: {
-                branch_code: frm.doc.branch_code,
-              },
-              freeze: true,
-              freeze_message: __("Getting Branch Managers..."),
-              callback: function (r) {
-                console.log("Branch managers response:", r.message); // Debug log
-
-                if (r.message && r.message.length > 0) {
-                  // Always show selection dialog, even for single manager
-                  // This prevents automatic request sending
-                  show_minimal_manager_selection(frm, r.message);
-                } else {
-                  frappe.msgprint({
-                    title: __("No Branch Managers Found"),
-                    message: __(
-                      "No Branch Managers found for branch code: {0}",
-                      [frm.doc.branch_code]
-                    ),
-                    indicator: "orange",
-                  });
-                }
-              },
-              error: function (error) {
-                console.error("Error getting branch managers:", error);
-                frappe.msgprint({
-                  title: __("Error"),
-                  message: __(
-                    "Failed to get branch managers. Please try again."
-                  ),
-                  indicator: "red",
-                });
-              },
-            });
-          }
-        );
-      });
-      // }
-    }
-
-    // --- Pending: Show Approve / Reject ---
-    if (frm.doc.approved_by == frappe.session.user) {
-      if (frm.doc.status === "Pending") {
-        // if (frappe.session.user === "Administrator") {
-        frm.add_custom_button(__("Approve"), () => {
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Allocate"), () => {
           frappe.confirm(
-            __("Are you sure you want to approve this allocation?"),
+            __("Are you sure you want to request allocation?"),
             () => {
+              // Get branch managers with multiple designations
               frm.call({
-                method: "approve_allocation",
-                doc: frm.doc,
+                method: "get_branch_managers",
+                args: {
+                  branch_code: frm.doc.branch_code,
+                },
                 freeze: true,
-                freeze_message: __("Approving Allocation..."),
+                freeze_message: __("Getting Branch Managers..."),
                 callback: function (r) {
-                  if (r.message?.success) {
-                    frappe.show_alert({
-                      message: r.message.message,
-                      indicator: "green",
+                  console.log("Branch managers response:", r.message); // Debug log
+
+                  if (r.message && r.message.length > 0) {
+                    // Always show selection dialog, even for single manager
+                    // This prevents automatic request sending
+                    show_minimal_manager_selection(frm, r.message);
+                  } else {
+                    frappe.msgprint({
+                      title: __("No Branch Managers Found"),
+                      message: __(
+                        "No Branch Managers found for branch code: {0}",
+                        [frm.doc.branch_code]
+                      ),
+                      indicator: "orange",
                     });
-                    frm.reload_doc();
                   }
+                },
+                error: function (error) {
+                  console.error("Error getting branch managers:", error);
+                  frappe.msgprint({
+                    title: __("Error"),
+                    message: __(
+                      "Failed to get branch managers. Please try again."
+                    ),
+                    indicator: "red",
+                  });
                 },
               });
             }
           );
         });
-        // }
+      }
+    }
 
-        // if (frappe.session.user === "Administrator") {
-        frm.add_custom_button(__("Reject"), () => {
+    // --- Pending: Show Approve / Reject ---
+    if (frm.doc.approved_by == frappe.session.user) {
+      if (frm.doc.status === "Pending") {
+        if (frappe.session.user === "Administrator") {
+          frm.add_custom_button(__("Approve"), () => {
+            frappe.confirm(
+              __("Are you sure you want to approve this allocation?"),
+              () => {
+                frm.call({
+                  method: "approve_allocation",
+                  doc: frm.doc,
+                  freeze: true,
+                  freeze_message: __("Approving Allocation..."),
+                  callback: function (r) {
+                    if (r.message?.success) {
+                      frappe.show_alert({
+                        message: r.message.message,
+                        indicator: "green",
+                      });
+                      frm.reload_doc();
+                    }
+                  },
+                });
+              }
+            );
+          });
+        }
+
+        if (frappe.session.user === "Administrator") {
+          frm.add_custom_button(__("Reject"), () => {
+            frappe.confirm(
+              __("Are you sure you want to reject this allocation?"),
+              () => {
+                frm.call({
+                  method: "reject_allocation",
+                  doc: frm.doc,
+                  freeze: true,
+                  freeze_message: __("Rejecting Allocation..."),
+                  callback: function (r) {
+                    if (r.message?.success) {
+                      frappe.show_alert({
+                        message: r.message.message,
+                        indicator: "red",
+                      });
+                      frm.reload_doc();
+                    }
+                  },
+                });
+              }
+            );
+          });
+        }
+      }
+    }
+
+    // --- Allocated: Show Unallocate ---
+    if (frm.doc.status === "Allocated") {
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Unallocate"), () => {
           frappe.confirm(
-            __("Are you sure you want to reject this allocation?"),
+            __("Are you sure you want to unallocate this agent?"),
             () => {
               frm.call({
-                method: "reject_allocation",
+                method: "unallocate_agent",
                 doc: frm.doc,
                 freeze: true,
-                freeze_message: __("Rejecting Allocation..."),
+                freeze_message: __("Unallocating Agent..."),
                 callback: function (r) {
                   if (r.message?.success) {
                     frappe.show_alert({
@@ -147,64 +176,35 @@ frappe.ui.form.on("Agent", {
             }
           );
         });
-        // }
       }
-    }
-
-    // --- Allocated: Show Unallocate ---
-    if (frm.doc.status === "Allocated") {
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Unallocate"), () => {
-        frappe.confirm(
-          __("Are you sure you want to unallocate this agent?"),
-          () => {
-            frm.call({
-              method: "unallocate_agent",
-              doc: frm.doc,
-              freeze: true,
-              freeze_message: __("Unallocating Agent..."),
-              callback: function (r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "red",
-                  });
-                  frm.reload_doc();
-                }
-              },
-            });
-          }
-        );
-      });
-      // }
     }
 
     // --- Allocated: Show Cancel ---
     if (frm.doc.status === "Pending") {
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Cancel"), () => {
-        frappe.confirm(
-          __("Are you sure you want to cancel this allocation?"),
-          () => {
-            frm.call({
-              method: "unallocate_agent",
-              doc: frm.doc,
-              freeze: true,
-              freeze_message: __("Unallocating Agent..."),
-              callback: function (r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "red",
-                  });
-                  frm.reload_doc();
-                }
-              },
-            });
-          }
-        );
-      });
-      // }
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Cancel"), () => {
+          frappe.confirm(
+            __("Are you sure you want to cancel this allocation?"),
+            () => {
+              frm.call({
+                method: "unallocate_agent",
+                doc: frm.doc,
+                freeze: true,
+                freeze_message: __("Unallocating Agent..."),
+                callback: function (r) {
+                  if (r.message?.success) {
+                    frappe.show_alert({
+                      message: r.message.message,
+                      indicator: "red",
+                    });
+                    frm.reload_doc();
+                  }
+                },
+              });
+            }
+          );
+        });
+      }
     }
 
     frm.trigger("hide_sidebar_options");
