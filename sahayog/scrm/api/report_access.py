@@ -1,3 +1,5 @@
+import os
+import csv
 import frappe
 from frappe.utils import now_datetime, getdate, date_diff, format_date
 
@@ -742,3 +744,135 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
             )
             
     return branches
+
+
+@frappe.whitelist()
+def generate_fast_lead_report():
+    site_private_path = frappe.get_site_path("private", "files")
+    final_filepath = os.path.join(site_private_path, "lead_report.csv")
+    temp_filepath = os.path.join(site_private_path, "lead_report_tmp.csv")
+
+    if os.path.exists(temp_filepath):
+        try:
+            os.remove(temp_filepath)
+        except Exception:
+            pass
+
+    # Try MariaDB INTO OUTFILE first for maximum performance
+    query = f"""
+        (
+            SELECT 
+                'Lead ID', 'Status', 'Lead Name', 'Contact', 'Source',
+                'Product Code', 'Product Name', 'Amount',
+                'Employee Name', 'Employee ID', 'Designation',
+                'SOL ID', 'Branch', 'District', 'Region', 'Zone', 'Created On'
+        )
+        UNION ALL
+        (
+            SELECT
+                l.name,
+                IFNULL(l.status, ''),
+                IFNULL(l.lead_name, ''),
+                IFNULL(COALESCE(l.mobile_no, l.phone), ''),
+                IFNULL(l.source, ''),
+                IFNULL(lp.product, ''),
+                IFNULL(lp.product_name, ''),
+                IFNULL(lp.product_amount, 0),
+                IFNULL(e.employee_name, ''),
+                IFNULL(e.employee_number, ''),
+                IFNULL(e.designation, ''),
+                IFNULL(l.sol_id, ''),
+                IFNULL(sb.branch, ''),
+                IFNULL(sb.district, ''),
+                IFNULL(sb.region, ''),
+                IFNULL(sb.zone, ''),
+                DATE_FORMAT(l.creation, '%d-%m-%Y')
+            FROM `tabLead` l
+            LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+            LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
+            LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
+            ORDER BY l.creation DESC
+        )
+        INTO OUTFILE '{temp_filepath}'
+        FIELDS TERMINATED BY ','
+        OPTIONALLY ENCLOSED BY '"'
+        LINES TERMINATED BY '\\n';
+    """
+
+    method_used = "INTO OUTFILE (MariaDB Direct)"
+    try:
+        frappe.db.sql(query)
+        os.replace(temp_filepath, final_filepath)
+    except Exception as e:
+        # Fallback to Python DB query write if MariaDB secure_file_priv/permissions restrict INTO OUTFILE
+        method_used = "Python Fast Stream Fallback"
+        frappe.log_error(f"INTO OUTFILE failed: {str(e)}", "Lead Report Test")
+
+        leads = frappe.db.sql("""
+            SELECT
+                l.name AS lead_id,
+                IFNULL(l.status, '') AS status,
+                IFNULL(l.lead_name, '') AS lead_name,
+                IFNULL(COALESCE(l.mobile_no, l.phone), '') AS contact,
+                IFNULL(l.source, '') AS source,
+                IFNULL(lp.product, '') AS product_code,
+                IFNULL(lp.product_name, '') AS product_name,
+                IFNULL(lp.product_amount, 0) AS amount,
+                IFNULL(e.employee_name, '') AS employee_name,
+                IFNULL(e.employee_number, '') AS employee_id,
+                IFNULL(e.designation, '') AS designation,
+                IFNULL(l.sol_id, '') AS sol_id,
+                IFNULL(sb.branch, '') AS branch,
+                IFNULL(sb.district, '') AS district,
+                IFNULL(sb.region, '') AS region,
+                IFNULL(sb.zone, '') AS zone,
+                DATE_FORMAT(l.creation, '%d-%m-%Y') AS created_on
+            FROM `tabLead` l
+            LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+            LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
+            LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
+            ORDER BY l.creation DESC
+        """, as_dict=True)
+
+        headers = [
+            "Lead ID", "Status", "Lead Name", "Contact", "Source",
+            "Product Code", "Product Name", "Amount",
+            "Employee Name", "Employee ID", "Designation",
+            "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+        ]
+
+        with open(temp_filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            for row in leads:
+                writer.writerow([
+                    row.lead_id, row.status, row.lead_name, row.contact, row.source,
+                    row.product_code, row.product_name, row.amount,
+                    row.employee_name, row.employee_id, row.designation,
+                    row.sol_id, row.branch, row.district, row.region, row.zone,
+                    row.created_on
+                ])
+
+        os.replace(temp_filepath, final_filepath)
+
+    file_size = os.path.getsize(final_filepath)
+    return {
+        "status": "success",
+        "method": method_used,
+        "size_kb": round(file_size / 1024, 2),
+        "filepath": final_filepath
+    }
+
+
+@frappe.whitelist()
+def download_fast_lead_report():
+    report_path = frappe.get_site_path("private", "files", "lead_report.csv")
+    if not os.path.exists(report_path):
+        frappe.throw("Report file not found. Please click 'Generate Fast Report' first.")
+
+    with open(report_path, "rb") as f:
+        filedata = f.read()
+
+    frappe.response['filename'] = "lead_report.csv"
+    frappe.response['filecontent'] = filedata
+    frappe.response['type'] = "download"
