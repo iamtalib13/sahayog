@@ -2,20 +2,21 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Agent", {
-  
+
   refresh(frm) {
     //  if (frappe.session.user !== "Administrator") {
-            // frm.page.btn_primary?.hide();
-        // }
+    // frm.page.btn_primary?.hide();
+    // }
     frm.clear_custom_buttons(); // remove old buttons
     frm.trigger("employee_details"); // trigger employee details display
     frm.trigger("read_only_fields");
 
-        // --- Feature: Update From Finacle ---
+    // --- Feature: Update From Finacle ---
     // Only show if:
     // 1. It is an existing document (not new)
     // 2. User has "System Manager" OR "MIS Admin" role
-    if (!frm.is_new() && (frappe.user.has_role("System Manager") || frappe.user.has_role("MIS Admin"))) {
+    // if (!frm.is_new() && (frappe.user.has_role("System Manager") || frappe.user.has_role("MIS Admin"))) {
+    if (!frm.is_new() && (frappe.user.has_role("System Manager") || frappe.user.has_role("Employee"))) {
       frm.add_custom_button(__("Update From Finacle"), () => {
         frappe.call({
           method: "sahayog.api.auto_agent_creation.update_agent_from_finacle",
@@ -46,93 +47,122 @@ frappe.ui.form.on("Agent", {
 
     // --- Unallocated: Show Allocate ---
     if (frm.doc.status === "Unallocated") {
-      
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Allocate"), () => {
-        frappe.confirm(
-          __("Are you sure you want to request allocation?"),
-          () => {
-            // Get branch managers with multiple designations
-            frm.call({
-              method: "get_branch_managers",
-              args: {
-                branch_code: frm.doc.branch_code,
-              },
-              freeze: true,
-              freeze_message: __("Getting Branch Managers..."),
-              callback: function (r) {
-                console.log("Branch managers response:", r.message); // Debug log
 
-                if (r.message && r.message.length > 0) {
-                  // Always show selection dialog, even for single manager
-                  // This prevents automatic request sending
-                  show_minimal_manager_selection(frm, r.message);
-                } else {
-                  frappe.msgprint({
-                    title: __("No Branch Managers Found"),
-                    message: __(
-                      "No Branch Managers found for branch code: {0}",
-                      [frm.doc.branch_code]
-                    ),
-                    indicator: "orange",
-                  });
-                }
-              },
-              error: function (error) {
-                console.error("Error getting branch managers:", error);
-                frappe.msgprint({
-                  title: __("Error"),
-                  message: __(
-                    "Failed to get branch managers. Please try again."
-                  ),
-                  indicator: "red",
-                });
-              },
-            });
-          }
-        );
-      });
-      // }
-    }
-
-    // --- Pending: Show Approve / Reject ---
-    if (frm.doc.approved_by == frappe.session.user) {
-      if (frm.doc.status === "Pending") {
-        // if (frappe.session.user === "Administrator") {
-        frm.add_custom_button(__("Approve"), () => {
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Allocate"), () => {
           frappe.confirm(
-            __("Are you sure you want to approve this allocation?"),
+            __("Are you sure you want to request allocation?"),
             () => {
+              // Get branch managers with multiple designations
               frm.call({
-                method: "approve_allocation",
-                doc: frm.doc,
+                method: "get_branch_managers",
+                args: {
+                  branch_code: frm.doc.branch_code,
+                },
                 freeze: true,
-                freeze_message: __("Approving Allocation..."),
+                freeze_message: __("Getting Branch Managers..."),
                 callback: function (r) {
-                  if (r.message?.success) {
-                    frappe.show_alert({
-                      message: r.message.message,
-                      indicator: "green",
+                  console.log("Branch managers response:", r.message); // Debug log
+
+                  if (r.message && r.message.length > 0) {
+                    // Always show selection dialog, even for single manager
+                    // This prevents automatic request sending
+                    show_minimal_manager_selection(frm, r.message);
+                  } else {
+                    frappe.msgprint({
+                      title: __("No Branch Managers Found"),
+                      message: __(
+                        "No Branch Managers found for branch code: {0}",
+                        [frm.doc.branch_code]
+                      ),
+                      indicator: "orange",
                     });
-                    frm.reload_doc();
                   }
+                },
+                error: function (error) {
+                  console.error("Error getting branch managers:", error);
+                  frappe.msgprint({
+                    title: __("Error"),
+                    message: __(
+                      "Failed to get branch managers. Please try again."
+                    ),
+                    indicator: "red",
+                  });
                 },
               });
             }
           );
         });
-      // }
+      }
+    }
 
-      // if (frappe.session.user === "Administrator") {
-        frm.add_custom_button(__("Reject"), () => {
+    // --- Pending: Show Approve / Reject ---
+    if (frm.doc.approved_by == frappe.session.user) {
+      if (frm.doc.status === "Pending") {
+        if (frappe.session.user === "Administrator") {
+          frm.add_custom_button(__("Approve"), () => {
+            frappe.confirm(
+              __("Are you sure you want to approve this allocation?"),
+              () => {
+                frm.call({
+                  method: "approve_allocation",
+                  doc: frm.doc,
+                  freeze: true,
+                  freeze_message: __("Approving Allocation..."),
+                  callback: function (r) {
+                    if (r.message?.success) {
+                      frappe.show_alert({
+                        message: r.message.message,
+                        indicator: "green",
+                      });
+                      frm.reload_doc();
+                    }
+                  },
+                });
+              }
+            );
+          });
+        }
+
+        if (frappe.session.user === "Administrator") {
+          frm.add_custom_button(__("Reject"), () => {
+            frappe.confirm(
+              __("Are you sure you want to reject this allocation?"),
+              () => {
+                frm.call({
+                  method: "reject_allocation",
+                  doc: frm.doc,
+                  freeze: true,
+                  freeze_message: __("Rejecting Allocation..."),
+                  callback: function (r) {
+                    if (r.message?.success) {
+                      frappe.show_alert({
+                        message: r.message.message,
+                        indicator: "red",
+                      });
+                      frm.reload_doc();
+                    }
+                  },
+                });
+              }
+            );
+          });
+        }
+      }
+    }
+
+    // --- Allocated: Show Unallocate ---
+    if (frm.doc.status === "Allocated") {
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Unallocate"), () => {
           frappe.confirm(
-            __("Are you sure you want to reject this allocation?"),
+            __("Are you sure you want to unallocate this agent?"),
             () => {
               frm.call({
-                method: "reject_allocation",
+                method: "unallocate_agent",
                 doc: frm.doc,
                 freeze: true,
-                freeze_message: __("Rejecting Allocation..."),
+                freeze_message: __("Unallocating Agent..."),
                 callback: function (r) {
                   if (r.message?.success) {
                     frappe.show_alert({
@@ -146,64 +176,35 @@ frappe.ui.form.on("Agent", {
             }
           );
         });
-      // }
       }
-    }
-
-    // --- Allocated: Show Unallocate ---
-    if (frm.doc.status === "Allocated") {
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Unallocate"), () => {
-        frappe.confirm(
-          __("Are you sure you want to unallocate this agent?"),
-          () => {
-            frm.call({
-              method: "unallocate_agent",
-              doc: frm.doc,
-              freeze: true,
-              freeze_message: __("Unallocating Agent..."),
-              callback: function (r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "red",
-                  });
-                  frm.reload_doc();
-                }
-              },
-            });
-          }
-        );
-      });
-    // }
     }
 
     // --- Allocated: Show Cancel ---
     if (frm.doc.status === "Pending") {
-      // if (frappe.session.user === "Administrator") {
-      frm.add_custom_button(__("Cancel"), () => {
-        frappe.confirm(
-          __("Are you sure you want to cancel this allocation?"),
-          () => {
-            frm.call({
-              method: "unallocate_agent",
-              doc: frm.doc,
-              freeze: true,
-              freeze_message: __("Unallocating Agent..."),
-              callback: function (r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "red",
-                  });
-                  frm.reload_doc();
-                }
-              },
-            });
-          }
-        );
-      });
-      // }
+      if (frappe.session.user === "Administrator") {
+        frm.add_custom_button(__("Cancel"), () => {
+          frappe.confirm(
+            __("Are you sure you want to cancel this allocation?"),
+            () => {
+              frm.call({
+                method: "unallocate_agent",
+                doc: frm.doc,
+                freeze: true,
+                freeze_message: __("Unallocating Agent..."),
+                callback: function (r) {
+                  if (r.message?.success) {
+                    frappe.show_alert({
+                      message: r.message.message,
+                      indicator: "red",
+                    });
+                    frm.reload_doc();
+                  }
+                },
+              });
+            }
+          );
+        });
+      }
     }
 
     frm.trigger("hide_sidebar_options");
@@ -243,16 +244,13 @@ frappe.ui.form.on("Agent", {
                             <div style="display:flex;align-items:flex-start;justify-content:space-between;">
                                 <div style="min-width:130px;">
                                     <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Requested By</div>
-                                    <div style="font-weight:600;margin-bottom:3px;">${
-                                      req.employee_name ||
-                                      req.display_name ||
-                                      frm.doc.requested_by
-                                    }</div>
-                                    <div style="font-size:12px;color:#bfaf86;">${
-                                      req.branch || "-"
-                                    }<br>${
-                  req.cell_number ? "  " + req.cell_number : ""
-                }${req.company_email ? " | " + req.company_email : ""}</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${req.employee_name ||
+                  req.display_name ||
+                  frm.doc.requested_by
+                  }</div>
+                                    <div style="font-size:12px;color:#bfaf86;">${req.branch || "-"
+                  }<br>${req.cell_number ? "  " + req.cell_number : ""
+                  }${req.company_email ? " | " + req.company_email : ""}</div>
                                 </div>
                                 <!-- Step Progress Bar -->
                                 <div style="flex:1;min-width:70px;max-width:850px;display:flex;align-items:center;justify-content:center;">
@@ -266,16 +264,13 @@ frappe.ui.form.on("Agent", {
                                 </div>
                                 <div style="min-width:130px;text-align:right;">
                                     <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Approval Pending From</div>
-                                    <div style="font-weight:600;margin-bottom:3px;">${
-                                      appr.employee_name ||
-                                      appr.display_name ||
-                                      frm.doc.approved_by
-                                    }</div>
-                                    <div style="font-size:12px;color:#bfaf86;">${
-                                      appr.branch || "-"
-                                    }<br>${
-                  appr.cell_number ? "  " + appr.cell_number : ""
-                }${appr.company_email ? " | " + appr.company_email : ""}</div>
+                                    <div style="font-weight:600;margin-bottom:3px;">${appr.employee_name ||
+                  appr.display_name ||
+                  frm.doc.approved_by
+                  }</div>
+                                    <div style="font-size:12px;color:#bfaf86;">${appr.branch || "-"
+                  }<br>${appr.cell_number ? "  " + appr.cell_number : ""
+                  }${appr.company_email ? " | " + appr.company_email : ""}</div>
                                 </div>
                             </div>
                         </div>
@@ -336,12 +331,11 @@ frappe.ui.form.on("Agent", {
                   <div style="min-width:130px;">
                       <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Allocated To</div>
                       <div style="font-weight:600;margin-bottom:3px;">
-                        ${
-                          req.employee_name ||
-                          req.display_name ||
-                          frm.doc.requested_by ||
-                          employee
-                        }
+                        ${req.employee_name ||
+                  req.display_name ||
+                  frm.doc.requested_by ||
+                  employee
+                  }
                       </div>
                       <div style="font-size:12px;color:#43b35399;">
                         ${req.branch || "-"}<br>
@@ -377,11 +371,10 @@ frappe.ui.form.on("Agent", {
                     <div style="min-width:130px;">
                         <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Allocated To</div>
                         <div style="font-weight:600;margin-bottom:3px;">
-                          ${
-                            req.employee_name ||
-                            req.display_name ||
-                            frm.doc.requested_by
-                          }
+                          ${req.employee_name ||
+                    req.display_name ||
+                    frm.doc.requested_by
+                    }
                         </div>
                         <div style="font-size:12px;color:#43b35399;">
                           ${req.branch || "-"}<br>
@@ -407,18 +400,16 @@ frappe.ui.form.on("Agent", {
                     <div style="min-width:130px;text-align:right;">
                         <div style="color:#a9a9a9;font-size:12px;margin-bottom:2px;">Approved By</div>
                         <div style="font-weight:600;margin-bottom:3px;">
-                          ${
-                            appr.employee_name ||
-                            appr.display_name ||
-                            frm.doc.approved_by
-                          }
+                          ${appr.employee_name ||
+                    appr.display_name ||
+                    frm.doc.approved_by
+                    }
                         </div>
                         <div style="font-size:12px;color:#43b35399;">
                           ${appr.branch || "-"}<br>
                           ${appr.cell_number ? "  " + appr.cell_number : ""}
-                          ${
-                            appr.company_email ? " | " + appr.company_email : ""
-                          }
+                          ${appr.company_email ? " | " + appr.company_email : ""
+                    }
                         </div>
                     </div>
                 </div>
@@ -627,18 +618,16 @@ function show_minimal_manager_selection(frm, managers) {
 
       groups[s.k].forEach((m, i) => {
         html += `
-                    <label class="agent-item" data-user-id="${
-                      m.user_id
-                    }" data-employee-name="${m.employee_name}">
+                    <label class="agent-item" data-user-id="${m.user_id
+          }" data-employee-name="${m.employee_name}">
                         <input type="radio" name="manager_radio" class="agent-radio" 
                                value='${JSON.stringify({
-                                 user_id: m.user_id,
-                                 employee_name: m.employee_name,
-                               })}'>
+            user_id: m.user_id,
+            employee_name: m.employee_name,
+          })}'>
                         <span class="agent-name">${m.employee_name}</span>
-                        <span class="agent-badge" style="background: ${s.c};">${
-          s.b
-        }</span>
+                        <span class="agent-badge" style="background: ${s.c};">${s.b
+          }</span>
                     </label>
                 `;
       });
