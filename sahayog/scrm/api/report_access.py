@@ -569,6 +569,12 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
             
     return branches
 
+# ==============================================================================
+# METHOD: generate_fast_lead_report()
+# PURPOSE: Executed by Cron Job or Admin manually. Runs MariaDB INTO OUTFILE
+#          query to dump all database lead records into /tmp/ first, then moves
+#          it to lead_report.csv in private/files. Bypasses Python RAM and timeouts.
+# ==============================================================================
 @frappe.whitelist()
 def generate_fast_lead_report():
     import shutil
@@ -689,6 +695,13 @@ def generate_fast_lead_report():
         "filepath": final_filepath
     }
 
+# ==============================================================================
+# METHOD: download_fast_lead_report(from_date, to_date, filters=None)
+# PURPOSE: Triggered by user's 'DOWNLOAD' action on CRM Lead Report dashboard.
+#          Instead of querying database, it opens the pre-generated master CSV
+#          file on the server, parses the rows in Python, applies active
+#          filters line-by-line, and streams the filtered CSV to the browser.
+# ==============================================================================
 @frappe.whitelist()
 def download_fast_lead_report(from_date, to_date, filters=None):
     import datetime

@@ -1036,6 +1036,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.updateCapsuleUI();
     },
 
+    /*
+     * generateFastReport()
+     * Triggered by 'Generate Fast Report' action.
+     * Calls python backend generate_fast_lead_report API to execute a high-speed
+     * SELECT ... INTO OUTFILE query which dumps all database leads directly to a master CSV file.
+     */
     generateFastReport() {
       this.show_export_menu = false;
       frappe.show_alert({ message: __("Generating CSV Report..."), indicator: "orange" });
@@ -1055,6 +1061,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
     },
 
+    /*
+     * downloadReport()
+     * Triggered by the main 'DOWNLOAD' button on the CRM dashboard.
+     * Captures current active date range and filter dropdown selections from the UI,
+     * encodes them, and sends a direct browser download request to the python backend.
+     */
     downloadReport() {
       this.show_export_menu = false;
       let from_date = this.employee_from_date;
@@ -1063,11 +1075,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
       window.open(download_url, "_blank");
     },
-    // data() {
-    //   return {
-    //     date_input_key: 0,
-    //   };
-    // },
+  
     getSelectedCountText(key) {
       const count = this.selected[key].length;
       if (count === 0) return "All";
@@ -1085,7 +1093,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (!this.master_month) return "";
       return this.master_month + "-01";
     },
-
     get month_end() {
       if (!this.master_month) return "";
 
@@ -1153,7 +1160,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         0,
       );
     },
-
     get totalNotInterestedInReport() {
       return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_not_interested || 0),
@@ -1230,7 +1236,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         ? Math.round((this.totalConvertedLeadsInReport / total) * 100)
         : 0;
     },
-
     get totalRevenue() {
       return this.filteredEmployees.reduce(
         (sum, e) => sum + (e.converted_amount || 0),
@@ -1242,7 +1247,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (emp.follow_ups >= 4) return { label: "Average", class: "bg-average" };
       return { label: "Bad", class: "bg-bad" };
     },
-
     getQualification(total) {
       return total >= 10
         ? { label: "Qualified", class: "bg-qualified" }
@@ -1273,6 +1277,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       this.fetchEmployeePerformance();
     },
+
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
       // 1. Agar ek bhi lead convert hui hai
@@ -1288,7 +1293,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         return { label: "Bad", class: "badge-pastel-red" };
       }
     },
-    // Status logic for Badges
     // Status logic for Badges
     getLeadStatus(count) {
       return count >= 10
@@ -1475,7 +1479,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
 
     // Watch for active_tab changes to load data automatically
-
     formatDisplayText(key, val) {
       if (val == null || val === undefined) return "";
 
@@ -1598,7 +1601,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.analytics_loading = false;
       }
     },
-
 
     async fetchVisibleBranches() {
       let res = await frappe.call({
