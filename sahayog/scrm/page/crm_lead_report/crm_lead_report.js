@@ -661,22 +661,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                       <div class="export-dropdown" v-if="totalLeadsInReport > 0 && false">
+                        <div v-if="totalLeadsInReport > 0">
                             <button class="btn-generate-sm"
-                                    @click.stop="toggleExportMenu" 
+                                    @click="downloadReport" 
                                     :disabled="loading">
-                                <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i>
-                                EXPORT <i class="fa fa-caret-down ml-1"></i>
+                                <i class="fa fa-download mr-1"></i> DOWNLOAD
                             </button>
-
-                            <div class="export-menu" v-if="show_export_menu">
-                                <div class="export-item" @click="generateFastReport">
-                                    Generate Fast Report
-                                </div>
-                                <div class="export-item" @click="downloadReport">
-                                    Download Report
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1046,6 +1036,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.updateCapsuleUI();
     },
 
+    /*
+     * generateFastReport()
+     * Triggered by 'Generate Fast Report' action.
+     * Calls python backend generate_fast_lead_report API to execute a high-speed
+     * SELECT ... INTO OUTFILE query which dumps all database leads directly to a master CSV file.
+     */
     generateFastReport() {
       this.show_export_menu = false;
       frappe.show_alert({ message: __("Generating CSV Report..."), indicator: "orange" });
@@ -1065,16 +1061,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
     },
 
+    /*
+     * downloadReport()
+     * Triggered by the main 'DOWNLOAD' button on the CRM dashboard.
+     * Captures current active date range and filter dropdown selections from the UI,
+     * encodes them, and sends a direct browser download request to the python backend.
+     */
     downloadReport() {
       this.show_export_menu = false;
-      let download_url = "/api/method/sahayog.scrm.api.report_access.download_fast_lead_report";
+      let from_date = this.employee_from_date;
+      let to_date = this.employee_to_date;
+      let filters_str = encodeURIComponent(JSON.stringify(this.selected));
+      let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
       window.open(download_url, "_blank");
     },
-    // data() {
-    //   return {
-    //     date_input_key: 0,
-    //   };
-    // },
+  
     getSelectedCountText(key) {
       const count = this.selected[key].length;
       if (count === 0) return "All";
@@ -1092,7 +1093,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (!this.master_month) return "";
       return this.master_month + "-01";
     },
-
     get month_end() {
       if (!this.master_month) return "";
 
@@ -1160,7 +1160,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         0,
       );
     },
-
     get totalNotInterestedInReport() {
       return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_not_interested || 0),
@@ -1237,7 +1236,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         ? Math.round((this.totalConvertedLeadsInReport / total) * 100)
         : 0;
     },
-
     get totalRevenue() {
       return this.filteredEmployees.reduce(
         (sum, e) => sum + (e.converted_amount || 0),
@@ -1249,7 +1247,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (emp.follow_ups >= 4) return { label: "Average", class: "bg-average" };
       return { label: "Bad", class: "bg-bad" };
     },
-
     getQualification(total) {
       return total >= 10
         ? { label: "Qualified", class: "bg-qualified" }
@@ -1280,6 +1277,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       this.fetchEmployeePerformance();
     },
+
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
       // 1. Agar ek bhi lead convert hui hai
@@ -1295,7 +1293,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         return { label: "Bad", class: "badge-pastel-red" };
       }
     },
-    // Status logic for Badges
     // Status logic for Badges
     getLeadStatus(count) {
       return count >= 10
@@ -1482,7 +1479,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
 
     // Watch for active_tab changes to load data automatically
-
     formatDisplayText(key, val) {
       if (val == null || val === undefined) return "";
 
@@ -1606,119 +1602,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
 
-    async applyFilters(format = "csv") {
-      // Safety check: though button is hidden, we block the function too
-      if (this.totalLeadsInReport === 0) {
-        this.showNoLeadsMessage();
-        return;
-      }
-
-      this.loading = true;
-      page.set_intro(`
-        <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-          <i class="fa fa-spinner fa-spin mr-2"></i> <b>Generating Report...</b> Please stay on this page.
-        </div>
-      `);
-
-      const fromDate = this.employee_from_date;
-      const toDate = this.employee_to_date;
-
-      try {
-        let res = await frappe.call({
-          method: "sahayog.scrm.api.report_access.queue_leads_export",
-          args: {
-            from_date: fromDate,
-            to_date: toDate,
-            filters: this.selected,
-            format: format,
-          },
-        });
-        if (res.message?.status === "queued") {
-          this.checkStatus();
-        }
-      } catch (e) {
-        this.loading = false;
-      }
-    },
-
-    showNoLeadsMessage() {
-      page.set_intro(`
-        <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-          <i class="fa fa-info-circle mr-2"></i> <b>No Records Found:</b> There are no leads available for the selected month or applied filter criteria.
-        </div>
-      `);
-    },
-
-    checkStatus() {
-      let progress = 10;
-      let attempts = 0;
-      const maxAttempts = 60; // 5 minutes max (60 * 5s)
-
-      let timer = setInterval(async () => {
-        attempts++;
-
-        if (attempts > maxAttempts) {
-          clearInterval(timer);
-          this.loading = false;
-          page.set_intro(`
-            <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-              <i class="fa fa-clock-o mr-2"></i> <b>Timeout:</b> Export is taking too long. Please check back later.
-            </div>
-          `);
-          return;
-        }
-
-        let res = await frappe.call(
-          "sahayog.scrm.api.report_access.check_export_status",
-        );
-
-        if (progress < 90) progress += 10;
-
-        page.set_intro(`
-          <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-            <i class="fa fa-spinner fa-spin mr-2"></i> <b>Processing (${progress}%)...</b> Fetching data.
-          </div>
-        `);
-
-        if (res.message?.status === "completed") {
-          clearInterval(timer);
-          this.loading = false;
-
-          if (res.message.row_count === 0) {
-            this.showNoLeadsMessage();
-            return;
-          }
-
-          const fileName = res.message.file_url.split("/").pop();
-          page.set_intro(`
-            <div class="p-2 blinking-success" style="background:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; font-size:12px; color:#166534;">
-              <div style="display:flex; justify-content:space-between;">
-                <span><i class="fa fa-check-circle"></i> <b>Export Ready</b></span>
-                <span><b>${res.message.row_count} rows</b></span>
-              </div>
-              <div style="margin-top:4px; font-size:11px;">📁 ${fileName}</div>
-            </div>
-          `);
-
-          // Trigger download
-          const a = document.createElement("a");
-          a.href = res.message.file_url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else if (res.message?.status === "failed") {
-          clearInterval(timer);
-          this.loading = false;
-          const errMsg = res.message.error || "Export failed.";
-          page.set_intro(
-            `<div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-              <i class="fa fa-exclamation-triangle mr-2"></i> <b>Error:</b> ${errMsg}
-            </div>`,
-          );
-        }
-      }, 5000);
-    },
     async fetchVisibleBranches() {
       let res = await frappe.call({
         method: "sahayog.scrm.api.report_access.get_branches_by_filters",
