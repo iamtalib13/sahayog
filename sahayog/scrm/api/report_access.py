@@ -133,110 +133,86 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
         ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
         sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
 
-    # ---------- Fetch Leads ----------
-    lead_db_filters = [
-        ["creation", ">=", f"{from_date} 00:00:00"],
-        ["creation", "<=", f"{to_date} 23:59:59"]
+    # ---------- Build Query Conditions ----------
+    conditions = [
+        "l.creation >= %(from_date)s",
+        "l.creation <= %(to_date)s"
     ]
+    values = {
+        "from_date": f"{from_date} 00:00:00",
+        "to_date": f"{to_date} 23:59:59"
+    }
+
     if sol_ids_pref:
-        lead_db_filters.append(["sol_id", "in", list(sol_ids_pref)])
+        conditions.append("l.sol_id IN %(sol_ids_pref)s")
+        values["sol_ids_pref"] = tuple(sol_ids_pref)
     elif user != "Administrator" and not has_pref:
-        lead_db_filters.append(["lead_owner", "=", user])
+        conditions.append("l.lead_owner = %(lead_owner)s")
+        values["lead_owner"] = user
 
-    page_length = 20000
-    start = 0
-    leads = []
+    if products_pref:
+        conditions.append("lp.product IN %(products_pref)s")
+        values["products_pref"] = tuple(products_pref)
+    if sources_pref:
+        conditions.append("l.source IN %(sources_pref)s")
+        values["sources_pref"] = tuple(sources_pref)
+    if zones_pref:
+        conditions.append("b.zone IN %(zones_pref)s")
+        values["zones_pref"] = tuple(zones_pref)
+    if regions_pref:
+        allowed_regions = set(regions_pref)
+        for r in list(regions_pref):
+            allowed_regions |= REGION_ALIAS_MAP.get(r, set())
+        conditions.append("b.region IN %(regions_pref)s")
+        values["regions_pref"] = tuple(allowed_regions)
 
-    while True:
-        batch = frappe.get_all(
-            "Lead",
-            filters=lead_db_filters,
-            fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
-            order_by="creation desc",
-            start=start,
-            limit_page_length=page_length
-        )
-        if not batch: break
-        leads.extend(batch)
-        start += page_length
+    # ---------- Single Optimized SQL Query ----------
+    query = """
+        SELECT
+            l.name,
+            l.status,
+            l.lead_name,
+            COALESCE(l.mobile_no, l.phone, '-') as contact,
+            l.source,
+            l.lead_owner,
+            l.sol_id,
+            l.creation,
+            COALESCE(lp.product, '-') as product_code,
+            COALESCE(lp.product_name, '-') as product_name,
+            COALESCE(lp.product_amount, 0) as amount,
+            COALESCE(emp.employee_name, '-') as employee_name,
+            COALESCE(emp.employee_number, '-') as employee_id,
+            COALESCE(emp.designation, '-') as designation,
+            b.branch,
+            b.district,
+            b.region,
+            b.zone
+        FROM `tabLead` l
+        LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = l.lead_owner AND emp.status = 'Active'
+        LEFT JOIN `tabSahayog Branch` b ON b.sol_id = l.sol_id
+        WHERE {where_clause}
+        ORDER BY l.creation DESC
+    """.format(
+        where_clause=" AND ".join(conditions)
+    )
 
-    if not leads:
-        return [], {}, {}, {}
-
-    # Pre-fetch lookup details
-    lead_names = [l.name for l in leads]
-    product_rows = frappe.get_all("Lead Product", filters={"parent": ["in", lead_names]}, fields=["parent", "product", "product_name", "product_amount"])
-    product_map = {}
-    for pr in product_rows:
-        product_map.setdefault(pr.parent, []).append(pr)
-
-    sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
-    branch_map = get_branch_map(list(sol_ids))
-    employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
+    frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
+    raw_leads = frappe.db.sql(query, values, as_dict=True)
 
     final_leads = []
+    for r in raw_leads:
+        new_row = frappe._dict(r)
+        # Reconstruct branch_info dictionary for compatibility with frontend/KPI loops
+        new_row["branch_info"] = {
+            "branch": r.get("branch") or "No SOL",
+            "district": r.get("district") or "-",
+            "region": r.get("region") or "-",
+            "zone": r.get("zone") or "-"
+        }
+        final_leads.append(new_row)
 
-    for l in leads:
-        if user != "Administrator" and not has_pref:
-            if l.lead_owner != user:
-                continue
-
-        curr_sol = str(l.sol_id) if l.sol_id else ""
-        if sol_ids_pref and curr_sol not in sol_ids_pref:
-            continue
-
-        branch = branch_map.get(curr_sol) if curr_sol else None
-        
-        if branch:
-            lead_zone = norm(branch.zone)
-            lead_region = norm(branch.region)
-            zone_match = not zones_pref or (lead_zone in zones_pref)
-            
-            region_match = True
-            if is_all_regions: 
-                region_match = True
-            elif regions_pref:
-                allowed = set(regions_pref)
-                for r in list(regions_pref):
-                    allowed |= REGION_ALIAS_MAP.get(r, set())
-                region_match = lead_region in allowed
-
-            if not zone_match or not region_match:
-                continue
-        else:
-            if zones_pref or regions_pref:
-                continue
-
-        if sources_pref and norm(l.source) not in sources_pref:
-            continue
-
-        l_products = product_map.get(l.name, [])
-        matched_products = []
-        
-        if products_pref:
-            matched_products = [p for p in l_products if norm(p.product) in products_pref]
-            if not matched_products:
-                continue 
-        else:
-            matched_products = l_products if l_products else [{}]
-
-        emp = employee_map.get(l.lead_owner)
-
-        for p in matched_products:
-            new_row = l.copy()
-            new_row.update({
-                "product_code": p.get("product") or "-",
-                "product_name": p.get("product_name") or "-",
-                "amount": p.get("product_amount") or 0,
-                "employee_name": emp.employee_name if emp else "-",
-                "employee_id": emp.employee_number if emp else "-",
-                "designation": emp.designation if emp else "-",
-                "branch_info": branch or {"branch": "No SOL", "district": "-", "region": "-", "zone": "-"},
-                "contact": l.mobile_no or l.phone or "-"
-            })
-            final_leads.append(new_row)
-
-    return final_leads, branch_map, employee_map, product_map
+    return final_leads, {}, {}, {}
 
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
