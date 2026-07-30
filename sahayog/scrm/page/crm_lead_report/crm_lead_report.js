@@ -661,7 +661,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                       <div class="export-dropdown" v-if="totalLeadsInReport > 0">
+                       <div class="export-dropdown" v-if="totalLeadsInReport > 0 && false">
                             <button class="btn-generate-sm"
                                     @click.stop="toggleExportMenu" 
                                     :disabled="loading">
@@ -670,11 +670,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </button>
 
                             <div class="export-menu" v-if="show_export_menu">
-                                <div class="export-item" @click="exportCSV">
-                                    Export CSV
+                                <div class="export-item" @click="generateFastReport">
+                                    Generate Fast Report
                                 </div>
-                                <div class="export-item" @click="exportZIP">
-                                    Export ZIP
+                                <div class="export-item" @click="downloadReport">
+                                    Download Report
                                 </div>
                             </div>
                         </div>
@@ -1046,19 +1046,29 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.updateCapsuleUI();
     },
 
-    exportCSV() {
+    generateFastReport() {
       this.show_export_menu = false;
-
-      // 👇 Existing functionality untouched
-      this.applyFilters();
+      frappe.show_alert({ message: __("Generating CSV Report..."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        freeze: true,
+        freeze_message: __("Generating Fast Lead Report..."),
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.msgprint({
+              title: __("Report Generated"),
+              indicator: "green",
+              message: __(`Report generated successfully using <b>${r.message.method}</b>.<br>File Size: <b>${r.message.size_kb} KB</b>.<br>Click 'Download Report' to download the CSV.`)
+            });
+          }
+        }
+      });
     },
 
-    exportZIP() {
+    downloadReport() {
       this.show_export_menu = false;
-
-      // 👇 Abhi ke liye same function call karenge
-      // Later backend me format param add karenge
-      this.applyFilters("zip");
+      let download_url = "/api/method/sahayog.scrm.api.report_access.download_fast_lead_report";
+      window.open(download_url, "_blank");
     },
     // data() {
     //   return {
