@@ -98,23 +98,6 @@ def empty_stats():
     }
 
 @frappe.whitelist()
-def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
-    user = frappe.session.user
-    from_date, to_date = validate_date_range(from_date, to_date)
-    
-    # Tracking counters for debugging
-    skip_reason_sol_pref = 0
-    skip_reason_no_branch = 0
-    skip_reason_zone_region_mismatch = 0
-    skip_reason_source = 0
-    skip_reason_product = 0
-
-    frappe.log_error(
-            "CRM INPUT DEBUG",
-            f"User:{user}, From:{from_date}, To:{to_date}, Filters:{filters}"
-        )
-    
-@frappe.whitelist()
 def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
     """Centralized helper to fetch and filter base leads. Prevents duplicate DB queries."""
     from_date, to_date = validate_date_range(from_date, to_date)
@@ -255,7 +238,6 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
 
     return final_leads, branch_map, employee_map, product_map
 
-
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
     user = frappe.session.user
@@ -270,169 +252,11 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         }
     }
 
-
 def validate_date_range(from_date, to_date):
     if not from_date or not to_date: frappe.throw("Dates are required")
     f, t = getdate(from_date), getdate(to_date)
     if f > t: frappe.throw("From Date cannot be after To Date")
     return f, t
-
-
-# sahayog/scrm/api/report_access.py (Ke andar changes)
-
-@frappe.whitelist()
-def queue_leads_export(from_date, to_date, filters=None, format="csv"):
-    user = frappe.session.user
-
-    frappe.cache().set_value(
-        f"export_status_{user}",
-        {"status": "processing"},
-        expires_in_sec=600
-    )
-
-    frappe.enqueue(
-        method="sahayog.scrm.api.report_access.run_leads_export_job",
-        queue="long",
-        timeout=3600,
-        user=user,
-        from_date=from_date,
-        to_date=to_date,
-        filters=filters,
-        format=format
-    )
-    return {"status": "queued"}
-
-
-import io
-import csv
-import zipfile
-
-
-def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
-    frappe.set_user(user)
-
-    try:
-        data = get_leads(from_date, to_date, filters=filters)
-        leads = data.get("leads", [])
-
-        headers = [
-            "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
-            "Source", "Product Code", "Product Name", "Amount",
-            "Employee Name", "Employee ID", "Designation",
-            "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
-        ]
-
-        # ---------- CREATE CSV IN MEMORY (FAST) ----------
-        output = io.StringIO()
-        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-
-        writer.writerow(headers)
-
-        for i, l in enumerate(leads):
-            b = l.get("branch_info", {})
-            writer.writerow([
-                i + 1,
-                l.status,
-                l.name,
-                l.lead_name or "",
-                l.contact,
-                l.source or "",
-                l.product_code,
-                l.product_name,
-                l.amount,
-                l.employee_name,
-                l.employee_id,
-                l.designation,
-                l.sol_id or "-",
-                b.get("branch", "-"),
-                b.get("district", "-"),
-                b.get("region", "-"),
-                b.get("zone", "-"),
-                format_date(l.creation, "dd-mm-yyyy")
-            ])
-
-        csv_content = output.getvalue()
-        output.close()
-
-        # ---------- HANDLE FORMAT ----------
-        if format == "zip":
-            zip_buffer = io.BytesIO()
-
-            with zipfile.ZipFile(
-                zip_buffer,
-                "w",
-                compression=zipfile.ZIP_DEFLATED,
-                compresslevel=6  # balanced speed + compression
-            ) as zip_file:
-                zip_file.writestr(
-                    f"crm_leads_{from_date}_to_{to_date}.csv",
-                    csv_content
-                )
-
-            file_content = zip_buffer.getvalue()
-            filename = f"crm_leads_{from_date}_to_{to_date}.zip"
-
-        else:
-            file_content = csv_content
-            filename = f"crm_leads_{from_date}_to_{to_date}.csv"
-        
-        # ---------- SAVE FILE ----------
-        file_doc = frappe.get_doc({
-            "doctype": "File",
-            "file_name": filename,
-            "content": file_content,
-            "is_private": 1
-        }).insert(ignore_permissions=True)
-
-        status_data = {
-            "status": "completed",
-            "file_url": file_doc.file_url,
-            "row_count": len(leads),
-            "from_date": from_date,
-            "to_date": to_date
-        }
-
-        frappe.cache().set_value(
-            f"export_status_{user}",
-            status_data,
-            expires_in_sec=600
-        )
-
-        notify_user(
-            user,
-            f"Export Ready: {filename}. "
-            f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
-        )
-
-        frappe.db.commit()
-
-    except Exception as e:
-        frappe.db.rollback()
-        frappe.log_error(f"CRM Export Job Failed: {str(e)}", frappe.get_traceback())
-        frappe.cache().set_value(
-            f"export_status_{user}",
-            {"status": "failed", "error": str(e)},
-            expires_in_sec=600
-        )
-    
-@frappe.whitelist()
-def check_export_status():
-    return frappe.cache().get_value(f"export_status_{frappe.session.user}") or {"status": "pending"}
-
-def notify_user(user, message):
-    try:
-        notification_doc = frappe.new_doc("Notification Log")
-        notification_doc.update({
-            "for_user": user,
-            "subject": "Lead Export Ready",
-            "type": "Alert",
-            "document_type": "Lead",
-        })
-        notification_doc.insert(ignore_permissions=True)
-        frappe.db.commit()
-    except Exception:
-        frappe.log_error("Notify User Error", frappe.get_traceback())
-
 
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date, sol_ids=None):
@@ -503,7 +327,6 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
             message=frappe.get_traceback()
         )
         raise
-
 
 @frappe.whitelist()
 def get_all_products_sources():
@@ -671,6 +494,7 @@ def transfer_employee_leads(target_employee, source_employee):
         )
 
         frappe.throw("Error occurred while transferring leads")
+
 @frappe.whitelist()
 def get_employee_lead_count(employee):
 
@@ -744,7 +568,6 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
             )
             
     return branches
-
 
 @frappe.whitelist()
 def generate_fast_lead_report():
@@ -865,7 +688,6 @@ def generate_fast_lead_report():
         "size_kb": round(file_size / 1024, 2),
         "filepath": final_filepath
     }
-
 
 @frappe.whitelist()
 def download_fast_lead_report(from_date, to_date, filters=None):
