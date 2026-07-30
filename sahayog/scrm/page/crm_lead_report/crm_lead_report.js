@@ -661,22 +661,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                       <div class="export-dropdown" v-if="totalLeadsInReport > 0 && false">
+                        <div v-if="totalLeadsInReport > 0">
                             <button class="btn-generate-sm"
-                                    @click.stop="toggleExportMenu" 
+                                    @click="downloadReport" 
                                     :disabled="loading">
-                                <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i>
-                                EXPORT <i class="fa fa-caret-down ml-1"></i>
+                                <i class="fa fa-download mr-1"></i> DOWNLOAD
                             </button>
-
-                            <div class="export-menu" v-if="show_export_menu">
-                                <div class="export-item" @click="generateFastReport">
-                                    Generate Fast Report
-                                </div>
-                                <div class="export-item" @click="downloadReport">
-                                    Download Report
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1067,7 +1057,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     downloadReport() {
       this.show_export_menu = false;
-      let download_url = "/api/method/sahayog.scrm.api.report_access.download_fast_lead_report";
+      let from_date = this.employee_from_date;
+      let to_date = this.employee_to_date;
+      let filters_str = encodeURIComponent(JSON.stringify(this.selected));
+      let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
       window.open(download_url, "_blank");
     },
     // data() {

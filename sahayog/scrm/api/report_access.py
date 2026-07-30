@@ -748,15 +748,13 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
 
 @frappe.whitelist()
 def generate_fast_lead_report():
-    site_private_path = frappe.get_site_path("private", "files")
+    import shutil
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
     final_filepath = os.path.join(site_private_path, "lead_report.csv")
-    temp_filepath = os.path.join(site_private_path, "lead_report_tmp.csv")
-
-    if os.path.exists(temp_filepath):
-        try:
-            os.remove(temp_filepath)
-        except Exception:
-            pass
+    
+    # Use unique name to prevent permission conflicts on overwrite
+    unique_id = frappe.generate_hash(length=8)
+    temp_filepath = f"/tmp/lead_report_{unique_id}.csv"
 
     # Try MariaDB INTO OUTFILE first for maximum performance
     query = f"""
@@ -801,12 +799,18 @@ def generate_fast_lead_report():
 
     method_used = "INTO OUTFILE (MariaDB Direct)"
     try:
+        frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
         frappe.db.sql(query)
-        os.replace(temp_filepath, final_filepath)
+        # Use copyfile as mysql-owned files cannot be unlinked/moved directly by rishabh user
+        shutil.copyfile(temp_filepath, final_filepath)
+        try:
+            os.remove(temp_filepath)
+        except Exception:
+            pass
     except Exception as e:
         # Fallback to Python DB query write if MariaDB secure_file_priv/permissions restrict INTO OUTFILE
         method_used = "Python Fast Stream Fallback"
-        frappe.log_error(f"INTO OUTFILE failed: {str(e)}", "Lead Report Test")
+        frappe.log_error(title="Fast Lead Report SQL Error", message=f"INTO OUTFILE failed: {str(e)}")
 
         leads = frappe.db.sql("""
             SELECT
@@ -841,7 +845,8 @@ def generate_fast_lead_report():
             "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
         ]
 
-        with open(temp_filepath, "w", newline="", encoding="utf-8") as f:
+        # Write directly to final_filepath
+        with open(final_filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(headers)
             for row in leads:
@@ -853,8 +858,6 @@ def generate_fast_lead_report():
                     row.created_on
                 ])
 
-        os.replace(temp_filepath, final_filepath)
-
     file_size = os.path.getsize(final_filepath)
     return {
         "status": "success",
@@ -865,14 +868,129 @@ def generate_fast_lead_report():
 
 
 @frappe.whitelist()
-def download_fast_lead_report():
+def download_fast_lead_report(from_date, to_date, filters=None):
+    import datetime
+    import csv
+    import io
+
     report_path = frappe.get_site_path("private", "files", "lead_report.csv")
     if not os.path.exists(report_path):
-        frappe.throw("Report file not found. Please click 'Generate Fast Report' first.")
+        frappe.throw("Master lead report file not found on the server. Please contact administrator.")
 
-    with open(report_path, "rb") as f:
-        filedata = f.read()
+    from_date, to_date = validate_date_range(from_date, to_date)
+    ui_filters = frappe.parse_json(filters) if filters else {}
 
-    frappe.response['filename'] = "lead_report.csv"
+    # 1. Preferences & UI filters parsing
+    user = frappe.session.user
+    has_pref = False
+    is_all_regions = False 
+    products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
+    
+    if user != "Administrator":
+        pref_res = get_user_report_preference_record(user)
+        if pref_res:
+            has_pref = True
+            p = pref_res[0]
+            is_all_regions = p.get("all_regions")
+            zones_pref = {norm(x) for x in p.get("zone", [])}
+            regions_pref = {norm(x) for x in p.get("region", [])}
+            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+
+    # UI Filters Standardizing
+    if "product" in ui_filters:
+        products_pref = {norm(x) for x in ui_filters.get("product", [])}
+    if "source" in ui_filters:
+        sources_pref = {norm(x) for x in ui_filters.get("source", [])}
+    if "zone" in ui_filters:
+        ui_zones = {norm(x) for x in ui_filters.get("zone", [])}
+        zones_pref = zones_pref.intersection(ui_zones) if ui_zones else set()
+    if "region" in ui_filters:
+        ui_regions = {norm(x) for x in ui_filters.get("region", [])}
+        regions_pref = regions_pref.intersection(ui_regions) if ui_regions else set()
+    if "sol_id" in ui_filters:
+        ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
+        sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
+
+    current_emp_number = frappe.db.get_value("Employee", {"user_id": user}, "employee_number")
+
+    # 2. Date parser helper
+    def parse_csv_date(date_str):
+        try:
+            return datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
+        except:
+            return None
+
+    # Stream to memory
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    
+    headers = [
+        "Lead ID", "Status", "Lead Name", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+    ]
+    writer.writerow(headers)
+
+    with open(report_path, "r", encoding="utf-8") as f_in:
+        reader = csv.reader(f_in)
+        
+        # Skip the header row
+        try:
+            next(reader)
+        except StopIteration:
+            pass
+
+        for row in reader:
+            if len(row) < 17:
+                continue
+
+            # A. Date Filter Check (row[16] is Created On)
+            row_date = parse_csv_date(row[16])
+            if not row_date or row_date < from_date or row_date > to_date:
+                continue
+
+            # B. Owner Preference (If no preference -> only own leads)
+            if user != "Administrator" and not has_pref:
+                if row[9] != current_emp_number:
+                    continue
+
+            # C. SOL ID Preference
+            curr_sol = row[11]
+            if sol_ids_pref and curr_sol not in sol_ids_pref:
+                continue
+
+            # D. Zone / Region Preference
+            curr_zone = norm(row[15])
+            curr_region = norm(row[14])
+            if zones_pref and curr_zone not in zones_pref:
+                continue
+            
+            region_match = True
+            if is_all_regions:
+                region_match = True
+            elif regions_pref:
+                allowed = set(regions_pref)
+                for r in list(regions_pref):
+                    allowed |= REGION_ALIAS_MAP.get(r, set())
+                region_match = curr_region in allowed
+            if not region_match:
+                continue
+
+            # E. UI Product Filter
+            if products_pref and norm(row[5]) not in products_pref:
+                continue
+
+            # F. UI Source Filter
+            if sources_pref and norm(row[4]) not in sources_pref:
+                continue
+
+            # Write matching row
+            writer.writerow(row)
+
+    filedata = output.getvalue().encode("utf-8")
+    output.close()
+
+    frappe.response['filename'] = f"filtered_lead_report_{from_date}_to_{to_date}.csv"
     frappe.response['filecontent'] = filedata
     frappe.response['type'] = "download"
