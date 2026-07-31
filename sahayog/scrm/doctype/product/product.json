@@ -15,7 +15,10 @@
   "column_break_ngig",
   "group_name",
   "group_subname",
-  "group_subname_category"
+  "group_subname_category",
+  "commission_parameters",
+  "commission_rate",
+  "commission_eligible_amount"
  ],
  "fields": [
   {
@@ -76,12 +79,27 @@
    "fieldtype": "Select",
    "label": "Group Subname Category",
    "options": "\nTASKSILVER\nTASKWEALTH\nSAVSIL\nCUGOLD\nCUWEALTH"
+  },
+  {
+   "fieldname": "commission_parameters",
+   "fieldtype": "Section Break",
+   "label": "Commission Parameters"
+  },
+  {
+   "fieldname": "commission_rate",
+   "fieldtype": "Percent",
+   "label": "Commission Rate"
+  },
+  {
+   "fieldname": "commission_eligible_amount",
+   "fieldtype": "Int",
+   "label": "Commission Eligible Amount"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-17 10:49:40.129531",
+ "modified": "2026-07-31 16:26:54.195428",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
