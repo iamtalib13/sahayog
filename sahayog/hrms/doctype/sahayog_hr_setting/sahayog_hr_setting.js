@@ -22,8 +22,46 @@ frappe.ui.form.on("Sahayog HR Setting", {
 				}
 			);
 		}, __("Action"));
+
+		frm.add_custom_button(__("Load File Headers"), () => {
+			load_file_headers(frm);
+		}, __("Action"));
+	},
+
+	employee_master(frm) {
+		if (frm.doc.employee_master) {
+			load_file_headers(frm);
+		}
 	},
 });
+
+function load_file_headers(frm) {
+	frappe.call({
+		method: "sahayog.api.employee_master_import.get_file_headers",
+		callback: (res) => {
+			if (!res.message || !res.message.headers || !res.message.headers.length) {
+				frappe.msgprint(__("No headers found in the uploaded file."));
+				return;
+			}
+
+			const headers = res.message.headers;
+			const existing = frm.doc.field_mappings || [];
+
+			frm.clear_table("field_mappings");
+
+			headers.forEach((header) => {
+				const row = frm.add_child("field_mappings");
+				row.source_column = header;
+				row.target_field = header.toLowerCase().replace(/\s+/g, "_");
+				row.is_mandatory = 0;
+				row.enabled = 1;
+			});
+
+			frm.refresh_field("field_mappings");
+			frappe.msgprint(__("{0} field mappings loaded from file.", [headers.length]));
+		},
+	});
+}
 
 function run_batch_import(frm, mode) {
 	const action_label = mode === "insert" ? __("Insert") : __("Update");

@@ -1,14 +1,15 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-07-17 15:45:00.000000",
+ "creation": "2026-07-17 15:45:00",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "source_column",
   "target_field",
-  "is_mandatory"
+  "is_mandatory",
+  "enabled"
  ],
  "fields": [
   {
@@ -31,13 +32,20 @@
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Mandatory"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-17 15:45:00.000000",
+ "modified": "2026-07-31 15:55:50.276626",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Employee Field Mapping",
