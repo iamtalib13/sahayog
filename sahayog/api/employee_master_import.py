@@ -282,6 +282,8 @@ def _load_table_mappings(setting):
         return None
     mappings = []
     for row in setting.field_mappings:
+        if not row.enabled:
+            continue
         mappings.append({
             "source_column": row.source_column,
             "target_field": row.target_field,
@@ -783,6 +785,22 @@ def _build_summary(result, mode):
             lines.append(f"  ... and {len(result['errors']) - 20} more")
 
     return "\n".join(lines)
+
+
+@frappe.whitelist()
+def get_file_headers():
+    """Read headers from the uploaded Employee Master file and return them."""
+    setting = frappe.get_doc("Sahayog HR Setting")
+    file_url = setting.get("employee_master")
+    if not file_url:
+        return {"headers": []}
+
+    rows = _parse_file(file_url)
+    if not rows or len(rows) < 1:
+        return {"headers": []}
+
+    headers = [h.strip() for h in rows[0]]
+    return {"headers": headers}
 
 
 class _StopRow(Exception):
