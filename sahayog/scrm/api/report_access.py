@@ -554,119 +554,127 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
 @frappe.whitelist()
 def generate_fast_lead_report():
     import shutil
+    import datetime
+    import csv
+
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
     final_filepath = os.path.join(site_private_path, "lead_report.csv")
     
-    # Use unique name to prevent permission conflicts on overwrite
+    # Calculate yesterday's date range
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+    yesterday_start = f"{yesterday} 00:00:00"
+    yesterday_end = f"{yesterday} 23:59:59"
+
+    file_exists = os.path.exists(final_filepath)
+
+    # 1. Decide date query criteria
+    if not file_exists:
+        # Full initial dump from 1st July 2026 to T-1
+        where_clause = "l.creation >= '2026-07-01 00:00:00' AND l.creation < CURDATE()"
+    else:
+        # Only fetch new creations or modifications from yesterday (T-1)
+        where_clause = """
+            l.creation >= '2026-07-01 00:00:00' AND (
+                (l.creation >= '{yesterday_start}' AND l.creation <= '{yesterday_end}') OR
+                (l.modified >= '{yesterday_start}' AND l.modified <= '{yesterday_end}')
+            )
+        """.format(yesterday_start=yesterday_start, yesterday_end=yesterday_end)
+
+    query = """
+        SELECT
+            l.name,
+            IFNULL(l.status, ''),
+            IFNULL(l.lead_name, ''),
+            IFNULL(COALESCE(l.mobile_no, l.phone), ''),
+            IFNULL(l.source, ''),
+            IFNULL(lp.product, ''),
+            IFNULL(lp.product_name, ''),
+            IFNULL(lp.product_amount, 0),
+            IFNULL(e.employee_name, ''),
+            IFNULL(e.employee_number, ''),
+            IFNULL(e.designation, ''),
+            IFNULL(l.sol_id, ''),
+            IFNULL(sb.branch, ''),
+            IFNULL(sb.district, ''),
+            IFNULL(sb.region, ''),
+            IFNULL(sb.zone, ''),
+            DATE_FORMAT(l.creation, '%d-%m-%Y') as created_on,
+            IFNULL(l.lead_owner, '')
+        FROM `tabLead` l
+        LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+        LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
+        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
+        WHERE {where_clause}
+        ORDER BY l.creation DESC
+    """.format(where_clause=where_clause)
+
+    frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
+    db_leads = frappe.db.sql(query, as_list=True)
+
+    headers = [
+        "Lead ID", "Status", "Lead Name", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
+    ]
+
+    new_leads_map = {}
+    for row in db_leads:
+        lead_id = row[0]
+        new_leads_map.setdefault(lead_id, []).append(row)
+
+    # Use unique filename in /tmp to prevent collisions during write
     unique_id = frappe.generate_hash(length=8)
     temp_filepath = f"/tmp/lead_report_{unique_id}.csv"
 
-    # Try MariaDB INTO OUTFILE first for maximum performance
-    query = f"""
-        (
-            SELECT 
-                'Lead ID', 'Status', 'Lead Name', 'Contact', 'Source',
-                'Product Code', 'Product Name', 'Amount',
-                'Employee Name', 'Employee ID', 'Designation',
-                'SOL ID', 'Branch', 'District', 'Region', 'Zone', 'Created On'
-        )
-        UNION ALL
-        (
-            SELECT
-                l.name,
-                IFNULL(l.status, ''),
-                IFNULL(l.lead_name, ''),
-                IFNULL(COALESCE(l.mobile_no, l.phone), ''),
-                IFNULL(l.source, ''),
-                IFNULL(lp.product, ''),
-                IFNULL(lp.product_name, ''),
-                IFNULL(lp.product_amount, 0),
-                IFNULL(e.employee_name, ''),
-                IFNULL(e.employee_number, ''),
-                IFNULL(e.designation, ''),
-                IFNULL(l.sol_id, ''),
-                IFNULL(sb.branch, ''),
-                IFNULL(sb.district, ''),
-                IFNULL(sb.region, ''),
-                IFNULL(sb.zone, ''),
-                DATE_FORMAT(l.creation, '%d-%m-%Y')
-            FROM `tabLead` l
-            LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-            LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
-            LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
-            ORDER BY l.creation DESC
-        )
-        INTO OUTFILE '{temp_filepath}'
-        FIELDS TERMINATED BY ','
-        OPTIONALLY ENCLOSED BY '"'
-        LINES TERMINATED BY '\\n';
-    """
-
-    method_used = "INTO OUTFILE (MariaDB Direct)"
-    try:
-        frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
-        frappe.db.sql(query)
-        # Use copyfile as mysql-owned files cannot be unlinked/moved directly by rishabh user
-        shutil.copyfile(temp_filepath, final_filepath)
-        try:
-            os.remove(temp_filepath)
-        except Exception:
-            pass
-    except Exception as e:
-        # Fallback to Python DB query write if MariaDB secure_file_priv/permissions restrict INTO OUTFILE
-        method_used = "Python Fast Stream Fallback"
-        frappe.log_error(title="Fast Lead Report SQL Error", message=f"INTO OUTFILE failed: {str(e)}")
-
-        leads = frappe.db.sql("""
-            SELECT
-                l.name AS lead_id,
-                IFNULL(l.status, '') AS status,
-                IFNULL(l.lead_name, '') AS lead_name,
-                IFNULL(COALESCE(l.mobile_no, l.phone), '') AS contact,
-                IFNULL(l.source, '') AS source,
-                IFNULL(lp.product, '') AS product_code,
-                IFNULL(lp.product_name, '') AS product_name,
-                IFNULL(lp.product_amount, 0) AS amount,
-                IFNULL(e.employee_name, '') AS employee_name,
-                IFNULL(e.employee_number, '') AS employee_id,
-                IFNULL(e.designation, '') AS designation,
-                IFNULL(l.sol_id, '') AS sol_id,
-                IFNULL(sb.branch, '') AS branch,
-                IFNULL(sb.district, '') AS district,
-                IFNULL(sb.region, '') AS region,
-                IFNULL(sb.zone, '') AS zone,
-                DATE_FORMAT(l.creation, '%d-%m-%Y') AS created_on
-            FROM `tabLead` l
-            LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-            LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
-            LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
-            ORDER BY l.creation DESC
-        """, as_dict=True)
-
-        headers = [
-            "Lead ID", "Status", "Lead Name", "Contact", "Source",
-            "Product Code", "Product Name", "Amount",
-            "Employee Name", "Employee ID", "Designation",
-            "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
-        ]
-
-        # Write directly to final_filepath
-        with open(final_filepath, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+    if not file_exists:
+        # Full initial dump
+        with open(temp_filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             writer.writerow(headers)
-            for row in leads:
-                writer.writerow([
-                    row.lead_id, row.status, row.lead_name, row.contact, row.source,
-                    row.product_code, row.product_name, row.amount,
-                    row.employee_name, row.employee_id, row.designation,
-                    row.sol_id, row.branch, row.district, row.region, row.zone,
-                    row.created_on
-                ])
+            for lead_id, rows in new_leads_map.items():
+                for r in rows:
+                    writer.writerow(r)
+    else:
+        # Incremental Sync: Filter old versions of modified leads out of existing CSV
+        existing_rows = []
+        with open(final_filepath, "r", encoding="utf-8") as f_in:
+            reader = csv.reader(f_in)
+            try:
+                file_headers = next(reader)
+            except StopIteration:
+                file_headers = headers
+
+            for r in reader:
+                if len(r) > 0:
+                    lead_id = r[0]
+                    # Filter out old version of modified/updated leads
+                    if lead_id in new_leads_map:
+                        continue
+                    existing_rows.append(r)
+
+        # Write merged data
+        with open(temp_filepath, "w", newline="", encoding="utf-8") as f_out:
+            writer = csv.writer(f_out, quoting=csv.QUOTE_ALL)
+            writer.writerow(file_headers)
+            for r in existing_rows:
+                writer.writerow(r)
+            for lead_id, rows in new_leads_map.items():
+                for r in rows:
+                    writer.writerow(r)
+
+    # Safely replace the file on server filesystem
+    shutil.copyfile(temp_filepath, final_filepath)
+    try:
+        os.remove(temp_filepath)
+    except Exception:
+        pass
 
     file_size = os.path.getsize(final_filepath)
     return {
         "status": "success",
-        "method": method_used,
+        "method": "Incremental T-1 Sync (Creation/Modified)" if file_exists else "Full Baseline Dump",
         "size_kb": round(file_size / 1024, 2),
         "filepath": final_filepath
     }
@@ -739,7 +747,7 @@ def download_fast_lead_report(from_date, to_date, filters=None):
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
-        "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
     ]
     writer.writerow(headers)
 
@@ -763,7 +771,7 @@ def download_fast_lead_report(from_date, to_date, filters=None):
 
             # B. Owner Preference (If no preference -> only own leads)
             if user != "Administrator" and not has_pref:
-                if row[9] != current_emp_number:
+                if len(row) > 17 and row[17] != user:
                     continue
 
             # C. SOL ID Preference
