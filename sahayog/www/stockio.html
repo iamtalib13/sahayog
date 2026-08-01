@@ -8661,8 +8661,7 @@
                 :key="row.name"
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
-                :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
-                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
+                @click="(serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -8869,7 +8868,7 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
+                      @click.stop="openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
                       View
@@ -18000,7 +17999,7 @@
       },
       async openRecord(row) {
         if (!row || !this.currentView.doctype) return;
-        if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
+        // if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         this.showDispatchHistory = false;
