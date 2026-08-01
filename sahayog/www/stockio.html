@@ -8980,6 +8980,38 @@
                 <span>Load More</span>
               </button>
               <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #f87171, #dc2626) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkDeleteAssets()"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Delete ([[ selectedRows.length ]])</span>
+              </button>
+              <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkUpdateAssets()"
+              >
+                <i class="fas fa-save"></i>
+                <span>Update ([[ selectedRows.length ]])</span>
+              </button>
+              <button
                 v-if="activeItem === 'Branch Stock' && selectedRows.length > 0"
                 class="btn-create-inline"
                 style="
@@ -15637,6 +15669,65 @@
             } catch (e) {
               console.error("Bulk delete error:", e);
               frappe.msgprint("Bulk delete failed");
+            } finally {
+              this.loading = false;
+            }
+          },
+        );
+      },
+      async bulkDeleteAssets() {
+        this.showConfirm(
+          "Bulk Delete Assets",
+          `Are you sure you want to delete ${this.selectedRows.length} asset(s)?`,
+          async () => {
+            this.loading = true;
+            try {
+              const deletePromises = this.selectedRows.map((name) =>
+                frappe.call({
+                  method: "frappe.client.delete",
+                  args: { doctype: "Asset", name: name },
+                }),
+              );
+              await Promise.all(deletePromises);
+              frappe.show_alert(
+                `${this.selectedRows.length} asset(s) deleted successfully`,
+                5,
+              );
+              this.selectedRows = [];
+              await this.fetchData("Asset Master");
+            } catch (e) {
+              console.error("Bulk delete assets error:", e);
+              frappe.msgprint("Bulk delete failed");
+            } finally {
+              this.loading = false;
+            }
+          },
+        );
+      },
+      async bulkUpdateAssets() {
+        this.showConfirm(
+          "Bulk Update Assets",
+          `Are you sure you want to update ${this.selectedRows.length} asset(s)?`,
+          async () => {
+            this.loading = true;
+            try {
+              const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+              const updatePromises = selected.map((row) =>
+                frappe.call({
+                  method: "frappe.client.save",
+                  args: { doc: { doctype: "Asset", name: row.name } },
+                }),
+              );
+              await Promise.all(updatePromises);
+              frappe.show_alert(
+                `${this.selectedRows.length} asset(s) updated successfully`,
+                5,
+              );
+              this.selectedRows = [];
+              await this.fetchData("Asset Master");
+            } catch (e) {
+              console.error("Bulk update assets error:", e);
+              frappe.msgprint("Bulk update failed");
             } finally {
               this.loading = false;
             }
