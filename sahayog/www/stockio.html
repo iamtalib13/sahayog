@@ -15760,17 +15760,17 @@
                 this.loading = false;
                 return;
               }
-              const updatePromises = selected.map((row) =>
-                frappe.call({
-                  method: "frappe.client.save",
-                  args: { doc: { doctype: "Asset", name: row.name, location: newLocation } },
-                }),
-              );
-              await Promise.all(updatePromises);
-              frappe.show_alert(
-                `${this.selectedRows.length} asset(s) updated successfully`,
-                5,
-              );
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets",
+                args: { asset_names: this.selectedRows, location: newLocation },
+              });
+              const result = res.message;
+              let msg = `${result.updated} asset(s) updated successfully`;
+              if (result.failed && result.failed.length > 0) {
+                msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+                console.error("Update errors:", result.errors);
+              }
+              frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
               this.selectedRows = [];
               await this.fetchData("Asset");
             } catch (e) {

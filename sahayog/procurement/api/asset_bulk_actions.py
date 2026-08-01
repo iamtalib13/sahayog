@@ -61,7 +61,6 @@ def bulk_delete_assets(asset_names):
             docstatus = frappe.db.get_value("Asset", name, "docstatus")
             if docstatus == 1:
                 cancel_linked_docs(name)
-                # Reset status to Submitted so validate_cancellation passes
                 frappe.db.sql("UPDATE `tabAsset` SET status='Submitted' WHERE name=%s", name)
                 frappe.db.commit()
                 frappe.get_doc("Asset", name).cancel()
@@ -75,3 +74,34 @@ def bulk_delete_assets(asset_names):
             errors[name] = str(e)
 
     return {"deleted": deleted, "failed": failed, "errors": errors}
+
+
+@frappe.whitelist()
+def bulk_update_assets(asset_names, location):
+    if isinstance(asset_names, str):
+        asset_names = frappe.parse_json(asset_names)
+
+    if not asset_names:
+        frappe.throw(_("No assets selected"))
+
+    if not location:
+        frappe.throw(_("Location is required"))
+
+    updated = 0
+    failed = []
+    errors = {}
+
+    for name in asset_names:
+        try:
+            frappe.db.sql(
+                "UPDATE `tabAsset` SET location=%s WHERE name=%s",
+                (location, name),
+            )
+            frappe.db.commit()
+            updated += 1
+        except Exception as e:
+            frappe.db.rollback()
+            failed.append(name)
+            errors[name] = str(e)
+
+    return {"updated": updated, "failed": failed, "errors": errors}
