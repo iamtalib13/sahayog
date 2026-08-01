@@ -87,6 +87,8 @@ def bulk_update_assets(asset_names, location):
     if not location:
         frappe.throw(_("Location is required"))
 
+    branch_name = frappe.db.get_value("Sahayog Branch", location, "branch")
+
     updated = 0
     failed = []
     errors = {}
@@ -94,8 +96,8 @@ def bulk_update_assets(asset_names, location):
     for name in asset_names:
         try:
             frappe.db.sql(
-                "UPDATE `tabAsset` SET location=%s WHERE name=%s",
-                (location, name),
+                "UPDATE `tabAsset` SET location=%s, branch_name=%s WHERE name=%s",
+                (location, branch_name, name),
             )
             frappe.db.commit()
             updated += 1
