@@ -15678,23 +15678,23 @@
       async bulkDeleteAssets() {
         this.showConfirm(
           "Bulk Delete Assets",
-          `Are you sure you want to delete ${this.selectedRows.length} asset(s)?`,
+          `Are you sure you want to delete ${this.selectedRows.length} asset(s)? Submitted assets will be cancelled first.`,
           async () => {
             this.loading = true;
             try {
-              const deletePromises = this.selectedRows.map((name) =>
-                frappe.call({
-                  method: "frappe.client.delete",
-                  args: { doctype: "Asset", name: name },
-                }),
-              );
-              await Promise.all(deletePromises);
-              frappe.show_alert(
-                `${this.selectedRows.length} asset(s) deleted successfully`,
-                5,
-              );
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_bulk_actions.bulk_delete_assets",
+                args: { asset_names: this.selectedRows },
+              });
+              const result = res.message;
+              let msg = `${result.deleted} asset(s) deleted successfully`;
+              if (result.failed && result.failed.length > 0) {
+                msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+                console.error("Delete errors:", result.errors);
+              }
+              frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
               this.selectedRows = [];
-              await this.fetchData("Asset Master");
+              await this.fetchData("Asset");
             } catch (e) {
               console.error("Bulk delete assets error:", e);
               frappe.msgprint("Bulk delete failed");
@@ -15724,7 +15724,7 @@
                 5,
               );
               this.selectedRows = [];
-              await this.fetchData("Asset Master");
+              await this.fetchData("Asset");
             } catch (e) {
               console.error("Bulk update assets error:", e);
               frappe.msgprint("Bulk update failed");
