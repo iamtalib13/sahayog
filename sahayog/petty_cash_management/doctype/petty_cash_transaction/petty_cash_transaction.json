@@ -9,9 +9,12 @@
   "transaction_details_section",
   "transaction_type",
   "transaction_date",
+  "entity_type",
   "column_break_1",
   "branch",
   "branch_name",
+  "branch_type",
+  "entity_id",
   "is_bulk_allocation",
   "target_scope",
   "source_bank_account",
@@ -289,13 +292,34 @@
    "fieldname": "custom_ttum_remarks",
    "fieldtype": "Data",
    "label": "TTUM Remarks"
+  },
+  {
+   "fetch_from": "branch.branch_type",
+   "fieldname": "branch_type",
+   "fieldtype": "Data",
+   "label": "Branch Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "branch.entity_type",
+   "fieldname": "entity_type",
+   "fieldtype": "Data",
+   "label": "Entity Type",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "branch.entity_id",
+   "fieldname": "entity_id",
+   "fieldtype": "Data",
+   "label": "Entity ID",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-08 14:48:20.251379",
+ "modified": "2026-07-22 12:04:27.091707",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

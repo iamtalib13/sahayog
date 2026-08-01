@@ -23,13 +23,16 @@
   "email_details_section",
   "email",
   "branch_type",
+  "column_break_equn",
+  "entity_id",
+  "entity_type",
   "section_break_zjir",
   "branch_details"
  ],
  "fields": [
   {
    "fieldname": "sol_id",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "SOL ID",
    "non_negative": 1,
    "reqd": 1,
@@ -133,19 +136,41 @@
   },
   {
    "fieldname": "branch_type",
-   "fieldtype": "Data",
-   "label": "Branch Type"
+   "fieldtype": "Select",
+   "label": "Branch Type",
+   "options": "\nMetro\nNon Metro\nZonal"
   },
   {
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
+  },
+  {
+   "fieldname": "column_break_equn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "fieldname": "entity_id",
+   "fieldtype": "Select",
+   "label": "Entity ID",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "options": "\n9001\n9002\n90033"
+  },
+  {
+   "default": "RRCDM",
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "fieldname": "entity_type",
+   "fieldtype": "Select",
+   "label": "Entity Type",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "options": "\nRRCDM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-23 13:39:07.816369",
+ "modified": "2026-07-23 12:15:26.680795",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",

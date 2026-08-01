@@ -10,6 +10,7 @@
   "category_name",
   "metro_limit",
   "non_metro_limit",
+  "zonal_limit",
   "finacle_gl_code",
   "is_active",
   "unique_id"
@@ -56,12 +57,18 @@
    "fieldtype": "Data",
    "label": "Unique ID",
    "unique": 1
+  },
+  {
+   "fieldname": "zonal_limit",
+   "fieldtype": "Currency",
+   "label": "Zonal Limit",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-23 15:59:37.426793",
+ "modified": "2026-07-24 15:37:12.047889",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Expense Category",
@@ -121,14 +128,9 @@
    "write": 1
   },
   {
-  "email": 0,
-  "export": 0,
-  "print": 0,
-  "read": 1,
-  "report": 0,
-  "role": "HO Petty Cash Auditor",
-  "share": 0
-}
+   "read": 1,
+   "role": "HO Petty Cash Auditor"
+  }
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
