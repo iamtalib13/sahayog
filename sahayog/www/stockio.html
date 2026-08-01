@@ -10539,47 +10539,67 @@
     </div>
   </div>
 
-  <!-- Custom Confirmation Modal -->
-  <div
-    class="profile-modal-overlay"
-    v-if="confirmModal.show"
-    @click.self="confirmModal.show = false"
-  >
-    <div class="profile-modal" style="max-width: 400px">
-      <div class="profile-modal-header">
-        <h3 style="margin: 0">[[ confirmModal.title ]]</h3>
-        <button class="profile-close" @click="confirmModal.show = false">
-          &times;
-        </button>
-      </div>
-      <div class="profile-modal-body" style="padding: 24px; text-align: center">
-        <div
-          style="
-            width: 64px;
-            height: 64px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin: 0 auto 16px;
-          "
-        >
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <p
-          style="
-            color: var(--text-main);
-            font-size: 15px;
-            line-height: 1.5;
-            margin: 0;
-          "
-        >
-          [[ confirmModal.message ]]
-        </p>
-      </div>
+      <!-- Custom Confirmation Modal -->
+      <div
+        class="profile-modal-overlay"
+        v-if="confirmModal.show"
+        @click.self="confirmModal.show = false"
+      >
+        <div class="profile-modal" style="max-width: 400px">
+          <div class="profile-modal-header">
+            <h3 style="margin: 0">[[ confirmModal.title ]]</h3>
+            <button class="profile-close" @click="confirmModal.show = false">
+              &times;
+            </button>
+          </div>
+          <div class="profile-modal-body" style="padding: 24px; text-align: center">
+            <div
+              style="
+                width: 64px;
+                height: 64px;
+                background: rgba(239, 68, 68, 0.1);
+                color: #ef4444;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                margin: 0 auto 16px;
+              "
+            >
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <p
+              style="
+                color: var(--text-main);
+                font-size: 15px;
+                line-height: 1.5;
+                margin: 0;
+              "
+            >
+              [[ confirmModal.message ]]
+            </p>
+            <div v-if="confirmFields && confirmFields.length">
+              <div v-for="field in confirmFields" :key="field.fieldname" style="text-align: left; margin-top: 16px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: block;">[[ field.label ]]</label>
+                <select
+                  v-if="field.type === 'select'"
+                  v-model="confirmFormData[field.fieldname]"
+                  style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-card); color: var(--text-main);"
+                >
+                  <option value="" disabled>Select [[ field.label ]]</option>
+                  <option v-for="opt in field.options" :key="opt.value" :value="opt.value">[[ opt.label ]]</option>
+                </select>
+                <input
+                  v-else
+                  type="text"
+                  v-model="confirmFormData[field.fieldname]"
+                  :placeholder="field.placeholder || ''"
+                  style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-card); color: var(--text-main);"
+                />
+              </div>
+            </div>
+          </div>
       <div
         class="profile-modal-footer"
         style="
@@ -10602,7 +10622,7 @@
           @click="executeConfirm()"
           style="background: #ef4444; border-color: #ef4444; margin: 0"
         >
-          Confirm Delete
+          [[ confirmModal.buttonText || 'Confirm' ]]
         </button>
       </div>
     </div>
@@ -13382,7 +13402,10 @@
         title: "",
         message: "",
         onConfirm: null,
+        buttonText: "Confirm",
       },
+      confirmFields: [],
+      confirmFormData: {},
       showAssetCreateView: false,
       showAssetActions: false,
       showAssetActionModal: false,
@@ -15705,17 +15728,42 @@
         );
       },
       async bulkUpdateAssets() {
+        const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+        const locations = [...new Set(selected.map((r) => r.location).filter(Boolean))];
+        const currentLocation = locations.length === 1 ? locations[0] : "";
+
+        const branchOptions = (this.sahayog_branches || []).map((b) => ({
+          value: b.name,
+          label: b.name,
+        }));
+
+        const fields = [
+          {
+            fieldname: "location",
+            label: "Location",
+            type: "select",
+            options: branchOptions,
+          },
+        ];
+
+        const formData = { location: currentLocation };
+
         this.showConfirm(
           "Bulk Update Assets",
-          `Are you sure you want to update ${this.selectedRows.length} asset(s)?`,
+          `Update location for ${this.selectedRows.length} asset(s)? Current location: ${currentLocation || "Mixed"}`,
           async () => {
             this.loading = true;
             try {
-              const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+              const newLocation = this.confirmFormData.location;
+              if (!newLocation) {
+                frappe.msgprint("Please select a location");
+                this.loading = false;
+                return;
+              }
               const updatePromises = selected.map((row) =>
                 frappe.call({
                   method: "frappe.client.save",
-                  args: { doc: { doctype: "Asset", name: row.name } },
+                  args: { doc: { doctype: "Asset", name: row.name, location: newLocation } },
                 }),
               );
               await Promise.all(updatePromises);
@@ -15732,15 +15780,21 @@
               this.loading = false;
             }
           },
+          fields,
+          formData,
+          "Update",
         );
       },
 
-      showConfirm(title, message, onConfirm) {
+      showConfirm(title, message, onConfirm, fields = [], formData = {}, buttonText = "Confirm") {
+        this.confirmFields = fields;
+        this.confirmFormData = formData;
         this.confirmModal = {
           show: true,
           title: title,
           message: message,
           onConfirm: onConfirm,
+          buttonText: buttonText,
         };
       },
 
