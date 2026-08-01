@@ -623,23 +623,25 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
         else:
             setattr(doc, doc_field, csv_val)
 
-    csv_first_name = row_dict.get(header_for.get("first_name"))
-    csv_middle_name = row_dict.get(header_for.get("middle_name"))
-    csv_last_name = row_dict.get(header_for.get("last_name"))
-    if csv_first_name:
-        fn, mn, ln = _split_name(
-            csv_first_name,
-            csv_middle_name if csv_middle_name and not doc.get("middle_name") else None,
-            csv_last_name if csv_last_name and not doc.get("last_name") else None,
-        )
-        if fn and fn != doc.first_name:
-            doc.first_name = fn
-        if mn and mn != doc.middle_name:
-            doc.middle_name = mn
-        if ln and ln != doc.last_name:
-            doc.last_name = ln
+    if "first_name" in field_map:
+        csv_first_name = row_dict.get(header_for.get("first_name"))
+        csv_middle_name = row_dict.get(header_for.get("middle_name"))
+        csv_last_name = row_dict.get(header_for.get("last_name"))
+        if csv_first_name:
+            fn, mn, ln = _split_name(
+                csv_first_name,
+                csv_middle_name if csv_middle_name and not doc.get("middle_name") else None,
+                csv_last_name if csv_last_name and not doc.get("last_name") else None,
+            )
+            if fn and fn != doc.first_name:
+                doc.first_name = fn
+            if mn and mn != doc.middle_name:
+                doc.middle_name = mn
+            if ln and ln != doc.last_name:
+                doc.last_name = ln
 
-    _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
+    if "sol_id" in field_map or "monthly_gross_salary" in field_map:
+        _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
 
     relieving = doc.relieving_date
     if relieving and getdate(relieving) <= getdate(today()):
