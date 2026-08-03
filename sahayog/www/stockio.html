@@ -5284,7 +5284,7 @@
                       <div class="info-content">
                         <span class="info-label">Receiver</span>
                         <select v-if="editingEMR" v-model="detailRecord.target_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
-                          <option v-for="wh in filteredWarehouses" :key="wh.name" :value="wh.name">[[ wh.name ]]</option>
+                          <option v-for="wh in warehouses" :key="wh" :value="wh">[[ wh ]]</option>
                         </select>
                         <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
@@ -5299,7 +5299,7 @@
                       <div class="info-content">
                         <span class="info-label">Provider</span>
                         <select v-if="editingEMR" v-model="detailRecord.source_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
-                          <option v-for="wh in filteredWarehouses" :key="wh.name" :value="wh.name">[[ wh.name ]]</option>
+                          <option v-for="wh in warehouses" :key="wh" :value="wh">[[ wh ]]</option>
                         </select>
                         <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
