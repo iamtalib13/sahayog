@@ -5283,7 +5283,10 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Receiver</span>
-                        <span class="info-value"
+                        <select v-if="editingEMR" v-model="detailRecord.target_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
+                          <option v-for="wh in filteredWarehouses" :key="wh.name" :value="wh.name">[[ wh.name ]]</option>
+                        </select>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
                         >
                       </div>
@@ -5295,7 +5298,10 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Provider</span>
-                        <span class="info-value"
+                        <select v-if="editingEMR" v-model="detailRecord.source_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
+                          <option v-for="wh in filteredWarehouses" :key="wh.name" :value="wh.name">[[ wh.name ]]</option>
+                        </select>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
                         >
                       </div>
@@ -5317,7 +5323,8 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Required By</span>
-                        <span class="info-value"
+                        <input v-if="editingEMR" type="date" v-model="detailRecord.required_by_date" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);" />
+                        <span v-else class="info-value"
                           >[[ detailRecord.required_by_date || '-' ]]</span
                         >
                       </div>
@@ -5345,6 +5352,19 @@
                           disabled
                           style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
                         />
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && !editingEMR" class="info-item" style="cursor: pointer;" @click="startEditEMR()">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-pencil-alt"></i>
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && editingEMR" class="info-item" style="cursor: pointer; gap: 4px;">
+                      <div class="info-icon" style="color: #22c55e" @click="saveEMRRecord()">
+                        <i class="fas fa-check"></i>
+                      </div>
+                      <div class="info-icon" style="color: #ef4444; margin-left: 8px;" @click="cancelEditEMR()">
+                        <i class="fas fa-times"></i>
                       </div>
                     </div>
                     <div class="info-item" v-if="activeItem === 'Requests'" style="cursor: pointer;" @click="showInfoNotAdded = !showInfoNotAdded">
@@ -13398,6 +13418,7 @@
       },
       confirmFields: [],
       confirmFormData: {},
+      editingEMR: false,
       showAssetCreateView: false,
       showAssetActions: false,
       showAssetActionModal: false,
@@ -15332,6 +15353,39 @@
         window.location.href = `/app/asset/${encodeURIComponent(name)}`;
       },
 
+      editEMRRecord(row) {
+        if (!row || !row.name) return;
+        window.location.href = `/app/employee-material-request/${encodeURIComponent(row.name)}`;
+      },
+      startEditEMR() {
+        this.editingEMR = true;
+      },
+      cancelEditEMR() {
+        this.editingEMR = false;
+        this.fetchData("Employee Material Request");
+      },
+      async saveEMRRecord() {
+        try {
+          await frappe.call({
+            method: "frappe.client.save",
+            args: {
+              doc: {
+                doctype: "Employee Material Request",
+                name: this.detailRecord.name,
+                target_warehouse: this.detailRecord.target_warehouse,
+                source_warehouse: this.detailRecord.source_warehouse,
+                required_by_date: this.detailRecord.required_by_date,
+              },
+            },
+          });
+          frappe.show_alert({ message: "Request updated", indicator: "green" });
+          this.editingEMR = false;
+          await this.fetchData("Employee Material Request");
+        } catch (e) {
+          console.error("Save EMR error:", e);
+          frappe.msgprint("Failed to save. Please try again.");
+        }
+      },
       handleCreate() {
         const doctype = this.currentView.createDoctype;
         if (doctype === "Employee Material Request") {
