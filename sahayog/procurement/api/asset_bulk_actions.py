@@ -110,6 +110,32 @@ def bulk_update_assets(asset_names, location):
 
 
 @frappe.whitelist()
+def update_emr_fields(name, target_warehouse=None, source_warehouse=None, required_by_date=None):
+    updates = []
+    values = []
+    if target_warehouse is not None:
+        updates.append("target_warehouse=%s")
+        values.append(target_warehouse)
+    if source_warehouse is not None:
+        updates.append("source_warehouse=%s")
+        values.append(source_warehouse)
+    if required_by_date is not None:
+        updates.append("required_by_date=%s")
+        values.append(required_by_date)
+
+    if not updates:
+        frappe.throw(_("No fields to update"))
+
+    values.append(name)
+    frappe.db.sql(
+        f"UPDATE `tabEmployee Material Request` SET {', '.join(updates)} WHERE name=%s",
+        values,
+    )
+    frappe.db.commit()
+    return {"success": True}
+
+
+@frappe.whitelist()
 def create_asset_with_name(doc, custom_name=None):
     if isinstance(doc, str):
         doc = frappe.parse_json(doc)

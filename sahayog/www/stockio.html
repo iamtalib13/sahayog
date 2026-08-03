@@ -5283,7 +5283,13 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Receiver</span>
-                        <span class="info-value"
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.target_warehouse" placeholder="Search warehouse..." @input="emrEditSearch = $event.target.value" @focus="focusedField = 'emr_edit_receiver'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_receiver'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearch || w.toLowerCase().includes(emrEditSearch.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.target_warehouse = wh; emrEditSearch = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
                         >
                       </div>
@@ -5295,7 +5301,13 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Provider</span>
-                        <span class="info-value"
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.source_warehouse" placeholder="Search warehouse..." @input="emrEditSearchProvider = $event.target.value" @focus="focusedField = 'emr_edit_provider'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_provider'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearchProvider || w.toLowerCase().includes(emrEditSearchProvider.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.source_warehouse = wh; emrEditSearchProvider = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
                         >
                       </div>
@@ -5317,7 +5329,8 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Required By</span>
-                        <span class="info-value"
+                        <input v-if="editingEMR" type="date" v-model="detailRecord.required_by_date" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);" />
+                        <span v-else class="info-value"
                           >[[ detailRecord.required_by_date || '-' ]]</span
                         >
                       </div>
@@ -5345,6 +5358,19 @@
                           disabled
                           style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
                         />
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && !editingEMR" class="info-item" style="cursor: pointer;" @click="startEditEMR()">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-pencil-alt"></i>
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && editingEMR" class="info-item" style="cursor: pointer; gap: 4px;">
+                      <div class="info-icon" style="color: #22c55e" @click="saveEMRRecord()">
+                        <i class="fas fa-check"></i>
+                      </div>
+                      <div class="info-icon" style="color: #ef4444; margin-left: 8px;" @click="cancelEditEMR()">
+                        <i class="fas fa-times"></i>
                       </div>
                     </div>
                     <div class="info-item" v-if="activeItem === 'Requests'" style="cursor: pointer;" @click="showInfoNotAdded = !showInfoNotAdded">
@@ -13398,6 +13424,9 @@
       },
       confirmFields: [],
       confirmFormData: {},
+      editingEMR: false,
+      emrEditSearch: "",
+      emrEditSearchProvider: "",
       showAssetCreateView: false,
       showAssetActions: false,
       showAssetActionModal: false,
@@ -15332,6 +15361,36 @@
         window.location.href = `/app/asset/${encodeURIComponent(name)}`;
       },
 
+      editEMRRecord(row) {
+        if (!row || !row.name) return;
+        window.location.href = `/app/employee-material-request/${encodeURIComponent(row.name)}`;
+      },
+      startEditEMR() {
+        this.editingEMR = true;
+      },
+      cancelEditEMR() {
+        this.editingEMR = false;
+        this.fetchData("Employee Material Request");
+      },
+      async saveEMRRecord() {
+        try {
+          await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.update_emr_fields",
+            args: {
+              name: this.detailRecord.name,
+              target_warehouse: this.detailRecord.target_warehouse,
+              source_warehouse: this.detailRecord.source_warehouse,
+              required_by_date: this.detailRecord.required_by_date,
+            },
+          });
+          frappe.show_alert({ message: "Request updated", indicator: "green" });
+          this.editingEMR = false;
+          await this.fetchData("Employee Material Request");
+        } catch (e) {
+          console.error("Save EMR error:", e);
+          frappe.msgprint("Failed to save. Please try again.");
+        }
+      },
       handleCreate() {
         const doctype = this.currentView.createDoctype;
         if (doctype === "Employee Material Request") {
