@@ -5283,9 +5283,12 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Receiver</span>
-                        <select v-if="editingEMR" v-model="detailRecord.target_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
-                          <option v-for="wh in warehouses" :key="wh" :value="wh">[[ wh ]]</option>
-                        </select>
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.target_warehouse" placeholder="Search warehouse..." @input="emrEditSearch = $event.target.value" @focus="focusedField = 'emr_edit_receiver'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_receiver'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearch || w.toLowerCase().includes(emrEditSearch.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.target_warehouse = wh; emrEditSearch = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
                         <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
                         >
@@ -5298,9 +5301,12 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Provider</span>
-                        <select v-if="editingEMR" v-model="detailRecord.source_warehouse" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);">
-                          <option v-for="wh in warehouses" :key="wh" :value="wh">[[ wh ]]</option>
-                        </select>
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.source_warehouse" placeholder="Search warehouse..." @input="emrEditSearchProvider = $event.target.value" @focus="focusedField = 'emr_edit_provider'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_provider'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearchProvider || w.toLowerCase().includes(emrEditSearchProvider.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.source_warehouse = wh; emrEditSearchProvider = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
                         <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
                         >
@@ -13419,6 +13425,8 @@
       confirmFields: [],
       confirmFormData: {},
       editingEMR: false,
+      emrEditSearch: "",
+      emrEditSearchProvider: "",
       showAssetCreateView: false,
       showAssetActions: false,
       showAssetActionModal: false,
