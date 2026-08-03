@@ -107,3 +107,21 @@ def bulk_update_assets(asset_names, location):
             errors[name] = str(e)
 
     return {"updated": updated, "failed": failed, "errors": errors}
+
+
+@frappe.whitelist()
+def create_asset_with_name(doc, custom_name=None):
+    if isinstance(doc, str):
+        doc = frappe.parse_json(doc)
+
+    if not doc.get("doctype"):
+        frappe.throw(_("Invalid document"))
+
+    new_doc = frappe.get_doc(doc)
+    new_doc.insert()
+
+    if custom_name and new_doc.name != custom_name:
+        frappe.rename_doc("Asset", new_doc.name, custom_name, force=True)
+        new_doc.name = custom_name
+
+    return {"name": new_doc.name}
