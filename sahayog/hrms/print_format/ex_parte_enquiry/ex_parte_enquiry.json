@@ -1,7 +1,7 @@
 {
  "absolute_value": 0,
  "align_labels_right": 0,
- "creation": "2025-11-17 14:01:00.346626",
+ "creation": "2026-08-03 10:18:59.625832",
  "css": "@page {\n    size: A4;\n    margin: 0;\n}\n\nhtml, body {\n    margin: 0;\n    padding: 0;\n    -webkit-print-color-adjust: exact;\n    print-color-adjust: exact;\n}\n\n.print-format {\n    margin: 0;\n    padding: 0;\n}\n\n.page {\n    position: relative;\n    width: 210mm;\n    min-height: 297mm;\n    box-sizing: border-box;\n    padding-top: 46mm;\n    padding-bottom: 44mm;\n    padding-left: 22mm;\n    padding-right: 22mm;\n    page-break-after: always;\n}\n\n.page .bg {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 210mm;\n    height: 297mm;\n    z-index: 0;\n    display: block;\n}\n\n.page .content {\n    position: relative;\n    z-index: 1;\n    box-sizing: border-box;\n    font-family: \"Times New Roman\", serif;\n    font-size: 14px;\n    line-height: 1.45;\n    text-align: justify;\n    word-wrap: break-word;\n    overflow-wrap: break-word;\n    color: #000000;\n}\n\n.content h2 {\n    margin: 0 0 16px 0;\n    font-size: 18px;\n    font-weight: bold;\n    text-align: center;\n    letter-spacing: 0.4px;\n}\n\n.content h3 {\n    margin: 10px 0 8px 0;\n    font-size: 15px;\n    font-weight: bold;\n    text-indent: 0;\n}\n\n.content p {\n    margin: 0 0 10px 0;\n    font-size: 14px;\n    line-height: 1.5;\n    text-indent: 28px;\n}\n\n.details {\n    margin-bottom: 16px;\n}\n\n.details p {\n    margin: 0 0 5px 0;\n    text-indent: 0;\n    font-size: 14px;\n}\n\n.signature {\n    margin-top: 24px;\n    font-size: 14px;\n    font-weight: bold;\n}\n",
  "custom_format": 1,
  "default_print_language": "en",
@@ -17,7 +17,7 @@
  "margin_left": 15.0,
  "margin_right": 15.0,
  "margin_top": 15.0,
- "modified": "2026-02-11 13:09:07.298214",
+ "modified": "2026-08-03 12:47:33.120709",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Ex Parte Enquiry",
