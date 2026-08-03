@@ -4129,7 +4129,7 @@
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
-        if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
+        if (statsRow) statsRow.style.display = "none";
         if (subTabs) subTabs.style.display = "none";
         if (empStatusFilters) empStatusFilters.style.display = "none";
         if (dirCardHead) dirCardHead.style.display = "none";
@@ -4166,6 +4166,7 @@
 
         if (tab === "attendance") {
           if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
+          if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
           if (dirCardHead) dirCardHead.style.display = "flex";
@@ -5505,7 +5506,8 @@
         const isHrUser = isHR();
 
         if (attendanceControls) {
-          attendanceControls.style.display = isMgr ? "flex" : "none";
+          attendanceControls.style.display =
+            isMgr || (isHrUser && allowHrToMarkAttendance) ? "flex" : "none";
         }
         if (searchBoxWrap) {
           searchBoxWrap.style.display = isMgr || isHrUser ? "flex" : "none";
