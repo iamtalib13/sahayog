@@ -15367,15 +15367,12 @@
       async saveEMRRecord() {
         try {
           await frappe.call({
-            method: "frappe.client.save",
+            method: "sahayog.procurement.api.asset_bulk_actions.update_emr_fields",
             args: {
-              doc: {
-                doctype: "Employee Material Request",
-                name: this.detailRecord.name,
-                target_warehouse: this.detailRecord.target_warehouse,
-                source_warehouse: this.detailRecord.source_warehouse,
-                required_by_date: this.detailRecord.required_by_date,
-              },
+              name: this.detailRecord.name,
+              target_warehouse: this.detailRecord.target_warehouse,
+              source_warehouse: this.detailRecord.source_warehouse,
+              required_by_date: this.detailRecord.required_by_date,
             },
           });
           frappe.show_alert({ message: "Request updated", indicator: "green" });
