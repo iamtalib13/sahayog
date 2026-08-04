@@ -176,6 +176,7 @@ def execute(filters=None):
     hl_names = list(set(e.holiday_list for e in employees if e.holiday_list))
     holiday_dates = set()
     weekly_off_dates = set()
+    holidays = []
 
     if hl_names:
         holidays = frappe.db.sql("""
