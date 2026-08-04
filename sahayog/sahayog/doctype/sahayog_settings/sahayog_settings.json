@@ -16,6 +16,7 @@
   "column_break_yawa",
   "notification",
   "create_stockio_request",
+  "restrict_stationery_record_creation_on_the_sahayog_ticket",
   "section_break_onti",
   "wh_dept_map",
   "branch_access",
@@ -165,13 +166,19 @@
   {
    "fieldname": "section_break_onti",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "restrict_stationery_record_creation_on_the_sahayog_ticket",
+   "fieldtype": "Check",
+   "label": "Restrict stationery record creation on the sahayog ticket"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-13 17:57:43.567990",
+ "modified": "2026-08-04 17:38:57.432048",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
