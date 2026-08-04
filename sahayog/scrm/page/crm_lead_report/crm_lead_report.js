@@ -1602,6 +1602,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
 
+    showNoLeadsMessage() {
+      page.set_intro(`
+        <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
+          <i class="fa fa-info-circle mr-2"></i> <b>No Records Found:</b> There are no leads available for the selected month or applied filter criteria.
+        </div>
+      `);
+    },
+
     async fetchVisibleBranches() {
       let res = await frappe.call({
         method: "sahayog.scrm.api.report_access.get_branches_by_filters",
