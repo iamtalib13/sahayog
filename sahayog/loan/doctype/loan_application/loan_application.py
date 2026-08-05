@@ -236,3 +236,22 @@ def get_current_user_branch_code():
     )
 
     return employee.sol_id if employee and employee.sol_id else None
+
+
+@frappe.whitelist()
+def get_branch_loan_user_employees(doctype, txt, searchfield, start, page_len, filters):
+    """Custom link query to return only active Employees having 'Branch Loan User' role."""
+    return frappe.db.sql("""
+        SELECT e.name, e.employee_name
+        FROM `tabEmployee` e
+        JOIN `tabHas Role` hr ON hr.parent = e.user_id
+        WHERE hr.role = 'Branch Loan User'
+          AND e.status = 'Active'
+          AND (e.name LIKE %(txt)s OR e.employee_name LIKE %(txt)s)
+        ORDER BY e.employee_name ASC
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+    })
