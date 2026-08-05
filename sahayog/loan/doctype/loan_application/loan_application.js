@@ -735,10 +735,15 @@ frappe.ui.form.on("Loan Application", {
               fieldtype: 'Link',
               options: 'Employee',
               reqd: 1,
+              get_query() {
+                return {
+                  query: 'sahayog.loan.doctype.loan_application.loan_application.get_branch_loan_user_employees'
+                };
+              },
               onchange() {
                 let emp = d.get_value('assigned_employee');
                 if (emp) {
-                  frappe.db.get_value('Employee', emp, 'sol_id', (r) => {
+                  frappe.db.get_value('Employee', emp, ['sol_id', 'user_id'], (r) => {
                     if (r && r.sol_id) {
                       d.set_value('branch_code', r.sol_id);
                     }
@@ -752,6 +757,7 @@ frappe.ui.form.on("Loan Application", {
               fieldtype: 'Link',
               options: 'Sahayog Branch',
               default: frm.doc.branch_code,
+              read_only: 1,
               reqd: 1
             }
           ],
