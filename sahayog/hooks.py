@@ -645,7 +645,7 @@ fixtures = [
     {"dt": "Task", "filters": [["is_template", "=", "1"]]},
     # Workspaces
     {"doctype": "Workspace", "filters": [
-        ["name", "in", ["Inventory Management"]]]},
+        ["name", "in", ["Inventory Management", "Marketing Activity Dashboard"]]]},
     # Custom HTML Blocks
     {
         "dt": "Custom HTML Block",
@@ -667,6 +667,7 @@ fixtures = [
                     "Finacle Dashboard",
                     "IT Dashboard",
                     "Petty Cash Dashboard Widget",
+                    "MAC Activity",
                 ],
             ]
         ],
