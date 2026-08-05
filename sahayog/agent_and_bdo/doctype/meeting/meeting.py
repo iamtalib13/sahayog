@@ -1,11 +1,17 @@
 # Copyright (c) 2025, Developer Team and contributors
 # For license information, please see license.txt
 import frappe
+from frappe import _
 from frappe.model.document import Document
 
 class Meeting(Document):
     def before_insert(self):
         self.set_trainer_from_user()
+
+    def before_submit(self):
+        # L&D trainings cannot be submitted until the training is delivered
+        if self.ld_training and not self.training_delivered:
+            frappe.throw(_("Training Delivered must be marked before this training can be submitted."))
 
     def set_trainer_from_user(self):
         # Admin / System Manager can create meetings without a linked Employee
@@ -30,32 +36,46 @@ def get_agent_full_name(reference_doctype, agent_employee):
 
 
 @frappe.whitelist()
-def get_branch_attendees(branch, attendee_type=None):
-    if not branch or not attendee_type:
-        return []
+def get_branch_geo(branch):
+    if not branch:
+        return {}
+    geo = frappe.db.get_value(
+        "Sahayog Branch", branch, ["zone", "region", "district"], as_dict=True
+    )
+    return geo or {}
 
-    attendees = []
 
-    if attendee_type == "Employee":
-        employees = frappe.db.get_all("Employee",
-            filters={"sahayog_branch": branch, "status": "Active"},
-            fields=["name", "employee_name"])
-        for emp in employees:
-            attendees.append({
-                "reference_doctype": "Employee",
-                "agent_employee": emp.name,
-                "full_name": emp.employee_name
-            })
-
-    elif attendee_type == "Agent":
-        agents = frappe.db.get_all("Agent",
-            filters={"branch_code": branch, "status": "Allocated"},
-            fields=["name", "agent_name"])
-        for ag in agents:
-            attendees.append({
-                "reference_doctype": "Agent",
-                "agent_employee": ag.name,
-                "full_name": ag.agent_name
-            })
-
-    return attendees
+# TODO: Auto-fetch of branch attendees is commented out until the requirement is
+# confirmed with stakeholders (BRD does not explicitly cover it).
+# Re-enable by uncommenting the function below.
+#
+# @frappe.whitelist()
+# def get_branch_attendees(branch, attendee_type=None):
+#     if not branch or not attendee_type:
+#         return []
+#
+#     attendees = []
+#
+#     if attendee_type == "Employee":
+#         employees = frappe.db.get_all("Employee",
+#             filters={"sahayog_branch": branch, "status": "Active"},
+#             fields=["name", "employee_name"])
+#         for emp in employees:
+#             attendees.append({
+#                 "reference_doctype": "Employee",
+#                 "agent_employee": emp.name,
+#                 "full_name": emp.employee_name
+#             })
+#
+#     elif attendee_type == "Agent":
+#         agents = frappe.db.get_all("Agent",
+#             filters={"branch_code": branch, "status": "Allocated"},
+#             fields=["name", "agent_name"])
+#         for ag in agents:
+#             attendees.append({
+#                 "reference_doctype": "Agent",
+#                 "agent_employee": ag.name,
+#                 "full_name": ag.agent_name
+#             })
+#
+#     return attendees
