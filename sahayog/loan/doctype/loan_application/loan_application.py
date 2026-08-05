@@ -7,11 +7,28 @@ import re
 class LoanApplication(Document):
     def validate(self):
         self.set_branch_code_from_employee()
+        self.set_lead_converter_from_user()
         self.validate_workflow_requirements()
         self.validate_basic_fields()
         if self.loan_type:
             self.run_rule_engine()
         self.calculate_payouts()
+
+    def set_lead_converter_from_user(self):
+        # Auto-set Lead Converter (LC) from current user
+        if not self.lead_converter:
+            employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+            if employee:
+                self.lead_converter = employee
+
+        # Auto-set Lead Generator (LG) details from creator/owner Employee record
+        creator_user = self.owner if not self.is_new() else frappe.session.user
+        emp_doc = frappe.db.get_value("Employee", {"user_id": creator_user}, ["name", "employee_name"], as_dict=True)
+        if emp_doc:
+            if not self.lead_generator_code:
+                self.lead_generator_code = emp_doc.name
+            if not self.lead_generator:
+                self.lead_generator = emp_doc.employee_name
 
     def set_branch_code_from_employee(self):
         if "Branch Loan User" not in frappe.get_roles(frappe.session.user):
@@ -219,3 +236,22 @@ def get_current_user_branch_code():
     )
 
     return employee.sol_id if employee and employee.sol_id else None
+
+
+@frappe.whitelist()
+def get_branch_loan_user_employees(doctype, txt, searchfield, start, page_len, filters):
+    """Custom link query to return only active Employees having 'Branch Loan User' role."""
+    return frappe.db.sql("""
+        SELECT e.name, e.employee_name
+        FROM `tabEmployee` e
+        JOIN `tabHas Role` hr ON hr.parent = e.user_id
+        WHERE hr.role = 'Branch Loan User'
+          AND e.status = 'Active'
+          AND (e.name LIKE %(txt)s OR e.employee_name LIKE %(txt)s)
+        ORDER BY e.employee_name ASC
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+    })

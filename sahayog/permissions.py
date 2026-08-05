@@ -341,3 +341,62 @@ def has_item_permission(doc, ptype, user):
     else:
         # Non-IT department users cannot see/access IT items
         return item_dept != "IT"
+
+
+def get_loan_application_permission(user, doctype=None):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles:
+        return ""
+
+    emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "sol_id"], as_dict=True)
+    if not emp:
+        return f"(`tabLoan Application`.owner = '{user}')"
+
+    emp_code = emp.name
+
+    # If document has been re-assigned to another LC (lead_converter != current employee), exclude previous generator
+    conditions = [
+        f"`tabLoan Application`.lead_converter = '{emp_code}'",
+        f"(`tabLoan Application`.owner = '{user}' AND (`tabLoan Application`.lead_converter IS NULL OR `tabLoan Application`.lead_converter = '' OR `tabLoan Application`.lead_converter = '{emp_code}'))",
+        f"`tabLoan Application`.name IN (SELECT share_name FROM `tabDocShare` WHERE share_doctype = 'Loan Application' AND user = '{user}')"
+    ]
+
+    return f"({' OR '.join(conditions)})"
+
+
+def has_loan_application_permission(doc, ptype, user=None):
+    if not user:
+        user = frappe.session.user
+
+    user_roles = frappe.get_roles(user)
+    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles:
+        return True
+
+    if not doc:
+        return True
+
+    emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "sol_id"], as_dict=True)
+    emp_code = emp.name if emp else None
+
+    # If case is assigned to another LC, stop all access for previous generator/owner
+    if doc.lead_converter and emp_code and doc.lead_converter != emp_code:
+        return False
+
+    if doc.lead_converter and emp_code and doc.lead_converter == emp_code:
+        return True
+
+    if doc.owner == user:
+        return True
+
+    shared = frappe.db.exists("DocShare", {
+        "share_doctype": "Loan Application",
+        "share_name": doc.name,
+        "user": user
+    })
+    if shared:
+        return True
+
+    return False
