@@ -661,6 +661,138 @@ frappe.ui.form.on("Loan Application", {
       frm.custom_home_button_added = true;
     }
 
+    // ==========================================
+    // CUSTOM BUTTONS: UPDATE BRANCH & ASSIGN CASE (For Admin & Credit Loan User)
+    // ==========================================
+    const allowed_roles = ["Administrator", "Credit Loan User", "System Manager"];
+    if (!frm.is_new() && frappe.user_roles.some(role => allowed_roles.includes(role))) {
+
+      // 1. UPDATE BRANCH BUTTON
+      frm.add_custom_button(__("Update Branch"), function () {
+        let d = new frappe.ui.Dialog({
+          title: __('Update Branch'),
+          fields: [
+            {
+              label: __('Select Branch'),
+              fieldname: 'branch_code',
+              fieldtype: 'Link',
+              options: 'Sahayog Branch',
+              default: frm.doc.branch_code,
+              reqd: 1
+            }
+          ],
+          primary_action_label: __('Update'),
+          primary_action(values) {
+            if (values.branch_code === frm.doc.branch_code) {
+              frappe.msgprint(__('Selected branch is already assigned.'));
+              d.hide();
+              return;
+            }
+            frappe.call({
+              method: 'frappe.client.set_value',
+              args: {
+                doctype: frm.doc.doctype,
+                name: frm.doc.name,
+                fieldname: 'branch_code',
+                value: values.branch_code
+              },
+              freeze: true,
+              freeze_message: __('Updating Branch...'),
+              callback: function (r) {
+                if (!r.exc) {
+                  frappe.show_alert({ message: __('Branch updated successfully'), indicator: 'green' });
+                  d.hide();
+                  frm.reload_doc();
+                }
+              }
+            });
+          }
+        });
+        d.show();
+      }, __("Actions"));
+
+      // 2. ASSIGN CASE BUTTON (Re-assign User, Update Branch & LC)
+      frm.add_custom_button(__("Assign Case"), function () {
+        let d = new frappe.ui.Dialog({
+          title: __('Assign Case to User'),
+          fields: [
+            {
+              label: __('Select Employee (New Assignee)'),
+              fieldname: 'assigned_employee',
+              fieldtype: 'Link',
+              options: 'Employee',
+              reqd: 1,
+              onchange() {
+                let emp = d.get_value('assigned_employee');
+                if (emp) {
+                  frappe.db.get_value('Employee', emp, 'sol_id', (r) => {
+                    if (r && r.sol_id) {
+                      d.set_value('branch_code', r.sol_id);
+                    }
+                  });
+                }
+              }
+            },
+            {
+              label: __('Branch Code'),
+              fieldname: 'branch_code',
+              fieldtype: 'Link',
+              options: 'Sahayog Branch',
+              default: frm.doc.branch_code,
+              reqd: 1
+            }
+          ],
+          primary_action_label: __('Assign'),
+          primary_action(values) {
+            frappe.call({
+              method: 'frappe.client.set_value',
+              args: {
+                doctype: frm.doc.doctype,
+                name: frm.doc.name,
+                fieldname: {
+                  'lead_converter': values.assigned_employee,
+                  'branch_code': values.branch_code
+                }
+              },
+              freeze: true,
+              freeze_message: __('Assigning Case & Granting Access...'),
+              callback: function (r) {
+                if (!r.exc) {
+                  // Fetch user_id for the assigned employee and grant DocShare access
+                  frappe.db.get_value('Employee', values.assigned_employee, 'user_id', (res) => {
+                    if (res && res.user_id) {
+                      frappe.call({
+                        method: 'frappe.share.add',
+                        args: {
+                          doctype: frm.doc.doctype,
+                          name: frm.doc.name,
+                          user: res.user_id,
+                          read: 1,
+                          write: 1,
+                          submit: 1,
+                          share: 1
+                        },
+                        callback: function() {
+                          frappe.show_alert({ message: __('Case assigned and shared successfully!'), indicator: 'green' });
+                          d.hide();
+                          frm.reload_doc();
+                        }
+                      });
+                    } else {
+                      frappe.show_alert({ message: __('Case assigned successfully!'), indicator: 'green' });
+                      d.hide();
+                      frm.reload_doc();
+                    }
+                  });
+                }
+              }
+            });
+          }
+        });
+        d.show();
+      }, __("Actions"));
+    }
+
 
     // ==========================================
     // AUTO-ADD: ACCOUNT OPEN FORM
