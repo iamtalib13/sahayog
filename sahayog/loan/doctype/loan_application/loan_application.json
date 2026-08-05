@@ -56,6 +56,7 @@
   "ornaments_section",
   "ornaments_list",
   "security_details_section",
+  "valuer",
   "total_gross_weight",
   "total_deduction",
   "column_break_2",
@@ -109,7 +110,11 @@
   "recommended_loan_amount",
   "margin_maintained",
   "repayment_mode_office",
-  "sanction_date"
+  "sanction_date",
+  "loan_generator_tab",
+  "lead_generator_code",
+  "lead_generator",
+  "lead_converter"
  ],
  "fields": [
   {
@@ -159,6 +164,7 @@
    "label": "CIF ID"
   },
   {
+   "allow_on_submit": 1,
    "description": "The branch where the application was initiated.",
    "fieldname": "branch_code",
    "fieldtype": "Link",
@@ -728,6 +734,43 @@
    "fieldname": "kyc_docs",
    "fieldtype": "HTML",
    "label": "KYC Documents"
+  },
+  {
+   "fieldname": "loan_generator_tab",
+   "fieldtype": "Tab Break",
+   "label": "Loan Generator"
+  },
+  {
+   "description": "Employee Code of Lead Generator (auto-fetched).",
+   "fieldname": "lead_generator_code",
+   "fieldtype": "Link",
+   "label": "LG Employee Code",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "description": "Employee Name of Lead Generator (auto-fetched).",
+   "fetch_from": "lead_generator_code.employee_name",
+   "fieldname": "lead_generator",
+   "fieldtype": "Data",
+   "label": "Lead Generator (LG) Name",
+   "read_only": 1
+  },
+  {
+   "description": "Logged-in LOS user who is processing/converting this lead. Auto-assigned on create.",
+   "fieldname": "lead_converter",
+   "fieldtype": "Link",
+   "label": "Lead Converter (LC)",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "description": "Valuer who appraised the gold. Linked to Valuer Master for code mapping.",
+   "depends_on": "eval:doc.security_type=='Gold'",
+   "fieldname": "valuer",
+   "fieldtype": "Link",
+   "label": "Valuer",
+   "options": "Valuer Master"
   }
  ],
  "grid_page_length": 50,
@@ -735,7 +778,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-03-27 18:47:15.983188",
+ "modified": "2026-08-05 12:53:16.688708",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
