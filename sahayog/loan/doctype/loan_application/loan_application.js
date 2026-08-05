@@ -661,6 +661,19 @@ frappe.ui.form.on("Loan Application", {
       frm.custom_home_button_added = true;
     }
 
+    // Lock form read-only if current user is previous generator/owner and case is re-assigned to someone else
+    if (!frm.is_new() && frm.doc.lead_converter) {
+      frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name", (r) => {
+        if (r && r.name && frm.doc.lead_converter !== r.name) {
+          const admin_roles = ["Administrator", "Credit Loan User", "System Manager"];
+          if (!frappe.user_roles.some(role => admin_roles.includes(role))) {
+            frm.disable_form();
+            frm.page.clear_actions();
+          }
+        }
+      });
+    }
+
     // ==========================================
     // CUSTOM BUTTONS: UPDATE BRANCH & ASSIGN CASE (For Admin & Credit Loan User)
     // ==========================================
@@ -709,7 +722,7 @@ frappe.ui.form.on("Loan Application", {
           }
         });
         d.show();
-      }, __("Actions"));
+      }, __("Update Loan Case"));
 
       // 2. ASSIGN CASE BUTTON (Re-assign User, Update Branch & LC)
       frm.add_custom_button(__("Assign Case"), function () {
@@ -761,6 +774,7 @@ frappe.ui.form.on("Loan Application", {
                   // Fetch user_id for the assigned employee and grant DocShare access
                   frappe.db.get_value('Employee', values.assigned_employee, 'user_id', (res) => {
                     if (res && res.user_id) {
+                      // First grant access to the new assigned user
                       frappe.call({
                         method: 'frappe.share.add',
                         args: {
@@ -773,6 +787,17 @@ frappe.ui.form.on("Loan Application", {
                           share: 1
                         },
                         callback: function() {
+                          // Next, revoke access from original owner/generator if different from new assignee
+                          if (frm.doc.owner && frm.doc.owner !== res.user_id) {
+                            frappe.call({
+                              method: 'frappe.share.remove',
+                              args: {
+                                doctype: frm.doc.doctype,
+                                name: frm.doc.name,
+                                user: frm.doc.owner
+                              }
+                            });
+                          }
                           frappe.show_alert({ message: __('Case assigned and shared successfully!'), indicator: 'green' });
                           d.hide();
                           frm.reload_doc();
@@ -790,7 +815,7 @@ frappe.ui.form.on("Loan Application", {
           }
         });
         d.show();
-      }, __("Actions"));
+      }, __("Update Loan Case"));
     }
 
 
