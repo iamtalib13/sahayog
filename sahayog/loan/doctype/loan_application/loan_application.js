@@ -763,18 +763,21 @@ frappe.ui.form.on("Loan Application", {
           ],
           primary_action_label: __('Assign'),
           primary_action(values) {
-            frappe.call({
-              method: 'frappe.client.set_value',
-              args: {
-                doctype: frm.doc.doctype,
-                name: frm.doc.name,
-                fieldname: {
-                  'lead_converter': values.assigned_employee,
-                  'branch_code': values.branch_code
-                }
-              },
-              freeze: true,
-              freeze_message: __('Assigning Case & Granting Access...'),
+            frappe.db.get_value('Employee', values.assigned_employee, 'employee_name', (emp_res) => {
+              let emp_name = emp_res ? emp_res.employee_name : '';
+              frappe.call({
+                method: 'frappe.client.set_value',
+                args: {
+                  doctype: frm.doc.doctype,
+                  name: frm.doc.name,
+                  fieldname: {
+                    'lead_converter': values.assigned_employee,
+                    'lead_converter_name': emp_name,
+                    'branch_code': values.branch_code
+                  }
+                },
+                freeze: true,
+                freeze_message: __('Assigning Case & Granting Access...'),
               callback: function (r) {
                 if (!r.exc) {
                   // Fetch user_id for the assigned employee and grant DocShare access
@@ -812,13 +815,13 @@ frappe.ui.form.on("Loan Application", {
                     } else {
                       frappe.show_alert({ message: __('Case assigned successfully!'), indicator: 'green' });
                       d.hide();
-                      frm.reload_doc();
                     }
                   });
                 }
               }
             });
-          }
+          });
+        }
         });
         d.show();
       }, __("Update Loan Case"));

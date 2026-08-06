@@ -17,9 +17,14 @@ class LoanApplication(Document):
     def set_lead_converter_from_user(self):
         # Auto-set Lead Converter (LC) from current user
         if not self.lead_converter:
-            employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-            if employee:
-                self.lead_converter = employee
+            emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"], as_dict=True)
+            if emp:
+                self.lead_converter = emp.name
+                self.lead_converter_name = emp.employee_name
+        elif self.lead_converter and not self.lead_converter_name:
+            emp_name = frappe.db.get_value("Employee", self.lead_converter, "employee_name")
+            if emp_name:
+                self.lead_converter_name = emp_name
 
         # Auto-set Lead Generator (LG) details from creator/owner Employee record
         creator_user = self.owner if not self.is_new() else frappe.session.user
