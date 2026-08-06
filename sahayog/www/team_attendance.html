@@ -484,6 +484,12 @@
         color: #d97706;
         font-weight: 600;
       }
+      .cal-d.pending-leave-d {
+        background: #f0f9ff;
+        border: 1px dashed #3b82f6;
+        color: #2563eb;
+        font-weight: 600;
+      }
       .cal-d.woff {
         color: #d1d5db;
       }
@@ -4088,6 +4094,39 @@
         corrections: { pending: [], history: [] },
       };
 
+      function setPendingBadge(btnId, count) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        let badge = btn.querySelector(".pending-badge");
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "pending-badge";
+          badge.style.cssText =
+            "display:none;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;line-height:1.4;vertical-align:middle;";
+          btn.appendChild(badge);
+        }
+        badge.textContent = count;
+        badge.style.display = count > 0 ? "inline-block" : "none";
+      }
+
+      async function updatePendingBadges() {
+        if (!isHR()) return;
+        const leaves = await callAPI("get_pending_leaves", {}, "leave");
+        const corr = await callAPI(
+          "get_pending_attendance_corrections",
+          {},
+          "attendance",
+        );
+        setPendingBadge(
+          "tabLeaveRequests",
+          leaves && leaves.pending ? leaves.pending.length : 0,
+        );
+        setPendingBadge(
+          "tabCorrApproval",
+          corr && corr.pending ? corr.pending.length : 0,
+        );
+      }
+
       function switchTab(tab, btn) {
         if (
           (tab === "leave" ||
@@ -4260,6 +4299,10 @@
             pending: data.pending || [],
             history: data.history || [],
           };
+          setPendingBadge(
+            "tabCorrApproval",
+            (data.pending || []).length,
+          );
           renderCorrectionRequests();
         }
       }
@@ -4340,7 +4383,11 @@
         if (res && res.success) {
           showToast(`Request ${action}`);
           loadCorrectionRequests();
-          fetchTeamData(); // Refresh calendar if needed
+          // Do NOT call fetchTeamData() here — it re-renders the employee
+          // directory into #empList (the same container as the approvals list)
+          // and re-shows the search bar / select-all controls, which clobbers
+          // the corrections view. The calendar refreshes automatically when the
+          // user switches to the attendance tab.
         }
       }
 
@@ -4398,6 +4445,10 @@
             pending: res.pending || [],
             history: res.history || [],
           };
+          setPendingBadge(
+            "tabLeaveRequests",
+            (res.pending || []).length,
+          );
           renderLeaveRequests();
         }
       }
@@ -4637,6 +4688,7 @@
             switchTab("hr_dashboard", hrTab);
           }
           populateAllFilters();
+          updatePendingBadges();
         } else {
           isFirstLoad = false;
           if (attendanceTab) attendanceTab.textContent = "Attendance";
@@ -5221,6 +5273,8 @@
             cls += " holiday-d";
           else if (histStatus && histStatus.includes("Pending Correction"))
             cls += " pending-corr-d";
+          else if (histStatus && histStatus.includes("Pending Leave"))
+            cls += " pending-leave-d";
           else if (isWeekend) cls += " woff";
 
           cell.textContent = d;
@@ -5232,6 +5286,8 @@
               Absent: "Absent",
               "Half Day": "Half Day",
               "On Leave": "On Leave",
+              "Pending Correction": "Correction Request Pending",
+              "Pending Leave": "Leave Request Pending",
             };
             cell.title =
               titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
@@ -5310,6 +5366,7 @@
         if (res && res.success) {
           showToast(res.message);
           closeCorrectionModal();
+          loadCalendarHistory();
         }
       }
 
@@ -5410,6 +5467,8 @@
         if (res && res.success) {
           showToast(res.message);
           closeLeaveModal();
+          loadCalendarHistory();
+          loadLeaveBalances(employee);
         } else if (res) {
           showToast("Error while applying leave");
         }
