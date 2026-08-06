@@ -8,6 +8,7 @@
  "field_order": [
   "date",
   "employee",
+  "employee_name",
   "branch",
   "branch_name",
   "branch_code",
@@ -40,6 +41,12 @@
    "label": "Employee",
    "options": "Employee",
    "reqd": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
   },
   {
    "fieldname": "branch",
