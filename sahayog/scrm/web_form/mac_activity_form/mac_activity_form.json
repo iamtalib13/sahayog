@@ -1,5 +1,4 @@
 {
- "accept_payment": 0,
  "allow_comments": 0,
  "allow_delete": 0,
  "allow_edit": 0,
@@ -9,13 +8,17 @@
  "anonymous": 1,
  "apply_document_permissions": 0,
  "button_label": "Submit",
- "creation": "2026-08-04 17:25:00.000000",
+ "creation": "2026-08-04 17:25:00",
  "doc_type": "MAC Activity",
+ "docstatus": 0,
  "doctype": "Web Form",
+ "idx": 0,
  "introduction_text": "<div class=\"ql-editor read-mode\"><p><strong>Marketing Activity Calendar (MAC) Form</strong></p><p>Please fill out the marketing activity details below.</p></div>",
  "is_standard": 1,
+ "list_columns": [],
  "login_required": 0,
- "modified": "2026-08-04 17:25:00.000000",
+ "max_attachment_size": 0,
+ "modified": "2026-08-06 12:55:52.913106",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "mac-activity-form",
@@ -28,114 +31,236 @@
  "title": "MAC Activity Form",
  "web_form_fields": [
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "date",
    "fieldtype": "Date",
+   "hidden": 0,
    "label": "Date",
-   "reqd": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "employee",
    "fieldtype": "Link",
+   "hidden": 0,
    "label": "Employee",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Employee",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "branch",
    "fieldtype": "Link",
+   "hidden": 0,
    "label": "Branch (SOL ID)",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Sahayog Branch",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "branch_name",
    "fieldtype": "Data",
+   "hidden": 0,
    "label": "Branch Name",
-   "read_only": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 1,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "branch_code",
    "fieldtype": "Data",
+   "hidden": 0,
    "label": "Branch Code",
-   "read_only": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 1,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "zone",
    "fieldtype": "Data",
+   "hidden": 0,
    "label": "Zone",
-   "read_only": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 1,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "region",
    "fieldtype": "Data",
+   "hidden": 0,
    "label": "Region",
-   "read_only": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 1,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "branch_category",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Branch Category",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Dist\nTAL",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "product_focus",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Product Focus",
+   "max_length": 0,
+   "max_value": 0,
    "options": "SMBG\nDDS\nCASA\nTASC\nFDs\nAll Products",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "target_segment",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Target Segment",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Business\nResidential",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "location_place",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Location / Place",
+   "max_length": 0,
+   "max_value": 0,
    "options": "In Branch\nExternal",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "activity_type",
    "fieldtype": "Data",
+   "hidden": 0,
    "label": "Activity Type",
-   "reqd": 1
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "paid_unpaid",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Paid / Unpaid",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Paid\nUnpaid",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
+   "default": "0",
    "fieldname": "estimated_cost",
    "fieldtype": "Currency",
+   "hidden": 0,
    "label": "Estimated Cost",
-   "default": "0"
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 0,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
+   "default": "0",
    "fieldname": "units_accounts",
    "fieldtype": "Int",
+   "hidden": 0,
    "label": "Units (Accounts)",
-   "default": "0"
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 0,
+   "reqd": 0,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
+   "default": "Done",
    "fieldname": "status",
    "fieldtype": "Select",
+   "hidden": 0,
    "label": "Status",
+   "max_length": 0,
+   "max_value": 0,
    "options": "Done\nCancelled",
-   "default": "Done",
-   "reqd": 1
+   "precision": "",
+   "read_only": 0,
+   "reqd": 1,
+   "show_in_filter": 0
   },
   {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "remark",
    "fieldtype": "Small Text",
-   "label": "Remark (Mandatory if Cancelled)"
+   "hidden": 0,
+   "label": "Remark (Mandatory if Cancelled)",
+   "max_length": 0,
+   "max_value": 0,
+   "precision": "",
+   "read_only": 0,
+   "reqd": 0,
+   "show_in_filter": 0
   }
  ]
 }
