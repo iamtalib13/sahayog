@@ -9,6 +9,9 @@ frappe.ui.form.on('MAC Activity', {
 				callback: function(r) {
 					if (r.message && r.message.employee_id) {
 						frm.set_value('employee', r.message.employee_id);
+						if (r.message.employee_name) {
+							frm.set_value('employee_name', r.message.employee_name);
+						}
 						if (r.message.sahayog_branch) {
 							frm.set_value('branch', r.message.sahayog_branch);
 						}
@@ -16,6 +19,7 @@ frappe.ui.form.on('MAC Activity', {
 						const is_admin = frappe.user_roles.includes('System Manager') || frappe.session.user === 'Administrator';
 						if (!is_admin) {
 							frm.set_df_property('employee', 'read_only', 1);
+							frm.set_df_property('employee_name', 'read_only', 1);
 							frm.set_df_property('branch', 'read_only', 1);
 						}
 					}
@@ -28,6 +32,7 @@ frappe.ui.form.on('MAC Activity', {
 		const is_admin = frappe.user_roles.includes('System Manager') || frappe.session.user === 'Administrator';
 		if (!frm.is_new() || !is_admin) {
 			frm.set_df_property('employee', 'read_only', 1);
+			frm.set_df_property('employee_name', 'read_only', 1);
 			frm.set_df_property('branch', 'read_only', 1);
 		}
 	},
@@ -39,8 +44,13 @@ frappe.ui.form.on('MAC Activity', {
 					employee: frm.doc.employee
 				},
 				callback: function(r) {
-					if (r.message && r.message.sahayog_branch) {
-						frm.set_value('branch', r.message.sahayog_branch);
+					if (r.message) {
+						if (r.message.employee_name) {
+							frm.set_value('employee_name', r.message.employee_name);
+						}
+						if (r.message.sahayog_branch) {
+							frm.set_value('branch', r.message.sahayog_branch);
+						}
 					}
 				}
 			});
