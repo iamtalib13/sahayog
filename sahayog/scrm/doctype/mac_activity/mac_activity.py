@@ -33,7 +33,7 @@ def ensure_qr_code():
 
 @frappe.whitelist()
 def get_dashboard_data():
-	ensure_qr_code()
+	frappe.enqueue("sahayog.scrm.doctype.mac_activity.mac_activity.ensure_qr_code", queue="short")
 	user = frappe.session.user
 	is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
 
