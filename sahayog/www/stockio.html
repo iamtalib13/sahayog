@@ -1874,6 +1874,15 @@
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
             : '') ]]
           </span>
+          <button
+            v-if="activeItem === 'Asset Master' && showDetailView && detailRecord"
+            class="btn-view-toggle"
+            style="margin-left: 8px; width: 32px; height: 32px; font-size: 0.8rem;"
+            title="Edit"
+            @click="isEditing = true"
+          >
+            <i class="fas fa-pencil-alt"></i>
+          </button>
 
           <!-- Inline Approval Flow -->
           <div
