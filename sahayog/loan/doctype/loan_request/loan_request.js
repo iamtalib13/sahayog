@@ -52,7 +52,7 @@ frappe.ui.form.on("Loan Request", {
 
 		// Credit Loan User buttons (dropdown)
 		if (frm.doc.status === "Pending Credit Review") {
-			let dropdown = frm.add_custom_button(__('Credit Team Actions'), null);
+			// let dropdown = frm.add_custom_button(__('Credit Team Actions'), null);
 			
 			frm.add_custom_button(__('Approve'), function() {
 				if (!frm.doc.scheme_code) {
