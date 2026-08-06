@@ -1,5 +1,4 @@
-import frappe
+from sahayog.scrm.doctype.mac_activity.mac_activity import ensure_qr_code
 
 def get_context(context):
-	# do your magic here
-	pass
+	ensure_qr_code()
