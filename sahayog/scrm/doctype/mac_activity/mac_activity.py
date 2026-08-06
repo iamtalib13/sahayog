@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) 2026, Administrator and contributors
-# For license information, please see license.txt
-
+import os
+import requests
 import frappe
 from frappe.model.document import Document
 from frappe import _
@@ -15,8 +13,27 @@ class MACActivity(Document):
 		if self.paid_unpaid == "Unpaid":
 			self.estimated_cost = 0
 
+def ensure_qr_code():
+	file_path = frappe.get_site_path("public", "files", "mac_activity_qr.png")
+	if not os.path.exists(file_path):
+		# Create directory if it doesn't exist
+		os.makedirs(os.path.dirname(file_path), exist_ok=True)
+		
+		# Generate QR pointing to the site's own domain
+		site_url = frappe.utils.get_url()
+		qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={site_url}/mac-activity"
+		
+		try:
+			response = requests.get(qr_url, timeout=15)
+			if response.status_code == 200:
+				with open(file_path, "wb") as f:
+					f.write(response.content)
+		except Exception as e:
+			frappe.log_error(message=str(e), title="MAC QR Generation Failed")
+
 @frappe.whitelist()
 def get_dashboard_data():
+	ensure_qr_code()
 	user = frappe.session.user
 	is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
 
