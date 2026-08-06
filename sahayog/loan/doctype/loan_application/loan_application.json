@@ -114,7 +114,9 @@
   "loan_generator_tab",
   "lead_generator_code",
   "lead_generator",
-  "lead_converter"
+  "column_break_zsis",
+  "lead_converter",
+  "lead_converter_name"
  ],
  "fields": [
   {
@@ -760,17 +762,29 @@
    "description": "Logged-in LOS user who is processing/converting this lead. Auto-assigned on create.",
    "fieldname": "lead_converter",
    "fieldtype": "Link",
-   "label": "Lead Converter (LC)",
+   "label": "Lead Converter (LC) Code",
    "options": "Employee",
    "read_only": 1
   },
   {
-   "description": "Valuer who appraised the gold. Linked to Valuer Master for code mapping.",
+   "description": "Employee Name of Lead Converter (auto-fetched).",
+   "fetch_from": "lead_converter.employee_name",
+   "fieldname": "lead_converter_name",
+   "fieldtype": "Data",
+   "label": "Lead Converter (LC) Name",
+   "read_only": 1
+  },
+  {
    "depends_on": "eval:doc.security_type=='Gold'",
+   "description": "Valuer who appraised the gold. Linked to Valuer Master for code mapping.",
    "fieldname": "valuer",
    "fieldtype": "Link",
    "label": "Valuer",
    "options": "Valuer Master"
+  },
+  {
+   "fieldname": "column_break_zsis",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
@@ -778,7 +792,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-05 12:53:16.688708",
+ "modified": "2026-08-06 10:16:05.766015",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
