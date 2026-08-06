@@ -107,9 +107,19 @@ def get_ld_calendar_data(year, month, zone=None, region=None, district=None, bra
                                       fields=["name", "employee_name"]):
             trainer_map[emp.name] = emp.employee_name
 
+    meeting_ids = [t.name for t in trainings]
+    participant_counts = {}
+    if meeting_ids:
+        placeholders = ", ".join(["%s"] * len(meeting_ids))
+        for row in frappe.db.sql(
+            f"select parent, count(*) from `tabAttendees` "
+            f"where parent in ({placeholders}) group by parent", meeting_ids):
+            participant_counts[row[0]] = row[1]
+
     for t in trainings:
         t.trainer_name = trainer_map.get(t.trainer, t.trainer or "")
         t.completion_score = _completion_score(t)
+        t.participants = participant_counts.get(t.name, 0)
 
     return trainings
 
