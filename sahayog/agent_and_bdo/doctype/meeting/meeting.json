@@ -28,6 +28,8 @@
   "column_break_ld_2",
   "region",
   "district",
+  "section_break_xhny",
+  "attandees_table",
   "section_break_ld_status",
   "training_delivered",
   "attendance_marked",
@@ -40,9 +42,7 @@
   "trainer_remarks",
   "section_break_ld_budget",
   "budget_amount",
-  "actual_expense",
-  "section_break_xhny",
-  "attandees_table"
+  "actual_expense"
  ],
  "fields": [
   {
@@ -286,7 +286,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-05 15:06:48.503868",
+ "modified": "2026-08-05 17:02:15.455057",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
