@@ -33,7 +33,7 @@ def ensure_qr_code():
 
 @frappe.whitelist()
 def get_dashboard_data():
-	ensure_qr_code()
+	frappe.enqueue("sahayog.scrm.doctype.mac_activity.mac_activity.ensure_qr_code", queue="short")
 	user = frappe.session.user
 	is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
 
@@ -44,7 +44,7 @@ def get_dashboard_data():
 	records = frappe.get_all(
 		"MAC Activity",
 		filters=filters,
-		fields=["name", "date", "branch_name", "product_focus", "estimated_cost", "units_accounts", "status", "creation"],
+		fields=["name", "date", "employee", "employee_name", "branch_name", "product_focus", "estimated_cost", "units_accounts", "status", "creation"],
 		order_by="creation desc",
 		limit=50
 	)

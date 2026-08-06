@@ -21,6 +21,10 @@ frappe.ready(function() {
 						frappe.web_form.set_value('employee', r.message.employee_id);
 						frappe.web_form.set_df_property('employee', 'read_only', 1);
 					}
+					if (r.message.employee_name) {
+						frappe.web_form.set_value('employee_name', r.message.employee_name);
+						frappe.web_form.set_df_property('employee_name', 'read_only', 1);
+					}
 					if (r.message.sahayog_branch) {
 						frappe.web_form.set_value('branch', r.message.sahayog_branch);
 						frappe.web_form.set_df_property('branch', 'read_only', 1);
@@ -40,6 +44,9 @@ frappe.ready(function() {
 				},
 				callback: function(r) {
 					if (r.message) {
+						if (r.message.employee_name) {
+							frappe.web_form.set_value('employee_name', r.message.employee_name);
+						}
 						if (r.message.sahayog_branch) {
 							frappe.web_form.set_value('branch', r.message.sahayog_branch);
 							// Restrict modifying branch for non-managers
