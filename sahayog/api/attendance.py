@@ -649,6 +649,28 @@ def get_employee_calendar(employee, month, year):
             history[str(curr)] = "On Leave"
             curr = add_days(curr, 1)
 
+    # Add pending (Open) leave requests
+    pending_leaves = frappe.get_all("Leave Application",
+        filters={
+            "employee": employee,
+            "status": "Open",
+            "from_date": ["<=", last_day],
+            "to_date": [">=", first_day]
+        },
+        fields=["from_date", "to_date"]
+    )
+    for pl in pending_leaves:
+        start = getdate(pl.from_date)
+        end = getdate(pl.to_date)
+        curr = start
+        while curr <= end:
+            ds = str(curr)
+            if ds not in history:
+                history[ds] = "Pending Leave"
+            else:
+                history[ds] = f"{history[ds]} (Leave Pending)"
+            curr = add_days(curr, 1)
+
     # Add holiday dates (only if no attendance/leave already marked)
     holiday_info = _get_employee_holiday_dates(employee, first_day, last_day)
     for hd, desc in holiday_info.items():
