@@ -34,6 +34,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
    "fieldname": "branch",
    "fieldtype": "Link",
    "label": "Branch (SOL ID)",
