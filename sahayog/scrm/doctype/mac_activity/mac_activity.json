@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "date",
+  "employee",
   "branch",
   "branch_name",
   "branch_code",
@@ -31,6 +32,13 @@
    "fieldname": "date",
    "fieldtype": "Date",
    "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
    "reqd": 1
   },
   {

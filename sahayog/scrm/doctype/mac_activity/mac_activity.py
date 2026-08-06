@@ -51,6 +51,44 @@ def get_dashboard_data():
 		"is_admin": is_admin
 	}
 
+@frappe.whitelist(allow_guest=True)
+def get_branch_details(branch):
+	if not branch:
+		return {}
+	branch_doc = frappe.get_doc("Sahayog Branch", branch)
+	return {
+		"branch": branch_doc.branch,
+		"branch_code": branch_doc.branch_code or branch_doc.sol_id,
+		"zone": branch_doc.zone,
+		"region": branch_doc.region
+	}
+
+@frappe.whitelist(allow_guest=True)
+def get_employee_details(employee):
+	if not employee:
+		return {}
+	emp = frappe.get_doc("Employee", employee)
+	branch_details = {}
+	if emp.sahayog_branch:
+		branch_details = get_branch_details(emp.sahayog_branch)
+	return {
+		"employee_id": emp.name,
+		"employee_name": emp.employee_name,
+		"sahayog_branch": emp.sahayog_branch,
+		"branch_details": branch_details
+	}
+
+@frappe.whitelist()
+def get_logged_in_employee_details():
+	user = frappe.session.user
+	if user == "Administrator":
+		return {}
+	employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	if not employee:
+		return {}
+	return get_employee_details(employee)
+
+
 
 
 
