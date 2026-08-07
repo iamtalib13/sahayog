@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:MAC-{YYYY}-{MM}-{DD}-{###}",
- "creation": "2026-08-04 17:25:00.000000",
+ "creation": "2026-08-04 17:25:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -21,6 +21,7 @@
   "target_segment",
   "location_place",
   "activity_type",
+  "activity_image",
   "column_break_financials",
   "paid_unpaid",
   "estimated_cost",
@@ -32,12 +33,14 @@
   {
    "fieldname": "date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Date",
    "reqd": 1
   },
   {
    "fieldname": "employee",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Employee",
    "options": "Employee",
    "reqd": 1
@@ -51,6 +54,7 @@
   {
    "fieldname": "branch",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Branch (SOL ID)",
    "options": "Sahayog Branch",
    "reqd": 1
@@ -90,8 +94,9 @@
   {
    "fieldname": "branch_category",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Branch Category",
-   "options": "\nDist\nTAL",
+   "options": "\nDistrict\nTaluka",
    "reqd": 1
   },
   {
@@ -103,7 +108,7 @@
    "fieldname": "product_focus",
    "fieldtype": "Select",
    "label": "Product Focus",
-   "options": "\nSMBG\nDDS\nCASA\nTASC\nFDs\nAll Products",
+   "options": "\nSMBG\nDDS\nCASA\nTASC\nFD\nAll Products",
    "reqd": 1
   },
   {
@@ -138,38 +143,44 @@
    "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "estimated_cost",
    "fieldtype": "Currency",
-   "label": "Estimated Cost",
-   "default": "0"
+   "label": "Estimated Cost"
   },
   {
+   "default": "0",
    "fieldname": "units_accounts",
    "fieldtype": "Int",
-   "label": "Units (Accounts)",
-   "default": "0"
+   "label": "Units (Accounts)"
   },
   {
+   "default": "Done",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
    "options": "\nDone\nCancelled",
-   "default": "Done",
    "reqd": 1
   },
   {
    "fieldname": "remark",
    "fieldtype": "Small Text",
    "label": "Remark (Mandatory if Cancelled)"
+  },
+  {
+   "fieldname": "activity_image",
+   "fieldtype": "Attach",
+   "label": "Activity Image"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "modified": "2026-08-04 17:25:00.000000",
+ "links": [],
+ "modified": "2026-08-06 17:27:35.621596",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "MAC Activity",
- "naming_rule": "Expression",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -187,8 +198,8 @@
   {
    "create": 1,
    "read": 1,
-   "write": 1,
-   "role": "All"
+   "role": "All",
+   "write": 1
   }
  ],
  "row_format": "Dynamic",
