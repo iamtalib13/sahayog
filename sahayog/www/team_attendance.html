@@ -2824,7 +2824,7 @@
                 >
                   <div>
                     <label>From Date</label>
-                    <input type="date" id="fromDate" class="member-select" />
+                    <input type="date" id="fromDate" class="member-select" onchange="onLeaveDateChanged()" />
                   </div>
                   <div>
                     <label>To Date</label>
@@ -5438,8 +5438,13 @@
         const chk = document.getElementById("halfDayChk");
         const toDate = document.getElementById("toDate");
         toDate.disabled = chk.checked;
-        if (chk.checked) {
-          toDate.value = document.getElementById("fromDate").value;
+        onLeaveDateChanged();
+      }
+
+      function onLeaveDateChanged() {
+        if (document.getElementById("halfDayChk").checked) {
+          document.getElementById("toDate").value =
+            document.getElementById("fromDate").value;
         }
       }
 
@@ -5455,7 +5460,17 @@
         const reason = document.getElementById("leaveReason").value;
         const half_day = document.getElementById("halfDayChk").checked;
 
-        if (!employee || !leave_type || !from_date || !to_date) {
+        if (!employee || !leave_type || !from_date) {
+          showToast("Please fill all required fields");
+          return;
+        }
+
+        // Half day applies to a single day only
+        if (half_day) {
+          to_date = from_date;
+        }
+
+        if (!to_date) {
           showToast("Please fill all required fields");
           return;
         }
@@ -5463,11 +5478,6 @@
         if (new Date(to_date) < new Date(from_date)) {
           showToast("To date cannot be before from date!");
           return;
-        }
-
-        // Half day applies to a single day only
-        if (half_day) {
-          to_date = from_date;
         }
 
         const res = await callAPI(
