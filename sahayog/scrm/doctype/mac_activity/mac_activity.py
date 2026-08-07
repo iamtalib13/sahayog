@@ -13,60 +13,70 @@ class MACActivity(Document):
 		if self.paid_unpaid == "Unpaid":
 			self.estimated_cost = 0
 
+@frappe.whitelist()
 def ensure_qr_code():
-	file_path = frappe.get_site_path("public", "files", "mac_activity_qr.png")
-	if not os.path.exists(file_path):
-		# Create directory if it doesn't exist
-		os.makedirs(os.path.dirname(file_path), exist_ok=True)
-		
-		# Generate QR pointing to the site's own domain
-		site_url = frappe.utils.get_url()
-		qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={site_url}/mac-activity"
-		
-		try:
-			response = requests.get(qr_url, timeout=15)
-			if response.status_code == 200:
-				with open(file_path, "wb") as f:
-					f.write(response.content)
-		except Exception as e:
-			frappe.log_error(message=str(e), title="MAC QR Generation Failed")
+    file_path = frappe.get_site_path("public", "files", "mac_activity_qr.png")
+    if not os.path.exists(file_path):
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        # Generate QR pointing to MAC Activity dashboard URL
+        try:
+            site_url = frappe.utils.get_url()
+            qr_data = f"{site_url}/mac-activity"
+            import qrcode
+            qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(file_path, format="PNG")
+        except Exception as e:
+            frappe.log_error(message=str(e), title="MAC QR Generation Failed")
 
 @frappe.whitelist()
 def get_dashboard_data():
-	frappe.enqueue("sahayog.scrm.doctype.mac_activity.mac_activity.ensure_qr_code", queue="short")
-	user = frappe.session.user
-	is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
+    user = frappe.session.user
+    is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
+    filters = {}
+    if not is_admin:
+        filters["owner"] = user
+    records = frappe.get_all(
+        "MAC Activity",
+        filters=filters,
+        fields=[
+            "name",
+            "date",
+            "employee",
+            "employee_name",
+            "branch_name",
+            "product_focus",
+            "estimated_cost",
+            "units_accounts",
+            "status",
+            "creation",
+        ],
+        order_by="creation desc",
+        limit=50,
+    )
 
-	filters = {}
-	if not is_admin:
-		filters["owner"] = user
+    # Stats count
+    total_activities = len(records)
+    total_cost = sum(float(r.estimated_cost or 0) for r in records)
+    total_units = sum(int(r.units_accounts or 0) for r in records)
+    done_count = sum(1 for r in records if r.status == "Done")
+    cancelled_count = sum(1 for r in records if r.status == "Cancelled")
 
-	records = frappe.get_all(
-		"MAC Activity",
-		filters=filters,
-		fields=["name", "date", "employee", "employee_name", "branch_name", "product_focus", "estimated_cost", "units_accounts", "status", "creation"],
-		order_by="creation desc",
-		limit=50
-	)
-
-	# Stats count
-	total_activities = len(records)
-	total_cost = sum(float(r.estimated_cost or 0) for r in records)
-	total_units = sum(int(r.units_accounts or 0) for r in records)
-	done_count = sum(1 for r in records if r.status == "Done")
-	cancelled_count = sum(1 for r in records if r.status == "Cancelled")
-
-	return {
-		"records": records,
-		"stats": {
-			"total_activities": total_activities,
-			"total_cost": total_cost,
-			"total_units": total_units,
-			"done_count": done_count,
-			"cancelled_count": cancelled_count
-		},
-		"is_admin": is_admin
-	}
+    return {
+        "records": records,
+        "stats": {
+            "total_activities": total_activities,
+            "total_cost": total_cost,
+            "total_units": total_units,
+            "done_count": done_count,
+            "cancelled_count": cancelled_count,
+        },
+        "is_admin": is_admin,
+    }
 
 @frappe.whitelist(allow_guest=True)
 def get_branch_details(branch):
