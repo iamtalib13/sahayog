@@ -41,7 +41,7 @@ frappe.ui.form.on("Agent", {
       frm.add_custom_button(__("Allocate"), () => {
         frappe.confirm(__("Are you sure you want to request allocation?"), () => {
           frm.call({
-            method: "get_branch_managers",
+            method: "sahayog.agent_and_bdo.doctype.agent.agent.get_branch_managers",
             args: {
               branch_code: frm.doc.branch_code,
             },
@@ -198,7 +198,10 @@ frappe.ui.form.on("Agent", {
     }
 
     try {
-      const emp = await frappe.xcall("get_employee_info", { employee: employee });
+      const emp = await frappe.xcall(
+        "sahayog.agent_and_bdo.doctype.agent.agent.get_employee_info",
+        { employee: employee }
+      );
       if (!emp) {
         frm.set_intro(render_error_intro_html(__("Employee details not found.")));
         return;
