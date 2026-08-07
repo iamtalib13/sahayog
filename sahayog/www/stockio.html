@@ -12,6 +12,8 @@
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 />
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- Premium UI Styles for StockIO -->
 <style>
@@ -2476,14 +2478,103 @@
           <i class="fas fa-plus"></i>
           <span>Create</span>
         </button>
-        <button
-          class="btn-view-toggle"
+        <!-- Download Format Picker -->
+        <div
           v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
-          @click="downloadCSV()"
-          title="Download CSV"
+          style="position: relative;"
         >
-          <i class="fas fa-download"></i>
-        </button>
+          <button
+            class="btn-view-toggle"
+            @click.stop="showDownloadPopup = !showDownloadPopup"
+            title="Download"
+          >
+            <i class="fas fa-download"></i>
+          </button>
+
+          <!-- Format Picker Popup -->
+          <div
+            v-if="showDownloadPopup"
+            @click.stop
+            style="
+              position: absolute;
+              top: calc(100% + 12px);
+              right: 0;
+              width: 200px;
+              background: var(--bg-surface);
+              border: 1px solid var(--border-color);
+              border-radius: 12px;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
+              z-index: 2000;
+              overflow: hidden;
+              animation: whatsappPop 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
+            "
+          >
+            <!-- Header -->
+            <div style="
+              background: #12a7a7;
+              color: #fff;
+              padding: 10px 14px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 13px;
+              font-weight: 700;
+            ">
+              <i class="fas fa-file-export" style="font-size: 12px;"></i>
+              Export As
+              <i class="fas fa-times" @click.stop="showDownloadPopup = false" style="margin-left: auto; cursor: pointer; opacity: 0.8;"></i>
+            </div>
+            <!-- Options -->
+            <div style="padding: 10px;display:flex;flex-direction:column;gap:8px;">
+              <button
+                @click.stop="downloadCSV('csv'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(69,231,231,0.08);
+                  border: 1.5px solid rgba(69,231,231,0.35);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(69,231,231,0.18)'"
+                onmouseout="this.style.background='rgba(69,231,231,0.08)'"
+              >
+                <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
+                CSV (.csv)
+              </button>
+              <button
+                @click.stop="downloadCSV('xlsx'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(16,185,129,0.08);
+                  border: 1.5px solid rgba(16,185,129,0.3);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(16,185,129,0.18)'"
+                onmouseout="this.style.background='rgba(16,185,129,0.08)'"
+              >
+                <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
+                Excel (.xlsx)
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -12732,6 +12823,7 @@
         "Storage", "Vendor", "Warranty start date", "Warranty end date", "Make"
       ],
       showFilterPopup: false,
+      showDownloadPopup: false,
       activeFilterKey: null,
       invoiceNumbers: [],
       filterForm: {
@@ -18961,41 +19053,59 @@
           }
         }
       },
-      downloadCSV() {
+      downloadCSV(format = 'csv') {
         if (!this.filteredRows || this.filteredRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
 
-        let headers, keys, filename;
+        let headers, keys, baseName;
 
         if (this.activeItem === 'Asset Master') {
-          headers = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
-          keys    = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
-          filename = `Asset_Master_${new Date().toISOString().slice(0,10)}.csv`;
+          headers  = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys     = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
         } else {
-          headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-          keys    = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
-          filename = `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`;
+          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
+          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          baseName = `Branch_Stock_${new Date().toISOString().slice(0,10)}`;
         }
 
-        let csvContent = headers.join(",") + "\r\n";
-        this.filteredRows.forEach(row => {
-          const rowData = keys.map(key => {
-            const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
-            return '"' + val.replace(/"/g, '""') + '"';
-          });
-          csvContent += rowData.join(",") + "\r\n";
-        });
+        // Build row data array
+        const rows = this.filteredRows.map(row =>
+          keys.map(key => (row[key] !== undefined && row[key] !== null ? row[key] : ""))
+        );
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        if (format === 'xlsx') {
+          // Excel export via SheetJS
+          if (typeof XLSX === 'undefined') {
+            frappe.msgprint("Excel library not loaded. Please refresh and try again.");
+            return;
+          }
+          const wsData = [headers, ...rows];
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          // Auto column widths
+          ws['!cols'] = headers.map((h, i) => ({
+            wch: Math.max(h.length, ...rows.map(r => String(r[i] || '').length), 10)
+          }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, this.activeItem || 'Sheet1');
+          XLSX.writeFile(wb, baseName + '.xlsx');
+        } else {
+          // CSV export
+          let csvContent = headers.join(",") + "\r\n";
+          rows.forEach(rowArr => {
+            csvContent += rowArr.map(val => '"' + String(val).replace(/"/g, '""') + '"').join(",") + "\r\n";
+          });
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url  = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.setAttribute("href", url);
+          link.setAttribute("download", baseName + '.csv');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       },
       async toggleRestrictInward() {
         try {
