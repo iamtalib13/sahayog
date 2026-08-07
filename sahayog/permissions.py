@@ -348,7 +348,7 @@ def get_loan_application_permission(user, doctype=None):
         user = frappe.session.user
 
     user_roles = frappe.get_roles(user)
-    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles:
+    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles or "CPC Loan User" in user_roles:
         return ""
 
     emp = frappe.db.get_value("Employee", {"user_id": user}, ["name", "sol_id"], as_dict=True)
@@ -372,7 +372,7 @@ def has_loan_application_permission(doc, ptype, user=None):
         user = frappe.session.user
 
     user_roles = frappe.get_roles(user)
-    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles:
+    if "Administrator" in user_roles or "System Manager" in user_roles or "Credit Loan User" in user_roles or "CPC Loan User" in user_roles:
         return True
 
     if not doc:
