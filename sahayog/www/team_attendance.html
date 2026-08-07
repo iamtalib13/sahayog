@@ -2831,6 +2831,24 @@
                     <input type="date" id="toDate" class="member-select" />
                   </div>
                 </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 10px;
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    id="halfDayChk"
+                    style="width: 16px; height: 16px"
+                    onchange="toggleHalfDay()"
+                  />
+                  <label style="margin-bottom: 0; cursor: pointer"
+                    >Half Day</label
+                  >
+                </div>
                 <div style="margin-bottom: 15px">
                   <label>Reason</label>
                   <textarea
@@ -5410,7 +5428,19 @@
         // Set dynamic date safeguard rules
         document.getElementById("fromDate").min = todayKey;
         document.getElementById("toDate").min = todayKey;
+        const halfChk = document.getElementById("halfDayChk");
+        halfChk.checked = false;
+        document.getElementById("toDate").disabled = false;
         document.getElementById("leaveModal").style.display = "flex";
+      }
+
+      function toggleHalfDay() {
+        const chk = document.getElementById("halfDayChk");
+        const toDate = document.getElementById("toDate");
+        toDate.disabled = chk.checked;
+        if (chk.checked) {
+          toDate.value = document.getElementById("fromDate").value;
+        }
       }
 
       function closeLeaveModal() {
@@ -5421,8 +5451,9 @@
         const employee = document.getElementById("leaveEmpSel").value;
         const leave_type = document.getElementById("leaveTypeSel").value;
         const from_date = document.getElementById("fromDate").value;
-        const to_date = document.getElementById("toDate").value;
+        let to_date = document.getElementById("toDate").value;
         const reason = document.getElementById("leaveReason").value;
+        const half_day = document.getElementById("halfDayChk").checked;
 
         if (!employee || !leave_type || !from_date || !to_date) {
           showToast("Please fill all required fields");
@@ -5434,6 +5465,11 @@
           return;
         }
 
+        // Half day applies to a single day only
+        if (half_day) {
+          to_date = from_date;
+        }
+
         const res = await callAPI(
           "apply_leave",
           {
@@ -5442,6 +5478,7 @@
             from_date,
             to_date,
             reason,
+            half_day: half_day,
             force: force,
           },
           "leave",
