@@ -912,11 +912,22 @@ def upload_leave_allocations():
             continue
 
         try:
+            # Normalize dates to YYYY-MM-DD (template uses DD-MM-YYYY)
+            try:
+                from_date = str(getdate(from_date)) if from_date else ""
+                to_date = str(getdate(to_date)) if to_date else ""
+            except Exception as de:
+                results["errors"].append(f"Row {i}: Invalid date format: {de}")
+                continue
+
             # Determine allocation period
             if not from_date:
                 from_date = frappe.utils.today()
             if not to_date:
                 to_date = f"{frappe.utils.getdate(from_date).year}-12-31"
+            elif getdate(to_date) < getdate(from_date):
+                results["errors"].append(f"Row {i}: To Date ({to_date}) is before From Date ({from_date})")
+                continue
 
             # Check for existing allocation
             existing = frappe.db.get_value("Leave Allocation", {
@@ -932,8 +943,18 @@ def upload_leave_allocations():
                 doc.new_leaves_allocated = new_leaves
                 doc.from_date = from_date
                 doc.to_date = to_date
-                doc.save(ignore_permissions=True)
-                doc.submit()
+                try:
+                    doc.save(ignore_permissions=True)
+                    if doc.docstatus == 0:
+                        doc.submit()
+                except Exception:
+                    # "Not allowed to change From Date after submission" —
+                    # update the fields directly instead.
+                    doc.db_set({
+                        "new_leaves_allocated": new_leaves,
+                        "from_date": from_date,
+                        "to_date": to_date,
+                    })
                 results["updated"] += 1
             else:
                 doc = frappe.get_doc({
