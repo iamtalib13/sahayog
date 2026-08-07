@@ -212,6 +212,27 @@
         background: #ddd;
         border-radius: 4px;
       }
+
+      /* Independent panel scrolling (Gmail/Outlook style) */
+      .main-grid > .card {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .main-grid .emp-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+      }
+      .main-grid .cal-panel {
+        overflow-y: auto;
+      }
+      .main-grid #hrDashboardContent {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+      }
       .emp-row {
         display: flex;
         align-items: center;
@@ -1007,6 +1028,21 @@
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
+          height: auto !important;
+        }
+        .main-grid > .card {
+          display: block;
+        }
+        .main-grid .emp-list {
+          flex: none;
+          max-height: 480px;
+        }
+        .main-grid .cal-panel {
+          overflow-y: visible;
+        }
+        .main-grid #hrDashboardContent {
+          flex: none;
+          overflow-y: visible;
         }
         .stats-row {
           grid-template-columns: repeat(2, 1fr);
@@ -4220,6 +4256,7 @@
           if (hrDash) hrDash.style.display = "block";
           loadPayrollDashboard();
         }
+        fitMainGridHeight();
       }
 
       function switchSubTab(subTab) {
@@ -4574,6 +4611,19 @@
       }
 
       let isFirstLoad = true;
+
+      function fitMainGridHeight() {
+        const grid = document.querySelector(".main-grid");
+        if (!grid) return;
+        if (window.innerWidth <= 900) {
+          grid.style.height = "";
+          return;
+        }
+        const rect = grid.getBoundingClientRect();
+        const h = window.innerHeight - rect.top - 10;
+        if (h > 300) grid.style.height = h + "px";
+      }
+
       function updateTabVisibility() {
         const attendanceTab = document.getElementById("tabAttendance");
         const leaveTab = document.getElementById("tabLeaveRequests");
@@ -4646,6 +4696,7 @@
           if (hrTab) hrTab.style.display = "none";
           if (hrFilters) hrFilters.style.display = "none";
         }
+        fitMainGridHeight();
       }
 
       function populateAllFilters() {
@@ -7027,6 +7078,8 @@
           console.error(e);
         }
       }
+
+      window.addEventListener("resize", fitMainGridHeight);
 
       fetchTeamData();
     </script>
