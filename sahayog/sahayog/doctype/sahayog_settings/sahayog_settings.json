@@ -20,10 +20,6 @@
   "section_break_onti",
   "wh_dept_map",
   "branch_access",
-  "agent_setting_tab",
-  "agent_automation_days",
-  "create_agents",
-  "column_break_wzyr",
   "email_tab",
   "send",
   "petty_cash_management_tab",
@@ -74,25 +70,6 @@
    "fieldname": "wh_dept_map",
    "fieldtype": "Table",
    "options": "Default Warehouse"
-  },
-  {
-   "fieldname": "agent_setting_tab",
-   "fieldtype": "Tab Break",
-   "label": "Agent Setting"
-  },
-  {
-   "fieldname": "agent_automation_days",
-   "fieldtype": "Data",
-   "label": "Agent Automation Days"
-  },
-  {
-   "fieldname": "column_break_wzyr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "create_agents",
-   "fieldtype": "Button",
-   "label": "Create Agents"
   },
   {
    "fieldname": "email_tab",
@@ -178,7 +155,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-04 17:38:57.432048",
+ "modified": "2026-08-07 12:48:30.000000",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
