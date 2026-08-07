@@ -2476,6 +2476,14 @@
           <i class="fas fa-plus"></i>
           <span>Create</span>
         </button>
+        <button
+          class="btn-view-toggle"
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          @click="downloadCSV()"
+          title="Download CSV"
+        >
+          <i class="fas fa-download"></i>
+        </button>
       </div>
     </header>
 
@@ -18958,10 +18966,20 @@
           frappe.msgprint("No data available to download");
           return;
         }
-        const headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-        const keys = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
-        let csvContent = "";
-        csvContent += headers.join(",") + "\r\n";
+
+        let headers, keys, filename;
+
+        if (this.activeItem === 'Asset Master') {
+          headers = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys    = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          filename = `Asset_Master_${new Date().toISOString().slice(0,10)}.csv`;
+        } else {
+          headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
+          keys    = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          filename = `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`;
+        }
+
+        let csvContent = headers.join(",") + "\r\n";
         this.filteredRows.forEach(row => {
           const rowData = keys.map(key => {
             const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
@@ -18969,11 +18987,12 @@
           });
           csvContent += rowData.join(",") + "\r\n";
         });
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
+        const url  = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
-        link.setAttribute("download", `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
