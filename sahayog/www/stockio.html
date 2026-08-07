@@ -18002,8 +18002,9 @@
         }
       },
       async submitInward() {
-        // Validation
-        if (!this.inwardForm.supplier) {
+        // Validation — accept either a resolved supplier ID or a typed display name
+        const typedName = (this.inwardForm.supplier_display || '').trim();
+        if (!this.inwardForm.supplier && !typedName) {
           frappe.msgprint("Supplier is required");
           return;
         }
@@ -18016,23 +18017,31 @@
           return;
         }
 
-        // Check if supplier exists in the list, if not create it
-        const supplierExists = this.suppliers.some(s => 
-          s.name === this.inwardForm.supplier || 
-          s.name.toLowerCase() === (this.inwardForm.supplier_display || '').toLowerCase() ||
-          (s.supplier_name && s.supplier_name.toLowerCase() === (this.inwardForm.supplier_display || '').toLowerCase())
-        );
+        // If supplier ID is not yet resolved, try to match typed text against existing suppliers
+        if (!this.inwardForm.supplier && typedName) {
+          const q = typedName.toLowerCase();
+          const match = this.suppliers.find(s =>
+            s.name.toLowerCase() === q ||
+            (s.supplier_name && s.supplier_name.toLowerCase() === q)
+          );
+          if (match) {
+            // Auto-select the matched existing supplier
+            this.inwardForm.supplier = match.name;
+            this.inwardForm.supplier_display = match.name + (match.supplier_name ? ' - ' + match.supplier_name : '');
+          }
+        }
 
-        if (!supplierExists && this.inwardForm.supplier_display && this.inwardForm.supplier_display.trim()) {
+        // If still no supplier ID, create a new supplier automatically
+        if (!this.inwardForm.supplier && typedName) {
           try {
             frappe.show_progress('Creating Supplier', 30, 100, 'Creating supplier...');
-            
+
             const newSupplier = await frappe.call({
               method: 'frappe.client.insert',
               args: {
                 doc: {
                   doctype: 'Supplier',
-                  supplier_name: this.inwardForm.supplier_display.trim(),
+                  supplier_name: typedName,
                   supplier_group: 'All Supplier Groups',
                   supplier_type: 'Company'
                 }
@@ -18040,21 +18049,21 @@
             });
 
             if (newSupplier && newSupplier.message) {
-              // Update the supplier field with the newly created supplier ID
               this.inwardForm.supplier = newSupplier.message.name;
-              
-              // Add to suppliers list for future use
+              this.inwardForm.supplier_display = newSupplier.message.name + ' - ' + newSupplier.message.supplier_name;
+
+              // Add to local suppliers list for future use
               this.suppliers.push({
                 name: newSupplier.message.name,
                 supplier_name: newSupplier.message.supplier_name
               });
-              
+
               frappe.show_alert({
                 message: `Supplier "${newSupplier.message.supplier_name}" created automatically`,
                 indicator: 'green'
-              }, 2);
+              }, 3);
             }
-            
+
             frappe.hide_progress();
           } catch (error) {
             frappe.hide_progress();
