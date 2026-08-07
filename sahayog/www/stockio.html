@@ -3796,11 +3796,11 @@
                     <div class="searchable-select-dropdown" v-if="focusedField === 'asset_location'">
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
+                        @mousedown="createAssetForm.location = loc.sol_id; createAssetForm.location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -4247,12 +4247,12 @@
                             style="width: 100%; z-index: 50"
                           >
                             <div
-                              v-for="loc in locations.filter(l => !item.target_location_display || l.toLowerCase().includes(item.target_location_display.toLowerCase()))"
-                              :key="loc"
+                              v-for="loc in sahayog_branches.filter(b => !item.target_location_display || b.branch.toLowerCase().includes(item.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(item.target_location_display.toLowerCase()))"
+                              :key="loc.name"
                               class="searchable-select-option"
-                              @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                              @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                             >
-                              [[ loc ]]
+                              [[ loc.branch ]] ([[ loc.sol_id ]])
                             </div>
                           </div>
                         </div>
@@ -4769,12 +4769,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !asset.target_location_display || l.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !asset.target_location_display || b.branch.toLowerCase().includes(asset.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="asset.target_location = loc; asset.target_location_display = loc; focusedField = null;"
+                                @mousedown="asset.target_location = loc.sol_id; asset.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -6928,12 +6928,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !detailRecord.location || l.toLowerCase().includes(detailRecord.location.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !detailRecord.location || b.branch.toLowerCase().includes(detailRecord.location.toLowerCase()) || b.sol_id.toLowerCase().includes(detailRecord.location.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="detailRecord.location = loc; focusedField = null;"
+                                @mousedown="detailRecord.location = loc.sol_id; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -9817,11 +9817,11 @@
                     >
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                        @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -14304,8 +14304,11 @@
         const search = (
           this.createAssetForm.location_display || ""
         ).toLowerCase();
-        if (!search) return this.locations;
-        return this.locations.filter((l) => l.toLowerCase().includes(search));
+        if (!search) return this.sahayog_branches;
+        return this.sahayog_branches.filter((b) => 
+          (b.branch && b.branch.toLowerCase().includes(search)) || 
+          (b.sol_id && b.sol_id.toLowerCase().includes(search))
+        );
       },
 
       get filteredSerialNos() {
