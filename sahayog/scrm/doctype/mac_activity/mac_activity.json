@@ -1,0 +1,210 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:MAC-{YYYY}-{MM}-{DD}-{###}",
+ "creation": "2026-08-04 17:25:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "employee",
+  "employee_name",
+  "branch",
+  "branch_name",
+  "branch_code",
+  "column_break_zone",
+  "zone",
+  "region",
+  "branch_category",
+  "section_break_activity",
+  "product_focus",
+  "target_segment",
+  "location_place",
+  "activity_type",
+  "activity_image",
+  "column_break_financials",
+  "paid_unpaid",
+  "estimated_cost",
+  "units_accounts",
+  "status",
+  "remark"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Branch (SOL ID)",
+   "options": "Sahayog Branch",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "branch.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "branch.branch_code",
+   "fieldname": "branch_code",
+   "fieldtype": "Data",
+   "label": "Branch Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zone",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "branch.zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "branch.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
+  },
+  {
+   "fieldname": "branch_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Branch Category",
+   "options": "\nDistrict\nTaluka",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_activity",
+   "fieldtype": "Section Break",
+   "label": "Activity Details"
+  },
+  {
+   "fieldname": "product_focus",
+   "fieldtype": "Select",
+   "label": "Product Focus",
+   "options": "\nSMBG\nDDS\nCASA\nTASC\nFD\nAll Products",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_segment",
+   "fieldtype": "Select",
+   "label": "Target Segment",
+   "options": "\nBusiness\nResidential",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_place",
+   "fieldtype": "Select",
+   "label": "Location / Place",
+   "options": "\nIn Branch\nExternal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "activity_type",
+   "fieldtype": "Data",
+   "label": "Activity Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_financials",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paid_unpaid",
+   "fieldtype": "Select",
+   "label": "Paid / Unpaid",
+   "options": "\nPaid\nUnpaid",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost"
+  },
+  {
+   "default": "0",
+   "fieldname": "units_accounts",
+   "fieldtype": "Int",
+   "label": "Units (Accounts)"
+  },
+  {
+   "default": "Done",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDone\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Small Text",
+   "label": "Remark (Mandatory if Cancelled)"
+  },
+  {
+   "fieldname": "activity_image",
+   "fieldtype": "Attach",
+   "label": "Activity Image"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-06 17:27:35.621596",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "MAC Activity",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "All",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

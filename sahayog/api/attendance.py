@@ -649,6 +649,28 @@ def get_employee_calendar(employee, month, year):
             history[str(curr)] = "On Leave"
             curr = add_days(curr, 1)
 
+    # Add pending (Open) leave requests
+    pending_leaves = frappe.get_all("Leave Application",
+        filters={
+            "employee": employee,
+            "status": "Open",
+            "from_date": ["<=", last_day],
+            "to_date": [">=", first_day]
+        },
+        fields=["from_date", "to_date"]
+    )
+    for pl in pending_leaves:
+        start = getdate(pl.from_date)
+        end = getdate(pl.to_date)
+        curr = start
+        while curr <= end:
+            ds = str(curr)
+            if ds not in history:
+                history[ds] = "Pending Leave"
+            else:
+                history[ds] = f"{history[ds]} (Leave Pending)"
+            curr = add_days(curr, 1)
+
     # Add holiday dates (only if no attendance/leave already marked)
     holiday_info = _get_employee_holiday_dates(employee, first_day, last_day)
     for hd, desc in holiday_info.items():
@@ -853,7 +875,7 @@ def upload_leave_allocations():
     from frappe.utils.xlsxutils import read_xlsx_file_from_attached_file
 
     roles = frappe.get_roles(frappe.session.user)
-    if not any(r in roles for r in ["Administrator"]):
+    if not any(r in roles for r in ["Administrator", "HR Manager", "HR User"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
 
     file_doc = frappe.request.files.get("file")
@@ -959,23 +981,132 @@ def upload_leave_allocations():
             else:
                 doc = frappe.get_doc({
                     "doctype": "Leave Allocation",
+        return {"success": False, "message": _("No file uploaded")}
+
+    try:
+        ext = file_doc.filename.rsplit(".", 1)[-1].lower() if "." in file_doc.filename else ""
+        content = file_doc.read()
+
+        if ext == "csv":
+            rows = read_csv_content(content)
+        elif ext in ("xlsx", "xls"):
+            rows = read_xlsx_file_from_attached_file(frappe.get_doc({
+                "doctype": "File",
+                "file_name": file_doc.filename,
+                "content": content,
+            }))
+        else:
+            return {"success": False, "message": _("Unsupported file format: '{0}'. Please upload CSV or XLSX").format(ext or "unknown")}
+
+        if not rows or len(rows) < 2:
+            return {"success": False, "message": _("File is empty or has no data rows")}
+
+        header = [h.strip().lower() for h in rows[0]]
+        required = ["employee code", "leave type", "new leaves"]
+        missing_cols = [r for r in required if r not in header]
+        if missing_cols:
+            return {"success": False, "message": _("Missing required column(s): {0}. Found columns: {1}").format(", ".join(missing_cols), ", ".join(header))}
+
+        results = {"created": 0, "updated": 0, "errors": []}
+
+        for i, row in enumerate(rows[1:], start=2):
+            if not any(row):
+                continue
+            row_data = {}
+            for j, col in enumerate(header):
+                val = row[j].strip() if j < len(row) and row[j] else ""
+                row_data[col] = val
+
+            emp_code = row_data.get("employee code", "").strip()
+            leave_type = row_data.get("leave type", "").strip()
+            new_leaves = frappe.utils.flt(row_data.get("new leaves", 0))
+            from_date = row_data.get("from date", "").strip()
+            to_date = row_data.get("to date", "").strip()
+
+            if not emp_code or not leave_type or new_leaves <= 0:
+                results["errors"].append(f"Row {i}: Missing required fields (employee code, leave type, valid new leaves)")
+                continue
+
+            if not frappe.db.exists("Employee", emp_code):
+                results["errors"].append(f"Row {i}: Employee '{emp_code}' not found")
+                continue
+
+            if not frappe.db.exists("Leave Type", leave_type):
+                results["errors"].append(f"Row {i}: Leave Type '{leave_type}' not found")
+                continue
+
+            try:
+                # Normalize dates to YYYY-MM-DD (CSV may use DD-MM-YYYY)
+                try:
+                    from_date = str(getdate(from_date)) if from_date else ""
+                    to_date = str(getdate(to_date)) if to_date else ""
+                except Exception as de:
+                    results["errors"].append(f"Row {i}: Invalid date format: {de}")
+                    continue
+
+                # Determine allocation period
+                if not from_date:
+                    from_date = frappe.utils.today()
+                if not to_date:
+                    to_date = f"{frappe.utils.getdate(from_date).year}-12-31"
+                elif getdate(to_date) < getdate(from_date):
+                    results["errors"].append(f"Row {i}: To Date ({to_date}) is before From Date ({from_date})")
+                    continue
+
+                # Check for existing allocation
+                existing = frappe.db.get_value("Leave Allocation", {
                     "employee": emp_code,
                     "leave_type": leave_type,
-                    "from_date": from_date,
-                    "to_date": to_date,
-                    "new_leaves_allocated": new_leaves,
-                    "carry_forward": 0,
-                })
-                doc.insert(ignore_permissions=True)
-                doc.submit()
-                results["created"] += 1
-        except Exception as e:
-            results["errors"].append(f"Row {i}: {str(e)}")
+                    "docstatus": 1,
+                    "from_date": ("<=", to_date),
+                    "to_date": (">=", from_date),
+                }, "name")
 
-    return {
-        "success": True,
-        "message": _("Created: {0}, Updated: {1}, Errors: {2}").format(
-            results["created"], results["updated"], len(results["errors"])
-        ),
-        "details": results,
-    }
+                if existing:
+                    doc = frappe.get_doc("Leave Allocation", existing)
+                    doc.new_leaves_allocated = new_leaves
+                    doc.from_date = from_date
+                    doc.to_date = to_date
+                    try:
+                        doc.save(ignore_permissions=True)
+                        if doc.docstatus == 0:
+                            doc.submit()
+                    except Exception:
+                        # "Not allowed to change From Date after submission" —
+                        # update the fields directly instead.
+                        doc.db_set({
+                            "new_leaves_allocated": new_leaves,
+                            "from_date": from_date,
+                            "to_date": to_date,
+                        })
+                    results["updated"] += 1
+                else:
+                    doc = frappe.get_doc({
+                        "doctype": "Leave Allocation",
+                        "employee": emp_code,
+                        "leave_type": leave_type,
+                        "from_date": from_date,
+                        "to_date": to_date,
+                        "new_leaves_allocated": new_leaves,
+                        "carry_forward": 0,
+                    })
+                    doc.insert(ignore_permissions=True)
+                    doc.submit()
+                    results["created"] += 1
+            except Exception as e:
+                results["errors"].append(f"Row {i}: {str(e)}")
+
+        return {
+            "success": True,
+            "message": _("Created: {0}, Updated: {1}, Errors: {2}").format(
+                results["created"], results["updated"], len(results["errors"])
+            ),
+            "details": results,
+        }
+    except Exception as e:
+        import traceback
+        frappe.log_error(traceback.format_exc(), "Upload Leave Allocations")
+        return {
+            "success": False,
+            "message": _("Unexpected error during upload: {0}").format(str(e)),
+        }

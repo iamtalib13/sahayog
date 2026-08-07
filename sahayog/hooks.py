@@ -228,6 +228,7 @@ permission_query_conditions = {
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.get_permission_query_conditions",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
     "Item": "sahayog.permissions.get_item_permission",
+    "Loan Application": "sahayog.permissions.get_loan_application_permission",
 }
 #
 # has_permission = {
@@ -240,6 +241,7 @@ has_permission = {
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
     "Item": "sahayog.permissions.has_item_permission",
+    "Loan Application": "sahayog.permissions.has_loan_application_permission",
 }
 
 # DocType Class
@@ -655,7 +657,7 @@ fixtures = [
     {"dt": "Task", "filters": [["is_template", "=", "1"]]},
     # Workspaces
     {"doctype": "Workspace", "filters": [
-        ["name", "in", ["Inventory Management"]]]},
+        ["name", "in", ["Inventory Management", "Marketing Activity Dashboard"]]]},
     # Custom HTML Blocks
     {
         "dt": "Custom HTML Block",
@@ -677,6 +679,7 @@ fixtures = [
                     "Finacle Dashboard",
                     "IT Dashboard",
                     "Petty Cash Dashboard Widget",
+                    "MAC Activity",
                 ],
             ]
         ],

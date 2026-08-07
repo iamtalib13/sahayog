@@ -505,6 +505,12 @@
         color: #d97706;
         font-weight: 600;
       }
+      .cal-d.pending-leave-d {
+        background: #f0f9ff;
+        border: 1px dashed #3b82f6;
+        color: #2563eb;
+        font-weight: 600;
+      }
       .cal-d.woff {
         color: #d1d5db;
       }
@@ -4142,6 +4148,39 @@
         corrections: { pending: [], history: [] },
       };
 
+      function setPendingBadge(btnId, count) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        let badge = btn.querySelector(".pending-badge");
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "pending-badge";
+          badge.style.cssText =
+            "display:none;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;line-height:1.4;vertical-align:middle;";
+          btn.appendChild(badge);
+        }
+        badge.textContent = count;
+        badge.style.display = count > 0 ? "inline-block" : "none";
+      }
+
+      async function updatePendingBadges() {
+        if (!isHR()) return;
+        const leaves = await callAPI("get_pending_leaves", {}, "leave");
+        const corr = await callAPI(
+          "get_pending_attendance_corrections",
+          {},
+          "attendance",
+        );
+        setPendingBadge(
+          "tabLeaveRequests",
+          leaves && leaves.pending ? leaves.pending.length : 0,
+        );
+        setPendingBadge(
+          "tabCorrApproval",
+          corr && corr.pending ? corr.pending.length : 0,
+        );
+      }
+
       function switchTab(tab, btn) {
         if (
           (tab === "leave" ||
@@ -4315,6 +4354,10 @@
             pending: data.pending || [],
             history: data.history || [],
           };
+          setPendingBadge(
+            "tabCorrApproval",
+            (data.pending || []).length,
+          );
           renderCorrectionRequests();
         }
       }
@@ -4395,7 +4438,11 @@
         if (res && res.success) {
           showToast(`Request ${action}`);
           loadCorrectionRequests();
-          fetchTeamData(); // Refresh calendar if needed
+          // Do NOT call fetchTeamData() here — it re-renders the employee
+          // directory into #empList (the same container as the approvals list)
+          // and re-shows the search bar / select-all controls, which clobbers
+          // the corrections view. The calendar refreshes automatically when the
+          // user switches to the attendance tab.
         }
       }
 
@@ -4453,6 +4500,10 @@
             pending: res.pending || [],
             history: res.history || [],
           };
+          setPendingBadge(
+            "tabLeaveRequests",
+            (res.pending || []).length,
+          );
           renderLeaveRequests();
         }
       }
@@ -4705,6 +4756,7 @@
             switchTab("hr_dashboard", hrTab);
           }
           populateAllFilters();
+          updatePendingBadges();
         } else {
           isFirstLoad = false;
           if (attendanceTab) attendanceTab.textContent = "Attendance";
@@ -5290,6 +5342,8 @@
             cls += " holiday-d";
           else if (histStatus && histStatus.includes("Pending Correction"))
             cls += " pending-corr-d";
+          else if (histStatus && histStatus.includes("Pending Leave"))
+            cls += " pending-leave-d";
           else if (isWeekend) cls += " woff";
 
           cell.textContent = d;
@@ -5301,6 +5355,8 @@
               Absent: "Absent",
               "Half Day": "Half Day",
               "On Leave": "On Leave",
+              "Pending Correction": "Correction Request Pending",
+              "Pending Leave": "Leave Request Pending",
             };
             cell.title =
               titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
@@ -5379,6 +5435,7 @@
         if (res && res.success) {
           showToast(res.message);
           closeCorrectionModal();
+          loadCalendarHistory();
         }
       }
 
@@ -5508,6 +5565,8 @@
         if (res && res.success) {
           showToast(res.message);
           closeLeaveModal();
+          loadCalendarHistory();
+          loadLeaveBalances(employee);
         } else if (res) {
           showToast("Error while applying leave");
         }
@@ -6011,7 +6070,7 @@
         // Filter reports based on role
         const reports = allReports.filter(r => !r.adminOnly || isAdmin());
 
-        const uploadSection = isAdmin() ? `
+        const uploadSection = isHR() ? `
           <div style="margin-top:24px; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; box-shadow:var(--shadow);">
             <h4 style="font-family:'Syne',sans-serif; font-size:14px; color:var(--brand); margin:0 0 6px;">📥 Upload Leave Allocation</h4>
             <p style="font-size:11px; color:var(--muted); margin:0 0 14px;">Upload CSV/Excel file with columns: <strong>Employee Code, Leave Type, New Leaves, From Date, To Date</strong></p>
@@ -6051,6 +6110,19 @@
         `;
       }
 
+      function extractServerMessage(res) {
+        try {
+          if (res && res._server_messages) {
+            const msgs = JSON.parse(res._server_messages);
+            if (msgs && msgs.length) return JSON.parse(msgs[0]).message;
+          }
+        } catch (e) {}
+        if (res && res.message && typeof res.message === "string")
+          return res.message;
+        if (res && res.exc_type) return "Server Error (" + res.exc_type + ")";
+        return "";
+      }
+
       function uploadLeaveAllocation() {
         const fileInput = document.getElementById("leaveAllocUpload");
         const resultDiv = document.getElementById("leaveAllocResult");
@@ -6063,39 +6135,81 @@
         formData.append("file", fileInput.files[0]);
         resultDiv.innerHTML =
           '<span style="color:var(--muted);">Uploading... ⏳</span>';
-        fetch("/api/method/sahayog.api.attendance.upload_leave_allocations", {
-          method: "POST",
-          body: formData,
-          headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
-        })
-          .then((r) => r.json())
-          .then((res) => {
-            if (res.message && res.message.success) {
-              const d = res.message.details;
-              let html = `<span style="color:#16a34a; font-weight:600;">✅ ${res.message.message}</span>`;
-              if (d.errors && d.errors.length) {
-                html +=
-                  '<div style="margin-top:6px; max-height:150px; overflow-y:auto; font-size:11px; color:#dc2626;">';
-                d.errors.slice(0, 20).forEach((e) => {
-                  html += `<div>⚠ ${e}</div>`;
-                });
-                if (d.errors.length > 20)
-                  html += `<div>...and ${d.errors.length - 20} more errors</div>`;
-                html += "</div>";
-              }
-              resultDiv.innerHTML = html;
-            } else {
-              resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Upload failed: ${JSON.stringify(res)}</span>`;
-            }
+
+        const csrfToken = document.querySelector(
+          'meta[name="csrf-token"]',
+        )?.content;
+
+        try {
+          fetch("/api/method/sahayog.api.attendance.upload_leave_allocations", {
+            method: "POST",
+            body: formData,
+            headers: csrfToken ? { "X-Frappe-CSRF-Token": csrfToken } : {},
           })
-          .catch((err) => {
-            resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
-          });
+            .then(async (r) => {
+              const text = await r.text();
+              let res = null;
+              try {
+                res = JSON.parse(text);
+              } catch (e) {
+                res = null;
+              }
+
+              // 417 → server threw a validation / exception (frappe.throw)
+              if (r.status === 417) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg || "Validation error. Please check the file."}</span>`;
+                return;
+              }
+              // 403 → permission denied
+              if (r.status === 403) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg || "Permission Denied: Access Restricted."}</span>`;
+                return;
+              }
+              if (!r.ok) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Server error (HTTP ${r.status}). ${msg}</span>`;
+                return;
+              }
+
+              if (res && res.message && res.message.success) {
+                const d = res.message.details || {};
+                let html = `<span style="color:#16a34a; font-weight:600;">✅ ${res.message.message}</span>`;
+                if (d.errors && d.errors.length) {
+                  html +=
+                    '<div style="margin-top:6px; max-height:150px; overflow-y:auto; font-size:11px; color:#dc2626;">';
+                  d.errors.slice(0, 20).forEach((e) => {
+                    html += `<div>⚠ ${e}</div>`;
+                  });
+                  if (d.errors.length > 20)
+                    html += `<div>...and ${d.errors.length - 20} more errors</div>`;
+                  html += "</div>";
+                }
+                resultDiv.innerHTML = html;
+              } else if (res && res.message && res.message.success === false) {
+                const msg =
+                  res.message.message || "Upload failed. Please check the file.";
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg}</span>`;
+              } else if (res && res.message && typeof res.message === "string") {
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${res.message}</span>`;
+              } else {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Upload failed: ${msg || JSON.stringify(res)}</span>`;
+              }
+            })
+            .catch((err) => {
+              resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
+            });
+        } catch (err) {
+          resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
+        }
       }
 
       function downloadLeaveAllocTemplate() {
         const csv =
           "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,01-04-2026,31-03-2027\nEMP001,Sick Leave,6,01-04-2026,31-03-2027\nEMP001,Earned Leave,15,01-04-2026,31-03-2027";
+          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,2026-04-01,2027-03-31\nEMP001,Sick Leave,6,2026-04-01,2027-03-31\nEMP001,Earned Leave,15,2026-04-01,2027-03-31";
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);

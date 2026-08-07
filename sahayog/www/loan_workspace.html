@@ -2389,6 +2389,7 @@
 
             userRoles: [],
             userBranchCode: null,
+            userEmployeeCode: null,
             canCreate: false,
             activeFilter: "Role Pending",
             activeView: "cards",
@@ -2572,6 +2573,25 @@
                 return TEMPLATE_USER_ROLES || [];
             },
 
+            async resolveUserEmployeeCode() {
+                try {
+                    const employees = await this.apiCall("frappe.client.get_list", {
+                        doctype: "Employee",
+                        filters: {
+                            user_id: frappe.session && frappe.session.user
+                        },
+                        fields: ["name", "sol_id"],
+                        limit_page_length: 1
+                    });
+
+                    const employee = Array.isArray(employees) ? employees[0] : null;
+                    return employee ? employee.name : null;
+                } catch (error) {
+                    console.error("Loan workspace employee lookup failed", error);
+                    return null;
+                }
+            },
+
             async resolveUserBranchCode() {
                 if (!this.userRoles.includes("Branch Loan User")) {
                     return null;
@@ -2599,6 +2619,7 @@
                 window.loanWorkspaceVm = this;
                 this.userRoles = await this.resolveUserRoles();
                 this.userBranchCode = await this.resolveUserBranchCode();
+                this.userEmployeeCode = await this.resolveUserEmployeeCode();
                 this.canCreate = this.userRoles.includes("Branch Loan User");
                 this.applyWorkspaceStateFromUrl();
                 if (!this.calendarMonthCursor) {
@@ -2881,7 +2902,7 @@
                 return this.apiCall("frappe.client.get_list", {
                     doctype: "Loan Application",
                     filters: this.getLoanApplicationFilters(),
-                    fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "modified"],
+                    fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "lead_converter", "modified"],
                     order_by: "modified desc",
                     limit_page_length: 30
                 });
@@ -2982,10 +3003,7 @@
                     filters.status = status;
                 }
 
-                if (this.userRoles.includes("Branch Loan User") && this.userBranchCode) {
-                    filters.branch_code = this.userBranchCode;
-                }
-
+                // If user is Branch Loan User, don't hard-restrict filter in query if they are LC, frappe permissions will handle it
                 return filters;
             },
 
@@ -3021,6 +3039,11 @@
             },
 
             matchesRolePending(application) {
+                // If this application is directly assigned to the logged-in user as LC, show it in Role Pending
+                if (this.userEmployeeCode && application.lead_converter === this.userEmployeeCode) {
+                    return true;
+                }
+
                 if (this.userRoles.includes("Branch Loan User")) {
                     return ["Draft", "Valuation Pending"].includes(application.status);
                 }

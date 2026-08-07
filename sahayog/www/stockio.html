@@ -1874,6 +1874,15 @@
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
             : '') ]]
           </span>
+          <button
+            v-if="activeItem === 'Asset Master' && showDetailView && detailRecord"
+            class="btn-view-toggle"
+            style="margin-left: 8px; width: 32px; height: 32px; font-size: 0.8rem;"
+            title="Edit"
+            @click="isEditing = true"
+          >
+            <i class="fas fa-pencil-alt"></i>
+          </button>
 
           <!-- Inline Approval Flow -->
           <div
@@ -13227,7 +13236,7 @@
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
       showProfileModal: false,
-      showInfoNotAdded: false,
+      showInfoNotAdded: true,
       branchAccessDesignations: ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"],
       profileData: null,
       showCreateItemModal: false,

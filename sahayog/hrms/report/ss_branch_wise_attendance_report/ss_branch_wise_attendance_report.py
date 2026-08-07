@@ -26,7 +26,6 @@ def execute(filters=None):
         {"label": "Total Absent", "fieldname": "absent", "fieldtype": "Int", "width": 110},
         {"label": "Total Half Day", "fieldname": "half_day", "fieldtype": "Int", "width": 110},
         {"label": "Total On Leave", "fieldname": "on_leave", "fieldtype": "Int", "width": 110},
-        {"label": "Work From Home", "fieldname": "work_from_home", "fieldtype": "Int", "width": 120},
         {"label": "Attendance %", "fieldname": "attendance_pct", "fieldtype": "Float", "width": 110, "precision": 1},
     ]
 
@@ -51,7 +50,6 @@ def execute(filters=None):
             SUM(CASE WHEN a.status = 'Absent' THEN 1 ELSE 0 END) AS absent,
             SUM(CASE WHEN a.status = 'Half Day' THEN 1 ELSE 0 END) AS half_day,
             SUM(CASE WHEN a.status = 'On Leave' THEN 1 ELSE 0 END) AS on_leave,
-            SUM(CASE WHEN a.status = 'Work From Home' THEN 1 ELSE 0 END) AS work_from_home,
             ROUND(
                 (SUM(CASE WHEN a.status IN ('Present', 'Work From Home') THEN 1 ELSE 0 END) * 100.0) 
                 / NULLIF(COUNT(a.name), 0), 1
