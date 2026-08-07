@@ -12,6 +12,8 @@
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 />
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- Premium UI Styles for StockIO -->
 <style>
@@ -1436,7 +1438,7 @@
     <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
       <div v-for="field in assetActionFields" :key="field.fieldname" class="form-group" style="margin-top: 16px; position: relative;">
-        <label class="form-label">[[ field.label ]]</label>
+        <label class="form-label">[[ field.label ]] <span v-if="field.optional" style="font-weight: 400; font-size: 0.75rem; color: var(--text-muted);">(Optional)</span></label>
         
         <!-- Searchable Select for Link fields -->
         <div v-if="field.fieldtype === 'Link'" class="searchable-select-wrapper" style="width: 100%;">
@@ -1879,7 +1881,7 @@
             class="btn-view-toggle"
             style="margin-left: 8px; width: 32px; height: 32px; font-size: 0.8rem;"
             title="Edit"
-            @click="isEditing = true"
+            @click="isEditing = true; detailRecord.asset_name = detailRecord.asset_name || ''"
           >
             <i class="fas fa-pencil-alt"></i>
           </button>
@@ -2476,6 +2478,103 @@
           <i class="fas fa-plus"></i>
           <span>Create</span>
         </button>
+        <!-- Download Format Picker -->
+        <div
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          style="position: relative;"
+        >
+          <button
+            class="btn-view-toggle"
+            @click.stop="showDownloadPopup = !showDownloadPopup"
+            title="Download"
+          >
+            <i class="fas fa-download"></i>
+          </button>
+
+          <!-- Format Picker Popup -->
+          <div
+            v-if="showDownloadPopup"
+            @click.stop
+            style="
+              position: absolute;
+              top: calc(100% + 12px);
+              right: 0;
+              width: 200px;
+              background: var(--bg-surface);
+              border: 1px solid var(--border-color);
+              border-radius: 12px;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
+              z-index: 2000;
+              overflow: hidden;
+              animation: whatsappPop 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
+            "
+          >
+            <!-- Header -->
+            <div style="
+              background: #12a7a7;
+              color: #fff;
+              padding: 10px 14px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 13px;
+              font-weight: 700;
+            ">
+              <i class="fas fa-file-export" style="font-size: 12px;"></i>
+              Export As
+              <i class="fas fa-times" @click.stop="showDownloadPopup = false" style="margin-left: auto; cursor: pointer; opacity: 0.8;"></i>
+            </div>
+            <!-- Options -->
+            <div style="padding: 10px;display:flex;flex-direction:column;gap:8px;">
+              <button
+                @click.stop="downloadCSV('csv'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(69,231,231,0.08);
+                  border: 1.5px solid rgba(69,231,231,0.35);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(69,231,231,0.18)'"
+                onmouseout="this.style.background='rgba(69,231,231,0.08)'"
+              >
+                <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
+                CSV (.csv)
+              </button>
+              <button
+                @click.stop="downloadCSV('xlsx'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(16,185,129,0.08);
+                  border: 1.5px solid rgba(16,185,129,0.3);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(16,185,129,0.18)'"
+                onmouseout="this.style.background='rgba(16,185,129,0.08)'"
+              >
+                <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
+                Excel (.xlsx)
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -2937,6 +3036,17 @@
                       placeholder="Search Supplier"
                     />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                      <!-- Create New Supplier Option -->
+                      <div
+                        v-if="inwardForm.supplier_display && inwardForm.supplier_display.trim() && !filteredSuppliers.some(s => s.name.toLowerCase() === inwardForm.supplier_display.toLowerCase() || (s.supplier_name && s.supplier_name.toLowerCase() === inwardForm.supplier_display.toLowerCase()))"
+                        class="searchable-select-option"
+                        style="padding: 10px 12px; font-size: 0.9rem; background: rgba(54, 150, 150, 0.1); border-bottom: 2px solid var(--border-color); font-weight: 700; color: #369696;"
+                        @mousedown="createAndSelectSupplier(inwardForm.supplier_display)"
+                      >
+                        <i class="fas fa-plus-circle" style="margin-right: 8px;"></i> Create New Supplier: "<span style="font-weight: 800;">[[ inwardForm.supplier_display ]]</span>"
+                      </div>
+                      
+                      <!-- Existing Suppliers -->
                       <div
                         v-for="sup in filteredSuppliers"
                         :key="sup.name"
@@ -2945,6 +3055,14 @@
                         @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
                       >
                         [[ sup.name ]] [[ sup.supplier_name ? '- ' + sup.supplier_name : '' ]]
+                      </div>
+                      
+                      <!-- No Results Message -->
+                      <div
+                        v-if="!inwardForm.supplier_display || !inwardForm.supplier_display.trim()"
+                        style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.85rem;"
+                      >
+                        Type to search or create new supplier
                       </div>
                     </div>
                   </div>
@@ -3796,11 +3914,11 @@
                     <div class="searchable-select-dropdown" v-if="focusedField === 'asset_location'">
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
+                        @mousedown="createAssetForm.location = loc.sol_id; createAssetForm.location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -4247,12 +4365,12 @@
                             style="width: 100%; z-index: 50"
                           >
                             <div
-                              v-for="loc in locations.filter(l => !item.target_location_display || l.toLowerCase().includes(item.target_location_display.toLowerCase()))"
-                              :key="loc"
+                              v-for="loc in sahayog_branches.filter(b => !item.target_location_display || b.branch.toLowerCase().includes(item.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(item.target_location_display.toLowerCase()))"
+                              :key="loc.name"
                               class="searchable-select-option"
-                              @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                              @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                             >
-                              [[ loc ]]
+                              [[ loc.branch ]] ([[ loc.sol_id ]])
                             </div>
                           </div>
                         </div>
@@ -4769,12 +4887,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !asset.target_location_display || l.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !asset.target_location_display || b.branch.toLowerCase().includes(asset.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="asset.target_location = loc; asset.target_location_display = loc; focusedField = null;"
+                                @mousedown="asset.target_location = loc.sol_id; asset.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -6928,12 +7046,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !detailRecord.location || l.toLowerCase().includes(detailRecord.location.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !detailRecord.location || b.branch.toLowerCase().includes(detailRecord.location.toLowerCase()) || b.sol_id.toLowerCase().includes(detailRecord.location.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="detailRecord.location = loc; focusedField = null;"
+                                @mousedown="detailRecord.location = loc.sol_id; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -9817,11 +9935,11 @@
                     >
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                        @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -12705,6 +12823,7 @@
         "Storage", "Vendor", "Warranty start date", "Warranty end date", "Make"
       ],
       showFilterPopup: false,
+      showDownloadPopup: false,
       activeFilterKey: null,
       invoiceNumbers: [],
       filterForm: {
@@ -13124,7 +13243,7 @@
             { label: "Action", key: "action", width: 1, type: "button" },
           ],
           detailFields: [
-            { label: "Asset Name", key: "asset_name" },
+            { label: "Asset Name", key: "name" },
             { label: "Serial No", key: "serial_no" },
             { label: "Item Code", key: "item_code" },
             { label: "Category", key: "asset_category" },
@@ -13482,6 +13601,7 @@
         remark: "",
         varient: "",
       },
+      assetSequence: 1,
       movementForm: {
         transaction_date: "",
         purpose: "Transfer",
@@ -14059,10 +14179,28 @@
         let serial = this.createAssetForm.serial_no || '[SERIAL NO]';
         parts.push(serial);
 
+        // Incrementing sequence number
+        const seq = String(this.assetSequence || 1).padStart(3, '0');
+        parts.push(seq);
+
         return {
           parts: parts,
           full_id: parts.join('/')
         };
+      },
+      async fetchAssetSequence() {
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_count",
+            args: {
+              doctype: "Asset",
+            },
+          });
+          this.assetSequence = (res.message || 0) + 1;
+        } catch (e) {
+          console.error("Error fetching asset sequence:", e);
+          this.assetSequence = 1;
+        }
       },
       editAssetId() {
         if (!this.projectedAssetId) return;
@@ -14285,8 +14423,11 @@
         const search = (
           this.createAssetForm.location_display || ""
         ).toLowerCase();
-        if (!search) return this.locations;
-        return this.locations.filter((l) => l.toLowerCase().includes(search));
+        if (!search) return this.sahayog_branches;
+        return this.sahayog_branches.filter((b) => 
+          (b.branch && b.branch.toLowerCase().includes(search)) || 
+          (b.sol_id && b.sol_id.toLowerCase().includes(search))
+        );
       },
 
       get filteredSerialNos() {
@@ -15584,6 +15725,8 @@
             is_existing_asset: true,
             is_composite_asset: false,
           };
+          // Fetch next sequence number
+          this.fetchAssetSequence();
           return;
         }
 
@@ -15852,6 +15995,61 @@
         this.confirmModal.show = false;
         if (onConfirm) {
           await onConfirm();
+        }
+      },
+
+      async createAndSelectSupplier(supplierName) {
+        if (!supplierName || !supplierName.trim()) {
+          frappe.msgprint('Please enter a supplier name');
+          return;
+        }
+
+        try {
+          // Show loading indicator
+          frappe.show_progress('Creating Supplier', 50, 100, 'Please wait...');
+          
+          // Create new supplier
+          const newSupplier = await frappe.call({
+            method: 'frappe.client.insert',
+            args: {
+              doc: {
+                doctype: 'Supplier',
+                supplier_name: supplierName.trim(),
+                supplier_group: 'All Supplier Groups', // Default group
+                supplier_type: 'Company' // Default type
+              }
+            }
+          });
+
+          if (newSupplier && newSupplier.message) {
+            const supplier = newSupplier.message;
+            
+            // Add to suppliers list
+            this.suppliers.push({
+              name: supplier.name,
+              supplier_name: supplier.supplier_name
+            });
+            
+            // Select the newly created supplier
+            this.inwardForm.supplier = supplier.name;
+            this.inwardForm.supplier_display = supplier.name + ' - ' + supplier.supplier_name;
+            this.focusedField = null;
+            
+            frappe.show_alert({
+              message: `Supplier "${supplier.supplier_name}" created successfully`,
+              indicator: 'green'
+            }, 3);
+          }
+          
+          frappe.hide_progress();
+        } catch (error) {
+          frappe.hide_progress();
+          console.error('Error creating supplier:', error);
+          frappe.msgprint({
+            title: 'Error',
+            message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+            indicator: 'red'
+          });
         }
       },
 
@@ -16144,7 +16342,7 @@
           console.log("Debug: Assign clicked for", doc.name);
           this.assetActionTitle = 'Assign Asset';
           this.assetActionFields = [
-              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
           ];
           this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
@@ -16637,6 +16835,27 @@
 
         this.loading = true;
         try {
+          // Check if Asset ID (name) has changed for Asset Master
+          const originalName = this.detailRecord._originalName || this.detailRecord.name;
+          const newName = this.detailRecord.name;
+          
+          if (this.activeItem === "Asset Master" && originalName !== newName) {
+            // Rename the document first
+            const renameRes = await frappe.call({
+              method: "frappe.client.rename_doc",
+              args: {
+                doctype: "Asset",
+                old_name: originalName,
+                new_name: newName,
+              },
+            });
+            if (renameRes.message) {
+              this.detailRecord.name = renameRes.message;
+              this.detailRecord._originalName = renameRes.message;
+            }
+          }
+
+          // Save the document
           const res = await frappe.call({
             method: "frappe.client.save",
             args: {
@@ -16645,6 +16864,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: `${this.activeItem} updated successfully`,
@@ -16654,7 +16874,7 @@
         } catch (e) {
           console.error("Save error:", e);
           frappe.show_alert({
-            message: "Error updating request",
+            message: "Error updating record",
             indicator: "red",
           });
         } finally {
@@ -16714,6 +16934,7 @@
             });
             if (getRes.message) {
               this.detailRecord = getRes.message;
+              this.detailRecord._originalName = getRes.message.name;
             }
 
             let res;
@@ -16862,6 +17083,7 @@
           });
           if (freshRes.message) {
             this.detailRecord = freshRes.message;
+            this.detailRecord._originalName = freshRes.message.name;
           }
           await this.fetchData(this.currentView.doctype);
         } catch (e) {
@@ -17880,8 +18102,9 @@
         }
       },
       async submitInward() {
-        // Validation
-        if (!this.inwardForm.supplier) {
+        // Validation — accept either a resolved supplier ID or a typed display name
+        const typedName = (this.inwardForm.supplier_display || '').trim();
+        if (!this.inwardForm.supplier && !typedName) {
           frappe.msgprint("Supplier is required");
           return;
         }
@@ -17892,6 +18115,66 @@
         ) {
           frappe.msgprint("At least one item is required");
           return;
+        }
+
+        // If supplier ID is not yet resolved, try to match typed text against existing suppliers
+        if (!this.inwardForm.supplier && typedName) {
+          const q = typedName.toLowerCase();
+          const match = this.suppliers.find(s =>
+            s.name.toLowerCase() === q ||
+            (s.supplier_name && s.supplier_name.toLowerCase() === q)
+          );
+          if (match) {
+            // Auto-select the matched existing supplier
+            this.inwardForm.supplier = match.name;
+            this.inwardForm.supplier_display = match.name + (match.supplier_name ? ' - ' + match.supplier_name : '');
+          }
+        }
+
+        // If still no supplier ID, create a new supplier automatically
+        if (!this.inwardForm.supplier && typedName) {
+          try {
+            frappe.show_progress('Creating Supplier', 30, 100, 'Creating supplier...');
+
+            const newSupplier = await frappe.call({
+              method: 'frappe.client.insert',
+              args: {
+                doc: {
+                  doctype: 'Supplier',
+                  supplier_name: typedName,
+                  supplier_group: 'All Supplier Groups',
+                  supplier_type: 'Company'
+                }
+              }
+            });
+
+            if (newSupplier && newSupplier.message) {
+              this.inwardForm.supplier = newSupplier.message.name;
+              this.inwardForm.supplier_display = newSupplier.message.name + ' - ' + newSupplier.message.supplier_name;
+
+              // Add to local suppliers list for future use
+              this.suppliers.push({
+                name: newSupplier.message.name,
+                supplier_name: newSupplier.message.supplier_name
+              });
+
+              frappe.show_alert({
+                message: `Supplier "${newSupplier.message.supplier_name}" created automatically`,
+                indicator: 'green'
+              }, 3);
+            }
+
+            frappe.hide_progress();
+          } catch (error) {
+            frappe.hide_progress();
+            console.error('Error creating supplier:', error);
+            frappe.msgprint({
+              title: 'Supplier Creation Failed',
+              message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+              indicator: 'red'
+            });
+            return;
+          }
         }
 
         this.creatingInward = true;
@@ -18084,6 +18367,7 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+              this.detailRecord._originalName = res.message.name;
 
               // Initialize display fields for movements
               if (this.activeItem === "Movements" && this.detailRecord.assets) {
@@ -18110,10 +18394,12 @@
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
+              this.detailRecord._originalName = row.name;
             }
           } catch (e) {
             console.error("Failed to fetch full record:", e);
             this.detailRecord = row;
+            this.detailRecord._originalName = row.name;
           } finally {
             this.loading = false;
           }
@@ -18264,6 +18550,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingSerialInline = false;
             this.tempSerialNo = '';
             frappe.show_alert({
@@ -18296,6 +18583,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingVarientInline = false;
             this.tempVarient = '';
             frappe.show_alert({
@@ -18377,6 +18665,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: "Serial No updated successfully",
@@ -18409,9 +18698,8 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
           }
-        } catch (e) {
-          console.error("Error reverting Serial No edits:", e);
         } finally {
           this.loading = false;
         }
@@ -18765,30 +19053,59 @@
           }
         }
       },
-      downloadCSV() {
+      downloadCSV(format = 'csv') {
         if (!this.filteredRows || this.filteredRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
-        const headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-        const keys = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
-        let csvContent = "";
-        csvContent += headers.join(",") + "\r\n";
-        this.filteredRows.forEach(row => {
-          const rowData = keys.map(key => {
-            const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
-            return '"' + val.replace(/"/g, '""') + '"';
+
+        let headers, keys, baseName;
+
+        if (this.activeItem === 'Asset Master') {
+          headers  = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys     = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
+        } else {
+          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
+          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          baseName = `Branch_Stock_${new Date().toISOString().slice(0,10)}`;
+        }
+
+        // Build row data array
+        const rows = this.filteredRows.map(row =>
+          keys.map(key => (row[key] !== undefined && row[key] !== null ? row[key] : ""))
+        );
+
+        if (format === 'xlsx') {
+          // Excel export via SheetJS
+          if (typeof XLSX === 'undefined') {
+            frappe.msgprint("Excel library not loaded. Please refresh and try again.");
+            return;
+          }
+          const wsData = [headers, ...rows];
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          // Auto column widths
+          ws['!cols'] = headers.map((h, i) => ({
+            wch: Math.max(h.length, ...rows.map(r => String(r[i] || '').length), 10)
+          }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, this.activeItem || 'Sheet1');
+          XLSX.writeFile(wb, baseName + '.xlsx');
+        } else {
+          // CSV export
+          let csvContent = headers.join(",") + "\r\n";
+          rows.forEach(rowArr => {
+            csvContent += rowArr.map(val => '"' + String(val).replace(/"/g, '""') + '"').join(",") + "\r\n";
           });
-          csvContent += rowData.join(",") + "\r\n";
-        });
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url  = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.setAttribute("href", url);
+          link.setAttribute("download", baseName + '.csv');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       },
       async toggleRestrictInward() {
         try {
