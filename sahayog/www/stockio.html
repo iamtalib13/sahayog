@@ -2937,6 +2937,17 @@
                       placeholder="Search Supplier"
                     />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                      <!-- Create New Supplier Option -->
+                      <div
+                        v-if="inwardForm.supplier_display && inwardForm.supplier_display.trim() && !filteredSuppliers.some(s => s.name.toLowerCase() === inwardForm.supplier_display.toLowerCase() || (s.supplier_name && s.supplier_name.toLowerCase() === inwardForm.supplier_display.toLowerCase()))"
+                        class="searchable-select-option"
+                        style="padding: 10px 12px; font-size: 0.9rem; background: rgba(54, 150, 150, 0.1); border-bottom: 2px solid var(--border-color); font-weight: 700; color: #369696;"
+                        @mousedown="createAndSelectSupplier(inwardForm.supplier_display)"
+                      >
+                        <i class="fas fa-plus-circle" style="margin-right: 8px;"></i> Create New Supplier: "<span style="font-weight: 800;">[[ inwardForm.supplier_display ]]</span>"
+                      </div>
+                      
+                      <!-- Existing Suppliers -->
                       <div
                         v-for="sup in filteredSuppliers"
                         :key="sup.name"
@@ -2945,6 +2956,14 @@
                         @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
                       >
                         [[ sup.name ]] [[ sup.supplier_name ? '- ' + sup.supplier_name : '' ]]
+                      </div>
+                      
+                      <!-- No Results Message -->
+                      <div
+                        v-if="!inwardForm.supplier_display || !inwardForm.supplier_display.trim()"
+                        style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.85rem;"
+                      >
+                        Type to search or create new supplier
                       </div>
                     </div>
                   </div>
@@ -15879,6 +15898,61 @@
         }
       },
 
+      async createAndSelectSupplier(supplierName) {
+        if (!supplierName || !supplierName.trim()) {
+          frappe.msgprint('Please enter a supplier name');
+          return;
+        }
+
+        try {
+          // Show loading indicator
+          frappe.show_progress('Creating Supplier', 50, 100, 'Please wait...');
+          
+          // Create new supplier
+          const newSupplier = await frappe.call({
+            method: 'frappe.client.insert',
+            args: {
+              doc: {
+                doctype: 'Supplier',
+                supplier_name: supplierName.trim(),
+                supplier_group: 'All Supplier Groups', // Default group
+                supplier_type: 'Company' // Default type
+              }
+            }
+          });
+
+          if (newSupplier && newSupplier.message) {
+            const supplier = newSupplier.message;
+            
+            // Add to suppliers list
+            this.suppliers.push({
+              name: supplier.name,
+              supplier_name: supplier.supplier_name
+            });
+            
+            // Select the newly created supplier
+            this.inwardForm.supplier = supplier.name;
+            this.inwardForm.supplier_display = supplier.name + ' - ' + supplier.supplier_name;
+            this.focusedField = null;
+            
+            frappe.show_alert({
+              message: `Supplier "${supplier.supplier_name}" created successfully`,
+              indicator: 'green'
+            }, 3);
+          }
+          
+          frappe.hide_progress();
+        } catch (error) {
+          frappe.hide_progress();
+          console.error('Error creating supplier:', error);
+          frappe.msgprint({
+            title: 'Error',
+            message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+            indicator: 'red'
+          });
+        }
+      },
+
       async fetchItemGroupsAndDepartments() {
         try {
           const res = await frappe.call({
@@ -17940,6 +18014,58 @@
         ) {
           frappe.msgprint("At least one item is required");
           return;
+        }
+
+        // Check if supplier exists in the list, if not create it
+        const supplierExists = this.suppliers.some(s => 
+          s.name === this.inwardForm.supplier || 
+          s.name.toLowerCase() === (this.inwardForm.supplier_display || '').toLowerCase() ||
+          (s.supplier_name && s.supplier_name.toLowerCase() === (this.inwardForm.supplier_display || '').toLowerCase())
+        );
+
+        if (!supplierExists && this.inwardForm.supplier_display && this.inwardForm.supplier_display.trim()) {
+          try {
+            frappe.show_progress('Creating Supplier', 30, 100, 'Creating supplier...');
+            
+            const newSupplier = await frappe.call({
+              method: 'frappe.client.insert',
+              args: {
+                doc: {
+                  doctype: 'Supplier',
+                  supplier_name: this.inwardForm.supplier_display.trim(),
+                  supplier_group: 'All Supplier Groups',
+                  supplier_type: 'Company'
+                }
+              }
+            });
+
+            if (newSupplier && newSupplier.message) {
+              // Update the supplier field with the newly created supplier ID
+              this.inwardForm.supplier = newSupplier.message.name;
+              
+              // Add to suppliers list for future use
+              this.suppliers.push({
+                name: newSupplier.message.name,
+                supplier_name: newSupplier.message.supplier_name
+              });
+              
+              frappe.show_alert({
+                message: `Supplier "${newSupplier.message.supplier_name}" created automatically`,
+                indicator: 'green'
+              }, 2);
+            }
+            
+            frappe.hide_progress();
+          } catch (error) {
+            frappe.hide_progress();
+            console.error('Error creating supplier:', error);
+            frappe.msgprint({
+              title: 'Supplier Creation Failed',
+              message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+              indicator: 'red'
+            });
+            return;
+          }
         }
 
         this.creatingInward = true;
