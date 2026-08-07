@@ -6048,7 +6048,7 @@
 
       function downloadLeaveAllocTemplate() {
         const csv =
-          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,2026-04-01,2026-03-31\nEMP001,Sick Leave,6,2026-04-01,2026-03-31\nEMP001,Earned Leave,15,2026-04-01,2026-03-31";
+          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,01-04-2026,31-03-2027\nEMP001,Sick Leave,6,01-04-2026,31-03-2027\nEMP001,Earned Leave,15,01-04-2026,31-03-2027";
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
