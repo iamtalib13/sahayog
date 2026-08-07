@@ -1436,7 +1436,7 @@
     <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
       <div v-for="field in assetActionFields" :key="field.fieldname" class="form-group" style="margin-top: 16px; position: relative;">
-        <label class="form-label">[[ field.label ]]</label>
+        <label class="form-label">[[ field.label ]] <span v-if="field.optional" style="font-weight: 400; font-size: 0.75rem; color: var(--text-muted);">(Optional)</span></label>
         
         <!-- Searchable Select for Link fields -->
         <div v-if="field.fieldtype === 'Link'" class="searchable-select-wrapper" style="width: 100%;">
@@ -16168,7 +16168,7 @@
           console.log("Debug: Assign clicked for", doc.name);
           this.assetActionTitle = 'Assign Asset';
           this.assetActionFields = [
-              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
           ];
           this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };

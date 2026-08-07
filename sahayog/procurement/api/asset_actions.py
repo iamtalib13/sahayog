@@ -47,7 +47,7 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
             _("Asset action {0} is not allowed when status is {1}.").format(action, current_status or _("blank"))
         )
 
-    if action in {"assign", "transfer"} and not custodian:
+    if action == "transfer" and not custodian:
         frappe.throw(_("Custodian is required for this action."))
 
     if action in {"assign", "transfer", "return", "mark_available"} and not location:
