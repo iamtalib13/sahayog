@@ -1,6 +1,6 @@
 import frappe
 from calendar import monthrange
-from frappe.utils import getdate, today, add_months, date_diff, flt
+from frappe.utils import getdate, today, add_months, date_diff, flt, add_days
 from frappe import _
 
 
@@ -11,11 +11,22 @@ LEAVE_MONTHLY_RATES = {
 }
 
 
-def _get_or_create_yearly_allocation(emp, lt_name, today_date):
-    """Return active allocation for current year; create one if missing (auto-renewal)."""
-    year_start = getdate(f"{today_date.year}-01-01")
-    year_end = getdate(f"{today_date.year}-12-31")
+def _fiscal_year_bounds(d):
+    """Return (start, end) of the Apr 1 - Mar 31 financial year containing date d."""
+    fy_start = getdate(f"{d.year}-04-01")
+    if d < fy_start:
+        fy_start = getdate(f"{d.year - 1}-04-01")
+    fy_end = getdate(f"{fy_start.year + 1}-03-31")
+    return fy_start, fy_end
 
+
+def _get_or_create_yearly_allocation(emp, lt_name, today_date):
+    """Return active allocation for the current financial year; create one if missing (auto-renewal).
+
+    Uses Apr 1 - Mar 31 financial-year windows. On renewal, unused leaves are carried
+    forward into the new window via HRMS native carry_forward (caps are applied from the
+    Leave Type `maximum_carry_forwarded_leaves` field).
+    """
     alloc = frappe.db.get_value(
         "Leave Allocation",
         {
@@ -31,11 +42,33 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
     if alloc:
         return alloc
 
-    # No active allocation → create one for the whole current year
+    fy_start, fy_end = _fiscal_year_bounds(today_date)
     rate = LEAVE_MONTHLY_RATES[lt_name]
-    from_date = year_start
-    if emp.date_of_joining and emp.date_of_joining > year_start:
-        from_date = emp.date_of_joining
+
+    # Latest expired allocation — determines renewal start and carry forward
+    prev = frappe.db.get_value(
+        "Leave Allocation",
+        {
+            "employee": emp.name,
+            "leave_type": lt_name,
+            "docstatus": 1,
+            "to_date": ("<", today_date),
+        },
+        ["name", "to_date"],
+        order_by="to_date desc",
+        as_dict=1,
+    )
+
+    if prev:
+        # Renewal: start right after the old allocation expired so HRMS's
+        # get_previous_allocation can pick it up and carry forward its unused leaves.
+        from_date = max(add_days(prev.to_date, 1), fy_start)
+        to_date = fy_end
+        carry_forward = 1
+    else:
+        from_date = max(emp.date_of_joining or today_date, fy_start)
+        to_date = fy_end
+        carry_forward = 0
 
     # Set new_leaves_allocated to monthly rate so total_leaves_allocated > 0
     # (HRMS requires total_leaves_allocated > 0 for non-earned leave types)
@@ -44,9 +77,9 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
         "employee": emp.name,
         "leave_type": lt_name,
         "from_date": from_date,
-        "to_date": year_end,
+        "to_date": to_date,
         "new_leaves_allocated": rate,
-        "carry_forward": 0,
+        "carry_forward": carry_forward,
     })
     try:
         doc.insert(ignore_permissions=True)
@@ -63,8 +96,8 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
 def monthly_leave_credit():
     """Run on 1st of each month — credit monthly SL/CL/EL to active support staff.
 
-    Auto-creates the yearly allocation envelope if missing (handles year-end renewal
-    automatically — e.g. Jan 2027 will create fresh Jan-Dec 2027 allocations).
+    Auto-creates the financial-year allocation envelope if missing (handles FY-end renewal
+    automatically — e.g. Apr 2027 will create a fresh Apr 2027 - Mar 2028 allocation).
 
     Skips crediting if the allocation was just created this month (new_leaves_allocated
     already covers the first month's credit).
@@ -76,7 +109,7 @@ def monthly_leave_credit():
         return
 
     first_of_month = today_date
-    year_end = getdate(f"{today_date.year}-12-31")
+    _, year_end = _fiscal_year_bounds(today_date)
 
     employees = frappe.get_all(
         "Employee",
@@ -135,10 +168,10 @@ def auto_setup_new_employee_leave():
 
     Sets new_leaves_allocated to the pro-rata (joining month) or full monthly rate.
     After this, monthly_leave_credit handles everything going forward — including
-    auto-renewal at year end.
+    auto-renewal at the financial year end.
     """
     today_date = getdate(today())
-    year_end = getdate(f"{today_date.year}-12-31")
+    fy_start, fy_end = _fiscal_year_bounds(today_date)
 
     employees = frappe.get_all(
         "Employee",
@@ -158,7 +191,7 @@ def auto_setup_new_employee_leave():
             continue
 
         for lt_name, rate in LEAVE_MONTHLY_RATES.items():
-            from_date = max(emp.date_of_joining, getdate(f"{today_date.year}-01-01"))
+            from_date = max(emp.date_of_joining, fy_start)
 
             # Pro-rata if joining this month, else full monthly rate
             if (
@@ -177,7 +210,7 @@ def auto_setup_new_employee_leave():
                 "employee": emp.name,
                 "leave_type": lt_name,
                 "from_date": from_date,
-                "to_date": year_end,
+                "to_date": fy_end,
                 "new_leaves_allocated": new_leaves,
                 "carry_forward": 0,
             })
