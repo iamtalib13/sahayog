@@ -10,6 +10,7 @@
   "agent_name",
   "phone_number",
   "agent_status",
+  "agent_type",
   "creation_date",
   "column_break_dxwu",
   "branch_code",
@@ -48,7 +49,8 @@
    "fieldname": "phone_number",
    "fieldtype": "Data",
    "label": "Phone Number",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "branch_code",
@@ -81,7 +83,8 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Unallocated\nAllocated\nPending",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "agent_details_section",
@@ -109,9 +112,11 @@
   },
   {
    "fieldname": "agent_status",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Agent Status",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "options": "\nInactive\nActive",
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "requested_by",
@@ -147,13 +152,15 @@
    "fieldname": "auth_id",
    "fieldtype": "Data",
    "label": "Auth ID",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "creation_date",
    "fieldtype": "Date",
    "label": "Creation Date",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "amended_from",
@@ -164,12 +171,19 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "agent_type",
+   "fieldtype": "Select",
+   "label": "Agent Type",
+   "options": "\nRDDSA\nDDDSA",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-16 11:01:33.765437",
+ "modified": "2026-08-07 16:27:22.253226",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

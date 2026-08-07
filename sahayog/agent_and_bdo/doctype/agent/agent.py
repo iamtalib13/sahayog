@@ -18,12 +18,19 @@ class Agent(Document):
 
     def validate(self) -> None:
         """Validate agent state before saving."""
-        if self.status == "Allocated":
-            self.agent_status = "LIVE"
+        self.set_agent_type_from_code()
 
         # If both auth_id and employee are blank, force status to Unallocated
         if not self.auth_id and not self.employee and self.status == "Allocated":
             self.status = "Unallocated"
+
+    def set_agent_type_from_code(self) -> None:
+        """Extract and set agent_type (RDDSA / DDDSA) based on agent_code or document name."""
+        code = str(self.agent_code or self.name or "").upper()
+        if code.startswith("RDDSA"):
+            self.agent_type = "RDDSA"
+        elif code.startswith("DDDSA"):
+            self.agent_type = "DDDSA"
 
     def before_save(self) -> None:
         """Actions to perform before saving document."""
@@ -376,3 +383,16 @@ def has_permission(doc: Any, ptype: str, user: str) -> bool:
         return False
 
     return True
+
+
+@frappe.whitelist()
+def update_existing_agent_types() -> Dict[str, Any]:
+    """Populate agent_type field for all existing Agent records in the database."""
+    frappe.db.sql(
+        "UPDATE `tabAgent` SET agent_type = 'RDDSA' WHERE name LIKE 'RDDSA%%' OR agent_code LIKE 'RDDSA%%'"
+    )
+    frappe.db.sql(
+        "UPDATE `tabAgent` SET agent_type = 'DDDSA' WHERE name LIKE 'DDDSA%%' OR agent_code LIKE 'DDDSA%%'"
+    )
+    frappe.db.commit()
+    return {"status": "success", "message": "Updated agent_type for existing records"}
