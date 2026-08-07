@@ -1879,7 +1879,7 @@
             class="btn-view-toggle"
             style="margin-left: 8px; width: 32px; height: 32px; font-size: 0.8rem;"
             title="Edit"
-            @click="isEditing = true"
+            @click="isEditing = true; detailRecord.asset_name = detailRecord.asset_name || ''"
           >
             <i class="fas fa-pencil-alt"></i>
           </button>
@@ -13124,7 +13124,7 @@
             { label: "Action", key: "action", width: 1, type: "button" },
           ],
           detailFields: [
-            { label: "Asset Name", key: "asset_name" },
+            { label: "Asset Name", key: "name" },
             { label: "Serial No", key: "serial_no" },
             { label: "Item Code", key: "item_code" },
             { label: "Category", key: "asset_category" },
@@ -16637,6 +16637,27 @@
 
         this.loading = true;
         try {
+          // Check if Asset ID (name) has changed for Asset Master
+          const originalName = this.detailRecord._originalName || this.detailRecord.name;
+          const newName = this.detailRecord.name;
+          
+          if (this.activeItem === "Asset Master" && originalName !== newName) {
+            // Rename the document first
+            const renameRes = await frappe.call({
+              method: "frappe.client.rename_doc",
+              args: {
+                doctype: "Asset",
+                old_name: originalName,
+                new_name: newName,
+              },
+            });
+            if (renameRes.message) {
+              this.detailRecord.name = renameRes.message;
+              this.detailRecord._originalName = renameRes.message;
+            }
+          }
+
+          // Save the document
           const res = await frappe.call({
             method: "frappe.client.save",
             args: {
@@ -16645,6 +16666,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: `${this.activeItem} updated successfully`,
@@ -16654,7 +16676,7 @@
         } catch (e) {
           console.error("Save error:", e);
           frappe.show_alert({
-            message: "Error updating request",
+            message: "Error updating record",
             indicator: "red",
           });
         } finally {
@@ -16714,6 +16736,7 @@
             });
             if (getRes.message) {
               this.detailRecord = getRes.message;
+              this.detailRecord._originalName = getRes.message.name;
             }
 
             let res;
@@ -16862,6 +16885,7 @@
           });
           if (freshRes.message) {
             this.detailRecord = freshRes.message;
+            this.detailRecord._originalName = freshRes.message.name;
           }
           await this.fetchData(this.currentView.doctype);
         } catch (e) {
@@ -18084,6 +18108,7 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+              this.detailRecord._originalName = res.message.name;
 
               // Initialize display fields for movements
               if (this.activeItem === "Movements" && this.detailRecord.assets) {
@@ -18110,10 +18135,12 @@
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
+              this.detailRecord._originalName = row.name;
             }
           } catch (e) {
             console.error("Failed to fetch full record:", e);
             this.detailRecord = row;
+            this.detailRecord._originalName = row.name;
           } finally {
             this.loading = false;
           }
@@ -18264,6 +18291,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingSerialInline = false;
             this.tempSerialNo = '';
             frappe.show_alert({
@@ -18296,6 +18324,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingVarientInline = false;
             this.tempVarient = '';
             frappe.show_alert({
@@ -18377,6 +18406,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: "Serial No updated successfully",
@@ -18409,9 +18439,8 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
           }
-        } catch (e) {
-          console.error("Error reverting Serial No edits:", e);
         } finally {
           this.loading = false;
         }
