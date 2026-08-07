@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+  <title>L&D Training Calendar</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    :root {
+      --bg: #f8fafc; --card: #ffffff; --border: #e5e7eb; --border-strong: #d1d5db;
+      --primary: #2563eb; --primary-hover: #1d4ed8; --primary-soft: #eff6ff;
+      --text: #111827; --muted: #6b7280; --muted-2: #9ca3af;
+      --r-card: 10px; --r-btn: 8px; --r-input: 8px; --r-event: 6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45;
+    }
+    .ld-wrap { max-width: none; width: 100%; padding: 12px 18px; }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .ld-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .ld-title-row { display:flex; align-items:center; gap:9px; }
+    .ld-title { font-size:18px; font-weight:600; color:var(--text); letter-spacing:-.01em; }
+    .ld-title-icon { width:30px; height:30px; border-radius:8px; background:var(--primary-soft); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:16px; }
+    .ld-subtitle { font-size:12px; color:var(--muted); margin-top:1px; font-weight:500; }
+    .ld-meta { font-size:11.5px; color:var(--muted-2); }
+    .ld-header-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .ld-role-badge { display:inline-block; border-radius:20px; padding:2px 10px; font-size:11px; font-weight:600; vertical-align:middle; }
+    .badge-admin   { background:#ede9fe; color:#5b21b6; }
+    .badge-trainer { background:#dcfce7; color:#166534; }
+    .badge-viewer  { background:#dbeafe; color:#1d4ed8; }
+    .badge-general { background:#f1f5f9; color:#475569; }
+
+    /* ── Buttons ────────────────────────────────────────── */
+    .ld-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:var(--r-btn); padding:0 14px; height:32px; font-size:13px; font-weight:500; cursor:pointer; background:#fff; color:var(--text); transition:background .15s,border-color .15s,color .15s; }
+    .ld-btn:hover { background:#f9fafb; }
+    .ld-btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .ld-btn-primary:hover { background:var(--primary-hover); color:#fff; }
+    .ld-btn-secondary { background:#f9fafb; }
+    .ld-btn-ghost { border:none; background:none; color:var(--muted); padding:0 10px; }
+    .ld-btn-ghost:hover { background:#f1f5f9; color:var(--text); }
+    .ld-btn-sm { padding:0 10px; height:27px; font-size:12px; }
+    .ld-btn-icon { width:32px; height:32px; padding:0; justify-content:center; }
+
+    /* ── Tabs ───────────────────────────────────────────── */
+    .ld-tabs { display:flex; gap:2px; border-bottom:1.5px solid var(--border); margin-bottom:16px; flex-wrap:wrap; }
+    .ld-tab { display:inline-flex; align-items:center; gap:6px; border:none; background:none; padding:10px 16px; font-size:13px; font-weight:500; color:var(--muted); cursor:pointer; border-bottom:2.5px solid transparent; margin-bottom:-1.5px; transition:color .15s; }
+    .ld-tab:hover { color:var(--text); }
+    .ld-tab.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+    .ld-tab-content { display:none; }
+    .ld-tab-content.active { display:block; }
+
+    /* ── Filter card ────────────────────────────────────── */
+    .ld-filters { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; background:#f8fafc; border:1px solid var(--border); border-radius:var(--r-card); padding:12px 14px; margin-bottom:14px; }
+    .ld-filter-group { display:flex; flex-direction:column; gap:4px; min-width:130px; }
+    .ld-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; }
+    .ld-input { border:1px solid var(--border-strong); border-radius:var(--r-input); padding:6px 10px; font-size:13px; color:var(--text); background:#fff; }
+    .ld-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .ld-input-wrap { position:relative; }
+    .ld-input-wrap .ld-input { padding-left:28px; width:100%; }
+    .ld-input-wrap i { position:absolute; left:9px; top:50%; transform:translateY(-50%); color:var(--muted-2); font-size:12px; }
+
+    /* ── Stats ──────────────────────────────────────────── */
+    .ld-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:16px; }
+    .ld-stat { background:var(--card); border:1px solid var(--border); border-radius:var(--r-card); padding:12px 14px; text-align:center; }
+    .ld-stat-val { font-size:24px; font-weight:700; line-height:1; }
+    .ld-stat-lbl { font-size:11px; color:var(--muted); margin-top:5px; }
+    .c-blue{color:#2563eb} .c-green{color:#16a34a} .c-orange{color:#d97706}
+    .c-purple{color:#7c3aed} .c-gray{color:#6b7280} .c-red{color:#dc2626}
+
+    /* ── Calendar ───────────────────────────────────────── */
+    .ld-cal-nav { display:flex; align-items:center; justify-content:center; gap:6px; margin-bottom:10px; }
+    .ld-cal-head { text-align:center; min-width:0; }
+    .ld-cal-month { font-size:16px; font-weight:700; }
+    .ld-cal-count { font-size:11.5px; color:var(--muted); margin-top:1px; }
+    .ld-summary { display:flex; align-items:center; background:#fff; border:1px solid var(--border); border-radius:var(--r-card); padding:6px 14px; margin-bottom:12px; font-size:12px; color:var(--muted); flex-wrap:wrap; }
+    .ld-summary b { font-weight:600; color:var(--text); margin:0 3px; }
+    .ld-summary .sep { width:1px; height:14px; background:var(--border); margin:0 14px; }
+    .ld-cal-dow-row { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:4px; }
+    .ld-cal-dow { text-align:center; font-size:11px; font-weight:600; color:var(--muted); padding:5px 0; text-transform:uppercase; letter-spacing:.03em; }
+    .ld-cal-body { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .ld-cal-cell { background:var(--card); border:1px solid #e8eaf0; border-radius:var(--r-card); min-height:106px; padding:6px; vertical-align:top; transition:background .12s; }
+    .ld-cal-cell.other-month { background:#fcfcfd; opacity:.55; }
+    .ld-cal-cell.today { border-color:var(--primary); box-shadow:0 0 0 1px var(--primary); }
+    .ld-cal-cell.ld-empty-cell:hover { background:#fafafa; }
+    .ld-cal-date { font-size:13px; font-weight:600; color:#475569; margin-bottom:5px; height:24px; display:flex; align-items:center; }
+    .ld-cal-date .num { display:inline-flex; align-items:center; justify-content:center; min-width:24px; height:24px; border-radius:50%; font-size:16px; font-weight:600; }
+    .ld-cal-cell.today .num { background:var(--primary); color:#fff; font-weight:700; }
+
+    .ld-cal-event { display:block; border-radius:var(--r-event); border-left:3px solid transparent; padding:3px 5px; margin-bottom:3px; cursor:pointer; overflow:hidden; transition:box-shadow .15s,transform .15s,filter .15s; }
+    .ld-cal-event:hover { box-shadow:0 2px 8px rgba(0,0,0,.08); transform:translateY(-1px); filter:brightness(.98); }
+    .ld-cal-event .ev-line { display:flex; align-items:center; gap:4px; font-size:12px; font-weight:600; }
+    .ld-cal-event .ev-line .t { overflow:hidden; text-overflow:ellipsis; }
+    .ld-cal-event .ev-time { display:block; font-size:10px; font-weight:400; opacity:.9; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ld-cal-more { font-size:10.5px; color:var(--primary); cursor:pointer; margin-top:2px; font-weight:500; }
+
+    /* ── Legend ─────────────────────────────────────────── */
+    .ld-legend { display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+    .ld-legend-item { display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted); }
+    .ld-legend-item .dot { width:9px; height:9px; border-radius:50%; }
+
+    /* ── Tooltip ────────────────────────────────────────── */
+    .ld-tooltip { display:none; position:fixed; z-index:1200; background:#111827; color:#f9fafb; border-radius:8px; padding:9px 11px; font-size:11.5px; max-width:260px; box-shadow:0 4px 14px rgba(0,0,0,.18); pointer-events:none; }
+    .ld-tooltip .tt-title { font-weight:600; font-size:12.5px; margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+    .ld-tooltip .tt-row { display:flex; align-items:center; gap:6px; padding:1px 0; }
+    .ld-tooltip .tt-row i { color:#9ca3af; font-size:11px; width:14px; text-align:center; }
+    .ld-tooltip .tt-row span { color:#d1d5db; }
+
+    /* ── Cards / table ──────────────────────────────────── */
+    .ld-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r-card); padding:14px; margin-bottom:10px; }
+    .ld-card-title { font-size:14px; font-weight:600; }
+    .ld-card-meta { font-size:12px; color:var(--muted); margin-top:3px; }
+    .ld-status-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; margin-top:10px; }
+    .ld-status-item { display:flex; align-items:center; gap:6px; font-size:12px; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:5px 8px; cursor:pointer; }
+    .ld-status-item input[type="checkbox"] { width:14px; height:14px; cursor:pointer; accent-color:var(--primary); }
+    .ld-status-item.done { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+    .ld-progress-bar { height:5px; background:var(--border); border-radius:3px; overflow:hidden; margin-top:6px; }
+    .ld-progress-fill { height:100%; border-radius:3px; background:var(--primary); transition:width .3s ease; }
+    .ld-table-wrap { overflow-x:auto; background:var(--card); border:1px solid var(--border); border-radius:var(--r-card); }
+    .ld-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .ld-table th { padding:9px 12px; text-align:left; font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); background:#f9fafb; }
+    .ld-table td { padding:9px 12px; border-bottom:1px solid #f3f4f6; }
+    .ld-table tr:last-child td { border-bottom:none; }
+    .ld-table tr:hover td { background:#f8fafc; }
+    .ld-table tr.clickable { cursor:pointer; }
+
+    /* ── Popup / misc ───────────────────────────────────── */
+    .ld-popup-overlay { display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:999; justify-content:center; align-items:center; }
+    .ld-popup-overlay.open { display:flex; }
+    .ld-popup-box { background:var(--card); border-radius:12px; padding:20px; max-width:560px; width:92%; max-height:90vh; overflow-y:auto; position:relative; box-shadow:0 12px 40px rgba(0,0,0,.18); }
+    .ld-popup-close { position:absolute; top:12px; right:14px; border:none; background:none; font-size:16px; cursor:pointer; color:var(--muted); border-radius:6px; padding:4px 6px; }
+    .ld-popup-close:hover { background:var(--bg); color:var(--text); }
+    .ld-mis-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r-card); padding:20px; margin-bottom:12px; }
+    .ld-empty { text-align:center; padding:40px; color:var(--muted-2); font-size:13px; }
+    .ld-spinner { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:ld-spin .6s linear infinite; }
+    @keyframes ld-spin { to { transform:rotate(360deg); } }
+    .ld-badge { display:inline-block; border-radius:20px; padding:2px 8px; font-size:11px; font-weight:500; }
+    .badge-green{background:#dcfce7;color:#166534} .badge-blue{background:#dbeafe;color:#1d4ed8}
+    .badge-orange{background:#fef3c7;color:#92400e} .badge-gray{background:#f1f5f9;color:#475569}
+
+    @media (max-width:700px) {
+      .ld-cal-cell { min-height:64px; padding:4px; }
+      .ld-cal-cell .ev-time, .ld-cal-cell .ev-loc { display:none; }
+      .ld-cal-event { padding:3px 4px; }
+      .ld-stats { grid-template-columns:repeat(3,1fr); }
+      .ld-title { font-size:17px; }
+    }
+  </style>
+</head>
+<body>
+<div class="ld-wrap">
+
+  <!-- Header -->
+  <div class="ld-header">
+    <div>
+      <div class="ld-title-row">
+        <span class="ld-title-icon"><i class="bi bi-calendar3"></i></span>
+        <h1 class="ld-title">L&amp;D Training Calendar</h1>
+        <span class="ld-role-badge badge-general" id="role-badge">&nbsp;</span>
+      </div>
+      <div class="ld-subtitle" id="ld-subtitle">Monthly training schedule &amp; status dashboard</div>
+      <div class="ld-meta" id="ld-meta">&nbsp;</div>
+    </div>
+    <div class="ld-header-actions">
+      <button class="ld-btn ld-btn-primary" id="btn-new-training" style="display:none"><i class="bi bi-plus-lg"></i> Add Training</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="ld-tabs">
+    <button class="ld-tab active" data-tab="calendar"><i class="bi bi-calendar3"></i> Calendar</button>
+    <button class="ld-tab" data-tab="status"><i class="bi bi-graph-up"></i> Status Overview</button>
+    <button class="ld-tab ld-tab-mis" data-tab="mis" style="display:none"><i class="bi bi-send"></i> MIS Report</button>
+  </div>
+
+  <!-- TAB 1: CALENDAR -->
+  <div class="ld-tab-content active" id="tab-calendar">
+    <div class="ld-filters">
+      <div class="ld-filter-group">
+        <label class="ld-label">Zone</label>
+        <select class="ld-input" id="fil-zone"><option value="">All Zones</option></select>
+      </div>
+      <div class="ld-filter-group">
+        <label class="ld-label">Region</label>
+        <select class="ld-input" id="fil-region"><option value="">All Regions</option></select>
+      </div>
+      <div class="ld-filter-group">
+        <label class="ld-label">District</label>
+        <select class="ld-input" id="fil-district"><option value="">All Districts</option></select>
+      </div>
+      <div class="ld-filter-group">
+        <label class="ld-label">Branch</label>
+        <div class="ld-input-wrap">
+          <i class="bi bi-search"></i>
+          <input class="ld-input" type="text" id="fil-branch" placeholder="Branch code..." />
+        </div>
+      </div>
+      <button class="ld-btn ld-btn-ghost" id="btn-cal-reset"><i class="bi bi-x-circle"></i> Reset</button>
+    </div>
+
+    <div class="ld-cal-nav">
+      <button class="ld-btn ld-btn-icon" id="cal-prev"><i class="bi bi-chevron-left"></i></button>
+      <div class="ld-cal-head">
+        <div class="ld-cal-month" id="cal-month-label"></div>
+        <div class="ld-cal-count" id="cal-total-badge">0 trainings</div>
+      </div>
+      <button class="ld-btn ld-btn-icon" id="cal-next"><i class="bi bi-chevron-right"></i></button>
+    </div>
+
+    <div class="ld-summary" id="ld-summary">
+      <span>Upcoming <b id="sum-upcoming" style="color:#2563eb">0</b></span>
+      <span class="sep"></span>
+      <span>In Progress <b id="sum-progress" style="color:#d97706">0</b></span>
+      <span class="sep"></span>
+      <span>Completed <b id="sum-completed" style="color:#16a34a">0</b></span>
+      <span class="sep"></span>
+      <span>Pending <b id="sum-pending" style="color:#9ca3af">0</b></span>
+    </div>
+
+    <div class="ld-cal-dow-row">
+      <div class="ld-cal-dow">Sun</div><div class="ld-cal-dow">Mon</div>
+      <div class="ld-cal-dow">Tue</div><div class="ld-cal-dow">Wed</div>
+      <div class="ld-cal-dow">Thu</div><div class="ld-cal-dow">Fri</div>
+      <div class="ld-cal-dow">Sat</div>
+    </div>
+    <div class="ld-cal-body" id="cal-body">
+      <div class="ld-empty"><span class="ld-spinner"></span></div>
+    </div>
+
+    <div class="ld-legend">
+      <span class="ld-legend-item"><span class="dot" style="background:#16a34a"></span> Completed</span>
+      <span class="ld-legend-item"><span class="dot" style="background:#d97706"></span> In Progress</span>
+      <span class="ld-legend-item"><span class="dot" style="background:#2563eb"></span> Upcoming</span>
+      <span class="ld-legend-item"><span class="dot" style="background:#9ca3af"></span> Pending</span>
+    </div>
+  </div>
+
+  <!-- TAB 2: STATUS OVERVIEW -->
+  <div class="ld-tab-content" id="tab-status">
+    <div class="ld-filters">
+      <div class="ld-filter-group">
+        <label class="ld-label">Zone</label>
+        <select class="ld-input" id="ov-zone"><option value="">All Zones</option></select>
+      </div>
+      <div class="ld-filter-group">
+        <label class="ld-label">Region</label>
+        <select class="ld-input" id="ov-region"><option value="">All Regions</option></select>
+      </div>
+      <div class="ld-filter-group">
+        <label class="ld-label">District</label>
+        <select class="ld-input" id="ov-district"><option value="">All Districts</option></select>
+      </div>
+      <button class="ld-btn ld-btn-ghost" id="btn-ov-reset"><i class="bi bi-x-circle"></i> Reset</button>
+      <button class="ld-btn ld-btn-secondary" id="btn-ov-refresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+    </div>
+    <div class="ld-stats" id="ov-stats">
+      <div class="ld-empty"><span class="ld-spinner"></span></div>
+    </div>
+    <div class="ld-table-wrap">
+      <table class="ld-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Date</th><th>Training Program</th>
+            <th>Zone</th><th>Region</th><th>District</th>
+            <th>Trainer</th>
+            <th>Delivered</th><th>Attendance</th>
+            <th>Pre</th><th>Post</th><th>Feedback</th><th>Progress</th>
+          </tr>
+        </thead>
+        <tbody id="ov-tbody">
+          <tr><td colspan="13" class="ld-empty"><span class="ld-spinner"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: MIS REPORT -->
+  <div class="ld-tab-content" id="tab-mis">
+    <div class="ld-mis-card">
+      <h3 style="margin-bottom:8px;font-size:15px"><i class="bi bi-file-earmark-bar-graph" style="color:#2563eb"></i> Monthly MIS Report</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+        Send the consolidated monthly training summary directly to MIS HO. L&amp;D Admin validation is the confirm click.
+      </p>
+      <div class="ld-filters" style="margin-bottom:16px">
+        <div class="ld-filter-group">
+          <label class="ld-label">Month</label>
+          <select class="ld-input" id="mis-month">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div class="ld-filter-group">
+          <label class="ld-label">Year</label>
+          <input type="number" class="ld-input" id="mis-year" style="min-width:90px" />
+        </div>
+        <div class="ld-filter-group">
+          <label class="ld-label">Zone (optional)</label>
+          <select class="ld-input" id="mis-zone"><option value="">PAN India</option></select>
+        </div>
+        <button class="ld-btn ld-btn-secondary" id="btn-preview-mis"><i class="bi bi-eye"></i> Preview</button>
+        <button class="ld-btn ld-btn-primary" id="btn-send-mis"><i class="bi bi-send"></i> Send to MIS HO</button>
+      </div>
+      <div id="mis-result"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Popup -->
+<div class="ld-popup-overlay" id="ld-popup">
+  <div class="ld-popup-box">
+    <button class="ld-popup-close" id="popup-close"><i class="bi bi-x-lg"></i></button>
+    <div id="popup-body"></div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="ld-tooltip" id="ld-tooltip"></div>
+
+<script>
+(function () {
+"use strict";
+
+var state = {
+  calMonth: new Date().getMonth() + 1,
+  calYear: new Date().getFullYear(),
+  calEvents: [], geoOptions: { zones: [], regions: [], districts: [] },
+  calFilters: { zone:"", region:"", district:"", branch:"" },
+  ovFilters:  { zone:"", region:"", district:"" }, ovLoaded: false
+};
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function api(method, args) {
+  return new Promise(function(resolve, reject) {
+    var csrf = (document.querySelector('meta[name="csrf-token"]')||{}).content || "";
+    var params = new URLSearchParams();
+    if (args) {
+      Object.keys(args).forEach(function(k) {
+        params.append(k, args[k] === null ? "" : args[k]);
+      });
+    }
+    fetch("/api/method/sahayog.www.ld_dashboard." + method, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-Frappe-CSRF-Token": csrf
+      },
+      body: params.toString()
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.exc) { reject(data.exc); } else { resolve(data.message); }
+    })
+    .catch(reject);
+  });
+}
+function esc(s) { return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function todayIso() { return new Date().toISOString().slice(0,10); }
+function fmtTime(t) {
+  if (!t) return "";
+  var p = String(t).split(":");
+  var h = parseInt(p[0],10), m = p[1] || "00";
+  var ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return h + ":" + m + " " + ap;
+}
+function eventColor(ev) {
+  var s = ev.completion_score || 0;
+  if (ev.docstatus === 2)  return {bg:"#fee2e2",dot:"#dc2626",border:"#dc2626",text:"#b91c1c",status:"Cancelled",icon:"bi-x-circle"};
+  if (s === 5)             return {bg:"#dcfce7",dot:"#16a34a",border:"#16a34a",text:"#166534",status:"Completed",icon:"bi-check-circle-fill"};
+  if (s > 0)               return {bg:"#fde68a",dot:"#d97706",border:"#d97706",text:"#92400e",status:"In Progress",icon:"bi-arrow-repeat"};
+  if (ev.date && ev.date >= todayIso()) return {bg:"#dbeafe",dot:"#2563eb",border:"#2563eb",text:"#1e40af",status:"Upcoming",icon:"bi-play-circle-fill"};
+  return                        {bg:"#f1f5f9",dot:"#9ca3af",border:"#9ca3af",text:"#475569",status:"Pending",icon:"bi-clock"};
+}
+function isoDate(y,m,d) {
+  var dt = new Date(y,m-1,d);
+  return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+}
+function setVal(sel,val) { var el=document.querySelector(sel); if(el&&val) el.value=val; }
+function closePopup() { document.getElementById("ld-popup").classList.remove("open"); }
+
+async function init() {
+  try {
+    state.userInfo   = await api("get_user_role_info");
+    state.geoOptions = await api("get_geo_options");
+    setupRoleUI(); populateGeoDropdowns(); setupTabs(); setupCalendarNav(); setupFilters(); setupTooltip();
+    document.getElementById("btn-new-training").onclick = function() {
+      window.location.href = "/app/meeting/new-meeting-1?ld_training=1";
+    };
+    document.getElementById("popup-close").onclick = closePopup;
+    document.getElementById("ld-popup").onclick = function(e) { if(e.target===document.getElementById("ld-popup")) closePopup(); };
+    await loadCalendar();
+    initMisTab();
+  } catch(e) { console.error("LD init error",e); }
+}
+
+function setupRoleUI() {
+  var u=state.userInfo, sub=document.getElementById("ld-subtitle");
+  var roleBadge=document.getElementById("role-badge");
+  if (u.is_ld_admin) {
+    sub.textContent="Admin View — All zones, full access";
+    roleBadge.textContent="L&D Admin"; roleBadge.className="ld-role-badge badge-admin";
+    document.getElementById("btn-new-training").style.display="inline-flex";
+    document.querySelectorAll(".ld-tab-mis").forEach(function(t){t.style.display="inline-flex";});
+  } else if (u.is_ld_trainer) {
+    sub.textContent="Trainer Dashboard";
+    roleBadge.textContent="Trainer"; roleBadge.className="ld-role-badge badge-trainer";
+    document.getElementById("btn-new-training").style.display="inline-flex";
+  } else if (u.is_ld_viewer) {
+    sub.textContent="Viewer — Read-only training calendar";
+    roleBadge.textContent="L&D Viewer"; roleBadge.className="ld-role-badge badge-viewer";
+  } else {
+    sub.textContent="General view";
+    roleBadge.textContent="General User"; roleBadge.className="ld-role-badge badge-general";
+  }
+  // Auto-scope to the user's geography ONLY for read-only viewers (role-wise dashboards per BRD).
+  var emp=u.employee||{};
+  var isPureViewer = u.is_ld_viewer && !u.is_ld_trainer && !u.is_ld_admin;
+  if(isPureViewer){
+    if(emp.zone)     {state.calFilters.zone=emp.zone;    state.ovFilters.zone=emp.zone;}
+    if(emp.region)   {state.calFilters.region=emp.region;state.ovFilters.region=emp.region;}
+    if(emp.district) {state.calFilters.district=emp.district;state.ovFilters.district=emp.district;}
+  }
+}
+
+function updateMetaLine() {
+  var u=state.userInfo, emp=(u&&u.employee)||{};
+  var zoneLabel = state.calFilters.zone || (emp.zone) || "All Zones";
+  var today = todayIso();
+  var upcoming = state.calEvents.filter(function(e){
+    return (e.date||"") >= today && (e.completion_score||0) < 5 && e.docstatus !== 2;
+  }).length;
+  document.getElementById("ld-meta").textContent = zoneLabel + "  •  " + upcoming + " Upcoming Training" + (upcoming===1?"":"s") + "  •  " + u.user;
+}
+
+function populateGeoDropdowns() {
+  var g=state.geoOptions;
+  [["#fil-zone","#ov-zone","#mis-zone",g.zones],
+   ["#fil-region","#ov-region",null,g.regions],
+   ["#fil-district","#ov-district",null,g.districts]
+  ].forEach(function(row) {
+    var items=row[3];
+    [row[0],row[1],row[2]].filter(Boolean).forEach(function(sel) {
+      var el=document.querySelector(sel); if(!el) return;
+      items.forEach(function(v){var o=document.createElement("option");o.value=v;o.textContent=v;el.appendChild(o);});
+    });
+  });
+  setVal("#fil-zone",state.calFilters.zone); setVal("#fil-region",state.calFilters.region);
+  setVal("#fil-district",state.calFilters.district); setVal("#ov-zone",state.ovFilters.zone);
+  setVal("#ov-region",state.ovFilters.region); setVal("#ov-district",state.ovFilters.district);
+}
+
+function setupTabs() {
+  document.querySelectorAll(".ld-tab").forEach(function(tab) {
+    tab.onclick = function() {
+      document.querySelectorAll(".ld-tab").forEach(function(t){t.classList.remove("active");});
+      document.querySelectorAll(".ld-tab-content").forEach(function(t){t.classList.remove("active");});
+      tab.classList.add("active");
+      document.getElementById("tab-"+tab.dataset.tab).classList.add("active");
+      if(tab.dataset.tab==="status"&&!state.ovLoaded){state.ovLoaded=true;loadStatusOverview();}
+    };
+  });
+}
+
+function setupFilters() {
+  document.getElementById("fil-zone").onchange    =function(e){state.calFilters.zone=e.target.value;loadCalendar();};
+  document.getElementById("fil-region").onchange  =function(e){state.calFilters.region=e.target.value;loadCalendar();};
+  document.getElementById("fil-district").onchange=function(e){state.calFilters.district=e.target.value;loadCalendar();};
+  var bt; document.getElementById("fil-branch").oninput=function(e){clearTimeout(bt);bt=setTimeout(function(){state.calFilters.branch=e.target.value.trim();loadCalendar();},400);};
+  document.getElementById("btn-cal-reset").onclick=function(){
+    state.calFilters={zone:"",region:"",district:"",branch:""};
+    ["#fil-zone","#fil-region","#fil-district"].forEach(function(s){setVal(s,"");});
+    document.getElementById("fil-branch").value=""; loadCalendar();
+  };
+  document.getElementById("ov-zone").onchange    =function(e){state.ovFilters.zone=e.target.value;loadStatusOverview();};
+  document.getElementById("ov-region").onchange  =function(e){state.ovFilters.region=e.target.value;loadStatusOverview();};
+  document.getElementById("ov-district").onchange=function(e){state.ovFilters.district=e.target.value;loadStatusOverview();};
+  document.getElementById("btn-ov-reset").onclick=function(){
+    state.ovFilters={zone:"",region:"",district:""};
+    ["#ov-zone","#ov-region","#ov-district"].forEach(function(s){setVal(s,"");});
+    loadStatusOverview();
+  };
+  document.getElementById("btn-ov-refresh").onclick=loadStatusOverview;
+}
+
+function setupCalendarNav() {
+  document.getElementById("cal-prev").onclick=function(){state.calMonth--;if(state.calMonth<1){state.calMonth=12;state.calYear--;}loadCalendar();};
+  document.getElementById("cal-next").onclick=function(){state.calMonth++;if(state.calMonth>12){state.calMonth=1;state.calYear++;}loadCalendar();};
+}
+
+/* Tooltip */
+function setupTooltip() {
+  var tt=document.getElementById("ld-tooltip");
+  document.getElementById("cal-body").addEventListener("mouseover", function(e){
+    var evEl=e.target.closest(".ld-cal-event"); if(!evEl) return;
+    var ev=state.calEvents.find(function(x){return x.name===evEl.getAttribute("data-name");});
+    if(!ev) return;
+    var c=eventColor(ev);
+    var loc=ev.training_location||"", geo=[ev.zone,ev.district].filter(Boolean).join(" / ");
+    var html='<div class="tt-title"><i class="bi '+c.icon+'" style="color:'+c.dot+';font-size:12px"></i>'+esc(ev.training_program||ev.topic||"Training")+'</div>'+
+      '<div class="tt-row"><i class="bi bi-person"></i><span>Trainer: '+(ev.trainer_name?esc(ev.trainer_name):"—")+'</span></div>'+
+      '<div class="tt-row"><i class="bi bi-geo-alt"></i><span>Venue: '+(loc?esc(loc):"—")+'</span></div>'+
+      '<div class="tt-row"><i class="bi bi-people"></i><span>Participants: '+(ev.participants||0)+'</span></div>'+
+      '<div class="tt-row"><i class="bi bi-flag"></i><span>Status: '+c.status+'</span></div>'+
+      (geo?'<div class="tt-row"><i class="bi bi-diagram-3"></i><span>'+esc(geo)+'</span></div>':"");
+    tt.innerHTML=html;
+    tt.style.display="block";
+    var show=function(ev2){var r=evEl.getBoundingClientRect();var tw=tt.offsetWidth;var left=ev2.clientX+12;if(left+tw>window.innerWidth-8)left=ev2.clientX-tw-12;tt.style.left=left+"px";tt.style.top=(ev2.clientY+14)+"px";};
+    evEl.addEventListener("mousemove",show);
+    evEl.addEventListener("mouseleave",function(){tt.style.display="none";evEl.removeEventListener("mousemove",show);},{once:true});
+  });
+}
+
+async function loadCalendar() {
+  var body=document.getElementById("cal-body");
+  body.innerHTML='<div class="ld-empty"><span class="ld-spinner"></span></div>';
+  document.getElementById("cal-month-label").textContent=MONTHS[state.calMonth-1]+" "+state.calYear;
+  try {
+    var f=state.calFilters;
+    state.calEvents=await api("get_ld_calendar_data",{year:state.calYear,month:state.calMonth,
+      zone:f.zone||null,region:f.region||null,district:f.district||null,branch:f.branch||null});
+    document.getElementById("cal-total-badge").textContent=state.calEvents.length+" training"+(state.calEvents.length!==1?"s":"")+" scheduled";
+    updateMetaLine();
+    updateSummary();
+    renderCalendar();
+  } catch(e) { body.innerHTML='<div class="ld-empty" style="color:#dc2626">Error loading calendar.</div>'; }
+}
+
+function renderCalendar() {
+  var body=document.getElementById("cal-body");
+  var y=state.calYear,m=state.calMonth;
+  var firstDay=new Date(y,m-1,1).getDay(), daysInMonth=new Date(y,m,0).getDate();
+  var prevDays=new Date(y,m-1,0).getDate(), todayStr=todayIso();
+  var byDate={};
+  state.calEvents.forEach(function(ev){var d=(ev.date||"").slice(0,10);if(!byDate[d])byDate[d]=[];byDate[d].push(ev);});
+  var totalCells=Math.ceil((firstDay+daysInMonth)/7)*7, html="";
+  for(var i=0;i<totalCells;i++){
+    var day,dateStr,isOther=false;
+    if(i<firstDay){day=prevDays-firstDay+i+1;dateStr=isoDate(y,m-1,day);isOther=true;}
+    else if(i>=firstDay+daysInMonth){day=i-firstDay-daysInMonth+1;dateStr=isoDate(y,m+1,day);isOther=true;}
+    else{day=i-firstDay+1;dateStr=isoDate(y,m,day);}
+    var isToday=dateStr===todayStr, evs=byDate[dateStr]||[], show=evs.slice(0,2), more=evs.length-show.length;
+    html+='<div class="ld-cal-cell'+(isOther?" other-month":"")+(isToday?" today":"")+(evs.length?"":" ld-empty-cell")+'">';
+    html+='<div class="ld-cal-date"><span class="num">'+day+'</span></div>';
+    show.forEach(function(ev){
+      var c=eventColor(ev);
+      var title=(ev.training_program||ev.topic||"Training");
+      html+='<div class="ld-cal-event" data-name="'+esc(ev.name)+'" style="background:'+c.bg+';color:'+c.text+';border-left-color:'+c.dot+'" onclick="ldFn.show(\''+esc(ev.name)+'\')">'+
+        '<span class="ev-line"><span class="t">'+esc(title)+'</span></span>'+
+        '<span class="ev-time">'+(fmtTime(ev.start_time)||"")+((ev.training_location)?"  •  "+esc(ev.training_location.slice(0,14)):"")+'</span></div>';
+    });
+    if(more>0) html+='<div class="ld-cal-more" onclick="ldFn.showDay(\''+dateStr+'\')">+'+more+' more</div>';
+    html+='</div>';
+  }
+  body.innerHTML=html;
+}
+
+function updateSummary() {
+  var today=todayIso(), up=0, prog=0, comp=0, pend=0;
+  state.calEvents.forEach(function(e){
+    var s=e.completion_score||0;
+    if (e.docstatus===2) return;
+    if (s===5) comp++;
+    else if (s>0) prog++;
+    else if ((e.date||"")>=today) up++;
+    else pend++;
+  });
+  document.getElementById("sum-upcoming").textContent=up;
+  document.getElementById("sum-progress").textContent=prog;
+  document.getElementById("sum-completed").textContent=comp;
+  document.getElementById("sum-pending").textContent=pend;
+}
+
+/* POPUP */
+var ldFn = window.ldFn = {
+  show: function(name) {
+    var ev=state.calEvents.find(function(e){return e.name===name;});
+    if(!ev) return;
+    var u=state.userInfo, canEdit=u.is_ld_admin||u.is_ld_trainer;
+    var score=ev.completion_score||0, pct=Math.round((score/5)*100);
+    var c=eventColor(ev);
+    var fields=[
+      {f:"training_delivered",l:"Training Delivered"},
+      {f:"attendance_marked",l:"Attendance Marked"},
+      {f:"pre_assessment_taken",l:"Pre-Assessment Taken"},
+      {f:"post_assessment_taken",l:"Post-Assessment Taken"},
+      {f:"feedback_taken",l:"Feedback Taken"}
+    ];
+    var statusHtml=fields.map(function(sf){
+      var chk=ev[sf.f]?"checked":"", done=ev[sf.f]?"done":"", dis=canEdit?"":"disabled";
+      return '<label class="ld-status-item '+done+'"><input type="checkbox" '+chk+' '+dis+
+        ' onchange="ldFn.toggleStatus(\''+esc(name)+'\',\''+sf.f+'\',this.checked,this)"> '+
+        (ev[sf.f]?"<i class='bi bi-check2' style='color:#16a34a'></i> ":"<i class='bi bi-square' style='color:#9ca3af'></i> ")+sf.l+'</label>';
+    }).join("");
+    var pbar='<div class="ld-progress-bar"><div class="ld-progress-fill" style="width:'+pct+'%;background:'+
+      (pct===100?"#16a34a":pct>=60?"#d97706":"#2563eb")+'"></div></div>';
+    var html='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'+
+      '<span class="ld-role-badge" style="background:'+c.bg+';color:'+c.text+'"><i class="'+c.icon+'" style="font-size:11px"></i> '+c.status+'</span>'+
+      '</div>'+
+      '<h3 style="font-size:16px;font-weight:700;margin-bottom:4px">'+esc(ev.training_program||ev.topic||"Training")+'</h3>'+
+      '<div style="font-size:12px;color:#6b7280;margin-bottom:10px;display:flex;gap:14px;flex-wrap:wrap">'+
+      '<span><i class="bi bi-calendar3"></i> '+(ev.date||"")+'</span>'+
+      (ev.start_time?'<span><i class="bi bi-clock"></i> '+fmtTime(ev.start_time)+'</span>':"")+
+      (ev.trainer_name?'<span><i class="bi bi-person"></i> '+esc(ev.trainer_name)+'</span>':"")+
+      (ev.training_location?'<span><i class="bi bi-geo-alt"></i> '+esc(ev.training_location)+'</span>':"")+
+      (ev.participants?'<span><i class="bi bi-people"></i> '+ev.participants+' participants</span>':"")+
+      '</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+
+      (ev.is_adhoc?'<span class="ld-badge badge-orange">Ad-hoc</span>':'<span class="ld-badge badge-blue">Scheduled</span>')+
+      (ev.zone?'<span class="ld-badge badge-gray">'+esc(ev.zone)+'</span>':"")+
+      (ev.region?'<span class="ld-badge badge-gray">'+esc(ev.region)+'</span>':"")+
+      (ev.district?'<span class="ld-badge badge-gray">'+esc(ev.district)+'</span>':"")+
+      '</div><div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Completion: '+score+'/5 ('+pct+'%)</div>'+
+      pbar+
+      '<div style="font-size:12px;font-weight:600;color:#475569;margin:12px 0 6px">Training Status</div>'+
+      '<div class="ld-status-grid">'+statusHtml+'</div>';
+    if(canEdit) {
+      html+='<div style="margin-top:12px"><label class="ld-label" style="display:block;margin-bottom:4px">Trainer Remarks</label>'+
+        '<textarea id="popup-remarks" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:6px 10px;font-size:13px;resize:vertical;min-height:60px">'+esc(ev.trainer_remarks||"")+'</textarea>'+
+        '<button class="ld-btn ld-btn-primary ld-btn-sm" style="margin-top:6px" onclick="ldFn.saveRemarks(\''+esc(name)+'\')">Save Remarks</button></div>';
+    } else if(ev.trainer_remarks) {
+      html+='<div style="margin-top:10px;font-size:12px;color:#475569"><b>Remarks:</b> '+esc(ev.trainer_remarks)+'</div>';
+    }
+    html+='<div style="margin-top:14px;text-align:right"><a href="/app/meeting/'+encodeURIComponent(name)+
+      '" target="_blank" class="ld-btn ld-btn-secondary ld-btn-sm"><i class="bi bi-box-arrow-up-right"></i> Open Full Record</a></div>';
+    document.getElementById("popup-body").innerHTML=html;
+    document.getElementById("ld-popup").classList.add("open");
+  },
+
+  showDay: function(dateStr) {
+    var evs=state.calEvents.filter(function(e){return (e.date||"").slice(0,10)===dateStr;});
+    var html='<h3 style="font-size:15px;font-weight:700;margin-bottom:12px"><i class="bi bi-calendar2-event" style="color:#2563eb"></i> Trainings on '+dateStr+'</h3>';
+    evs.forEach(function(ev){
+      var c=eventColor(ev);
+      html+='<div class="ld-card" style="border-left:3px solid '+c.border+';cursor:pointer" onclick="closePopup();setTimeout(function(){ldFn.show(\''+esc(ev.name)+'\');},100)">'+
+        '<div class="ld-card-title"><i class="bi '+c.icon+'" style="color:'+c.dot+';font-size:12px;margin-right:5px"></i>'+esc(ev.training_program||ev.topic||"Training")+'</div>'+
+        '<div class="ld-card-meta">'+(ev.trainer_name?esc(ev.trainer_name)+"  |  ":"")+(ev.completion_score||0)+'/5 complete'+(ev.training_location?"  |  "+esc(ev.training_location):"")+'</div></div>';
+    });
+    document.getElementById("popup-body").innerHTML=html;
+    document.getElementById("ld-popup").classList.add("open");
+  },
+
+  toggleStatus: async function(name,field,value,checkbox) {
+    checkbox.disabled=true;
+    try {
+      await api("update_training_status",{meeting_name:name,field:field,value:value?1:0});
+      var ev=state.calEvents.find(function(e){return e.name===name;});
+      if(ev){
+        ev[field]=value?1:0;
+        ev.completion_score=["training_delivered","attendance_marked","pre_assessment_taken","post_assessment_taken","feedback_taken"].filter(function(f){return ev[f];}).length;
+      }
+      var lbl=checkbox.closest(".ld-status-item");
+      if(value) lbl.classList.add("done"); else lbl.classList.remove("done");
+      renderCalendar();
+    } catch(e) { showToast("Could not update status. Please try again.", "red"); }
+    checkbox.disabled=false;
+  },
+
+  saveRemarks: async function(name) {
+    var remarks=document.getElementById("popup-remarks")&&document.getElementById("popup-remarks").value||"";
+    try {
+      await api("update_training_status",{meeting_name:name,field:"trainer_remarks",value:remarks});
+      var ev=state.calEvents.find(function(e){return e.name===name;});
+      if(ev) ev.trainer_remarks=remarks;
+      showToast("Remarks saved", "green");
+    } catch(e) { showToast("Could not save remarks.", "red"); }
+  }
+};
+
+/* STATUS OVERVIEW */
+async function loadStatusOverview() {
+  document.getElementById("ov-stats").innerHTML='<div class="ld-empty"><span class="ld-spinner"></span></div>';
+  document.getElementById("ov-tbody").innerHTML='<tr><td colspan="13" class="ld-empty"><span class="ld-spinner"></span></td></tr>';
+  try {
+    var f=state.ovFilters;
+    var res=await Promise.all([
+      api("get_status_overview",{year:state.calYear,month:state.calMonth,zone:f.zone||null,region:f.region||null,district:f.district||null}),
+      api("get_ld_calendar_data",{year:state.calYear,month:state.calMonth,zone:f.zone||null,region:f.region||null,district:f.district||null})
+    ]);
+    renderOvStats(res[0]); renderOvTable(res[1]);
+  } catch(e) { document.getElementById("ov-stats").innerHTML='<div class="ld-empty" style="color:#dc2626">Error loading data.</div>'; }
+}
+
+function renderOvStats(d) {
+  var tiles=[
+    {v:d.total,l:"Total Planned",c:"c-blue"},{v:d.delivered,l:"Delivered",c:"c-green"},
+    {v:d.pending,l:"Pending",c:"c-orange"},{v:d.fully_complete,l:"Fully Complete",c:"c-purple"},
+    {v:d.attendance_marked,l:"Attendance Marked",c:"c-blue"},{v:d.pre_assessment,l:"Pre-Assessment",c:"c-gray"},
+    {v:d.post_assessment,l:"Post-Assessment",c:"c-gray"},{v:d.feedback,l:"Feedback Taken",c:"c-gray"},
+    {v:d.adhoc,l:"Ad-hoc",c:"c-orange"}
+  ];
+  document.getElementById("ov-stats").innerHTML=tiles.map(function(t){
+    return '<div class="ld-stat"><div class="ld-stat-val '+t.c+'">'+t.v+'</div><div class="ld-stat-lbl">'+t.l+'</div></div>';
+  }).join("");
+}
+
+function renderOvTable(rows) {
+  if(!rows.length){document.getElementById("ov-tbody").innerHTML='<tr><td colspan="13" class="ld-empty">No trainings found.</td></tr>';return;}
+  function tick(v){return v?'<span style="color:#16a34a"><i class="bi bi-check2"></i></span>':'<span style="color:#dc2626"><i class="bi bi-x"></i></span>';}
+  document.getElementById("ov-tbody").innerHTML=rows.map(function(r,i){
+    var pct=Math.round(((r.completion_score||0)/5)*100);
+    var bar='<div class="ld-progress-bar" style="width:80px;display:inline-block"><div class="ld-progress-fill" style="width:'+pct+'%;background:'+(pct===100?"#16a34a":pct>=60?"#d97706":"#2563eb")+'"></div></div> '+pct+'%';
+    return '<tr class="clickable" onclick="ldFn.show(\''+esc(r.name)+'\')">'+
+      '<td>'+(i+1)+'</td><td>'+(r.date||"")+'</td>'+
+      '<td><a href="/app/meeting/'+encodeURIComponent(r.name)+'" onclick="event.stopPropagation()" target="_blank">'+esc(r.training_program||r.topic||"-")+'</a>'+
+      (r.is_adhoc?' <span class="ld-badge badge-orange" style="font-size:10px">Ad-hoc</span>':"")+
+      '</td><td>'+esc(r.zone||"")+'</td><td>'+esc(r.region||"")+'</td><td>'+esc(r.district||"")+'</td>'+
+      '<td>'+esc(r.trainer_name||"")+'</td>'+
+      '<td>'+tick(r.training_delivered)+'</td><td>'+tick(r.attendance_marked)+'</td>'+
+      '<td>'+tick(r.pre_assessment_taken)+'</td><td>'+tick(r.post_assessment_taken)+'</td>'+
+      '<td>'+tick(r.feedback_taken)+'</td><td>'+bar+'</td></tr>';
+  }).join("");
+}
+
+/* MIS TAB */
+function initMisTab() {
+  var now=new Date();
+  document.getElementById("mis-month").value=now.getMonth()+1;
+  document.getElementById("mis-year").value=now.getFullYear();
+  state.geoOptions.zones.forEach(function(z){
+    var o=document.createElement("option");o.value=z;o.textContent=z;
+    document.getElementById("mis-zone").appendChild(o);
+  });
+  document.getElementById("btn-preview-mis").onclick=async function(){
+    var month=document.getElementById("mis-month").value;
+    var year=document.getElementById("mis-year").value;
+    var zone=document.getElementById("mis-zone").value;
+    var res=document.getElementById("mis-result");
+    res.innerHTML='<span class="ld-spinner"></span> Loading preview...';
+    try {
+      var r=await api("get_mis_preview",{year:year,month:month,zone:zone||null});
+      var d=r.data;
+      var rows=[
+        ["Total Trainings", d.total],["Delivered", d.delivered],["Pending", d.pending],
+        ["Attendance Marked", d.attendance_marked],["Pre-Assessment", d.pre_assessment],
+        ["Post-Assessment", d.post_assessment],["Feedback Taken", d.feedback],["Ad-hoc Trainings", d.adhoc]
+      ];
+      res.innerHTML='<div class="ld-card" style="border-left:3px solid #2563eb;margin-top:10px">'+
+        '<div style="font-size:14px;font-weight:600;margin-bottom:4px"><i class="bi bi-file-earmark-bar-graph" style="color:#2563eb"></i> MIS Report Preview</div>'+
+        '<div style="font-size:12px;color:#6b7280;margin-bottom:8px">'+
+          'Subject: '+esc(r.subject)+'<br>'+
+          'Recipients: '+esc((r.recipients||[]).join(", "))+'<br>'+
+          'Period: '+esc(r.period)+' | '+esc(r.zone_label)+
+        '</div>'+
+        '<table class="ld-table" style="margin-bottom:8px"><tbody>'+
+        rows.map(function(row){return '<tr><td style="border:none;padding:5px 8px">'+row[0]+'</td><td style="border:none;padding:5px 8px;font-weight:600;text-align:right">'+row[1]+'</td></tr>';}).join("")+
+        '</tbody></table>'+
+        '<div style="font-size:12px;color:#6b7280">Ye sirf preview hai — koi mail nahi gayi. "Send to MIS HO" dabane par hi mail jayegi.</div></div>';
+    } catch(e){ res.innerHTML='<div class="ld-empty" style="color:#dc2626">Error loading preview.</div>'; }
+  };
+
+  document.getElementById("btn-send-mis").onclick=function(){
+    var month=document.getElementById("mis-month").value;
+    var year=document.getElementById("mis-year").value;
+    var zone=document.getElementById("mis-zone").value;
+    var res=document.getElementById("mis-result");
+    if(!confirm("Send the monthly training report to MIS HO? This is the L&D validation step.")) return;
+    res.innerHTML='<span class="ld-spinner"></span> Sending...';
+    api("send_mis_report",{year:year,month:month,zone:zone||null}).then(function(r){
+      res.innerHTML='<div class="ld-card" style="border-left:3px solid #16a34a;margin-top:10px">'+
+        '<div style="font-size:14px;font-weight:600;margin-bottom:6px"><i class="bi bi-check-circle" style="color:#16a34a"></i> Report Sent to MIS HO</div>'+
+        '<div style="font-size:13px;color:#6b7280">Sent to: '+esc((r.sent_to||[]).join(", "))+'</div></div>';
+    }).catch(function(){ res.innerHTML='<div class="ld-empty" style="color:#dc2626">Error sending report.</div>'; });
+  };
+}
+
+/* Toast */
+var toastTimer=null;
+function showToast(msg,type) {
+  var t=document.getElementById("ld-toast");
+  if(!t){ t=document.createElement("div"); t.id="ld-toast"; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:1300;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;transition:opacity .2s"; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity="1";
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.style.opacity="0"; }, 2200);
+}
+
+/* START */
+document.addEventListener("DOMContentLoaded", function() { init(); });
+
+})();
+</script>
+</body>
+</html>

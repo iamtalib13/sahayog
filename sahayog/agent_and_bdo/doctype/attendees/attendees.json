@@ -8,7 +8,8 @@
  "field_order": [
   "reference_doctype",
   "agent_employee",
-  "full_name"
+  "full_name",
+  "attendance_status"
  ],
  "fields": [
   {
@@ -37,6 +38,15 @@
    "mandatory_depends_on": "eval:doc.reference_doctype",
    "options": "reference_doctype",
    "read_only_depends_on": "eval:!doc.reference_doctype"
+  },
+  {
+   "columns": 2,
+   "fieldname": "attendance_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Attendance",
+   "options": "\nPresent\nAbsent\nLate",
+   "default": "Present"
   }
  ],
  "grid_page_length": 50,

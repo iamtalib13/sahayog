@@ -449,6 +449,16 @@ scheduler_events = {
             "sahayog.tasks.auto_setup_new_employee_leave",
             "sahayog.scrm.api.report_access.generate_fast_lead_report"
         ],
+
+        # Run daily at 7:00 AM — L&D pre-training reminders (N days before training)
+        "0 7 * * *": [
+            "sahayog.agent_and_bdo.ld_notifications.send_pre_training_reminders"
+        ],
+
+        # Run daily at 9:00 AM — L&D post-training closure mails (for yesterday's trainings)
+        "0 9 * * *": [
+            "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
+        ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
