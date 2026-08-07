@@ -13482,6 +13482,7 @@
         remark: "",
         varient: "",
       },
+      assetSequence: 1,
       movementForm: {
         transaction_date: "",
         purpose: "Transfer",
@@ -14059,10 +14060,28 @@
         let serial = this.createAssetForm.serial_no || '[SERIAL NO]';
         parts.push(serial);
 
+        // Incrementing sequence number
+        const seq = String(this.assetSequence || 1).padStart(3, '0');
+        parts.push(seq);
+
         return {
           parts: parts,
           full_id: parts.join('/')
         };
+      },
+      async fetchAssetSequence() {
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_count",
+            args: {
+              doctype: "Asset",
+            },
+          });
+          this.assetSequence = (res.message || 0) + 1;
+        } catch (e) {
+          console.error("Error fetching asset sequence:", e);
+          this.assetSequence = 1;
+        }
       },
       editAssetId() {
         if (!this.projectedAssetId) return;
@@ -15584,6 +15603,8 @@
             is_existing_asset: true,
             is_composite_asset: false,
           };
+          // Fetch next sequence number
+          this.fetchAssetSequence();
           return;
         }
 
