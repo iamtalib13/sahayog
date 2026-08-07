@@ -114,7 +114,7 @@
    "fieldname": "agent_status",
    "fieldtype": "Select",
    "label": "Agent Status",
-   "options": "\nInactive\nActive\nLive\nLIVE",
+   "options": "\nInactive\nActive",
    "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "search_index": 1
   },
