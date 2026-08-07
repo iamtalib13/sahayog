@@ -9,7 +9,7 @@ def get_leave_types():
 from sahayog.api.attendance import get_leave_balances
 
 @frappe.whitelist(allow_guest=False)
-def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False):
+def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False, half_day=False):
     from frappe.utils import date_diff, getdate
 
     if not employee or not leave_type:
@@ -19,6 +19,14 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     if isinstance(force, str):
         force = force.lower() in ("true", "1", "yes")
 
+    # Normalize half_day param (comes as string from API call)
+    if isinstance(half_day, str):
+        half_day = half_day.lower() in ("true", "1", "yes")
+
+    # Half day can only be applied for a single day
+    if half_day:
+        to_date = from_date
+
     # Check Balance
     balances = get_leave_balances(employee)
     leave_bal = next((b for b in balances if b.leave_type == leave_type), None)
@@ -27,7 +35,7 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
         frappe.throw(_("No leave allocation found for {0}").format(leave_type))
         
     # Calculate requested days
-    requested_days = date_diff(getdate(to_date), getdate(from_date)) + 1
+    requested_days = 0.5 if half_day else date_diff(getdate(to_date), getdate(from_date)) + 1
     
     if leave_bal.unused_leaves < requested_days:
         frappe.throw(_("Insufficient balance. Available: {0}, Requested: {1}").format(leave_bal.unused_leaves, requested_days))
@@ -67,6 +75,10 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
         "description": reason or "Applied via Portal",
         "status": "Open"
     }
+
+    if half_day:
+        doc_data["half_day"] = 1
+        doc_data["half_day_date"] = from_date
     
     if holiday_list:
         doc_data["holiday_list"] = holiday_list
