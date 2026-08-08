@@ -402,13 +402,19 @@ def update_existing_agent_types() -> Dict[str, Any]:
 def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
     """
     Scans tabSS and VS Report for the specified agent_code (rm_id).
-    Builds and saves structured JSON hierarchy in agent's commission_json field:
+    Builds and saves structured JSON hierarchy with Year-wise and Month-wise total commission:
     {
-        "YYYY": {
-            "MM": {
-                "REPORT_TYPE": float(total_commission)
+        "2026": {
+            "total_commission": 1388.50,
+            "08": {
+                "total_commission": 1388.50,
+                "DAM": 353.00,
+                "DD SAV": 325.50,
+                "RD": 500.00,
+                "SMBG": 210.00
             }
-        }
+        },
+        "grand_total_commission": 1388.50
     }
     """
     if not agent_code:
@@ -433,6 +439,8 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
     """, (agent_code, agent_doc_name), as_dict=True)
 
     result = {}
+    grand_total = 0.0
+
     for row in records:
         year_str = str(row["year"])
         month_str = str(row["month"])
@@ -440,11 +448,20 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
         comm_val = float(row["total_commission"] or 0.0)
 
         if year_str not in result:
-            result[year_str] = {}
+            result[year_str] = {
+                "total_commission": 0.0
+            }
         if month_str not in result[year_str]:
-            result[year_str][month_str] = {}
+            result[year_str][month_str] = {
+                "total_commission": 0.0
+            }
 
-        result[year_str][month_str][report_type] = comm_val
+        result[year_str][month_str][report_type] = round(comm_val, 2)
+        result[year_str][month_str]["total_commission"] = round(result[year_str][month_str]["total_commission"] + comm_val, 2)
+        result[year_str]["total_commission"] = round(result[year_str]["total_commission"] + comm_val, 2)
+        grand_total = round(grand_total + comm_val, 2)
+
+    result["grand_total_commission"] = grand_total
 
     commission_json_str = frappe.as_json(result)
 
@@ -456,5 +473,5 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
         "status": "success",
         "data": result,
         "commission_json": commission_json_str,
-        "message": _("Commission JSON generated successfully for Agent {0}").format(agent_code),
+        "message": _("Commission JSON with Year-wise totals generated for Agent {0}").format(agent_code),
     }
