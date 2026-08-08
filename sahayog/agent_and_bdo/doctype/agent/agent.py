@@ -396,3 +396,65 @@ def update_existing_agent_types() -> Dict[str, Any]:
     )
     frappe.db.commit()
     return {"status": "success", "message": "Updated agent_type for existing records"}
+
+
+@frappe.whitelist()
+def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
+    """
+    Scans tabSS and VS Report for the specified agent_code (rm_id).
+    Builds and saves structured JSON hierarchy in agent's commission_json field:
+    {
+        "YYYY": {
+            "MM": {
+                "REPORT_TYPE": float(total_commission)
+            }
+        }
+    }
+    """
+    if not agent_code:
+        frappe.throw(_("Agent Code is required."))
+
+    agent_doc_name = frappe.db.get_value(
+        "Agent",
+        {"agent_code": agent_code},
+        "name"
+    ) or agent_code
+
+    records = frappe.db.sql("""
+        SELECT 
+            YEAR(`date`) AS `year`,
+            LPAD(MONTH(`date`), 2, '0') AS `month`,
+            report_type,
+            SUM(CAST(COALESCE(NULLIF(commission, ''), '0') AS DECIMAL(18,2))) AS total_commission
+        FROM `tabSS and VS Report`
+        WHERE rm_id = %s OR rm_id = %s
+        GROUP BY YEAR(`date`), MONTH(`date`), report_type
+        ORDER BY `year` DESC, `month` DESC, report_type ASC
+    """, (agent_code, agent_doc_name), as_dict=True)
+
+    result = {}
+    for row in records:
+        year_str = str(row["year"])
+        month_str = str(row["month"])
+        report_type = str(row["report_type"])
+        comm_val = float(row["total_commission"] or 0.0)
+
+        if year_str not in result:
+            result[year_str] = {}
+        if month_str not in result[year_str]:
+            result[year_str][month_str] = {}
+
+        result[year_str][month_str][report_type] = comm_val
+
+    commission_json_str = frappe.as_json(result)
+
+    if frappe.db.exists("Agent", agent_doc_name):
+        frappe.db.set_value("Agent", agent_doc_name, "commission_json", commission_json_str, update_modified=True)
+        frappe.db.commit()
+
+    return {
+        "status": "success",
+        "data": result,
+        "commission_json": commission_json_str,
+        "message": _("Commission JSON generated successfully for Agent {0}").format(agent_code),
+    }
