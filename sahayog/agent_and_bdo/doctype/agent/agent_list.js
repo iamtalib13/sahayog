@@ -3,6 +3,7 @@ frappe.listview_settings["Agent"] = {
 
   refresh(listview) {
     setupSyncAgentsButton(listview);
+    setupBulkCommissionButton(listview);
   },
 
   onload(listview) {
@@ -49,6 +50,44 @@ function setupSyncAgentsButton(listview) {
                   message: __(
                     r.message ? r.message.message : "Failed to sync agents."
                   ),
+                  indicator: "red",
+                });
+              }
+            },
+          });
+        }
+      );
+    },
+    __("Actions")
+  );
+}
+
+/**
+ * Add "Update Bulk Commission" inner button to list view header.
+ */
+function setupBulkCommissionButton(listview) {
+  listview.page.add_inner_button(
+    __("Update Bulk Commission"),
+    () => {
+      frappe.confirm(
+        __("Are you sure you want to scan SS & VS Report and update commission JSON for all agents?"),
+        () => {
+          frappe.call({
+            method: "sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions",
+            freeze: true,
+            freeze_message: __("⚡ Updating commission JSON for all agents in superfast mode..."),
+            callback(r) {
+              if (r.message && r.message.status === "success") {
+                frappe.msgprint({
+                  title: __("Bulk Commission Update Completed"),
+                  message: __(r.message.message),
+                  indicator: "green",
+                });
+                listview.refresh();
+              } else {
+                frappe.msgprint({
+                  title: __("Error"),
+                  message: __(r.message ? r.message.message : "Failed to update bulk commission."),
                   indicator: "red",
                 });
               }
