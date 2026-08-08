@@ -9321,7 +9321,7 @@
         <button class="profile-close" @click="showBulkAssetInsertModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 24px;">
-        <div style="text-align: center; padding: 40px 20px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
           <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
             <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
           </div>
@@ -9332,6 +9332,13 @@
             <i class="fas fa-upload"></i>
             <span>Choose File</span>
           </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadInsertTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #10b981; color: #10b981; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#10b981';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#10b981'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
         </div>
       </div>
     </div>
@@ -9349,17 +9356,24 @@
         <button class="profile-close" @click="showBulkAssetUpdateModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 24px;">
-        <div style="text-align: center; padding: 40px 20px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
           <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
             <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
           </div>
           <p style="color: var(--text-main); font-weight: 600; margin-bottom: 8px;">Upload your file</p>
-          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files. Asset ID (name) is required.</p>
           <input type="file" id="bulkAssetUpdateFile" accept=".csv,.xlsx,.xls" style="display: none;" @change="handleBulkAssetUpdateFile($event)" />
           <label for="bulkAssetUpdateFile" class="btn-create-inline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 8px; font-weight: 600;">
             <i class="fas fa-upload"></i>
             <span>Choose File</span>
           </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadUpdateTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#3b82f6';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#3b82f6'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
         </div>
       </div>
     </div>
@@ -16166,6 +16180,30 @@
           frappe.msgprint("Bulk update failed: " + (e.message || "Unknown error"));
         }
         event.target.value = "";
+      },
+      downloadInsertTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_insert_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      downloadUpdateTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_update_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
       },
 
       showConfirm(title, message, onConfirm, fields = [], formData = {}, buttonText = "Confirm") {
