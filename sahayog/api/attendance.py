@@ -618,7 +618,7 @@ def get_employee_calendar(employee, month, year):
             "from_date": ["<=", last_day],
             "to_date": [">=", first_day]
         },
-        fields=["from_date", "to_date", "leave_type"]
+        fields=["from_date", "to_date", "leave_type", "half_day", "half_day_date"]
     )
     
     # Format for easy frontend mapping
@@ -646,7 +646,12 @@ def get_employee_calendar(employee, month, year):
         end = getdate(leave.to_date)
         curr = start
         while curr <= end:
-            history[str(curr)] = "On Leave"
+            ds = str(curr)
+            is_half = leave.half_day and (
+                (leave.half_day_date and str(leave.half_day_date) == ds)
+                or (not leave.half_day_date and start == end)
+            )
+            history[ds] = "Half Day" if is_half else "On Leave"
             curr = add_days(curr, 1)
 
     # Add pending (Open) leave requests
@@ -657,7 +662,7 @@ def get_employee_calendar(employee, month, year):
             "from_date": ["<=", last_day],
             "to_date": [">=", first_day]
         },
-        fields=["from_date", "to_date"]
+        fields=["from_date", "to_date", "half_day", "half_day_date"]
     )
     for pl in pending_leaves:
         start = getdate(pl.from_date)
@@ -665,8 +670,13 @@ def get_employee_calendar(employee, month, year):
         curr = start
         while curr <= end:
             ds = str(curr)
+            is_half = pl.half_day and (
+                (pl.half_day_date and str(pl.half_day_date) == ds)
+                or (not pl.half_day_date and start == end)
+            )
+            label = "Pending Half Day" if is_half else "Pending Leave"
             if ds not in history:
-                history[ds] = "Pending Leave"
+                history[ds] = label
             else:
                 history[ds] = f"{history[ds]} (Leave Pending)"
             curr = add_days(curr, 1)
