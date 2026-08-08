@@ -738,3 +738,14 @@ fixtures = [
     },
 
 ]
+
+# Scheduled Tasks
+# ---------------
+scheduler_events = {
+	"cron": {
+		# 08:45 AM IST - Daily Bulk Update of Agent Commission JSON for all agents
+		"45 8 * * *": [
+			"sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
+		]
+	}
+}

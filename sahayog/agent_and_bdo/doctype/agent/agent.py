@@ -478,3 +478,83 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
         "commission_json": commission_json_str,
         "message": _("Commission JSON generated in superfast mode for Agent {0}").format(agent_code),
     }
+
+
+@frappe.whitelist()
+def bulk_update_agent_commissions() -> Dict[str, Any]:
+    """
+    Superfast Bulk Update of commission_json for ALL agents in tabAgent.
+    1. Single Grouped Raw SQL Scan from tabSS and VS Report for all agents.
+    2. Builds structured JSON layers for all agents in memory.
+    3. Bulk updates tabAgent using direct SQL.
+    """
+    records = frappe.db.sql("""
+        SELECT 
+            rm_id,
+            YEAR(`date`) AS `year`,
+            LPAD(MONTH(`date`), 2, '0') AS `month`,
+            report_type,
+            SUM(CAST(COALESCE(NULLIF(commission, ''), '0') AS DECIMAL(18,2))) AS total_commission
+        FROM `tabSS and VS Report`
+        WHERE rm_id IS NOT NULL AND rm_id != ''
+        GROUP BY rm_id, YEAR(`date`), MONTH(`date`), report_type
+        ORDER BY rm_id ASC, `year` DESC, `month` DESC, report_type ASC
+    """, as_dict=True)
+
+    if not records:
+        return {
+            "status": "success",
+            "message": _("No SS & VS Report records found to calculate commission."),
+            "processed": 0
+        }
+
+    agent_data = {}
+
+    for row in records:
+        rm_id = str(row["rm_id"]).strip()
+        year_str = str(row["year"])
+        month_str = str(row["month"])
+        report_type = str(row["report_type"])
+        comm_val = float(row["total_commission"] or 0.0)
+
+        if rm_id not in agent_data:
+            agent_data[rm_id] = {"grand_total_commission": 0.0}
+
+        if year_str not in agent_data[rm_id]:
+            agent_data[rm_id][year_str] = {"total_commission": 0.0}
+
+        if month_str not in agent_data[rm_id][year_str]:
+            agent_data[rm_id][year_str][month_str] = {"total_commission": 0.0}
+
+        agent_data[rm_id][year_str][month_str][report_type] = round(comm_val, 2)
+        agent_data[rm_id][year_str][month_str]["total_commission"] = round(
+            agent_data[rm_id][year_str][month_str]["total_commission"] + comm_val, 2
+        )
+        agent_data[rm_id][year_str]["total_commission"] = round(
+            agent_data[rm_id][year_str]["total_commission"] + comm_val, 2
+        )
+        agent_data[rm_id]["grand_total_commission"] = round(
+            agent_data[rm_id]["grand_total_commission"] + comm_val, 2
+        )
+
+    updated_count = 0
+    now_time = now_datetime()
+
+    for rm_id, comm_dict in agent_data.items():
+        comm_json_str = frappe.as_json(comm_dict)
+        frappe.db.sql("""
+            UPDATE `tabAgent`
+            SET commission_json = %s, modified = %s
+            WHERE name = %s OR agent_code = %s
+        """, (comm_json_str, now_time, rm_id, rm_id))
+        updated_count += 1
+
+    frappe.db.commit()
+
+    msg = _("Successfully updated commission JSON for {0} agents.").format(updated_count)
+    frappe.logger("scheduler").info(msg)
+    return {
+        "status": "success",
+        "processed": updated_count,
+        "message": msg
+    }
