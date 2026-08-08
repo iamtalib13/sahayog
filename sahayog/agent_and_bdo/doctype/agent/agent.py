@@ -398,24 +398,38 @@ def update_existing_agent_types() -> Dict[str, Any]:
     return {"status": "success", "message": "Updated agent_type for existing records"}
 
 
+def evaluate_agent_status_from_json(comm_dict: dict) -> str:
+    """
+    Evaluates agent_status ('Active' vs 'Inactive') based on commission in the Current Month + Last 3 Months (4-month window).
+    If total commission in these 4 months > 0: returns 'Active', else returns 'Inactive'.
+    """
+    if not comm_dict:
+        return "Inactive"
+
+    today = frappe.utils.getdate(frappe.utils.nowdate())
+    recent_4_months = []
+    for i in range(4):
+        dt = frappe.utils.add_months(today, -i)
+        year_str = str(dt.year)
+        month_str = str(dt.month).zfill(2)
+        recent_4_months.append((year_str, month_str))
+
+    total_recent_commission = 0.0
+    for yr, mth in recent_4_months:
+        if yr in comm_dict and isinstance(comm_dict[yr], dict):
+            if mth in comm_dict[yr] and isinstance(comm_dict[yr][mth], dict):
+                mth_comm = float(comm_dict[yr][mth].get("total_commission", 0.0) or 0.0)
+                total_recent_commission += mth_comm
+
+    return "Active" if total_recent_commission > 0 else "Inactive"
+
+
 @frappe.whitelist()
 def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
     """
     Scans tabSS and VS Report for the specified agent_code (rm_id).
-    Builds and saves structured JSON hierarchy with Year-wise and Month-wise total commission:
-    {
-        "2026": {
-            "total_commission": 1388.50,
-            "08": {
-                "total_commission": 1388.50,
-                "DAM": 353.00,
-                "DD SAV": 325.50,
-                "RD": 500.00,
-                "SMBG": 210.00
-            }
-        },
-        "grand_total_commission": 1388.50
-    }
+    Builds and saves structured JSON hierarchy with Year-wise and Month-wise total commission,
+    and updates agent_status (Active / Inactive) based on 4-month commission window.
     """
     if not agent_code:
         frappe.throw(_("Agent Code is required."))
@@ -463,29 +477,35 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
 
     result["grand_total_commission"] = grand_total
 
+    agent_status = evaluate_agent_status_from_json(result)
     commission_json_str = frappe.as_json(result)
 
-    # Superfast Direct MariaDB SQL Update bypassing ORM overhead
+    # Superfast Direct MariaDB SQL Update of commission_json and agent_status
     frappe.db.sql(
-        "UPDATE `tabAgent` SET commission_json = %s, modified = NOW() WHERE name = %s OR agent_code = %s",
-        (commission_json_str, agent_doc_name, agent_code)
+        """
+        UPDATE `tabAgent` 
+        SET commission_json = %s, agent_status = %s, modified = NOW() 
+        WHERE name = %s OR agent_code = %s
+        """,
+        (commission_json_str, agent_status, agent_doc_name, agent_code)
     )
     frappe.db.commit()
 
     return {
         "status": "success",
         "data": result,
+        "agent_status": agent_status,
         "commission_json": commission_json_str,
-        "message": _("Commission JSON generated in superfast mode for Agent {0}").format(agent_code),
+        "message": _("Commission JSON & Status ({0}) updated for Agent {1}").format(agent_status, agent_code),
     }
 
 
 @frappe.whitelist()
 def bulk_update_agent_commissions() -> Dict[str, Any]:
     """
-    Superfast Bulk Update of commission_json for ALL agents in tabAgent.
+    Superfast Bulk Update of commission_json and agent_status for ALL agents in tabAgent.
     1. Single Grouped Raw SQL Scan from tabSS and VS Report for all agents.
-    2. Builds structured JSON layers for all agents in memory.
+    2. Evaluates agent_status (Active / Inactive) for 4-month window (current + 3 prior months).
     3. Bulk updates tabAgent using direct SQL.
     """
     records = frappe.db.sql("""
@@ -500,13 +520,6 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
         GROUP BY rm_id, YEAR(`date`), MONTH(`date`), report_type
         ORDER BY rm_id ASC, `year` DESC, `month` DESC, report_type ASC
     """, as_dict=True)
-
-    if not records:
-        return {
-            "status": "success",
-            "message": _("No SS & VS Report records found to calculate commission."),
-            "processed": 0
-        }
 
     agent_data = {}
 
@@ -537,24 +550,39 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
             agent_data[rm_id]["grand_total_commission"] + comm_val, 2
         )
 
-    updated_count = 0
-    now_time = now_datetime()
+    # Fetch all agents in tabAgent to update both active and inactive agents
+    all_agents = frappe.db.sql_list("SELECT name FROM `tabAgent` WHERE docstatus < 2")
 
-    for rm_id, comm_dict in agent_data.items():
-        comm_json_str = frappe.as_json(comm_dict)
+    now_time = now_datetime()
+    active_count = 0
+    inactive_count = 0
+
+    for agent_name in all_agents:
+        comm_dict = agent_data.get(agent_name, {})
+        agent_status = evaluate_agent_status_from_json(comm_dict)
+        comm_json_str = frappe.as_json(comm_dict) if comm_dict else None
+
+        if agent_status == "Active":
+            active_count += 1
+        else:
+            inactive_count += 1
+
         frappe.db.sql("""
             UPDATE `tabAgent`
-            SET commission_json = %s, modified = %s
+            SET commission_json = %s, agent_status = %s, modified = %s
             WHERE name = %s OR agent_code = %s
-        """, (comm_json_str, now_time, rm_id, rm_id))
-        updated_count += 1
+        """, (comm_json_str, agent_status, now_time, agent_name, agent_name))
 
     frappe.db.commit()
 
-    msg = _("Successfully updated commission JSON for {0} agents.").format(updated_count)
+    msg = _("Successfully updated commission JSON & status for {0} agents ({1} Active, {2} Inactive).").format(
+        len(all_agents), active_count, inactive_count
+    )
     frappe.logger("scheduler").info(msg)
     return {
         "status": "success",
-        "processed": updated_count,
+        "processed": len(all_agents),
+        "active_count": active_count,
+        "inactive_count": inactive_count,
         "message": msg
     }
