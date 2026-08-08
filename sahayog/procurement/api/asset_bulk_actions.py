@@ -175,8 +175,8 @@ def _parse_csv(file_content):
 def bulk_insert_assets(file_url):
     """Insert assets from a CSV/Excel file.
     
-    Expected columns: name, item_code, asset_category, location, custodian, department, 
-    serial_no, purchase_date, gross_purchase_amount, etc.
+    Expected columns: name, item_code, custom_invoice_number, brand, serial_no,
+    Zone, State, Location, Division, gross_purchase_amount, available_for_use_date, purchase_date
     """
     if not file_url:
         frappe.throw(_("No file provided"))
@@ -208,14 +208,17 @@ def bulk_insert_assets(file_url):
                 "doctype": "Asset",
                 "asset_name": asset_name,
                 "item_code": row.get("item_code", "").strip(),
-                "asset_category": row.get("asset_category", "").strip() or None,
-                "location": row.get("location", "").strip() or None,
-                "custodian": row.get("custodian", "").strip() or None,
-                "department": row.get("department", "").strip() or None,
+                "custom_invoice_number": row.get("custom_invoice_number", "").strip() or None,
+                "brand": row.get("brand", "").strip() or None,
                 "serial_no": row.get("serial_no", "").strip() or None,
-                "purchase_date": row.get("purchase_date", "").strip() or None,
+                "zone": row.get("Zone", "").strip() or None,
+                "state": row.get("State", "").strip() or None,
+                "location": row.get("Location", "").strip() or None,
+                "division": row.get("Division", "").strip() or None,
                 "gross_purchase_amount": row.get("gross_purchase_amount", "").strip() or None,
-                "company": row.get("company", "").strip() or frappe.defaults.get_global_default("company"),
+                "available_for_use_date": row.get("available_for_use_date", "").strip() or None,
+                "purchase_date": row.get("purchase_date", "").strip() or None,
+                "company": frappe.defaults.get_global_default("company"),
             }
 
             doc = frappe.get_doc(doc_data)
@@ -235,8 +238,8 @@ def bulk_update_assets_from_file(file_url):
     """Update assets from a CSV/Excel file.
     
     Required column: name (Asset ID)
-    Optional columns: item_code, asset_category, location, custodian, department,
-    serial_no, purchase_date, gross_purchase_amount, etc.
+    Optional columns: item_code, custom_invoice_number, brand, serial_no,
+    Zone, State, Location, Division, gross_purchase_amount, available_for_use_date, purchase_date
     """
     if not file_url:
         frappe.throw(_("No file provided"))
@@ -264,14 +267,25 @@ def bulk_update_assets_from_file(file_url):
                 errors[asset_name] = "Asset does not exist"
                 continue
 
+            field_map = {
+                "item_code": "item_code",
+                "custom_invoice_number": "custom_invoice_number",
+                "brand": "brand",
+                "serial_no": "serial_no",
+                "Zone": "zone",
+                "State": "state",
+                "Location": "location",
+                "Division": "division",
+                "gross_purchase_amount": "gross_purchase_amount",
+                "available_for_use_date": "available_for_use_date",
+                "purchase_date": "purchase_date",
+            }
+
             update_fields = {}
-            updatable = ["item_code", "asset_category", "location", "custodian", 
-                        "department", "serial_no", "purchase_date", "gross_purchase_amount"]
-            
-            for field in updatable:
-                val = row.get(field, "").strip()
+            for csv_col, db_field in field_map.items():
+                val = row.get(csv_col, "").strip()
                 if val:
-                    update_fields[field] = val
+                    update_fields[db_field] = val
 
             if update_fields:
                 set_clause = ", ".join([f"{k}=%s" for k in update_fields.keys()])
