@@ -1,5 +1,7 @@
 import frappe
 from frappe import _
+import csv
+import io
 
 
 def cancel_linked_docs(asset_name):
@@ -151,3 +153,135 @@ def create_asset_with_name(doc, custom_name=None):
         new_doc.name = custom_name
 
     return {"name": new_doc.name}
+
+
+def _read_file_content(file_url):
+    """Read file content from a file URL."""
+    if file_url.startswith("/files/"):
+        file_path = frappe.get_site_path("public", file_url)
+    else:
+        file_path = frappe.get_site_path(file_url.lstrip("/"))
+    with open(file_path, "r") as f:
+        return f.read()
+
+
+def _parse_csv(file_content):
+    """Parse CSV content and return list of dicts."""
+    reader = csv.DictReader(io.StringIO(file_content))
+    return [row for row in reader]
+
+
+@frappe.whitelist()
+def bulk_insert_assets(file_url):
+    """Insert assets from a CSV/Excel file.
+    
+    Expected columns: name, item_code, asset_category, location, custodian, department, 
+    serial_no, purchase_date, gross_purchase_amount, etc.
+    """
+    if not file_url:
+        frappe.throw(_("No file provided"))
+
+    content = _read_file_content(file_url)
+    rows = _parse_csv(content)
+
+    if not rows:
+        frappe.throw(_("No data found in file"))
+
+    inserted = 0
+    failed = []
+    errors = {}
+
+    for i, row in enumerate(rows):
+        try:
+            asset_name = row.get("name", "").strip()
+            if not asset_name:
+                failed.append(f"Row {i+1}")
+                errors[f"Row {i+1}"] = "Missing name"
+                continue
+
+            if frappe.db.exists("Asset", asset_name):
+                failed.append(asset_name)
+                errors[asset_name] = "Asset already exists"
+                continue
+
+            doc_data = {
+                "doctype": "Asset",
+                "asset_name": asset_name,
+                "item_code": row.get("item_code", "").strip(),
+                "asset_category": row.get("asset_category", "").strip() or None,
+                "location": row.get("location", "").strip() or None,
+                "custodian": row.get("custodian", "").strip() or None,
+                "department": row.get("department", "").strip() or None,
+                "serial_no": row.get("serial_no", "").strip() or None,
+                "purchase_date": row.get("purchase_date", "").strip() or None,
+                "gross_purchase_amount": row.get("gross_purchase_amount", "").strip() or None,
+                "company": row.get("company", "").strip() or frappe.defaults.get_global_default("company"),
+            }
+
+            doc = frappe.get_doc(doc_data)
+            doc.insert(ignore_permissions=True)
+            frappe.db.commit()
+            inserted += 1
+        except Exception as e:
+            frappe.db.rollback()
+            failed.append(row.get("name", f"Row {i+1}"))
+            errors[row.get("name", f"Row {i+1}")] = str(e)
+
+    return {"inserted": inserted, "failed": failed, "errors": errors}
+
+
+@frappe.whitelist()
+def bulk_update_assets_from_file(file_url):
+    """Update assets from a CSV/Excel file.
+    
+    Required column: name (Asset ID)
+    Optional columns: item_code, asset_category, location, custodian, department,
+    serial_no, purchase_date, gross_purchase_amount, etc.
+    """
+    if not file_url:
+        frappe.throw(_("No file provided"))
+
+    content = _read_file_content(file_url)
+    rows = _parse_csv(content)
+
+    if not rows:
+        frappe.throw(_("No data found in file"))
+
+    updated = 0
+    failed = []
+    errors = {}
+
+    for i, row in enumerate(rows):
+        try:
+            asset_name = row.get("name", "").strip()
+            if not asset_name:
+                failed.append(f"Row {i+1}")
+                errors[f"Row {i+1}"] = "Missing name"
+                continue
+
+            if not frappe.db.exists("Asset", asset_name):
+                failed.append(asset_name)
+                errors[asset_name] = "Asset does not exist"
+                continue
+
+            update_fields = {}
+            updatable = ["item_code", "asset_category", "location", "custodian", 
+                        "department", "serial_no", "purchase_date", "gross_purchase_amount"]
+            
+            for field in updatable:
+                val = row.get(field, "").strip()
+                if val:
+                    update_fields[field] = val
+
+            if update_fields:
+                set_clause = ", ".join([f"{k}=%s" for k in update_fields.keys()])
+                values = list(update_fields.values()) + [asset_name]
+                frappe.db.sql(f"UPDATE `tabAsset` SET {set_clause} WHERE name=%s", values)
+                frappe.db.commit()
+                updated += 1
+        except Exception as e:
+            frappe.db.rollback()
+            failed.append(row.get("name", f"Row {i+1}"))
+            errors[row.get("name", f"Row {i+1}")] = str(e)
+
+    return {"updated": updated, "failed": failed, "errors": errors}
