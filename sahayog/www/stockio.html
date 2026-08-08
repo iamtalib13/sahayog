@@ -9122,20 +9122,21 @@
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
               </div>
+              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-left: auto;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
+                <i class="fas fa-layer-group"></i>
+                <span>Bulk Actions</span>
+              </div>
               <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
                 :disabled="loading"
+                style="margin-left: 8px;"
               >
                 <i class="fas fa-spinner fa-spin" v-if="loading"></i>
                 <i class="fas fa-plus" v-else></i>
                 <span>Load More</span>
               </button>
-              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
-                <i class="fas fa-layer-group"></i>
-                <span>Bulk Actions</span>
-              </div>
               <button
                 v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
                 class="btn-create-inline"
