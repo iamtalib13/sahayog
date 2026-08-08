@@ -465,13 +465,16 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
 
     commission_json_str = frappe.as_json(result)
 
-    if frappe.db.exists("Agent", agent_doc_name):
-        frappe.db.set_value("Agent", agent_doc_name, "commission_json", commission_json_str, update_modified=True)
-        frappe.db.commit()
+    # Superfast Direct MariaDB SQL Update bypassing ORM overhead
+    frappe.db.sql(
+        "UPDATE `tabAgent` SET commission_json = %s, modified = NOW() WHERE name = %s OR agent_code = %s",
+        (commission_json_str, agent_doc_name, agent_code)
+    )
+    frappe.db.commit()
 
     return {
         "status": "success",
         "data": result,
         "commission_json": commission_json_str,
-        "message": _("Commission JSON with Year-wise totals generated for Agent {0}").format(agent_code),
+        "message": _("Commission JSON generated in superfast mode for Agent {0}").format(agent_code),
     }
