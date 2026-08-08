@@ -8550,6 +8550,10 @@
               
               <!-- Card View -->
               <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+                <div v-if="assetAvailability.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                  <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
+                  No [[ assetStatusFilter ]] items
+                </div>
                 <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" @click="openAssetAvailability(item)" style="padding: 16px; flex-direction: column; align-items: flex-start; cursor: pointer;">
                     <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
                     <div class="card-value" style="font-size: 1.5rem;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">[[ item.count ]]</div>
@@ -8562,6 +8566,10 @@
 
               <!-- List View -->
               <div v-else class="rows-list" style="margin-top: 16px;">
+                 <div v-if="assetAvailability.length === 0" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                   <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
+                   No [[ assetStatusFilter ]] items
+                 </div>
                  <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" @click="openAssetAvailability(item)" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                      <div style="font-weight: 600;">[[ item.item_name ]]</div>
                      <div style="font-weight: 700;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">
@@ -9114,11 +9122,16 @@
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
               </div>
+              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-left: auto;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
+                <i class="fas fa-layer-group"></i>
+                <span>Bulk Actions</span>
+              </div>
               <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
                 :disabled="loading"
+                style="margin-left: 8px;"
               >
                 <i class="fas fa-spinner fa-spin" v-if="loading"></i>
                 <i class="fas fa-plus" v-else></i>
@@ -9219,7 +9232,7 @@
   >
     <div class="profile-modal" style="max-width: 600px;">
       <div class="profile-modal-header">
-        <h3>[[ assetAvailabilityModalData.title ]] - Available</h3>
+        <h3>[[ assetAvailabilityModalData.title ]] - [[ assetStatusFilter ]]</h3>
         <button class="profile-close" @click="showAssetAvailabilityModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 0;">
@@ -9232,9 +9245,9 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
                 <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
@@ -9245,14 +9258,122 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Assets ([[ assetAvailabilityModalData.assets.length ]])
             </div>
-            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" @click="showAssetAvailabilityModal = false; navigateTo('Asset Master'); openRecord({name: asset.name, item_code: asset.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ asset.name ]]</div>
-                <div style="font-size: 0.8rem; color: #999;">[[ asset.serial_no || 'No Serial' ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ asset.name ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ asset.item_code || 'No Item' ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Actions Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetModal"
+    @click.self="showBulkAssetModal = false"
+  >
+    <div class="profile-modal" style="max-width: 420px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Asset Actions</h3>
+        <button class="profile-close" @click="showBulkAssetModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div @click="showBulkAssetModal = false; showBulkAssetInsertModal = true" style="display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981';this.style.boxShadow='0 2px 12px rgba(16,185,129,0.15)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+            <div style="width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-file-import" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Bulk Insert</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Upload CSV/Excel to create new asset records</div>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem;"></i>
+          </div>
+          <div @click="showBulkAssetModal = false; showBulkAssetUpdateModal = true" style="display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6';this.style.boxShadow='0 2px 12px rgba(59,130,246,0.15)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+            <div style="width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-file-export" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Bulk Update</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Upload CSV/Excel to update existing asset records</div>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Insert Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetInsertModal"
+    @click.self="showBulkAssetInsertModal = false"
+  >
+    <div class="profile-modal" style="max-width: 500px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Insert Assets</h3>
+        <button class="profile-close" @click="showBulkAssetInsertModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
+          </div>
+          <p style="color: var(--text-main); font-weight: 600; margin-bottom: 8px;">Upload your file</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files</p>
+          <input type="file" id="bulkAssetInsertFile" accept=".csv,.xlsx,.xls" style="display: none;" @change="handleBulkAssetInsertFile($event)" />
+          <label for="bulkAssetInsertFile" class="btn-create-inline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 8px; font-weight: 600;">
+            <i class="fas fa-upload"></i>
+            <span>Choose File</span>
+          </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadInsertTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #10b981; color: #10b981; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#10b981';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#10b981'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Update Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetUpdateModal"
+    @click.self="showBulkAssetUpdateModal = false"
+  >
+    <div class="profile-modal" style="max-width: 500px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Update Assets</h3>
+        <button class="profile-close" @click="showBulkAssetUpdateModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
+          </div>
+          <p style="color: var(--text-main); font-weight: 600; margin-bottom: 8px;">Upload your file</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files. Asset ID (name) is required.</p>
+          <input type="file" id="bulkAssetUpdateFile" accept=".csv,.xlsx,.xls" style="display: none;" @change="handleBulkAssetUpdateFile($event)" />
+          <label for="bulkAssetUpdateFile" class="btn-create-inline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 8px; font-weight: 600;">
+            <i class="fas fa-upload"></i>
+            <span>Choose File</span>
+          </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadUpdateTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#3b82f6';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#3b82f6'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
         </div>
       </div>
     </div>
@@ -13718,6 +13839,10 @@
       itemWiseModalData: { item_code: '', serials: [] },
       availableSerials: [],
       availableAssets: [],
+      assignedAssetsList: [],
+      showBulkAssetModal: false,
+      showBulkAssetInsertModal: false,
+      showBulkAssetUpdateModal: false,
 
       async getSerialWarehouseMap() {
         try {
@@ -13874,6 +13999,7 @@
                 }
             });
             const assignedAssets = assignedRes.message || [];
+            this.assignedAssetsList = assignedAssets;
             assignedAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 const isUnmatched = !item;
@@ -13911,6 +14037,12 @@
           }
           
           this.assetAvailability = Object.values(summaryMap).filter(item => this.isAdmin || item.unmatched < item.count);
+          
+          // If Available filter has no data, auto-switch to Assigned
+          if (this.assetStatusFilter === 'Available' && this.assetAvailability.length === 0) {
+            this.assetStatusFilter = 'Assigned';
+            await this.fetchAssetAvailability();
+          }
         } catch (e) {
           console.error("Error fetching asset availability:", e);
         }
@@ -13919,7 +14051,9 @@
       openAssetAvailability(item) {
         let serials = [];
         let assets = [];
-        if (this.assetGroupBy === 'Item') {
+        if (this.assetStatusFilter === 'Assigned') {
+            assets = this.assignedAssetsList.filter(a => a.item_code === item.item_code);
+        } else if (this.assetGroupBy === 'Item') {
             serials = this.availableSerials.filter(sn => sn.item_code === item.item_code);
             assets = this.availableAssets.filter(a => a.item_code === item.item_code);
         } else {
@@ -15976,6 +16110,100 @@
           formData,
           "Update",
         );
+      },
+      async handleBulkAssetInsertFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("is_private", 0);
+        try {
+          frappe.show_alert("Uploading file...", 3);
+          const uploadRes = await frappe.xhr({
+            url: "/api/method/upload_file",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+          });
+          const fileUrl = uploadRes.message.file_url;
+          frappe.show_alert("Processing bulk insert...", 5);
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
+            args: { file_url: fileUrl },
+          });
+          const result = res.message;
+          let msg = `${result.inserted} asset(s) inserted successfully`;
+          if (result.failed && result.failed.length > 0) {
+            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          }
+          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+          this.showBulkAssetInsertModal = false;
+          await this.fetchData("Asset");
+        } catch (e) {
+          console.error("Bulk insert assets error:", e);
+          frappe.msgprint("Bulk insert failed: " + (e.message || "Unknown error"));
+        }
+        event.target.value = "";
+      },
+      async handleBulkAssetUpdateFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("is_private", 0);
+        try {
+          frappe.show_alert("Uploading file...", 3);
+          const uploadRes = await frappe.xhr({
+            url: "/api/method/upload_file",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+          });
+          const fileUrl = uploadRes.message.file_url;
+          frappe.show_alert("Processing bulk update...", 5);
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets_from_file",
+            args: { file_url: fileUrl },
+          });
+          const result = res.message;
+          let msg = `${result.updated} asset(s) updated successfully`;
+          if (result.failed && result.failed.length > 0) {
+            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          }
+          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+          this.showBulkAssetUpdateModal = false;
+          await this.fetchData("Asset");
+        } catch (e) {
+          console.error("Bulk update assets error:", e);
+          frappe.msgprint("Bulk update failed: " + (e.message || "Unknown error"));
+        }
+        event.target.value = "";
+      },
+      downloadInsertTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_insert_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      downloadUpdateTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_update_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
       },
 
       showConfirm(title, message, onConfirm, fields = [], formData = {}, buttonText = "Confirm") {
