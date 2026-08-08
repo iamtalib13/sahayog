@@ -9082,10 +9082,6 @@
 
           <!-- List Footer / Pagination -->
           <div class="list-view-footer" v-if="!loading && rows.length > 0">
-            <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-bottom: 12px;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
-              <i class="fas fa-layer-group"></i>
-              <span>Bulk Actions</span>
-            </div>
             <div class="footer-content">
               <button
                 v-if="activeItem === 'Access' && selectedRows.length > 0"
@@ -9136,6 +9132,10 @@
                 <i class="fas fa-plus" v-else></i>
                 <span>Load More</span>
               </button>
+              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
+                <i class="fas fa-layer-group"></i>
+                <span>Bulk Actions</span>
+              </div>
               <button
                 v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
                 class="btn-create-inline"
