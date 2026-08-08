@@ -13718,7 +13718,7 @@
       },
       assetAvailability: [],
       assetViewMode: 'cards',
-      assetStatusFilter: 'Assigned',
+      assetStatusFilter: 'Available',
       assetGroupBy: 'Item',
       showAssetAvailabilityModal: false,
       assetAvailabilityModalData: { items: [], title: '' },
@@ -13921,6 +13921,12 @@
           }
           
           this.assetAvailability = Object.values(summaryMap).filter(item => this.isAdmin || item.unmatched < item.count);
+          
+          // If Available filter has no data, auto-switch to Assigned
+          if (this.assetStatusFilter === 'Available' && this.assetAvailability.length === 0) {
+            this.assetStatusFilter = 'Assigned';
+            await this.fetchAssetAvailability();
+          }
         } catch (e) {
           console.error("Error fetching asset availability:", e);
         }
