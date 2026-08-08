@@ -9227,7 +9227,7 @@
   >
     <div class="profile-modal" style="max-width: 600px;">
       <div class="profile-modal-header">
-        <h3>[[ assetAvailabilityModalData.title ]] - Available</h3>
+        <h3>[[ assetAvailabilityModalData.title ]] - [[ assetStatusFilter ]]</h3>
         <button class="profile-close" @click="showAssetAvailabilityModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 0;">
@@ -9240,9 +9240,9 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
                 <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
@@ -9253,9 +9253,9 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Assets ([[ assetAvailabilityModalData.assets.length ]])
             </div>
-            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" @click="showAssetAvailabilityModal = false; navigateTo('Asset Master'); openRecord({name: asset.name, item_code: asset.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ asset.name ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ asset.name ]]</div>
                 <div style="font-size: 0.8rem; color: #999;">[[ asset.item_code || 'No Item' ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
