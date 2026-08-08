@@ -9248,7 +9248,7 @@
             <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
               <div>
                 <div style="font-weight: 600; color: var(--text-main);">[[ asset.name ]]</div>
-                <div style="font-size: 0.8rem; color: #999;">[[ asset.serial_no || 'No Serial' ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ asset.item_code || 'No Item' ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
             </div>
@@ -13718,6 +13718,7 @@
       itemWiseModalData: { item_code: '', serials: [] },
       availableSerials: [],
       availableAssets: [],
+      assignedAssetsList: [],
 
       async getSerialWarehouseMap() {
         try {
@@ -13874,6 +13875,7 @@
                 }
             });
             const assignedAssets = assignedRes.message || [];
+            this.assignedAssetsList = assignedAssets;
             assignedAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 const isUnmatched = !item;
@@ -13919,7 +13921,9 @@
       openAssetAvailability(item) {
         let serials = [];
         let assets = [];
-        if (this.assetGroupBy === 'Item') {
+        if (this.assetStatusFilter === 'Assigned') {
+            assets = this.assignedAssetsList.filter(a => a.item_code === item.item_code);
+        } else if (this.assetGroupBy === 'Item') {
             serials = this.availableSerials.filter(sn => sn.item_code === item.item_code);
             assets = this.availableAssets.filter(a => a.item_code === item.item_code);
         } else {
