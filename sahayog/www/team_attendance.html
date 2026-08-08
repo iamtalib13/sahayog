@@ -5342,7 +5342,11 @@
             cls += " holiday-d";
           else if (histStatus && histStatus.includes("Pending Correction"))
             cls += " pending-corr-d";
-          else if (histStatus && histStatus.includes("Pending Leave"))
+          else if (
+            histStatus &&
+            (histStatus.includes("Pending Leave") ||
+              histStatus.includes("Pending Half Day"))
+          )
             cls += " pending-leave-d";
           else if (isWeekend) cls += " woff";
 
@@ -5357,6 +5361,7 @@
               "On Leave": "On Leave",
               "Pending Correction": "Correction Request Pending",
               "Pending Leave": "Leave Request Pending",
+              "Pending Half Day": "Half Day Leave Request Pending",
             };
             cell.title =
               titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);

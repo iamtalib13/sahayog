@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import nowdate, nowtime, getdate, add_days
+from frappe.utils import nowdate, nowtime, getdate, add_days, flt
 
 @frappe.whitelist(allow_guest=False)
 def get_team_attendance_data(employee_status="Active"):
@@ -618,7 +618,7 @@ def get_employee_calendar(employee, month, year):
             "from_date": ["<=", last_day],
             "to_date": [">=", first_day]
         },
-        fields=["from_date", "to_date", "leave_type"]
+        fields=["from_date", "to_date", "leave_type", "half_day", "half_day_date"]
     )
     
     # Format for easy frontend mapping
@@ -646,7 +646,12 @@ def get_employee_calendar(employee, month, year):
         end = getdate(leave.to_date)
         curr = start
         while curr <= end:
-            history[str(curr)] = "On Leave"
+            ds = str(curr)
+            is_half = leave.half_day and (
+                (leave.half_day_date and str(leave.half_day_date) == ds)
+                or (not leave.half_day_date and start == end)
+            )
+            history[ds] = "Half Day" if is_half else "On Leave"
             curr = add_days(curr, 1)
 
     # Add pending (Open) leave requests
@@ -657,7 +662,7 @@ def get_employee_calendar(employee, month, year):
             "from_date": ["<=", last_day],
             "to_date": [">=", first_day]
         },
-        fields=["from_date", "to_date"]
+        fields=["from_date", "to_date", "half_day", "half_day_date"]
     )
     for pl in pending_leaves:
         start = getdate(pl.from_date)
@@ -665,8 +670,13 @@ def get_employee_calendar(employee, month, year):
         curr = start
         while curr <= end:
             ds = str(curr)
+            is_half = pl.half_day and (
+                (pl.half_day_date and str(pl.half_day_date) == ds)
+                or (not pl.half_day_date and start == end)
+            )
+            label = "Pending Half Day" if is_half else "Pending Leave"
             if ds not in history:
-                history[ds] = "Pending Leave"
+                history[ds] = label
             else:
                 history[ds] = f"{history[ds]} (Leave Pending)"
             curr = add_days(curr, 1)
@@ -682,7 +692,12 @@ def get_employee_calendar(employee, month, year):
 
 @frappe.whitelist(allow_guest=False)
 def get_leave_balances(employee):
-    """Fetch leave balances for the given employee."""
+    """Fetch accurate leave balances for the given employee.
+
+    Computed from the Leave Ledger so the shown balance always reflects the
+    initial allocation, monthly accrual credits, carry-forward and leave
+    deductions (including half-day leaves).
+    """
     from frappe.utils import today
     
     # Fetch active leave allocations (valid for today's date)
@@ -698,20 +713,33 @@ def get_leave_balances(employee):
     )
 
     for alloc in allocations:
-        # Calculate used leaves ONLY within the allocation period
-        total_used = frappe.db.sql("""
-            SELECT COALESCE(SUM(total_leave_days), 0)
-            FROM `tabLeave Application`
+        # Total credited so far in this period (initial + monthly accrual + carry forward)
+        total_allocated = frappe.db.sql("""
+            SELECT COALESCE(SUM(leaves), 0)
+            FROM `tabLeave Ledger Entry`
             WHERE employee = %s
               AND leave_type = %s
-              AND status = 'Approved'
               AND docstatus = 1
+              AND is_expired = 0
+              AND leaves > 0
               AND from_date >= %s
-              AND to_date <= %s
+              AND from_date <= %s
         """, (employee, alloc.leave_type, alloc.from_date, alloc.to_date))[0][0] or 0
 
-        # Recalculate accurate balance
-        alloc.unused_leaves = alloc.total_leaves_allocated - total_used
+        # Net available = credits minus debits (approved leave applications)
+        unused = frappe.db.sql("""
+            SELECT COALESCE(SUM(leaves), 0)
+            FROM `tabLeave Ledger Entry`
+            WHERE employee = %s
+              AND leave_type = %s
+              AND docstatus = 1
+              AND is_expired = 0
+              AND from_date >= %s
+              AND from_date <= %s
+        """, (employee, alloc.leave_type, alloc.from_date, alloc.to_date))[0][0] or 0
+
+        alloc.total_leaves_allocated = flt(total_allocated)
+        alloc.unused_leaves = flt(unused)
         
         # Remove internal fields not needed in frontend
         alloc.pop("from_date", None)
