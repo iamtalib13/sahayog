@@ -175,3 +175,6 @@ def save_asset_after_submit(doc):
     asset.reload()
 
     return asset
+
+# save_asset_after_submit: Allows updating Asset fields (item_code, serial_no, etc.) after submission
+# by using ignore_validate_update_after_submit flag to bypass Frappe's generic post-submit validation.
