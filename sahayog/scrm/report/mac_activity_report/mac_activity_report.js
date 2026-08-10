@@ -39,5 +39,17 @@ frappe.query_reports["MAC Activity Report"] = {
 			"fieldtype": "Select",
 			"options": "\nDone\nCancelled"
 		}
-	]
+	],
+	"onload": function(report) {
+		// Clear Filters Button
+		report.page.add_inner_button(__('Clear Filters'), function () {
+			report.filters.forEach(f => f.set_value(''));
+			report.refresh();
+		}).addClass('btn-secondary');
+
+		// Download CSV Button
+		report.page.add_inner_button(__('Download CSV'), function () {
+			frappe.query_report.export_report();
+		}).addClass('btn-primary');
+	}
 };
