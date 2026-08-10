@@ -17084,12 +17084,20 @@
           }
 
           // Save the document
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.detailRecord,
-            },
-          });
+          let res;
+          if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 1) {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.asset_actions.save_asset_after_submit",
+              args: { doc: this.detailRecord },
+            });
+          } else {
+            res = await frappe.call({
+              method: "frappe.client.save",
+              args: {
+                doc: this.detailRecord,
+              },
+            });
+          }
           if (res.message) {
             this.detailRecord = res.message;
             this.detailRecord._originalName = res.message.name;
