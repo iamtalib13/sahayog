@@ -34,11 +34,11 @@ def send_pre_training_reminders():
     trainings = frappe.db.get_all(
         "Training",
         filters={
-            "training_date": target_date,
+            "from_date": target_date,
             "pre_reminder_sent": 0,
             "docstatus": ["<", 2]
         },
-        fields=["name", "training_date", "start_time", "training_program",
+        fields=["name", "from_date", "to_date", "start_time", "training_program",
                 "trainer", "training_location", "zone", "region", "district", "branch"]
     )
 
@@ -68,12 +68,12 @@ def send_post_training_closures():
     trainings = frappe.db.get_all(
         "Training",
         filters={
-            "training_date": yesterday,
+            "to_date": yesterday,
             "training_delivered": 1,
             "closure_sent": 0,
             "docstatus": ["<", 2]
         },
-        fields=["name", "training_date", "training_program", "trainer",
+        fields=["name", "from_date", "to_date", "training_program", "trainer",
                 "training_location", "zone", "region", "district", "branch",
                 "training_delivered", "attendance_marked", "pre_assessment_taken",
                 "post_assessment_taken", "feedback_taken", "trainer_remarks"]
@@ -84,7 +84,7 @@ def send_post_training_closures():
         if not recipients:
             continue
 
-        subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.training_date)}"
+        subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.from_date)} - {_fmt_date(training.to_date)}"
         message = _post_training_email_body(training)
 
         try:
@@ -113,7 +113,7 @@ def _pre_training_email_body(t):
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
             <td style="padding:6px 0;font-weight:600">{t.training_program or "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Date</td>
-            <td style="padding:6px 0;font-weight:600">{_fmt_date(t.training_date)}</td></tr>
+            <td style="padding:6px 0;font-weight:600">{_fmt_date(t.from_date)} - {_fmt_date(t.to_date)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Time</td>
             <td style="padding:6px 0">{_fmt_time(t.start_time)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Location</td>
@@ -144,7 +144,7 @@ def _post_training_email_body(t):
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
             <td style="padding:6px 0;font-weight:600">{t.training_program or "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Date</td>
-            <td style="padding:6px 0">{_fmt_date(t.training_date)}</td></tr>
+            <td style="padding:6px 0">{_fmt_date(t.from_date)} - {_fmt_date(t.to_date)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Zone / District</td>
             <td style="padding:6px 0">{t.zone or "—"} / {t.district or "—"}</td></tr>
       </table>
