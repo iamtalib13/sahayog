@@ -1,0 +1,2359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+    <title>L&amp;D Training Calendar</title>
+    <style>
+      :root {
+        --bg: #f5f6f8;
+        --surface: #ffffff;
+        --surface-2: #f1f2f4;
+        --surface-3: #e9eaed;
+        --border: #e3e5e9;
+        --ink-1: #1c1d21;
+        --ink-2: #4a4b52;
+        --ink-3: #87898f;
+        --accent: #4f6bed;
+        --accent-soft: #eef1fe;
+        --accent-ink: #3f57c4;
+        --green: #1f9d61;
+        --green-soft: #e6f6ee;
+        --orange: #e07030;
+        --orange-soft: #fdf0e7;
+        --gray: #8a8f98;
+        --gray-soft: #f0f1f3;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --sidebar-w: 230px;
+        --sidebar-w-collapsed: 60px;
+        --header-h: 56px;
+        --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink-1);
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font-family: inherit;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: inherit;
+      }
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+        font-size: 13px;
+        color: var(--ink-1);
+      }
+      button:focus-visible,
+      a:focus-visible,
+      [tabindex]:focus-visible,
+      select:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+        border-radius: var(--radius-sm);
+      }
+
+      /* ---------- App shell ---------- */
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: var(--sidebar-w) 1fr;
+        grid-template-rows: var(--header-h) 1fr;
+        grid-template-areas: "sidebar header" "sidebar main";
+        transition: grid-template-columns 0.16s ease;
+      }
+      .app.collapsed {
+        grid-template-columns: var(--sidebar-w-collapsed) 1fr;
+      }
+
+      /* ---------- Shared controls ---------- */
+      .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: var(--radius-sm);
+        color: var(--ink-2);
+        flex-shrink: 0;
+      }
+      .icon-btn:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .icon-btn svg {
+        width: 17px;
+        height: 17px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 13px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--ink-2);
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .btn:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .btn-primary:hover {
+        background: var(--accent-ink);
+        color: #fff;
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .role-badge {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+      .badge-admin {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .badge-trainer {
+        background: var(--green-soft);
+        color: #15803d;
+      }
+      .badge-viewer {
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+      }
+      .badge-general {
+        background: var(--gray-soft);
+        color: #4a4b52;
+      }
+
+      .field-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 4px;
+      }
+      .field-input,
+      .field-select {
+        width: 100%;
+        height: 32px;
+        padding: 0 9px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        outline: none;
+      }
+      .field-input:focus,
+      .field-select:focus {
+        border-color: var(--accent);
+      }
+
+      /* ---------- Header ---------- */
+      .header {
+        grid-area: header;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        min-width: 0;
+      }
+      .header-title-block {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .header-title-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+      .header-title {
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+      }
+      .header-sub {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
+      }
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 32px;
+        padding: 0 10px;
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        color: var(--ink-3);
+        width: 240px;
+        max-width: 26vw;
+        margin-left: 10px;
+        border: 1px solid transparent;
+        transition: border-color 0.12s, background 0.12s;
+      }
+      .search:focus-within {
+        background: var(--surface);
+        border-color: var(--accent);
+      }
+      .search svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+      }
+      .search input {
+        border: none;
+        background: none;
+        outline: none;
+        font-size: 13px;
+        color: var(--ink-1);
+        width: 100%;
+      }
+      .search input::placeholder {
+        color: var(--ink-3);
+      }
+      .header-spacer {
+        flex: 1;
+        min-width: 8px;
+      }
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 2px;
+        flex-shrink: 0;
+        user-select: none;
+      }
+
+      /* ---------- Sidebar ---------- */
+      .sidebar {
+        grid-area: sidebar;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .sidebar-top {
+        height: var(--header-h);
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        gap: 6px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        padding: 0 4px;
+      }
+      .brand-mark {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--accent);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .brand-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .collapse-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius-sm);
+        display: grid;
+        place-items: center;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .collapse-btn:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .collapse-btn svg {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.16s ease;
+      }
+      .app.collapsed .collapse-btn svg {
+        transform: rotate(180deg);
+      }
+      .sidebar-scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 10px 10px 16px;
+      }
+      .sidebar-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+      .sidebar-scroll::-webkit-scrollbar-thumb {
+        background: var(--surface-3);
+        border-radius: 8px;
+      }
+      .sidebar-section + .sidebar-section {
+        margin-top: 18px;
+      }
+      .sidebar-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ink-3);
+        padding: 0 8px 6px;
+      }
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 36px;
+        padding: 0 8px;
+        border-radius: var(--radius-sm);
+        color: var(--ink-2);
+        width: 100%;
+        text-align: left;
+        margin-bottom: 2px;
+      }
+      .nav-item:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .nav-item.active {
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        font-weight: 600;
+      }
+      .nav-item svg {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+      }
+      .item-label {
+        font-size: 13.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+      }
+      .item-count {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ink-3);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 1px 7px;
+        flex-shrink: 0;
+      }
+      .nav-item.active .item-count {
+        background: #fff;
+        color: var(--accent-ink);
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .nav-placeholder {
+        opacity: 0.55;
+        pointer-events: none;
+      }
+      .app.collapsed .brand-name,
+      .app.collapsed .sidebar-section-title,
+      .app.collapsed .item-label,
+      .app.collapsed .item-count {
+        display: none;
+      }
+      .app.collapsed .nav-item,
+      .app.collapsed .collapse-btn,
+      .app.collapsed .brand {
+        justify-content: center;
+        padding: 0;
+      }
+      .sidebar-footer {
+        border-top: 1px solid var(--border);
+        padding: 8px 10px;
+        flex-shrink: 0;
+        font-size: 11.5px;
+        color: var(--ink-3);
+      }
+      .app.collapsed .sidebar-footer {
+        text-align: center;
+        padding: 8px 4px;
+      }
+
+      /* ---------- Main ---------- */
+      .main {
+        grid-area: main;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      /* Filters */
+      .filters-bar {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        padding: 12px 20px 10px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 128px;
+      }
+      .filter-group input,
+      .filter-group select {
+        height: 30px;
+      }
+      .filters-bar .filter-group {
+        min-width: 116px;
+        gap: 3px;
+      }
+      .filters-bar .field-label {
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0.01em;
+        margin-bottom: 0;
+      }
+      .filters-bar .filter-group input,
+      .filters-bar .filter-group select {
+        height: 26px;
+        font-size: 12px;
+        padding: 0 7px;
+      }
+      .btn-reset {
+        background: transparent;
+        border: none;
+        color: var(--ink-3);
+        font-size: 12px;
+        height: 26px;
+        padding: 0 6px;
+        margin-left: 2px;
+      }
+      .btn-reset:hover {
+        background: transparent;
+        color: var(--accent-ink);
+      }
+
+      /* Toolbar */
+      .cal-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px 0;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+      }
+      .month-nav {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .month-title-block {
+        text-align: center;
+        flex: 1;
+        min-width: 120px;
+      }
+      .month-title {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .month-count {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        margin-top: 1px;
+      }
+      .view-switch {
+        display: flex;
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        padding: 3px;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+      .view-switch button {
+        height: 26px;
+        padding: 0 12px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--ink-2);
+        border-radius: 5px;
+      }
+      .view-switch button.active {
+        background: var(--surface);
+        color: var(--ink-1);
+        box-shadow: var(--shadow-1);
+      }
+      .view-switch button:not(.active):hover {
+        color: var(--ink-1);
+      }
+
+      /* Status summary */
+      .status-summary {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 6px 20px;
+        flex-shrink: 0;
+        font-size: 12px;
+        color: var(--ink-2);
+        flex-wrap: wrap;
+      }
+      .status-summary button {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 7px;
+        border-radius: 6px;
+        color: var(--ink-2);
+        font-size: 12px;
+        font-weight: 500;
+        background: transparent;
+      }
+      .status-summary button:hover {
+        background: var(--surface-2);
+      }
+      .status-summary button.active {
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+      }
+      .status-summary button .sum-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-summary .sum-count {
+        font-weight: 700;
+      }
+      .summary-sep {
+        width: 1px;
+        height: 12px;
+        background: var(--border);
+        margin: 0 4px;
+      }
+
+      /* Calendar body */
+      .cal-body {
+        flex: 1;
+        display: flex;
+        padding: 0 20px 12px;
+      }
+      .cal-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .weekday-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .weekday-row div {
+        padding: 7px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ink-3);
+        text-align: left;
+      }
+      .weekday-row .wk-num {
+        display: block;
+        margin-top: 2px;
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: none;
+        letter-spacing: normal;
+        color: var(--ink-1);
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+        text-align: center;
+        border-radius: 50%;
+      }
+      .weekday-row .wk-num.is-today {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* Pixel-perfect grid: 1px gutters drawn by the shared background */
+      .month-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        grid-auto-rows: 1fr;
+        gap: 1px;
+        background: var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .day-cell {
+        background: var(--surface);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-height: 92px;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .day-cell.other-month {
+        background: #fcfcfd;
+      }
+      .day-cell:hover {
+        background: var(--surface-2);
+      }
+      .day-cell.selected {
+        box-shadow: inset 0 0 0 1.5px var(--accent);
+      }
+      .day-num {
+        width: 22px;
+        height: 22px;
+        display: grid;
+        place-items: center;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--ink-2);
+        border-radius: 50%;
+      }
+      .day-cell.other-month .day-num {
+        color: var(--ink-3);
+      }
+      .day-cell.is-today .day-num {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+      }
+      .day-cell.dimmed {
+        opacity: 0.45;
+      }
+
+      .event-chip {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        font-size: 11px;
+        padding: 3px 5px;
+        border-radius: 4px;
+        background: var(--surface-2);
+        color: var(--ink-1);
+        width: 100%;
+        min-width: 0;
+        cursor: pointer;
+        border-left: 2px solid transparent;
+      }
+      .event-chip:hover {
+        background: var(--surface-3);
+      }
+      .event-chip .status-dot {
+        width: 6px;
+        height: 6px;
+        flex-shrink: 0;
+      }
+      .event-chip-top {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        width: 100%;
+        min-width: 0;
+      }
+      .event-chip-title {
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 500;
+      }
+      .event-chip-time {
+        font-size: 9.5px;
+        color: var(--ink-3);
+        padding-left: 10px;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .event-more {
+        font-size: 10.5px;
+        color: var(--accent-ink);
+        padding: 0 5px;
+        cursor: pointer;
+      }
+
+      /* Week view */
+      .week-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .week-day-col {
+        background: var(--surface);
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 0;
+      }
+      .week-day-col.is-today {
+        background: #fafbff;
+      }
+      .week-day-col.selected {
+        box-shadow: inset 0 0 0 1.5px var(--accent);
+      }
+      .week-day-col.dimmed {
+        opacity: 0.45;
+      }
+      .week-event {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        font-size: 11.5px;
+        padding: 5px 6px;
+        border-radius: 6px;
+        background: var(--surface-2);
+        line-height: 1.35;
+        min-width: 0;
+        cursor: pointer;
+      }
+      .week-event:hover {
+        background: var(--surface-3);
+      }
+      .week-event .status-dot {
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
+      .week-event-title {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+        color: var(--ink-1);
+      }
+      .week-event-time {
+        color: var(--ink-3);
+        font-size: 10.5px;
+      }
+      .week-day-empty {
+        font-size: 11px;
+        color: var(--ink-3);
+        padding: 4px 2px;
+      }
+
+      /* Day view */
+      .day-view {
+        flex: 1;
+        padding: 14px 4px 20px;
+      }
+      .day-view-heading {
+        font-size: 19px;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .day-view-sub {
+        font-size: 13px;
+        color: var(--ink-3);
+        margin-bottom: 18px;
+      }
+      .day-view-item {
+        display: flex;
+        gap: 14px;
+        padding: 12px 0;
+        border-top: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .day-view-item:hover .day-view-title {
+        color: var(--accent-ink);
+      }
+      .day-view-time {
+        width: 80px;
+        flex-shrink: 0;
+        font-size: 13px;
+        color: var(--ink-3);
+        padding-top: 2px;
+      }
+      .day-view-bar {
+        width: 3px;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
+      .day-view-title {
+        font-size: 14.5px;
+        font-weight: 600;
+        color: var(--ink-1);
+        margin-bottom: 3px;
+      }
+      .day-view-meta {
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+      .day-view-empty {
+        font-size: 13px;
+        color: var(--ink-3);
+        padding: 40px 0;
+        text-align: center;
+      }
+
+      /* Legend */
+      .legend {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 8px 20px 12px;
+        flex-shrink: 0;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11.5px;
+        color: var(--ink-2);
+      }
+
+      /* ---------- Overlays / drawer / modal ---------- */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.35);
+        z-index: 999;
+        display: none;
+      }
+      .overlay.open {
+        display: block;
+      }
+
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 400px;
+        max-width: 92vw;
+        background: var(--surface);
+        border-left: 1px solid var(--border);
+        box-shadow: -8px 0 30px rgba(16, 24, 40, 0.12);
+        z-index: 1000;
+        transform: translateX(102%);
+        transition: transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      .drawer.open {
+        transform: translateX(0);
+      }
+      .drawer-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 16px 18px 12px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .drawer-head .title {
+        flex: 1;
+        min-width: 0;
+      }
+      .drawer-head h3 {
+        font-size: 15.5px;
+        font-weight: 700;
+        margin: 4px 0 4px;
+        line-height: 1.3;
+      }
+      .drawer-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 18px 20px;
+      }
+      .drawer-section {
+        margin-bottom: 16px;
+      }
+      .drawer-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ink-3);
+        margin-bottom: 8px;
+      }
+      .meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 14px;
+      }
+      .meta-item .k {
+        font-size: 11px;
+        color: var(--ink-3);
+        margin-bottom: 1px;
+      }
+      .meta-item .v {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-1);
+      }
+      .check-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        background: var(--surface);
+      }
+      .check-item.done {
+        background: var(--green-soft);
+        border-color: #bbe7cf;
+      }
+      .check-item input {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--green);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .check-item .ck-label {
+        flex: 1;
+        font-size: 13px;
+      }
+      .check-item .ck-val {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-3);
+      }
+      .check-item.done .ck-val {
+        color: #15803d;
+      }
+      .progress-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .progress-track {
+        flex: 1;
+        height: 5px;
+        background: var(--surface-3);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 3px;
+        transition: width 0.2s ease;
+      }
+      .progress-fill.complete {
+        background: var(--green);
+      }
+      .progress-pct {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink-2);
+        min-width: 38px;
+        text-align: right;
+      }
+      .remarks-box {
+        width: 100%;
+        min-height: 64px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 7px 9px;
+        font-size: 13px;
+        resize: vertical;
+        outline: none;
+      }
+      .remarks-box:focus {
+        border-color: var(--accent);
+      }
+      .remarks-read {
+        font-size: 13px;
+        color: var(--ink-2);
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        white-space: pre-wrap;
+      }
+      .drawer-actions {
+        padding: 12px 18px 16px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 999px;
+        padding: 2px 9px;
+      }
+      .chip-green {
+        background: var(--green-soft);
+        color: #15803d;
+      }
+      .chip-orange {
+        background: var(--orange-soft);
+        color: #b45309;
+      }
+      .chip-blue {
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+      }
+      .chip-gray {
+        background: var(--gray-soft);
+        color: #4a4b52;
+      }
+
+      /* Modal */
+      .modal-wrap {
+        position: fixed;
+        inset: 0;
+        z-index: 1001;
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-wrap.open {
+        display: flex;
+      }
+      .modal {
+        width: 480px;
+        max-width: 92vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: var(--radius-md);
+        box-shadow: 0 18px 50px rgba(16, 24, 40, 0.18);
+        padding: 18px 20px 16px;
+      }
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      .modal-head h3 {
+        font-size: 15.5px;
+        font-weight: 700;
+        margin: 0;
+      }
+      .modal-close {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        color: var(--ink-3);
+        display: grid;
+        place-items: center;
+      }
+      .modal-close:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .form-row.full {
+        grid-template-columns: 1fr;
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .check-inline {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .check-inline input {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--accent);
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 22px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #1c1d21;
+        color: #fff;
+        padding: 9px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        z-index: 1300;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        pointer-events: none;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ---------- Responsive ---------- */
+      @media (max-width: 1080px) {
+        .search {
+          width: 170px;
+        }
+      }
+      @media (max-width: 920px) {
+        :root {
+          --sidebar-w: 200px;
+        }
+        .search {
+          display: none;
+        }
+      }
+      @media (max-width: 700px) {
+        .cal-body {
+          padding: 0 10px 8px;
+        }
+        .filters-bar {
+          padding: 10px 12px 8px;
+        }
+        .day-cell {
+          min-height: 64px;
+          padding: 4px;
+        }
+        .event-chip-time,
+        .event-chip .status-dot {
+          display: none;
+        }
+        .view-switch button {
+          padding: 0 9px;
+        }
+        .month-title {
+          font-size: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <!-- ===== Sidebar ===== -->
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand">
+            <div class="brand-mark">LD</div>
+            <div class="brand-name">L&amp;D Training</div>
+          </div>
+          <button class="collapse-btn" id="collapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" /></svg>
+          </button>
+        </div>
+
+        <div class="sidebar-scroll">
+          <div class="sidebar-section">
+            <button class="nav-item active" id="nav-calendar" title="Calendar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+              <span class="item-label">Calendar</span>
+            </button>
+            <button class="nav-item nav-placeholder" title="Trainings — training list & data management (backend phase)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><rect x="7" y="10" width="3" height="7" /><rect x="12" y="6" width="3" height="11" /><rect x="17" y="13" width="3" height="4" /></svg>
+              <span class="item-label">Trainings</span>
+            </button>
+            <button class="nav-item nav-placeholder" title="Reports — MIS & consolidated reporting (backend phase)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>
+              <span class="item-label">Reports</span>
+            </button>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Training status</div>
+            <button class="nav-item" data-status="draft" title="Draft">
+              <span class="status-dot" style="background: var(--gray)"></span>
+              <span class="item-label">Draft</span>
+              <span class="item-count" id="count-draft">0</span>
+            </button>
+            <button class="nav-item" data-status="upcoming" title="Upcoming">
+              <span class="status-dot" style="background: var(--accent)"></span>
+              <span class="item-label">Upcoming</span>
+              <span class="item-count" id="count-upcoming">0</span>
+            </button>
+            <button class="nav-item" data-status="inprogress" title="In progress">
+              <span class="status-dot" style="background: var(--orange)"></span>
+              <span class="item-label">In progress</span>
+              <span class="item-count" id="count-inprogress">0</span>
+            </button>
+            <button class="nav-item" data-status="completed" title="Completed">
+              <span class="status-dot" style="background: var(--green)"></span>
+              <span class="item-label">Completed</span>
+              <span class="item-count" id="count-completed">0</span>
+            </button>
+            <button class="nav-item" data-status="pending" title="Pending">
+              <span class="status-dot" style="background: var(--ink-3)"></span>
+              <span class="item-label">Pending</span>
+              <span class="item-count" id="count-pending">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sidebar-footer" id="sidebarFooter"></div>
+      </aside>
+
+      <!-- ===== Header ===== -->
+      <header class="header">
+        <div class="header-title-block">
+          <div class="header-title-row">
+            <h1 class="header-title">L&amp;D Training Calendar</h1>
+            <span class="role-badge badge-general" id="roleBadge">&nbsp;</span>
+          </div>
+          <div class="header-sub" id="headerSub">&nbsp;</div>
+        </div>
+
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <input type="text" id="searchInput" placeholder="Search trainings" />
+        </div>
+        <div class="header-spacer"></div>
+        <div class="header-right">
+          <button class="icon-btn" id="misBtn" title="Monthly MIS report" style="display: none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v-2a5 5 0 00-5-5H8a5 5 0 00-5 5v2" /><path d="M3 12h5l2 3h4l2-3h5v5a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+          </button>
+          <button class="icon-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
+          </button>
+          <div class="avatar" id="avatar">A</div>
+        </div>
+      </header>
+
+      <!-- ===== Main ===== -->
+      <main class="main">
+        <div class="filters-bar" id="filtersBar">
+          <div class="filter-group">
+            <label class="field-label">Zone</label>
+            <select class="field-select" id="fil-zone"><option value="">All Zones</option></select>
+          </div>
+          <div class="filter-group">
+            <label class="field-label">Region</label>
+            <select class="field-select" id="fil-region"><option value="">All Regions</option></select>
+          </div>
+          <div class="filter-group">
+            <label class="field-label">District</label>
+            <select class="field-select" id="fil-district"><option value="">All Districts</option></select>
+          </div>
+          <div class="filter-group">
+            <label class="field-label">Branch</label>
+            <input class="field-input" type="text" id="fil-branch" placeholder="Branch code..." />
+          </div>
+          <button class="btn btn-reset" id="btn-reset" title="Reset filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+            Reset
+          </button>
+        </div>
+
+        <div class="cal-toolbar">
+          <button class="btn" id="todayBtn">Today</button>
+          <div class="month-nav">
+            <button class="icon-btn" id="prevBtn" title="Previous">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <button class="icon-btn" id="nextBtn" title="Next">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+            </button>
+          </div>
+          <div class="month-title-block">
+            <div class="month-title" id="monthTitle"></div>
+            <div class="month-count" id="monthCount"></div>
+          </div>
+          <div class="view-switch" id="viewSwitch">
+            <button class="active" data-view="month">Month</button>
+            <button data-view="week">Week</button>
+            <button data-view="day">Day</button>
+          </div>
+        </div>
+
+        <div class="status-summary" id="statusSummary"></div>
+
+        <div class="cal-body">
+          <div class="cal-content" id="calContent"></div>
+        </div>
+
+        <div class="legend">
+          <span class="legend-item"><span class="status-dot" style="background: var(--green)"></span> Completed</span>
+          <span class="legend-item"><span class="status-dot" style="background: var(--orange)"></span> In Progress</span>
+          <span class="legend-item"><span class="status-dot" style="background: var(--accent)"></span> Upcoming</span>
+          <span class="legend-item"><span class="status-dot" style="background: var(--ink-3)"></span> Pending</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- Drawer: training details -->
+    <div class="overlay" id="drawerOverlay"></div>
+    <div class="drawer" id="drawer" aria-hidden="true">
+      <div class="drawer-head" id="drawerHead"></div>
+      <div class="drawer-body" id="drawerBody"></div>
+      <div class="drawer-actions" id="drawerActions"></div>
+    </div>
+
+    <!-- Modal: add training -->
+    <div class="modal-wrap" id="addModal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Add Training</h3>
+          <button class="modal-close" data-close="addModal" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="form-row full">
+          <div>
+            <label class="field-label">Training Program / Title *</label>
+            <input class="field-input" id="new-program" placeholder="E.g. Product Knowledge" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="field-label">Date *</label>
+            <input class="field-input" type="date" id="new-date" />
+          </div>
+          <div>
+            <label class="field-label">Start Time</label>
+            <input class="field-input" type="time" id="new-time" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="field-label">Trainer</label>
+            <select class="field-select" id="new-trainer"></select>
+          </div>
+          <div>
+            <label class="field-label">Training Location</label>
+            <input class="field-input" id="new-location" placeholder="Venue / town" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="field-label">Zone</label>
+            <select class="field-select" id="new-zone"></select>
+          </div>
+          <div>
+            <label class="field-label">Region</label>
+            <select class="field-select" id="new-region"></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label class="field-label">District</label>
+            <select class="field-select" id="new-district"></select>
+          </div>
+          <div>
+            <label class="field-label">Branch</label>
+            <input class="field-input" id="new-branch" placeholder="Branch code" />
+          </div>
+        </div>
+        <label class="check-inline">
+          <input type="checkbox" id="new-adhoc" />
+          Ad-hoc / Need-based training
+        </label>
+        <div class="form-actions">
+          <button class="btn" data-close="addModal">Cancel</button>
+          <button class="btn btn-primary" id="btn-save-training">Add Training</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: MIS report preview (admin) -->
+    <div class="modal-wrap" id="misModal">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Monthly MIS Report</h3>
+          <button class="modal-close" data-close="misModal" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div id="misBody"></div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // FRONTEND DEMO - mock data only. Backend phase will replace buildMockEvents()
+      // with the existing ld_dashboard API calls; field names/status logic match the real system.
+      (function () {
+        "use strict";
+
+        /* ---------- Status metadata (single source of truth) ---------- */
+        var STATUS_ORDER = ["draft", "upcoming", "inprogress", "completed", "pending"];
+        var STATUS_META = {
+          draft: { color: "#8a8f98", label: "Draft" },
+          upcoming: { color: "#4f6bed", label: "Upcoming" },
+          inprogress: { color: "#e07030", label: "In Progress" },
+          completed: { color: "#1f9d61", label: "Completed" },
+          pending: { color: "#a0a5b0", label: "Pending" },
+        };
+        var CHECK_FIELDS = [
+          { key: "training_delivered", label: "Training Delivered" },
+          { key: "attendance_marked", label: "Attendance Marked" },
+          { key: "pre_assessment_taken", label: "Pre-Assessment Taken" },
+          { key: "post_assessment_taken", label: "Post-Assessment Taken" },
+          { key: "feedback_taken", label: "Feedback Taken" },
+        ];
+
+        var ROLES = {
+          ld_admin: { label: "L&D Admin", badge: "badge-admin", sub: "Admin View - All zones, full access", canAdd: true, canEdit: true, showBudget: true, showMis: true },
+          trainer: { label: "Trainer", badge: "badge-trainer", sub: "Trainer Dashboard - update training status after completion", canAdd: true, canEdit: true, showBudget: false, showMis: false },
+          viewer: { label: "Leadership", badge: "badge-viewer", sub: "Leadership View - read-only training calendar", canAdd: false, canEdit: false, showBudget: false, showMis: false },
+          general: { label: "General", badge: "badge-general", sub: "General View", canAdd: false, canEdit: false, showBudget: false, showMis: false },
+        };
+
+        /* ---------- State ---------- */
+        var state = {
+          role: "ld_admin",
+          viewMode: "month",
+          viewDate: null,
+          selectedDate: null,
+          calEvents: [],
+          calFilters: { zone: "", region: "", district: "", branch: "" },
+          statusFilter: null,
+          search: "",
+          currentEvent: null,
+        };
+
+        var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        var MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        var WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        var WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        function iso(offsetDays) {
+          var d = new Date(today);
+          d.setDate(d.getDate() + offsetDays);
+          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        }
+        function todayIso() { return iso(0); }
+
+        function buildMockEvents() {
+          function ev(o) {
+            return {
+              name: o.name,
+              date: o.date,
+              time: o.time,
+              training_program: o.training_program,
+              topic: "Training",
+              trainer_name: o.trainer_name,
+              training_location: o.training_location,
+              zone: o.zone,
+              region: o.region,
+              district: o.district,
+              branch: o.branch,
+              participants: o.participants,
+              is_adhoc: o.is_adhoc || 0,
+              docstatus: o.docstatus == null ? 1 : o.docstatus,
+              training_delivered: o.training_delivered || 0,
+              attendance_marked: o.attendance_marked || 0,
+              pre_assessment_taken: o.pre_assessment_taken || 0,
+              post_assessment_taken: o.post_assessment_taken || 0,
+              feedback_taken: o.feedback_taken || 0,
+              trainer_remarks: o.trainer_remarks || "",
+              budget_amount: o.budget_amount || 0,
+              actual_expense: o.actual_expense || 0,
+            };
+          }
+          return [
+            ev({ name: "MEETING-0727-001", date: iso(-14), time: "9:00 AM", training_program: "Sales Enablement", trainer_name: "Priya Sharma", training_location: "Mumbai HO", zone: "West", region: "Konkan", district: "Mumbai", branch: "BR-MMB-01", participants: 18, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 1, feedback_taken: 1, trainer_remarks: "All modules covered. Attendees engaged well.", budget_amount: 8000, actual_expense: 7600 }),
+            ev({ name: "MEETING-0802-001", date: iso(-8), time: "10:00 AM", training_program: "Product Knowledge", trainer_name: "Rajesh Kumar", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 12, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 1, feedback_taken: 1, budget_amount: 5000, actual_expense: 4800 }),
+            ev({ name: "MEETING-0805-001", date: iso(-5), time: "11:30 AM", training_program: "Induction Batch 12", trainer_name: "Amit Verma", training_location: "Indore Training Hall", zone: "North", region: "Malwa", district: "Indore", branch: "BR-IND-02", participants: 14, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 0, feedback_taken: 1, trainer_remarks: "Post-assessment pending for 2 members.", budget_amount: 6000, actual_expense: 6100 }),
+            ev({ name: "MEETING-0807-001", date: iso(-3), time: "2:00 PM", training_program: "Soft Skills", trainer_name: "Sneha Patil", training_location: "Nagpur Office", zone: "Central", region: "Vidarbha", district: "Nagpur", branch: "BR-NGP-03", participants: 9, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 0, feedback_taken: 0, trainer_remarks: "Session went well. Assessment in progress.", budget_amount: 4000, actual_expense: 3900 }),
+            ev({ name: "MEETING-0808-001", date: iso(-2), time: "10:00 AM", training_program: "Customer Support Bootcamp", trainer_name: "Rajesh Kumar", training_location: "Thane Branch", zone: "West", region: "Konkan", district: "Thane", branch: "BR-THN-04", participants: 8, trainer_remarks: "Attendees were reassigned; needs rescheduling." }),
+            ev({ name: "MEETING-0809-001", date: iso(-1), time: "1:00 PM", training_program: "Compliance Refresher", trainer_name: "Priya Sharma", training_location: "Mumbai HO", zone: "West", region: "Konkan", district: "Mumbai", branch: "BR-MMB-01", participants: 11, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 0, post_assessment_taken: 0, feedback_taken: 0, trainer_remarks: "Covered policy updates. Feedback form to be shared." }),
+            ev({ name: "MEETING-0810-001", date: iso(0), time: "9:00 AM", training_program: "Workplace Safety", trainer_name: "Amit Verma", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 15 }),
+            ev({ name: "MEETING-0812-001", date: iso(2), time: "3:21 PM", training_program: "Training Assessment", trainer_name: "Sneha Patil", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 10, pre_assessment_taken: 1, is_adhoc: 1 }),
+            ev({ name: "MEETING-0814-001", date: iso(4), time: "3:00 PM", training_program: "Leadership Fundamentals", trainer_name: "Rajesh Kumar", training_location: "Bengaluru HO", zone: "South", region: "Karnataka", district: "Bengaluru", branch: "BR-BLR-05", participants: 20, is_adhoc: 1 }),
+            ev({ name: "MEETING-0816-001", date: iso(6), time: "12:00 PM", training_program: "Data Privacy", trainer_name: "Priya Sharma", training_location: "Indore Training Hall", zone: "North", region: "Malwa", district: "Indore", branch: "BR-IND-02", participants: 13 }),
+            ev({ name: "MEETING-0819-001", date: iso(9), time: "10:30 AM", training_program: "Design Systems", trainer_name: "Amit Verma", training_location: "Nagpur Office", zone: "Central", region: "Vidarbha", district: "Nagpur", branch: "BR-NGP-03", participants: 7, docstatus: 0 }),
+            ev({ name: "MEETING-0821-001", date: iso(11), time: "11:00 AM", training_program: "Manager 1:1 Skills", trainer_name: "Sneha Patil", training_location: "Thane Branch", zone: "West", region: "Konkan", district: "Thane", branch: "BR-THN-04", participants: 5, docstatus: 0, is_adhoc: 1 }),
+            ev({ name: "MEETING-0818-001", date: iso(8), time: "2:30 PM", training_program: "Field Work Training", trainer_name: "Rajesh Kumar", training_location: "Bengaluru HO", zone: "South", region: "Karnataka", district: "Bengaluru", branch: "BR-BLR-05", participants: 16 }),
+          ];
+        }
+
+        /* ---------- Pure helpers ---------- */
+        function esc(s) {
+          return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+        function fmtTime(t) {
+          if (!t) return "";
+          var p = String(t).split(":");
+          var h = parseInt(p[0], 10), m = p[1] || "00";
+          var ap = h >= 12 ? "PM" : "AM";
+          h = h % 12 || 12;
+          return h + ":" + m + " " + ap;
+        }
+        function inr(n) {
+          n = Number(n || 0);
+          return "\u20B9" + n.toLocaleString("en-IN");
+        }
+        function completionScore(ev) {
+          return CHECK_FIELDS.filter(function (f) { return ev[f.key]; }).length;
+        }
+        function statusOf(ev) {
+          if (ev.docstatus === 0) return "draft";
+          var s = completionScore(ev);
+          if (s === 5) return "completed";
+          if (s > 0) return "inprogress";
+          return ev.date >= todayIso() ? "upcoming" : "pending";
+        }
+        function monthOf(d) { return d.getMonth(); }
+        function yearOf(d) { return d.getFullYear(); }
+        function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+        function startOfWeek(d) {
+          var s = new Date(d);
+          s.setDate(s.getDate() - s.getDay());
+          s.setHours(0, 0, 0, 0);
+          return s;
+        }
+        function isoOf(d) {
+          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+        }
+
+        function filteredEvents() {
+          var f = state.calFilters;
+          var q = (state.search || "").trim().toLowerCase();
+          return state.calEvents.filter(function (ev) {
+            if (f.zone && ev.zone !== f.zone) return false;
+            if (f.region && ev.region !== f.region) return false;
+            if (f.district && ev.district !== f.district) return false;
+            if (f.branch && !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())) return false;
+            if (q) {
+              var hay = [ev.training_program, ev.topic, ev.trainer_name, ev.training_location, ev.zone, ev.region, ev.district, ev.branch].join(" ").toLowerCase();
+              if (hay.indexOf(q) === -1) return false;
+            }
+            return true;
+          });
+        }
+        function statusCounts(events) {
+          var c = { draft: 0, upcoming: 0, inprogress: 0, completed: 0, pending: 0 };
+          events.forEach(function (ev) { c[statusOf(ev)]++; });
+          return c;
+        }
+
+        /* ---------- Role UI ---------- */
+        function role() { return ROLES[state.role]; }
+
+        function setupRoleUI() {
+          var r = role();
+          var badge = document.getElementById("roleBadge");
+          badge.textContent = r.label;
+          badge.className = "role-badge " + r.badge;
+          document.getElementById("headerSub").textContent = r.sub;
+          document.getElementById("avatar").textContent = r.label.charAt(0);
+          document.getElementById("sidebarFooter").textContent = r.label;
+          var addBtn = document.getElementById("btn-add-training");
+          if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
+          document.getElementById("misBtn").style.display = r.showMis ? "grid" : "none";
+        }
+
+        /* ---------- Filters ---------- */
+        function populateGeoOptions() {
+          var zones = {}, regions = {}, districts = {};
+          state.calEvents.forEach(function (ev) {
+            if (ev.zone) zones[ev.zone] = 1;
+            if (ev.region) regions[ev.region] = 1;
+            if (ev.district) districts[ev.district] = 1;
+          });
+          fillSelect("fil-zone", Object.keys(zones).sort(), "All Zones");
+          fillSelect("fil-region", Object.keys(regions).sort(), "All Regions");
+          fillSelect("fil-district", Object.keys(districts).sort(), "All Districts");
+          fillSelect("new-zone", Object.keys(zones).sort(), "");
+          fillSelect("new-region", Object.keys(regions).sort(), "");
+          fillSelect("new-district", Object.keys(districts).sort(), "");
+        }
+        function fillSelect(id, items, placeholder) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.innerHTML = "";
+          if (placeholder !== undefined) {
+            var o = document.createElement("option");
+            o.value = "";
+            o.textContent = placeholder;
+            el.appendChild(o);
+          }
+          items.forEach(function (v) {
+            var op = document.createElement("option");
+            op.value = v;
+            op.textContent = v;
+            el.appendChild(op);
+          });
+        }
+
+        function setupFilters() {
+          document.getElementById("fil-zone").onchange = function (e) { state.calFilters.zone = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
+          document.getElementById("fil-region").onchange = function (e) { state.calFilters.region = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
+          document.getElementById("fil-district").onchange = function (e) { state.calFilters.district = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
+          var bt;
+          document.getElementById("fil-branch").oninput = function (e) {
+            clearTimeout(bt);
+            bt = setTimeout(function () { state.calFilters.branch = e.target.value.trim(); render(); }, 350);
+          };
+          document.getElementById("btn-reset").onclick = function () {
+            state.calFilters = { zone: "", region: "", district: "", branch: "" };
+            state.statusFilter = null;
+            state.search = "";
+            document.getElementById("searchInput").value = "";
+            ["fil-zone", "fil-region", "fil-district"].forEach(function (s) { document.getElementById(s).value = ""; });
+            document.getElementById("fil-branch").value = "";
+            state.selectedDate = new Date(today);
+            render();
+          };
+        }
+        function pickRelevantDate() {
+          var evs = filteredEvents();
+          if (!evs.length) return new Date(today);
+          var dates = evs.map(function (e) { return e.date; }).sort();
+          var next = dates.find(function (d) { return d >= todayIso(); }) || dates[dates.length - 1];
+          var p = next.split("-");
+          return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+        }
+
+        /* ---------- Render ---------- */
+        function render() {
+          updateSidebarCounts();
+          renderStatusSummary();
+          var el = document.getElementById("calContent");
+          el.innerHTML = "";
+          if (state.viewMode === "month") renderMonthView();
+          else if (state.viewMode === "week") renderWeekView();
+          else renderDayView();
+        }
+
+        function eventsOn(dateIso) {
+          var statusOk = state.statusFilter
+            ? function (ev) { return statusOf(ev) === state.statusFilter; }
+            : function () { return true; };
+          return filteredEvents()
+            .filter(function (ev) { return ev.date === dateIso && statusOk(ev); })
+            .sort(function (a, b) { return a.time.localeCompare(b.time); });
+        }
+
+        function monthCountLabel() {
+          var evs = filteredEvents().filter(function (ev) {
+            return ev.date.slice(0, 7) === state.viewDate.getFullYear() + "-" + String(state.viewDate.getMonth() + 1).padStart(2, "0");
+          });
+          return evs.length + " training" + (evs.length === 1 ? "" : "s") + " scheduled";
+        }
+
+        function renderMonthView() {
+          state.viewDate = state.viewDate || new Date(today.getFullYear(), today.getMonth(), 1);
+          document.getElementById("monthTitle").textContent = MONTHS[monthOf(state.viewDate)] + " " + yearOf(state.viewDate);
+          document.getElementById("monthCount").textContent = monthCountLabel();
+
+          var content = document.getElementById("calContent");
+          var row = document.createElement("div");
+          row.className = "weekday-row";
+          WEEKDAYS.forEach(function (w) {
+            var d = document.createElement("div");
+            d.textContent = w;
+            row.appendChild(d);
+          });
+          content.appendChild(row);
+
+          var grid = document.createElement("div");
+          grid.className = "month-grid";
+
+          var first = new Date(yearOf(state.viewDate), monthOf(state.viewDate), 1);
+          var start = new Date(first);
+          start.setDate(start.getDate() - first.getDay());
+
+          var isFiltered = state.statusFilter !== null;
+          for (var i = 0; i < 42; i++) {
+            var cellDate = new Date(start);
+            cellDate.setDate(start.getDate() + i);
+            var dateIso = isoOf(cellDate);
+            var evs = eventsOn(dateIso);
+            var other = cellDate.getMonth() !== monthOf(state.viewDate);
+
+            var cell = document.createElement("div");
+            cell.className = "day-cell";
+            if (other) cell.classList.add("other-month");
+            if (sameDay(cellDate, today)) cell.classList.add("is-today");
+            if (sameDay(cellDate, state.selectedDate)) cell.classList.add("selected");
+            if (isFiltered && evs.length === 0 && !other) cell.classList.add("dimmed");
+
+            var num = document.createElement("div");
+            num.className = "day-num";
+            num.textContent = cellDate.getDate();
+            cell.appendChild(num);
+
+            evs.slice(0, 2).forEach(function (ev) {
+              cell.appendChild(eventChip(ev));
+            });
+            if (evs.length > 2) {
+              var more = document.createElement("div");
+              more.className = "event-more";
+              more.textContent = "+" + (evs.length - 2) + " more";
+              more.onclick = function () {
+                var p = dateIso.split("-");
+                state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                state.viewMode = "day";
+                syncViewSwitch();
+                render();
+              };
+              cell.appendChild(more);
+            }
+
+            cell.addEventListener("click", function (d) { return function () {
+              state.selectedDate = d;
+              if (state.viewMode === "month" && d.getMonth() !== monthOf(state.viewDate)) {
+                state.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+              }
+              render();
+            }; }(new Date(cellDate)));
+            grid.appendChild(cell);
+          }
+          content.appendChild(grid);
+        }
+
+        function eventChip(ev) {
+          var st = statusOf(ev);
+          var meta = STATUS_META[st];
+          var chip = document.createElement("div");
+          chip.className = "event-chip";
+          chip.style.borderLeftColor = meta.color;
+          chip.innerHTML =
+            '<span class="event-chip-top">' +
+            '<span class="status-dot" style="background:' + meta.color + '"></span>' +
+            '<span class="event-chip-title">' + esc(ev.training_program || ev.topic || "Training") + "</span>" +
+            "</span>" +
+            '<span class="event-chip-time">' + esc(ev.time || "") + "</span>";
+          chip.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openDrawer(ev);
+          });
+          return chip;
+        }
+
+        function renderWeekView() {
+          var anchor = state.selectedDate || new Date(today);
+          var weekStart = startOfWeek(anchor);
+          var weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+
+          var title;
+          if (weekStart.getMonth() === weekEnd.getMonth()) {
+            title = MONTH_SHORT[weekStart.getMonth()] + " " + weekStart.getDate() + " - " + weekEnd.getDate() + ", " + weekStart.getFullYear();
+          } else {
+            title = MONTH_SHORT[weekStart.getMonth()] + " " + weekStart.getDate() + " - " + MONTH_SHORT[weekEnd.getMonth()] + " " + weekEnd.getDate() + ", " + weekEnd.getFullYear();
+          }
+          document.getElementById("monthTitle").textContent = title;
+
+          var visible = filteredEvents().filter(function (ev) {
+            var d = new Date(parseInt(ev.date.slice(0, 4), 10), parseInt(ev.date.slice(5, 7), 10) - 1, parseInt(ev.date.slice(8, 10), 10));
+            return d >= weekStart && d <= weekEnd;
+          });
+          document.getElementById("monthCount").textContent = visible.length + " training" + (visible.length === 1 ? "" : "s") + " scheduled";
+
+          var content = document.getElementById("calContent");
+          var row = document.createElement("div");
+          row.className = "weekday-row";
+          for (var i = 0; i < 7; i++) {
+            var d = new Date(weekStart);
+            d.setDate(d.getDate() + i);
+            var dCell = document.createElement("div");
+            dCell.innerHTML = WEEKDAYS[i] + '<span class="wk-num' + (sameDay(d, today) ? " is-today" : "") + '">' + d.getDate() + "</span>";
+            row.appendChild(dCell);
+          }
+          content.appendChild(row);
+
+          var grid = document.createElement("div");
+          grid.className = "week-grid";
+          var isFiltered = state.statusFilter !== null;
+
+          for (var j = 0; j < 7; j++) {
+            var day = new Date(weekStart);
+            day.setDate(day.getDate() + j);
+            var dateIso = isoOf(day);
+            var evs = eventsOn(dateIso);
+
+            var col = document.createElement("div");
+            col.className = "week-day-col";
+            if (sameDay(day, today)) col.classList.add("is-today");
+            if (sameDay(day, state.selectedDate)) col.classList.add("selected");
+            if (isFiltered && evs.length === 0) col.classList.add("dimmed");
+
+            if (evs.length === 0) {
+              var empty = document.createElement("div");
+              empty.className = "week-day-empty";
+              empty.textContent = "No trainings";
+              col.appendChild(empty);
+            } else {
+              evs.forEach(function (ev) {
+                var st = statusOf(ev);
+                var item = document.createElement("div");
+                item.className = "week-event";
+                item.innerHTML =
+                  '<span class="status-dot" style="background:' + STATUS_META[st].color + '"></span>' +
+                  '<span><span class="week-event-title">' + esc(ev.training_program || ev.topic || "Training") + "</span>" +
+                  '<br><span class="week-event-time">' + esc(ev.time || "") + (ev.training_location ? " • " + esc(ev.training_location) : "") + "</span></span>";
+                item.addEventListener("click", function (e) {
+                  e.stopPropagation();
+                  openDrawer(ev);
+                });
+                col.appendChild(item);
+              });
+            }
+
+            col.addEventListener("click", function (d) { return function () {
+              state.selectedDate = d;
+              render();
+            }; }(new Date(day)));
+            grid.appendChild(col);
+          }
+          content.appendChild(grid);
+        }
+
+        function renderDayView() {
+          var d = state.selectedDate || new Date(today);
+          document.getElementById("monthTitle").textContent = WEEKDAY_NAMES[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate() + " " + d.getFullYear();
+
+          var evs = eventsOn(isoOf(d));
+          document.getElementById("monthCount").textContent = evs.length + " training" + (evs.length === 1 ? "" : "s") + " scheduled";
+
+          var content = document.getElementById("calContent");
+          var wrap = document.createElement("div");
+          wrap.className = "day-view";
+
+          var head = document.createElement("div");
+          head.className = "day-view-heading";
+          head.textContent = WEEKDAY_NAMES[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate();
+          wrap.appendChild(head);
+
+          if (evs.length === 0) {
+            var empty = document.createElement("div");
+            empty.className = "day-view-empty";
+            empty.textContent = "No trainings scheduled for this day";
+            wrap.appendChild(empty);
+          } else {
+            evs.forEach(function (ev) {
+              var st = statusOf(ev);
+              var item = document.createElement("div");
+              item.className = "day-view-item";
+              item.innerHTML =
+                '<div class="day-view-time">' + esc(ev.time || "All day") + "</div>" +
+                '<div class="day-view-bar" style="background:' + STATUS_META[st].color + '"></div>' +
+                "<div>" +
+                '<div class="day-view-title">' + esc(ev.training_program || ev.topic || "Training") + "</div>" +
+                '<div class="day-view-meta">' + esc(STATUS_META[st].label) +
+                (ev.training_location ? " &middot; " + esc(ev.training_location) : "") +
+                (ev.trainer_name ? " &middot; " + esc(ev.trainer_name) : "") + "</div></div>";
+              item.addEventListener("click", function (e) {
+                e.stopPropagation();
+                openDrawer(ev);
+              });
+              wrap.appendChild(item);
+            });
+          }
+          content.appendChild(wrap);
+        }
+
+        function syncViewSwitch() {
+          document.querySelectorAll("#viewSwitch button").forEach(function (b) {
+            b.classList.toggle("active", b.dataset.view === state.viewMode);
+          });
+        }
+
+        function updateSidebarCounts() {
+          var counts = statusCounts(filteredEvents());
+          STATUS_ORDER.forEach(function (k) {
+            var el = document.getElementById("count-" + k);
+            if (el) el.textContent = counts[k];
+          });
+          document.querySelectorAll(".nav-item[data-status]").forEach(function (b) {
+            b.classList.toggle("active", b.dataset.status === state.statusFilter);
+          });
+        }
+
+        function renderStatusSummary() {
+          var counts = statusCounts(filteredEvents());
+          var el = document.getElementById("statusSummary");
+          el.innerHTML = "";
+          var order = ["upcoming", "inprogress", "completed", "pending"];
+          order.forEach(function (k, i) {
+            var m = STATUS_META[k];
+            var b = document.createElement("button");
+            b.className = state.statusFilter === k ? "active" : "";
+            b.innerHTML =
+              '<span class="sum-dot" style="background:' + m.color + '"></span>' +
+              "<span>" + m.label + "</span>" +
+              '<span class="sum-count">' + counts[k] + "</span>";
+            b.addEventListener("click", function () {
+              state.statusFilter = state.statusFilter === k ? null : k;
+              render();
+            });
+            el.appendChild(b);
+            if (i < order.length - 1) {
+              var sep = document.createElement("span");
+              sep.className = "summary-sep";
+              el.appendChild(sep);
+            }
+          });
+        }
+
+        /* ---------- Drawer (training details) ---------- */
+        var drawer = document.getElementById("drawer");
+        var drawerOverlay = document.getElementById("drawerOverlay");
+
+        function closeDrawer() {
+          drawer.classList.remove("open");
+          drawerOverlay.classList.remove("open");
+          drawer.setAttribute("aria-hidden", "true");
+        }
+        function openDrawer(ev) {
+          state.currentEvent = ev;
+          var r = role();
+          var st = statusOf(ev);
+          var meta = STATUS_META[st];
+          var score = completionScore(ev);
+          var pct = Math.round((score / 5) * 100);
+
+          var chipClass = st === "completed" ? "chip-green" : st === "inprogress" ? "chip-orange" : st === "upcoming" ? "chip-blue" : "chip-gray";
+
+          var head =
+            '<div class="title">' +
+            '<span class="chip ' + chipClass + '"><span class="status-dot" style="background:' + meta.color + '"></span> ' + meta.label + "</span>" +
+            (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : ' <span class="chip chip-gray">Scheduled</span>') +
+            "<h3>" + esc(ev.training_program || ev.topic || "Training") + "</h3>" +
+            "</div>" +
+            '<button class="icon-btn" id="drawerClose" title="Close">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg></button>';
+          document.getElementById("drawerHead").innerHTML = head;
+          document.getElementById("drawerClose").onclick = closeDrawer;
+
+          var body =
+            '<div class="drawer-section">' +
+            '<div class="drawer-section-title">Details</div>' +
+            '<div class="meta-grid">' +
+            metaRow("Date", esc(ev.date)) +
+            metaRow("Time", esc(ev.time || "—")) +
+            metaRow("Zone", esc(ev.zone || "—")) +
+            metaRow("Region", esc(ev.region || "—")) +
+            metaRow("District", esc(ev.district || "—")) +
+            metaRow("Branch", esc(ev.branch || "—")) +
+            metaRow("Trainer", esc(ev.trainer_name || "—")) +
+            metaRow("Participants", ev.participants || 0) +
+            metaRow("Venue", esc(ev.training_location || "—")) +
+            "</div></div>";
+
+          body +=
+            '<div class="drawer-section">' +
+            '<div class="drawer-section-title">Completion ' + score + "/5</div>" +
+            '<div class="progress-row">' +
+            '<div class="progress-track"><div class="progress-fill' + (pct === 100 ? " complete" : "") + '" style="width:' + pct + '%"></div></div>' +
+            '<span class="progress-pct">' + pct + "%</span>" +
+            "</div></div>";
+
+          var checkList = CHECK_FIELDS.map(function (f) {
+            var on = !!ev[f.key];
+            var input = r.canEdit
+              ? '<input type="checkbox" ' + (on ? "checked" : "") + ' data-field="' + f.key + '" />'
+              : "";
+            return '<label class="check-item' + (on ? " done" : "") + '">' +
+              input +
+              '<span class="ck-label">' + f.label + "</span>" +
+              '<span class="ck-val">' + (on ? "Yes" : "No") + "</span></label>";
+          }).join("");
+          body += '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' + checkList + "</div>";
+
+          if (r.showBudget) {
+            var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
+            body +=
+              '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+              '<div class="meta-grid">' +
+              metaRow("Budget Amount", inr(ev.budget_amount)) +
+              metaRow("Actual Expense", inr(ev.actual_expense)) +
+              metaRow("Expense Status", expStatus) +
+              "</div></div>";
+          }
+
+          if (r.canEdit) {
+            body +=
+              '<div class="drawer-section">' +
+              '<div class="drawer-section-title">Trainer Remarks</div>' +
+              '<textarea class="remarks-box" id="remarksInput" placeholder="Add remarks...">' + esc(ev.trainer_remarks || "") + "</textarea>" +
+              "</div>";
+          } else if (ev.trainer_remarks) {
+            body +=
+              '<div class="drawer-section">' +
+              '<div class="drawer-section-title">Trainer Remarks</div>' +
+              '<div class="remarks-read">' + esc(ev.trainer_remarks) + "</div></div>";
+          }
+
+          document.getElementById("drawerBody").innerHTML = body;
+
+          var actions = "";
+          if (r.canEdit) {
+            actions += '<button class="btn" id="saveRemarksBtn">Save Remarks</button>';
+          }
+          actions += '<button class="btn btn-primary" id="drawerDone">Done</button>';
+          document.getElementById("drawerActions").innerHTML = actions;
+          if (r.canEdit) {
+            document.getElementById("saveRemarksBtn").onclick = function () { saveRemarks(); };
+            document.querySelectorAll("#drawerBody .check-item input").forEach(function (inp) {
+              inp.onchange = function () { toggleStatus(ev, inp.dataset.field, inp.checked); };
+            });
+          }
+          document.getElementById("drawerDone").onclick = closeDrawer;
+
+          drawerOverlay.classList.add("open");
+          drawer.classList.add("open");
+          drawer.setAttribute("aria-hidden", "false");
+        }
+
+        function metaRow(k, v) {
+          return '<div class="meta-item"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>";
+        }
+
+        function toggleStatus(ev, field, value) {
+          ev[field] = value ? 1 : 0;
+          var st = statusOf(ev);
+          var label = document.querySelector('.check-item input[data-field="' + field + '"]');
+          if (label) {
+            var item = label.closest(".check-item");
+            if (item) {
+              item.classList.toggle("done", value);
+              item.querySelector(".ck-val").textContent = value ? "Yes" : "No";
+            }
+          }
+          openDrawer(ev);
+          render();
+          showToast("Training " + (st === "completed" ? "marked complete" : "status updated"));
+        }
+
+        function saveRemarks() {
+          var ev = state.currentEvent;
+          if (!ev) return;
+          var val = (document.getElementById("remarksInput") || {}).value || "";
+          ev.trainer_remarks = val;
+          showToast("Remarks saved");
+        }
+
+        /* ---------- Add training ---------- */
+        var addModal = document.getElementById("addModal");
+
+        function openAddModal() {
+          if (!role().canAdd) return;
+          document.getElementById("new-program").value = "";
+          document.getElementById("new-date").value = todayIso();
+          document.getElementById("new-time").value = "";
+          document.getElementById("new-location").value = "";
+          document.getElementById("new-zone").value = "";
+          document.getElementById("new-region").value = "";
+          document.getElementById("new-district").value = "";
+          document.getElementById("new-branch").value = "";
+          document.getElementById("new-adhoc").checked = false;
+          addModal.classList.add("open");
+          document.getElementById("new-program").focus();
+        }
+        function closeModal(id) {
+          document.getElementById(id).classList.remove("open");
+        }
+        function saveTraining() {
+          var program = document.getElementById("new-program").value.trim();
+          var date = document.getElementById("new-date").value;
+          if (!program) { showToast("Training program is required"); return; }
+          if (!date) { showToast("Date is required"); return; }
+
+          var trainerSel = document.getElementById("new-trainer");
+          var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
+          var newEv = {
+            name: "TR-" + Date.now(),
+            date: date,
+            time: fmtTime(document.getElementById("new-time").value || "09:00:00"),
+            training_program: program,
+            topic: "Training",
+            trainer_name: trainerSel.options[trainerSel.selectedIndex] ? trainerSel.options[trainerSel.selectedIndex].textContent : "",
+            training_location: document.getElementById("new-location").value.trim(),
+            zone: document.getElementById("new-zone").value,
+            region: document.getElementById("new-region").value,
+            district: document.getElementById("new-district").value,
+            branch: document.getElementById("new-branch").value.trim(),
+            participants: 0,
+            is_adhoc: isAdhoc,
+            docstatus: 1,
+            training_delivered: 0,
+            attendance_marked: 0,
+            pre_assessment_taken: 0,
+            post_assessment_taken: 0,
+            feedback_taken: 0,
+            trainer_remarks: "",
+            budget_amount: 0,
+            actual_expense: 0,
+          };
+          state.calEvents.push(newEv);
+          populateGeoOptions();
+          var p = date.split("-");
+          state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+          if (state.viewMode !== "day") {
+            state.viewMode = "month";
+            syncViewSwitch();
+            state.viewDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, 1);
+          }
+          closeModal("addModal");
+          render();
+          showToast(isAdhoc ? "Ad-hoc training added to calendar" : "Training added to calendar");
+        }
+
+        /* ---------- MIS report (admin, demo preview) ---------- */
+        function openMisModal() {
+          var d = state.viewDate || new Date(today);
+          var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          var evs = filteredEvents().filter(function (e) { return e.date.slice(0, 7) === key; });
+          var counts = statusCounts(evs);
+          var rows = [
+            ["Total Trainings", evs.length],
+            ["Delivered", counts.completed + counts.inprogress + evs.filter(function (e) { return e.training_delivered && statusOf(e) === "upcoming"; }).length],
+            ["Attendance Marked", evs.filter(function (e) { return e.attendance_marked; }).length],
+            ["Pre-Assessment", evs.filter(function (e) { return e.pre_assessment_taken; }).length],
+            ["Post-Assessment", evs.filter(function (e) { return e.post_assessment_taken; }).length],
+            ["Feedback Taken", evs.filter(function (e) { return e.feedback_taken; }).length],
+            ["Ad-hoc", evs.filter(function (e) { return e.is_adhoc; }).length],
+          ];
+          var html =
+            '<div style="font-size:13px;color:var(--ink-3);margin-bottom:12px">' +
+            "Subject: L&D Monthly Training Report &mdash; " + MONTHS[d.getMonth()] + " " + d.getFullYear() + "<br>" +
+            "Recipients: mis@example.com (MIS HO) &mdash; L&D Admin validation required" +
+            "</div>" +
+            '<table class="mis-table">' +
+            rows.map(function (r) {
+              return '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:13px">' + r[0] +
+                '</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;text-align:right">' + r[1] + "</td></tr>";
+            }).join("") +
+            "</table>" +
+            '<div class="form-actions">' +
+            '<button class="btn" data-close="misModal">Close</button>' +
+            '<button class="btn btn-primary" id="misSend">Send to MIS HO</button>' +
+            "</div>";
+          document.getElementById("misBody").innerHTML = html;
+          document.getElementById("misModal").classList.add("open");
+          document.getElementById("misSend").onclick = function () {
+            closeModal("misModal");
+            showToast("MIS email sending — backend integration pending");
+          };
+        }
+
+        /* ---------- Toast ---------- */
+        var toastTimer = null;
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          t.textContent = msg;
+          t.classList.add("show");
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+        }
+
+        /* ---------- Wire up ---------- */
+        document.getElementById("collapseBtn").onclick = function () {
+          document.getElementById("app").classList.toggle("collapsed");
+        };
+
+        document.querySelectorAll("#viewSwitch button").forEach(function (b) {
+          b.onclick = function () {
+            state.viewMode = b.dataset.view;
+            syncViewSwitch();
+            if (state.viewMode === "month") {
+              var d = state.selectedDate || new Date(today);
+              state.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+            }
+            render();
+          };
+        });
+
+        document.getElementById("prevBtn").onclick = function () {
+          if (state.viewMode === "month") {
+            state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() - 1, 1);
+          } else if (state.viewMode === "week") {
+            var s = new Date(state.selectedDate || today);
+            s.setDate(s.getDate() - 7);
+            state.selectedDate = s;
+          } else {
+            var d = new Date(state.selectedDate || today);
+            d.setDate(d.getDate() - 1);
+            state.selectedDate = d;
+          }
+          render();
+        };
+        document.getElementById("nextBtn").onclick = function () {
+          if (state.viewMode === "month") {
+            state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() + 1, 1);
+          } else if (state.viewMode === "week") {
+            var s = new Date(state.selectedDate || today);
+            s.setDate(s.getDate() + 7);
+            state.selectedDate = s;
+          } else {
+            var d = new Date(state.selectedDate || today);
+            d.setDate(d.getDate() + 1);
+            state.selectedDate = d;
+          }
+          render();
+        };
+        document.getElementById("todayBtn").onclick = function () {
+          state.selectedDate = new Date(today);
+          state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          if (state.viewMode !== "month") { state.viewMode = "month"; syncViewSwitch(); }
+          render();
+        };
+
+        document.querySelectorAll(".nav-item[data-status]").forEach(function (b) {
+          b.onclick = function () {
+            state.statusFilter = state.statusFilter === b.dataset.status ? null : b.dataset.status;
+            render();
+          };
+        });
+
+        document.getElementById("searchInput").oninput = function (e) {
+          state.search = e.target.value;
+          render();
+        };
+
+        drawerOverlay.onclick = closeDrawer;
+        document.getElementById("btn-reset");
+        document.getElementById("misBtn").onclick = openMisModal;
+        document.querySelectorAll("[data-close]").forEach(function (b) {
+          b.onclick = function () { closeModal(b.dataset.close); };
+        });
+
+        var addTrainingBtn = document.createElement("button");
+        addTrainingBtn.className = "btn btn-primary";
+        addTrainingBtn.id = "btn-add-training";
+        addTrainingBtn.style.display = "none";
+        addTrainingBtn.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" /></svg> Add Training';
+        addTrainingBtn.onclick = openAddModal;
+        document.querySelector(".header-right").appendChild(addTrainingBtn);
+
+        document.getElementById("btn-save-training").onclick = saveTraining;
+        document.getElementById("new-trainer").innerHTML = "";
+        var trainerNames = [];
+        state.calEvents.forEach(function (ev) {
+          if (ev.trainer_name && trainerNames.indexOf(ev.trainer_name) === -1) trainerNames.push(ev.trainer_name);
+        });
+        trainerNames.sort().forEach(function (n) {
+          var o = document.createElement("option");
+          o.value = n;
+          o.textContent = n;
+          document.getElementById("new-trainer").appendChild(o);
+        });
+
+        /* ---------- Init ---------- */
+        state.calEvents = buildMockEvents();
+        state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        state.selectedDate = new Date(today);
+        populateGeoOptions();
+        setupRoleUI();
+        setupFilters();
+        render();
+      })();
+    </script>
+  </body>
+</html>
