@@ -1103,6 +1103,42 @@
         color: #4a4b52;
       }
 
+      .field-hint {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ink-3);
+        margin-left: 6px;
+      }
+      .participant-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .participant-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        border-radius: 999px;
+        padding: 3px 10px;
+      }
+      .participant-chip button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+        opacity: 0.7;
+      }
+      .participant-chip button:hover {
+        opacity: 1;
+      }
+
       /* Modal */
       .modal-wrap {
         position: fixed;
@@ -1415,9 +1451,15 @@
         </div>
         <div class="form-row">
           <div>
-            <label class="field-label">Date *</label>
-            <input class="field-input" type="date" id="new-date" />
+            <label class="field-label">From Date *</label>
+            <input class="field-input" type="date" id="new-from-date" />
           </div>
+          <div>
+            <label class="field-label">To Date *</label>
+            <input class="field-input" type="date" id="new-to-date" />
+          </div>
+        </div>
+        <div class="form-row">
           <div>
             <label class="field-label">Start Time *</label>
             <input class="field-input" type="text" id="new-time" placeholder="e.g. 9:00 or 09:00 AM" />
@@ -1452,6 +1494,22 @@
               max-height:180px;overflow-y:auto;
             "></div>
           </div>
+        </div>
+        <div class="form-row full">
+          <div style="position:relative">
+            <label class="field-label">Participants <span class="field-hint" id="participant-count">(0 selected)</span></label>
+            <input class="field-input" id="new-participant-search" placeholder="Search employee by name…" autocomplete="off" />
+            <div id="participant-dropdown" style="
+              display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
+              background:var(--surface);border:1px solid var(--border);border-top:none;
+              border-radius:0 0 var(--radius-sm) var(--radius-sm);
+              box-shadow:0 4px 12px rgba(16,24,40,0.1);
+              max-height:200px;overflow-y:auto;
+            "></div>
+          </div>
+        </div>
+        <div class="form-row full">
+          <div id="participant-chips" class="participant-chips"></div>
         </div>
         <div class="form-row">
           <div>
@@ -1552,6 +1610,9 @@
           search: "",
           currentEvent: null,
           loadedMonth: "",
+          branchOptions: [],
+          allEmployees: [],
+          selectedParticipants: [],
         };
 
         var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -1590,12 +1651,14 @@
         function completionScore(ev) {
           return CHECK_FIELDS.filter(function (f) { return ev[f.key]; }).length;
         }
+        function evStart(ev) { return ev.from_date || ev.date || ""; }
+        function evEnd(ev) { return ev.to_date || ev.from_date || ev.date || ""; }
         function statusOf(ev) {
           if (ev.docstatus === 0) return "draft";
           var s = completionScore(ev);
           if (s === 5) return "completed";
           if (s > 0) return "inprogress";
-          return ev.date >= todayIso() ? "upcoming" : "pending";
+          return evEnd(ev) >= todayIso() ? "upcoming" : "pending";
         }
         function monthOf(d) { return d.getMonth(); }
         function yearOf(d) { return d.getFullYear(); }
@@ -1674,6 +1737,9 @@
             fillSelect("fil-district", districts, "All Districts");
             fillSelect("fil-branch", branches, "All Branches");
             state.branchOptions = branches;
+            return api("get_trainer_options", { enabled_only: 1 });
+          }).then(function (employees) {
+            state.allEmployees = Array.isArray(employees) ? employees : [];
           });
         }
 
@@ -1718,7 +1784,7 @@
         function pickRelevantDate() {
           var evs = filteredEvents();
           if (!evs.length) return new Date(today);
-          var dates = evs.map(function (e) { return e.date; }).sort();
+          var dates = evs.map(function (e) { return evStart(e); }).sort();
           var next = dates.find(function (d) { return d >= todayIso(); }) || dates[dates.length - 1];
           var p = next.split("-");
           return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
@@ -1740,13 +1806,13 @@
             ? function (ev) { return statusOf(ev) === state.statusFilter; }
             : function () { return true; };
           return filteredEvents()
-            .filter(function (ev) { return ev.date === dateIso && statusOk(ev); })
+            .filter(function (ev) { return evStart(ev) <= dateIso && evEnd(ev) >= dateIso && statusOk(ev); })
             .sort(function (a, b) { return a.time.localeCompare(b.time); });
         }
 
         function monthCountLabel() {
           var evs = filteredEvents().filter(function (ev) {
-            return ev.date.slice(0, 7) === state.viewDate.getFullYear() + "-" + String(state.viewDate.getMonth() + 1).padStart(2, "0");
+            return evStart(ev).slice(0, 7) === state.viewDate.getFullYear() + "-" + String(state.viewDate.getMonth() + 1).padStart(2, "0");
           });
           return evs.length + " training" + (evs.length === 1 ? "" : "s") + " scheduled";
         }
@@ -1856,7 +1922,7 @@
           document.getElementById("monthTitle").textContent = title;
 
           var visible = filteredEvents().filter(function (ev) {
-            var d = new Date(parseInt(ev.date.slice(0, 4), 10), parseInt(ev.date.slice(5, 7), 10) - 1, parseInt(ev.date.slice(8, 10), 10));
+            var d = new Date(parseInt(evStart(ev).slice(0, 4), 10), parseInt(evStart(ev).slice(5, 7), 10) - 1, parseInt(evStart(ev).slice(8, 10), 10));
             return d >= weekStart && d <= weekEnd;
           });
           document.getElementById("monthCount").textContent = visible.length + " training" + (visible.length === 1 ? "" : "s") + " scheduled";
@@ -2041,7 +2107,7 @@
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
             '<div class="meta-grid">' +
-            metaRow("Date", esc(ev.date)) +
+            metaRow("Date", esc(evStart(ev) === evEnd(ev) ? evStart(ev) : evStart(ev) + " — " + evEnd(ev))) +
             metaRow("Time", esc(ev.time || "—")) +
             metaRow("Zone", esc(ev.zone || "—")) +
             metaRow("Region", esc(ev.region || "—")) +
@@ -2154,7 +2220,8 @@
         function openAddModal() {
           if (!role().canAdd) return;
           document.getElementById("new-program").value = "";
-          document.getElementById("new-date").value = todayIso();
+          document.getElementById("new-from-date").value = todayIso();
+          document.getElementById("new-to-date").value = todayIso();
           document.getElementById("new-time").value = "";
           document.getElementById("new-end-time").value = "";
           document.getElementById("new-location").value = "";
@@ -2163,6 +2230,13 @@
           document.getElementById("new-region").value = "";
           document.getElementById("new-district").value = "";
           document.getElementById("new-adhoc").checked = false;
+          state.selectedParticipants = [];
+          var pc = document.getElementById("participant-chips");
+          if (pc) pc.innerHTML = "";
+          var ps = document.getElementById("new-participant-search");
+          if (ps) ps.value = "";
+          var pcount = document.getElementById("participant-count");
+          if (pcount) pcount.textContent = "(0 selected)";
           // Auto-fill trainer from session user's linked Employee
           var trainerInput = document.getElementById("new-trainer");
           if (trainerInput) {
@@ -2190,9 +2264,11 @@
           }
 
           var program = document.getElementById("new-program").value.trim();
-          var date = document.getElementById("new-date").value;
+          var date = document.getElementById("new-from-date").value;
+          var toDate = document.getElementById("new-to-date").value || date;
           if (!program) { showToast("Training program is required"); return; }
-          if (!date) { showToast("Date is required"); return; }
+          if (!date) { showToast("From Date is required"); return; }
+          if (toDate < date) { showToast("To Date cannot be before From Date"); return; }
 
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
@@ -2208,7 +2284,8 @@
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
           var args = {
             training_program: program,
-            training_date: date,
+            from_date: date,
+            to_date: toDate,
             start_time: startTime,
             end_time: endTime,
             training_location: document.getElementById("new-location").value.trim(),
@@ -2218,6 +2295,7 @@
             district: document.getElementById("new-district").value,
             branch: document.getElementById("new-branch").value.trim() || null,
             is_adhoc: isAdhoc,
+            participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
           api("create_training", args).then(function () {
@@ -2237,7 +2315,7 @@
         function openMisModal() {
           var d = state.viewDate || new Date(today);
           var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-          var evs = filteredEvents().filter(function (e) { return e.date.slice(0, 7) === key; });
+          var evs = filteredEvents().filter(function (e) { return evStart(e).slice(0, 7) === key; });
           var counts = statusCounts(evs);
           var rows = [
             ["Total Trainings", evs.length],
@@ -2421,6 +2499,89 @@
 
           document.addEventListener("click", function (e) {
             if (!branchInput.contains(e.target) && !branchDd.contains(e.target)) closeDd();
+          });
+        })();
+
+        /* ---------- Participants (Add Training modal) ---------- */
+        (function () {
+          var pSearch = document.getElementById("new-participant-search");
+          var pDd = document.getElementById("participant-dropdown");
+          var pChips = document.getElementById("participant-chips");
+
+          function pLabel() {
+            var n = state.selectedParticipants.length;
+            return n === 1 ? "1 participant" : n + " participants";
+          }
+
+          function escP(v) { return esc(v); }
+
+          function pEmployees() {
+            var branch = (document.getElementById("new-branch") || {}).value || "";
+            var bq = branch.toLowerCase();
+            return (state.allEmployees || []).filter(function (emp) {
+              if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq) return false;
+              if (state.selectedParticipants.indexOf(emp.name) !== -1) return false;
+              return true;
+            });
+          }
+
+          function renderPDd(filter) {
+            var q = (filter || "").trim().toLowerCase();
+            var list = pEmployees().filter(function (emp) {
+              var hay = (emp.employee_name + " " + (emp.sahayog_branch || "")).toLowerCase();
+              return !q || hay.indexOf(q) !== -1;
+            });
+            if (!list.length) {
+              pDd.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+            } else {
+              pDd.innerHTML = list.map(function (emp) {
+                return '<div class="branch-opt" data-val="' + esc(emp.name) + '" style="' +
+                  'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);display:flex;justify-content:space-between;gap:8px' +
+                  '">' +
+                  '<span>' + esc(emp.employee_name || emp.name) + '</span>' +
+                  (emp.sahayog_branch ? '<span style="color:var(--ink-3);font-size:11px">' + escP(emp.sahayog_branch) + '</span>' : '') +
+                  '</div>';
+              }).join("");
+            }
+            pDd.style.display = "block";
+          }
+
+          function renderPChips() {
+            var byName = {};
+            state.allEmployees.forEach(function (e) { byName[e.name] = e; });
+            pChips.innerHTML = state.selectedParticipants.map(function (empName) {
+              var emp = byName[empName] || {};
+              return '<span class="participant-chip">' + esc(emp.employee_name || empName) +
+                '<button type="button" data-remove="' + esc(empName) + '" title="Remove">&times;</button></span>';
+            }).join("");
+            document.getElementById("participant-count").textContent = "(" + pLabel() + ")";
+          }
+
+          function addParticipant(val) {
+            if (state.selectedParticipants.indexOf(val) !== -1) return;
+            state.selectedParticipants.push(val);
+            renderPChips();
+            pSearch.value = "";
+            pDd.style.display = "none";
+            pSearch.focus();
+          }
+
+          pSearch.addEventListener("focus", function () { renderPDd(this.value); });
+          pSearch.addEventListener("input", function () { renderPDd(this.value); });
+          pDd.addEventListener("mousedown", function (e) {
+            var opt = e.target.closest(".branch-opt");
+            if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
+          });
+          document.addEventListener("click", function (e) {
+            if (!pSearch.contains(e.target) && !pDd.contains(e.target)) pDd.style.display = "none";
+          });
+          pChips.addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-remove]");
+            if (btn) {
+              var i = state.selectedParticipants.indexOf(btn.dataset.remove);
+              if (i !== -1) state.selectedParticipants.splice(i, 1);
+              renderPChips();
+            }
           });
         })();
 
