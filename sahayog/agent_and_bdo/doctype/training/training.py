@@ -49,6 +49,9 @@ class Training(Document):
         self.status = get_training_status(self)
 
     def validate(self):
+        if self.from_date and self.to_date:
+            if frappe.utils.getdate(self.to_date) < frappe.utils.getdate(self.from_date):
+                frappe.throw(_("To Date cannot be before From Date."))
         if self.start_time and self.end_time:
             if frappe.utils.get_time(self.end_time) < frappe.utils.get_time(self.start_time):
                 frappe.throw(_("End Time cannot be before Start Time."))
