@@ -560,26 +560,25 @@ def generate_fast_lead_report():
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
     final_filepath = os.path.join(site_private_path, "lead_report.csv")
     
-    # Calculate yesterday's date range
+    # Calculate rolling 3-day window for gap-free incremental sync
     today = datetime.date.today()
-    yesterday = today - datetime.timedelta(days=1)
-    yesterday_start = f"{yesterday} 00:00:00"
-    yesterday_end = f"{yesterday} 23:59:59"
+    start_date = today - datetime.timedelta(days=3)
+    start_datetime = f"{start_date} 00:00:00"
 
     file_exists = os.path.exists(final_filepath)
 
     # 1. Decide date query criteria
     if not file_exists:
-        # Full initial dump from 1st July 2026 to T-1
-        where_clause = "l.creation >= '2026-07-01 00:00:00' AND l.creation < CURDATE()"
+        # Full initial dump from 1st July 2026 onwards
+        where_clause = "l.creation >= '2026-07-01 00:00:00'"
     else:
-        # Only fetch new creations or modifications from yesterday (T-1)
+        # Incremental Sync: Catch all new creations or modifications from last 3 days
         where_clause = """
             l.creation >= '2026-07-01 00:00:00' AND (
-                (l.creation >= '{yesterday_start}' AND l.creation <= '{yesterday_end}') OR
-                (l.modified >= '{yesterday_start}' AND l.modified <= '{yesterday_end}')
+                l.creation >= '{start_datetime}' OR
+                l.modified >= '{start_datetime}'
             )
-        """.format(yesterday_start=yesterday_start, yesterday_end=yesterday_end)
+        """.format(start_datetime=start_datetime)
 
     query = """
         SELECT
