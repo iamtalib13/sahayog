@@ -34,12 +34,22 @@ def ensure_qr_code():
             frappe.log_error(message=str(e), title="MAC QR Generation Failed")
 
 @frappe.whitelist()
-def get_dashboard_data():
+def get_dashboard_data(start=0, page_length=10):
     user = frappe.session.user
     is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
     filters = {}
     if not is_admin:
         filters["owner"] = user
+
+    try:
+        start = int(start)
+    except Exception:
+        start = 0
+
+    try:
+        page_length = int(page_length)
+    except Exception:
+        page_length = 10
 
     # 1. Fetch exact total stats across ALL database records
     where_conditions = []
@@ -62,7 +72,9 @@ def get_dashboard_data():
     """
     stats_res = frappe.db.sql(stats_query, values, as_dict=True)[0]
 
-    # 2. Fetch recent 50 records for display table
+    total_activities = int(stats_res.total_activities or 0)
+
+    # 2. Fetch paginated records for display table
     records = frappe.get_all(
         "MAC Activity",
         filters=filters,
@@ -79,19 +91,22 @@ def get_dashboard_data():
             "creation",
         ],
         order_by="creation desc",
-        limit=50,
+        start=start,
+        page_length=page_length,
     )
 
     return {
         "records": records,
         "stats": {
-            "total_activities": stats_res.total_activities,
+            "total_activities": total_activities,
             "total_cost": float(stats_res.total_cost or 0),
             "total_units": int(stats_res.total_units or 0),
             "done_count": int(stats_res.done_count or 0),
             "cancelled_count": int(stats_res.cancelled_count or 0),
         },
         "is_admin": is_admin,
+        "has_more": (start + len(records)) < total_activities,
+        "total_count": total_activities
     }
 
 @frappe.whitelist(allow_guest=True)
