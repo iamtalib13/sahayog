@@ -1,0 +1,333 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:TRN-{YY}{MM}-{####}",
+ "creation": "2026-08-11 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_details",
+  "training_program",
+  "is_adhoc",
+  "training_date",
+  "column_break_details",
+  "start_time",
+  "end_time",
+  "training_location",
+  "trainer",
+  "section_break_geo",
+  "branch",
+  "zone",
+  "column_break_geo",
+  "region",
+  "district",
+  "section_break_participants",
+  "participants",
+  "section_break_status",
+  "status",
+  "training_delivered",
+  "attendance_marked",
+  "column_break_status",
+  "pre_assessment_taken",
+  "post_assessment_taken",
+  "feedback_taken",
+  "trainer_remarks",
+  "pre_reminder_sent",
+  "closure_sent",
+  "section_break_budget",
+  "budget_amount",
+  "actual_expense",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_details",
+   "fieldtype": "Section Break",
+   "label": "Schedule & Training Details"
+  },
+  {
+   "description": "E.g. Product Knowledge, Soft Skills, Induction Batch 12",
+   "fieldname": "training_program",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Training Program / Title",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "description": "Training added outside the monthly plan",
+   "fieldname": "is_adhoc",
+   "fieldtype": "Check",
+   "label": "Ad-hoc / Need Based?"
+  },
+  {
+   "default": "Today",
+   "fieldname": "training_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Training Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_details",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Time",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time"
+  },
+  {
+   "description": "Who conducts this training",
+   "fieldname": "trainer",
+   "fieldtype": "Data",
+   "label": "Trainer"
+  },
+  {
+   "fieldname": "training_location",
+   "fieldtype": "Data",
+   "label": "Training Location"
+  },
+  {
+   "fieldname": "section_break_geo",
+   "fieldtype": "Section Break",
+   "label": "Geography"
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Zone"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Region"
+  },
+  {
+   "fieldname": "column_break_geo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "District"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "section_break_participants",
+   "fieldtype": "Section Break",
+   "label": "Participants"
+  },
+  {
+   "fieldname": "participants",
+   "fieldtype": "Table",
+   "label": "Participants",
+   "options": "Training Participant"
+  },
+  {
+   "fieldname": "section_break_status",
+   "fieldtype": "Section Break",
+   "label": "Training Status"
+  },
+  {
+   "description": "Auto-computed from schedule and completion checks",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nDraft\nUpcoming\nIn Progress\nCompleted\nPending",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "training_delivered",
+   "fieldtype": "Check",
+   "label": "Training Delivered"
+  },
+  {
+   "default": "0",
+   "fieldname": "attendance_marked",
+   "fieldtype": "Check",
+   "label": "Attendance Marked"
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "pre_assessment_taken",
+   "fieldtype": "Check",
+   "label": "Pre-Assessment Taken"
+  },
+  {
+   "default": "0",
+   "fieldname": "post_assessment_taken",
+   "fieldtype": "Check",
+   "label": "Post-Assessment Taken"
+  },
+  {
+   "default": "0",
+   "fieldname": "feedback_taken",
+   "fieldtype": "Check",
+   "label": "Feedback Taken"
+  },
+  {
+   "fieldname": "trainer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Trainer Remarks"
+  },
+  {
+   "default": "0",
+   "fieldname": "pre_reminder_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Pre-Training Reminder Sent",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "closure_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Post-Training Closure Sent",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_budget",
+   "fieldtype": "Section Break",
+   "label": "Budget & Expenses",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "budget_amount",
+   "fieldtype": "Currency",
+   "label": "Budget Amount",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "actual_expense",
+   "fieldtype": "Currency",
+   "label": "Actual Expense",
+   "permlevel": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Training",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-08-11 13:59:50.781339",
+ "modified_by": "Administrator",
+ "module": "Agent and BDO",
+ "name": "Training",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Trainer",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Trainer Head",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "L&D Admin",
+   "select": 1,
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "L&D Admin",
+   "write": 1
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "L&D Viewer",
+   "select": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "training_program"
+}
