@@ -34,7 +34,8 @@ def get_training_status(doc, for_date=None):
         return "In Progress"
 
     ref = for_date or frappe.utils.getdate()
-    training_date = frappe.utils.getdate(doc.training_date) if doc.training_date else None
+    end = doc.to_date or doc.from_date
+    training_date = frappe.utils.getdate(end) if end else None
     if training_date and training_date >= ref:
         return "Upcoming"
     return "Pending"
