@@ -27,19 +27,18 @@ def _fmt_time(t):
 def send_pre_training_reminders():
     """
     Daily task: Send reminder emails for L&D trainings scheduled N days from today.
-    Dedup via Meeting.pre_reminder_sent flag.
+    Dedup via Training.pre_reminder_sent flag.
     """
     target_date = add_days(today(), PRE_TRAINING_REMINDER_DAYS)
 
     trainings = frappe.db.get_all(
-        "Meeting",
+        "Training",
         filters={
-            "ld_training": 1,
-            "date": target_date,
+            "training_date": target_date,
             "pre_reminder_sent": 0,
             "docstatus": ["<", 2]
         },
-        fields=["name", "date", "start_time", "training_program", "topic",
+        fields=["name", "training_date", "start_time", "training_program",
                 "trainer", "training_location", "zone", "region", "district", "branch"]
     )
 
@@ -48,12 +47,12 @@ def send_pre_training_reminders():
         if not recipients:
             continue
 
-        subject = f"Reminder: Training Tomorrow — {training.training_program or training.topic or 'L&D Training'}"
+        subject = f"Reminder: Training Tomorrow — {training.training_program or 'L&D Training'}"
         message = _pre_training_email_body(training)
 
         try:
             frappe.sendmail(recipients=recipients, subject=subject, message=message, now=False)
-            frappe.db.set_value("Meeting", training.name, "pre_reminder_sent", 1)
+            frappe.db.set_value("Training", training.name, "pre_reminder_sent", 1)
         except Exception as e:
             frappe.log_error(f"Pre-training reminder failed for {training.name}: {e}", "LD Notification")
 
@@ -62,20 +61,19 @@ def send_post_training_closures():
     """
     Daily task: Send closure mails for L&D trainings that were yesterday
     and have training_delivered = 1 but closure not yet sent.
-    Dedup via Meeting.closure_sent flag.
+    Dedup via Training.closure_sent flag.
     """
     yesterday = add_days(today(), -1)
 
     trainings = frappe.db.get_all(
-        "Meeting",
+        "Training",
         filters={
-            "ld_training": 1,
-            "date": yesterday,
+            "training_date": yesterday,
             "training_delivered": 1,
             "closure_sent": 0,
             "docstatus": ["<", 2]
         },
-        fields=["name", "date", "training_program", "topic", "trainer",
+        fields=["name", "training_date", "training_program", "trainer",
                 "training_location", "zone", "region", "district", "branch",
                 "training_delivered", "attendance_marked", "pre_assessment_taken",
                 "post_assessment_taken", "feedback_taken", "trainer_remarks"]
@@ -86,12 +84,12 @@ def send_post_training_closures():
         if not recipients:
             continue
 
-        subject = f"Training Completed — {training.training_program or training.topic or 'L&D Training'} | {_fmt_date(training.date)}"
+        subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.training_date)}"
         message = _post_training_email_body(training)
 
         try:
             frappe.sendmail(recipients=recipients, subject=subject, message=message, now=False)
-            frappe.db.set_value("Meeting", training.name, "closure_sent", 1)
+            frappe.db.set_value("Training", training.name, "closure_sent", 1)
         except Exception as e:
             frappe.log_error(f"Post-training closure failed for {training.name}: {e}", "LD Notification")
 
@@ -101,9 +99,8 @@ def send_post_training_closures():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _pre_training_email_body(t):
-    trainer_name = ""
-    if t.trainer:
-        trainer_name = frappe.db.get_value("Employee", t.trainer, "employee_name") or t.trainer
+    # trainer field now stores the name directly
+    trainer_name = t.trainer or "—"
 
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
@@ -114,9 +111,9 @@ def _pre_training_email_body(t):
       <p>This is a reminder for the upcoming L&amp;D training session.</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
-            <td style="padding:6px 0;font-weight:600">{t.training_program or t.topic or "—"}</td></tr>
+            <td style="padding:6px 0;font-weight:600">{t.training_program or "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Date</td>
-            <td style="padding:6px 0;font-weight:600">{_fmt_date(t.date)}</td></tr>
+            <td style="padding:6px 0;font-weight:600">{_fmt_date(t.training_date)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Time</td>
             <td style="padding:6px 0">{_fmt_time(t.start_time)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Location</td>
@@ -145,9 +142,9 @@ def _post_training_email_body(t):
       <p>The following L&amp;D training has been completed. Here is the status update:</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
-            <td style="padding:6px 0;font-weight:600">{t.training_program or t.topic or "—"}</td></tr>
+            <td style="padding:6px 0;font-weight:600">{t.training_program or "—"}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Date</td>
-            <td style="padding:6px 0">{_fmt_date(t.date)}</td></tr>
+            <td style="padding:6px 0">{_fmt_date(t.training_date)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Zone / District</td>
             <td style="padding:6px 0">{t.zone or "—"} / {t.district or "—"}</td></tr>
       </table>
@@ -180,21 +177,25 @@ def _get_training_recipients(training):
     """Get participant emails + trainer email for pre-training reminder."""
     emails = set()
 
+    # trainer field now stores the name (string), not Employee ID
     if training.trainer:
-        trainer_email = frappe.db.get_value("Employee", training.trainer, "company_email") \
-                     or frappe.db.get_value("Employee", training.trainer, "personal_email")
+        trainer_email = frappe.db.get_value(
+            "Employee", {"employee_name": training.trainer}, "company_email"
+        ) or frappe.db.get_value(
+            "Employee", {"employee_name": training.trainer}, "personal_email"
+        )
         if trainer_email:
             emails.add(trainer_email)
 
-    attendees = frappe.db.get_all(
-        "Attendees",
-        filters={"parent": training.name, "parenttype": "Meeting"},
-        fields=["reference_doctype", "agent_employee"]
+    participants = frappe.db.get_all(
+        "Training Participant",
+        filters={"parent": training.name, "parenttype": "Training"},
+        fields=["employee"]
     )
-    for a in attendees:
-        if a.reference_doctype == "Employee":
-            email = frappe.db.get_value("Employee", a.agent_employee, "company_email") \
-                 or frappe.db.get_value("Employee", a.agent_employee, "personal_email")
+    for p in participants:
+        if p.employee:
+            email = frappe.db.get_value("Employee", p.employee, "company_email") \
+                 or frappe.db.get_value("Employee", p.employee, "personal_email")
             if email:
                 emails.add(email)
 
@@ -221,8 +222,8 @@ def _get_district_leader_emails(training):
                 emails.add(email)
 
     if not emails and training.trainer:
-        email = frappe.db.get_value("Employee", training.trainer, "company_email") \
-             or frappe.db.get_value("Employee", training.trainer, "personal_email")
+        email = frappe.db.get_value("Employee", {"employee_name": training.trainer}, "company_email") \
+             or frappe.db.get_value("Employee", {"employee_name": training.trainer}, "personal_email")
         if email:
             emails.add(email)
 
