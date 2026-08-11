@@ -671,12 +671,121 @@ def generate_fast_lead_report():
         pass
 
     file_size = os.path.getsize(final_filepath)
-    return {
+    
+    latest_sample = {}
+    if db_leads:
+        first_row = db_leads[0]
+        latest_sample = {
+            "lead_id": first_row[0],
+            "status": first_row[1],
+            "lead_name": first_row[2],
+            "sol_id": first_row[11],
+            "branch": first_row[12],
+            "created_on": first_row[16],
+        }
+
+    sync_result = {
         "status": "success",
-        "method": "Incremental T-1 Sync (Creation/Modified)" if file_exists else "Full Baseline Dump",
+        "method": "Incremental 3-Day Rolling Sync (Creation/Modified)" if file_exists else "Full Baseline Dump",
+        "processed_count": len(new_leads_map),
+        "size_mb": round(file_size / (1024 * 1024), 2),
         "size_kb": round(file_size / 1024, 2),
-        "filepath": final_filepath
+        "filepath": final_filepath,
+        "latest_sample": latest_sample
     }
+
+    # Trigger email notification to rishabh.rahangdale@sahayogmultistate.com and talib.s@sahayogmultistate.com
+    try:
+        send_crm_report_sync_email(sync_result)
+    except Exception:
+        frappe.log_error(title="CRM Report Sync Email Exception", message=frappe.get_traceback())
+
+    return sync_result
+
+
+def send_crm_report_sync_email(summary_data):
+    """Sends HTML email notification to designated emails after CRM Lead Report sync."""
+    recipients = [
+        "rishabh.rahangdale@sahayogmultistate.com",
+        "talib.s@sahayogmultistate.com"
+    ]
+
+    now_str = frappe.utils.now_datetime().strftime("%d-%m-%Y %H:%M:%S")
+    subject = f"[CRM Report Sync] Fast Lead Report Sync Completed - {now_str}"
+
+    latest_sample = summary_data.get("latest_sample", {})
+
+    message = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <div style="background-color: #0056b3; color: white; padding: 18px 24px;">
+            <h2 style="margin: 0; font-size: 20px;">📊 CRM Fast Lead Report Sync Notification</h2>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+            <p style="font-size: 15px; color: #333; margin-top: 0;">
+                The master lead report CSV file has been successfully generated / updated on the server.
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555; width: 40%;">Task / Cron Name:</td>
+                    <td style="padding: 10px 0; color: #111;"><code>generate_fast_lead_report</code></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Execution Time:</td>
+                    <td style="padding: 10px 0; color: #111;">{now_str} IST</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Sync Method:</td>
+                    <td style="padding: 10px 0; color: #28a745; font-weight: bold;">{summary_data.get("method")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Processed Records Count:</td>
+                    <td style="padding: 10px 0; color: #111; font-weight: bold;">{summary_data.get("processed_count", 0):,} leads</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Master CSV Size:</td>
+                    <td style="padding: 10px 0; color: #111;">{summary_data.get("size_mb", 0)} MB ({summary_data.get("size_kb", 0)} KB)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">File Path:</td>
+                    <td style="padding: 10px 0; color: #666; font-size: 12px; word-break: break-all;"><code>{summary_data.get("filepath")}</code></td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">
+                📌 Latest Synced Lead Sample
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; background-color: #f8f9fa; border-radius: 6px; padding: 10px;">
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Lead ID:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("lead_id", "-")}</td>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Status:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("status", "-")}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Lead Name:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("lead_name", "-")}</td>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Created On:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("created_on", "-")}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">SOL ID / Branch:</td>
+                    <td style="padding: 8px; color: #111;" colspan="3">{latest_sample.get("sol_id", "-")} - {latest_sample.get("branch", "-")}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="background-color: #f1f3f5; color: #777; padding: 12px 24px; text-align: center; font-size: 12px;">
+            Sahayog SCRM System Automated Notification
+        </div>
+    </div>
+    """
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=message,
+        now=True
+    )
 
 # ==============================================================================
 # METHOD: download_fast_lead_report(from_date, to_date, filters=None)
