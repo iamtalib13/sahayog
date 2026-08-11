@@ -1125,6 +1125,10 @@
         box-shadow: 0 18px 50px rgba(16, 24, 40, 0.18);
         padding: 18px 20px 16px;
       }
+      #addModal .modal {
+        width: 96vw;
+        max-width: 96vw;
+      }
       .modal-head {
         display: flex;
         align-items: center;
@@ -1342,7 +1346,7 @@
           </div>
           <div class="filter-group">
             <label class="field-label">Branch</label>
-            <input class="field-input" type="text" id="fil-branch" placeholder="Branch code..." />
+            <select class="field-select" id="fil-branch"><option value="">All Branches</option></select>
           </div>
           <button class="btn btn-reset" id="btn-reset" title="Reset filters">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
@@ -1415,39 +1419,56 @@
             <input class="field-input" type="date" id="new-date" />
           </div>
           <div>
-            <label class="field-label">Start Time</label>
-            <input class="field-input" type="time" id="new-time" />
+            <label class="field-label">Start Time *</label>
+            <input class="field-input" type="text" id="new-time" placeholder="e.g. 9:00 or 09:00 AM" />
           </div>
         </div>
         <div class="form-row">
           <div>
+            <label class="field-label">End Time *</label>
+            <input class="field-input" type="text" id="new-end-time" placeholder="e.g. 11:00 or 11:00 AM" />
+          </div>
+          <div></div>
+        </div>
+        <div class="form-row">
+          <div>
             <label class="field-label">Trainer</label>
-            <select class="field-select" id="new-trainer"></select>
+            <input class="field-input" id="new-trainer" placeholder="—" readonly style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
           </div>
           <div>
             <label class="field-label">Training Location</label>
             <input class="field-input" id="new-location" placeholder="Venue / town" />
           </div>
         </div>
+        <div class="form-row full">
+          <div style="position:relative">
+            <label class="field-label">Branch</label>
+            <input class="field-input" id="new-branch" placeholder="Select or type branch…" autocomplete="off" />
+            <div id="branch-dropdown" style="
+              display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
+              background:var(--surface);border:1px solid var(--border);border-top:none;
+              border-radius:0 0 var(--radius-sm) var(--radius-sm);
+              box-shadow:0 4px 12px rgba(16,24,40,0.1);
+              max-height:180px;overflow-y:auto;
+            "></div>
+          </div>
+        </div>
         <div class="form-row">
           <div>
             <label class="field-label">Zone</label>
-            <select class="field-select" id="new-zone"></select>
+            <input class="field-input" id="new-zone" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
           </div>
           <div>
             <label class="field-label">Region</label>
-            <select class="field-select" id="new-region"></select>
+            <input class="field-input" id="new-region" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
           </div>
         </div>
         <div class="form-row">
           <div>
             <label class="field-label">District</label>
-            <select class="field-select" id="new-district"></select>
+            <input class="field-input" id="new-district" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
           </div>
-          <div>
-            <label class="field-label">Branch</label>
-            <input class="field-input" id="new-branch" placeholder="Branch code" />
-          </div>
+          <div></div>
         </div>
         <label class="check-inline">
           <input type="checkbox" id="new-adhoc" />
@@ -1476,10 +1497,24 @@
     <div class="toast" id="toast"></div>
 
     <script>
-      // FRONTEND DEMO - mock data only. Backend phase will replace buildMockEvents()
-      // with the existing ld_dashboard API calls; field names/status logic match the real system.
+      // Backend: talks to sahayog.agent_and_bdo.ld_training_api (Training doctype).
       (function () {
         "use strict";
+
+        /* ---------- Backend API helper ---------- */
+        var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+        function api(method, args) {
+          return fetch("/api/method/sahayog.agent_and_bdo.ld_training_api." + method, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Frappe-CSRF-Token": csrf },
+            body: JSON.stringify(args || {}),
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              if (d.exc_type) throw new Error(d.exception || d.exc_type);
+              return d.message;
+            });
+        }
 
         /* ---------- Status metadata (single source of truth) ---------- */
         var STATUS_ORDER = ["draft", "upcoming", "inprogress", "completed", "pending"];
@@ -1516,6 +1551,7 @@
           statusFilter: null,
           search: "",
           currentEvent: null,
+          loadedMonth: "",
         };
 
         var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -1532,50 +1568,6 @@
           return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
         }
         function todayIso() { return iso(0); }
-
-        function buildMockEvents() {
-          function ev(o) {
-            return {
-              name: o.name,
-              date: o.date,
-              time: o.time,
-              training_program: o.training_program,
-              topic: "Training",
-              trainer_name: o.trainer_name,
-              training_location: o.training_location,
-              zone: o.zone,
-              region: o.region,
-              district: o.district,
-              branch: o.branch,
-              participants: o.participants,
-              is_adhoc: o.is_adhoc || 0,
-              docstatus: o.docstatus == null ? 1 : o.docstatus,
-              training_delivered: o.training_delivered || 0,
-              attendance_marked: o.attendance_marked || 0,
-              pre_assessment_taken: o.pre_assessment_taken || 0,
-              post_assessment_taken: o.post_assessment_taken || 0,
-              feedback_taken: o.feedback_taken || 0,
-              trainer_remarks: o.trainer_remarks || "",
-              budget_amount: o.budget_amount || 0,
-              actual_expense: o.actual_expense || 0,
-            };
-          }
-          return [
-            ev({ name: "MEETING-0727-001", date: iso(-14), time: "9:00 AM", training_program: "Sales Enablement", trainer_name: "Priya Sharma", training_location: "Mumbai HO", zone: "West", region: "Konkan", district: "Mumbai", branch: "BR-MMB-01", participants: 18, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 1, feedback_taken: 1, trainer_remarks: "All modules covered. Attendees engaged well.", budget_amount: 8000, actual_expense: 7600 }),
-            ev({ name: "MEETING-0802-001", date: iso(-8), time: "10:00 AM", training_program: "Product Knowledge", trainer_name: "Rajesh Kumar", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 12, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 1, feedback_taken: 1, budget_amount: 5000, actual_expense: 4800 }),
-            ev({ name: "MEETING-0805-001", date: iso(-5), time: "11:30 AM", training_program: "Induction Batch 12", trainer_name: "Amit Verma", training_location: "Indore Training Hall", zone: "North", region: "Malwa", district: "Indore", branch: "BR-IND-02", participants: 14, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 0, feedback_taken: 1, trainer_remarks: "Post-assessment pending for 2 members.", budget_amount: 6000, actual_expense: 6100 }),
-            ev({ name: "MEETING-0807-001", date: iso(-3), time: "2:00 PM", training_program: "Soft Skills", trainer_name: "Sneha Patil", training_location: "Nagpur Office", zone: "Central", region: "Vidarbha", district: "Nagpur", branch: "BR-NGP-03", participants: 9, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 1, post_assessment_taken: 0, feedback_taken: 0, trainer_remarks: "Session went well. Assessment in progress.", budget_amount: 4000, actual_expense: 3900 }),
-            ev({ name: "MEETING-0808-001", date: iso(-2), time: "10:00 AM", training_program: "Customer Support Bootcamp", trainer_name: "Rajesh Kumar", training_location: "Thane Branch", zone: "West", region: "Konkan", district: "Thane", branch: "BR-THN-04", participants: 8, trainer_remarks: "Attendees were reassigned; needs rescheduling." }),
-            ev({ name: "MEETING-0809-001", date: iso(-1), time: "1:00 PM", training_program: "Compliance Refresher", trainer_name: "Priya Sharma", training_location: "Mumbai HO", zone: "West", region: "Konkan", district: "Mumbai", branch: "BR-MMB-01", participants: 11, training_delivered: 1, attendance_marked: 1, pre_assessment_taken: 0, post_assessment_taken: 0, feedback_taken: 0, trainer_remarks: "Covered policy updates. Feedback form to be shared." }),
-            ev({ name: "MEETING-0810-001", date: iso(0), time: "9:00 AM", training_program: "Workplace Safety", trainer_name: "Amit Verma", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 15 }),
-            ev({ name: "MEETING-0812-001", date: iso(2), time: "3:21 PM", training_program: "Training Assessment", trainer_name: "Sneha Patil", training_location: "Gondia Branch", zone: "Central", region: "Vidarbha", district: "Gondia", branch: "BR-GND-01", participants: 10, pre_assessment_taken: 1, is_adhoc: 1 }),
-            ev({ name: "MEETING-0814-001", date: iso(4), time: "3:00 PM", training_program: "Leadership Fundamentals", trainer_name: "Rajesh Kumar", training_location: "Bengaluru HO", zone: "South", region: "Karnataka", district: "Bengaluru", branch: "BR-BLR-05", participants: 20, is_adhoc: 1 }),
-            ev({ name: "MEETING-0816-001", date: iso(6), time: "12:00 PM", training_program: "Data Privacy", trainer_name: "Priya Sharma", training_location: "Indore Training Hall", zone: "North", region: "Malwa", district: "Indore", branch: "BR-IND-02", participants: 13 }),
-            ev({ name: "MEETING-0819-001", date: iso(9), time: "10:30 AM", training_program: "Design Systems", trainer_name: "Amit Verma", training_location: "Nagpur Office", zone: "Central", region: "Vidarbha", district: "Nagpur", branch: "BR-NGP-03", participants: 7, docstatus: 0 }),
-            ev({ name: "MEETING-0821-001", date: iso(11), time: "11:00 AM", training_program: "Manager 1:1 Skills", trainer_name: "Sneha Patil", training_location: "Thane Branch", zone: "West", region: "Konkan", district: "Thane", branch: "BR-THN-04", participants: 5, docstatus: 0, is_adhoc: 1 }),
-            ev({ name: "MEETING-0818-001", date: iso(8), time: "2:30 PM", training_program: "Field Work Training", trainer_name: "Rajesh Kumar", training_location: "Bengaluru HO", zone: "South", region: "Karnataka", district: "Bengaluru", branch: "BR-BLR-05", participants: 16 }),
-          ];
-        }
 
         /* ---------- Pure helpers ---------- */
         function esc(s) {
@@ -1656,20 +1648,6 @@
         }
 
         /* ---------- Filters ---------- */
-        function populateGeoOptions() {
-          var zones = {}, regions = {}, districts = {};
-          state.calEvents.forEach(function (ev) {
-            if (ev.zone) zones[ev.zone] = 1;
-            if (ev.region) regions[ev.region] = 1;
-            if (ev.district) districts[ev.district] = 1;
-          });
-          fillSelect("fil-zone", Object.keys(zones).sort(), "All Zones");
-          fillSelect("fil-region", Object.keys(regions).sort(), "All Regions");
-          fillSelect("fil-district", Object.keys(districts).sort(), "All Districts");
-          fillSelect("new-zone", Object.keys(zones).sort(), "");
-          fillSelect("new-region", Object.keys(regions).sort(), "");
-          fillSelect("new-district", Object.keys(districts).sort(), "");
-        }
         function fillSelect(id, items, placeholder) {
           var el = document.getElementById(id);
           if (!el) return;
@@ -1688,24 +1666,53 @@
           });
         }
 
+        function loadGeo() {
+          return api("get_geo_options").then(function (opts) {
+            var zones = opts.zones || [], regions = opts.regions || [], districts = opts.districts || [], branches = opts.branches || [];
+            fillSelect("fil-zone", zones, "All Zones");
+            fillSelect("fil-region", regions, "All Regions");
+            fillSelect("fil-district", districts, "All Districts");
+            fillSelect("fil-branch", branches, "All Branches");
+            state.branchOptions = branches;
+          });
+        }
+
+        function loadData(force) {
+          var anchor = state.viewMode === "month" ? state.viewDate : state.selectedDate;
+          if (!anchor) anchor = new Date(today);
+          var y = anchor.getFullYear();
+          var m = anchor.getMonth() + 1;
+          var key = y + "-" + String(m).padStart(2, "0");
+          if (!force && key === state.loadedMonth) { render(); return; }
+          state.loadedMonth = key;
+          var f = state.calFilters;
+          api("get_calendar_data", {
+            year: y, month: m,
+            zone: f.zone || null, region: f.region || null,
+            district: f.district || null, branch: f.branch || null
+          }).then(function (evs) {
+            state.calEvents = Array.isArray(evs) ? evs : [];
+            render();
+          }).catch(function (err) {
+            state.calEvents = [];
+            render();
+            showToast("Could not load calendar: " + err.message);
+          });
+        }
+
         function setupFilters() {
-          document.getElementById("fil-zone").onchange = function (e) { state.calFilters.zone = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
-          document.getElementById("fil-region").onchange = function (e) { state.calFilters.region = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
-          document.getElementById("fil-district").onchange = function (e) { state.calFilters.district = e.target.value; state.selectedDate = pickRelevantDate(); render(); };
-          var bt;
-          document.getElementById("fil-branch").oninput = function (e) {
-            clearTimeout(bt);
-            bt = setTimeout(function () { state.calFilters.branch = e.target.value.trim(); render(); }, 350);
-          };
+          document.getElementById("fil-zone").onchange = function (e) { state.calFilters.zone = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
+          document.getElementById("fil-region").onchange = function (e) { state.calFilters.region = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
+          document.getElementById("fil-district").onchange = function (e) { state.calFilters.district = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
+          document.getElementById("fil-branch").onchange = function (e) { state.calFilters.branch = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
           document.getElementById("btn-reset").onclick = function () {
             state.calFilters = { zone: "", region: "", district: "", branch: "" };
             state.statusFilter = null;
             state.search = "";
             document.getElementById("searchInput").value = "";
-            ["fil-zone", "fil-region", "fil-district"].forEach(function (s) { document.getElementById(s).value = ""; });
-            document.getElementById("fil-branch").value = "";
+            ["fil-zone", "fil-region", "fil-district", "fil-branch"].forEach(function (s) { document.getElementById(s).value = ""; });
             state.selectedDate = new Date(today);
-            render();
+            loadData(true);
           };
         }
         function pickRelevantDate() {
@@ -2115,27 +2122,30 @@
         }
 
         function toggleStatus(ev, field, value) {
-          ev[field] = value ? 1 : 0;
-          var st = statusOf(ev);
-          var label = document.querySelector('.check-item input[data-field="' + field + '"]');
-          if (label) {
-            var item = label.closest(".check-item");
-            if (item) {
-              item.classList.toggle("done", value);
-              item.querySelector(".ck-val").textContent = value ? "Yes" : "No";
-            }
-          }
-          openDrawer(ev);
-          render();
-          showToast("Training " + (st === "completed" ? "marked complete" : "status updated"));
+          var val = value ? 1 : 0;
+          ev[field] = val;
+          api("update_training_status", { training_name: ev.name, field: field, value: val })
+            .then(function (res) {
+              if (res && res.status) ev.status = res.status;
+              openDrawer(ev);
+              render();
+              showToast("Training " + (statusOf(ev) === "completed" ? "marked complete" : "status updated"));
+            })
+            .catch(function (e) {
+              ev[field] = val ? 0 : 1;
+              openDrawer(ev);
+              render();
+              showToast("Update failed: " + e.message);
+            });
         }
 
         function saveRemarks() {
           var ev = state.currentEvent;
           if (!ev) return;
           var val = (document.getElementById("remarksInput") || {}).value || "";
-          ev.trainer_remarks = val;
-          showToast("Remarks saved");
+          api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
+            .then(function () { ev.trainer_remarks = val; showToast("Remarks saved"); })
+            .catch(function (e) { showToast("Could not save remarks: " + e.message); });
         }
 
         /* ---------- Add training ---------- */
@@ -2146,12 +2156,18 @@
           document.getElementById("new-program").value = "";
           document.getElementById("new-date").value = todayIso();
           document.getElementById("new-time").value = "";
+          document.getElementById("new-end-time").value = "";
           document.getElementById("new-location").value = "";
+          document.getElementById("new-branch").value = "";
           document.getElementById("new-zone").value = "";
           document.getElementById("new-region").value = "";
           document.getElementById("new-district").value = "";
-          document.getElementById("new-branch").value = "";
           document.getElementById("new-adhoc").checked = false;
+          // Auto-fill trainer from session user's linked Employee
+          var trainerInput = document.getElementById("new-trainer");
+          if (trainerInput) {
+            trainerInput.value = state.currentEmployeeName || "";
+          }
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
         }
@@ -2159,49 +2175,62 @@
           document.getElementById(id).classList.remove("open");
         }
         function saveTraining() {
+          // Parse flexible time input into minutes-since-midnight (returns -1 if invalid)
+          function parseTime(t) {
+            if (!t) return -1;
+            t = t.trim();
+            var m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+            if (!m) return -1;
+            var h = parseInt(m[1], 10), mi = parseInt(m[2] || "0", 10);
+            var ap = (m[3] || "").toUpperCase();
+            if (ap === "PM" && h < 12) h += 12;
+            if (ap === "AM" && h === 12) h = 0;
+            if (h > 23 || mi > 59) return -1;
+            return h * 60 + mi;
+          }
+
           var program = document.getElementById("new-program").value.trim();
           var date = document.getElementById("new-date").value;
           if (!program) { showToast("Training program is required"); return; }
           if (!date) { showToast("Date is required"); return; }
 
+          var startTime = document.getElementById("new-time").value.trim();
+          var endTime = document.getElementById("new-end-time").value.trim();
+          if (!startTime) { showToast("Start Time is required"); return; }
+          if (!endTime) { showToast("End Time is required"); return; }
+          var startMins = parseTime(startTime);
+          var endMins = parseTime(endTime);
+          if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
+          if (endMins === -1) { showToast("End Time format invalid — e.g. 11:00 or 11:00 AM"); return; }
+          if (endMins <= startMins) { showToast("End Time must be after Start Time"); return; }
+
           var trainerSel = document.getElementById("new-trainer");
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
-          var newEv = {
-            name: "TR-" + Date.now(),
-            date: date,
-            time: fmtTime(document.getElementById("new-time").value || "09:00:00"),
+          var args = {
             training_program: program,
-            topic: "Training",
-            trainer_name: trainerSel.options[trainerSel.selectedIndex] ? trainerSel.options[trainerSel.selectedIndex].textContent : "",
+            training_date: date,
+            start_time: startTime,
+            end_time: endTime,
             training_location: document.getElementById("new-location").value.trim(),
+            trainer: trainerSel.value.trim() || null,
             zone: document.getElementById("new-zone").value,
             region: document.getElementById("new-region").value,
             district: document.getElementById("new-district").value,
-            branch: document.getElementById("new-branch").value.trim(),
-            participants: 0,
+            branch: document.getElementById("new-branch").value.trim() || null,
             is_adhoc: isAdhoc,
-            docstatus: 1,
-            training_delivered: 0,
-            attendance_marked: 0,
-            pre_assessment_taken: 0,
-            post_assessment_taken: 0,
-            feedback_taken: 0,
-            trainer_remarks: "",
-            budget_amount: 0,
-            actual_expense: 0,
+            submit: 1,
           };
-          state.calEvents.push(newEv);
-          populateGeoOptions();
-          var p = date.split("-");
-          state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-          if (state.viewMode !== "day") {
-            state.viewMode = "month";
-            syncViewSwitch();
+          api("create_training", args).then(function () {
+            var p = date.split("-");
+            state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
             state.viewDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, 1);
-          }
-          closeModal("addModal");
-          render();
-          showToast(isAdhoc ? "Ad-hoc training added to calendar" : "Training added to calendar");
+            if (state.viewMode !== "month") { state.viewMode = "month"; syncViewSwitch(); }
+            closeModal("addModal");
+            loadData(true);
+            showToast(isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled");
+          }).catch(function (e) {
+            showToast("Could not save training: " + e.message);
+          });
         }
 
         /* ---------- MIS report (admin, demo preview) ---------- */
@@ -2265,7 +2294,7 @@
               var d = state.selectedDate || new Date(today);
               state.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
             }
-            render();
+            loadData();
           };
         });
 
@@ -2281,7 +2310,7 @@
             d.setDate(d.getDate() - 1);
             state.selectedDate = d;
           }
-          render();
+          loadData();
         };
         document.getElementById("nextBtn").onclick = function () {
           if (state.viewMode === "month") {
@@ -2295,13 +2324,13 @@
             d.setDate(d.getDate() + 1);
             state.selectedDate = d;
           }
-          render();
+          loadData();
         };
         document.getElementById("todayBtn").onclick = function () {
           state.selectedDate = new Date(today);
           state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
           if (state.viewMode !== "month") { state.viewMode = "month"; syncViewSwitch(); }
-          render();
+          loadData();
         };
 
         document.querySelectorAll(".nav-item[data-status]").forEach(function (b) {
@@ -2333,26 +2362,85 @@
         document.querySelector(".header-right").appendChild(addTrainingBtn);
 
         document.getElementById("btn-save-training").onclick = saveTraining;
-        document.getElementById("new-trainer").innerHTML = "";
-        var trainerNames = [];
-        state.calEvents.forEach(function (ev) {
-          if (ev.trainer_name && trainerNames.indexOf(ev.trainer_name) === -1) trainerNames.push(ev.trainer_name);
-        });
-        trainerNames.sort().forEach(function (n) {
-          var o = document.createElement("option");
-          o.value = n;
-          o.textContent = n;
-          document.getElementById("new-trainer").appendChild(o);
-        });
+
+        /* ---------- Branch custom dropdown (Add Training modal) ---------- */
+        (function () {
+          var branchInput = document.getElementById("new-branch");
+          var branchDd = document.getElementById("branch-dropdown");
+          var selectedBranch = "";
+
+          function renderDropdown(filter) {
+            var opts = (state.branchOptions || []).filter(function (b) {
+              return !filter || b.toLowerCase().includes(filter.toLowerCase());
+            });
+            if (!opts.length) {
+              branchDd.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No branches found</div>';
+            } else {
+              branchDd.innerHTML = opts.map(function (b) {
+                return '<div class="branch-opt" data-val="' + esc(b) + '" style="' +
+                  'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);' +
+                  (b === selectedBranch ? 'background:var(--accent-soft);color:var(--accent-ink);font-weight:600;' : '') +
+                  '">' + esc(b) + '</div>';
+              }).join("");
+            }
+            branchDd.style.display = "block";
+          }
+
+          function closeDd() { branchDd.style.display = "none"; }
+
+          function selectBranch(val) {
+            selectedBranch = val;
+            branchInput.value = val;
+            closeDd();
+            // Auto-fill geo
+            api("get_branch_geo", { branch: val })
+              .then(function (geo) {
+                document.getElementById("new-zone").value = geo.zone || "";
+                document.getElementById("new-region").value = geo.region || "";
+                document.getElementById("new-district").value = geo.district || "";
+              })
+              .catch(function () {});
+          }
+
+          branchInput.addEventListener("focus", function () {
+            renderDropdown(this.value);
+          });
+
+          branchInput.addEventListener("input", function () {
+            selectedBranch = "";
+            document.getElementById("new-zone").value = "";
+            document.getElementById("new-region").value = "";
+            document.getElementById("new-district").value = "";
+            renderDropdown(this.value);
+          });
+
+          branchDd.addEventListener("mousedown", function (e) {
+            var opt = e.target.closest(".branch-opt");
+            if (opt) { e.preventDefault(); selectBranch(opt.dataset.val); }
+          });
+
+          document.addEventListener("click", function (e) {
+            if (!branchInput.contains(e.target) && !branchDd.contains(e.target)) closeDd();
+          });
+        })();
 
         /* ---------- Init ---------- */
-        state.calEvents = buildMockEvents();
         state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
         state.selectedDate = new Date(today);
-        populateGeoOptions();
-        setupRoleUI();
         setupFilters();
-        render();
+        api("get_user_role_info")
+          .then(function (info) {
+            if (info.is_ld_admin) state.role = "ld_admin";
+            else if (info.is_ld_trainer) state.role = "trainer";
+            else if (info.is_ld_viewer) state.role = "viewer";
+            else state.role = "general";
+            state.currentEmployee = (info.employee && info.employee.name) ? info.employee.name : null;
+            state.currentEmployeeName = (info.employee && info.employee.employee_name) ? info.employee.employee_name : null;
+            setupRoleUI();
+            return loadGeo();
+          })
+          .then(function () { loadData(true); })
+          .catch(function (err) { console.error("init failed", err); });
       })();
     </script>
   </body>
