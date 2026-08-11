@@ -20,7 +20,7 @@ TRAINER_ROLES = {"Trainer", "Trainer Head"}
 
 # Event payload fields expected by the calendar frontend
 CALENDAR_FIELDS = [
-    "name", "training_program", "training_date", "start_time", "end_time",
+    "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "zone", "region", "district", "branch",
     "is_adhoc", "docstatus", "status", "trainer_remarks",
     "training_delivered", "attendance_marked",
@@ -114,7 +114,8 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
 
     filters = {
         "docstatus": ["<", 2],
-        "training_date": ["between", [f"{year}-{month:02d}-01", f"{year}-{month:02d}-{last_day}"]],
+        # Any training whose date range overlaps the requested month
+        "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
     if zone: filters["zone"] = zone
     if region: filters["region"] = region
@@ -125,17 +126,25 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         "Training",
         filters=filters,
         fields=CALENDAR_FIELDS + BUDGET_FIELDS,
-        order_by="training_date asc, start_time asc",
+        order_by="from_date asc, start_time asc",
     )
+    month_start = f"{year}-{month:02d}-01"
+    # Keep only trainings that reach into (or end within) this month.
+    # Missing to_date falls back to from_date (single-day).
+    rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
 
     participants = _participant_counts([r.name for r in rows])
     show_budget = _is_admin()
 
     out = []
     for r in rows:
+        from_date = str(r.from_date or "")[:10]
+        to_date = str(r.to_date or r.from_date or "")[:10]
         out.append({
             "name": r.name,
-            "date": str(r.training_date),
+            "date": from_date,
+            "from_date": from_date,
+            "to_date": to_date,
             "time": _format_time(r.start_time),
             "training_program": r.training_program or "",
             "trainer": r.trainer,
@@ -166,7 +175,9 @@ def get_training_details(name):
     """Single training record (drawer view)."""
     doc = frappe.get_doc("Training", name)
     r = doc.as_dict()
-    r["date"] = str(doc.training_date)
+    r["date"] = str(doc.from_date or "")[:10]
+    r["from_date"] = str(doc.from_date or "")[:10]
+    r["to_date"] = str(doc.to_date or doc.from_date or "")[:10]
     r["time"] = _format_time(doc.start_time)
     employees = frappe.db.get_all(
         "Training Participant",
@@ -208,7 +219,7 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
 
     filters = {
         "docstatus": ["<", 2],
-        "training_date": ["between", [f"{year}-{month:02d}-01", f"{year}-{month:02d}-{last_day}"]],
+        "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
     if zone: filters["zone"] = zone
     if region: filters["region"] = region
@@ -216,8 +227,10 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
     if branch: filters["branch"] = branch
 
     rows = frappe.db.get_all(
-        "Training", filters=filters, fields=["name", "training_date", "docstatus", "status", *COMPLETION_FIELDS]
+        "Training", filters=filters, fields=["name", "from_date", "to_date", "docstatus", "status", *COMPLETION_FIELDS]
     )
+    month_start = f"{year}-{month:02d}-01"
+    rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
 
     counts = {"draft": 0, "upcoming": 0, "inprogress": 0, "completed": 0, "pending": 0}
     for r in rows:
@@ -244,7 +257,7 @@ def create_training(**kwargs):
     _require_can_write()
 
     allowed = {
-        "training_program", "is_adhoc", "training_date", "start_time", "end_time",
+        "training_program", "is_adhoc", "from_date", "to_date", "start_time", "end_time",
         "trainer", "training_location", "zone", "region", "district", "branch",
         "trainer_remarks", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
@@ -263,6 +276,9 @@ def create_training(**kwargs):
     # If end_time was not provided, clear it so validate() doesn't compare against a stale/default value
     if not kwargs.get("end_time"):
         doc.end_time = None
+    # Single-day training: to_date defaults to from_date
+    if not doc.to_date and doc.from_date:
+        doc.to_date = doc.from_date
     for emp in participants:
         if isinstance(emp, dict):
             emp = emp.get("employee") or emp.get("name")
