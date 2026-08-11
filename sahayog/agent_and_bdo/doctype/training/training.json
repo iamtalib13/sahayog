@@ -9,7 +9,8 @@
   "section_break_details",
   "training_program",
   "is_adhoc",
-  "training_date",
+  "from_date",
+  "to_date",
   "column_break_details",
   "start_time",
   "end_time",
@@ -32,6 +33,7 @@
   "post_assessment_taken",
   "feedback_taken",
   "trainer_remarks",
+  "notifications_section",
   "pre_reminder_sent",
   "closure_sent",
   "section_break_budget",
@@ -63,11 +65,19 @@
   },
   {
    "default": "Today",
-   "fieldname": "training_date",
+   "fieldname": "from_date",
    "fieldtype": "Date",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Training Date",
+   "label": "From Date",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "in_standard_filter": 1,
+   "label": "To Date",
    "reqd": 1
   },
   {
@@ -240,12 +250,18 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "notifications_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Notifications"
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-11 13:59:50.781339",
+ "modified": "2026-08-11 15:25:19.126736",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Training",
