@@ -613,6 +613,33 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
   $container.append(`
         <div id="crm-app" v-scope @vue:mounted="init()">
+            <!-- Admin Control Panel Widget (Visible ONLY to Administrator / System Managers) -->
+            <div v-if="report_info && report_info.is_admin" class="admin-master-report-bar mb-3 p-3 rounded shadow-sm d-flex flex-wrap align-items-center justify-content-between" style="background-color: #ffffff; border: 1px solid #e2e8f0; gap: 12px; border-left: 4px solid #0056b3;">
+                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
+                    <span class="font-weight-bold text-dark" style="font-size: 13px;">
+                        <i class="fa fa-shield text-primary mr-1"></i> Master Lead Report Control:
+                    </span>
+                    <span :class="['badge', report_info.status === 'Ready' ? 'badge-success' : 'badge-warning', 'py-1', 'px-2']">
+                        {{ report_info.status === 'Ready' ? '🟢 Ready' : '⏳ ' + report_info.status }}
+                    </span>
+                    <span class="small text-muted font-weight-bold" v-if="report_info.active_filename">
+                        Active File: <code>{{ report_info.active_filename }}</code> ({{ report_info.size_mb }} MB)
+                    </span>
+                    <span class="small text-muted" v-if="report_info.last_generated_at">
+                        Last Generated: {{ report_info.last_generated_at }}
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center" style="gap: 8px;">
+                    <button class="btn btn-sm btn-outline-danger font-weight-bold shadow-sm" 
+                            @click="confirmRebuildReport" 
+                            :disabled="report_info.status === 'Generating'">
+                        <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
+                        {{ report_info.status === 'Generating' ? 'Generating Report...' : 'Rebuild Baseline Report' }}
+                    </button>
+                </div>
+            </div>
+
             <div class="ui-section-card">
                <div class="section-header">
                     <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 20px;">
@@ -1019,6 +1046,53 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     transfer_loading: false,
     visible_branches: [],
     disabled_branches: [],
+    report_info: {
+      is_admin: false,
+      status: "Loading...",
+      active_filename: "",
+      size_mb: 0,
+      last_generated_at: "-"
+    },
+
+    fetchReportInfo() {
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.get_fast_lead_report_info",
+        callback: (r) => {
+          if (r.message) {
+            this.report_info = r.message;
+            if (r.message.status === "Generating") {
+              setTimeout(() => { this.fetchReportInfo(); }, 5000);
+            }
+          }
+        }
+      });
+    },
+    confirmRebuildReport() {
+      frappe.confirm(
+        __("Are you sure you want to trigger a full baseline report rebuild? <br><br><b>Note:</b> This will clean deleted leads. Live users will seamlessly continue downloading from active backup file without any disruption."),
+        () => {
+          this.rebuildFullReport();
+        }
+      );
+    },
+    rebuildFullReport() {
+      this.report_info.status = "Generating";
+      frappe.show_alert({ message: __("Full Baseline Rebuild Started in Background... Backup file active for live users."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        args: { force_rebuild: true },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.msgprint({
+              title: __("Full Baseline Report Rebuilt"),
+              indicator: "green",
+              message: __(`Full Baseline Lead Report rebuilt successfully.<br>File Name: <b>${r.message.filename}</b><br>File Size: <b>${r.message.size_mb} MB</b>.<br>Email notification sent.`)
+            });
+            this.fetchReportInfo();
+          }
+        }
+      });
+    },
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
@@ -1476,6 +1550,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         // active_popup ko null mat kijiye yahan, warna modal bhi band ho jayega
       });
       await this.fetchVisibleBranches();
+      this.fetchReportInfo();
     },
 
     // Watch for active_tab changes to load data automatically
