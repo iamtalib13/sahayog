@@ -786,10 +786,11 @@ def generate_fast_lead_report(force_rebuild=False):
     except Exception:
         pass
 
-    # Clean up older timestamped files except new_filename and backup
+    # Clean up older report CSV files on server so only current active file & latest backup remain
     try:
+        keep_files = set([new_filename, backup_filename, "lead_report.csv"])
         for fname in os.listdir(site_private_path):
-            if fname.startswith("lead_report_20") and fname.endswith(".csv") and fname not in [new_filename, prev_active_filename, backup_filename]:
+            if fname.startswith("lead_report") and fname.endswith(".csv") and fname not in keep_files:
                 old_fpath = os.path.join(site_private_path, fname)
                 os.remove(old_fpath)
     except Exception:
