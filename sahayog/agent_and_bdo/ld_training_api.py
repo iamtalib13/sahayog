@@ -171,6 +171,85 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
 
 
 @frappe.whitelist()
+def get_training_list(
+    status=None,
+    zone=None,
+    region=None,
+    district=None,
+    branch=None,
+    from_date=None,
+    to_date=None,
+    search=None,
+    is_adhoc=None,
+    limit=500,
+):
+    """Flat, filterable list of training records for the Trainings tab."""
+    filters = {"docstatus": ["<", 2]}
+    if zone:
+        filters["zone"] = zone
+    if region:
+        filters["region"] = region
+    if district:
+        filters["district"] = district
+    if branch:
+        filters["branch"] = branch
+    if from_date:
+        filters["from_date"] = [">=", from_date]
+    if to_date:
+        filters["to_date"] = ["<=", to_date]
+    if is_adhoc in ("1", "0"):
+        filters["is_adhoc"] = int(is_adhoc)
+    if search:
+        filters["training_program"] = ["like", f"%{search}%"]
+
+    rows = frappe.db.get_all(
+        "Training",
+        filters=filters,
+        fields=CALENDAR_FIELDS + BUDGET_FIELDS,
+        order_by="from_date desc, start_time desc",
+        limit_page_length=limit,
+    )
+    participants = _participant_counts([r.name for r in rows])
+    show_budget = _is_admin()
+    req_status = (status or "").strip().lower().replace(" ", "") or None
+
+    out = []
+    for r in rows:
+        st = (r.status or get_training_status(r) or "").strip().lower().replace(" ", "")
+        if req_status and st != req_status:
+            continue
+        from_date = str(r.from_date or "")[:10]
+        to_date = str(r.to_date or r.from_date or "")[:10]
+        out.append({
+            "name": r.name,
+            "from_date": from_date,
+            "to_date": to_date,
+            "time": _format_time(r.start_time),
+            "training_program": r.training_program or "",
+            "trainer": r.trainer or "",
+            "trainer_name": r.trainer or "",
+            "training_location": r.training_location or "",
+            "zone": r.zone or "",
+            "region": r.region or "",
+            "district": r.district or "",
+            "branch": r.branch or "",
+            "participants": participants.get(r.name, 0),
+            "is_adhoc": r.is_adhoc or 0,
+            "docstatus": r.docstatus,
+            "status": st,
+            "training_delivered": r.training_delivered or 0,
+            "attendance_marked": r.attendance_marked or 0,
+            "pre_assessment_taken": r.pre_assessment_taken or 0,
+            "post_assessment_taken": r.post_assessment_taken or 0,
+            "feedback_taken": r.feedback_taken or 0,
+            "trainer_remarks": r.trainer_remarks or "",
+            "budget_amount": (r.budget_amount if show_budget else None),
+            "actual_expense": (r.actual_expense if show_budget else None),
+        })
+    return out
+
+
+@frappe.whitelist()
 def get_training_details(name):
     """Single training record (drawer view)."""
     doc = frappe.get_doc("Training", name)
