@@ -1139,6 +1139,440 @@
         opacity: 1;
       }
 
+      /* ===== New Training modal (Teams-style "New Event") ===== */
+      .nt-scroll {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .nt-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px 13px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .nt-head h3 {
+        margin: 0;
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .nt-body {
+        padding: 12px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nt-body-foot {
+        padding-top: 0;
+        gap: 10px;
+      }
+      .nt-title {
+        width: 100%;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ink-1);
+        padding: 1px 0;
+        line-height: 1.3;
+      }
+      .nt-title::placeholder {
+        color: var(--ink-3);
+        font-weight: 400;
+      }
+      .nt-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: var(--surface);
+      }
+      .nt-row:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+      .nt-row > svg {
+        width: 17px;
+        height: 17px;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .nt-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 13.5px;
+        color: var(--ink-1);
+        font-family: inherit;
+      }
+      .nt-input::placeholder {
+        color: var(--ink-3);
+      }
+
+      /* Attendee field */
+      .nt-pop-wrap {
+        position: relative;
+      }
+      .nt-attendee {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        background: var(--surface);
+        cursor: text;
+        min-height: 40px;
+      }
+      .nt-attendee:focus-within {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-soft);
+      }
+      .nt-attendee > svg {
+        width: 17px;
+        height: 17px;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .nt-attendee-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-items: center;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .nt-attendee-count {
+        font-size: 12px;
+        color: var(--ink-3);
+        font-weight: 500;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .nt-attendee-count.has {
+        color: var(--accent-ink);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 2px 9px;
+        font-weight: 600;
+      }
+
+      /* Popover */
+      .nt-pop {
+        position: absolute;
+        z-index: 300;
+        left: 0;
+        right: 0;
+        top: calc(100% + 4px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 16px 40px rgba(16, 24, 40, 0.18);
+        overflow: hidden;
+      }
+      .nt-pop-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+      }
+      .nt-pop-search svg {
+        width: 15px;
+        height: 15px;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .nt-pop-search input {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 13.5px;
+        color: var(--ink-1);
+        flex: 1;
+        font-family: inherit;
+      }
+      .nt-pop-list {
+        max-height: 212px;
+        overflow-y: auto;
+      }
+      .nt-pop-list .branch-opt {
+        padding: 9px 12px;
+        font-size: 13px;
+        cursor: pointer;
+        color: var(--ink-1);
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+      }
+      .nt-pop-list .branch-opt:hover {
+        background: var(--surface-2);
+      }
+      .nt-pop-list .branch-opt .opt-check {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .nt-pop-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border-top: 1px solid var(--border);
+        font-size: 12.5px;
+        color: var(--ink-2);
+      }
+      .nt-pop-foot .btn {
+        padding: 5px 14px;
+        font-size: 12.5px;
+      }
+
+      /* Schedule */
+      .nt-sched-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        min-width: 0;
+      }
+      .nt-sched-preview {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink-1);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .nt-sched-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .nt-sched-gap {
+        flex: 0 0 6px;
+      }
+      .nt-sched-date,
+      .nt-sched-time {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 12.5px;
+        color: var(--ink-1);
+        background: var(--surface);
+        outline: none;
+        font-family: inherit;
+      }
+      .nt-sched-date:focus,
+      .nt-sched-time:focus {
+        border-color: var(--accent);
+      }
+      .nt-sched-dash {
+        color: var(--ink-3);
+        font-size: 12px;
+      }
+      .nt-sched-hint {
+        font-size: 11.5px;
+        color: var(--ink-3);
+      }
+      .nt-scheduler-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 7px;
+        padding: 6px 12px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent-ink);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .nt-scheduler-btn:hover {
+        background: var(--accent-soft);
+      }
+      .nt-scheduler-btn svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      /* Trainer readonly + Branch */
+      .nt-readonly {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .nt-kicker {
+        font-size: 10.5px;
+        color: var(--ink-3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .nt-readonly input {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 13.5px;
+        color: var(--ink-1);
+        cursor: default;
+      }
+      .nt-branch-block {
+        flex: 1;
+        min-width: 0;
+      }
+      .nt-branch-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .nt-branch-wrap .nt-input {
+        width: 100%;
+      }
+      .nt-branch-pop {
+        top: calc(100% + 2px);
+        border-top: 1px solid var(--border);
+        border-radius: 0 0 10px 10px;
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .nt-branch-pop .branch-opt {
+        padding: 6px 12px;
+      }
+
+      /* Zone / Region / District (auto-filled, muted) */
+      .nt-geo {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 0 20px 12px;
+      }
+      .nt-geo > div {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+      }
+      .nt-geo label {
+        font-size: 10.5px;
+        color: var(--ink-3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .nt-geo input {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 5px 9px;
+        font-size: 12.5px;
+        color: var(--ink-2);
+        background: var(--surface-2);
+        outline: none;
+        cursor: default;
+        width: 100%;
+      }
+
+      /* Ad-hoc + agenda */
+      .nt-check {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .nt-check input {
+        width: 15px;
+        height: 15px;
+        accent-color: var(--accent);
+      }
+      .nt-agenda {
+        resize: none;
+        max-height: 26px;
+        overflow: hidden;
+        line-height: 1.45;
+        transition: max-height 0.15s ease;
+      }
+      .nt-agenda.open {
+        max-height: 84px;
+      }
+      .nt-agenda-row {
+        align-items: center;
+      }
+      .nt-agenda-row.open {
+        align-items: flex-start;
+      }
+      .nt-agenda-row > svg {
+        flex-shrink: 0;
+      }
+      .nt-agenda-row.open > svg {
+        margin-top: 3px;
+      }
+
+      .nt-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 13px 20px;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        flex-shrink: 0;
+      }
+
+      /* Edit mode */
+      .nt-edit-extra {
+        padding: 14px 20px 18px;
+        border-top: 1px solid var(--border);
+      }
+      #addModal.editing .nt-scheduler-btn {
+        display: none;
+      }
+      #addModal.editing .nt-title {
+        color: var(--ink-1);
+      }
+      #addModal.editing .nt-input[readonly],
+      #addModal.editing .nt-sched-date[readonly],
+      #addModal.editing .nt-sched-time[readonly] {
+        color: var(--ink-2);
+        cursor: default;
+      }
+      #addModal.editing .nt-sched-date[readonly],
+      #addModal.editing .nt-sched-time[readonly] {
+        background: var(--surface-2);
+      }
+      #addModal.editing .nt-attendee {
+        cursor: default;
+      }
+      #addModal.editing .nt-attendee-count {
+        cursor: default;
+      }
+
+      @media (max-width: 560px) {
+        #addModal .modal {
+          width: 96vw;
+        }
+        .nt-geo {
+          grid-template-columns: 1fr;
+        }
+        .nt-sched-controls {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .nt-sched-controls .nt-sched-dash {
+          display: none;
+        }
+      }
+
       /* Modal */
       .modal-wrap {
         position: fixed;
@@ -1162,8 +1596,15 @@
         padding: 18px 20px 16px;
       }
       #addModal .modal {
-        width: 96vw;
+        width: min(760px, 96vw);
         max-width: 96vw;
+        padding: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 24px 60px rgba(16, 24, 40, 0.22), 0 2px 8px rgba(16, 24, 40, 0.08);
+        display: flex;
+        flex-direction: column;
+        max-height: min(92vh, 900px);
       }
       .modal-head {
         display: flex;
@@ -1436,108 +1877,132 @@
 
     <!-- Modal: add training -->
     <div class="modal-wrap" id="addModal">
-      <div class="modal">
-        <div class="modal-head">
-          <h3>Add Training</h3>
+      <div class="modal new-training-modal">
+        <div class="nt-head">
+          <h3>New Training</h3>
           <button class="modal-close" data-close="addModal" title="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </div>
-        <div class="form-row full">
-          <div>
-            <label class="field-label">Training Program / Title *</label>
-            <input class="field-input" id="new-program" placeholder="E.g. Product Knowledge" />
+
+        <div class="nt-scroll">
+
+        <div class="nt-body">
+
+          <!-- Title -->
+          <input class="nt-title" id="new-program" placeholder="Add training title" autocomplete="off" />
+
+          <!-- Participants: Teams-style attendee field -->
+          <div class="nt-pop-wrap">
+            <div class="nt-attendee" id="nt-attendee" title="Add participants">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+              <div class="nt-attendee-chips" id="participant-chips"></div>
+              <span class="nt-attendee-count" id="participant-count">Add participants</span>
+            </div>
+
+            <div class="nt-pop" id="nt-participant-pop" style="display:none">
+              <div class="nt-pop-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                <input id="new-participant-search" placeholder="Search employees..." autocomplete="off" />
+              </div>
+              <div id="participant-dropdown" class="nt-pop-list"></div>
+              <div class="nt-pop-foot">
+                <span id="participant-dropdown-count">0 selected</span>
+                <button class="btn" id="btn-participant-done">Done</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Schedule: single Teams-like row -->
+          <div class="nt-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+            <div class="nt-sched-main">
+              <div class="nt-sched-preview" id="new-schedule-preview">Select date and time</div>
+              <div class="nt-sched-controls">
+                <input type="date" class="nt-sched-date" id="new-from-date" />
+                <span class="nt-sched-dash">–</span>
+                <input type="date" class="nt-sched-date" id="new-to-date" />
+                <span class="nt-sched-gap"></span>
+                <input type="text" class="nt-sched-time" id="new-time" placeholder="Start" autocomplete="off" />
+                <span class="nt-sched-dash">–</span>
+                <input type="text" class="nt-sched-time" id="new-end-time" placeholder="End" autocomplete="off" />
+              </div>
+              <div class="nt-sched-hint" id="new-schedule-hint"></div>
+            </div>
+            <button class="nt-scheduler-btn" id="btn-scheduler" title="Pick date and time">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
+              Scheduler
+            </button>
+          </div>
+
+          <!-- Location -->
+          <div class="nt-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+            <input class="nt-input" id="new-location" placeholder="Add training location" autocomplete="off" />
+          </div>
+
+          <!-- Trainer (read-only, auto-filled) -->
+          <div class="nt-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+            <label class="nt-readonly">
+              <span class="nt-kicker">Trainer</span>
+              <input id="new-trainer" readonly placeholder="Not assigned" />
+            </label>
+          </div>
+
+          <!-- Branch (editable) -->
+          <div class="nt-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" /></svg>
+            <div class="nt-branch-block">
+              <span class="nt-kicker">Branch</span>
+              <div class="nt-branch-wrap">
+                <input class="nt-input" id="new-branch" placeholder="Select or type branch…" autocomplete="off" />
+                <div id="branch-dropdown" class="nt-pop nt-branch-pop" style="display:none"></div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="form-row">
+
+        <!-- Zone / Region / District (read-only, auto-filled from Branch) -->
+        <div class="nt-geo">
           <div>
-            <label class="field-label">From Date *</label>
-            <input class="field-input" type="date" id="new-from-date" />
-          </div>
-          <div>
-            <label class="field-label">To Date *</label>
-            <input class="field-input" type="date" id="new-to-date" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div>
-            <label class="field-label">Start Time *</label>
-            <input class="field-input" type="text" id="new-time" placeholder="e.g. 9:00 or 09:00 AM" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div>
-            <label class="field-label">End Time *</label>
-            <input class="field-input" type="text" id="new-end-time" placeholder="e.g. 11:00 or 11:00 AM" />
-          </div>
-          <div></div>
-        </div>
-        <div class="form-row">
-          <div>
-            <label class="field-label">Trainer</label>
-            <input class="field-input" id="new-trainer" placeholder="—" readonly style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
+            <label for="new-zone">Zone</label>
+            <input id="new-zone" readonly placeholder="—" />
           </div>
           <div>
-            <label class="field-label">Training Location</label>
-            <input class="field-input" id="new-location" placeholder="Venue / town" />
-          </div>
-        </div>
-        <div class="form-row full">
-          <div style="position:relative">
-            <label class="field-label">Branch</label>
-            <input class="field-input" id="new-branch" placeholder="Select or type branch…" autocomplete="off" />
-            <div id="branch-dropdown" style="
-              display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
-              background:var(--surface);border:1px solid var(--border);border-top:none;
-              border-radius:0 0 var(--radius-sm) var(--radius-sm);
-              box-shadow:0 4px 12px rgba(16,24,40,0.1);
-              max-height:180px;overflow-y:auto;
-            "></div>
-          </div>
-        </div>
-        <div class="form-row full">
-          <div style="position:relative">
-            <label class="field-label">Participants <span class="field-hint" id="participant-count">(0 selected)</span></label>
-            <input class="field-input" id="new-participant-search" placeholder="Search employee by name…" autocomplete="off" />
-            <div id="participant-dropdown" style="
-              display:none;position:absolute;top:100%;left:0;right:0;z-index:200;
-              background:var(--surface);border:1px solid var(--border);border-top:none;
-              border-radius:0 0 var(--radius-sm) var(--radius-sm);
-              box-shadow:0 4px 12px rgba(16,24,40,0.1);
-              max-height:200px;overflow-y:auto;
-            "></div>
-          </div>
-        </div>
-        <div class="form-row full">
-          <div id="participant-chips" class="participant-chips"></div>
-        </div>
-        <div class="form-row">
-          <div>
-            <label class="field-label">Zone</label>
-            <input class="field-input" id="new-zone" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
+            <label for="new-region">Region</label>
+            <input id="new-region" readonly placeholder="—" />
           </div>
           <div>
-            <label class="field-label">Region</label>
-            <input class="field-input" id="new-region" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
+            <label for="new-district">District</label>
+            <input id="new-district" readonly placeholder="—" />
           </div>
         </div>
-        <div class="form-row">
-          <div>
-            <label class="field-label">District</label>
-            <input class="field-input" id="new-district" readonly placeholder="—" style="background:var(--surface-2);color:var(--ink-3);cursor:default;" />
+
+        <div class="nt-body nt-body-foot">
+          <label class="nt-check">
+            <input type="checkbox" id="new-adhoc" />
+            Ad-hoc / Need-based training
+          </label>
+
+          <div class="nt-row nt-agenda-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" /></svg>
+            <textarea class="nt-input nt-agenda" id="new-agenda" placeholder="Add notes / trainer remarks" rows="1"></textarea>
           </div>
-          <div></div>
         </div>
-        <label class="check-inline">
-          <input type="checkbox" id="new-adhoc" />
-          Ad-hoc / Need-based training
-        </label>
-        <div class="form-actions">
+
+        <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
+        <div class="nt-edit-extra" id="nt-edit-extra"></div>
+
+        </div>
+
+        <div class="nt-foot">
           <button class="btn" data-close="addModal">Cancel</button>
-          <button class="btn btn-primary" id="btn-save-training">Add Training</button>
+          <button class="btn btn-primary" id="btn-save-training">Save Training</button>
         </div>
       </div>
     </div>
+
 
     <!-- Modal: MIS report preview (admin) -->
     <div class="modal-wrap" id="misModal">
@@ -1608,6 +2073,7 @@
           calFilters: { zone: "", region: "", district: "", branch: "" },
           statusFilter: null,
           search: "",
+          dialogMode: "add",
           currentEvent: null,
           loadedMonth: "",
           branchOptions: [],
@@ -1902,7 +2368,7 @@
             '<span class="event-chip-time">' + esc(ev.time || "") + "</span>";
           chip.addEventListener("click", function (e) {
             e.stopPropagation();
-            openDrawer(ev);
+            openTrainingDialog(ev);
           });
           return chip;
         }
@@ -1971,7 +2437,7 @@
                   '<br><span class="week-event-time">' + esc(ev.time || "") + (ev.training_location ? " • " + esc(ev.training_location) : "") + "</span></span>";
                 item.addEventListener("click", function (e) {
                   e.stopPropagation();
-                  openDrawer(ev);
+                  openTrainingDialog(ev);
                 });
                 col.appendChild(item);
               });
@@ -2022,7 +2488,7 @@
                 (ev.trainer_name ? " &middot; " + esc(ev.trainer_name) : "") + "</div></div>";
               item.addEventListener("click", function (e) {
                 e.stopPropagation();
-                openDrawer(ev);
+                openTrainingDialog(ev);
               });
               wrap.appendChild(item);
             });
@@ -2193,16 +2659,24 @@
           api("update_training_status", { training_name: ev.name, field: field, value: val })
             .then(function (res) {
               if (res && res.status) ev.status = res.status;
-              openDrawer(ev);
+              refreshTrainingSurface(ev);
               render();
               showToast("Training " + (statusOf(ev) === "completed" ? "marked complete" : "status updated"));
             })
             .catch(function (e) {
               ev[field] = val ? 0 : 1;
-              openDrawer(ev);
+              refreshTrainingSurface(ev);
               render();
               showToast("Update failed: " + e.message);
             });
+        }
+
+        function refreshTrainingSurface(ev) {
+          if (state.dialogMode === "edit" && addModal.classList.contains("open")) {
+            openTrainingDialog(ev);
+          } else {
+            openDrawer(ev);
+          }
         }
 
         function saveRemarks() {
@@ -2219,31 +2693,190 @@
 
         function openAddModal() {
           if (!role().canAdd) return;
+          var extra = document.getElementById("nt-edit-extra");
+          if (extra) extra.innerHTML = "";
           document.getElementById("new-program").value = "";
+          document.getElementById("new-program").readOnly = false;
           document.getElementById("new-from-date").value = todayIso();
+          document.getElementById("new-from-date").readOnly = false;
           document.getElementById("new-to-date").value = todayIso();
+          document.getElementById("new-to-date").readOnly = false;
           document.getElementById("new-time").value = "";
+          document.getElementById("new-time").readOnly = false;
           document.getElementById("new-end-time").value = "";
+          document.getElementById("new-end-time").readOnly = false;
           document.getElementById("new-location").value = "";
+          document.getElementById("new-location").readOnly = false;
           document.getElementById("new-branch").value = "";
+          document.getElementById("new-branch").readOnly = false;
           document.getElementById("new-zone").value = "";
           document.getElementById("new-region").value = "";
           document.getElementById("new-district").value = "";
           document.getElementById("new-adhoc").checked = false;
+          document.getElementById("new-adhoc").disabled = false;
           state.selectedParticipants = [];
           var pc = document.getElementById("participant-chips");
           if (pc) pc.innerHTML = "";
           var ps = document.getElementById("new-participant-search");
           if (ps) ps.value = "";
           var pcount = document.getElementById("participant-count");
-          if (pcount) pcount.textContent = "(0 selected)";
+          if (pcount) pcount.textContent = "Add participants";
+          var pdrop = document.getElementById("participant-dropdown-count");
+          if (pdrop) pdrop.textContent = "0 selected";
+          var agenda = document.getElementById("new-agenda");
+          if (agenda) {
+            agenda.value = "";
+            agenda.classList.remove("open");
+            var agRow = agenda.closest(".nt-agenda-row");
+            if (agRow) agRow.classList.remove("open");
+          }
+          updateSchedulePreview();
           // Auto-fill trainer from session user's linked Employee
           var trainerInput = document.getElementById("new-trainer");
           if (trainerInput) {
             trainerInput.value = state.currentEmployeeName || "";
           }
+          setDialogMode("add");
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
+        }
+        function setDialogMode(mode, ev) {
+          state.dialogMode = mode;
+          addModal.classList.toggle("editing", mode === "edit");
+          var h = document.querySelector("#addModal .nt-head h3");
+          if (h) h.textContent = mode === "edit" ? "Edit Training" : "New Training";
+          var saveBtn = document.getElementById("btn-save-training");
+          if (mode === "edit") {
+            saveBtn.textContent = "Save Changes";
+            saveBtn.onclick = saveTrainingChanges;
+          } else {
+            saveBtn.textContent = "Save Training";
+            saveBtn.onclick = saveTraining;
+          }
+        }
+        function openTrainingDialog(ev) {
+          var r = role();
+          if (!r.canEdit && !r.canAdd) { openDrawer(ev); return; }
+          state.currentEvent = ev;
+          api("get_training_details", { name: ev.name }).then(function (d) {
+            if (d) {
+              for (var k in d) {
+                if (d[k] !== undefined && d[k] !== null) ev[k] = d[k];
+              }
+            }
+            fillEditDialog(ev);
+          }).catch(function () {
+            fillEditDialog(ev);
+          });
+        }
+        function fillEditDialog(ev) {
+          var r = role();
+          setDialogMode("edit", ev);
+          var f = function (id, v) {
+            var el = document.getElementById(id);
+            if (el) el.value = (v == null ? "" : v);
+          };
+          f("new-program", ev.training_program || ev.topic || "");
+          f("new-from-date", ev.from_date || "");
+          f("new-to-date", ev.to_date || ev.from_date || "");
+          f("new-time", fmtTimeInput(ev.start_time));
+          f("new-end-time", fmtTimeInput(ev.end_time));
+          f("new-location", ev.training_location || "");
+          f("new-branch", ev.branch || "");
+          f("new-zone", ev.zone || "");
+          f("new-region", ev.region || "");
+          f("new-district", ev.district || "");
+          f("new-trainer", ev.trainer || ev.trainer_name || "");
+          var adhoc = document.getElementById("new-adhoc");
+          adhoc.checked = !!ev.is_adhoc;
+          adhoc.disabled = !r.canEdit;
+          var agenda = document.getElementById("new-agenda");
+          if (agenda) {
+            agenda.value = ev.trainer_remarks || "";
+            if (agenda.value.trim()) {
+              agenda.classList.add("open");
+              var agRow = agenda.closest(".nt-agenda-row");
+              if (agRow) agRow.classList.add("open");
+            }
+          }
+          ["new-program", "new-from-date", "new-to-date", "new-time", "new-end-time", "new-location", "new-branch"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.readOnly = true;
+          });
+          state.selectedParticipants = (ev.participant_list || []).map(function (p) { return p.employee; });
+          dialogFn.renderPChips();
+          updateSchedulePreview();
+          var extra = document.getElementById("nt-edit-extra");
+          if (extra) {
+            extra.innerHTML = editExtraHTML(ev);
+            if (r.canEdit) {
+              extra.querySelectorAll(".check-item input").forEach(function (inp) {
+                inp.onchange = function () { toggleStatus(ev, inp.dataset.field, inp.checked); };
+              });
+            }
+          }
+          addModal.classList.add("open");
+        }
+        function editExtraHTML(ev) {
+          var r = role();
+          var score = completionScore(ev);
+          var pct = Math.round((score / 5) * 100);
+          var html =
+            '<div class="drawer-section">' +
+            '<div class="drawer-section-title">Training Completion &middot; ' + score + "/5</div>" +
+            '<div class="progress-row">' +
+            '<div class="progress-track"><div class="progress-fill' + (pct === 100 ? " complete" : "") + '" style="width:' + pct + '%"></div></div>' +
+            '<span class="progress-pct">' + pct + "%</span></div></div>";
+          var checkList = CHECK_FIELDS.map(function (f) {
+            var on = !!ev[f.key];
+            var input = r.canEdit
+              ? '<input type="checkbox" ' + (on ? "checked" : "") + ' data-field="' + f.key + '" />'
+              : "";
+            return '<label class="check-item' + (on ? " done" : "") + '">' +
+              input +
+              '<span class="ck-label">' + f.label + "</span>" +
+              '<span class="ck-val">' + (on ? "Yes" : "No") + "</span></label>";
+          }).join("");
+          html += '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' + checkList + "</div>";
+          if (r.showBudget) {
+            var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
+            html +=
+              '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+              '<div class="meta-grid">' +
+              metaRow("Budget Amount", inr(ev.budget_amount)) +
+              metaRow("Actual Expense", inr(ev.actual_expense)) +
+              metaRow("Expense Status", expStatus) +
+              "</div></div>";
+          }
+          return html;
+        }
+        function fmtTimeInput(t) {
+          if (!t) return "";
+          t = String(t).trim();
+          var m = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+          if (!m) return t;
+          var h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
+          if (h > 23 || mi > 59) return t;
+          var ap = h < 12 ? "AM" : "PM";
+          var hr = h % 12 || 12;
+          return hr + ":" + (mi < 10 ? "0" : "") + mi + " " + ap;
+        }
+        function saveTrainingChanges() {
+          var ev = state.currentEvent;
+          if (!ev) { closeModal("addModal"); return; }
+          var val = (document.getElementById("new-agenda") || {}).value || "";
+          var changed = (ev.trainer_remarks || "") !== val;
+          var p = changed
+            ? api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
+                .then(function () { ev.trainer_remarks = val; })
+            : Promise.resolve();
+          p.then(function () {
+            closeModal("addModal");
+            loadData(true);
+            showToast("Training updated");
+          }).catch(function (e) {
+            showToast("Could not save changes: " + e.message);
+          });
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
@@ -2282,6 +2915,7 @@
 
           var trainerSel = document.getElementById("new-trainer");
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
+          var agenda = (document.getElementById("new-agenda") || {}).value || "";
           var args = {
             training_program: program,
             from_date: date,
@@ -2294,6 +2928,7 @@
             region: document.getElementById("new-region").value,
             district: document.getElementById("new-district").value,
             branch: document.getElementById("new-branch").value.trim() || null,
+            trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
@@ -2456,7 +3091,7 @@
             } else {
               branchDd.innerHTML = opts.map(function (b) {
                 return '<div class="branch-opt" data-val="' + esc(b) + '" style="' +
-                  'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);' +
+                  'padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);' +
                   (b === selectedBranch ? 'background:var(--accent-soft);color:var(--accent-ink);font-weight:600;' : '') +
                   '">' + esc(b) + '</div>';
               }).join("");
@@ -2481,6 +3116,7 @@
           }
 
           branchInput.addEventListener("focus", function () {
+            if (state.dialogMode === "edit") return;
             renderDropdown(this.value);
           });
 
@@ -2503,10 +3139,16 @@
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
+        var dialogFn = { renderPChips: function () {}, openPop: function () {}, closePop: function () {} };
         (function () {
           var pSearch = document.getElementById("new-participant-search");
           var pDd = document.getElementById("participant-dropdown");
           var pChips = document.getElementById("participant-chips");
+          var pPop = document.getElementById("nt-participant-pop");
+          var pCount = document.getElementById("participant-count");
+          var pDropCount = document.getElementById("participant-dropdown-count");
+          var pDone = document.getElementById("btn-participant-done");
+          var pAttendee = document.getElementById("nt-attendee");
 
           function pLabel() {
             var n = state.selectedParticipants.length;
@@ -2528,18 +3170,18 @@
           function renderPDd(filter) {
             var q = (filter || "").trim().toLowerCase();
             var list = pEmployees().filter(function (emp) {
-              var hay = (emp.employee_name + " " + (emp.sahayog_branch || "")).toLowerCase();
+              var hay = (emp.employee_name + " " + (emp.sahayog_branch || "") + " " + (emp.name || "")).toLowerCase();
               return !q || hay.indexOf(q) !== -1;
             });
             if (!list.length) {
-              pDd.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+              pDd.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
             } else {
               pDd.innerHTML = list.map(function (emp) {
-                return '<div class="branch-opt" data-val="' + esc(emp.name) + '" style="' +
-                  'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);display:flex;justify-content:space-between;gap:8px' +
-                  '">' +
+                var code = emp.name || "";
+                var br = emp.sahayog_branch || "";
+                return '<div class="branch-opt" data-val="' + esc(emp.name) + '">' +
                   '<span>' + esc(emp.employee_name || emp.name) + '</span>' +
-                  (emp.sahayog_branch ? '<span style="color:var(--ink-3);font-size:11px">' + escP(emp.sahayog_branch) + '</span>' : '') +
+                  '<span style="color:var(--ink-3);font-size:11px">' + escP(code) + (br && code ? " &middot; " : "") + (br ? escP(br) : "") + '</span>' +
                   '</div>';
               }).join("");
             }
@@ -2549,41 +3191,163 @@
           function renderPChips() {
             var byName = {};
             state.allEmployees.forEach(function (e) { byName[e.name] = e; });
+            var removable = state.dialogMode !== "edit";
             pChips.innerHTML = state.selectedParticipants.map(function (empName) {
               var emp = byName[empName] || {};
               return '<span class="participant-chip">' + esc(emp.employee_name || empName) +
-                '<button type="button" data-remove="' + esc(empName) + '" title="Remove">&times;</button></span>';
+                (removable ? '<button type="button" data-remove="' + esc(empName) + '" title="Remove">&times;</button>' : "") +
+                '</span>';
             }).join("");
-            document.getElementById("participant-count").textContent = "(" + pLabel() + ")";
+            var n = state.selectedParticipants.length;
+            if (pCount) {
+              pCount.textContent = n ? pLabel() : "Add participants";
+              pCount.classList.toggle("has", n > 0);
+            }
+            if (pDropCount) pDropCount.textContent = n + " selected";
           }
+
+          function openPop() {
+            if (state.dialogMode === "edit") return;
+            if (!pPop || !pDd) return;
+            pPop.style.display = "block";
+            pDd.style.display = "block";
+            renderPDd(pSearch.value);
+            if (pSearch) pSearch.focus();
+          }
+          function closePop() {
+            if (pPop) pPop.style.display = "none";
+          }
+
+          dialogFn.renderPChips = renderPChips;
+          dialogFn.openPop = openPop;
+          dialogFn.closePop = closePop;
 
           function addParticipant(val) {
             if (state.selectedParticipants.indexOf(val) !== -1) return;
             state.selectedParticipants.push(val);
             renderPChips();
-            pSearch.value = "";
-            pDd.style.display = "none";
-            pSearch.focus();
+            if (pSearch) { pSearch.value = ""; pSearch.focus(); }
+            if (pPop && pPop.style.display === "block") renderPDd("");
           }
 
-          pSearch.addEventListener("focus", function () { renderPDd(this.value); });
-          pSearch.addEventListener("input", function () { renderPDd(this.value); });
-          pDd.addEventListener("mousedown", function (e) {
-            var opt = e.target.closest(".branch-opt");
-            if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
-          });
+          if (pAttendee) {
+            pAttendee.addEventListener("click", function () { openPop(); });
+          }
+          if (pSearch) {
+            pSearch.addEventListener("focus", function () { openPop(); });
+            pSearch.addEventListener("input", function () { renderPDd(this.value); });
+            pSearch.addEventListener("keydown", function (e) {
+              if (e.key === "Escape") { e.preventDefault(); closePop(); pSearch.blur(); }
+              if (e.key === "Enter") {
+                e.preventDefault();
+                var first = pDd.querySelector(".branch-opt");
+                if (first && first.dataset.val) addParticipant(first.dataset.val);
+              }
+            });
+          }
+          if (pDd) {
+            pDd.addEventListener("mousedown", function (e) {
+              var opt = e.target.closest(".branch-opt");
+              if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
+            });
+          }
+          if (pDone) pDone.addEventListener("click", closePop);
           document.addEventListener("click", function (e) {
-            if (!pSearch.contains(e.target) && !pDd.contains(e.target)) pDd.style.display = "none";
+            if (!pAttendee || pAttendee.contains(e.target)) return;
+            if (pPop && !pPop.contains(e.target)) closePop();
           });
-          pChips.addEventListener("click", function (e) {
-            var btn = e.target.closest("[data-remove]");
-            if (btn) {
-              var i = state.selectedParticipants.indexOf(btn.dataset.remove);
-              if (i !== -1) state.selectedParticipants.splice(i, 1);
-              renderPChips();
-            }
-          });
+          if (pChips) {
+            pChips.addEventListener("click", function (e) {
+              var btn = e.target.closest("[data-remove]");
+              if (btn) {
+                var i = state.selectedParticipants.indexOf(btn.dataset.remove);
+                if (i !== -1) state.selectedParticipants.splice(i, 1);
+                renderPChips();
+              }
+            });
+          }
         })();
+
+        /* ---------- Schedule preview + scheduler (Add Training modal) ---------- */
+        function fmtSchDate(iso) {
+          if (!iso) return "";
+          var p = String(iso).split("-");
+          var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+          if (isNaN(d.getTime())) return "";
+          return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+        }
+        function fmtSchTime(t) {
+          if (!t) return "";
+          var m = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+          if (!m) return t;
+          var h = parseInt(m[1], 10), mi = parseInt(m[2] || "0", 10);
+          var ap = (m[3] || "").toUpperCase();
+          if (ap === "PM" && h < 12) h += 12;
+          if (ap === "AM" && h === 12) h = 0;
+          if (h > 23 || mi > 59) return t;
+          var hr = h % 12 || 12;
+          return hr + ":" + (mi < 10 ? "0" : "") + mi + " " + (h < 12 ? "AM" : "PM");
+        }
+        function updateSchedulePreview() {
+          var fEl = document.getElementById("new-from-date");
+          var tEl = document.getElementById("new-to-date");
+          var sEl = document.getElementById("new-time");
+          var eEl = document.getElementById("new-end-time");
+          var pvEl = document.getElementById("new-schedule-preview");
+          var hintEl = document.getElementById("new-schedule-hint");
+          var f = fEl ? fEl.value : "";
+          var t = tEl ? tEl.value : "";
+          var st = sEl ? sEl.value.trim() : "";
+          var et = eEl ? eEl.value.trim() : "";
+          if (pvEl) {
+            var parts = [];
+            if (f && t === f) parts.push(fmtSchDate(f));
+            else if (f && t) parts.push(fmtSchDate(f) + " – " + fmtSchDate(t));
+            var ts = [];
+            if (st) ts.push(fmtSchTime(st));
+            if (et) ts.push(fmtSchTime(et));
+            if (ts.length) parts.push(ts.join(" – "));
+            pvEl.textContent = parts.length ? parts.join("    ") : "Select date and time";
+          }
+          if (hintEl) {
+            var existing = (state.calEvents || []).filter(function (ev) {
+              return f && evStart(ev) <= f && evEnd(ev) >= f;
+            }).length;
+            hintEl.textContent = existing ? existing + " existing training" + (existing === 1 ? "" : "s") + " on this date" : "";
+          }
+        }
+        ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.addEventListener("input", updateSchedulePreview);
+          if (el) el.addEventListener("change", updateSchedulePreview);
+        });
+        /* Agenda: compact expandable remarks */
+        (function () {
+          var agenda = document.getElementById("new-agenda");
+          if (!agenda) return;
+          function expand() {
+            agenda.classList.add("open");
+            var r = agenda.closest(".nt-agenda-row");
+            if (r) r.classList.add("open");
+          }
+          function maybeCollapse() {
+            if (!agenda.value.trim()) {
+              agenda.classList.remove("open");
+              var r = agenda.closest(".nt-agenda-row");
+              if (r) r.classList.remove("open");
+            }
+          }
+          agenda.addEventListener("click", expand);
+          agenda.addEventListener("focus", expand);
+          agenda.addEventListener("blur", maybeCollapse);
+        })();
+
+        document.getElementById("btn-scheduler").onclick = function () {
+          var fd = document.getElementById("new-from-date");
+          if (!fd) return;
+          fd.focus();
+          if (fd.showPicker) { try { fd.showPicker(); } catch (e) {} }
+        };
 
         /* ---------- Init ---------- */
         state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
