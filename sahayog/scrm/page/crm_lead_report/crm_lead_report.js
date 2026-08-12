@@ -642,15 +642,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <button class="btn btn-xs btn-primary font-weight-bold" 
                             @click="syncIncrementalReport" 
                             :disabled="report_info.status === 'Generating'" title="Manually sync latest 3-day lead data in-place">
-                        <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
-                        {{ report_info.status === 'Generating' ? 'Syncing...' : 'Generate' }}
+                        <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'sync'}"></i> 
+                        {{ (report_info.status === 'Generating' && active_report_action === 'sync') ? 'Syncing...' : 'Generate' }}
                     </button>
 
                     <button class="btn btn-xs btn-outline-danger font-weight-bold" 
                             @click="confirmRebuildReport" 
                             :disabled="report_info.status === 'Generating'" title="Rebuild full baseline report cleanly with backup fallback">
-                        <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
-                        {{ report_info.status === 'Generating' ? 'Building...' : 'Rebuild' }}
+                        <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'rebuild'}"></i> 
+                        {{ (report_info.status === 'Generating' && active_report_action === 'rebuild') ? 'Building...' : 'Rebuild' }}
                     </button>
                 </div>
             </div>
@@ -1107,6 +1107,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     visible_branches: [],
     disabled_branches: [],
     show_server_files_modal: false,
+    active_report_action: null,
     report_info: {
       is_admin: false,
       status: "Loading...",
@@ -1127,6 +1128,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             this.report_info = r.message;
             if (r.message.status === "Generating") {
               setTimeout(() => { this.fetchReportInfo(); }, 5000);
+            } else {
+              this.active_report_action = null;
             }
           }
         }
@@ -1141,12 +1144,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       );
     },
     rebuildFullReport() {
+      this.active_report_action = "rebuild";
       this.report_info.status = "Generating";
       frappe.show_alert({ message: __("Full Baseline Rebuild Started in Background... Backup file active for live users."), indicator: "orange" });
       frappe.call({
         method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
         args: { force_rebuild: true },
         callback: (r) => {
+          this.active_report_action = null;
           if (r.message && r.message.status === "success") {
             frappe.msgprint({
               title: __("Full Baseline Report Rebuilt"),
@@ -1160,12 +1165,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
 
     syncIncrementalReport() {
+      this.active_report_action = "sync";
       this.report_info.status = "Generating";
       frappe.show_alert({ message: __("Syncing Latest 3-Day Incremental Lead Data..."), indicator: "orange" });
       frappe.call({
         method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
         args: { force_rebuild: false },
         callback: (r) => {
+          this.active_report_action = null;
           if (r.message && r.message.status === "success") {
             frappe.msgprint({
               title: __("Incremental Sync Completed"),
