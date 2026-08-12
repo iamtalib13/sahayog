@@ -625,12 +625,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <span class="small text-muted font-weight-bold" v-if="report_info.active_filename">
                         Active File: <code>{{ report_info.active_filename }}</code> ({{ report_info.size_mb }} MB)
                     </span>
+                    <span class="small text-info font-weight-bold" v-if="report_info.backup_exists">
+                        🛡️ Backup File: <code>{{ report_info.backup_filename }}</code> ({{ report_info.backup_size_mb }} MB)
+                    </span>
                     <span class="small text-muted" v-if="report_info.last_generated_at">
                         Last Generated: {{ report_info.last_generated_at }}
                     </span>
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 8px;">
+                    <button class="btn btn-sm btn-outline-secondary font-weight-bold shadow-sm" 
+                            @click="show_server_files_modal = true">
+                        <i class="fa fa-folder-open mr-1"></i> View Server Files
+                    </button>
+
                     <button class="btn btn-sm btn-outline-primary font-weight-bold shadow-sm" 
                             @click="syncIncrementalReport" 
                             :disabled="report_info.status === 'Generating'">
@@ -644,6 +652,51 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
                         {{ report_info.status === 'Generating' ? 'Generating...' : 'Rebuild Report' }}
                     </button>
+                </div>
+            </div>
+
+            <!-- Modal for Viewing Server Files -->
+            <div v-if="show_server_files_modal" class="modal-backdrop-custom d-flex align-items-center justify-content-center" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1050;" @click.self="show_server_files_modal = false">
+                <div class="bg-white rounded p-4 shadow-lg" style="width: 750px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h5 class="m-0 font-weight-bold text-dark"><i class="fa fa-server text-primary mr-2"></i> Server Lead Report Files</h5>
+                        <button class="btn btn-sm btn-link text-muted" @click="show_server_files_modal = false"><i class="fa fa-times fa-lg"></i></button>
+                    </div>
+                    
+                    <table class="table table-bordered table-striped table-hover table-sm" style="font-size: 13px;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Filename</th>
+                                <th>Size</th>
+                                <th>Last Modified</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="f in report_info.server_files" :key="f.filename">
+                                <td><code>{{ f.filename }}</code></td>
+                                <td>{{ f.size_mb }} MB</td>
+                                <td>{{ f.modified_at }}</td>
+                                <td>
+                                    <span v-if="f.is_active" class="badge badge-success px-2 py-1">🟢 Active</span>
+                                    <span v-else-if="f.is_backup" class="badge badge-info px-2 py-1">🛡️ Backup</span>
+                                    <span v-else class="badge badge-secondary px-2 py-1">Archived</span>
+                                </td>
+                                <td class="text-center">
+                                    <a :href="f.file_url" target="_blank" download class="btn btn-xs btn-primary font-weight-bold">
+                                        <i class="fa fa-download mr-1"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr v-if="!report_info.server_files || report_info.server_files.length === 0">
+                                <td colspan="5" class="text-center text-muted py-3">No report files found on server.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-right mt-3">
+                        <button class="btn btn-secondary btn-sm px-4" @click="show_server_files_modal = false">Close</button>
+                    </div>
                 </div>
             </div>
 
@@ -1053,12 +1106,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     transfer_loading: false,
     visible_branches: [],
     disabled_branches: [],
+    show_server_files_modal: false,
     report_info: {
       is_admin: false,
       status: "Loading...",
       active_filename: "",
+      backup_filename: "",
+      backup_exists: false,
+      backup_size_mb: 0,
       size_mb: 0,
-      last_generated_at: "-"
+      last_generated_at: "-",
+      server_files: []
     },
 
     fetchReportInfo() {
