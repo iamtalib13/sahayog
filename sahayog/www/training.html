@@ -41,7 +41,13 @@
         margin: 0;
         background: var(--bg);
         color: var(--ink-1);
-        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+        font-family:
+          "Segoe UI",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
         -webkit-font-smoothing: antialiased;
       }
       button {
@@ -236,7 +242,9 @@
         max-width: 26vw;
         margin-left: 10px;
         border: 1px solid transparent;
-        transition: border-color 0.12s, background 0.12s;
+        transition:
+          border-color 0.12s,
+          background 0.12s;
       }
       .search:focus-within {
         background: var(--surface);
@@ -1667,7 +1675,9 @@
         padding: 0;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 24px 60px rgba(16, 24, 40, 0.22), 0 2px 8px rgba(16, 24, 40, 0.08);
+        box-shadow:
+          0 24px 60px rgba(16, 24, 40, 0.22),
+          0 2px 8px rgba(16, 24, 40, 0.08);
         display: flex;
         flex-direction: column;
         max-height: min(92vh, 900px);
@@ -1736,7 +1746,9 @@
         font-size: 13px;
         z-index: 1300;
         opacity: 0;
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
         pointer-events: none;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
       }
@@ -1797,7 +1809,6 @@
         flex: 1;
         min-height: 0;
       }
-      .tr-head { }
       .tr-head-row {
         display: flex;
         align-items: flex-start;
@@ -1829,13 +1840,26 @@
         max-width: 260px;
         transition: border-color 0.12s;
       }
-      .tr-search:focus-within { border-color: var(--accent); }
-      .tr-search svg { width: 13px; height: 13px; color: var(--ink-3); flex-shrink: 0; }
-      .tr-search input {
-        border: none; background: none; outline: none;
-        font-size: 12.5px; color: var(--ink-1); width: 100%;
+      .tr-search:focus-within {
+        border-color: var(--accent);
       }
-      .tr-search input::placeholder { color: var(--ink-3); }
+      .tr-search svg {
+        width: 13px;
+        height: 13px;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .tr-search input {
+        border: none;
+        background: none;
+        outline: none;
+        font-size: 12.5px;
+        color: var(--ink-1);
+        width: 100%;
+      }
+      .tr-search input::placeholder {
+        color: var(--ink-3);
+      }
       .tr-toolbar .field-select {
         height: 30px;
         font-size: 12px;
@@ -1872,12 +1896,23 @@
         background: none;
         border: none;
         cursor: pointer;
-        transition: background 0.1s, color 0.1s;
+        transition:
+          background 0.1s,
+          color 0.1s;
       }
-      .tr-icon-btn:hover { background: var(--surface-3); color: var(--ink-1); }
-      .tr-icon-btn svg { width: 14px; height: 14px; pointer-events: none; }
+      .tr-icon-btn:hover {
+        background: var(--surface-3);
+        color: var(--ink-1);
+      }
+      .tr-icon-btn svg {
+        width: 14px;
+        height: 14px;
+        pointer-events: none;
+      }
       /* remove old action menu styles */
-      .tr-action-btn { display: none; }
+      .tr-action-btn {
+        display: none;
+      }
 
       /* Pagination */
       .tr-pagination {
@@ -1890,9 +1925,20 @@
         flex-wrap: wrap;
         gap: 8px;
       }
-      .pg-left { display: flex; align-items: center; gap: 8px; }
-      .pg-right { display: flex; align-items: center; gap: 6px; }
-      .pg-label { font-size: 12.5px; color: var(--ink-3); }
+      .pg-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .pg-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .pg-label {
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
       .pg-size-select {
         height: 28px;
         font-size: 12.5px;
@@ -1903,8 +1949,15 @@
         outline: none;
         cursor: pointer;
       }
-      .pg-size-select:focus { border-color: var(--accent); }
-      .pg-info { font-size: 12.5px; color: var(--ink-3); min-width: 80px; text-align: right; }
+      .pg-size-select:focus {
+        border-color: var(--accent);
+      }
+      .pg-info {
+        font-size: 12.5px;
+        color: var(--ink-3);
+        min-width: 80px;
+        text-align: right;
+      }
       .pg-btn {
         display: grid;
         place-items: center;
@@ -1916,10 +1969,23 @@
         color: var(--ink-2);
         cursor: pointer;
       }
-      .pg-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--ink-1); }
-      .pg-btn:disabled { opacity: 0.4; cursor: default; }
-      .pg-btn svg { width: 14px; height: 14px; }
-      .pg-nums { display: flex; align-items: center; gap: 3px; }
+      .pg-btn:hover:not(:disabled) {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      .pg-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      .pg-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .pg-nums {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
       .pg-num {
         display: grid;
         place-items: center;
@@ -1933,7 +1999,9 @@
         font-size: 12.5px;
         cursor: pointer;
       }
-      .pg-num:hover:not(.active) { background: var(--surface-2); }
+      .pg-num:hover:not(.active) {
+        background: var(--surface-2);
+      }
       .pg-num.active {
         background: var(--accent);
         border-color: var(--accent);
@@ -1975,9 +2043,15 @@
         color: var(--ink-3);
         font-weight: 500;
       }
-      .tr-stat-card.sc-upcoming .sc-num { color: var(--accent); }
-      .tr-stat-card.sc-inprogress .sc-num { color: var(--orange); }
-      .tr-stat-card.sc-completed .sc-num { color: var(--green); }
+      .tr-stat-card.sc-upcoming .sc-num {
+        color: var(--accent);
+      }
+      .tr-stat-card.sc-inprogress .sc-num {
+        color: var(--orange);
+      }
+      .tr-stat-card.sc-completed .sc-num {
+        color: var(--green);
+      }
       .tr-table-wrap {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -2008,8 +2082,12 @@
         cursor: pointer;
         transition: background 0.1s;
       }
-      .tr-table tbody tr:last-child { border-bottom: none; }
-      .tr-table tbody tr:hover { background: var(--surface-2); }
+      .tr-table tbody tr:last-child {
+        border-bottom: none;
+      }
+      .tr-table tbody tr:hover {
+        background: var(--surface-2);
+      }
       .tr-table td {
         padding: 11px 14px;
         vertical-align: middle;
@@ -2044,7 +2122,10 @@
         padding: 3px 10px;
       }
       .tr-status-pill .sp-dot {
-        width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
       }
       .tr-empty {
         padding: 48px 20px;
@@ -2053,10 +2134,16 @@
         color: var(--ink-3);
       }
       @media (max-width: 700px) {
-        .trainings-view { padding: 12px 12px; }
-        .tr-toolbar { gap: 6px; }
-        .tr-table th:nth-child(n+4),
-        .tr-table td:nth-child(n+4) { display: none; }
+        .trainings-view {
+          padding: 12px 12px;
+        }
+        .tr-toolbar {
+          gap: 6px;
+        }
+        .tr-table th:nth-child(n + 4),
+        .tr-table td:nth-child(n + 4) {
+          display: none;
+        }
       }
     </style>
   </head>
@@ -2069,23 +2156,72 @@
             <div class="brand-mark">LD</div>
             <div class="brand-name">L&amp;D Training</div>
           </div>
-          <button class="collapse-btn" id="collapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          <button
+            class="collapse-btn"
+            id="collapseBtn"
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
         </div>
 
         <div class="sidebar-scroll">
           <div class="sidebar-section">
             <button class="nav-item active" id="nav-calendar" title="Calendar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
               <span class="item-label">Calendar</span>
             </button>
             <button class="nav-item" id="nav-trainings" title="Trainings">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><rect x="7" y="10" width="3" height="7" /><rect x="12" y="6" width="3" height="11" /><rect x="17" y="13" width="3" height="4" /></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 3v18h18" />
+                <rect x="7" y="10" width="3" height="7" />
+                <rect x="12" y="6" width="3" height="11" />
+                <rect x="17" y="13" width="3" height="4" />
+              </svg>
               <span class="item-label">Trainings</span>
             </button>
-            <button class="nav-item nav-placeholder" title="Reports — MIS & consolidated reporting (backend phase)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" /><path d="M7 15l4-4 3 3 5-6" /></svg>
+            <button
+              class="nav-item nav-placeholder"
+              title="Reports — MIS & consolidated reporting (backend phase)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 3v18h18" />
+                <path d="M7 15l4-4 3 3 5-6" />
+              </svg>
               <span class="item-label">Reports</span>
             </button>
           </div>
@@ -2102,7 +2238,11 @@
               <span class="item-label">Upcoming</span>
               <span class="item-count" id="count-upcoming">0</span>
             </button>
-            <button class="nav-item" data-status="inprogress" title="In progress">
+            <button
+              class="nav-item"
+              data-status="inprogress"
+              title="In progress"
+            >
               <span class="status-dot" style="background: var(--orange)"></span>
               <span class="item-label">In progress</span>
               <span class="item-count" id="count-inprogress">0</span>
@@ -2134,13 +2274,38 @@
         </div>
 
         <div class="search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
           <input type="text" id="searchInput" placeholder="Search trainings" />
         </div>
         <div class="header-spacer"></div>
         <div class="header-right">
-          <button class="icon-btn" id="misBtn" title="Monthly MIS report" style="display: none">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v-2a5 5 0 00-5-5H8a5 5 0 00-5 5v2" /><path d="M3 12h5l2 3h4l2-3h5v5a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+          <button
+            class="icon-btn"
+            id="misBtn"
+            title="Monthly MIS report"
+            style="display: none"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12v-2a5 5 0 00-5-5H8a5 5 0 00-5 5v2" />
+              <path d="M3 12h5l2 3h4l2-3h5v5a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
           </button>
           <div class="avatar" id="avatar">A</div>
         </div>
@@ -2149,66 +2314,120 @@
       <!-- ===== Main ===== -->
       <main class="main">
         <div class="cal-view" id="calView">
-        <div class="filters-bar" id="filtersBar">
-          <div class="filter-group">
-            <label class="field-label">Zone</label>
-            <select class="field-select" id="fil-zone"><option value="">All Zones</option></select>
-          </div>
-          <div class="filter-group">
-            <label class="field-label">Region</label>
-            <select class="field-select" id="fil-region"><option value="">All Regions</option></select>
-          </div>
-          <div class="filter-group">
-            <label class="field-label">District</label>
-            <select class="field-select" id="fil-district"><option value="">All Districts</option></select>
-          </div>
-          <div class="filter-group">
-            <label class="field-label">Branch</label>
-            <select class="field-select" id="fil-branch"><option value="">All Branches</option></select>
-          </div>
-          <button class="btn btn-reset" id="btn-reset" title="Reset filters">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
-            Reset
-          </button>
-        </div>
-
-        <div class="cal-toolbar">
-          <button class="btn" id="todayBtn">Today</button>
-          <div class="month-nav">
-            <button class="icon-btn" id="prevBtn" title="Previous">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          <div class="filters-bar" id="filtersBar">
+            <div class="filter-group">
+              <label class="field-label">Zone</label>
+              <select class="field-select" id="fil-zone">
+                <option value="">All Zones</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="field-label">Region</label>
+              <select class="field-select" id="fil-region">
+                <option value="">All Regions</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="field-label">District</label>
+              <select class="field-select" id="fil-district">
+                <option value="">All Districts</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label class="field-label">Branch</label>
+              <select class="field-select" id="fil-branch">
+                <option value="">All Branches</option>
+              </select>
+            </div>
+            <button class="btn btn-reset" id="btn-reset" title="Reset filters">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              Reset
             </button>
-            <button class="icon-btn" id="nextBtn" title="Next">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-            </button>
           </div>
-          <div class="month-title-block">
-            <div class="month-title" id="monthTitle"></div>
-            <div class="month-count" id="monthCount"></div>
+
+          <div class="cal-toolbar">
+            <button class="btn" id="todayBtn">Today</button>
+            <div class="month-nav">
+              <button class="icon-btn" id="prevBtn" title="Previous">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button class="icon-btn" id="nextBtn" title="Next">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div class="month-title-block">
+              <div class="month-title" id="monthTitle"></div>
+              <div class="month-count" id="monthCount"></div>
+            </div>
+            <div class="view-switch" id="viewSwitch">
+              <button class="active" data-view="month">Month</button>
+              <button data-view="week">Week</button>
+              <button data-view="day">Day</button>
+            </div>
           </div>
-          <div class="view-switch" id="viewSwitch">
-            <button class="active" data-view="month">Month</button>
-            <button data-view="week">Week</button>
-            <button data-view="day">Day</button>
+
+          <div class="status-summary" id="statusSummary"></div>
+
+          <div class="cal-body">
+            <div class="cal-content" id="calContent"></div>
           </div>
-        </div>
 
-        <div class="status-summary" id="statusSummary"></div>
-
-        <div class="cal-body">
-          <div class="cal-content" id="calContent"></div>
-        </div>
-
-        <div class="legend">
-          <span class="legend-item"><span class="status-dot" style="background: var(--green)"></span> Completed</span>
-          <span class="legend-item"><span class="status-dot" style="background: var(--orange)"></span> In Progress</span>
-          <span class="legend-item"><span class="status-dot" style="background: var(--accent)"></span> Upcoming</span>
-          <span class="legend-item"><span class="status-dot" style="background: var(--ink-3)"></span> Pending</span>
-        </div>
+          <div class="legend">
+            <span class="legend-item"
+              ><span class="status-dot" style="background: var(--green)"></span>
+              Completed</span
+            >
+            <span class="legend-item"
+              ><span
+                class="status-dot"
+                style="background: var(--orange)"
+              ></span>
+              In Progress</span
+            >
+            <span class="legend-item"
+              ><span
+                class="status-dot"
+                style="background: var(--accent)"
+              ></span>
+              Upcoming</span
+            >
+            <span class="legend-item"
+              ><span class="status-dot" style="background: var(--ink-3)"></span>
+              Pending</span
+            >
+          </div>
         </div>
 
         <!-- ===== Trainings (management list) ===== -->
-        <div class="trainings-view" id="trainingsView" style="display:none">
+        <div class="trainings-view" id="trainingsView" style="display: none">
           <div class="tr-head-row">
             <div>
               <h2>Trainings</h2>
@@ -2218,8 +2437,22 @@
 
           <div class="tr-toolbar">
             <div class="tr-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-              <input id="tr-search" placeholder="Search training program..." autocomplete="off" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                id="tr-search"
+                placeholder="Search training program..."
+                autocomplete="off"
+              />
             </div>
             <select class="field-select" id="tr-status">
               <option value="">All Status</option>
@@ -2229,10 +2462,18 @@
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
             </select>
-            <select class="field-select" id="tr-zone"><option value="">All Zones</option></select>
-            <select class="field-select" id="tr-region"><option value="">All Regions</option></select>
-            <select class="field-select" id="tr-district"><option value="">All Districts</option></select>
-            <select class="field-select" id="tr-branch"><option value="">All Branches</option></select>
+            <select class="field-select" id="tr-zone">
+              <option value="">All Zones</option>
+            </select>
+            <select class="field-select" id="tr-region">
+              <option value="">All Regions</option>
+            </select>
+            <select class="field-select" id="tr-district">
+              <option value="">All Districts</option>
+            </select>
+            <select class="field-select" id="tr-branch">
+              <option value="">All Branches</option>
+            </select>
             <select class="field-select" id="tr-range">
               <option value="all">All dates</option>
               <option value="month">This month</option>
@@ -2240,7 +2481,17 @@
               <option value="past">Past dates</option>
             </select>
             <button class="btn btn-reset" id="tr-reset" title="Reset filters">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
               Reset
             </button>
           </div>
@@ -2264,7 +2515,9 @@
               </thead>
               <tbody id="trBody"></tbody>
             </table>
-            <div class="tr-empty" id="trEmpty" style="display:none">No trainings match your filters.</div>
+            <div class="tr-empty" id="trEmpty" style="display: none">
+              No trainings match your filters.
+            </div>
           </div>
 
           <!-- Pagination -->
@@ -2280,11 +2533,29 @@
             <div class="pg-right">
               <span class="pg-info" id="tr-pg-info"></span>
               <button class="pg-btn" id="tr-pg-prev" title="Previous page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
               </button>
               <div class="pg-nums" id="tr-pg-nums"></div>
               <button class="pg-btn" id="tr-pg-next" title="Next page">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
               </button>
             </div>
           </div>
@@ -2306,128 +2577,272 @@
         <div class="nt-head">
           <h3>New Training</h3>
           <button class="modal-close" data-close="addModal" title="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="16"
+              height="16"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         <div class="nt-scroll">
+          <div class="nt-body">
+            <!-- Title -->
+            <input
+              class="nt-title"
+              id="new-program"
+              placeholder="Add training title"
+              autocomplete="off"
+            />
 
-        <div class="nt-body">
+            <!-- Participants: Teams-style attendee field -->
+            <div class="nt-pop-wrap">
+              <div
+                class="nt-attendee"
+                id="nt-attendee"
+                title="Add participants"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <div class="nt-attendee-chips" id="participant-chips"></div>
+                <span class="nt-attendee-count" id="participant-count"
+                  >Add participants</span
+                >
+              </div>
 
-          <!-- Title -->
-          <input class="nt-title" id="new-program" placeholder="Add training title" autocomplete="off" />
-
-          <!-- Participants: Teams-style attendee field -->
-          <div class="nt-pop-wrap">
-            <div class="nt-attendee" id="nt-attendee" title="Add participants">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-              <div class="nt-attendee-chips" id="participant-chips"></div>
-              <span class="nt-attendee-count" id="participant-count">Add participants</span>
+              <div class="nt-pop" id="nt-participant-pop" style="display: none">
+                <div class="nt-pop-search">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    id="new-participant-search"
+                    placeholder="Search employees..."
+                    autocomplete="off"
+                  />
+                </div>
+                <div id="participant-dropdown" class="nt-pop-list"></div>
+                <div class="nt-pop-foot">
+                  <span id="participant-dropdown-count">0 selected</span>
+                  <button class="btn" id="btn-participant-done">Done</button>
+                </div>
+              </div>
             </div>
 
-            <div class="nt-pop" id="nt-participant-pop" style="display:none">
-              <div class="nt-pop-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                <input id="new-participant-search" placeholder="Search employees..." autocomplete="off" />
+            <!-- Schedule: single Teams-like row -->
+            <div class="nt-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              <div class="nt-sched-main">
+                <div class="nt-sched-preview" id="new-schedule-preview">
+                  Select date and time
+                </div>
+                <div class="nt-sched-controls">
+                  <input type="date" class="nt-sched-date" id="new-from-date" />
+                  <span class="nt-sched-dash">–</span>
+                  <input type="date" class="nt-sched-date" id="new-to-date" />
+                  <span class="nt-sched-gap"></span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-time"
+                    placeholder="Start"
+                    autocomplete="off"
+                  />
+                  <span class="nt-sched-dash">–</span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-end-time"
+                    placeholder="End"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="nt-sched-hint" id="new-schedule-hint"></div>
               </div>
-              <div id="participant-dropdown" class="nt-pop-list"></div>
-              <div class="nt-pop-foot">
-                <span id="participant-dropdown-count">0 selected</span>
-                <button class="btn" id="btn-participant-done">Done</button>
+              <button
+                class="nt-scheduler-btn"
+                id="btn-scheduler"
+                title="Pick date and time"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
+                </svg>
+                Scheduler
+              </button>
+            </div>
+
+            <!-- Location -->
+            <div class="nt-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <input
+                class="nt-input"
+                id="new-location"
+                placeholder="Add training location"
+                autocomplete="off"
+              />
+            </div>
+
+            <!-- Trainer (read-only, auto-filled) -->
+            <div class="nt-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <label class="nt-readonly">
+                <span class="nt-kicker">Trainer</span>
+                <input id="new-trainer" readonly placeholder="Not assigned" />
+              </label>
+            </div>
+
+            <!-- Branch (editable) -->
+            <div class="nt-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+              </svg>
+              <div class="nt-branch-block">
+                <span class="nt-kicker">Branch</span>
+                <div class="nt-branch-wrap">
+                  <input
+                    class="nt-input"
+                    id="new-branch"
+                    placeholder="Select or type branch…"
+                    autocomplete="off"
+                  />
+                  <div
+                    id="branch-dropdown"
+                    class="nt-pop nt-branch-pop"
+                    style="display: none"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Schedule: single Teams-like row -->
-          <div class="nt-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
-            <div class="nt-sched-main">
-              <div class="nt-sched-preview" id="new-schedule-preview">Select date and time</div>
-              <div class="nt-sched-controls">
-                <input type="date" class="nt-sched-date" id="new-from-date" />
-                <span class="nt-sched-dash">–</span>
-                <input type="date" class="nt-sched-date" id="new-to-date" />
-                <span class="nt-sched-gap"></span>
-                <input type="text" class="nt-sched-time" id="new-time" placeholder="Start" autocomplete="off" />
-                <span class="nt-sched-dash">–</span>
-                <input type="text" class="nt-sched-time" id="new-end-time" placeholder="End" autocomplete="off" />
-              </div>
-              <div class="nt-sched-hint" id="new-schedule-hint"></div>
+          <!-- Zone / Region / District (read-only, auto-filled from Branch) -->
+          <div class="nt-geo">
+            <div>
+              <label for="new-zone">Zone</label>
+              <input id="new-zone" readonly placeholder="—" />
             </div>
-            <button class="nt-scheduler-btn" id="btn-scheduler" title="Pick date and time">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" /></svg>
-              Scheduler
-            </button>
+            <div>
+              <label for="new-region">Region</label>
+              <input id="new-region" readonly placeholder="—" />
+            </div>
+            <div>
+              <label for="new-district">District</label>
+              <input id="new-district" readonly placeholder="—" />
+            </div>
           </div>
 
-          <!-- Location -->
-          <div class="nt-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-            <input class="nt-input" id="new-location" placeholder="Add training location" autocomplete="off" />
-          </div>
-
-          <!-- Trainer (read-only, auto-filled) -->
-          <div class="nt-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-            <label class="nt-readonly">
-              <span class="nt-kicker">Trainer</span>
-              <input id="new-trainer" readonly placeholder="Not assigned" />
+          <div class="nt-body nt-body-foot">
+            <label class="nt-check">
+              <input type="checkbox" id="new-adhoc" />
+              Ad-hoc / Need-based training
             </label>
-          </div>
 
-          <!-- Branch (editable) -->
-          <div class="nt-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" /></svg>
-            <div class="nt-branch-block">
-              <span class="nt-kicker">Branch</span>
-              <div class="nt-branch-wrap">
-                <input class="nt-input" id="new-branch" placeholder="Select or type branch…" autocomplete="off" />
-                <div id="branch-dropdown" class="nt-pop nt-branch-pop" style="display:none"></div>
-              </div>
+            <div class="nt-row nt-agenda-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                />
+                <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
+              </svg>
+              <textarea
+                class="nt-input nt-agenda"
+                id="new-agenda"
+                placeholder="Add notes / trainer remarks"
+                rows="1"
+              ></textarea>
             </div>
           </div>
-        </div>
 
-        <!-- Zone / Region / District (read-only, auto-filled from Branch) -->
-        <div class="nt-geo">
-          <div>
-            <label for="new-zone">Zone</label>
-            <input id="new-zone" readonly placeholder="—" />
-          </div>
-          <div>
-            <label for="new-region">Region</label>
-            <input id="new-region" readonly placeholder="—" />
-          </div>
-          <div>
-            <label for="new-district">District</label>
-            <input id="new-district" readonly placeholder="—" />
-          </div>
-        </div>
-
-        <div class="nt-body nt-body-foot">
-          <label class="nt-check">
-            <input type="checkbox" id="new-adhoc" />
-            Ad-hoc / Need-based training
-          </label>
-
-          <div class="nt-row nt-agenda-row">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" /></svg>
-            <textarea class="nt-input nt-agenda" id="new-agenda" placeholder="Add notes / trainer remarks" rows="1"></textarea>
-          </div>
-        </div>
-
-        <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
-        <div class="nt-edit-extra" id="nt-edit-extra"></div>
-
+          <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
+          <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
 
         <div class="nt-foot">
           <button class="btn" data-close="addModal">Cancel</button>
-          <button class="btn btn-primary" id="btn-save-training">Save Training</button>
+          <button class="btn btn-primary" id="btn-save-training">
+            Save Training
+          </button>
         </div>
       </div>
     </div>
-
 
     <!-- Modal: MIS report preview (admin) -->
     <div class="modal-wrap" id="misModal">
@@ -2435,7 +2850,18 @@
         <div class="modal-head">
           <h3>Monthly MIS Report</h3>
           <button class="modal-close" data-close="misModal" title="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="15"
+              height="15"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
           </button>
         </div>
         <div id="misBody"></div>
@@ -2450,14 +2876,24 @@
         "use strict";
 
         /* ---------- Backend API helper ---------- */
-        var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+        var csrf =
+          (document.querySelector('meta[name="csrf-token"]') || {}).content ||
+          "";
         function api(method, args) {
-          return fetch("/api/method/sahayog.agent_and_bdo.ld_training_api." + method, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Frappe-CSRF-Token": csrf },
-            body: JSON.stringify(args || {}),
-          })
-            .then(function (r) { return r.json(); })
+          return fetch(
+            "/api/method/sahayog.agent_and_bdo.ld_training_api." + method,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Frappe-CSRF-Token": csrf,
+              },
+              body: JSON.stringify(args || {}),
+            },
+          )
+            .then(function (r) {
+              return r.json();
+            })
             .then(function (d) {
               if (d.exc_type) throw new Error(d.exception || d.exc_type);
               return d.message;
@@ -2465,7 +2901,13 @@
         }
 
         /* ---------- Status metadata (single source of truth) ---------- */
-        var STATUS_ORDER = ["draft", "upcoming", "inprogress", "completed", "pending"];
+        var STATUS_ORDER = [
+          "draft",
+          "upcoming",
+          "inprogress",
+          "completed",
+          "pending",
+        ];
         var STATUS_META = {
           draft: { color: "#8a8f98", label: "Draft" },
           upcoming: { color: "#4f6bed", label: "Upcoming" },
@@ -2482,10 +2924,42 @@
         ];
 
         var ROLES = {
-          ld_admin: { label: "L&D Admin", badge: "badge-admin", sub: "Admin View - All zones, full access", canAdd: true, canEdit: true, showBudget: true, showMis: true },
-          trainer: { label: "Trainer", badge: "badge-trainer", sub: "Trainer Dashboard - update training status after completion", canAdd: true, canEdit: true, showBudget: false, showMis: false },
-          viewer: { label: "Leadership", badge: "badge-viewer", sub: "Leadership View - read-only training calendar", canAdd: false, canEdit: false, showBudget: false, showMis: false },
-          general: { label: "General", badge: "badge-general", sub: "General View", canAdd: false, canEdit: false, showBudget: false, showMis: false },
+          ld_admin: {
+            label: "L&D Admin",
+            badge: "badge-admin",
+            sub: "Admin View - All zones, full access",
+            canAdd: true,
+            canEdit: true,
+            showBudget: true,
+            showMis: true,
+          },
+          trainer: {
+            label: "Trainer",
+            badge: "badge-trainer",
+            sub: "Trainer Dashboard - update training status after completion",
+            canAdd: true,
+            canEdit: true,
+            showBudget: false,
+            showMis: false,
+          },
+          viewer: {
+            label: "Leadership",
+            badge: "badge-viewer",
+            sub: "Leadership View - read-only training calendar",
+            canAdd: false,
+            canEdit: false,
+            showBudget: false,
+            showMis: false,
+          },
+          general: {
+            label: "General",
+            badge: "badge-general",
+            sub: "General View",
+            canAdd: false,
+            canEdit: false,
+            showBudget: false,
+            showMis: false,
+          },
         };
 
         /* ---------- State ---------- */
@@ -2506,10 +2980,44 @@
           selectedParticipants: [],
         };
 
-        var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        var MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        var MONTHS = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+        var MONTH_SHORT = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
         var WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        var WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        var WEEKDAY_NAMES = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
 
         var today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -2517,20 +3025,32 @@
         function iso(offsetDays) {
           var d = new Date(today);
           d.setDate(d.getDate() + offsetDays);
-          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+          return (
+            d.getFullYear() +
+            "-" +
+            String(d.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(d.getDate()).padStart(2, "0")
+          );
         }
-        function todayIso() { return iso(0); }
+        function todayIso() {
+          return iso(0);
+        }
 
         /* ---------- Pure helpers ---------- */
         function esc(s) {
           return String(s == null ? "" : s)
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
         }
         function fmtTime(t) {
           if (!t) return "";
           var p = String(t).split(":");
-          var h = parseInt(p[0], 10), m = p[1] || "00";
+          var h = parseInt(p[0], 10),
+            m = p[1] || "00";
           var ap = h >= 12 ? "PM" : "AM";
           h = h % 12 || 12;
           return h + ":" + m + " " + ap;
@@ -2540,10 +3060,16 @@
           return "\u20B9" + n.toLocaleString("en-IN");
         }
         function completionScore(ev) {
-          return CHECK_FIELDS.filter(function (f) { return ev[f.key]; }).length;
+          return CHECK_FIELDS.filter(function (f) {
+            return ev[f.key];
+          }).length;
         }
-        function evStart(ev) { return ev.from_date || ev.date || ""; }
-        function evEnd(ev) { return ev.to_date || ev.from_date || ev.date || ""; }
+        function evStart(ev) {
+          return ev.from_date || ev.date || "";
+        }
+        function evEnd(ev) {
+          return ev.to_date || ev.from_date || ev.date || "";
+        }
         function statusOf(ev) {
           if (ev.docstatus === 0) return "draft";
           var s = completionScore(ev);
@@ -2551,9 +3077,19 @@
           if (s > 0) return "inprogress";
           return evEnd(ev) >= todayIso() ? "upcoming" : "pending";
         }
-        function monthOf(d) { return d.getMonth(); }
-        function yearOf(d) { return d.getFullYear(); }
-        function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+        function monthOf(d) {
+          return d.getMonth();
+        }
+        function yearOf(d) {
+          return d.getFullYear();
+        }
+        function sameDay(a, b) {
+          return (
+            a.getFullYear() === b.getFullYear() &&
+            a.getMonth() === b.getMonth() &&
+            a.getDate() === b.getDate()
+          );
+        }
         function startOfWeek(d) {
           var s = new Date(d);
           s.setDate(s.getDate() - s.getDay());
@@ -2561,7 +3097,13 @@
           return s;
         }
         function isoOf(d) {
-          return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+          return (
+            d.getFullYear() +
+            "-" +
+            String(d.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(d.getDate()).padStart(2, "0")
+          );
         }
 
         function filteredEvents() {
@@ -2571,22 +3113,47 @@
             if (f.zone && ev.zone !== f.zone) return false;
             if (f.region && ev.region !== f.region) return false;
             if (f.district && ev.district !== f.district) return false;
-            if (f.branch && !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())) return false;
+            if (
+              f.branch &&
+              !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())
+            )
+              return false;
             if (q) {
-              var hay = [ev.training_program, ev.topic, ev.trainer_name, ev.training_location, ev.zone, ev.region, ev.district, ev.branch].join(" ").toLowerCase();
+              var hay = [
+                ev.training_program,
+                ev.topic,
+                ev.trainer_name,
+                ev.training_location,
+                ev.zone,
+                ev.region,
+                ev.district,
+                ev.branch,
+              ]
+                .join(" ")
+                .toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
           });
         }
         function statusCounts(events) {
-          var c = { draft: 0, upcoming: 0, inprogress: 0, completed: 0, pending: 0 };
-          events.forEach(function (ev) { c[statusOf(ev)]++; });
+          var c = {
+            draft: 0,
+            upcoming: 0,
+            inprogress: 0,
+            completed: 0,
+            pending: 0,
+          };
+          events.forEach(function (ev) {
+            c[statusOf(ev)]++;
+          });
           return c;
         }
 
         /* ---------- Role UI ---------- */
-        function role() { return ROLES[state.role]; }
+        function role() {
+          return ROLES[state.role];
+        }
 
         function setupRoleUI() {
           var r = role();
@@ -2598,7 +3165,9 @@
           document.getElementById("sidebarFooter").textContent = r.label;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
-          document.getElementById("misBtn").style.display = r.showMis ? "grid" : "none";
+          document.getElementById("misBtn").style.display = r.showMis
+            ? "grid"
+            : "none";
         }
 
         /* ---------- Filters ---------- */
@@ -2621,57 +3190,96 @@
         }
 
         function loadGeo() {
-          return api("get_geo_options").then(function (opts) {
-            var zones = opts.zones || [], regions = opts.regions || [], districts = opts.districts || [], branches = opts.branches || [];
-            fillSelect("fil-zone", zones, "All Zones");
-            fillSelect("fil-region", regions, "All Regions");
-            fillSelect("fil-district", districts, "All Districts");
-            fillSelect("fil-branch", branches, "All Branches");
-            fillSelect("tr-zone", zones, "All Zones");
-            fillSelect("tr-region", regions, "All Regions");
-            fillSelect("tr-district", districts, "All Districts");
-            fillSelect("tr-branch", branches, "All Branches");
-            state.branchOptions = branches;
-            return api("get_trainer_options", { enabled_only: 1 });
-          }).then(function (employees) {
-            state.allEmployees = Array.isArray(employees) ? employees : [];
-          });
+          return api("get_geo_options")
+            .then(function (opts) {
+              var zones = opts.zones || [],
+                regions = opts.regions || [],
+                districts = opts.districts || [],
+                branches = opts.branches || [];
+              fillSelect("fil-zone", zones, "All Zones");
+              fillSelect("fil-region", regions, "All Regions");
+              fillSelect("fil-district", districts, "All Districts");
+              fillSelect("fil-branch", branches, "All Branches");
+              fillSelect("tr-zone", zones, "All Zones");
+              fillSelect("tr-region", regions, "All Regions");
+              fillSelect("tr-district", districts, "All Districts");
+              fillSelect("tr-branch", branches, "All Branches");
+              state.branchOptions = branches;
+              return api("get_trainer_options", { enabled_only: 1 });
+            })
+            .then(function (employees) {
+              state.allEmployees = Array.isArray(employees) ? employees : [];
+            });
         }
 
         function loadData(force) {
-          var anchor = state.viewMode === "month" ? state.viewDate : state.selectedDate;
+          var anchor =
+            state.viewMode === "month" ? state.viewDate : state.selectedDate;
           if (!anchor) anchor = new Date(today);
           var y = anchor.getFullYear();
           var m = anchor.getMonth() + 1;
           var key = y + "-" + String(m).padStart(2, "0");
-          if (!force && key === state.loadedMonth) { render(); return; }
+          if (!force && key === state.loadedMonth) {
+            render();
+            return;
+          }
           state.loadedMonth = key;
           var f = state.calFilters;
           api("get_calendar_data", {
-            year: y, month: m,
-            zone: f.zone || null, region: f.region || null,
-            district: f.district || null, branch: f.branch || null
-          }).then(function (evs) {
-            state.calEvents = Array.isArray(evs) ? evs : [];
-            render();
-          }).catch(function (err) {
-            state.calEvents = [];
-            render();
-            showToast("Could not load calendar: " + err.message);
-          });
+            year: y,
+            month: m,
+            zone: f.zone || null,
+            region: f.region || null,
+            district: f.district || null,
+            branch: f.branch || null,
+          })
+            .then(function (evs) {
+              state.calEvents = Array.isArray(evs) ? evs : [];
+              render();
+            })
+            .catch(function (err) {
+              state.calEvents = [];
+              render();
+              showToast("Could not load calendar: " + err.message);
+            });
         }
 
         function setupFilters() {
-          document.getElementById("fil-zone").onchange = function (e) { state.calFilters.zone = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
-          document.getElementById("fil-region").onchange = function (e) { state.calFilters.region = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
-          document.getElementById("fil-district").onchange = function (e) { state.calFilters.district = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
-          document.getElementById("fil-branch").onchange = function (e) { state.calFilters.branch = e.target.value; state.selectedDate = pickRelevantDate(); loadData(true); };
+          document.getElementById("fil-zone").onchange = function (e) {
+            state.calFilters.zone = e.target.value;
+            state.selectedDate = pickRelevantDate();
+            loadData(true);
+          };
+          document.getElementById("fil-region").onchange = function (e) {
+            state.calFilters.region = e.target.value;
+            state.selectedDate = pickRelevantDate();
+            loadData(true);
+          };
+          document.getElementById("fil-district").onchange = function (e) {
+            state.calFilters.district = e.target.value;
+            state.selectedDate = pickRelevantDate();
+            loadData(true);
+          };
+          document.getElementById("fil-branch").onchange = function (e) {
+            state.calFilters.branch = e.target.value;
+            state.selectedDate = pickRelevantDate();
+            loadData(true);
+          };
           document.getElementById("btn-reset").onclick = function () {
-            state.calFilters = { zone: "", region: "", district: "", branch: "" };
+            state.calFilters = {
+              zone: "",
+              region: "",
+              district: "",
+              branch: "",
+            };
             state.statusFilter = null;
             state.search = "";
             document.getElementById("searchInput").value = "";
-            ["fil-zone", "fil-region", "fil-district", "fil-branch"].forEach(function (s) { document.getElementById(s).value = ""; });
+            ["fil-zone", "fil-region", "fil-district", "fil-branch"].forEach(
+              function (s) {
+                document.getElementById(s).value = "";
+              },
+            );
             state.selectedDate = new Date(today);
             loadData(true);
           };
@@ -2679,10 +3287,21 @@
         function pickRelevantDate() {
           var evs = filteredEvents();
           if (!evs.length) return new Date(today);
-          var dates = evs.map(function (e) { return evStart(e); }).sort();
-          var next = dates.find(function (d) { return d >= todayIso(); }) || dates[dates.length - 1];
+          var dates = evs
+            .map(function (e) {
+              return evStart(e);
+            })
+            .sort();
+          var next =
+            dates.find(function (d) {
+              return d >= todayIso();
+            }) || dates[dates.length - 1];
           var p = next.split("-");
-          return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+          return new Date(
+            parseInt(p[0], 10),
+            parseInt(p[1], 10) - 1,
+            parseInt(p[2], 10),
+          );
         }
 
         /* ---------- Render ---------- */
@@ -2698,23 +3317,46 @@
 
         function eventsOn(dateIso) {
           var statusOk = state.statusFilter
-            ? function (ev) { return statusOf(ev) === state.statusFilter; }
-            : function () { return true; };
+            ? function (ev) {
+                return statusOf(ev) === state.statusFilter;
+              }
+            : function () {
+                return true;
+              };
           return filteredEvents()
-            .filter(function (ev) { return evStart(ev) <= dateIso && evEnd(ev) >= dateIso && statusOk(ev); })
-            .sort(function (a, b) { return a.time.localeCompare(b.time); });
+            .filter(function (ev) {
+              return (
+                evStart(ev) <= dateIso && evEnd(ev) >= dateIso && statusOk(ev)
+              );
+            })
+            .sort(function (a, b) {
+              return a.time.localeCompare(b.time);
+            });
         }
 
         function monthCountLabel() {
           var evs = filteredEvents().filter(function (ev) {
-            return evStart(ev).slice(0, 7) === state.viewDate.getFullYear() + "-" + String(state.viewDate.getMonth() + 1).padStart(2, "0");
+            return (
+              evStart(ev).slice(0, 7) ===
+              state.viewDate.getFullYear() +
+                "-" +
+                String(state.viewDate.getMonth() + 1).padStart(2, "0")
+            );
           });
-          return evs.length + " training" + (evs.length === 1 ? "" : "s") + " scheduled";
+          return (
+            evs.length +
+            " training" +
+            (evs.length === 1 ? "" : "s") +
+            " scheduled"
+          );
         }
 
         function renderMonthView() {
-          state.viewDate = state.viewDate || new Date(today.getFullYear(), today.getMonth(), 1);
-          document.getElementById("monthTitle").textContent = MONTHS[monthOf(state.viewDate)] + " " + yearOf(state.viewDate);
+          state.viewDate =
+            state.viewDate ||
+            new Date(today.getFullYear(), today.getMonth(), 1);
+          document.getElementById("monthTitle").textContent =
+            MONTHS[monthOf(state.viewDate)] + " " + yearOf(state.viewDate);
           document.getElementById("monthCount").textContent = monthCountLabel();
 
           var content = document.getElementById("calContent");
@@ -2730,7 +3372,11 @@
           var grid = document.createElement("div");
           grid.className = "month-grid";
 
-          var first = new Date(yearOf(state.viewDate), monthOf(state.viewDate), 1);
+          var first = new Date(
+            yearOf(state.viewDate),
+            monthOf(state.viewDate),
+            1,
+          );
           var start = new Date(first);
           start.setDate(start.getDate() - first.getDay());
 
@@ -2746,8 +3392,10 @@
             cell.className = "day-cell";
             if (other) cell.classList.add("other-month");
             if (sameDay(cellDate, today)) cell.classList.add("is-today");
-            if (sameDay(cellDate, state.selectedDate)) cell.classList.add("selected");
-            if (isFiltered && evs.length === 0 && !other) cell.classList.add("dimmed");
+            if (sameDay(cellDate, state.selectedDate))
+              cell.classList.add("selected");
+            if (isFiltered && evs.length === 0 && !other)
+              cell.classList.add("dimmed");
 
             var num = document.createElement("div");
             num.className = "day-num";
@@ -2763,7 +3411,11 @@
               more.textContent = "+" + (evs.length - 2) + " more";
               more.onclick = function () {
                 var p = dateIso.split("-");
-                state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+                state.selectedDate = new Date(
+                  parseInt(p[0], 10),
+                  parseInt(p[1], 10) - 1,
+                  parseInt(p[2], 10),
+                );
                 state.viewMode = "day";
                 syncViewSwitch();
                 render();
@@ -2771,13 +3423,21 @@
               cell.appendChild(more);
             }
 
-            cell.addEventListener("click", function (d) { return function () {
-              state.selectedDate = d;
-              if (state.viewMode === "month" && d.getMonth() !== monthOf(state.viewDate)) {
-                state.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
-              }
-              render();
-            }; }(new Date(cellDate)));
+            cell.addEventListener(
+              "click",
+              (function (d) {
+                return function () {
+                  state.selectedDate = d;
+                  if (
+                    state.viewMode === "month" &&
+                    d.getMonth() !== monthOf(state.viewDate)
+                  ) {
+                    state.viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+                  }
+                  render();
+                };
+              })(new Date(cellDate)),
+            );
             grid.appendChild(cell);
           }
           content.appendChild(grid);
@@ -2791,10 +3451,16 @@
           chip.style.borderLeftColor = meta.color;
           chip.innerHTML =
             '<span class="event-chip-top">' +
-            '<span class="status-dot" style="background:' + meta.color + '"></span>' +
-            '<span class="event-chip-title">' + esc(ev.training_program || ev.topic || "Training") + "</span>" +
+            '<span class="status-dot" style="background:' +
+            meta.color +
+            '"></span>' +
+            '<span class="event-chip-title">' +
+            esc(ev.training_program || ev.topic || "Training") +
             "</span>" +
-            '<span class="event-chip-time">' + esc(ev.time || "") + "</span>";
+            "</span>" +
+            '<span class="event-chip-time">' +
+            esc(ev.time || "") +
+            "</span>";
           chip.addEventListener("click", function (e) {
             e.stopPropagation();
             openTrainingDialog(ev);
@@ -2810,17 +3476,41 @@
 
           var title;
           if (weekStart.getMonth() === weekEnd.getMonth()) {
-            title = MONTH_SHORT[weekStart.getMonth()] + " " + weekStart.getDate() + " - " + weekEnd.getDate() + ", " + weekStart.getFullYear();
+            title =
+              MONTH_SHORT[weekStart.getMonth()] +
+              " " +
+              weekStart.getDate() +
+              " - " +
+              weekEnd.getDate() +
+              ", " +
+              weekStart.getFullYear();
           } else {
-            title = MONTH_SHORT[weekStart.getMonth()] + " " + weekStart.getDate() + " - " + MONTH_SHORT[weekEnd.getMonth()] + " " + weekEnd.getDate() + ", " + weekEnd.getFullYear();
+            title =
+              MONTH_SHORT[weekStart.getMonth()] +
+              " " +
+              weekStart.getDate() +
+              " - " +
+              MONTH_SHORT[weekEnd.getMonth()] +
+              " " +
+              weekEnd.getDate() +
+              ", " +
+              weekEnd.getFullYear();
           }
           document.getElementById("monthTitle").textContent = title;
 
           var visible = filteredEvents().filter(function (ev) {
-            var d = new Date(parseInt(evStart(ev).slice(0, 4), 10), parseInt(evStart(ev).slice(5, 7), 10) - 1, parseInt(evStart(ev).slice(8, 10), 10));
+            var d = new Date(
+              parseInt(evStart(ev).slice(0, 4), 10),
+              parseInt(evStart(ev).slice(5, 7), 10) - 1,
+              parseInt(evStart(ev).slice(8, 10), 10),
+            );
             return d >= weekStart && d <= weekEnd;
           });
-          document.getElementById("monthCount").textContent = visible.length + " training" + (visible.length === 1 ? "" : "s") + " scheduled";
+          document.getElementById("monthCount").textContent =
+            visible.length +
+            " training" +
+            (visible.length === 1 ? "" : "s") +
+            " scheduled";
 
           var content = document.getElementById("calContent");
           var row = document.createElement("div");
@@ -2829,7 +3519,13 @@
             var d = new Date(weekStart);
             d.setDate(d.getDate() + i);
             var dCell = document.createElement("div");
-            dCell.innerHTML = WEEKDAYS[i] + '<span class="wk-num' + (sameDay(d, today) ? " is-today" : "") + '">' + d.getDate() + "</span>";
+            dCell.innerHTML =
+              WEEKDAYS[i] +
+              '<span class="wk-num' +
+              (sameDay(d, today) ? " is-today" : "") +
+              '">' +
+              d.getDate() +
+              "</span>";
             row.appendChild(dCell);
           }
           content.appendChild(row);
@@ -2861,9 +3557,18 @@
                 var item = document.createElement("div");
                 item.className = "week-event";
                 item.innerHTML =
-                  '<span class="status-dot" style="background:' + STATUS_META[st].color + '"></span>' +
-                  '<span><span class="week-event-title">' + esc(ev.training_program || ev.topic || "Training") + "</span>" +
-                  '<br><span class="week-event-time">' + esc(ev.time || "") + (ev.training_location ? " • " + esc(ev.training_location) : "") + "</span></span>";
+                  '<span class="status-dot" style="background:' +
+                  STATUS_META[st].color +
+                  '"></span>' +
+                  '<span><span class="week-event-title">' +
+                  esc(ev.training_program || ev.topic || "Training") +
+                  "</span>" +
+                  '<br><span class="week-event-time">' +
+                  esc(ev.time || "") +
+                  (ev.training_location
+                    ? " • " + esc(ev.training_location)
+                    : "") +
+                  "</span></span>";
                 item.addEventListener("click", function (e) {
                   e.stopPropagation();
                   openTrainingDialog(ev);
@@ -2872,10 +3577,15 @@
               });
             }
 
-            col.addEventListener("click", function (d) { return function () {
-              state.selectedDate = d;
-              render();
-            }; }(new Date(day)));
+            col.addEventListener(
+              "click",
+              (function (d) {
+                return function () {
+                  state.selectedDate = d;
+                  render();
+                };
+              })(new Date(day)),
+            );
             grid.appendChild(col);
           }
           content.appendChild(grid);
@@ -2883,10 +3593,21 @@
 
         function renderDayView() {
           var d = state.selectedDate || new Date(today);
-          document.getElementById("monthTitle").textContent = WEEKDAY_NAMES[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate() + " " + d.getFullYear();
+          document.getElementById("monthTitle").textContent =
+            WEEKDAY_NAMES[d.getDay()] +
+            ", " +
+            MONTHS[d.getMonth()] +
+            " " +
+            d.getDate() +
+            " " +
+            d.getFullYear();
 
           var evs = eventsOn(isoOf(d));
-          document.getElementById("monthCount").textContent = evs.length + " training" + (evs.length === 1 ? "" : "s") + " scheduled";
+          document.getElementById("monthCount").textContent =
+            evs.length +
+            " training" +
+            (evs.length === 1 ? "" : "s") +
+            " scheduled";
 
           var content = document.getElementById("calContent");
           var wrap = document.createElement("div");
@@ -2894,7 +3615,12 @@
 
           var head = document.createElement("div");
           head.className = "day-view-heading";
-          head.textContent = WEEKDAY_NAMES[d.getDay()] + ", " + MONTHS[d.getMonth()] + " " + d.getDate();
+          head.textContent =
+            WEEKDAY_NAMES[d.getDay()] +
+            ", " +
+            MONTHS[d.getMonth()] +
+            " " +
+            d.getDate();
           wrap.appendChild(head);
 
           if (evs.length === 0) {
@@ -2908,13 +3634,23 @@
               var item = document.createElement("div");
               item.className = "day-view-item";
               item.innerHTML =
-                '<div class="day-view-time">' + esc(ev.time || "All day") + "</div>" +
-                '<div class="day-view-bar" style="background:' + STATUS_META[st].color + '"></div>' +
+                '<div class="day-view-time">' +
+                esc(ev.time || "All day") +
+                "</div>" +
+                '<div class="day-view-bar" style="background:' +
+                STATUS_META[st].color +
+                '"></div>' +
                 "<div>" +
-                '<div class="day-view-title">' + esc(ev.training_program || ev.topic || "Training") + "</div>" +
-                '<div class="day-view-meta">' + esc(STATUS_META[st].label) +
-                (ev.training_location ? " &middot; " + esc(ev.training_location) : "") +
-                (ev.trainer_name ? " &middot; " + esc(ev.trainer_name) : "") + "</div></div>";
+                '<div class="day-view-title">' +
+                esc(ev.training_program || ev.topic || "Training") +
+                "</div>" +
+                '<div class="day-view-meta">' +
+                esc(STATUS_META[st].label) +
+                (ev.training_location
+                  ? " &middot; " + esc(ev.training_location)
+                  : "") +
+                (ev.trainer_name ? " &middot; " + esc(ev.trainer_name) : "") +
+                "</div></div>";
               item.addEventListener("click", function (e) {
                 e.stopPropagation();
                 openTrainingDialog(ev);
@@ -2937,9 +3673,14 @@
             var el = document.getElementById("count-" + k);
             if (el) el.textContent = counts[k];
           });
-          document.querySelectorAll(".nav-item[data-status]").forEach(function (b) {
-            b.classList.toggle("active", b.dataset.status === state.statusFilter);
-          });
+          document
+            .querySelectorAll(".nav-item[data-status]")
+            .forEach(function (b) {
+              b.classList.toggle(
+                "active",
+                b.dataset.status === state.statusFilter,
+              );
+            });
         }
 
         function renderStatusSummary() {
@@ -2952,9 +3693,15 @@
             var b = document.createElement("button");
             b.className = state.statusFilter === k ? "active" : "";
             b.innerHTML =
-              '<span class="sum-dot" style="background:' + m.color + '"></span>' +
-              "<span>" + m.label + "</span>" +
-              '<span class="sum-count">' + counts[k] + "</span>";
+              '<span class="sum-dot" style="background:' +
+              m.color +
+              '"></span>' +
+              "<span>" +
+              m.label +
+              "</span>" +
+              '<span class="sum-count">' +
+              counts[k] +
+              "</span>";
             b.addEventListener("click", function () {
               state.statusFilter = state.statusFilter === k ? null : k;
               render();
@@ -2985,13 +3732,30 @@
           var score = completionScore(ev);
           var pct = Math.round((score / 5) * 100);
 
-          var chipClass = st === "completed" ? "chip-green" : st === "inprogress" ? "chip-orange" : st === "upcoming" ? "chip-blue" : "chip-gray";
+          var chipClass =
+            st === "completed"
+              ? "chip-green"
+              : st === "inprogress"
+                ? "chip-orange"
+                : st === "upcoming"
+                  ? "chip-blue"
+                  : "chip-gray";
 
           var head =
             '<div class="title">' +
-            '<span class="chip ' + chipClass + '"><span class="status-dot" style="background:' + meta.color + '"></span> ' + meta.label + "</span>" +
-            (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : ' <span class="chip chip-gray">Scheduled</span>') +
-            "<h3>" + esc(ev.training_program || ev.topic || "Training") + "</h3>" +
+            '<span class="chip ' +
+            chipClass +
+            '"><span class="status-dot" style="background:' +
+            meta.color +
+            '"></span> ' +
+            meta.label +
+            "</span>" +
+            (ev.is_adhoc
+              ? ' <span class="chip chip-gray">Ad-hoc</span>'
+              : ' <span class="chip chip-gray">Scheduled</span>') +
+            "<h3>" +
+            esc(ev.training_program || ev.topic || "Training") +
+            "</h3>" +
             "</div>" +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg></button>';
@@ -3002,7 +3766,14 @@
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
             '<div class="meta-grid">' +
-            metaRow("Date", esc(evStart(ev) === evEnd(ev) ? evStart(ev) : evStart(ev) + " — " + evEnd(ev))) +
+            metaRow(
+              "Date",
+              esc(
+                evStart(ev) === evEnd(ev)
+                  ? evStart(ev)
+                  : evStart(ev) + " — " + evEnd(ev),
+              ),
+            ) +
             metaRow("Time", esc(ev.time || "—")) +
             metaRow("Zone", esc(ev.zone || "—")) +
             metaRow("Region", esc(ev.region || "—")) +
@@ -3015,23 +3786,46 @@
 
           body +=
             '<div class="drawer-section">' +
-            '<div class="drawer-section-title">Completion ' + score + "/5</div>" +
+            '<div class="drawer-section-title">Completion ' +
+            score +
+            "/5</div>" +
             '<div class="progress-row">' +
-            '<div class="progress-track"><div class="progress-fill' + (pct === 100 ? " complete" : "") + '" style="width:' + pct + '%"></div></div>' +
-            '<span class="progress-pct">' + pct + "%</span>" +
+            '<div class="progress-track"><div class="progress-fill' +
+            (pct === 100 ? " complete" : "") +
+            '" style="width:' +
+            pct +
+            '%"></div></div>' +
+            '<span class="progress-pct">' +
+            pct +
+            "%</span>" +
             "</div></div>";
 
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
             var input = r.canEdit
-              ? '<input type="checkbox" ' + (on ? "checked" : "") + ' data-field="' + f.key + '" />'
+              ? '<input type="checkbox" ' +
+                (on ? "checked" : "") +
+                ' data-field="' +
+                f.key +
+                '" />'
               : "";
-            return '<label class="check-item' + (on ? " done" : "") + '">' +
+            return (
+              '<label class="check-item' +
+              (on ? " done" : "") +
+              '">' +
               input +
-              '<span class="ck-label">' + f.label + "</span>" +
-              '<span class="ck-val">' + (on ? "Yes" : "No") + "</span></label>";
+              '<span class="ck-label">' +
+              f.label +
+              "</span>" +
+              '<span class="ck-val">' +
+              (on ? "Yes" : "No") +
+              "</span></label>"
+            );
           }).join("");
-          body += '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' + checkList + "</div>";
+          body +=
+            '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
+            checkList +
+            "</div>";
 
           if (r.showBudget) {
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
@@ -3048,28 +3842,40 @@
             body +=
               '<div class="drawer-section">' +
               '<div class="drawer-section-title">Trainer Remarks</div>' +
-              '<textarea class="remarks-box" id="remarksInput" placeholder="Add remarks...">' + esc(ev.trainer_remarks || "") + "</textarea>" +
+              '<textarea class="remarks-box" id="remarksInput" placeholder="Add remarks...">' +
+              esc(ev.trainer_remarks || "") +
+              "</textarea>" +
               "</div>";
           } else if (ev.trainer_remarks) {
             body +=
               '<div class="drawer-section">' +
               '<div class="drawer-section-title">Trainer Remarks</div>' +
-              '<div class="remarks-read">' + esc(ev.trainer_remarks) + "</div></div>";
+              '<div class="remarks-read">' +
+              esc(ev.trainer_remarks) +
+              "</div></div>";
           }
 
           document.getElementById("drawerBody").innerHTML = body;
 
           var actions = "";
           if (r.canEdit) {
-            actions += '<button class="btn" id="saveRemarksBtn">Save Remarks</button>';
+            actions +=
+              '<button class="btn" id="saveRemarksBtn">Save Remarks</button>';
           }
-          actions += '<button class="btn btn-primary" id="drawerDone">Done</button>';
+          actions +=
+            '<button class="btn btn-primary" id="drawerDone">Done</button>';
           document.getElementById("drawerActions").innerHTML = actions;
           if (r.canEdit) {
-            document.getElementById("saveRemarksBtn").onclick = function () { saveRemarks(); };
-            document.querySelectorAll("#drawerBody .check-item input").forEach(function (inp) {
-              inp.onchange = function () { toggleStatus(ev, inp.dataset.field, inp.checked); };
-            });
+            document.getElementById("saveRemarksBtn").onclick = function () {
+              saveRemarks();
+            };
+            document
+              .querySelectorAll("#drawerBody .check-item input")
+              .forEach(function (inp) {
+                inp.onchange = function () {
+                  toggleStatus(ev, inp.dataset.field, inp.checked);
+                };
+              });
           }
           document.getElementById("drawerDone").onclick = closeDrawer;
 
@@ -3079,18 +3885,33 @@
         }
 
         function metaRow(k, v) {
-          return '<div class="meta-item"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>";
+          return (
+            '<div class="meta-item"><div class="k">' +
+            k +
+            '</div><div class="v">' +
+            v +
+            "</div></div>"
+          );
         }
 
         function toggleStatus(ev, field, value) {
           var val = value ? 1 : 0;
           ev[field] = val;
-          api("update_training_status", { training_name: ev.name, field: field, value: val })
+          api("update_training_status", {
+            training_name: ev.name,
+            field: field,
+            value: val,
+          })
             .then(function (res) {
               if (res && res.status) ev.status = res.status;
               refreshTrainingSurface(ev);
               render();
-              showToast("Training " + (statusOf(ev) === "completed" ? "marked complete" : "status updated"));
+              showToast(
+                "Training " +
+                  (statusOf(ev) === "completed"
+                    ? "marked complete"
+                    : "status updated"),
+              );
             })
             .catch(function (e) {
               ev[field] = val ? 0 : 1;
@@ -3101,7 +3922,10 @@
         }
 
         function refreshTrainingSurface(ev) {
-          if (state.dialogMode === "edit" && addModal.classList.contains("open")) {
+          if (
+            state.dialogMode === "edit" &&
+            addModal.classList.contains("open")
+          ) {
             openTrainingDialog(ev);
           } else {
             openDrawer(ev);
@@ -3112,9 +3936,18 @@
           var ev = state.currentEvent;
           if (!ev) return;
           var val = (document.getElementById("remarksInput") || {}).value || "";
-          api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
-            .then(function () { ev.trainer_remarks = val; showToast("Remarks saved"); })
-            .catch(function (e) { showToast("Could not save remarks: " + e.message); });
+          api("update_training_status", {
+            training_name: ev.name,
+            field: "trainer_remarks",
+            value: val,
+          })
+            .then(function () {
+              ev.trainer_remarks = val;
+              showToast("Remarks saved");
+            })
+            .catch(function (e) {
+              showToast("Could not save remarks: " + e.message);
+            });
         }
 
         /* ---------- Add training ---------- */
@@ -3173,7 +4006,8 @@
           state.dialogMode = mode;
           addModal.classList.toggle("editing", mode === "edit");
           var h = document.querySelector("#addModal .nt-head h3");
-          if (h) h.textContent = mode === "edit" ? "Edit Training" : "New Training";
+          if (h)
+            h.textContent = mode === "edit" ? "Edit Training" : "New Training";
           var saveBtn = document.getElementById("btn-save-training");
           if (mode === "edit") {
             saveBtn.textContent = "Save Changes";
@@ -3185,25 +4019,30 @@
         }
         function openTrainingDialog(ev) {
           var r = role();
-          if (!r.canEdit && !r.canAdd) { openDrawer(ev); return; }
+          if (!r.canEdit && !r.canAdd) {
+            openDrawer(ev);
+            return;
+          }
           state.currentEvent = ev;
-          api("get_training_details", { name: ev.name }).then(function (d) {
-            if (d) {
-              for (var k in d) {
-                if (d[k] !== undefined && d[k] !== null) ev[k] = d[k];
+          api("get_training_details", { name: ev.name })
+            .then(function (d) {
+              if (d) {
+                for (var k in d) {
+                  if (d[k] !== undefined && d[k] !== null) ev[k] = d[k];
+                }
               }
-            }
-            fillEditDialog(ev);
-          }).catch(function () {
-            fillEditDialog(ev);
-          });
+              fillEditDialog(ev);
+            })
+            .catch(function () {
+              fillEditDialog(ev);
+            });
         }
         function fillEditDialog(ev) {
           var r = role();
           setDialogMode("edit", ev);
           var f = function (id, v) {
             var el = document.getElementById(id);
-            if (el) el.value = (v == null ? "" : v);
+            if (el) el.value = v == null ? "" : v;
           };
           f("new-program", ev.training_program || ev.topic || "");
           f("new-from-date", ev.from_date || "");
@@ -3228,26 +4067,44 @@
               if (agRow) agRow.classList.add("open");
             }
           }
-          ["new-program", "new-from-date", "new-to-date", "new-time", "new-end-time", "new-location", "new-branch"].forEach(function (id) {
+          [
+            "new-program",
+            "new-from-date",
+            "new-to-date",
+            "new-time",
+            "new-end-time",
+            "new-location",
+            "new-branch",
+          ].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
           });
-          state.selectedParticipants = (ev.participant_list || []).map(function (p) { return p.employee; });
+          state.selectedParticipants = (ev.participant_list || []).map(
+            function (p) {
+              return p.employee;
+            },
+          );
           dialogFn.renderPChips();
           updateSchedulePreview();
           var extra = document.getElementById("nt-edit-extra");
           if (extra) {
             extra.innerHTML = editExtraHTML(ev);
             if (r.canEdit) {
-              extra.querySelectorAll(".check-item input").forEach(function (inp) {
-                inp.onchange = function () { toggleStatus(ev, inp.dataset.field, inp.checked); };
-              });
+              extra
+                .querySelectorAll(".check-item input")
+                .forEach(function (inp) {
+                  inp.onchange = function () {
+                    toggleStatus(ev, inp.dataset.field, inp.checked);
+                  };
+                });
             }
-            ["edit-budget-amount", "edit-actual-expense"].forEach(function (id) {
-              var inp = document.getElementById(id);
-              if (!inp) return;
-              inp.readOnly = !r.canEdit;
-            });
+            ["edit-budget-amount", "edit-actual-expense"].forEach(
+              function (id) {
+                var inp = document.getElementById(id);
+                if (!inp) return;
+                inp.readOnly = !r.canEdit;
+              },
+            );
           }
           addModal.classList.add("open");
         }
@@ -3257,31 +4114,60 @@
           var pct = Math.round((score / 5) * 100);
           var html =
             '<div class="drawer-section">' +
-            '<div class="drawer-section-title">Training Completion &middot; ' + score + "/5</div>" +
+            '<div class="drawer-section-title">Training Completion &middot; ' +
+            score +
+            "/5</div>" +
             '<div class="progress-row">' +
-            '<div class="progress-track"><div class="progress-fill' + (pct === 100 ? " complete" : "") + '" style="width:' + pct + '%"></div></div>' +
-            '<span class="progress-pct">' + pct + "%</span></div></div>";
+            '<div class="progress-track"><div class="progress-fill' +
+            (pct === 100 ? " complete" : "") +
+            '" style="width:' +
+            pct +
+            '%"></div></div>' +
+            '<span class="progress-pct">' +
+            pct +
+            "%</span></div></div>";
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
             var input = r.canEdit
-              ? '<input type="checkbox" ' + (on ? "checked" : "") + ' data-field="' + f.key + '" />'
+              ? '<input type="checkbox" ' +
+                (on ? "checked" : "") +
+                ' data-field="' +
+                f.key +
+                '" />'
               : "";
-            return '<label class="check-item' + (on ? " done" : "") + '">' +
+            return (
+              '<label class="check-item' +
+              (on ? " done" : "") +
+              '">' +
               input +
-              '<span class="ck-label">' + f.label + "</span>" +
-              '<span class="ck-val">' + (on ? "Yes" : "No") + "</span></label>";
+              '<span class="ck-label">' +
+              f.label +
+              "</span>" +
+              '<span class="ck-val">' +
+              (on ? "Yes" : "No") +
+              "</span></label>"
+            );
           }).join("");
-          html += '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' + checkList + "</div>";
+          html +=
+            '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
+            checkList +
+            "</div>";
           if (r.showBudget) {
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
             html +=
               '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
               '<div class="budget-edit">' +
-              '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' + (ev.budget_amount == null ? "" : ev.budget_amount) + '" /></label>' +
-              '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' + (ev.actual_expense == null ? "" : ev.actual_expense) + '" /></label>' +
+              '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
+              (ev.budget_amount == null ? "" : ev.budget_amount) +
+              '" /></label>' +
+              '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
+              (ev.actual_expense == null ? "" : ev.actual_expense) +
+              '" /></label>' +
               "</div>" +
               '<div class="budget-edit-foot">' +
-              '<span class="budget-exp-status">Expense Status: <strong>' + expStatus + "</strong></span>" +
+              '<span class="budget-exp-status">Expense Status: <strong>' +
+              expStatus +
+              "</strong></span>" +
               '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
           }
@@ -3292,7 +4178,8 @@
           t = String(t).trim();
           var m = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
           if (!m) return t;
-          var h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
+          var h = parseInt(m[1], 10),
+            mi = parseInt(m[2], 10);
           if (h > 23 || mi > 59) return t;
           var ap = h < 12 ? "AM" : "PM";
           var hr = h % 12 || 12;
@@ -3300,34 +4187,48 @@
         }
         function saveTrainingChanges() {
           var ev = state.currentEvent;
-          if (!ev) { closeModal("addModal"); return; }
+          if (!ev) {
+            closeModal("addModal");
+            return;
+          }
           var tasks = [];
           var val = (document.getElementById("new-agenda") || {}).value || "";
           if ((ev.trainer_remarks || "") !== val) {
-            tasks.push(api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
-              .then(function () { ev.trainer_remarks = val; }));
+            tasks.push(
+              api("update_training_status", {
+                training_name: ev.name,
+                field: "trainer_remarks",
+                value: val,
+              }).then(function () {
+                ev.trainer_remarks = val;
+              }),
+            );
           }
           if (role().showBudget) {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            tasks.push(api("update_budget", {
-              training_name: ev.name,
-              budget_amount: isNaN(bv) ? null : bv,
-              actual_expense: isNaN(av) ? null : av,
-            }).then(function () {
-              ev.budget_amount = isNaN(bv) ? null : bv;
-              ev.actual_expense = isNaN(av) ? null : av;
-            }));
+            tasks.push(
+              api("update_budget", {
+                training_name: ev.name,
+                budget_amount: isNaN(bv) ? null : bv,
+                actual_expense: isNaN(av) ? null : av,
+              }).then(function () {
+                ev.budget_amount = isNaN(bv) ? null : bv;
+                ev.actual_expense = isNaN(av) ? null : av;
+              }),
+            );
           }
-          Promise.all(tasks).then(function () {
-            closeModal("addModal");
-            loadData(true);
-            showToast("Training updated");
-          }).catch(function (e) {
-            showToast("Could not save changes: " + e.message);
-          });
+          Promise.all(tasks)
+            .then(function () {
+              closeModal("addModal");
+              loadData(true);
+              showToast("Training updated");
+            })
+            .catch(function (e) {
+              showToast("Could not save changes: " + e.message);
+            });
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
@@ -3339,7 +4240,8 @@
             t = t.trim();
             var m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
             if (!m) return -1;
-            var h = parseInt(m[1], 10), mi = parseInt(m[2] || "0", 10);
+            var h = parseInt(m[1], 10),
+              mi = parseInt(m[2] || "0", 10);
             var ap = (m[3] || "").toUpperCase();
             if (ap === "PM" && h < 12) h += 12;
             if (ap === "AM" && h === 12) h = 0;
@@ -3350,30 +4252,57 @@
           var program = document.getElementById("new-program").value.trim();
           var date = document.getElementById("new-from-date").value;
           var toDate = document.getElementById("new-to-date").value || date;
-          if (!program) { showToast("Training program is required"); return; }
-          if (!date) { showToast("From Date is required"); return; }
-          if (toDate < date) { showToast("To Date cannot be before From Date"); return; }
+          if (!program) {
+            showToast("Training program is required");
+            return;
+          }
+          if (!date) {
+            showToast("From Date is required");
+            return;
+          }
+          if (toDate < date) {
+            showToast("To Date cannot be before From Date");
+            return;
+          }
 
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
-          if (!startTime) { showToast("Start Time is required"); return; }
-          if (!endTime) { showToast("End Time is required"); return; }
+          if (!startTime) {
+            showToast("Start Time is required");
+            return;
+          }
+          if (!endTime) {
+            showToast("End Time is required");
+            return;
+          }
           var startMins = parseTime(startTime);
           var endMins = parseTime(endTime);
-          if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
-          if (endMins === -1) { showToast("End Time format invalid — e.g. 11:00 or 11:00 AM"); return; }
-          if (endMins <= startMins) { showToast("End Time must be after Start Time"); return; }
+          if (startMins === -1) {
+            showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM");
+            return;
+          }
+          if (endMins === -1) {
+            showToast("End Time format invalid — e.g. 11:00 or 11:00 AM");
+            return;
+          }
+          if (endMins <= startMins) {
+            showToast("End Time must be after Start Time");
+            return;
+          }
 
           var trainerSel = document.getElementById("new-trainer");
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
-          var agenda = (document.getElementById("new-agenda") || {}).value || "";
+          var agenda =
+            (document.getElementById("new-agenda") || {}).value || "";
           var args = {
             training_program: program,
             from_date: date,
             to_date: toDate,
             start_time: startTime,
             end_time: endTime,
-            training_location: document.getElementById("new-location").value.trim(),
+            training_location: document
+              .getElementById("new-location")
+              .value.trim(),
             trainer: trainerSel.value.trim() || null,
             zone: document.getElementById("new-zone").value,
             region: document.getElementById("new-region").value,
@@ -3384,44 +4313,105 @@
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
-          api("create_training", args).then(function () {
-            var p = date.split("-");
-            state.selectedDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-            state.viewDate = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, 1);
-            if (state.viewMode !== "month") { state.viewMode = "month"; syncViewSwitch(); }
-            closeModal("addModal");
-            loadData(true);
-            showToast(isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled");
-          }).catch(function (e) {
-            showToast("Could not save training: " + e.message);
-          });
+          api("create_training", args)
+            .then(function () {
+              var p = date.split("-");
+              state.selectedDate = new Date(
+                parseInt(p[0], 10),
+                parseInt(p[1], 10) - 1,
+                parseInt(p[2], 10),
+              );
+              state.viewDate = new Date(
+                parseInt(p[0], 10),
+                parseInt(p[1], 10) - 1,
+                1,
+              );
+              if (state.viewMode !== "month") {
+                state.viewMode = "month";
+                syncViewSwitch();
+              }
+              closeModal("addModal");
+              loadData(true);
+              showToast(
+                isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled",
+              );
+            })
+            .catch(function (e) {
+              showToast("Could not save training: " + e.message);
+            });
         }
 
         /* ---------- MIS report (admin, demo preview) ---------- */
         function openMisModal() {
           var d = state.viewDate || new Date(today);
-          var key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-          var evs = filteredEvents().filter(function (e) { return evStart(e).slice(0, 7) === key; });
+          var key =
+            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          var evs = filteredEvents().filter(function (e) {
+            return evStart(e).slice(0, 7) === key;
+          });
           var counts = statusCounts(evs);
           var rows = [
             ["Total Trainings", evs.length],
-            ["Delivered", counts.completed + counts.inprogress + evs.filter(function (e) { return e.training_delivered && statusOf(e) === "upcoming"; }).length],
-            ["Attendance Marked", evs.filter(function (e) { return e.attendance_marked; }).length],
-            ["Pre-Assessment", evs.filter(function (e) { return e.pre_assessment_taken; }).length],
-            ["Post-Assessment", evs.filter(function (e) { return e.post_assessment_taken; }).length],
-            ["Feedback Taken", evs.filter(function (e) { return e.feedback_taken; }).length],
-            ["Ad-hoc", evs.filter(function (e) { return e.is_adhoc; }).length],
+            [
+              "Delivered",
+              counts.completed +
+                counts.inprogress +
+                evs.filter(function (e) {
+                  return e.training_delivered && statusOf(e) === "upcoming";
+                }).length,
+            ],
+            [
+              "Attendance Marked",
+              evs.filter(function (e) {
+                return e.attendance_marked;
+              }).length,
+            ],
+            [
+              "Pre-Assessment",
+              evs.filter(function (e) {
+                return e.pre_assessment_taken;
+              }).length,
+            ],
+            [
+              "Post-Assessment",
+              evs.filter(function (e) {
+                return e.post_assessment_taken;
+              }).length,
+            ],
+            [
+              "Feedback Taken",
+              evs.filter(function (e) {
+                return e.feedback_taken;
+              }).length,
+            ],
+            [
+              "Ad-hoc",
+              evs.filter(function (e) {
+                return e.is_adhoc;
+              }).length,
+            ],
           ];
           var html =
             '<div style="font-size:13px;color:var(--ink-3);margin-bottom:12px">' +
-            "Subject: L&D Monthly Training Report &mdash; " + MONTHS[d.getMonth()] + " " + d.getFullYear() + "<br>" +
+            "Subject: L&D Monthly Training Report &mdash; " +
+            MONTHS[d.getMonth()] +
+            " " +
+            d.getFullYear() +
+            "<br>" +
             "Recipients: mis@example.com (MIS HO) &mdash; L&D Admin validation required" +
             "</div>" +
             '<table class="mis-table">' +
-            rows.map(function (r) {
-              return '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:13px">' + r[0] +
-                '</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;text-align:right">' + r[1] + "</td></tr>";
-            }).join("") +
+            rows
+              .map(function (r) {
+                return (
+                  '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:13px">' +
+                  r[0] +
+                  '</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;text-align:right">' +
+                  r[1] +
+                  "</td></tr>"
+                );
+              })
+              .join("") +
             "</table>" +
             '<div class="form-actions">' +
             '<button class="btn" data-close="misModal">Close</button>' +
@@ -3442,7 +4432,9 @@
           t.textContent = msg;
           t.classList.add("show");
           clearTimeout(toastTimer);
-          toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+          toastTimer = setTimeout(function () {
+            t.classList.remove("show");
+          }, 2200);
         }
 
         /* ---------- Wire up ---------- */
@@ -3450,8 +4442,14 @@
           var app = document.getElementById("app");
           app.classList.toggle("collapsed");
           var collapsed = app.classList.contains("collapsed");
-          this.setAttribute("title", collapsed ? "Expand sidebar" : "Collapse sidebar");
-          this.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+          this.setAttribute(
+            "title",
+            collapsed ? "Expand sidebar" : "Collapse sidebar",
+          );
+          this.setAttribute(
+            "aria-label",
+            collapsed ? "Expand sidebar" : "Collapse sidebar",
+          );
         };
 
         document.querySelectorAll("#viewSwitch button").forEach(function (b) {
@@ -3468,7 +4466,11 @@
 
         document.getElementById("prevBtn").onclick = function () {
           if (state.viewMode === "month") {
-            state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() - 1, 1);
+            state.viewDate = new Date(
+              state.viewDate.getFullYear(),
+              state.viewDate.getMonth() - 1,
+              1,
+            );
           } else if (state.viewMode === "week") {
             var s = new Date(state.selectedDate || today);
             s.setDate(s.getDate() - 7);
@@ -3482,7 +4484,11 @@
         };
         document.getElementById("nextBtn").onclick = function () {
           if (state.viewMode === "month") {
-            state.viewDate = new Date(state.viewDate.getFullYear(), state.viewDate.getMonth() + 1, 1);
+            state.viewDate = new Date(
+              state.viewDate.getFullYear(),
+              state.viewDate.getMonth() + 1,
+              1,
+            );
           } else if (state.viewMode === "week") {
             var s = new Date(state.selectedDate || today);
             s.setDate(s.getDate() + 7);
@@ -3497,16 +4503,24 @@
         document.getElementById("todayBtn").onclick = function () {
           state.selectedDate = new Date(today);
           state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
-          if (state.viewMode !== "month") { state.viewMode = "month"; syncViewSwitch(); }
+          if (state.viewMode !== "month") {
+            state.viewMode = "month";
+            syncViewSwitch();
+          }
           loadData();
         };
 
-        document.querySelectorAll(".nav-item[data-status]").forEach(function (b) {
-          b.onclick = function () {
-            state.statusFilter = state.statusFilter === b.dataset.status ? null : b.dataset.status;
-            render();
-          };
-        });
+        document
+          .querySelectorAll(".nav-item[data-status]")
+          .forEach(function (b) {
+            b.onclick = function () {
+              state.statusFilter =
+                state.statusFilter === b.dataset.status
+                  ? null
+                  : b.dataset.status;
+              render();
+            };
+          });
 
         document.getElementById("searchInput").oninput = function (e) {
           state.search = e.target.value;
@@ -3517,7 +4531,9 @@
         document.getElementById("btn-reset");
         document.getElementById("misBtn").onclick = openMisModal;
         document.querySelectorAll("[data-close]").forEach(function (b) {
-          b.onclick = function () { closeModal(b.dataset.close); };
+          b.onclick = function () {
+            closeModal(b.dataset.close);
+          };
         });
 
         var addTrainingBtn = document.createElement("button");
@@ -3542,19 +4558,32 @@
               return !filter || b.toLowerCase().includes(filter.toLowerCase());
             });
             if (!opts.length) {
-              branchDd.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No branches found</div>';
+              branchDd.innerHTML =
+                '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No branches found</div>';
             } else {
-              branchDd.innerHTML = opts.map(function (b) {
-                return '<div class="branch-opt" data-val="' + esc(b) + '" style="' +
-                  'padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);' +
-                  (b === selectedBranch ? 'background:var(--accent-soft);color:var(--accent-ink);font-weight:600;' : '') +
-                  '">' + esc(b) + '</div>';
-              }).join("");
+              branchDd.innerHTML = opts
+                .map(function (b) {
+                  return (
+                    '<div class="branch-opt" data-val="' +
+                    esc(b) +
+                    '" style="' +
+                    "padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);" +
+                    (b === selectedBranch
+                      ? "background:var(--accent-soft);color:var(--accent-ink);font-weight:600;"
+                      : "") +
+                    '">' +
+                    esc(b) +
+                    "</div>"
+                  );
+                })
+                .join("");
             }
             branchDd.style.display = "block";
           }
 
-          function closeDd() { branchDd.style.display = "none"; }
+          function closeDd() {
+            branchDd.style.display = "none";
+          }
 
           function selectBranch(val) {
             selectedBranch = val;
@@ -3565,7 +4594,8 @@
               .then(function (geo) {
                 document.getElementById("new-zone").value = geo.zone || "";
                 document.getElementById("new-region").value = geo.region || "";
-                document.getElementById("new-district").value = geo.district || "";
+                document.getElementById("new-district").value =
+                  geo.district || "";
               })
               .catch(function () {});
           }
@@ -3585,23 +4615,33 @@
 
           branchDd.addEventListener("mousedown", function (e) {
             var opt = e.target.closest(".branch-opt");
-            if (opt) { e.preventDefault(); selectBranch(opt.dataset.val); }
+            if (opt) {
+              e.preventDefault();
+              selectBranch(opt.dataset.val);
+            }
           });
 
           document.addEventListener("click", function (e) {
-            if (!branchInput.contains(e.target) && !branchDd.contains(e.target)) closeDd();
+            if (!branchInput.contains(e.target) && !branchDd.contains(e.target))
+              closeDd();
           });
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
-        var dialogFn = { renderPChips: function () {}, openPop: function () {}, closePop: function () {} };
+        var dialogFn = {
+          renderPChips: function () {},
+          openPop: function () {},
+          closePop: function () {},
+        };
         (function () {
           var pSearch = document.getElementById("new-participant-search");
           var pDd = document.getElementById("participant-dropdown");
           var pChips = document.getElementById("participant-chips");
           var pPop = document.getElementById("nt-participant-pop");
           var pCount = document.getElementById("participant-count");
-          var pDropCount = document.getElementById("participant-dropdown-count");
+          var pDropCount = document.getElementById(
+            "participant-dropdown-count",
+          );
           var pDone = document.getElementById("btn-participant-done");
           var pAttendee = document.getElementById("nt-attendee");
 
@@ -3610,14 +4650,19 @@
             return n === 1 ? "1 participant" : n + " participants";
           }
 
-          function escP(v) { return esc(v); }
+          function escP(v) {
+            return esc(v);
+          }
 
           function pEmployees() {
-            var branch = (document.getElementById("new-branch") || {}).value || "";
+            var branch =
+              (document.getElementById("new-branch") || {}).value || "";
             var bq = branch.toLowerCase();
             return (state.allEmployees || []).filter(function (emp) {
-              if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq) return false;
-              if (state.selectedParticipants.indexOf(emp.name) !== -1) return false;
+              if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq)
+                return false;
+              if (state.selectedParticipants.indexOf(emp.name) !== -1)
+                return false;
               return true;
             });
           }
@@ -3625,34 +4670,64 @@
           function renderPDd(filter) {
             var q = (filter || "").trim().toLowerCase();
             var list = pEmployees().filter(function (emp) {
-              var hay = (emp.employee_name + " " + (emp.sahayog_branch || "") + " " + (emp.name || "")).toLowerCase();
+              var hay = (
+                emp.employee_name +
+                " " +
+                (emp.sahayog_branch || "") +
+                " " +
+                (emp.name || "")
+              ).toLowerCase();
               return !q || hay.indexOf(q) !== -1;
             });
             if (!list.length) {
-              pDd.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+              pDd.innerHTML =
+                '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
             } else {
-              pDd.innerHTML = list.map(function (emp) {
-                var code = emp.name || "";
-                var br = emp.sahayog_branch || "";
-                return '<div class="branch-opt" data-val="' + esc(emp.name) + '">' +
-                  '<span>' + esc(emp.employee_name || emp.name) + '</span>' +
-                  '<span style="color:var(--ink-3);font-size:11px">' + escP(code) + (br && code ? " &middot; " : "") + (br ? escP(br) : "") + '</span>' +
-                  '</div>';
-              }).join("");
+              pDd.innerHTML = list
+                .map(function (emp) {
+                  var code = emp.name || "";
+                  var br = emp.sahayog_branch || "";
+                  return (
+                    '<div class="branch-opt" data-val="' +
+                    esc(emp.name) +
+                    '">' +
+                    "<span>" +
+                    esc(emp.employee_name || emp.name) +
+                    "</span>" +
+                    '<span style="color:var(--ink-3);font-size:11px">' +
+                    escP(code) +
+                    (br && code ? " &middot; " : "") +
+                    (br ? escP(br) : "") +
+                    "</span>" +
+                    "</div>"
+                  );
+                })
+                .join("");
             }
             pDd.style.display = "block";
           }
 
           function renderPChips() {
             var byName = {};
-            state.allEmployees.forEach(function (e) { byName[e.name] = e; });
+            state.allEmployees.forEach(function (e) {
+              byName[e.name] = e;
+            });
             var removable = state.dialogMode !== "edit";
-            pChips.innerHTML = state.selectedParticipants.map(function (empName) {
-              var emp = byName[empName] || {};
-              return '<span class="participant-chip">' + esc(emp.employee_name || empName) +
-                (removable ? '<button type="button" data-remove="' + esc(empName) + '" title="Remove">&times;</button>' : "") +
-                '</span>';
-            }).join("");
+            pChips.innerHTML = state.selectedParticipants
+              .map(function (empName) {
+                var emp = byName[empName] || {};
+                return (
+                  '<span class="participant-chip">' +
+                  esc(emp.employee_name || empName) +
+                  (removable
+                    ? '<button type="button" data-remove="' +
+                      esc(empName) +
+                      '" title="Remove">&times;</button>'
+                    : "") +
+                  "</span>"
+                );
+              })
+              .join("");
             var n = state.selectedParticipants.length;
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
@@ -3681,29 +4756,46 @@
             if (state.selectedParticipants.indexOf(val) !== -1) return;
             state.selectedParticipants.push(val);
             renderPChips();
-            if (pSearch) { pSearch.value = ""; pSearch.focus(); }
+            if (pSearch) {
+              pSearch.value = "";
+              pSearch.focus();
+            }
             if (pPop && pPop.style.display === "block") renderPDd("");
           }
 
           if (pAttendee) {
-            pAttendee.addEventListener("click", function () { openPop(); });
+            pAttendee.addEventListener("click", function () {
+              openPop();
+            });
           }
           if (pSearch) {
-            pSearch.addEventListener("focus", function () { openPop(); });
-            pSearch.addEventListener("input", function () { renderPDd(this.value); });
+            pSearch.addEventListener("focus", function () {
+              openPop();
+            });
+            pSearch.addEventListener("input", function () {
+              renderPDd(this.value);
+            });
             pSearch.addEventListener("keydown", function (e) {
-              if (e.key === "Escape") { e.preventDefault(); closePop(); pSearch.blur(); }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                closePop();
+                pSearch.blur();
+              }
               if (e.key === "Enter") {
                 e.preventDefault();
                 var first = pDd.querySelector(".branch-opt");
-                if (first && first.dataset.val) addParticipant(first.dataset.val);
+                if (first && first.dataset.val)
+                  addParticipant(first.dataset.val);
               }
             });
           }
           if (pDd) {
             pDd.addEventListener("mousedown", function (e) {
               var opt = e.target.closest(".branch-opt");
-              if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
+              if (opt) {
+                e.preventDefault();
+                addParticipant(opt.dataset.val);
+              }
             });
           }
           if (pDone) pDone.addEventListener("click", closePop);
@@ -3727,21 +4819,34 @@
         function fmtSchDate(iso) {
           if (!iso) return "";
           var p = String(iso).split("-");
-          var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+          var d = new Date(
+            parseInt(p[0], 10),
+            parseInt(p[1], 10) - 1,
+            parseInt(p[2], 10),
+          );
           if (isNaN(d.getTime())) return "";
-          return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+          return d.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
         }
         function fmtSchTime(t) {
           if (!t) return "";
-          var m = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+          var m = String(t)
+            .trim()
+            .match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
           if (!m) return t;
-          var h = parseInt(m[1], 10), mi = parseInt(m[2] || "0", 10);
+          var h = parseInt(m[1], 10),
+            mi = parseInt(m[2] || "0", 10);
           var ap = (m[3] || "").toUpperCase();
           if (ap === "PM" && h < 12) h += 12;
           if (ap === "AM" && h === 12) h = 0;
           if (h > 23 || mi > 59) return t;
           var hr = h % 12 || 12;
-          return hr + ":" + (mi < 10 ? "0" : "") + mi + " " + (h < 12 ? "AM" : "PM");
+          return (
+            hr + ":" + (mi < 10 ? "0" : "") + mi + " " + (h < 12 ? "AM" : "PM")
+          );
         }
         function updateSchedulePreview() {
           var fEl = document.getElementById("new-from-date");
@@ -3762,20 +4867,29 @@
             if (st) ts.push(fmtSchTime(st));
             if (et) ts.push(fmtSchTime(et));
             if (ts.length) parts.push(ts.join(" – "));
-            pvEl.textContent = parts.length ? parts.join("    ") : "Select date and time";
+            pvEl.textContent = parts.length
+              ? parts.join("    ")
+              : "Select date and time";
           }
           if (hintEl) {
             var existing = (state.calEvents || []).filter(function (ev) {
               return f && evStart(ev) <= f && evEnd(ev) >= f;
             }).length;
-            hintEl.textContent = existing ? existing + " existing training" + (existing === 1 ? "" : "s") + " on this date" : "";
+            hintEl.textContent = existing
+              ? existing +
+                " existing training" +
+                (existing === 1 ? "" : "s") +
+                " on this date"
+              : "";
           }
         }
-        ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.addEventListener("input", updateSchedulePreview);
-          if (el) el.addEventListener("change", updateSchedulePreview);
-        });
+        ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
+          function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener("input", updateSchedulePreview);
+            if (el) el.addEventListener("change", updateSchedulePreview);
+          },
+        );
         /* Agenda: compact expandable remarks */
         (function () {
           var agenda = document.getElementById("new-agenda");
@@ -3801,7 +4915,11 @@
           var fd = document.getElementById("new-from-date");
           if (!fd) return;
           fd.focus();
-          if (fd.showPicker) { try { fd.showPicker(); } catch (e) {} }
+          if (fd.showPicker) {
+            try {
+              fd.showPicker();
+            } catch (e) {}
+          }
         };
 
         /* ============================================================
@@ -3809,7 +4927,15 @@
            ============================================================ */
 
         /* --- state for trainings filters --- */
-        var trFilters = { search: "", status: "", zone: "", region: "", district: "", branch: "", range: "all" };
+        var trFilters = {
+          search: "",
+          status: "",
+          zone: "",
+          region: "",
+          district: "",
+          branch: "",
+          range: "all",
+        };
         var trPage = { current: 1, size: 10 };
 
         /* --- nav switch: Calendar ↔ Trainings --- */
@@ -3818,60 +4944,100 @@
         function switchTab(tab) {
           activeTab = tab;
           var calView = document.getElementById("calView");
-          var trView  = document.getElementById("trainingsView");
-          var navCal  = document.getElementById("nav-calendar");
-          var navTr   = document.getElementById("nav-trainings");
+          var trView = document.getElementById("trainingsView");
+          var navCal = document.getElementById("nav-calendar");
+          var navTr = document.getElementById("nav-trainings");
 
           if (tab === "trainings") {
             calView.style.display = "none";
-            trView.style.display  = "flex";
+            trView.style.display = "flex";
             navCal.classList.remove("active");
             navTr.classList.add("active");
             renderTrainings();
           } else {
-            trView.style.display  = "none";
+            trView.style.display = "none";
             calView.style.display = "flex";
             navTr.classList.remove("active");
             navCal.classList.add("active");
           }
         }
 
-        document.getElementById("nav-calendar").addEventListener("click", function () { switchTab("calendar"); });
-        document.getElementById("nav-trainings").addEventListener("click", function () { switchTab("trainings"); });
+        document
+          .getElementById("nav-calendar")
+          .addEventListener("click", function () {
+            switchTab("calendar");
+          });
+        document
+          .getElementById("nav-trainings")
+          .addEventListener("click", function () {
+            switchTab("trainings");
+          });
 
         /* --- helpers --- */
         function fmtDateShort(iso) {
           if (!iso) return "—";
           var p = iso.split("-");
-          var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-          return parseInt(p[2], 10) + " " + months[parseInt(p[1], 10) - 1] + " " + p[0];
+          var months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          return (
+            parseInt(p[2], 10) +
+            " " +
+            months[parseInt(p[1], 10) - 1] +
+            " " +
+            p[0]
+          );
         }
 
         function trFilteredEvents() {
           var f = trFilters;
           var q = f.search.trim().toLowerCase();
           var todayIso2 = isoOf(today);
-          var monthKey  = todayIso2.slice(0, 7);
+          var monthKey = todayIso2.slice(0, 7);
 
           return state.calEvents.filter(function (ev) {
             if (f.status) {
-              if (f.status === "inprogress" && statusOf(ev) !== "inprogress") return false;
-              if (f.status !== "inprogress" && statusOf(ev) !== f.status) return false;
+              if (f.status === "inprogress" && statusOf(ev) !== "inprogress")
+                return false;
+              if (f.status !== "inprogress" && statusOf(ev) !== f.status)
+                return false;
             }
-            if (f.zone     && ev.zone     !== f.zone)     return false;
-            if (f.region   && ev.region   !== f.region)   return false;
+            if (f.zone && ev.zone !== f.zone) return false;
+            if (f.region && ev.region !== f.region) return false;
             if (f.district && ev.district !== f.district) return false;
-            if (f.branch   && ev.branch   !== f.branch)   return false;
+            if (f.branch && ev.branch !== f.branch) return false;
             if (f.range === "month") {
               var evKey = (ev.from_date || ev.date || "").slice(0, 7);
               if (evKey !== monthKey) return false;
             } else if (f.range === "upcoming") {
               if ((ev.from_date || ev.date || "") < todayIso2) return false;
             } else if (f.range === "past") {
-              if ((ev.to_date || ev.from_date || ev.date || "") >= todayIso2) return false;
+              if ((ev.to_date || ev.from_date || ev.date || "") >= todayIso2)
+                return false;
             }
             if (q) {
-              var hay = [ev.training_program, ev.trainer, ev.training_location, ev.zone, ev.region, ev.district, ev.branch].join(" ").toLowerCase();
+              var hay = [
+                ev.training_program,
+                ev.trainer,
+                ev.training_location,
+                ev.zone,
+                ev.region,
+                ev.district,
+                ev.branch,
+              ]
+                .join(" ")
+                .toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
@@ -3881,39 +5047,53 @@
         /* --- stats cards --- */
         function renderTrStats(evs) {
           var counts = statusCounts(evs);
-          var total  = evs.length;
+          var total = evs.length;
           var el = document.getElementById("trStats");
           if (!el) return;
           var cards = [
-            { cls: "",             num: total,              label: "Total" },
-            { cls: "sc-upcoming",  num: counts.upcoming,    label: "Upcoming" },
-            { cls: "sc-inprogress",num: counts.inprogress,  label: "In Progress" },
-            { cls: "sc-completed", num: counts.completed,   label: "Completed" },
+            { cls: "", num: total, label: "Total" },
+            { cls: "sc-upcoming", num: counts.upcoming, label: "Upcoming" },
+            {
+              cls: "sc-inprogress",
+              num: counts.inprogress,
+              label: "In Progress",
+            },
+            { cls: "sc-completed", num: counts.completed, label: "Completed" },
           ];
-          el.innerHTML = cards.map(function (c) {
-            return '<div class="tr-stat-card ' + c.cls + '">' +
-              '<span class="sc-num">' + c.num + '</span>' +
-              '<span class="sc-label">' + c.label + '</span>' +
-              '</div>';
-          }).join("");
+          el.innerHTML = cards
+            .map(function (c) {
+              return (
+                '<div class="tr-stat-card ' +
+                c.cls +
+                '">' +
+                '<span class="sc-num">' +
+                c.num +
+                "</span>" +
+                '<span class="sc-label">' +
+                c.label +
+                "</span>" +
+                "</div>"
+              );
+            })
+            .join("");
         }
 
         /* --- table rows with pagination --- */
         function renderTrainings() {
           var allEvs = trFilteredEvents();
-          var tbody  = document.getElementById("trBody");
-          var empty  = document.getElementById("trEmpty");
+          var tbody = document.getElementById("trBody");
+          var empty = document.getElementById("trEmpty");
           if (!tbody) return;
 
           renderTrStats(allEvs);
 
-          var total    = allEvs.length;
+          var total = allEvs.length;
           var pageSize = trPage.size;
           var totalPages = Math.max(1, Math.ceil(total / pageSize));
           if (trPage.current > totalPages) trPage.current = 1;
 
           var start = (trPage.current - 1) * pageSize;
-          var end   = Math.min(start + pageSize, total);
+          var end = Math.min(start + pageSize, total);
 
           // sort: from_date asc
           var sorted = allEvs.slice().sort(function (a, b) {
@@ -3933,42 +5113,89 @@
 
           var canEdit = role().canEdit;
 
-          tbody.innerHTML = pageEvs.map(function (ev) {
-            var st    = statusOf(ev);
-            var meta  = STATUS_META[st];
-            var dateStr = ev.from_date && ev.to_date && ev.from_date !== ev.to_date
-              ? fmtDateShort(ev.from_date) + " – " + fmtDateShort(ev.to_date)
-              : fmtDateShort(ev.from_date || ev.date);
-            var timeStr = ev.time && ev.end_time
-              ? esc(ev.time) + " – " + esc(ev.end_time)
-              : ev.time ? esc(ev.time) : "—";
-            var pillBg  = st === "completed" ? "var(--green-soft)"  :
-                          st === "inprogress" ? "var(--orange-soft)" :
-                          st === "upcoming"   ? "var(--accent-soft)" : "var(--gray-soft)";
-            var pillClr = st === "completed" ? "#15803d"            :
-                          st === "inprogress" ? "#b45309"            :
-                          st === "upcoming"   ? "var(--accent-ink)"  : "var(--ink-3)";
-            var editBtn = canEdit
-              ? '<button class="tr-icon-btn" data-menu-edit="' + esc(ev.name) + '" title="Edit">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
-              : "";
-            return '<tr data-name="' + esc(ev.name) + '">' +
-              '<td class="td-program">' +
+          tbody.innerHTML = pageEvs
+            .map(function (ev) {
+              var st = statusOf(ev);
+              var meta = STATUS_META[st];
+              var dateStr =
+                ev.from_date && ev.to_date && ev.from_date !== ev.to_date
+                  ? fmtDateShort(ev.from_date) +
+                    " – " +
+                    fmtDateShort(ev.to_date)
+                  : fmtDateShort(ev.from_date || ev.date);
+              var timeStr =
+                ev.time && ev.end_time
+                  ? esc(ev.time) + " – " + esc(ev.end_time)
+                  : ev.time
+                    ? esc(ev.time)
+                    : "—";
+              var pillBg =
+                st === "completed"
+                  ? "var(--green-soft)"
+                  : st === "inprogress"
+                    ? "var(--orange-soft)"
+                    : st === "upcoming"
+                      ? "var(--accent-soft)"
+                      : "var(--gray-soft)";
+              var pillClr =
+                st === "completed"
+                  ? "#15803d"
+                  : st === "inprogress"
+                    ? "#b45309"
+                    : st === "upcoming"
+                      ? "var(--accent-ink)"
+                      : "var(--ink-3)";
+              var editBtn = canEdit
+                ? '<button class="tr-icon-btn" data-menu-edit="' +
+                  esc(ev.name) +
+                  '" title="Edit">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+                : "";
+              return (
+                '<tr data-name="' +
+                esc(ev.name) +
+                '">' +
+                '<td class="td-program">' +
                 esc(ev.training_program || "—") +
-                (ev.is_adhoc ? ' <span style="font-size:10px;font-weight:600;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 6px;margin-left:4px">Ad-hoc</span>' : '') +
-              '</td>' +
-              '<td class="td-meta">' + dateStr + '</td>' +
-              '<td class="td-meta">' + timeStr + '</td>' +
-              '<td class="td-meta">' + esc(ev.training_location || "—") + '</td>' +
-              '<td class="td-meta">' + esc(ev.trainer || "—") + '</td>' +
-              '<td class="td-meta">' + esc(ev.branch || "—") + '</td>' +
-              '<td class="td-meta" style="text-align:center">' + (ev.participants || 0) + '</td>' +
-              '<td><span class="tr-status-pill" style="background:' + pillBg + ';color:' + pillClr + '">' +
-                '<span class="sp-dot" style="background:' + meta.color + '"></span>' + meta.label +
-              '</span></td>' +
-              '<td class="td-actions"><div class="td-actions-wrap">' + editBtn + '</div></td>' +
-            '</tr>';
-          }).join("");
+                (ev.is_adhoc
+                  ? ' <span style="font-size:10px;font-weight:600;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 6px;margin-left:4px">Ad-hoc</span>'
+                  : "") +
+                "</td>" +
+                '<td class="td-meta">' +
+                dateStr +
+                "</td>" +
+                '<td class="td-meta">' +
+                timeStr +
+                "</td>" +
+                '<td class="td-meta">' +
+                esc(ev.training_location || "—") +
+                "</td>" +
+                '<td class="td-meta">' +
+                esc(ev.trainer || "—") +
+                "</td>" +
+                '<td class="td-meta">' +
+                esc(ev.branch || "—") +
+                "</td>" +
+                '<td class="td-meta" style="text-align:center">' +
+                (ev.participants || 0) +
+                "</td>" +
+                '<td><span class="tr-status-pill" style="background:' +
+                pillBg +
+                ";color:" +
+                pillClr +
+                '">' +
+                '<span class="sp-dot" style="background:' +
+                meta.color +
+                '"></span>' +
+                meta.label +
+                "</span></td>" +
+                '<td class="td-actions"><div class="td-actions-wrap">' +
+                editBtn +
+                "</div></td>" +
+                "</tr>"
+              );
+            })
+            .join("");
 
           renderPagination(start + 1, end, total, totalPages);
 
@@ -3976,7 +5203,9 @@
           tbody.querySelectorAll("tr[data-name]").forEach(function (row) {
             row.addEventListener("click", function (e) {
               if (e.target.closest(".td-actions")) return;
-              var ev = state.calEvents.find(function (x) { return x.name === row.dataset.name; });
+              var ev = state.calEvents.find(function (x) {
+                return x.name === row.dataset.name;
+              });
               if (ev) openDrawer(ev);
             });
           });
@@ -3985,7 +5214,9 @@
           tbody.querySelectorAll("[data-menu-edit]").forEach(function (btn) {
             btn.addEventListener("click", function (e) {
               e.stopPropagation();
-              var ev = state.calEvents.find(function (x) { return x.name === btn.dataset.menuEdit; });
+              var ev = state.calEvents.find(function (x) {
+                return x.name === btn.dataset.menuEdit;
+              });
               if (ev) openDrawer(ev);
             });
           });
@@ -3993,13 +5224,15 @@
 
         /* --- pagination renderer --- */
         function renderPagination(from, to, total, totalPages) {
-          var info    = document.getElementById("tr-pg-info");
-          var nums    = document.getElementById("tr-pg-nums");
+          var info = document.getElementById("tr-pg-info");
+          var nums = document.getElementById("tr-pg-nums");
           var prevBtn = document.getElementById("tr-pg-prev");
           var nextBtn = document.getElementById("tr-pg-next");
           if (!info) return;
 
-          info.textContent = total ? from + "–" + to + " of " + total : "0 records";
+          info.textContent = total
+            ? from + "–" + to + " of " + total
+            : "0 records";
           prevBtn.disabled = trPage.current <= 1;
           nextBtn.disabled = trPage.current >= totalPages;
 
@@ -4011,15 +5244,30 @@
             var cur = trPage.current;
             pages = [1];
             if (cur > 3) pages.push("…");
-            for (var p = Math.max(2, cur - 1); p <= Math.min(totalPages - 1, cur + 1); p++) pages.push(p);
+            for (
+              var p = Math.max(2, cur - 1);
+              p <= Math.min(totalPages - 1, cur + 1);
+              p++
+            )
+              pages.push(p);
             if (cur < totalPages - 2) pages.push("…");
             pages.push(totalPages);
           }
 
-          nums.innerHTML = pages.map(function (p) {
-            if (p === "…") return '<span class="pg-ellipsis">…</span>';
-            return '<button class="pg-num' + (p === trPage.current ? " active" : "") + '" data-pg="' + p + '">' + p + '</button>';
-          }).join("");
+          nums.innerHTML = pages
+            .map(function (p) {
+              if (p === "…") return '<span class="pg-ellipsis">…</span>';
+              return (
+                '<button class="pg-num' +
+                (p === trPage.current ? " active" : "") +
+                '" data-pg="' +
+                p +
+                '">' +
+                p +
+                "</button>"
+              );
+            })
+            .join("");
 
           nums.querySelectorAll(".pg-num:not(.active)").forEach(function (btn) {
             btn.addEventListener("click", function () {
@@ -4034,28 +5282,51 @@
           function onChange(key, id) {
             var el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener("change", function () { trFilters[key] = el.value; trPage.current = 1; renderTrainings(); });
+            el.addEventListener("change", function () {
+              trFilters[key] = el.value;
+              trPage.current = 1;
+              renderTrainings();
+            });
           }
           function onInput(key, id) {
             var el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener("input", function () { trFilters[key] = el.value; trPage.current = 1; renderTrainings(); });
+            el.addEventListener("input", function () {
+              trFilters[key] = el.value;
+              trPage.current = 1;
+              renderTrainings();
+            });
           }
 
-          onInput("search",   "tr-search");
-          onChange("status",  "tr-status");
-          onChange("zone",    "tr-zone");
-          onChange("region",  "tr-region");
-          onChange("district","tr-district");
-          onChange("branch",  "tr-branch");
-          onChange("range",   "tr-range");
+          onInput("search", "tr-search");
+          onChange("status", "tr-status");
+          onChange("zone", "tr-zone");
+          onChange("region", "tr-region");
+          onChange("district", "tr-district");
+          onChange("branch", "tr-branch");
+          onChange("range", "tr-range");
 
           var resetBtn = document.getElementById("tr-reset");
           if (resetBtn) {
             resetBtn.addEventListener("click", function () {
-              trFilters = { search: "", status: "", zone: "", region: "", district: "", branch: "", range: "all" };
+              trFilters = {
+                search: "",
+                status: "",
+                zone: "",
+                region: "",
+                district: "",
+                branch: "",
+                range: "all",
+              };
               trPage.current = 1;
-              ["tr-search","tr-status","tr-zone","tr-region","tr-district","tr-branch"].forEach(function (id) {
+              [
+                "tr-search",
+                "tr-status",
+                "tr-zone",
+                "tr-region",
+                "tr-district",
+                "tr-branch",
+              ].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.value = "";
               });
@@ -4068,18 +5339,37 @@
           // prev / next
           var prevBtn = document.getElementById("tr-pg-prev");
           var nextBtn = document.getElementById("tr-pg-next");
-          if (prevBtn) prevBtn.addEventListener("click", function () { if (trPage.current > 1) { trPage.current--; renderTrainings(); } });
-          if (nextBtn) nextBtn.addEventListener("click", function () { trPage.current++; renderTrainings(); });
+          if (prevBtn)
+            prevBtn.addEventListener("click", function () {
+              if (trPage.current > 1) {
+                trPage.current--;
+                renderTrainings();
+              }
+            });
+          if (nextBtn)
+            nextBtn.addEventListener("click", function () {
+              trPage.current++;
+              renderTrainings();
+            });
 
           // rows per page
           var sizeEl = document.getElementById("tr-page-size");
-          if (sizeEl) sizeEl.addEventListener("change", function () { trPage.size = parseInt(sizeEl.value, 10); trPage.current = 1; renderTrainings(); });
+          if (sizeEl)
+            sizeEl.addEventListener("change", function () {
+              trPage.size = parseInt(sizeEl.value, 10);
+              trPage.current = 1;
+              renderTrainings();
+            });
         }
         setupTrFilters();
 
         /* close action menus on outside click */
         document.addEventListener("click", function () {
-          document.querySelectorAll(".tr-action-menu.open").forEach(function (m) { m.classList.remove("open"); });
+          document
+            .querySelectorAll(".tr-action-menu.open")
+            .forEach(function (m) {
+              m.classList.remove("open");
+            });
         });
 
         /* ---------- Init ---------- */
@@ -4092,13 +5382,21 @@
             else if (info.is_ld_trainer) state.role = "trainer";
             else if (info.is_ld_viewer) state.role = "viewer";
             else state.role = "general";
-            state.currentEmployee = (info.employee && info.employee.name) ? info.employee.name : null;
-            state.currentEmployeeName = (info.employee && info.employee.employee_name) ? info.employee.employee_name : null;
+            state.currentEmployee =
+              info.employee && info.employee.name ? info.employee.name : null;
+            state.currentEmployeeName =
+              info.employee && info.employee.employee_name
+                ? info.employee.employee_name
+                : null;
             setupRoleUI();
             return loadGeo();
           })
-          .then(function () { loadData(true); })
-          .catch(function (err) { console.error("init failed", err); });
+          .then(function () {
+            loadData(true);
+          })
+          .catch(function (err) {
+            console.error("init failed", err);
+          });
       })();
     </script>
   </body>
