@@ -771,13 +771,19 @@ def generate_fast_lead_report(force_rebuild=False):
                 for r in rows:
                     writer.writerow(r)
 
-    # Generate timestamped filename (e.g. lead_report_20260812_160300.csv)
     now_dt = frappe.utils.now_datetime()
-    timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S")
-    new_filename = f"lead_report_{timestamp_str}.csv"
+    now_formatted = now_dt.strftime("%d-%m-%Y %H:%M:%S")
+
+    # If force rebuild, generate new timestamped filename. Otherwise update existing active file.
+    if force_rebuild or not file_exists or not prev_active_filename or prev_active_filename == "lead_report.csv":
+        timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S")
+        new_filename = f"lead_report_{timestamp_str}.csv"
+    else:
+        new_filename = prev_active_filename
+
     new_filepath = os.path.join(site_private_path, new_filename)
 
-    # Atomic copy to timestamped file and standard lead_report.csv
+    # Atomic copy to active file and standard lead_report.csv
     shutil.copyfile(temp_filepath, new_filepath)
     shutil.copyfile(temp_filepath, standard_filepath)
 
@@ -786,15 +792,16 @@ def generate_fast_lead_report(force_rebuild=False):
     except Exception:
         pass
 
-    # Clean up older report CSV files on server so only current active file & latest backup remain
-    try:
-        keep_files = set([new_filename, backup_filename, "lead_report.csv"])
-        for fname in os.listdir(site_private_path):
-            if fname.startswith("lead_report") and fname.endswith(".csv") and fname not in keep_files:
-                old_fpath = os.path.join(site_private_path, fname)
-                os.remove(old_fpath)
-    except Exception:
-        pass
+    # Clean up older report CSV files on server during full rebuild
+    if force_rebuild:
+        try:
+            keep_files = set([new_filename, backup_filename, "lead_report.csv"])
+            for fname in os.listdir(site_private_path):
+                if fname.startswith("lead_report") and fname.endswith(".csv") and fname not in keep_files:
+                    old_fpath = os.path.join(site_private_path, fname)
+                    os.remove(old_fpath)
+        except Exception:
+            pass
 
     file_size = os.path.getsize(new_filepath)
     now_formatted = now_dt.strftime("%d-%m-%Y %H:%M:%S")
