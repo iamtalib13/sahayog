@@ -547,32 +547,116 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
 
 # ==============================================================================
 # METHOD: generate_fast_lead_report()
+INFO_FILE_NAME = "lead_report_info.json"
+
+
+def get_report_info():
+    import json
+    info_path = frappe.get_site_path("private", "files", INFO_FILE_NAME)
+    if os.path.exists(info_path):
+        try:
+            with open(info_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_report_info(info_dict):
+    import json
+    info_path = frappe.get_site_path("private", "files", INFO_FILE_NAME)
+    with open(info_path, "w", encoding="utf-8") as f:
+        json.dump(info_dict, f, indent=2)
+
+
+@frappe.whitelist()
+def get_fast_lead_report_info():
+    """Whitelisted API for Admin Dashboard Widget to get live status of Master CSV report."""
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    info = get_report_info()
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    active_filename = info.get("active_filename", "lead_report.csv")
+    active_path = os.path.join(site_private_path, active_filename)
+
+    file_exists = os.path.exists(active_path) or os.path.exists(os.path.join(site_private_path, "lead_report.csv"))
+    size_mb = 0
+    if os.path.exists(active_path):
+        size_mb = round(os.path.getsize(active_path) / (1024 * 1024), 2)
+    elif os.path.exists(os.path.join(site_private_path, "lead_report.csv")):
+        size_mb = round(os.path.getsize(os.path.join(site_private_path, "lead_report.csv")) / (1024 * 1024), 2)
+
+    return {
+        "is_admin": is_admin,
+        "status": info.get("status", "Ready" if file_exists else "Not Generated"),
+        "last_generated_at": info.get("last_generated_at", "-"),
+        "active_filename": active_filename,
+        "size_mb": size_mb,
+        "total_records": info.get("total_records", 0),
+        "file_exists": file_exists
+    }
+
+
+# ==============================================================================
+# METHOD: generate_fast_lead_report(force_rebuild=False)
 # PURPOSE: Executed by Cron Job or Admin manually. Runs MariaDB INTO OUTFILE
 #          query to dump all database lead records into /tmp/ first, then moves
-#          it to lead_report.csv in private/files. Bypasses Python RAM and timeouts.
+#          it to timestamped CSV in private/files with zero-downtime backup.
 # ==============================================================================
 @frappe.whitelist()
-def generate_fast_lead_report():
+def generate_fast_lead_report(force_rebuild=False):
     import shutil
     import datetime
     import csv
 
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    if isinstance(force_rebuild, str):
+        force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
+
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
-    final_filepath = os.path.join(site_private_path, "lead_report.csv")
-    
-    # Calculate rolling 3-day window for gap-free incremental sync
+
+    info = get_report_info()
+    prev_active_filename = info.get("active_filename", "lead_report.csv")
+    prev_active_path = os.path.join(site_private_path, prev_active_filename)
+
+    standard_filepath = os.path.join(site_private_path, "lead_report.csv")
+    if not os.path.exists(prev_active_path) and os.path.exists(standard_filepath):
+        prev_active_path = standard_filepath
+        prev_active_filename = "lead_report.csv"
+
+    # Create backup file before rebuilding if active file exists
+    backup_filename = "lead_report_backup.csv"
+    backup_filepath = os.path.join(site_private_path, backup_filename)
+    if os.path.exists(prev_active_path):
+        try:
+            shutil.copyfile(prev_active_path, backup_filepath)
+        except Exception:
+            pass
+
+    file_exists = os.path.exists(prev_active_path) and not force_rebuild
+
+    # Mark status as Generating in info JSON
+    info["status"] = "Generating"
+    info["backup_filename"] = backup_filename if os.path.exists(backup_filepath) else prev_active_filename
+    save_report_info(info)
+
+    # Calculate rolling 3-day window
     today = datetime.date.today()
     start_date = today - datetime.timedelta(days=3)
     start_datetime = f"{start_date} 00:00:00"
 
-    file_exists = os.path.exists(final_filepath)
-
     # 1. Decide date query criteria
     if not file_exists:
-        # Full initial dump from 1st July 2026 onwards
+        # Full initial dump or forced rebuild from 1st July 2026 onwards
         where_clause = "l.creation >= '2026-07-01 00:00:00'"
     else:
-        # Incremental Sync: Catch all new creations or modifications from last 3 days
+        # Incremental Sync: Catch creations or modifications from last 3 days
         where_clause = """
             l.creation >= '2026-07-01 00:00:00' AND (
                 l.creation >= '{start_datetime}' OR
@@ -623,12 +707,11 @@ def generate_fast_lead_report():
         lead_id = row[0]
         new_leads_map.setdefault(lead_id, []).append(row)
 
-    # Use unique filename in /tmp to prevent collisions during write
-    unique_id = frappe.generate_hash(length=8)
-    temp_filepath = f"/tmp/lead_report_{unique_id}.csv"
+    unique_id = frappe.generate_hash(length=6)
+    temp_filepath = f"/tmp/lead_report_temp_{unique_id}.csv"
 
     if not file_exists:
-        # Full initial dump
+        # Full initial dump or forced rebuild
         with open(temp_filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             writer.writerow(headers)
@@ -636,9 +719,9 @@ def generate_fast_lead_report():
                 for r in rows:
                     writer.writerow(r)
     else:
-        # Incremental Sync: Filter old versions of modified leads out of existing CSV
+        # Incremental Sync
         existing_rows = []
-        with open(final_filepath, "r", encoding="utf-8") as f_in:
+        with open(prev_active_path, "r", encoding="utf-8") as f_in:
             reader = csv.reader(f_in)
             try:
                 file_headers = next(reader)
@@ -648,12 +731,10 @@ def generate_fast_lead_report():
             for r in reader:
                 if len(r) > 0:
                     lead_id = r[0]
-                    # Filter out old version of modified/updated leads
                     if lead_id in new_leads_map:
                         continue
                     existing_rows.append(r)
 
-        # Write merged data
         with open(temp_filepath, "w", newline="", encoding="utf-8") as f_out:
             writer = csv.writer(f_out, quoting=csv.QUOTE_ALL)
             writer.writerow(file_headers)
@@ -663,15 +744,33 @@ def generate_fast_lead_report():
                 for r in rows:
                     writer.writerow(r)
 
-    # Safely replace the file on server filesystem
-    shutil.copyfile(temp_filepath, final_filepath)
+    # Generate timestamped filename (e.g. lead_report_20260812_160300.csv)
+    now_dt = frappe.utils.now_datetime()
+    timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S")
+    new_filename = f"lead_report_{timestamp_str}.csv"
+    new_filepath = os.path.join(site_private_path, new_filename)
+
+    # Atomic copy to timestamped file and standard lead_report.csv
+    shutil.copyfile(temp_filepath, new_filepath)
+    shutil.copyfile(temp_filepath, standard_filepath)
+
     try:
         os.remove(temp_filepath)
     except Exception:
         pass
 
-    file_size = os.path.getsize(final_filepath)
-    
+    # Clean up older timestamped files except new_filename and backup
+    try:
+        for fname in os.listdir(site_private_path):
+            if fname.startswith("lead_report_20") and fname.endswith(".csv") and fname not in [new_filename, prev_active_filename, backup_filename]:
+                old_fpath = os.path.join(site_private_path, fname)
+                os.remove(old_fpath)
+    except Exception:
+        pass
+
+    file_size = os.path.getsize(new_filepath)
+    now_formatted = now_dt.strftime("%d-%m-%Y %H:%M:%S")
+
     latest_sample = {}
     if db_leads:
         first_row = db_leads[0]
@@ -684,17 +783,30 @@ def generate_fast_lead_report():
             "created_on": first_row[16],
         }
 
-    sync_result = {
-        "status": "success",
-        "method": "Incremental 3-Day Rolling Sync (Creation/Modified)" if file_exists else "Full Baseline Dump",
-        "processed_count": len(new_leads_map),
+    # Save updated info metadata
+    updated_info = {
+        "status": "Ready",
+        "active_filename": new_filename,
+        "backup_filename": backup_filename,
+        "last_generated_at": now_formatted,
         "size_mb": round(file_size / (1024 * 1024), 2),
         "size_kb": round(file_size / 1024, 2),
-        "filepath": final_filepath,
+        "filepath": new_filepath,
+        "latest_sample": latest_sample
+    }
+    save_report_info(updated_info)
+
+    sync_result = {
+        "status": "success",
+        "method": "Full Baseline Rebuild" if force_rebuild or not file_exists else "Incremental 3-Day Rolling Sync",
+        "filename": new_filename,
+        "processed_count": len(new_leads_map),
+        "size_mb": updated_info["size_mb"],
+        "size_kb": updated_info["size_kb"],
+        "filepath": new_filepath,
         "latest_sample": latest_sample
     }
 
-    # Trigger email notification to rishabh.rahangdale@sahayogmultistate.com and talib.s@sahayogmultistate.com
     try:
         send_crm_report_sync_email(sync_result)
     except Exception:
@@ -737,6 +849,10 @@ def send_crm_report_sync_email(summary_data):
                 <tr style="border-bottom: 1px solid #eeeeee;">
                     <td style="padding: 10px 0; font-weight: bold; color: #555;">Sync Method:</td>
                     <td style="padding: 10px 0; color: #28a745; font-weight: bold;">{summary_data.get("method")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Master CSV File:</td>
+                    <td style="padding: 10px 0; color: #111;"><code>{summary_data.get("filename", "lead_report.csv")}</code></td>
                 </tr>
                 <tr style="border-bottom: 1px solid #eeeeee;">
                     <td style="padding: 10px 0; font-weight: bold; color: #555;">Processed Records Count:</td>
@@ -787,12 +903,14 @@ def send_crm_report_sync_email(summary_data):
         now=True
     )
 
+
 # ==============================================================================
 # METHOD: download_fast_lead_report(from_date, to_date, filters=None)
 # PURPOSE: Triggered by user's 'DOWNLOAD' action on CRM Lead Report dashboard.
 #          Instead of querying database, it opens the pre-generated master CSV
 #          file on the server, parses the rows in Python, applies active
 #          filters line-by-line, and streams the filtered CSV to the browser.
+#          If master file is being generated, seamlessly streams from backup file!
 # ==============================================================================
 @frappe.whitelist()
 def download_fast_lead_report(from_date, to_date, filters=None):
@@ -800,9 +918,24 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     import csv
     import io
 
-    report_path = frappe.get_site_path("private", "files", "lead_report.csv")
-    if not os.path.exists(report_path):
-        frappe.throw("Master lead report file not found on the server. Please contact administrator.")
+    info = get_report_info()
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    active_filename = info.get("active_filename", "lead_report.csv")
+    backup_filename = info.get("backup_filename", "lead_report_backup.csv")
+
+    report_path = os.path.join(site_private_path, active_filename)
+    backup_path = os.path.join(site_private_path, backup_filename)
+    standard_path = os.path.join(site_private_path, "lead_report.csv")
+
+    # Seamless fallback to backup file if active file is Generating or missing!
+    if info.get("status") == "Generating" or not os.path.exists(report_path):
+        if os.path.exists(backup_path):
+            report_path = backup_path
+        elif os.path.exists(standard_path):
+            report_path = standard_path
+        else:
+            frappe.throw("Master lead report file is being generated for the first time. Please retry in 1 minute.")
 
     from_date, to_date = validate_date_range(from_date, to_date)
     ui_filters = frappe.parse_json(filters) if filters else {}
