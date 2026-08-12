@@ -147,6 +147,31 @@ def get_logged_in_employee_details():
 	return get_employee_details(employee)
 
 
+def get_permission_query_conditions(user=None):
+	if not user:
+		user = frappe.session.user
+
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "MIS Admin" in roles or user == "Administrator":
+		return ""
+
+	return f"`tabMAC Activity`.owner = {frappe.db.escape(user)}"
+
+
+def has_permission(doc, ptype="read", user=None):
+	if not user:
+		user = frappe.session.user
+
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "MIS Admin" in roles or user == "Administrator":
+		return True
+
+	if ptype in ["read", "write", "submit", "cancel"]:
+		return doc.owner == user
+
+	return True
+
+
 
 
 
