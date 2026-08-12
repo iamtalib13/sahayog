@@ -631,11 +631,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 8px;">
+                    <button class="btn btn-sm btn-outline-primary font-weight-bold shadow-sm" 
+                            @click="syncIncrementalReport" 
+                            :disabled="report_info.status === 'Generating'">
+                        <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
+                        {{ report_info.status === 'Generating' ? 'Syncing...' : 'Generate Lead Report' }}
+                    </button>
+
                     <button class="btn btn-sm btn-outline-danger font-weight-bold shadow-sm" 
                             @click="confirmRebuildReport" 
                             :disabled="report_info.status === 'Generating'">
                         <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
-                        {{ report_info.status === 'Generating' ? 'Generating Report...' : 'Rebuild Baseline Report' }}
+                        {{ report_info.status === 'Generating' ? 'Generating...' : 'Rebuild Report' }}
                     </button>
                 </div>
             </div>
@@ -1087,6 +1094,25 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
               title: __("Full Baseline Report Rebuilt"),
               indicator: "green",
               message: __(`Full Baseline Lead Report rebuilt successfully.<br>File Name: <b>${r.message.filename}</b><br>File Size: <b>${r.message.size_mb} MB</b>.<br>Email notification sent.`)
+            });
+            this.fetchReportInfo();
+          }
+        }
+      });
+    },
+
+    syncIncrementalReport() {
+      this.report_info.status = "Generating";
+      frappe.show_alert({ message: __("Syncing Latest 3-Day Incremental Lead Data..."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        args: { force_rebuild: false },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.msgprint({
+              title: __("Incremental Sync Completed"),
+              indicator: "green",
+              message: __(`Latest lead data synced successfully using <b>${r.message.method}</b>.<br>Processed: <b>${r.message.processed_count} leads</b>.<br>File Size: <b>${r.message.size_mb} MB</b>.<br>Email notification sent.`)
             });
             this.fetchReportInfo();
           }
