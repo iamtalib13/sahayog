@@ -36,7 +36,8 @@ def ensure_qr_code():
 @frappe.whitelist()
 def get_dashboard_data(start=0, page_length=10):
     user = frappe.session.user
-    is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
     filters = {}
     if not is_admin:
         filters["owner"] = user
