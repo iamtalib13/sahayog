@@ -614,43 +614,43 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
   $container.append(`
         <div id="crm-app" v-scope @vue:mounted="init()">
             <!-- Admin Control Panel Widget (Visible ONLY to Administrator / System Managers) -->
-            <div v-if="report_info && report_info.is_admin" class="admin-master-report-bar mb-3 p-3 rounded shadow-sm d-flex flex-wrap align-items-center justify-content-between" style="background-color: #ffffff; border: 1px solid #e2e8f0; gap: 12px; border-left: 4px solid #0056b3;">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 12px;">
-                    <span class="font-weight-bold text-dark" style="font-size: 13px;">
-                        <i class="fa fa-shield text-primary mr-1"></i> Master Lead Report Control:
+            <div v-if="report_info && report_info.is_admin" class="admin-master-report-bar mb-2 py-1 px-3 rounded shadow-xs d-flex align-items-center justify-content-between" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; height: 38px;">
+                <div class="d-flex align-items-center" style="gap: 10px; overflow: hidden; white-space: nowrap;">
+                    <span class="font-weight-bold text-dark" style="font-size: 11px;">
+                        <i class="fa fa-shield text-primary mr-1"></i> Admin Report:
                     </span>
-                    <span :class="['badge', report_info.status === 'Ready' ? 'badge-success' : 'badge-warning', 'py-1', 'px-2']">
+                    <span :class="['badge', report_info.status === 'Ready' ? 'badge-success' : 'badge-warning']" style="font-size: 10px; padding: 2px 6px;">
                         {{ report_info.status === 'Ready' ? '🟢 Ready' : '⏳ ' + report_info.status }}
                     </span>
-                    <span class="small text-muted font-weight-bold" v-if="report_info.active_filename">
-                        Active File: <code>{{ report_info.active_filename }}</code> ({{ report_info.size_mb }} MB)
+                    <span class="text-muted" v-if="report_info.active_filename">
+                        Active: <code class="text-primary font-weight-bold" style="font-size: 11px;">{{ report_info.active_filename }}</code> ({{ report_info.size_mb }}MB)
                     </span>
-                    <span class="small text-info font-weight-bold" v-if="report_info.backup_exists">
-                        🛡️ Backup File: <code>{{ report_info.backup_filename }}</code> ({{ report_info.backup_size_mb }} MB)
+                    <span class="text-info font-weight-bold" v-if="report_info.backup_exists" title="Backup file active for live downloads during rebuild">
+                        | 🛡️ Backup Active ({{ report_info.backup_size_mb }}MB)
                     </span>
-                    <span class="small text-muted" v-if="report_info.last_generated_at">
-                        Last Generated: {{ report_info.last_generated_at }}
+                    <span class="text-muted" v-if="report_info.last_generated_at">
+                        | <i class="fa fa-clock-o text-secondary"></i> {{ report_info.last_generated_at }}
                     </span>
                 </div>
 
-                <div class="d-flex align-items-center" style="gap: 8px;">
-                    <button class="btn btn-sm btn-outline-secondary font-weight-bold shadow-sm" 
-                            @click="show_server_files_modal = true">
-                        <i class="fa fa-folder-open mr-1"></i> View Server Files
+                <div class="d-flex align-items-center" style="gap: 6px; flex-shrink: 0;">
+                    <button class="btn btn-xs btn-default font-weight-bold border" 
+                            @click="show_server_files_modal = true" title="View all CSV report files stored on server">
+                        <i class="fa fa-folder-open text-warning mr-1"></i> Files
                     </button>
 
-                    <button class="btn btn-sm btn-outline-primary font-weight-bold shadow-sm" 
+                    <button class="btn btn-xs btn-primary font-weight-bold" 
                             @click="syncIncrementalReport" 
-                            :disabled="report_info.status === 'Generating'">
+                            :disabled="report_info.status === 'Generating'" title="Manually sync latest 3-day lead data in-place">
                         <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
-                        {{ report_info.status === 'Generating' ? 'Syncing...' : 'Generate Lead Report' }}
+                        {{ report_info.status === 'Generating' ? 'Syncing...' : 'Generate' }}
                     </button>
 
-                    <button class="btn btn-sm btn-outline-danger font-weight-bold shadow-sm" 
+                    <button class="btn btn-xs btn-outline-danger font-weight-bold" 
                             @click="confirmRebuildReport" 
-                            :disabled="report_info.status === 'Generating'">
+                            :disabled="report_info.status === 'Generating'" title="Rebuild full baseline report cleanly with backup fallback">
                         <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating'}"></i> 
-                        {{ report_info.status === 'Generating' ? 'Generating...' : 'Rebuild Report' }}
+                        {{ report_info.status === 'Generating' ? 'Building...' : 'Rebuild' }}
                     </button>
                 </div>
             </div>
