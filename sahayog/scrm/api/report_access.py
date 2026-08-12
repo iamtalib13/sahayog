@@ -571,7 +571,8 @@ def save_report_info(info_dict):
 
 @frappe.whitelist()
 def get_fast_lead_report_info():
-    """Whitelisted API for Admin Dashboard Widget to get live status of Master CSV report."""
+    """Whitelisted API for Admin Dashboard Widget to get live status of Master CSV report and server files list."""
+    import datetime
     user = frappe.session.user
     roles = frappe.get_roles(user)
     is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
@@ -582,6 +583,11 @@ def get_fast_lead_report_info():
     active_filename = info.get("active_filename", "lead_report.csv")
     active_path = os.path.join(site_private_path, active_filename)
 
+    backup_filename = info.get("backup_filename", "lead_report_backup.csv")
+    backup_path = os.path.join(site_private_path, backup_filename)
+    backup_exists = os.path.exists(backup_path)
+    backup_size_mb = round(os.path.getsize(backup_path) / (1024 * 1024), 2) if backup_exists else 0
+
     file_exists = os.path.exists(active_path) or os.path.exists(os.path.join(site_private_path, "lead_report.csv"))
     size_mb = 0
     if os.path.exists(active_path):
@@ -589,14 +595,35 @@ def get_fast_lead_report_info():
     elif os.path.exists(os.path.join(site_private_path, "lead_report.csv")):
         size_mb = round(os.path.getsize(os.path.join(site_private_path, "lead_report.csv")) / (1024 * 1024), 2)
 
+    server_files = []
+    if is_admin and os.path.exists(site_private_path):
+        for fname in sorted(os.listdir(site_private_path), reverse=True):
+            if (fname.startswith("lead_report") and fname.endswith(".csv")) or fname == "lead_report_info.json":
+                fpath = os.path.join(site_private_path, fname)
+                mtime = os.path.getmtime(fpath)
+                mtime_str = datetime.datetime.fromtimestamp(mtime).strftime("%d-%m-%Y %H:%M:%S")
+                fsize_mb = round(os.path.getsize(fpath) / (1024 * 1024), 2)
+                server_files.append({
+                    "filename": fname,
+                    "size_mb": fsize_mb,
+                    "modified_at": mtime_str,
+                    "is_active": fname == active_filename or (fname == "lead_report.csv" and not os.path.exists(active_path)),
+                    "is_backup": fname == backup_filename or fname == "lead_report_backup.csv",
+                    "file_url": f"/private/files/{fname}"
+                })
+
     return {
         "is_admin": is_admin,
         "status": info.get("status", "Ready" if file_exists else "Not Generated"),
         "last_generated_at": info.get("last_generated_at", "-"),
         "active_filename": active_filename,
+        "backup_filename": backup_filename,
+        "backup_exists": backup_exists,
+        "backup_size_mb": backup_size_mb,
         "size_mb": size_mb,
         "total_records": info.get("total_records", 0),
-        "file_exists": file_exists
+        "file_exists": file_exists,
+        "server_files": server_files
     }
 
 
