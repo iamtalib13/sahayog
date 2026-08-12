@@ -36,7 +36,8 @@ def ensure_qr_code():
 @frappe.whitelist()
 def get_dashboard_data(start=0, page_length=10):
     user = frappe.session.user
-    is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
     filters = {}
     if not is_admin:
         filters["owner"] = user
@@ -145,6 +146,31 @@ def get_logged_in_employee_details():
 	if not employee:
 		return {}
 	return get_employee_details(employee)
+
+
+def get_permission_query_conditions(user=None):
+	if not user:
+		user = frappe.session.user
+
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "MIS Admin" in roles or user == "Administrator":
+		return ""
+
+	return f"`tabMAC Activity`.owner = {frappe.db.escape(user)}"
+
+
+def has_permission(doc, ptype="read", user=None):
+	if not user:
+		user = frappe.session.user
+
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "MIS Admin" in roles or user == "Administrator":
+		return True
+
+	if ptype in ["read", "write", "submit", "cancel"]:
+		return doc.owner == user
+
+	return True
 
 
 
