@@ -1554,6 +1554,52 @@
         padding: 14px 20px 18px;
         border-top: 1px solid var(--border);
       }
+      .budget-edit {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .budget-edit label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 10.5px;
+        color: var(--ink-3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .budget-edit input {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 5px 9px;
+        font-size: 13px;
+        color: var(--ink-1);
+        outline: none;
+        font-family: inherit;
+        background: var(--surface);
+      }
+      .budget-edit input:focus {
+        border-color: var(--accent);
+      }
+      .budget-edit-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .budget-exp-status {
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .budget-exp-status strong {
+        color: var(--ink-1);
+      }
+      .budget-hint {
+        font-size: 11px;
+        color: var(--ink-3);
+      }
       #addModal.editing .nt-scheduler-btn {
         display: none;
       }
@@ -2831,6 +2877,11 @@
                 inp.onchange = function () { toggleStatus(ev, inp.dataset.field, inp.checked); };
               });
             }
+            ["edit-budget-amount", "edit-actual-expense"].forEach(function (id) {
+              var inp = document.getElementById(id);
+              if (!inp) return;
+              inp.readOnly = !r.canEdit;
+            });
           }
           addModal.classList.add("open");
         }
@@ -2859,10 +2910,13 @@
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
             html +=
               '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
-              '<div class="meta-grid">' +
-              metaRow("Budget Amount", inr(ev.budget_amount)) +
-              metaRow("Actual Expense", inr(ev.actual_expense)) +
-              metaRow("Expense Status", expStatus) +
+              '<div class="budget-edit">' +
+              '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' + (ev.budget_amount == null ? "" : ev.budget_amount) + '" /></label>' +
+              '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' + (ev.actual_expense == null ? "" : ev.actual_expense) + '" /></label>' +
+              "</div>" +
+              '<div class="budget-edit-foot">' +
+              '<span class="budget-exp-status">Expense Status: <strong>' + expStatus + "</strong></span>" +
+              '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
           }
           return html;
@@ -2881,13 +2935,27 @@
         function saveTrainingChanges() {
           var ev = state.currentEvent;
           if (!ev) { closeModal("addModal"); return; }
+          var tasks = [];
           var val = (document.getElementById("new-agenda") || {}).value || "";
-          var changed = (ev.trainer_remarks || "") !== val;
-          var p = changed
-            ? api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
-                .then(function () { ev.trainer_remarks = val; })
-            : Promise.resolve();
-          p.then(function () {
+          if ((ev.trainer_remarks || "") !== val) {
+            tasks.push(api("update_training_status", { training_name: ev.name, field: "trainer_remarks", value: val })
+              .then(function () { ev.trainer_remarks = val; }));
+          }
+          if (role().showBudget) {
+            var b = document.getElementById("edit-budget-amount");
+            var a = document.getElementById("edit-actual-expense");
+            var bv = b ? parseFloat(b.value) : NaN;
+            var av = a ? parseFloat(a.value) : NaN;
+            tasks.push(api("update_budget", {
+              training_name: ev.name,
+              budget_amount: isNaN(bv) ? null : bv,
+              actual_expense: isNaN(av) ? null : av,
+            }).then(function () {
+              ev.budget_amount = isNaN(bv) ? null : bv;
+              ev.actual_expense = isNaN(av) ? null : av;
+            }));
+          }
+          Promise.all(tasks).then(function () {
             closeModal("addModal");
             loadData(true);
             showToast("Training updated");
