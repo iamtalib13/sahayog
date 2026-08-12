@@ -27,7 +27,7 @@
         --radius-sm: 6px;
         --radius-md: 10px;
         --sidebar-w: 230px;
-        --sidebar-w-collapsed: 60px;
+        --sidebar-w-collapsed: 64px;
         --header-h: 56px;
         --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
       }
@@ -300,6 +300,7 @@
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
         gap: 6px;
+        position: relative;
       }
       .brand {
         display: flex;
@@ -331,21 +332,24 @@
         text-overflow: ellipsis;
       }
       .collapse-btn {
-        width: 30px;
-        height: 30px;
-        border-radius: var(--radius-sm);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
         display: grid;
         place-items: center;
         color: var(--ink-3);
         flex-shrink: 0;
+        border: 1px solid var(--border);
+        background: var(--surface);
       }
       .collapse-btn:hover {
-        background: var(--surface-2);
-        color: var(--ink-1);
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        border-color: var(--accent);
       }
       .collapse-btn svg {
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         transition: transform 0.16s ease;
       }
       .app.collapsed .collapse-btn svg {
@@ -438,10 +442,26 @@
         display: none;
       }
       .app.collapsed .nav-item,
-      .app.collapsed .collapse-btn,
       .app.collapsed .brand {
         justify-content: center;
         padding: 0;
+      }
+      .app.collapsed .sidebar-top {
+        position: relative;
+        padding: 0 4px;
+      }
+      .app.collapsed .brand {
+        flex: 0 0 auto;
+        width: 28px;
+      }
+      .app.collapsed .collapse-btn {
+        position: absolute;
+        right: 3px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 26px;
+        height: 26px;
+        border: none;
       }
       .sidebar-footer {
         border-top: 1px solid var(--border);
@@ -1727,7 +1747,7 @@
             <div class="brand-name">L&amp;D Training</div>
           </div>
           <button class="collapse-btn" id="collapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" /></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
         </div>
 
@@ -1798,9 +1818,6 @@
         <div class="header-right">
           <button class="icon-btn" id="misBtn" title="Monthly MIS report" style="display: none">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v-2a5 5 0 00-5-5H8a5 5 0 00-5 5v2" /><path d="M3 12h5l2 3h4l2-3h5v5a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-          </button>
-          <button class="icon-btn" title="Notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 01-3.46 0" /></svg>
           </button>
           <div class="avatar" id="avatar">A</div>
         </div>
@@ -2996,7 +3013,11 @@
 
         /* ---------- Wire up ---------- */
         document.getElementById("collapseBtn").onclick = function () {
-          document.getElementById("app").classList.toggle("collapsed");
+          var app = document.getElementById("app");
+          app.classList.toggle("collapsed");
+          var collapsed = app.classList.contains("collapsed");
+          this.setAttribute("title", collapsed ? "Expand sidebar" : "Collapse sidebar");
+          this.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
         };
 
         document.querySelectorAll("#viewSwitch button").forEach(function (b) {
