@@ -34,12 +34,47 @@ def ensure_qr_code():
             frappe.log_error(message=str(e), title="MAC QR Generation Failed")
 
 @frappe.whitelist()
-def get_dashboard_data():
+def get_dashboard_data(start=0, page_length=10):
     user = frappe.session.user
     is_admin = "System Manager" in frappe.get_roles(user) or user == "Administrator"
     filters = {}
     if not is_admin:
         filters["owner"] = user
+
+    try:
+        start = int(start)
+    except Exception:
+        start = 0
+
+    try:
+        page_length = int(page_length)
+    except Exception:
+        page_length = 10
+
+    # 1. Fetch exact total stats across ALL database records
+    where_conditions = []
+    values = {}
+    if not is_admin:
+        where_conditions.append("owner = %(user)s")
+        values["user"] = user
+
+    where_clause = f"WHERE {' AND '.join(where_conditions)}" if where_conditions else ""
+
+    stats_query = f"""
+        SELECT
+            COUNT(name) as total_activities,
+            COALESCE(SUM(estimated_cost), 0) as total_cost,
+            COALESCE(SUM(units_accounts), 0) as total_units,
+            COALESCE(SUM(CASE WHEN status = 'Done' THEN 1 ELSE 0 END), 0) as done_count,
+            COALESCE(SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END), 0) as cancelled_count
+        FROM `tabMAC Activity`
+        {where_clause}
+    """
+    stats_res = frappe.db.sql(stats_query, values, as_dict=True)[0]
+
+    total_activities = int(stats_res.total_activities or 0)
+
+    # 2. Fetch paginated records for display table
     records = frappe.get_all(
         "MAC Activity",
         filters=filters,
@@ -56,26 +91,22 @@ def get_dashboard_data():
             "creation",
         ],
         order_by="creation desc",
-        limit=50,
+        start=start,
+        page_length=page_length,
     )
-
-    # Stats count
-    total_activities = len(records)
-    total_cost = sum(float(r.estimated_cost or 0) for r in records)
-    total_units = sum(int(r.units_accounts or 0) for r in records)
-    done_count = sum(1 for r in records if r.status == "Done")
-    cancelled_count = sum(1 for r in records if r.status == "Cancelled")
 
     return {
         "records": records,
         "stats": {
             "total_activities": total_activities,
-            "total_cost": total_cost,
-            "total_units": total_units,
-            "done_count": done_count,
-            "cancelled_count": cancelled_count,
+            "total_cost": float(stats_res.total_cost or 0),
+            "total_units": int(stats_res.total_units or 0),
+            "done_count": int(stats_res.done_count or 0),
+            "cancelled_count": int(stats_res.cancelled_count or 0),
         },
         "is_admin": is_admin,
+        "has_more": (start + len(records)) < total_activities,
+        "total_count": total_activities
     }
 
 @frappe.whitelist(allow_guest=True)
