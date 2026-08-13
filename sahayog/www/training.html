@@ -1097,6 +1097,14 @@
         padding: 8px 10px;
         white-space: pre-wrap;
       }
+      .drawer-kicker {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--accent);
+        margin-bottom: 3px;
+      }
       .drawer-actions {
         padding: 12px 18px 16px;
         border-top: 1px solid var(--border);
@@ -3059,6 +3067,9 @@
           n = Number(n || 0);
           return "\u20B9" + n.toLocaleString("en-IN");
         }
+        function inrOrDash(n) {
+          return n == null || Number(n) === 0 ? "—" : inr(n);
+        }
         function completionScore(ev) {
           return CHECK_FIELDS.filter(function (f) {
             return ev[f.key];
@@ -3724,9 +3735,11 @@
           drawerOverlay.classList.remove("open");
           drawer.setAttribute("aria-hidden", "true");
         }
-        function openDrawer(ev) {
+        function openDrawer(ev, mode) {
+          mode = mode === "edit" ? "edit" : "view";
           state.currentEvent = ev;
           var r = role();
+          var editable = mode === "edit" && r.canEdit;
           var st = statusOf(ev);
           var meta = STATUS_META[st];
           var score = completionScore(ev);
@@ -3743,6 +3756,12 @@
 
           var head =
             '<div class="title">' +
+            '<div class="drawer-kicker">' +
+            (editable ? "Edit Training" : "Training Details") +
+            "</div>" +
+            '<h3>' +
+            esc(ev.training_program || ev.topic || "Training") +
+            "</h3>" +
             '<span class="chip ' +
             chipClass +
             '"><span class="status-dot" style="background:' +
@@ -3752,57 +3771,58 @@
             "</span>" +
             (ev.is_adhoc
               ? ' <span class="chip chip-gray">Ad-hoc</span>'
-              : ' <span class="chip chip-gray">Scheduled</span>') +
-            "<h3>" +
-            esc(ev.training_program || ev.topic || "Training") +
-            "</h3>" +
+              : "") +
             "</div>" +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg></button>';
           document.getElementById("drawerHead").innerHTML = head;
           document.getElementById("drawerClose").onclick = closeDrawer;
 
+          var dateLabel = evStart(ev)
+            ? evStart(ev) === evEnd(ev)
+              ? fmtDateShort(evStart(ev))
+              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
+            : "—";
+          var timeLabel = ev.time
+            ? ev.end_time
+              ? esc(ev.time) + " – " + esc(ev.end_time)
+              : esc(ev.time)
+            : "—";
+
           var body =
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
             '<div class="meta-grid">' +
-            metaRow(
-              "Date",
-              esc(
-                evStart(ev) === evEnd(ev)
-                  ? evStart(ev)
-                  : evStart(ev) + " — " + evEnd(ev),
-              ),
-            ) +
-            metaRow("Time", esc(ev.time || "—")) +
+            metaRow("Date", dateLabel) +
+            metaRow("Time", timeLabel) +
             metaRow("Zone", esc(ev.zone || "—")) +
             metaRow("Region", esc(ev.region || "—")) +
             metaRow("District", esc(ev.district || "—")) +
             metaRow("Branch", esc(ev.branch || "—")) +
-            metaRow("Trainer", esc(ev.trainer_name || "—")) +
+            metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
             "</div></div>";
 
           body +=
             '<div class="drawer-section">' +
-            '<div class="drawer-section-title">Completion ' +
+            '<div class="drawer-section-title" id="drw-completion-title">Completion ' +
             score +
             "/5</div>" +
             '<div class="progress-row">' +
             '<div class="progress-track"><div class="progress-fill' +
             (pct === 100 ? " complete" : "") +
-            '" style="width:' +
+            '" id="drw-progress-fill" style="width:' +
             pct +
             '%"></div></div>' +
-            '<span class="progress-pct">' +
+            '<span class="progress-pct" id="drw-progress-pct">' +
             pct +
             "%</span>" +
             "</div></div>";
 
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
-            var input = r.canEdit
+            var input = editable
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
@@ -3812,6 +3832,8 @@
             return (
               '<label class="check-item' +
               (on ? " done" : "") +
+              '" data-field="' +
+              f.key +
               '">' +
               input +
               '<span class="ck-label">' +
@@ -3829,20 +3851,39 @@
 
           if (r.showBudget) {
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
-            body +=
-              '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
-              '<div class="meta-grid">' +
-              metaRow("Budget Amount", inr(ev.budget_amount)) +
-              metaRow("Actual Expense", inr(ev.actual_expense)) +
-              metaRow("Expense Status", expStatus) +
-              "</div></div>";
+            if (editable) {
+              body +=
+                '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+                '<div class="budget-edit">' +
+                '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="0" value="' +
+                (ev.budget_amount == null ? "" : ev.budget_amount) +
+                '" /></label>' +
+                '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="0" value="' +
+                (ev.actual_expense == null ? "" : ev.actual_expense) +
+                '" /></label>' +
+                "</div>" +
+                '<div class="budget-edit-foot">' +
+                '<span class="budget-exp-status">Expense Status: <strong>' +
+                expStatus +
+                "</strong></span>" +
+                '<span class="budget-hint">Saved with Save Changes</span>' +
+                "</div></div>";
+            } else {
+              body +=
+                '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+                '<div class="meta-grid">' +
+                metaRow("Budget Amount", inrOrDash(ev.budget_amount)) +
+                metaRow("Actual Expense", inrOrDash(ev.actual_expense)) +
+                metaRow("Expense Status", expStatus) +
+                "</div></div>";
+            }
           }
 
-          if (r.canEdit) {
+          if (editable) {
             body +=
               '<div class="drawer-section">' +
               '<div class="drawer-section-title">Trainer Remarks</div>' +
-              '<textarea class="remarks-box" id="remarksInput" placeholder="Add remarks...">' +
+              '<textarea class="remarks-box" id="drw-remarks" placeholder="Add remarks...">' +
               esc(ev.trainer_remarks || "") +
               "</textarea>" +
               "</div>";
@@ -3857,31 +3898,62 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
-          var actions = "";
-          if (r.canEdit) {
-            actions +=
-              '<button class="btn" id="saveRemarksBtn">Save Remarks</button>';
-          }
-          actions +=
-            '<button class="btn btn-primary" id="drawerDone">Done</button>';
+          var actions = editable
+            ? '<button class="btn" id="drawerCancel">Cancel</button>' +
+              '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
+            : '<button class="btn btn-primary" id="drawerDone">Close</button>';
           document.getElementById("drawerActions").innerHTML = actions;
-          if (r.canEdit) {
-            document.getElementById("saveRemarksBtn").onclick = function () {
-              saveRemarks();
-            };
+
+          if (editable) {
+            document.getElementById("drawerSave").onclick = saveDrawerChanges;
+            document.getElementById("drawerCancel").onclick = closeDrawer;
             document
               .querySelectorAll("#drawerBody .check-item input")
               .forEach(function (inp) {
                 inp.onchange = function () {
-                  toggleStatus(ev, inp.dataset.field, inp.checked);
+                  stageCheck(ev, inp.dataset.field, inp.checked);
                 };
               });
+          } else {
+            document.getElementById("drawerDone").onclick = closeDrawer;
           }
-          document.getElementById("drawerDone").onclick = closeDrawer;
+
+          state.drawerBase = {
+            checks: {},
+            remarks: ev.trainer_remarks || "",
+            budget: ev.budget_amount == null ? "" : ev.budget_amount,
+            expense: ev.actual_expense == null ? "" : ev.actual_expense,
+          };
+          CHECK_FIELDS.forEach(function (f) {
+            state.drawerBase.checks[f.key] = ev[f.key] || 0;
+          });
 
           drawerOverlay.classList.add("open");
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
+        }
+
+        function stageCheck(ev, field, checked) {
+          ev[field] = checked ? 1 : 0;
+          var label = document.querySelector(
+            "#drawerBody .check-item[data-field='" + field + "']",
+          );
+          if (label) {
+            label.classList.toggle("done", checked);
+            var val = label.querySelector(".ck-val");
+            if (val) val.textContent = checked ? "Yes" : "No";
+          }
+          var score = completionScore(ev);
+          var pct = Math.round((score / 5) * 100);
+          var titleEl = document.getElementById("drw-completion-title");
+          if (titleEl) titleEl.textContent = "Completion " + score + "/5";
+          var fill = document.getElementById("drw-progress-fill");
+          if (fill) {
+            fill.style.width = pct + "%";
+            fill.classList.toggle("complete", pct === 100);
+          }
+          var pctEl = document.getElementById("drw-progress-pct");
+          if (pctEl) pctEl.textContent = pct + "%";
         }
 
         function metaRow(k, v) {
@@ -3932,21 +4004,78 @@
           }
         }
 
-        function saveRemarks() {
+        function saveDrawerChanges() {
           var ev = state.currentEvent;
-          if (!ev) return;
-          var val = (document.getElementById("remarksInput") || {}).value || "";
-          api("update_training_status", {
-            training_name: ev.name,
-            field: "trainer_remarks",
-            value: val,
-          })
+          if (!ev) {
+            closeDrawer();
+            return;
+          }
+          var base = state.drawerBase || { checks: {} };
+          var tasks = [];
+
+          CHECK_FIELDS.forEach(function (f) {
+            var cur = ev[f.key] || 0;
+            if (cur !== (base.checks[f.key] || 0)) {
+              tasks.push(
+                api("update_training_status", {
+                  training_name: ev.name,
+                  field: f.key,
+                  value: cur,
+                }),
+              );
+            }
+          });
+
+          var rem =
+            (document.getElementById("drw-remarks") || {}).value || "";
+          if (rem !== (base.remarks || "")) {
+            tasks.push(
+              api("update_training_status", {
+                training_name: ev.name,
+                field: "trainer_remarks",
+                value: rem,
+              }).then(function () {
+                ev.trainer_remarks = rem;
+              }),
+            );
+          }
+
+          if (role().showBudget) {
+            var b = document.getElementById("drw-budget-amount");
+            var a = document.getElementById("drw-actual-expense");
+            var bv = b ? parseFloat(b.value) : NaN;
+            var av = a ? parseFloat(a.value) : NaN;
+            var bStr = isNaN(bv) ? "" : bv;
+            var aStr = isNaN(av) ? "" : av;
+            if (String(bStr) !== String(base.budget) ||
+                String(aStr) !== String(base.expense)) {
+              tasks.push(
+                api("update_budget", {
+                  training_name: ev.name,
+                  budget_amount: isNaN(bv) ? null : bv,
+                  actual_expense: isNaN(av) ? null : av,
+                }).then(function () {
+                  ev.budget_amount = isNaN(bv) ? null : bv;
+                  ev.actual_expense = isNaN(av) ? null : av;
+                }),
+              );
+            }
+          }
+
+          if (!tasks.length) {
+            closeDrawer();
+            return;
+          }
+
+          Promise.all(tasks)
             .then(function () {
-              ev.trainer_remarks = val;
-              showToast("Remarks saved");
+              closeDrawer();
+              render();
+              renderTrainings();
+              showToast("Training updated");
             })
             .catch(function (e) {
-              showToast("Could not save remarks: " + e.message);
+              showToast("Could not save changes: " + e.message);
             });
         }
 
@@ -5206,7 +5335,7 @@
               var ev = state.calEvents.find(function (x) {
                 return x.name === row.dataset.name;
               });
-              if (ev) openDrawer(ev);
+              if (ev) openDrawer(ev, "view");
             });
           });
 
@@ -5217,7 +5346,7 @@
               var ev = state.calEvents.find(function (x) {
                 return x.name === btn.dataset.menuEdit;
               });
-              if (ev) openDrawer(ev);
+              if (ev) openDrawer(ev, "edit");
             });
           });
         }
