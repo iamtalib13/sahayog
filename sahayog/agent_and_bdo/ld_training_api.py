@@ -225,6 +225,7 @@ def get_training_list(
             "from_date": from_date,
             "to_date": to_date,
             "time": _format_time(r.start_time),
+            "end_time": _format_time(r.end_time),
             "training_program": r.training_program or "",
             "trainer": r.trainer or "",
             "trainer_name": r.trainer or "",
