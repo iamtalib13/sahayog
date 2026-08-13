@@ -2121,6 +2121,9 @@
       .tr-stat-card.sc-completed .sc-num {
         color: var(--green);
       }
+      .tr-stat-card.sc-pending .sc-num {
+        color: var(--ink-3);
+      }
       .tr-table-wrap {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -5332,6 +5335,7 @@
               label: "In Progress",
             },
             { cls: "sc-completed", num: counts.completed, label: "Completed" },
+            { cls: "sc-pending", num: counts.pending, label: "Pending" },
           ];
           el.innerHTML = cards
             .map(function (c) {
