@@ -1146,17 +1146,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     rebuildFullReport() {
       this.active_report_action = "rebuild";
       this.report_info.status = "Generating";
-      frappe.show_alert({ message: __("Full Baseline Rebuild Started in Background... Backup file active for live users."), indicator: "orange" });
+      frappe.show_alert({ message: __("Full Baseline Rebuild Started in Background Worker... Backup file active for live users."), indicator: "orange" });
       frappe.call({
-        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        method: "sahayog.scrm.api.report_access.trigger_fast_lead_report_job",
         args: { force_rebuild: true },
         callback: (r) => {
-          this.active_report_action = null;
           if (r.message && r.message.status === "success") {
-            frappe.msgprint({
-              title: __("Full Baseline Report Rebuilt"),
-              indicator: "green",
-              message: __(`Full Baseline Lead Report rebuilt successfully.<br>File Name: <b>${r.message.filename}</b><br>File Size: <b>${r.message.size_mb} MB</b>.<br>Email notification sent.`)
+            frappe.show_alert({
+              message: __("Rebuild job enqueued in background worker. Live status auto-polling..."),
+              indicator: "blue"
             });
             this.fetchReportInfo();
           }
@@ -1167,17 +1165,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     syncIncrementalReport() {
       this.active_report_action = "sync";
       this.report_info.status = "Generating";
-      frappe.show_alert({ message: __("Syncing Latest 3-Day Incremental Lead Data..."), indicator: "orange" });
+      frappe.show_alert({ message: __("Syncing Latest 3-Day Incremental Lead Data in Background Worker..."), indicator: "orange" });
       frappe.call({
-        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        method: "sahayog.scrm.api.report_access.trigger_fast_lead_report_job",
         args: { force_rebuild: false },
         callback: (r) => {
-          this.active_report_action = null;
           if (r.message && r.message.status === "success") {
-            frappe.msgprint({
-              title: __("Incremental Sync Completed"),
-              indicator: "green",
-              message: __(`Latest lead data synced successfully using <b>${r.message.method}</b>.<br>Processed: <b>${r.message.processed_count} leads</b>.<br>File Size: <b>${r.message.size_mb} MB</b>.<br>Email notification sent.`)
+            frappe.show_alert({
+              message: __("Sync job enqueued in background worker. Live status auto-polling..."),
+              indicator: "blue"
             });
             this.fetchReportInfo();
           }

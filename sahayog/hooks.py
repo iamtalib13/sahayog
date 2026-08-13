@@ -463,7 +463,6 @@ scheduler_events = {
     "daily": [
         "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
         "sahayog.sahayog.doctype.bank_eod.bank_eod.create_daily_bank_eod",
-        "sahayog.scrm.api.report_access.generate_fast_lead_report",
     ],
     # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
