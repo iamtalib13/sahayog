@@ -612,9 +612,20 @@ def get_fast_lead_report_info():
                     "file_url": f"/private/files/{fname}"
                 })
 
+    status = info.get("status", "Ready" if file_exists else "Not Generated")
+
+    # Auto-heal stuck "Generating" status if info file was last updated > 10 minutes ago
+    info_file_path = os.path.join(site_private_path, INFO_FILE_NAME)
+    if status == "Generating" and os.path.exists(info_file_path):
+        mtime = os.path.getmtime(info_file_path)
+        if (datetime.datetime.now().timestamp() - mtime) > 600:
+            status = "Ready"
+            info["status"] = "Ready"
+            save_report_info(info)
+
     return {
         "is_admin": is_admin,
-        "status": info.get("status", "Ready" if file_exists else "Not Generated"),
+        "status": status,
         "last_generated_at": info.get("last_generated_at", "-"),
         "active_filename": active_filename,
         "backup_filename": backup_filename,
