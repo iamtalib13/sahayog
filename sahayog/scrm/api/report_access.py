@@ -627,6 +627,61 @@ def get_fast_lead_report_info():
     }
 
 
+@frappe.whitelist()
+def trigger_fast_lead_report_job(force_rebuild=False):
+    """Enqueues generate_fast_lead_report in Frappe background long worker to prevent HTTP 504 Gateway Timeout."""
+    import shutil
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    if not is_admin:
+        frappe.throw("Only Administrators can trigger master lead report generation.")
+
+    if isinstance(force_rebuild, str):
+        force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
+
+    info = get_report_info()
+
+    # Prevent duplicate background worker execution
+    if info.get("status") == "Generating":
+        return {
+            "status": "already_running",
+            "message": "Report generation is already running in background worker.",
+            "force_rebuild": force_rebuild
+        }
+
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+    prev_active_filename = info.get("active_filename", "lead_report.csv")
+    prev_active_path = os.path.join(site_private_path, prev_active_filename)
+
+    backup_filename = "lead_report_backup.csv"
+    backup_filepath = os.path.join(site_private_path, backup_filename)
+    if os.path.exists(prev_active_path):
+        try:
+            shutil.copyfile(prev_active_path, backup_filepath)
+        except Exception:
+            pass
+
+    info["status"] = "Generating"
+    info["backup_filename"] = backup_filename if os.path.exists(backup_filepath) else prev_active_filename
+    save_report_info(info)
+
+    frappe.enqueue(
+        method="sahayog.scrm.api.report_access.generate_fast_lead_report",
+        queue="long",
+        timeout=3600,
+        is_async=True,
+        force_rebuild=force_rebuild
+    )
+
+    return {
+        "status": "success",
+        "message": "Master report generation enqueued in background long worker.",
+        "force_rebuild": force_rebuild
+    }
+
+
 # ==============================================================================
 # METHOD: generate_fast_lead_report(force_rebuild=False)
 # PURPOSE: Executed by Cron Job or Admin manually. Runs MariaDB INTO OUTFILE
@@ -647,6 +702,21 @@ def generate_fast_lead_report(force_rebuild=False):
         force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
 
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    try:
+        return _execute_lead_report_generation(force_rebuild, site_private_path)
+    except Exception as e:
+        info = get_report_info()
+        info["status"] = "Ready"
+        save_report_info(info)
+        frappe.log_error(title="Fast Lead Report Generation Exception", message=frappe.get_traceback())
+        raise e
+
+
+def _execute_lead_report_generation(force_rebuild, site_private_path):
+    import shutil
+    import datetime
+    import csv
 
     info = get_report_info()
     prev_active_filename = info.get("active_filename", "lead_report.csv")
