@@ -3433,13 +3433,26 @@ createLead() {
       primary_action: async (values) => {
         const btn = dialog.get_primary_btn();
 
+        // Direct DOM re-sync before validation (prevents mobile keyboard / network lag data loss)
+        dialog.$wrapper.find("#lead-product-rows tr").each(function(index) {
+          if (productsData[index]) {
+            const amountVal = parseFloat($(this).find(".product-amount").val()) || 0;
+            productsData[index].product_amount = amountVal;
+          }
+        });
+
         // Basic validation — freeze se pehle
         if (!validateIndianPhone(values.mobile_no)) {
           frappe.msgprint({ title: __("Invalid Phone Number"), indicator: "red", message: __("Please enter a valid 10-digit mobile number.") });
           return;
         }
         if (productsData.length === 0) {
-          frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please add products" });
+          frappe.msgprint({ title: "Missing Products", indicator: "red", message: "Please select at least one product before saving." });
+          return;
+        }
+        const missingProductCode = productsData.filter(p => !p.product || !p.product.toString().trim());
+        if (missingProductCode.length > 0) {
+          frappe.msgprint({ title: "Missing Product Code", indicator: "red", message: "Please select a valid Product Code for all rows." });
           return;
         }
         const invalidProducts = productsData.filter(p => !p.product_amount || p.product_amount <= 0);

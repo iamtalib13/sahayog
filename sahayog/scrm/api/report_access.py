@@ -603,18 +603,34 @@ def get_fast_lead_report_info():
                 mtime = os.path.getmtime(fpath)
                 mtime_str = datetime.datetime.fromtimestamp(mtime).strftime("%d-%m-%Y %H:%M:%S")
                 fsize_mb = round(os.path.getsize(fpath) / (1024 * 1024), 2)
+                is_active = fname == active_filename or fname == "lead_report.csv"
+                is_backup = fname == backup_filename or fname == "lead_report_backup.csv"
+                is_info = fname == "lead_report_info.json"
+
                 server_files.append({
                     "filename": fname,
                     "size_mb": fsize_mb,
                     "modified_at": mtime_str,
-                    "is_active": fname == active_filename or (fname == "lead_report.csv" and not os.path.exists(active_path)),
-                    "is_backup": fname == backup_filename or fname == "lead_report_backup.csv",
+                    "is_active": is_active and not is_info,
+                    "is_backup": is_backup and not is_active and not is_info,
+                    "is_info": is_info,
                     "file_url": f"/private/files/{fname}"
                 })
 
+    status = info.get("status", "Ready" if file_exists else "Not Generated")
+
+    # Auto-heal stuck "Generating" status if info file was last updated > 10 minutes ago
+    info_file_path = os.path.join(site_private_path, INFO_FILE_NAME)
+    if status == "Generating" and os.path.exists(info_file_path):
+        mtime = os.path.getmtime(info_file_path)
+        if (datetime.datetime.now().timestamp() - mtime) > 600:
+            status = "Ready"
+            info["status"] = "Ready"
+            save_report_info(info)
+
     return {
         "is_admin": is_admin,
-        "status": info.get("status", "Ready" if file_exists else "Not Generated"),
+        "status": status,
         "last_generated_at": info.get("last_generated_at", "-"),
         "active_filename": active_filename,
         "backup_filename": backup_filename,
