@@ -806,10 +806,13 @@
         max-width: 100%;
       }
       .event-more {
-        font-size: 10.5px;
+        font-size: 11px;
         color: var(--accent-ink);
-        padding: 0 5px;
+        padding: 1px 5px;
         cursor: pointer;
+      }
+      .event-more:hover {
+        text-decoration: underline;
       }
 
       /* Week view */
@@ -1727,6 +1730,50 @@
         background: var(--surface-2);
         color: var(--ink-1);
       }
+      .more-modal {
+        width: 420px;
+        max-width: 92vw;
+      }
+      .more-body {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .more-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--ink-1);
+        text-align: left;
+        cursor: pointer;
+      }
+      .more-row:hover {
+        background: var(--surface-2);
+      }
+      .more-row .more-title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .more-row .more-time {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        white-space: nowrap;
+      }
+      .more-row .more-status {
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
       .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -2588,6 +2635,30 @@
       <div class="drawer-actions" id="drawerActions"></div>
     </div>
 
+    <!-- Modal: all trainings on a date -->
+    <div class="modal-wrap" id="moreModal">
+      <div class="modal more-modal">
+        <div class="modal-head">
+          <h3 id="moreTitle"></h3>
+          <button class="modal-close" id="moreClose" title="Close">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="16"
+              height="16"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="more-body" id="moreBody"></div>
+      </div>
+    </div>
+
     <!-- Modal: add training -->
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
@@ -3430,17 +3501,11 @@
               var more = document.createElement("div");
               more.className = "event-more";
               more.textContent = "+" + (evs.length - 2) + " more";
-              more.onclick = function () {
-                var p = dateIso.split("-");
-                state.selectedDate = new Date(
-                  parseInt(p[0], 10),
-                  parseInt(p[1], 10) - 1,
-                  parseInt(p[2], 10),
-                );
-                state.viewMode = "day";
-                syncViewSwitch();
-                render();
-              };
+              (function (dIso, evList) {
+                more.onclick = function () {
+                  openMoreModal(dIso, evList);
+                };
+              })(dateIso, evs);
               cell.appendChild(more);
             }
 
@@ -3487,6 +3552,56 @@
             openTrainingDialog(ev);
           });
           return chip;
+        }
+
+        function openMoreModal(dateIso, evs) {
+          var titleEl = document.getElementById("moreTitle");
+          var body = document.getElementById("moreBody");
+          var p = dateIso.split("-");
+          var d = new Date(
+            parseInt(p[0], 10),
+            parseInt(p[1], 10) - 1,
+            parseInt(p[2], 10),
+          );
+          var label =
+            WEEKDAY_NAMES[d.getDay()] + ", " + fmtDateShort(dateIso);
+          titleEl.textContent =
+            label +
+            " — " +
+            evs.length +
+            (evs.length === 1 ? " Training" : " Trainings");
+          body.innerHTML = "";
+          evs.slice()
+            .sort(function (a, b) {
+              return (a.time || "").localeCompare(b.time || "");
+            })
+            .forEach(function (ev) {
+              var st = statusOf(ev);
+              var meta = STATUS_META[st];
+              var row = document.createElement("button");
+              row.className = "more-row";
+              row.innerHTML =
+                '<span class="status-dot" style="background:' +
+                meta.color +
+                '"></span>' +
+                '<span class="more-title">' +
+                esc(ev.training_program || ev.topic || "Training") +
+                "</span>" +
+                '<span class="more-time">' +
+                esc(ev.time || "") +
+                "</span>" +
+                '<span class="more-status" style="color:' +
+                meta.color +
+                '">' +
+                meta.label +
+                "</span>";
+              row.addEventListener("click", function () {
+                closeModal("moreModal");
+                openTrainingDialog(ev);
+              });
+              body.appendChild(row);
+            });
+          document.getElementById("moreModal").classList.add("open");
         }
 
         function renderWeekView() {
@@ -4678,6 +4793,14 @@
         };
 
         drawerOverlay.onclick = closeDrawer;
+        document.getElementById("moreClose").onclick = function () {
+          closeModal("moreModal");
+        };
+        document
+          .getElementById("moreModal")
+          .addEventListener("click", function (e) {
+            if (e.target === this) closeModal("moreModal");
+          });
         document.getElementById("btn-reset");
         document.getElementById("misBtn").onclick = openMisModal;
         document.querySelectorAll("[data-close]").forEach(function (b) {
