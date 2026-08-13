@@ -486,8 +486,7 @@
       /* ---------- Main ---------- */
       .main {
         grid-area: main;
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: hidden;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -497,9 +496,9 @@
       /* Filters */
       .filters-bar {
         display: flex;
-        align-items: flex-end;
-        gap: 12px;
-        padding: 12px 20px 10px;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 20px;
         background: var(--surface);
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
@@ -513,26 +512,30 @@
       }
       .filter-group input,
       .filter-group select {
-        height: 30px;
+        height: 26px;
       }
       .filters-bar .filter-group {
-        min-width: 116px;
-        gap: 3px;
-      }
-      .filters-bar .field-label {
-        font-size: 10px;
-        font-weight: 500;
-        text-transform: none;
-        letter-spacing: 0.01em;
-        margin-bottom: 0;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
       }
       .filters-bar .filter-group input,
       .filters-bar .filter-group select {
+        width: auto;
+        min-width: 118px;
         height: 26px;
         font-size: 12px;
         padding: 0 7px;
       }
+      .filters-bar .btn-reset {
+        margin-left: 4px;
+      }
       .btn-reset {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         background: transparent;
         border: none;
         color: var(--ink-3);
@@ -540,6 +543,10 @@
         height: 26px;
         padding: 0 6px;
         margin-left: 2px;
+      }
+      .btn-reset svg {
+        width: 13px;
+        height: 13px;
       }
       .btn-reset:hover {
         background: transparent;
@@ -551,7 +558,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 20px 0;
+        padding: 8px 20px 0;
         flex-shrink: 0;
         flex-wrap: wrap;
       }
@@ -605,11 +612,16 @@
         display: flex;
         align-items: center;
         gap: 2px;
-        padding: 6px 20px;
+        padding: 4px 20px 5px;
         flex-shrink: 0;
         font-size: 12px;
         color: var(--ink-2);
         flex-wrap: wrap;
+      }
+      .status-summary .sum-total {
+        font-weight: 600;
+        color: var(--ink-1);
+        margin-right: 2px;
       }
       .status-summary button {
         display: inline-flex;
@@ -648,11 +660,13 @@
       /* Calendar body */
       .cal-body {
         flex: 1;
+        min-height: 0;
         display: flex;
         padding: 0 20px 12px;
       }
       .cal-content {
         flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -665,7 +679,7 @@
         flex-shrink: 0;
       }
       .weekday-row div {
-        padding: 7px 10px;
+        padding: 5px 10px;
         font-size: 11px;
         font-weight: 600;
         text-transform: uppercase;
@@ -708,7 +722,7 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        min-height: 92px;
+        min-height: 72px;
         min-width: 0;
         overflow: hidden;
       }
@@ -2324,30 +2338,26 @@
         <div class="cal-view" id="calView">
           <div class="filters-bar" id="filtersBar">
             <div class="filter-group">
-              <label class="field-label">Zone</label>
               <select class="field-select" id="fil-zone">
                 <option value="">All Zones</option>
               </select>
             </div>
             <div class="filter-group">
-              <label class="field-label">Region</label>
               <select class="field-select" id="fil-region">
                 <option value="">All Regions</option>
               </select>
             </div>
             <div class="filter-group">
-              <label class="field-label">District</label>
               <select class="field-select" id="fil-district">
                 <option value="">All Districts</option>
               </select>
             </div>
             <div class="filter-group">
-              <label class="field-label">Branch</label>
               <select class="field-select" id="fil-branch">
                 <option value="">All Branches</option>
               </select>
             </div>
-            <button class="btn btn-reset" id="btn-reset" title="Reset filters">
+            <button class="btn-reset" id="btn-reset" title="Reset filters">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -2393,7 +2403,6 @@
             </div>
             <div class="month-title-block">
               <div class="month-title" id="monthTitle"></div>
-              <div class="month-count" id="monthCount"></div>
             </div>
             <div class="view-switch" id="viewSwitch">
               <button class="active" data-view="month">Month</button>
@@ -3368,7 +3377,8 @@
             new Date(today.getFullYear(), today.getMonth(), 1);
           document.getElementById("monthTitle").textContent =
             MONTHS[monthOf(state.viewDate)] + " " + yearOf(state.viewDate);
-          document.getElementById("monthCount").textContent = monthCountLabel();
+          var mc = document.getElementById("monthCount");
+          if (mc) mc.textContent = monthCountLabel();
 
           var content = document.getElementById("calContent");
           var row = document.createElement("div");
@@ -3517,11 +3527,13 @@
             );
             return d >= weekStart && d <= weekEnd;
           });
-          document.getElementById("monthCount").textContent =
-            visible.length +
-            " training" +
-            (visible.length === 1 ? "" : "s") +
-            " scheduled";
+          var mc = document.getElementById("monthCount");
+          if (mc)
+            mc.textContent =
+              visible.length +
+              " training" +
+              (visible.length === 1 ? "" : "s") +
+              " scheduled";
 
           var content = document.getElementById("calContent");
           var row = document.createElement("div");
@@ -3614,11 +3626,13 @@
             d.getFullYear();
 
           var evs = eventsOn(isoOf(d));
-          document.getElementById("monthCount").textContent =
-            evs.length +
-            " training" +
-            (evs.length === 1 ? "" : "s") +
-            " scheduled";
+          var mc = document.getElementById("monthCount");
+          if (mc)
+            mc.textContent =
+              evs.length +
+              " training" +
+              (evs.length === 1 ? "" : "s") +
+              " scheduled";
 
           var content = document.getElementById("calContent");
           var wrap = document.createElement("div");
@@ -3698,6 +3712,13 @@
           var counts = statusCounts(filteredEvents());
           var el = document.getElementById("statusSummary");
           el.innerHTML = "";
+          var t = document.createElement("span");
+          t.className = "sum-total";
+          t.textContent = monthCountLabel();
+          el.appendChild(t);
+          var tsep = document.createElement("span");
+          tsep.className = "summary-sep";
+          el.appendChild(tsep);
           var order = ["upcoming", "inprogress", "completed", "pending"];
           order.forEach(function (k, i) {
             var m = STATUS_META[k];
