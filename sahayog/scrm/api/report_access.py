@@ -603,12 +603,17 @@ def get_fast_lead_report_info():
                 mtime = os.path.getmtime(fpath)
                 mtime_str = datetime.datetime.fromtimestamp(mtime).strftime("%d-%m-%Y %H:%M:%S")
                 fsize_mb = round(os.path.getsize(fpath) / (1024 * 1024), 2)
+                is_active = fname == active_filename or fname == "lead_report.csv"
+                is_backup = fname == backup_filename or fname == "lead_report_backup.csv"
+                is_info = fname == "lead_report_info.json"
+
                 server_files.append({
                     "filename": fname,
                     "size_mb": fsize_mb,
                     "modified_at": mtime_str,
-                    "is_active": fname == active_filename or (fname == "lead_report.csv" and not os.path.exists(active_path)),
-                    "is_backup": fname == backup_filename or fname == "lead_report_backup.csv",
+                    "is_active": is_active and not is_info,
+                    "is_backup": is_backup and not is_active and not is_info,
+                    "is_info": is_info,
                     "file_url": f"/private/files/{fname}"
                 })
 
