@@ -1373,6 +1373,21 @@
         color: var(--accent);
         font-weight: 700;
       }
+      .nt-pop-more {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .nt-pop-more .btn-mini {
+        padding: 3px 10px;
+        font-size: 12px;
+      }
       .nt-pop-foot {
         display: flex;
         align-items: center;
@@ -1389,12 +1404,35 @@
       }
 
       /* Schedule */
-      .nt-sched-main {
-        flex: 1;
+      .nt-kicker-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0 6px;
+      }
+      .nt-dt-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 12px;
+      }
+      .nt-dt-cell {
         display: flex;
         flex-direction: column;
-        gap: 7px;
+        align-items: stretch;
+        gap: 3px;
         min-width: 0;
+      }
+      .nt-field-label {
+        font-size: 11px;
+        color: var(--ink-3);
+        font-weight: 600;
+      }
+      .nt-dt-cell .nt-sched-date,
+      .nt-dt-cell .nt-sched-time {
+        width: 100%;
+      }
+      .nt-sched-summary {
+        margin-top: 7px;
       }
       .nt-sched-preview {
         font-size: 14px;
@@ -1404,20 +1442,11 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .nt-sched-controls {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-      }
-      .nt-sched-gap {
-        flex: 0 0 6px;
-      }
       .nt-sched-date,
       .nt-sched-time {
         border: 1px solid var(--border);
         border-radius: 6px;
-        padding: 4px 8px;
+        padding: 6px 8px;
         font-size: 12.5px;
         color: var(--ink-1);
         background: var(--surface);
@@ -1428,34 +1457,38 @@
       .nt-sched-time:focus {
         border-color: var(--accent);
       }
-      .nt-sched-dash {
-        color: var(--ink-3);
-        font-size: 12px;
-      }
       .nt-sched-hint {
         font-size: 11.5px;
         color: var(--ink-3);
+        margin-top: 2px;
       }
-      .nt-scheduler-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 7px;
-        padding: 6px 12px;
-        font-size: 12.5px;
+      .nt-sched-hint.has {
+        color: #b45309;
         font-weight: 600;
-        color: var(--accent-ink);
+      }
+      .nt-sched-hint.overlap {
+        color: #dc2626;
+        font-weight: 600;
+      }
+      .nt-allday-row {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        color: var(--ink-2);
+        margin: 6px 0 4px;
         cursor: pointer;
-        white-space: nowrap;
+        user-select: none;
       }
-      .nt-scheduler-btn:hover {
-        background: var(--accent-soft);
-      }
-      .nt-scheduler-btn svg {
+      .nt-allday-row input[type="checkbox"] {
         width: 15px;
         height: 15px;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+      .nt-dt-cell.dimmed input {
+        opacity: 0.4;
+        pointer-events: none;
       }
 
       /* Trainer readonly + Branch */
@@ -1632,9 +1665,6 @@
       .budget-hint {
         font-size: 11px;
         color: var(--ink-3);
-      }
-      #addModal.editing .nt-scheduler-btn {
-        display: none;
       }
       #addModal.editing .nt-title {
         color: var(--ink-1);
@@ -2739,6 +2769,16 @@
                   />
                 </div>
                 <div id="participant-dropdown" class="nt-pop-list"></div>
+                <div class="nt-pop-more" id="participant-more" style="display: none">
+                  <span id="participant-range"></span>
+                  <button
+                    class="btn-mini"
+                    id="btn-participant-load"
+                    type="button"
+                  >
+                    Load more
+                  </button>
+                </div>
                 <div class="nt-pop-foot">
                   <span id="participant-dropdown-count">0 selected</span>
                   <button class="btn" id="btn-participant-done">Done</button>
@@ -2746,64 +2786,53 @@
               </div>
             </div>
 
-            <!-- Schedule: single Teams-like row -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <div class="nt-sched-main">
-                <div class="nt-sched-preview" id="new-schedule-preview">
-                  Select date and time
-                </div>
-                <div class="nt-sched-controls">
-                  <input type="date" class="nt-sched-date" id="new-from-date" />
-                  <span class="nt-sched-dash">–</span>
-                  <input type="date" class="nt-sched-date" id="new-to-date" />
-                  <span class="nt-sched-gap"></span>
-                  <input
-                    type="text"
-                    class="nt-sched-time"
-                    id="new-time"
-                    placeholder="Start"
-                    autocomplete="off"
-                  />
-                  <span class="nt-sched-dash">–</span>
-                  <input
-                    type="text"
-                    class="nt-sched-time"
-                    id="new-end-time"
-                    placeholder="End"
-                    autocomplete="off"
-                  />
-                </div>
-                <div class="nt-sched-hint" id="new-schedule-hint"></div>
+            <!-- Date & Time: labeled fields -->
+            <div class="nt-kicker-wrap">
+              <span class="nt-kicker">Date &amp; Time</span>
+            </div>
+            <div class="nt-dt-grid">
+              <label class="nt-dt-cell">
+                <span class="nt-field-label">Start date</span>
+                <input
+                  type="date"
+                  class="nt-sched-date"
+                  id="new-from-date"
+                />
+              </label>
+              <label class="nt-dt-cell">
+                <span class="nt-field-label">End date</span>
+                <input type="date" class="nt-sched-date" id="new-to-date" />
+              </label>
+              <label class="nt-dt-cell">
+                <span class="nt-field-label">Start time</span>
+                <input
+                  type="text"
+                  class="nt-sched-time"
+                  id="new-time"
+                  placeholder="e.g. 10:00 AM"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="nt-dt-cell">
+                <span class="nt-field-label">End time</span>
+                <input
+                  type="text"
+                  class="nt-sched-time"
+                  id="new-end-time"
+                  placeholder="e.g. 11:00 AM"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+            <div class="nt-sched-summary">
+              <label class="nt-allday-row">
+                <input type="checkbox" id="new-allday" />
+                <span>All day</span>
+              </label>
+              <div class="nt-sched-preview" id="new-schedule-preview">
+                Select date and time
               </div>
-              <button
-                class="nt-scheduler-btn"
-                id="btn-scheduler"
-                title="Pick date and time"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
-                </svg>
-                Scheduler
-              </button>
+              <div class="nt-sched-hint" id="new-schedule-hint"></div>
             </div>
 
             <!-- Location -->
@@ -3068,6 +3097,8 @@
           loadedMonth: "",
           branchOptions: [],
           allEmployees: [],
+          branchPick: [],
+          selectedBranch: "",
           selectedParticipants: [],
         };
 
@@ -3299,10 +3330,14 @@
               fillSelect("tr-district", districts, "All Districts");
               fillSelect("tr-branch", branches, "All Branches");
               state.branchOptions = branches;
-              return api("get_trainer_options", { enabled_only: 1 });
+              return Promise.all([
+                api("get_trainer_options", { enabled_only: 1 }),
+                api("get_branch_options"),
+              ]);
             })
-            .then(function (employees) {
-              state.allEmployees = Array.isArray(employees) ? employees : [];
+            .then(function (res) {
+              state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
+              state.branchPick = Array.isArray(res[1]) ? res[1] : [];
             });
         }
 
@@ -4244,6 +4279,14 @@
           document.getElementById("new-district").value = "";
           document.getElementById("new-adhoc").checked = false;
           document.getElementById("new-adhoc").disabled = false;
+          var alldayReset = document.getElementById("new-allday");
+          if (alldayReset) {
+            alldayReset.checked = false;
+            ["new-time", "new-end-time"].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (el) { el.disabled = false; el.closest && el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.remove("dimmed"); }
+            });
+          }
           state.selectedParticipants = [];
           var pc = document.getElementById("participant-chips");
           if (pc) pc.innerHTML = "";
@@ -4501,6 +4544,21 @@
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
         }
+        /* Parse flexible time input into minutes-since-midnight (returns -1 if invalid) */
+        function parseTime(t) {
+          if (!t) return -1;
+          t = t.trim();
+          var m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*([AaPp][Mm])?$/);
+          if (!m) return -1;
+          var h = parseInt(m[1], 10),
+            mi = parseInt(m[2] || "0", 10);
+          var ap = (m[3] || "").toUpperCase();
+          if (ap === "PM" && h < 12) h += 12;
+          if (ap === "AM" && h === 12) h = 0;
+          if (h > 23 || mi > 59) return -1;
+          return h * 60 + mi;
+        }
+
         function saveTraining() {
           // Parse flexible time input into minutes-since-midnight (returns -1 if invalid)
           function parseTime(t) {
@@ -4533,29 +4591,17 @@
             return;
           }
 
+          var isAllDay = document.getElementById("new-allday") && document.getElementById("new-allday").checked;
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
-          if (!startTime) {
-            showToast("Start Time is required");
-            return;
-          }
-          if (!endTime) {
-            showToast("End Time is required");
-            return;
-          }
-          var startMins = parseTime(startTime);
-          var endMins = parseTime(endTime);
-          if (startMins === -1) {
-            showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM");
-            return;
-          }
-          if (endMins === -1) {
-            showToast("End Time format invalid — e.g. 11:00 or 11:00 AM");
-            return;
-          }
-          if (endMins <= startMins) {
-            showToast("End Time must be after Start Time");
-            return;
+          if (!isAllDay) {
+            if (!startTime) { showToast("Start Time is required"); return; }
+            if (!endTime) { showToast("End Time is required"); return; }
+            var startMins = parseTime(startTime);
+            var endMins = parseTime(endTime);
+            if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
+            if (endMins === -1) { showToast("End Time format invalid — e.g. 11:00 or 11:00 AM"); return; }
+            if (endMins <= startMins) { showToast("End Time must be after Start Time"); return; }
           }
 
           var trainerSel = document.getElementById("new-trainer");
@@ -4575,7 +4621,7 @@
             zone: document.getElementById("new-zone").value,
             region: document.getElementById("new-region").value,
             district: document.getElementById("new-district").value,
-            branch: document.getElementById("new-branch").value.trim() || null,
+            branch: state.selectedBranch || null,
             trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
@@ -4824,14 +4870,42 @@
         document.getElementById("btn-save-training").onclick = saveTraining;
 
         /* ---------- Branch custom dropdown (Add Training modal) ---------- */
+        var dialogFn = {
+          renderPChips: function () {},
+          openPop: function () {},
+          closePop: function () {},
+        };
         (function () {
           var branchInput = document.getElementById("new-branch");
           var branchDd = document.getElementById("branch-dropdown");
-          var selectedBranch = "";
+
+          function setGeo(geo) {
+            document.getElementById("new-zone").value = geo.zone || "";
+            document.getElementById("new-region").value = geo.region || "";
+            document.getElementById("new-district").value = geo.district || "";
+          }
+
+          function branchLabel(b) {
+            return b && b.branch ? b.name + " - " + b.branch : b.name;
+          }
+
+          function findBranch(code) {
+            if (!code) return null;
+            var found = null;
+            (state.branchPick || []).forEach(function (b) {
+              if (b.name === code) found = b;
+            });
+            return found;
+          }
 
           function renderDropdown(filter) {
-            var opts = (state.branchOptions || []).filter(function (b) {
-              return !filter || b.toLowerCase().includes(filter.toLowerCase());
+            var q = (filter || "").trim().toLowerCase();
+            var opts = (state.branchPick || []).filter(function (b) {
+              if (!q) return true;
+              return (
+                (b.name || "").toLowerCase().indexOf(q) !== -1 ||
+                (b.branch || "").toLowerCase().indexOf(q) !== -1
+              );
             });
             if (!opts.length) {
               branchDd.innerHTML =
@@ -4841,14 +4915,17 @@
                 .map(function (b) {
                   return (
                     '<div class="branch-opt" data-val="' +
-                    esc(b) +
+                    esc(b.name) +
                     '" style="' +
                     "padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);" +
-                    (b === selectedBranch
+                    (b.name === state.selectedBranch
                       ? "background:var(--accent-soft);color:var(--accent-ink);font-weight:600;"
                       : "") +
                     '">' +
-                    esc(b) +
+                    '<span style="flex:1">' +
+                    esc(b.name) +
+                    (b.branch ? " &middot; " + esc(b.branch) : "") +
+                    "</span>" +
                     "</div>"
                   );
                 })
@@ -4862,16 +4939,18 @@
           }
 
           function selectBranch(val) {
-            selectedBranch = val;
-            branchInput.value = val;
+            var found = findBranch(val);
+            state.selectedBranch = val || "";
+            branchInput.value = found ? branchLabel(found) : val || "";
             closeDd();
+            if (!val) {
+              setGeo({});
+              return;
+            }
             // Auto-fill geo
             api("get_branch_geo", { branch: val })
               .then(function (geo) {
-                document.getElementById("new-zone").value = geo.zone || "";
-                document.getElementById("new-region").value = geo.region || "";
-                document.getElementById("new-district").value =
-                  geo.district || "";
+                setGeo(geo || {});
               })
               .catch(function () {});
           }
@@ -4882,10 +4961,8 @@
           });
 
           branchInput.addEventListener("input", function () {
-            selectedBranch = "";
-            document.getElementById("new-zone").value = "";
-            document.getElementById("new-region").value = "";
-            document.getElementById("new-district").value = "";
+            state.selectedBranch = "";
+            setGeo({});
             renderDropdown(this.value);
           });
 
@@ -4901,14 +4978,13 @@
             if (!branchInput.contains(e.target) && !branchDd.contains(e.target))
               closeDd();
           });
+
+          dialogFn.branchSelect = function (code) {
+            selectBranch(code);
+          };
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
-        var dialogFn = {
-          renderPChips: function () {},
-          openPop: function () {},
-          closePop: function () {},
-        };
         (function () {
           var pSearch = document.getElementById("new-participant-search");
           var pDd = document.getElementById("participant-dropdown");
@@ -4920,6 +4996,10 @@
           );
           var pDone = document.getElementById("btn-participant-done");
           var pAttendee = document.getElementById("nt-attendee");
+          var pMore = document.getElementById("participant-more");
+          var pRange = document.getElementById("participant-range");
+          var pLoad = document.getElementById("btn-participant-load");
+          var pLimit = 20;
 
           function pLabel() {
             var n = state.selectedParticipants.length;
@@ -4931,9 +5011,8 @@
           }
 
           function pEmployees() {
-            var branch =
-              (document.getElementById("new-branch") || {}).value || "";
-            var bq = branch.toLowerCase();
+            var branch = state.selectedBranch;
+            var bq = (branch || "").toLowerCase();
             return (state.allEmployees || []).filter(function (emp) {
               if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq)
                 return false;
@@ -4943,9 +5022,26 @@
             });
           }
 
-          function renderPDd(filter) {
-            var q = (filter || "").trim().toLowerCase();
-            var list = pEmployees().filter(function (emp) {
+          function pRowHtml(emp) {
+            var code = emp.name || "";
+            var br = emp.sahayog_branch || "";
+            return (
+              '<div class="branch-opt" data-val="' +
+              esc(emp.name) +
+              '">' +
+              "<span>" +
+              esc(emp.employee_name || emp.name) +
+              "</span>" +
+              '<span style="color:var(--ink-3);font-size:11px">' +
+              escP(code) +
+              (br && code ? " &middot; " : "") +
+              (br ? escP(br) : "") +
+              "</span></div>"
+            );
+          }
+
+          function pRows(q) {
+            return pEmployees().filter(function (emp) {
               var hay = (
                 emp.employee_name +
                 " " +
@@ -4955,30 +5051,34 @@
               ).toLowerCase();
               return !q || hay.indexOf(q) !== -1;
             });
+          }
+
+          function pShown() {
+            return pDd.querySelectorAll(".branch-opt").length;
+          }
+
+          function pMoreFoot(total) {
+            var shown = pShown();
+            if (pRange)
+              pRange.textContent =
+                "Showing " +
+                shown +
+                " of " +
+                total +
+                (total === 1 ? " employee" : " employees");
+            if (pMore) pMore.style.display = shown < total ? "flex" : "none";
+          }
+
+          function renderPDd(filter) {
+            var q = (filter || "").trim().toLowerCase();
+            var list = pRows(q);
             if (!list.length) {
               pDd.innerHTML =
                 '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+              if (pMore) pMore.style.display = "none";
             } else {
-              pDd.innerHTML = list
-                .map(function (emp) {
-                  var code = emp.name || "";
-                  var br = emp.sahayog_branch || "";
-                  return (
-                    '<div class="branch-opt" data-val="' +
-                    esc(emp.name) +
-                    '">' +
-                    "<span>" +
-                    esc(emp.employee_name || emp.name) +
-                    "</span>" +
-                    '<span style="color:var(--ink-3);font-size:11px">' +
-                    escP(code) +
-                    (br && code ? " &middot; " : "") +
-                    (br ? escP(br) : "") +
-                    "</span>" +
-                    "</div>"
-                  );
-                })
-                .join("");
+              pDd.innerHTML = list.slice(0, pLimit).map(pRowHtml).join("");
+              pMoreFoot(list.length);
             }
             pDd.style.display = "block";
           }
@@ -5075,6 +5175,21 @@
             });
           }
           if (pDone) pDone.addEventListener("click", closePop);
+          if (pLoad) {
+            pLoad.addEventListener("click", function () {
+              var q = (pSearch ? pSearch.value : "").trim().toLowerCase();
+              var list = pRows(q);
+              var start = pShown();
+              var chunk = list.slice(start, start + pLimit);
+              if (chunk.length) {
+                pDd.insertAdjacentHTML(
+                  "beforeend",
+                  chunk.map(pRowHtml).join(""),
+                );
+              }
+              pMoreFoot(list.length);
+            });
+          }
           document.addEventListener("click", function (e) {
             if (!pAttendee || pAttendee.contains(e.target)) return;
             if (pPop && !pPop.contains(e.target)) closePop();
@@ -5125,40 +5240,84 @@
           );
         }
         function updateSchedulePreview() {
-          var fEl = document.getElementById("new-from-date");
-          var tEl = document.getElementById("new-to-date");
-          var sEl = document.getElementById("new-time");
-          var eEl = document.getElementById("new-end-time");
-          var pvEl = document.getElementById("new-schedule-preview");
-          var hintEl = document.getElementById("new-schedule-hint");
-          var f = fEl ? fEl.value : "";
-          var t = tEl ? tEl.value : "";
-          var st = sEl ? sEl.value.trim() : "";
-          var et = eEl ? eEl.value.trim() : "";
+          var fEl      = document.getElementById("new-from-date");
+          var tEl      = document.getElementById("new-to-date");
+          var sEl      = document.getElementById("new-time");
+          var eEl      = document.getElementById("new-end-time");
+          var pvEl     = document.getElementById("new-schedule-preview");
+          var hintEl   = document.getElementById("new-schedule-hint");
+          var alldayEl = document.getElementById("new-allday");
+          var isAllDay = alldayEl && alldayEl.checked;
+          var f  = fEl ? fEl.value : "";
+          var t  = tEl ? tEl.value : "";
+          var st = (!isAllDay && sEl) ? sEl.value.trim() : "";
+          var et = (!isAllDay && eEl) ? eEl.value.trim() : "";
+
+          // preview
           if (pvEl) {
             var parts = [];
             if (f && t === f) parts.push(fmtSchDate(f));
             else if (f && t) parts.push(fmtSchDate(f) + " – " + fmtSchDate(t));
-            var ts = [];
-            if (st) ts.push(fmtSchTime(st));
-            if (et) ts.push(fmtSchTime(et));
-            if (ts.length) parts.push(ts.join(" – "));
-            pvEl.textContent = parts.length
-              ? parts.join("    ")
-              : "Select date and time";
+            if (isAllDay) {
+              parts.push("All day");
+            } else {
+              var ts = [];
+              if (st) ts.push(fmtSchTime(st));
+              if (et) ts.push(fmtSchTime(et));
+              if (ts.length) parts.push(ts.join(" – "));
+            }
+            pvEl.textContent = parts.length ? parts.join("    ") : "Select date and time";
           }
+
+          // hint: count + overlap warning
           if (hintEl) {
-            var existing = (state.calEvents || []).filter(function (ev) {
+            var onDate = (state.calEvents || []).filter(function (ev) {
               return f && evStart(ev) <= f && evEnd(ev) >= f;
-            }).length;
-            hintEl.textContent = existing
-              ? existing +
-                " existing training" +
-                (existing === 1 ? "" : "s") +
-                " on this date"
-              : "";
+            });
+            var count = onDate.length;
+
+            // check time overlap if start+end time given
+            var stMins = parseTime(st);
+            var etMins = parseTime(et);
+            var hasOverlap = false;
+            if (!isAllDay && stMins !== -1 && etMins !== -1 && count > 0) {
+              hasOverlap = onDate.some(function (ev) {
+                var evSt = parseTime(ev.time || "");
+                var evEt = parseTime(ev.end_time || "");
+                if (evSt === -1 || evEt === -1) return false;
+                return stMins < evEt && etMins > evSt;
+              });
+            }
+
+            if (hasOverlap) {
+              hintEl.textContent = "⚠️ Time overlaps with an existing training on this date";
+              hintEl.className = "nt-sched-hint overlap";
+            } else if (count > 0) {
+              hintEl.textContent = count + " existing training" + (count === 1 ? "" : "s") + " on this date";
+              hintEl.className = "nt-sched-hint has";
+            } else {
+              hintEl.textContent = "";
+              hintEl.className = "nt-sched-hint";
+            }
           }
         }
+
+        /* All day toggle — dim/enable time inputs */
+        (function () {
+          var alldayEl = document.getElementById("new-allday");
+          if (!alldayEl) return;
+          alldayEl.addEventListener("change", function () {
+            var isAllDay = alldayEl.checked;
+            ["new-time", "new-end-time"].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (!el) return;
+              el.disabled = isAllDay;
+              el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.toggle("dimmed", isAllDay);
+            });
+            updateSchedulePreview();
+          });
+        })();
+
         ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
           function (id) {
             var el = document.getElementById(id);
@@ -5187,16 +5346,17 @@
           agenda.addEventListener("blur", maybeCollapse);
         })();
 
-        document.getElementById("btn-scheduler").onclick = function () {
-          var fd = document.getElementById("new-from-date");
-          if (!fd) return;
-          fd.focus();
-          if (fd.showPicker) {
-            try {
-              fd.showPicker();
-            } catch (e) {}
-          }
-        };
+        var schedulerBtn = document.getElementById("btn-scheduler");
+        if (schedulerBtn) {
+          schedulerBtn.onclick = function () {
+            var fd = document.getElementById("new-from-date");
+            if (!fd) return;
+            fd.focus();
+            if (fd.showPicker) {
+              try { fd.showPicker(); } catch (e) {}
+            }
+          };
+        }
 
         /* ============================================================
            TRAININGS TAB — list view
