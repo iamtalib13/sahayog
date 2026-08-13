@@ -154,6 +154,8 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "from_date": from_date,
             "to_date": to_date,
             "time": _format_time(r.start_time),
+            "start_time": _format_time(r.start_time),
+            "end_time": _format_time(r.end_time),
             "training_program": r.training_program or "",
             "trainer": r.trainer,
             "trainer_name": r.trainer or "",
@@ -456,6 +458,23 @@ def get_geo_options():
         "districts": sorted(d for d in districts if d),
         "branches": sorted(branches or []),
     }
+
+
+@frappe.whitelist()
+def get_branch_options():
+    """Branches for the Add Training picker: name (code) + display name, sorted."""
+    filters = (
+        {"disabled": ["!=", 1]}
+        if frappe.db.has_column("Sahayog Branch", "disabled")
+        else None
+    )
+    return frappe.db.get_all(
+        "Sahayog Branch",
+        fields=["name", "branch", "district", "region", "zone"],
+        filters=filters,
+        order_by="name asc",
+        limit_page_length=0,
+    )
 
 
 @frappe.whitelist()
