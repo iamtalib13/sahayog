@@ -38,6 +38,13 @@ def _is_trainer():
     return bool(TRAINER_ROLES & set(frappe.get_roles(frappe.session.user)))
 
 
+def _owner_scope():
+    """Non-admin trainers only see trainings they created (all others see all)."""
+    if _is_admin() or not _is_trainer():
+        return {}
+    return {"owner": frappe.session.user}
+
+
 def _safe_year_month(year, month):
     try:
         year = int(year)
@@ -117,6 +124,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         # Any training whose date range overlaps the requested month
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
+    filters.update(_owner_scope())
     if zone: filters["zone"] = zone
     if region: filters["region"] = region
     if district: filters["district"] = district
@@ -185,6 +193,7 @@ def get_training_list(
 ):
     """Flat, filterable list of training records for the Trainings tab."""
     filters = {"docstatus": ["<", 2]}
+    filters.update(_owner_scope())
     if zone:
         filters["zone"] = zone
     if region:
@@ -253,6 +262,10 @@ def get_training_list(
 @frappe.whitelist()
 def get_training_details(name):
     """Single training record (drawer view)."""
+    if not _is_admin() and _is_trainer():
+        owner = frappe.db.get_value("Training", name, "owner")
+        if owner != frappe.session.user:
+            frappe.throw(_("You don't have permission to view this training."))
     doc = frappe.get_doc("Training", name)
     r = doc.as_dict()
     r["date"] = str(doc.from_date or "")[:10]
@@ -301,6 +314,7 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
         "docstatus": ["<", 2],
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
+    filters.update(_owner_scope())
     if zone: filters["zone"] = zone
     if region: filters["region"] = region
     if district: filters["district"] = district
