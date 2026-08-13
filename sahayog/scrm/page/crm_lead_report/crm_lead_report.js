@@ -679,7 +679,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 <td>{{ f.size_mb }} MB</td>
                                 <td>{{ f.modified_at }}</td>
                                 <td>
-                                    <span v-if="f.is_active" class="badge badge-success px-2 py-1">🟢 Active</span>
+                                    <span v-if="f.is_info" class="badge badge-secondary px-2 py-1">⚙️ Metadata</span>
+                                    <span v-else-if="f.is_active" class="badge badge-success px-2 py-1">🟢 Active</span>
                                     <span v-else-if="f.is_backup" class="badge badge-info px-2 py-1">🛡️ Backup</span>
                                     <span v-else class="badge badge-secondary px-2 py-1">Archived</span>
                                 </td>
