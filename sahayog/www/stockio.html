@@ -19289,8 +19289,59 @@
           }
         }
       },
-      downloadCSV(format = 'csv') {
-        if (!this.filteredRows || this.filteredRows.length === 0) {
+      async downloadCSV(format = 'csv') {
+        let allRows = [];
+        this.loading = true;
+        try {
+          if (this.activeItem === 'Asset Master') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data;
+            }
+          } else if (this.activeItem === 'Branch Stock') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: (this.userInventoryType || this.searchText) ? null : this.userWarehouse,
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+                filter_type: this.branchStockFilter,
+                item_code: this.filterForm.item_code,
+                warehouse_filter: this.filterForm.warehouse,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data.map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
+            }
+          } else {
+            allRows = this.filteredRows;
+          }
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Error fetching all records for download");
+          this.loading = false;
+          return;
+        } finally {
+          this.loading = false;
+        }
+
+        if (!allRows || allRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
@@ -19308,7 +19359,7 @@
         }
 
         // Build row data array
-        const rows = this.filteredRows.map(row =>
+        const rows = allRows.map(row =>
           keys.map(key => (row[key] !== undefined && row[key] !== null ? row[key] : ""))
         );
 
