@@ -1823,19 +1823,103 @@
         gap: 8px;
         margin-top: 16px;
       }
-      .report-modal {
-        width: min(1120px, 96vw);
-        max-width: 96vw;
+      /* Reports view */
+      .report-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+        margin-top: 4px;
+      }
+      .report-card {
+        display: flex;
+        gap: 14px;
+        padding: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s,
+          transform 0.15s;
+      }
+      .report-card:hover,
+      .report-card:focus-visible {
+        border-color: var(--accent);
+        box-shadow: 0 6px 20px rgba(16, 24, 40, 0.08);
+        transform: translateY(-1px);
+        outline: none;
+      }
+      .report-card-icon {
+        flex: 0 0 auto;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        display: grid;
+        place-items: center;
+      }
+      .report-card-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+      .report-card-body {
+        min-width: 0;
+      }
+      .report-card-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ink-1);
+        margin-bottom: 4px;
+      }
+      .report-card-desc {
+        font-size: 12.5px;
+        color: var(--ink-3);
+        line-height: 1.45;
+        margin-bottom: 10px;
+      }
+      .report-card-link {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--accent-ink);
+      }
+      .report-detail-top {
+        margin-bottom: 4px;
+      }
+      .btn-ghost {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--ink-2);
+        font-weight: 600;
+        font-size: 12.5px;
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+      }
+      .btn-ghost:hover {
+        background: var(--surface-2);
+        color: var(--ink-1);
+      }
+      #reportDetail {
         display: flex;
         flex-direction: column;
-        max-height: min(92vh, 900px);
+        gap: 14px;
+        flex: 1;
+        min-height: 0;
       }
-      .report-controls {
+      .report-toolbar {
         display: flex;
         align-items: flex-end;
-        gap: 10px;
-        margin-bottom: 12px;
+        gap: 8px;
         flex-wrap: wrap;
+      }
+      .report-toolbar .field-select {
+        height: 32px;
+        font-size: 12px;
+        padding: 0 7px;
+        min-width: 96px;
+        max-width: 130px;
       }
       .report-month-label {
         display: flex;
@@ -1846,9 +1930,10 @@
         color: var(--ink-3);
       }
       .report-month-label input {
+        height: 32px;
         border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 6px 8px;
+        border-radius: var(--radius-sm);
+        padding: 0 8px;
         font-size: 12.5px;
         font-family: inherit;
         color: var(--ink-1);
@@ -1858,20 +1943,45 @@
       .report-month-label input:focus {
         border-color: var(--accent);
       }
-      .report-spacer {
+      .report-input {
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        font-size: 12.5px;
+        font-family: inherit;
+        color: var(--ink-1);
+        outline: none;
+      }
+      .report-input:focus {
+        border-color: var(--accent);
+      }
+      .report-emp-search {
+        min-width: 170px;
         flex: 1;
+        max-width: 240px;
+      }
+      .report-dash {
+        color: var(--ink-3);
+        font-size: 12px;
+        padding-bottom: 9px;
       }
       .report-count {
         font-size: 12px;
         color: var(--ink-3);
         font-weight: 600;
       }
-      .report-body {
+      .report-spacer {
+        flex: 1;
+      }
+      .report-scroll {
         overflow: auto;
-        max-height: 62vh;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface);
+        flex: 1;
+        min-height: 0;
       }
       .report-table {
         width: 100%;
@@ -2395,9 +2505,9 @@
               <span class="item-label">Trainings</span>
             </button>
             <button
-              class="nav-item nav-placeholder"
+              class="nav-item"
               id="nav-reports"
-              title="Reports — MIS detail report (Excel format)"
+              title="Reports — MIS and employee training reports"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -2743,6 +2853,170 @@
             </div>
           </div>
         </div>
+
+        <!-- ===== Reports view ===== -->
+        <div class="trainings-view" id="reportsView" style="display: none">
+          <!-- Home: report options -->
+          <div id="reportsHome">
+            <div class="tr-head-row">
+              <div>
+                <h2>Reports</h2>
+                <p class="tr-sub">View and export L&D training reports</p>
+              </div>
+            </div>
+
+            <div class="report-cards">
+              <div class="report-card" id="report-card-mis" role="button" tabindex="0">
+                <div class="report-card-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 3v18h18" />
+                    <path d="M7 15l4-4 3 3 5-6" />
+                  </svg>
+                </div>
+                <div class="report-card-body">
+                  <div class="report-card-title">MIS Monthly Report</div>
+                  <div class="report-card-desc">
+                    Monthly consolidated training data for MIS/HO reporting.
+                  </div>
+                  <span class="report-card-link">View Report →</span>
+                </div>
+              </div>
+
+              <div class="report-card" id="report-card-emp" role="button" tabindex="0">
+                <div class="report-card-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <div class="report-card-body">
+                  <div class="report-card-title">Employee Training Report</div>
+                  <div class="report-card-desc">
+                    Employee-wise training attendance and training history.
+                  </div>
+                  <span class="report-card-link">View Report →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detail: single report view -->
+          <div id="reportDetail" style="display: none">
+            <div class="report-detail-top">
+              <button class="btn btn-ghost" id="report-back">← Back to Reports</button>
+            </div>
+            <div class="tr-head-row">
+              <div>
+                <h2 id="reportDetailTitle">MIS Monthly Training Report</h2>
+                <p class="tr-sub" id="reportDetailSub"></p>
+              </div>
+            </div>
+
+            <!-- MIS toolbar -->
+            <div class="report-toolbar" id="misToolbar">
+              <label class="report-month-label">
+                Month
+                <input type="month" id="mis-month" />
+              </label>
+              <span class="report-spacer"></span>
+              <span class="report-count" id="mis-count"></span>
+              <button class="btn btn-primary" id="mis-export" type="button">
+                Export CSV
+              </button>
+              <button
+                class="btn"
+                id="mis-send"
+                type="button"
+                disabled
+                title="Coming soon — validated monthly mail to MIS HO"
+              >
+                Send to MIS HO
+              </button>
+            </div>
+
+            <!-- Employee toolbar -->
+            <div class="report-toolbar" id="empToolbar" style="display: none">
+              <input
+                class="report-input report-emp-search"
+                id="emp-search"
+                placeholder="Employee name or ID"
+                autocomplete="off"
+              />
+              <input type="date" class="report-input" id="emp-from" title="From date" />
+              <span class="report-dash">–</span>
+              <input type="date" class="report-input" id="emp-to" title="To date" />
+              <select class="field-select" id="emp-zone"></select>
+              <select class="field-select" id="emp-region"></select>
+              <select class="field-select" id="emp-district"></select>
+              <select class="field-select" id="emp-branch"></select>
+              <button class="btn btn-primary" id="emp-export" type="button">
+                Export CSV
+              </button>
+              <span class="report-spacer"></span>
+              <span class="report-count" id="emp-count"></span>
+            </div>
+
+            <div class="report-scroll" id="reportBody">
+              <div style="padding: 20px; color: var(--ink-3)">
+                Select a report to view data.
+              </div>
+            </div>
+
+            <!-- Report pagination -->
+            <div class="tr-pagination" id="rpPagination">
+              <div class="pg-left">
+                <span class="pg-label">Rows per page:</span>
+                <select class="pg-size-select" id="rp-page-size">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+              <div class="pg-right">
+                <span class="pg-info" id="rp-pg-info"></span>
+                <button class="pg-btn" id="rp-pg-prev" title="Previous page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <div class="pg-nums" id="rp-pg-nums"></div>
+                <button class="pg-btn" id="rp-pg-next" title="Next page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
 
@@ -3074,44 +3348,6 @@
       </div>
     </div>
 
-    <!-- Modal: MIS detail report (Excel format, L&D Admin) -->
-    <div class="modal-wrap" id="reportModal">
-      <div class="modal report-modal">
-        <div class="modal-head">
-          <h3>L&amp;D MIS Report</h3>
-          <button class="modal-close" data-close="reportModal" title="Close">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              width="15"
-              height="15"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="report-controls">
-          <label class="report-month-label">
-            Month
-            <input type="month" id="report-month" />
-          </label>
-          <button class="btn" id="report-load" type="button">Load</button>
-          <span class="report-spacer"></span>
-          <span class="report-count" id="report-count"></span>
-          <button class="btn btn-primary" id="report-export" type="button">
-            Export CSV
-          </button>
-        </div>
-        <div id="reportBody" class="report-body">
-          <div style="padding: 20px; color: var(--ink-3)">Select a month and click Load.</div>
-        </div>
-      </div>
-    </div>
-
     <div class="toast" id="toast"></div>
 
     <script>
@@ -3417,6 +3653,8 @@
           document.getElementById("misBtn").style.display = r.showMis
             ? "grid"
             : "none";
+          var navRep = document.getElementById("nav-reports");
+          if (navRep) navRep.style.display = r.showMis ? "" : "none";
         }
 
         /* ---------- Filters ---------- */
@@ -3453,6 +3691,10 @@
               fillSelect("tr-region", regions, "All Regions");
               fillSelect("tr-district", districts, "All Districts");
               fillSelect("tr-branch", branches, "All Branches");
+              fillSelect("emp-zone", zones, "All Zones");
+              fillSelect("emp-region", regions, "All Regions");
+              fillSelect("emp-district", districts, "All Districts");
+              fillSelect("emp-branch", branches, "All Branches");
               state.branchOptions = branches;
               return Promise.all([
                 api("get_trainer_options", { enabled_only: 1 }),
@@ -4865,25 +5107,87 @@
           };
         }
 
-        /* ---------- MIS detail report (Excel format, L&D Admin) ---------- */
+        /* ---------- Reports section (MIS + Employee training reports) ---------- */
         state.reportData = null;
+        var activeReport = null;
 
-        function openReportModal() {
+        var REPORT_DEFS = {
+          mis: {
+            title: "MIS Monthly Training Report",
+            sub: "Monthly consolidated training data for MIS/HO reporting.",
+            empty: "Select a month and click Load.",
+            api: "get_mis_report",
+            file: "L&D_MIS_Report_",
+          },
+          emp: {
+            title: "Employee Training Report",
+            sub: "Employee-wise training attendance and training history.",
+            empty: "Select a report to view data.",
+            api: "get_employee_training_report",
+            file: "L&D_Employee_Training_Report_",
+          },
+        };
+
+        function showReportsHome() {
+          activeReport = null;
+          var home = document.getElementById("reportsHome");
+          var detail = document.getElementById("reportDetail");
+          if (home) home.style.display = "block";
+          if (detail) detail.style.display = "none";
+        }
+
+        function openReportDetail(type) {
           if (!role().showMis) {
             showToast("Reports are available to L&D Admin only");
             return;
           }
-          var d = state.viewDate || new Date(today);
-          var key =
-            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-          var mEl = document.getElementById("report-month");
-          if (mEl) mEl.value = key;
-          loadReport();
-          document.getElementById("reportModal").classList.add("open");
+          if (!REPORT_DEFS[type]) return;
+          activeReport = type;
+          var def = REPORT_DEFS[type];
+          document.getElementById("reportsHome").style.display = "none";
+          document.getElementById("reportDetail").style.display = "flex";
+          document.getElementById("reportDetailTitle").textContent = def.title;
+          document.getElementById("reportDetailSub").textContent = def.sub;
+
+          var isMis = type === "mis";
+          document.getElementById("misToolbar").style.display = isMis
+            ? "flex"
+            : "none";
+          document.getElementById("empToolbar").style.display = isMis
+            ? "none"
+            : "flex";
+
+          var body = document.getElementById("reportBody");
+          body.innerHTML =
+            '<div style="padding:20px;color:var(--ink-3)">' +
+            def.empty +
+            "</div>";
+          document.getElementById(type + "-count").textContent = "";
+          state.reportData = null;
+          rpPage.current = 1;
+
+          if (isMis) {
+            var mEl = document.getElementById("mis-month");
+            if (mEl) {
+              var d = state.viewDate || new Date(today);
+              var key =
+                d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+              mEl.value = key;
+            }
+            loadReport();
+          } else {
+            var todayKey = isoOf(today);
+            var fromEl = document.getElementById("emp-from");
+            if (fromEl && !fromEl.value) fromEl.value = todayKey;
+            var toEl = document.getElementById("emp-to");
+            if (toEl && !toEl.value) toEl.value = todayKey;
+            loadEmpReport();
+          }
         }
 
         function loadReport() {
-          var mEl = document.getElementById("report-month");
+          if (activeReport === "emp") return loadEmpReport();
+          var mEl = document.getElementById("mis-month");
           var m = mEl ? mEl.value : "";
           if (!m) {
             showToast("Select a month first");
@@ -4892,8 +5196,12 @@
           var body = document.getElementById("reportBody");
           body.innerHTML =
             '<div style="padding:20px;color:var(--ink-3)">Loading report…</div>';
-          document.getElementById("report-count").textContent = "";
-          api("get_mis_report", { month: m })
+          document.getElementById("mis-count").textContent = "";
+          api("get_mis_report", {
+            month: m,
+            page: rpPage.current,
+            page_size: rpPage.size,
+          })
             .then(function (res) {
               state.reportData = res;
               renderReport(res);
@@ -4907,12 +5215,60 @@
             });
         }
 
+        function loadEmpReport() {
+          var body = document.getElementById("reportBody");
+          body.innerHTML =
+            '<div style="padding:20px;color:var(--ink-3)">Loading report…</div>';
+          document.getElementById("emp-count").textContent = "";
+          var params = {
+            employee:
+              document.getElementById("emp-search").value.trim() || undefined,
+            from_date: document.getElementById("emp-from").value || undefined,
+            to_date: document.getElementById("emp-to").value || undefined,
+            zone: document.getElementById("emp-zone").value || undefined,
+            region: document.getElementById("emp-region").value || undefined,
+            district: document.getElementById("emp-district").value || undefined,
+            branch: document.getElementById("emp-branch").value || undefined,
+            page: rpPage.current,
+            page_size: rpPage.size,
+          };
+          api("get_employee_training_report", params)
+            .then(function (res) {
+              state.reportData = res;
+              renderReport(res);
+            })
+            .catch(function (e) {
+              state.reportData = null;
+              body.innerHTML =
+                '<div style="padding:20px;color:var(--ink-3)">' +
+                esc((e && e.message) || "Could not load report") +
+                "</div>";
+            });
+        }
+
+        function goReportPage() {
+          if (activeReport === "emp") loadEmpReport();
+          else loadReport();
+        }
+
         function renderReport(res) {
           var cols = (res && res.columns) || [];
           var rows = (res && res.rows) || [];
+          var total = (res && res.total) || 0;
           var body = document.getElementById("reportBody");
-          var countEl = document.getElementById("report-count");
-          if (countEl) countEl.textContent = rows.length + " rows";
+          var countId = activeReport === "emp" ? "emp-count" : "mis-count";
+          var countEl = document.getElementById(countId);
+          if (countEl)
+            countEl.textContent = total
+              ? rows.length + " rows shown"
+              : "0 rows";
+
+          var pageSize = rpPage.size;
+          var totalPages = Math.max(1, Math.ceil(total / pageSize));
+          if (rpPage.current > totalPages) rpPage.current = 1;
+          var from = total ? (rpPage.current - 1) * pageSize + 1 : 0;
+          var to = Math.min(rpPage.current * pageSize, total);
+
           var head =
             "<thead><tr>" +
             cols
@@ -4927,8 +5283,9 @@
               '<tr><td colspan="' +
               cols.length +
               '" style="padding:16px;color:var(--ink-3);text-align:center">' +
-              "No trainings found for this month." +
+              "No trainings found." +
               "</td></tr>";
+            renderReportPagination(0, 0, 0, 1);
           } else {
             tbody = rows
               .map(function (r) {
@@ -4944,6 +5301,7 @@
                 );
               })
               .join("");
+            renderReportPagination(from, to, total, totalPages);
           }
           body.innerHTML =
             '<table class="report-table">' +
@@ -4953,38 +5311,125 @@
             "</tbody></table>";
         }
 
-        function exportReportCsv() {
-          var res = state.reportData;
-          if (!res || !res.rows.length) {
-            showToast("Load the report first");
-            return;
+        /* --- report pagination renderer (reuses .pg-* styles) --- */
+        function renderReportPagination(from, to, total, totalPages) {
+          var info = document.getElementById("rp-pg-info");
+          var nums = document.getElementById("rp-pg-nums");
+          var prevBtn = document.getElementById("rp-pg-prev");
+          var nextBtn = document.getElementById("rp-pg-next");
+          if (!info) return;
+
+          info.textContent = total
+            ? from + "–" + to + " of " + total
+            : "0 records";
+          prevBtn.disabled = rpPage.current <= 1;
+          nextBtn.disabled = rpPage.current >= totalPages;
+
+          var pages = [];
+          if (totalPages <= 7) {
+            for (var i = 1; i <= totalPages; i++) pages.push(i);
+          } else {
+            var cur = rpPage.current;
+            pages = [1];
+            if (cur > 3) pages.push("…");
+            for (
+              var p = Math.max(2, cur - 1);
+              p <= Math.min(totalPages - 1, cur + 1);
+              p++
+            )
+              pages.push(p);
+            if (cur < totalPages - 2) pages.push("…");
+            pages.push(totalPages);
           }
-          var cols = res.columns;
-          var m = (document.getElementById("report-month") || {}).value || "month";
-          var lines = [
-            cols.map(function (c) { return csvCell(c.label); }).join(","),
-          ];
-          res.rows.forEach(function (r) {
-            lines.push(
-              cols
-                .map(function (c) {
-                  return csvCell(r[c.key]);
-                })
-                .join(","),
-            );
+
+          nums.innerHTML = pages
+            .map(function (p) {
+              if (p === "…") return '<span class="pg-ellipsis">…</span>';
+              return (
+                '<button class="pg-num' +
+                (p === rpPage.current ? " active" : "") +
+                '" data-pg="' +
+                p +
+                '">' +
+                p +
+                "</button>"
+              );
+            })
+            .join("");
+
+          nums.querySelectorAll(".pg-num:not(.active)").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              rpPage.current = parseInt(btn.dataset.pg, 10);
+              goReportPage();
+            });
           });
-          var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
-            type: "text/csv;charset=utf-8;",
-          });
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "L&D_MIS_Report_" + m + ".csv";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function () {
-            URL.revokeObjectURL(a.href);
-            a.remove();
-          }, 100);
+        }
+
+        function exportReportCsv() {
+          var key = activeReport === "emp" ? "emp" : "mis";
+          var def = REPORT_DEFS[key];
+          var params;
+          var tag;
+          if (key === "emp") {
+            params = {
+              employee:
+                document.getElementById("emp-search").value.trim() || undefined,
+              from_date: document.getElementById("emp-from").value || undefined,
+              to_date: document.getElementById("emp-to").value || undefined,
+              zone: document.getElementById("emp-zone").value || undefined,
+              region: document.getElementById("emp-region").value || undefined,
+              district: document.getElementById("emp-district").value || undefined,
+              branch: document.getElementById("emp-branch").value || undefined,
+            };
+            var e = document.getElementById("emp-search").value.trim();
+            var d = document.getElementById("emp-to").value || "ytd";
+            tag = e || d;
+          } else {
+            var m = (document.getElementById("mis-month") || {}).value || "";
+            if (!m) {
+              showToast("Select a month first");
+              return;
+            }
+            params = { month: m };
+            tag = m;
+          }
+          params.page_size = 0;
+          api(def.api, params)
+            .then(function (res) {
+              var cols = (res && res.columns) || [];
+              var rows = (res && res.rows) || [];
+              if (!rows.length) {
+                showToast("No data to export");
+                return;
+              }
+              var lines = [
+                cols.map(function (c) { return csvCell(c.label); }).join(","),
+              ];
+              rows.forEach(function (r) {
+                lines.push(
+                  cols
+                    .map(function (c) {
+                      return csvCell(r[c.key]);
+                    })
+                    .join(","),
+                );
+              });
+              var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
+                type: "text/csv;charset=utf-8;",
+              });
+              var a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = def.file + (tag || "") + ".csv";
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(function () {
+                URL.revokeObjectURL(a.href);
+                a.remove();
+              }, 100);
+            })
+            .catch(function (e) {
+              showToast((e && e.message) || "Could not export report");
+            });
         }
 
         function csvCell(v) {
@@ -4992,18 +5437,91 @@
           return '"' + s.replace(/"/g, '""') + '"';
         }
 
+        function debounce(fn, ms) {
+          var t = null;
+          return function () {
+            var self = this,
+              args = arguments;
+            clearTimeout(t);
+            t = setTimeout(function () {
+              fn.apply(self, args);
+            }, ms);
+          };
+        }
+
         document
-          .getElementById("report-load")
-          .addEventListener("click", loadReport);
-        document
-          .getElementById("report-export")
+          .getElementById("mis-export")
           .addEventListener("click", exportReportCsv);
         document
-          .getElementById("report-month")
-          .addEventListener("change", loadReport);
+          .getElementById("mis-month")
+          .addEventListener("change", onMisFilter);
+        document
+          .getElementById("emp-export")
+          .addEventListener("click", exportReportCsv);
+        document
+          .getElementById("emp-search")
+          .addEventListener("input", debounce(onEmpFilter, 350));
+        ["emp-from", "emp-to", "emp-zone", "emp-region", "emp-district", "emp-branch"]
+          .forEach(function (id) {
+            document.getElementById(id).addEventListener("change", onEmpFilter);
+          });
         document
           .getElementById("nav-reports")
-          .addEventListener("click", openReportModal);
+          .addEventListener("click", function () {
+            switchTab("reports");
+          });
+        document
+          .getElementById("report-card-mis")
+          .addEventListener("click", function () {
+            openReportDetail("mis");
+          });
+        document
+          .getElementById("report-card-emp")
+          .addEventListener("click", function () {
+            openReportDetail("emp");
+          });
+        ["report-card-mis", "report-card-emp"].forEach(function (id) {
+          document.getElementById(id).addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.target.click();
+            }
+          });
+        });
+        document
+          .getElementById("report-back")
+          .addEventListener("click", showReportsHome);
+
+        /* report pagination controls */
+        document.getElementById("rp-page-size").addEventListener("change", function () {
+          rpPage.size = parseInt(this.value, 10);
+          rpPage.current = 1;
+          goReportPage();
+        });
+        document.getElementById("rp-pg-prev").addEventListener("click", function () {
+          if (rpPage.current > 1) {
+            rpPage.current--;
+            goReportPage();
+          }
+        });
+        document.getElementById("rp-pg-next").addEventListener("click", function () {
+          var total = (state.reportData && state.reportData.total) || 0;
+          var pages = Math.max(1, Math.ceil(total / rpPage.size));
+          if (rpPage.current < pages) {
+            rpPage.current++;
+            goReportPage();
+          }
+        });
+
+        /* filter changes reset to page 1 before a fresh backend fetch */
+        function onMisFilter() {
+          rpPage.current = 1;
+          loadReport();
+        }
+        function onEmpFilter() {
+          rpPage.current = 1;
+          loadEmpReport();
+        }
 
         /* ---------- Toast ---------- */
         var toastTimer = null;
@@ -5627,6 +6145,7 @@
           range: "all",
         };
         var trPage = { current: 1, size: 10 };
+        var rpPage = { current: 1, size: 10 };
 
         /* --- nav switch: Calendar ↔ Trainings --- */
         var activeTab = "calendar"; // "calendar" | "trainings"
@@ -5635,21 +6154,20 @@
           activeTab = tab;
           var calView = document.getElementById("calView");
           var trView = document.getElementById("trainingsView");
+          var repView = document.getElementById("reportsView");
           var navCal = document.getElementById("nav-calendar");
           var navTr = document.getElementById("nav-trainings");
+          var navRep = document.getElementById("nav-reports");
 
-          if (tab === "trainings") {
-            calView.style.display = "none";
-            trView.style.display = "flex";
-            navCal.classList.remove("active");
-            navTr.classList.add("active");
-            renderTrainings();
-          } else {
-            trView.style.display = "none";
-            calView.style.display = "flex";
-            navTr.classList.remove("active");
-            navCal.classList.add("active");
-          }
+          calView.style.display = tab === "calendar" ? "flex" : "none";
+          trView.style.display = tab === "trainings" ? "flex" : "none";
+          repView.style.display = tab === "reports" ? "flex" : "none";
+          if (navCal) navCal.classList.toggle("active", tab === "calendar");
+          if (navTr) navTr.classList.toggle("active", tab === "trainings");
+          if (navRep) navRep.classList.toggle("active", tab === "reports");
+
+          if (tab === "trainings") renderTrainings();
+          if (tab === "reports") showReportsHome();
         }
 
         document
