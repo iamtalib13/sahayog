@@ -276,20 +276,6 @@
         gap: 6px;
         flex-shrink: 0;
       }
-      .avatar {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: var(--accent);
-        color: #fff;
-        display: grid;
-        place-items: center;
-        font-size: 12px;
-        font-weight: 600;
-        margin-left: 2px;
-        flex-shrink: 0;
-        user-select: none;
-      }
 
       /* ---------- Sidebar ---------- */
       .sidebar {
@@ -2587,25 +2573,6 @@
         </div>
         <div class="header-spacer"></div>
         <div class="header-right">
-          <button
-            class="icon-btn"
-            id="misBtn"
-            title="Monthly MIS report"
-            style="display: none"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 12v-2a5 5 0 00-5-5H8a5 5 0 00-5 5v2" />
-              <path d="M3 12h5l2 3h4l2-3h5v5a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            </svg>
-          </button>
-          <div class="avatar" id="avatar">A</div>
         </div>
       </header>
 
@@ -3324,30 +3291,6 @@
       </div>
     </div>
 
-    <!-- Modal: MIS report preview (admin) -->
-    <div class="modal-wrap" id="misModal">
-      <div class="modal">
-        <div class="modal-head">
-          <h3>Monthly MIS Report</h3>
-          <button class="modal-close" data-close="misModal" title="Close">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              width="15"
-              height="15"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div id="misBody"></div>
-      </div>
-    </div>
-
     <div class="toast" id="toast"></div>
 
     <script>
@@ -3646,13 +3589,9 @@
           badge.textContent = r.label;
           badge.className = "role-badge " + r.badge;
           document.getElementById("headerSub").textContent = r.sub;
-          document.getElementById("avatar").textContent = r.label.charAt(0);
           document.getElementById("sidebarFooter").textContent = r.label;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
-          document.getElementById("misBtn").style.display = r.showMis
-            ? "grid"
-            : "none";
           var navRep = document.getElementById("nav-reports");
           if (navRep) navRep.style.display = r.showMis ? "" : "none";
         }
@@ -5023,90 +4962,6 @@
             });
         }
 
-        /* ---------- MIS report (admin, demo preview) ---------- */
-        function openMisModal() {
-          var d = state.viewDate || new Date(today);
-          var key =
-            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-          var evs = filteredEvents().filter(function (e) {
-            return evStart(e).slice(0, 7) === key;
-          });
-          var counts = statusCounts(evs);
-          var rows = [
-            ["Total Trainings", evs.length],
-            [
-              "Delivered",
-              counts.completed +
-                counts.inprogress +
-                evs.filter(function (e) {
-                  return e.training_delivered && statusOf(e) === "upcoming";
-                }).length,
-            ],
-            [
-              "Attendance Marked",
-              evs.filter(function (e) {
-                return e.attendance_marked;
-              }).length,
-            ],
-            [
-              "Pre-Assessment",
-              evs.filter(function (e) {
-                return e.pre_assessment_taken;
-              }).length,
-            ],
-            [
-              "Post-Assessment",
-              evs.filter(function (e) {
-                return e.post_assessment_taken;
-              }).length,
-            ],
-            [
-              "Feedback Taken",
-              evs.filter(function (e) {
-                return e.feedback_taken;
-              }).length,
-            ],
-            [
-              "Ad-hoc",
-              evs.filter(function (e) {
-                return e.is_adhoc;
-              }).length,
-            ],
-          ];
-          var html =
-            '<div style="font-size:13px;color:var(--ink-3);margin-bottom:12px">' +
-            "Subject: L&D Monthly Training Report &mdash; " +
-            MONTHS[d.getMonth()] +
-            " " +
-            d.getFullYear() +
-            "<br>" +
-            "Recipients: mis@example.com (MIS HO) &mdash; L&D Admin validation required" +
-            "</div>" +
-            '<table class="mis-table">' +
-            rows
-              .map(function (r) {
-                return (
-                  '<tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-size:13px">' +
-                  r[0] +
-                  '</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-weight:600;text-align:right">' +
-                  r[1] +
-                  "</td></tr>"
-                );
-              })
-              .join("") +
-            "</table>" +
-            '<div class="form-actions">' +
-            '<button class="btn" data-close="misModal">Close</button>' +
-            '<button class="btn btn-primary" id="misSend">Send to MIS HO</button>' +
-            "</div>";
-          document.getElementById("misBody").innerHTML = html;
-          document.getElementById("misModal").classList.add("open");
-          document.getElementById("misSend").onclick = function () {
-            closeModal("misModal");
-            showToast("MIS email sending — backend integration pending");
-          };
-        }
-
         /* ---------- Reports section (MIS + Employee training reports) ---------- */
         state.reportData = null;
         var activeReport = null;
@@ -5635,7 +5490,6 @@
             if (e.target === this) closeModal("moreModal");
           });
         document.getElementById("btn-reset");
-        document.getElementById("misBtn").onclick = openMisModal;
         document.querySelectorAll("[data-close]").forEach(function (b) {
           b.onclick = function () {
             closeModal(b.dataset.close);
