@@ -17901,14 +17901,10 @@
         };
 
         // Create Stock Entry
-          const res = await frappe.call({
-            method: this.assetIdEdited
-              ? "sahayog.doc_events.asset.create_asset_ignore_links"
-              : "frappe.client.insert",
-            args: this.assetIdEdited
-              ? { doc_data: doc }
-              : { doc },
-          });
+        const res = await frappe.call({
+          method: "frappe.client.insert",
+          args: { doc: stockEntry },
+        });
 
         if (res.message) {
           // Submit the Stock Entry
@@ -19316,8 +19312,59 @@
           }
         }
       },
-      downloadCSV(format = 'csv') {
-        if (!this.filteredRows || this.filteredRows.length === 0) {
+      async downloadCSV(format = 'csv') {
+        let allRows = [];
+        this.loading = true;
+        try {
+          if (this.activeItem === 'Asset Master') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data;
+            }
+          } else if (this.activeItem === 'Branch Stock') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: (this.userInventoryType || this.searchText) ? null : this.userWarehouse,
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+                filter_type: this.branchStockFilter,
+                item_code: this.filterForm.item_code,
+                warehouse_filter: this.filterForm.warehouse,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data.map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
+            }
+          } else {
+            allRows = this.filteredRows;
+          }
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Error fetching all records for download");
+          this.loading = false;
+          return;
+        } finally {
+          this.loading = false;
+        }
+
+        if (!allRows || allRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
@@ -19325,8 +19372,8 @@
         let headers, keys, baseName;
 
         if (this.activeItem === 'Asset Master') {
-          headers  = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
-          keys     = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          headers  = ["Asset ID", "Asset Name", "Serial No", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys     = ["name", "asset_name", "serial_no", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
           baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
         } else {
           headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
@@ -19335,8 +19382,22 @@
         }
 
         // Build row data array
-        const rows = this.filteredRows.map(row =>
-          keys.map(key => (row[key] !== undefined && row[key] !== null ? row[key] : ""))
+        const rows = allRows.map(row =>
+          keys.map(key => {
+            let val = row[key];
+            if (val !== undefined && val !== null) {
+              // Format date fields to dd-mm-yyyy format
+              if (key.toLowerCase().includes("date") && typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+                const datePart = val.split(" ")[0];
+                const parts = datePart.split("-");
+                if (parts.length === 3) {
+                  return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+              }
+              return val;
+            }
+            return "";
+          })
         );
 
         if (format === 'xlsx') {
