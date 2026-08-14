@@ -16570,10 +16570,11 @@
           console.log("Debug: Assign clicked for", doc.name);
           this.assetActionTitle = 'Assign Asset';
           this.assetActionFields = [
+              {label: 'Serial No', fieldname: 'serial_no', fieldtype: 'Data'},
               {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
           ];
-          this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.assetActionData = { action: 'assign', asset_name: doc.name, serial_no: doc.serial_no || '', custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
           this.showAssetActionModal = true;
           console.log("Debug: showAssetActionModal set to true");
       },
@@ -16625,9 +16626,21 @@
       
       async submitAssetAction() {
           try {
+              // Update serial_no if provided
+              if (this.assetActionData.serial_no && this.assetActionData.serial_no.trim()) {
+                  await frappe.call({
+                      method: 'frappe.client.set_value',
+                      args: {
+                          doctype: 'Asset',
+                          name: this.assetActionData.asset_name,
+                          fieldname: 'serial_no',
+                          value: this.assetActionData.serial_no.trim()
+                      }
+                  });
+              }
               const response = await frappe.call({
-                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
-                args: this.assetActionData
+                  method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                  args: this.assetActionData
               });
               frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
               this.showAssetActionModal = false;
@@ -17119,6 +17132,12 @@
       },
       async submitDetailRecord() {
         if (!this.detailRecord) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 0) {
+          this.assignCustodian(this.detailRecord);
+          return;
+        }
 
         // Validation for Employee Material Request submission
         if (this.activeItem === "Requests") {
@@ -17737,6 +17756,14 @@
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && row.docstatus === 0) {
+          this.detailRecord = row;
+          this.assignCustodian(row);
+          return;
+        }
+
         const doctype = this.currentView.doctype;
         const isEMR = doctype === "Employee Material Request";
 
