@@ -509,11 +509,92 @@ def _employee_columns():
         return set()
 
 
+def _employee_master(emp_ids):
+    """name -> employee row (incl. optional custom fields) for a set of employee ids."""
+    if not emp_ids:
+        return {}
+    emp_cols = _employee_columns()
+    fields = ["name", "employee_name", "department", "designation",
+              "date_of_joining", "reports_to", "branch"]
+    for extra in ("custom_division", "custom_zone", "sahayog_branch"):
+        if extra in emp_cols:
+            fields.append(extra)
+    out = {}
+    for e in frappe.db.get_all(
+        "Employee",
+        filters={"name": ["in", list(emp_ids)]},
+        fields=fields,
+        limit_page_length=0,
+    ):
+        out[e.name] = e
+    return out
+
+
+def _manager_names(emp_rows):
+    """reports_to employee id -> manager name."""
+    mgr_ids = {e.reports_to for e in emp_rows.values() if e.reports_to}
+    out = {}
+    if not mgr_ids:
+        return out
+    for m in frappe.db.get_all(
+        "Employee",
+        filters={"name": ["in", list(mgr_ids)]},
+        fields=["name", "employee_name"],
+        limit_page_length=0,
+    ):
+        out[m.name] = m.employee_name or m.name
+    return out
+
+
+def _branch_meta(branch_ids):
+    """Sahayog Branch name (code) -> {name, branch (display), state}."""
+    if not branch_ids:
+        return {}
+    out = {}
+    for b in frappe.db.get_all(
+        "Sahayog Branch",
+        filters={"name": ["in", list(branch_ids)]},
+        fields=["name", "branch", "state"],
+        limit_page_length=0,
+    ):
+        out[b.name] = b
+    return out
+
+
+def _trainer_ids(trainings):
+    """trainer field stores employee_name; reverse lookup to Employee id."""
+    trainer_names = {t.trainer for t in trainings if t.trainer}
+    out = {}
+    if not trainer_names:
+        return out
+    for tr in frappe.db.get_all(
+        "Employee",
+        filters={"employee_name": ["in", list(trainer_names)]},
+        fields=["employee_name", "name"],
+        limit_page_length=0,
+    ):
+        out[tr.employee_name] = tr.name
+    return out
+
+
 @frappe.whitelist()
-def get_mis_report(month, zone=None, region=None, district=None, branch=None):
+def get_mis_report(
+    month,
+    zone=None,
+    region=None,
+    district=None,
+    branch=None,
+    page=None,
+    page_size=None,
+):
     """Participant-level monthly report matching the MIS Excel format.
 
     One row per training participant (plus trainings with no participants yet).
+
+    Pagination happens at the SQL level: rows are the Training Ø Training
+    Participant join (LEFT JOIN so trainings without participants still yield
+    exactly one row), sliced with LIMIT/OFFSET. ``page_size=0`` (or ``None``
+    combined with ``page_size<=0``) returns the full dataset for CSV export.
     """
     if not _is_admin():
         frappe.throw(_("Only L&D Admin can generate this report."))
@@ -530,147 +611,285 @@ def get_mis_report(month, zone=None, region=None, district=None, branch=None):
     start = f"{year}-{mm:02d}-01"
     end = f"{year}-{mm:02d}-{last_day}"
 
-    filters = {
-        "docstatus": ["<", 2],
-        "from_date": ["<=", end],
-    }
-    if zone:
-        filters["zone"] = zone
-    if region:
-        filters["region"] = region
-    if district:
-        filters["district"] = district
-    if branch:
-        filters["branch"] = branch
-
-    trainings = frappe.db.get_all(
-        "Training",
-        filters=filters,
-        fields=["name", "training_program", "from_date", "to_date", "trainer"],
-        order_by="from_date asc, start_time asc",
-    )
-    trainings = [
-        t for t in trainings if str(t.to_date or t.from_date or "")[:10] >= start
+    conds = [
+        "t.docstatus < 2",
+        "t.from_date <= %(end)s",
+        "COALESCE(t.to_date, t.from_date) >= %(start)s",
     ]
-    if not trainings:
-        return {"columns": MIS_REPORT_COLUMNS, "rows": []}
+    params = {"start": start, "end": end}
+    for col in ("zone", "region", "district", "branch"):
+        val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
+        if val:
+            conds.append("t.%s = %%(val_%s)s" % (col, col))
+            params["val_" + col] = val
+    where = " AND ".join(conds)
 
-    # Participants per training
-    part_map = {}
-    emp_ids = set()
-    for t in trainings:
-        parts = frappe.db.get_all(
-            "Training Participant",
-            filters={"parent": t.name, "parenttype": "Training"},
-            fields=["employee", "employee_name"],
+    base = """
+        FROM `tabTraining` t
+        LEFT JOIN `tabTraining Participant` p
+          ON p.parent = t.name AND p.parenttype = 'Training'
+        WHERE {where}
+    """.format(where=where)
+
+    total = frappe.db.sql("SELECT COUNT(*) " + base, params)[0][0]
+
+    page, page_size, offset = _paginate_args(page, page_size)
+    if page_size:
+        page_params = dict(params, page_size=page_size, offset=offset)
+        rows = frappe.db.sql(
+            "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
+            "t.trainer, p.idx, p.employee, p.employee_name "
+            + base
+            + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
+            "LIMIT %(page_size)s OFFSET %(offset)s",
+            page_params,
+            as_dict=True,
         )
-        part_map[t.name] = parts
-        for p in parts:
-            if p.employee:
-                emp_ids.add(p.employee)
+    else:
+        rows = frappe.db.sql(
+            "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
+            "t.trainer, p.idx, p.employee, p.employee_name "
+            + base
+            + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
+            params,
+            as_dict=True,
+        )
 
-    # Employee master data (guard custom columns in case migration is pending)
-    emp_data = {}
-    if emp_ids:
-        emp_cols = _employee_columns()
-        fields = ["name", "employee_name", "department", "designation",
-                  "date_of_joining", "reports_to", "branch"]
-        for extra in ("custom_division", "custom_zone", "sahayog_branch"):
-            if extra in emp_cols:
-                fields.append(extra)
-        for e in frappe.db.get_all(
-            "Employee",
-            filters={"name": ["in", list(emp_ids)]},
-            fields=fields,
-            limit_page_length=0,
-        ):
-            emp_data[e.name] = e
+    if not rows:
+        return {"columns": MIS_REPORT_COLUMNS, "rows": [], "total": 0}
 
-    # Manager names
-    mgr_ids = {e.reports_to for e in emp_data.values() if e.reports_to}
-    mgr_names = {}
-    if mgr_ids:
-        for m in frappe.db.get_all(
-            "Employee",
-            filters={"name": ["in", list(mgr_ids)]},
-            fields=["name", "employee_name"],
-            limit_page_length=0,
-        ):
-            mgr_names[m.name] = m.employee_name or m.name
-
-    # Branch display name + state
+    emp_ids = {r.employee for r in rows if r.employee}
+    emp_data = _employee_master(emp_ids)
+    mgr_names = _manager_names(emp_data)
     branch_ids = {
         (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
         if getattr(e, "sahayog_branch", "")
     }
-    branch_meta = {}
-    if branch_ids:
-        for b in frappe.db.get_all(
-            "Sahayog Branch",
-            filters={"name": ["in", list(branch_ids)]},
-            fields=["name", "branch", "state"],
-            limit_page_length=0,
-        ):
-            branch_meta[b.name] = b
+    branch_meta = _branch_meta(branch_ids)
+    trainer_ids = _trainer_ids([_row_tag(t) for t in rows if t.trainer])
 
-    # Trainer ID (trainer stores employee_name) — reverse lookup
-    trainer_names = {t.trainer for t in trainings if t.trainer}
-    trainer_ids = {}
-    if trainer_names:
-        for tr in frappe.db.get_all(
-            "Employee",
-            filters={"employee_name": ["in", list(trainer_names)]},
-            fields=["employee_name", "name"],
-            limit_page_length=0,
-        ):
-            trainer_ids[tr.employee_name] = tr.name
-
-    rows = []
-    seq = 0
-    for t in trainings:
-        parts = part_map.get(t.name) or []
-        date_label = str(t.from_date or "")[:10]
-        if t.to_date and str(t.to_date)[:10] != str(t.from_date or "")[:10]:
-            date_label += " to " + str(t.to_date)[:10]
-        base = {
+    out = []
+    seq = offset
+    for r in rows:
+        seq += 1
+        e = emp_data.get(r.employee) if r.employee else None
+        emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+        branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
+        date_label = str(r.from_date or "")[:10]
+        if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
+            date_label += " to " + str(r.to_date)[:10]
+        out.append({
+            "s_no": seq,
+            "emp_id": (r.employee or "") or ((e.name or "") if e else ""),
+            "name": (getattr(r, "employee_name", "") or "") or ((e.employee_name or "") if e else ""),
+            "department": (e.department or "") if e else "",
+            "division": (getattr(e, "custom_division", "") or "") if e else "",
+            "designation": (e.designation or "") if e else "",
+            "date_of_joining": str(e.date_of_joining or "")[:10] if e and e.date_of_joining else "",
+            "manager_id": (e.reports_to or "") if e else "",
+            "manager_name": mgr_names.get(e.reports_to) if e and e.reports_to else "",
+            "branch_name": (
+                (branch_meta_row.branch or branch_meta_row.name)
+                if branch_meta_row
+                else emp_branch_code or ((e.branch or "") if e else "")
+            ),
+            "state": (branch_meta_row.state or "") if branch_meta_row else "",
+            "zone": (getattr(e, "custom_zone", "") or "") if e else "",
             "training_date": date_label,
-            "program_name": t.training_program or "",
-            "trainer_name": t.trainer or "",
-            "trainer_id": trainer_ids.get(t.trainer) or "",
-        }
-        if not parts:
-            seq += 1
-            row = {"s_no": seq, "emp_id": "", "name": "", "department": "",
-                   "division": "", "designation": "", "date_of_joining": "",
-                   "manager_id": "", "manager_name": "", "branch_name": "",
-                   "state": "", "zone": ""}
-            row.update(base)
-            rows.append(row)
-            continue
-        for p in parts:
-            seq += 1
-            e = emp_data.get(p.employee)
-            emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
-            branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
-            rows.append({
-                "s_no": seq,
-                "emp_id": (p.employee or "") or ((e.name or "") if e else ""),
-                "name": (p.employee_name or "") or ((e.employee_name or "") if e else ""),
-                "department": (e.department or "") if e else "",
-                "division": (getattr(e, "custom_division", "") or "") if e else "",
-                "designation": (e.designation or "") if e else "",
-                "date_of_joining": str(e.date_of_joining or "")[:10] if e and e.date_of_joining else "",
-                "manager_id": (e.reports_to or "") if e else "",
-                "manager_name": mgr_names.get(e.reports_to) if e and e.reports_to else "",
-                "branch_name": (
-                    (branch_meta_row.branch or branch_meta_row.name)
-                    if branch_meta_row
-                    else emp_branch_code or ((e.branch or "") if e else "")
-                ),
-                "state": (branch_meta_row.state or "") if branch_meta_row else "",
-                "zone": (getattr(e, "custom_zone", "") or "") if e else "",
-            } | base)
-    return {"columns": MIS_REPORT_COLUMNS, "rows": rows}
+            "program_name": r.training_program or "",
+            "trainer_name": r.trainer or "",
+            "trainer_id": trainer_ids.get(r.trainer) or "",
+        })
+    return {"columns": MIS_REPORT_COLUMNS, "rows": out, "total": total}
+
+
+class _RowTag(dict):
+    """Minimal mapping so get_training_status / _trainer_ids accept a row."""
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            return None
+
+
+def _row_tag(row):
+    return _RowTag((row or {}).items() if isinstance(row, dict) else {})
+
+
+def _paginate_args(page, page_size):
+    """Normalise (page, page_size, offset). page_size<=0/None-with-0 => no limit (all rows)."""
+    if page_size in (None, 0):
+        return 1, 0, 0
+    try:
+        page = max(1, int(page or 1))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = max(1, int(page_size or 50))
+    except (TypeError, ValueError):
+        page_size = 50
+    return page, page_size, (page - 1) * page_size
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Employee-wise training report (L&D Admin)
+# BRD: "Employee wise training report for training attended YTD."
+# ─────────────────────────────────────────────────────────────────────────────
+
+EMPLOYEE_REPORT_COLUMNS = [
+    {"key": "s_no", "label": "S.No"},
+    {"key": "emp_id", "label": "Emp ID"},
+    {"key": "employee_name", "label": "Employee Name"},
+    {"key": "department", "label": "Department"},
+    {"key": "division", "label": "Division"},
+    {"key": "designation", "label": "Designation"},
+    {"key": "branch_name", "label": "Branch"},
+    {"key": "zone", "label": "Zone"},
+    {"key": "training_date", "label": "Training Date"},
+    {"key": "program_name", "label": "Training/Program Name"},
+    {"key": "trainer_name", "label": "Trainer Name"},
+    {"key": "status", "label": "Training Status"},
+    {"key": "training_delivered", "label": "Training Delivered"},
+    {"key": "attendance_marked", "label": "Attendance Marked"},
+    {"key": "pre_assessment_taken", "label": "Pre-Assessment Taken"},
+    {"key": "post_assessment_taken", "label": "Post-Assessment Taken"},
+    {"key": "feedback_taken", "label": "Feedback Taken"},
+]
+
+
+@frappe.whitelist()
+def get_employee_training_report(
+    employee=None,
+    from_date=None,
+    to_date=None,
+    zone=None,
+    region=None,
+    district=None,
+    branch=None,
+    page=None,
+    page_size=None,
+):
+    """Employee-wise training history. One row per training participant.
+
+    Defaults to the current financial year-to-date when no date bounds are given.
+    Rows are paged at the SQL level (INNER JOIN on participants, LIMIT/OFFSET);
+    ``page_size=0``/``None`` returns the full dataset for CSV export.
+    """
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can generate this report."))
+
+    today_dt = frappe.utils.getdate()
+    from_dt = frappe.utils.getdate(from_date) if from_date else frappe.utils.getdate(f"{today_dt.year}-01-01")
+    to_dt = frappe.utils.getdate(to_date) if to_date else today_dt
+    if from_dt > to_dt:
+        frappe.throw(_("From Date cannot be after To Date."))
+
+    conds = [
+        "t.docstatus < 2",
+        "t.from_date <= %(to_dt)s",
+        "COALESCE(t.to_date, t.from_date) >= %(from_dt)s",
+    ]
+    params = {"from_dt": str(from_dt), "to_dt": str(to_dt)}
+    for col in ("zone", "region", "district", "branch"):
+        val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
+        if val:
+            conds.append("t.%s = %%(val_%s)s" % (col, col))
+            params["val_" + col] = val
+
+    q = (employee or "").strip().lower()
+    if q:
+        conds.append(
+            "(LOWER(p.employee) LIKE %(q)s OR LOWER(p.employee_name) LIKE %(q)s)"
+        )
+        params["q"] = f"%{q}%"
+
+    where = " AND ".join(conds)
+
+    base = """
+        FROM `tabTraining` t
+        INNER JOIN `tabTraining Participant` p
+          ON p.parent = t.name AND p.parenttype = 'Training'
+        WHERE {where}
+    """.format(where=where)
+
+    total = frappe.db.sql("SELECT COUNT(*) " + base, params)[0][0]
+
+    page, page_size, offset = _paginate_args(page, page_size)
+    if page_size:
+        page_params = dict(params, page_size=page_size, offset=offset)
+        rows = frappe.db.sql(
+            "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
+            "t.trainer, t.zone, t.training_delivered, t.attendance_marked, "
+            "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
+            "p.idx, p.employee, p.employee_name "
+            + base
+            + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
+            "LIMIT %(page_size)s OFFSET %(offset)s",
+            page_params,
+            as_dict=True,
+        )
+    else:
+        rows = frappe.db.sql(
+            "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
+            "t.trainer, t.zone, t.training_delivered, t.attendance_marked, "
+            "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
+            "p.idx, p.employee, p.employee_name "
+            + base
+            + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
+            params,
+            as_dict=True,
+        )
+
+    if not rows:
+        return {"columns": EMPLOYEE_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    emp_ids = {r.employee for r in rows if r.employee}
+    emp_data = _employee_master(emp_ids)
+    branch_ids = {
+        (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
+        if getattr(e, "sahayog_branch", "")
+    }
+    branch_meta = _branch_meta(branch_ids)
+
+    def _yn(v):
+        return "Yes" if v else "No"
+
+    out = []
+    seq = offset
+    for r in rows:
+        seq += 1
+        e = emp_data.get(r.employee) if r.employee else None
+        emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+        branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
+        date_label = str(r.from_date or "")[:10]
+        if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
+            date_label += " to " + str(r.to_date)[:10]
+        status = r.status or get_training_status(_row_tag(r))
+        out.append({
+            "s_no": seq,
+            "emp_id": (r.employee or "") or ((e.name or "") if e else ""),
+            "employee_name": (r.employee_name or "") or ((e.employee_name or "") if e else ""),
+            "department": (e.department or "") if e else "",
+            "division": (getattr(e, "custom_division", "") or "") if e else "",
+            "designation": (e.designation or "") if e else "",
+            "branch_name": (
+                (branch_meta_row.branch or branch_meta_row.name)
+                if branch_meta_row
+                else emp_branch_code or ((e.branch or "") if e else "")
+            ),
+            "zone": (getattr(e, "custom_zone", "") or "") or (r.zone or ""),
+            "training_date": date_label,
+            "program_name": r.training_program or "",
+            "trainer_name": r.trainer or "",
+            "status": status or "",
+            "training_delivered": _yn(r.training_delivered),
+            "attendance_marked": _yn(r.attendance_marked),
+            "pre_assessment_taken": _yn(r.pre_assessment_taken),
+            "post_assessment_taken": _yn(r.post_assessment_taken),
+            "feedback_taken": _yn(r.feedback_taken),
+        })
+    return {"columns": EMPLOYEE_REPORT_COLUMNS, "rows": out, "total": total}
 
 
 @frappe.whitelist()
