@@ -13583,8 +13583,8 @@
         gst_hsn_code_display: "",
         is_stock_item: true,
         is_fixed_asset: false,
-        stock_uom: "",
-        stock_uom_display: "",
+        stock_uom: "Unit",
+        stock_uom_display: "Unit",
         asset_category: "",
         asset_category_display: "",
         valuation_rate: 0,
@@ -15817,8 +15817,8 @@
             gst_hsn_code_display: "",
             is_stock_item: true,
             is_fixed_asset: false,
-            stock_uom: "",
-            stock_uom_display: "",
+            stock_uom: "Unit",
+            stock_uom_display: "Unit",
             asset_category: "",
             asset_category_display: "",
             valuation_rate: 0,
@@ -16353,6 +16353,17 @@
             "Asset Category is required when Is Fixed Asset is checked",
           );
           return;
+        }
+        // Validate HSN/SAC Code if provided
+        if (!this.createItemForm.gst_hsn_code && this.createItemForm.gst_hsn_code_display) {
+          this.createItemForm.gst_hsn_code = this.createItemForm.gst_hsn_code_display;
+        }
+        if (this.createItemForm.gst_hsn_code) {
+          const hsnVal = String(this.createItemForm.gst_hsn_code).trim();
+          if (hsnVal && !/^\d{6}$|^\d{8}$/.test(hsnVal)) {
+            frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
+            return;
+          }
         }
 
         this.creatingItem = true;
