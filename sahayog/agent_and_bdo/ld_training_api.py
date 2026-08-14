@@ -477,6 +477,202 @@ def get_branch_options():
     )
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MIS monthly report (L&D Admin)
+# Column layout follows the Excel sheet shared by the MIS team.
+# ─────────────────────────────────────────────────────────────────────────────
+
+MIS_REPORT_COLUMNS = [
+    {"key": "s_no", "label": "S.No"},
+    {"key": "emp_id", "label": "Emp ID"},
+    {"key": "name", "label": "Name"},
+    {"key": "department", "label": "Department"},
+    {"key": "division", "label": "Division"},
+    {"key": "designation", "label": "Designation"},
+    {"key": "date_of_joining", "label": "Date of Joining"},
+    {"key": "manager_id", "label": "Manager ID"},
+    {"key": "manager_name", "label": "Manager Name"},
+    {"key": "branch_name", "label": "Branch Name"},
+    {"key": "state", "label": "State"},
+    {"key": "zone", "label": "Zone"},
+    {"key": "training_date", "label": "Training Date"},
+    {"key": "program_name", "label": "Program Name"},
+    {"key": "trainer_name", "label": "Trainer Name"},
+    {"key": "trainer_id", "label": "Trainer ID"},
+]
+
+
+def _employee_columns():
+    try:
+        return {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    except Exception:
+        return set()
+
+
+@frappe.whitelist()
+def get_mis_report(month, zone=None, region=None, district=None, branch=None):
+    """Participant-level monthly report matching the MIS Excel format.
+
+    One row per training participant (plus trainings with no participants yet).
+    """
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can generate this report."))
+    parts = str(month or "").split("-")
+    if len(parts) != 2:
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    try:
+        year, mm = int(parts[0]), int(parts[1])
+    except (TypeError, ValueError):
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    if mm < 1 or mm > 12:
+        frappe.throw(_("Month must be between 01 and 12."))
+    last_day = calendar.monthrange(year, mm)[1]
+    start = f"{year}-{mm:02d}-01"
+    end = f"{year}-{mm:02d}-{last_day}"
+
+    filters = {
+        "docstatus": ["<", 2],
+        "from_date": ["<=", end],
+    }
+    if zone:
+        filters["zone"] = zone
+    if region:
+        filters["region"] = region
+    if district:
+        filters["district"] = district
+    if branch:
+        filters["branch"] = branch
+
+    trainings = frappe.db.get_all(
+        "Training",
+        filters=filters,
+        fields=["name", "training_program", "from_date", "to_date", "trainer"],
+        order_by="from_date asc, start_time asc",
+    )
+    trainings = [
+        t for t in trainings if str(t.to_date or t.from_date or "")[:10] >= start
+    ]
+    if not trainings:
+        return {"columns": MIS_REPORT_COLUMNS, "rows": []}
+
+    # Participants per training
+    part_map = {}
+    emp_ids = set()
+    for t in trainings:
+        parts = frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": t.name, "parenttype": "Training"},
+            fields=["employee", "employee_name"],
+        )
+        part_map[t.name] = parts
+        for p in parts:
+            if p.employee:
+                emp_ids.add(p.employee)
+
+    # Employee master data (guard custom columns in case migration is pending)
+    emp_data = {}
+    if emp_ids:
+        emp_cols = _employee_columns()
+        fields = ["name", "employee_name", "department", "designation",
+                  "date_of_joining", "reports_to", "branch"]
+        for extra in ("custom_division", "custom_zone", "sahayog_branch"):
+            if extra in emp_cols:
+                fields.append(extra)
+        for e in frappe.db.get_all(
+            "Employee",
+            filters={"name": ["in", list(emp_ids)]},
+            fields=fields,
+            limit_page_length=0,
+        ):
+            emp_data[e.name] = e
+
+    # Manager names
+    mgr_ids = {e.reports_to for e in emp_data.values() if e.reports_to}
+    mgr_names = {}
+    if mgr_ids:
+        for m in frappe.db.get_all(
+            "Employee",
+            filters={"name": ["in", list(mgr_ids)]},
+            fields=["name", "employee_name"],
+            limit_page_length=0,
+        ):
+            mgr_names[m.name] = m.employee_name or m.name
+
+    # Branch display name + state
+    branch_ids = {
+        (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
+        if getattr(e, "sahayog_branch", "")
+    }
+    branch_meta = {}
+    if branch_ids:
+        for b in frappe.db.get_all(
+            "Sahayog Branch",
+            filters={"name": ["in", list(branch_ids)]},
+            fields=["name", "branch", "state"],
+            limit_page_length=0,
+        ):
+            branch_meta[b.name] = b
+
+    # Trainer ID (trainer stores employee_name) — reverse lookup
+    trainer_names = {t.trainer for t in trainings if t.trainer}
+    trainer_ids = {}
+    if trainer_names:
+        for tr in frappe.db.get_all(
+            "Employee",
+            filters={"employee_name": ["in", list(trainer_names)]},
+            fields=["employee_name", "name"],
+            limit_page_length=0,
+        ):
+            trainer_ids[tr.employee_name] = tr.name
+
+    rows = []
+    seq = 0
+    for t in trainings:
+        parts = part_map.get(t.name) or []
+        date_label = str(t.from_date or "")[:10]
+        if t.to_date and str(t.to_date)[:10] != str(t.from_date or "")[:10]:
+            date_label += " to " + str(t.to_date)[:10]
+        base = {
+            "training_date": date_label,
+            "program_name": t.training_program or "",
+            "trainer_name": t.trainer or "",
+            "trainer_id": trainer_ids.get(t.trainer) or "",
+        }
+        if not parts:
+            seq += 1
+            row = {"s_no": seq, "emp_id": "", "name": "", "department": "",
+                   "division": "", "designation": "", "date_of_joining": "",
+                   "manager_id": "", "manager_name": "", "branch_name": "",
+                   "state": "", "zone": ""}
+            row.update(base)
+            rows.append(row)
+            continue
+        for p in parts:
+            seq += 1
+            e = emp_data.get(p.employee)
+            emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+            branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
+            rows.append({
+                "s_no": seq,
+                "emp_id": (p.employee or "") or ((e.name or "") if e else ""),
+                "name": (p.employee_name or "") or ((e.employee_name or "") if e else ""),
+                "department": (e.department or "") if e else "",
+                "division": (getattr(e, "custom_division", "") or "") if e else "",
+                "designation": (e.designation or "") if e else "",
+                "date_of_joining": str(e.date_of_joining or "")[:10] if e and e.date_of_joining else "",
+                "manager_id": (e.reports_to or "") if e else "",
+                "manager_name": mgr_names.get(e.reports_to) if e and e.reports_to else "",
+                "branch_name": (
+                    (branch_meta_row.branch or branch_meta_row.name)
+                    if branch_meta_row
+                    else emp_branch_code or ((e.branch or "") if e else "")
+                ),
+                "state": (branch_meta_row.state or "") if branch_meta_row else "",
+                "zone": (getattr(e, "custom_zone", "") or "") if e else "",
+            } | base)
+    return {"columns": MIS_REPORT_COLUMNS, "rows": rows}
+
+
 @frappe.whitelist()
 def get_trainer_options(enabled_only=True):
     """Active employees to pick as trainer in the Add Training form."""

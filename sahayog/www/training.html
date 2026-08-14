@@ -1467,6 +1467,10 @@
         font-weight: 600;
       }
       .nt-sched-hint.overlap {
+        color: #b91c1c;
+        font-weight: 600;
+      }
+      .nt-sched-hint.overlap {
         color: #dc2626;
         font-weight: 600;
       }
@@ -1818,6 +1822,87 @@
         justify-content: flex-end;
         gap: 8px;
         margin-top: 16px;
+      }
+      .report-modal {
+        width: min(1120px, 96vw);
+        max-width: 96vw;
+        display: flex;
+        flex-direction: column;
+        max-height: min(92vh, 900px);
+      }
+      .report-controls {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .report-month-label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-3);
+      }
+      .report-month-label input {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 12.5px;
+        font-family: inherit;
+        color: var(--ink-1);
+        background: var(--surface);
+        outline: none;
+      }
+      .report-month-label input:focus {
+        border-color: var(--accent);
+      }
+      .report-spacer {
+        flex: 1;
+      }
+      .report-count {
+        font-size: 12px;
+        color: var(--ink-3);
+        font-weight: 600;
+      }
+      .report-body {
+        overflow: auto;
+        max-height: 62vh;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .report-table thead th {
+        position: sticky;
+        top: 0;
+        background: var(--surface-2);
+        color: var(--ink-2);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+        z-index: 1;
+      }
+      .report-table tbody td {
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--border);
+        color: var(--ink-1);
+        white-space: nowrap;
+      }
+      .report-table tbody tr:nth-child(even) {
+        background: var(--surface-2);
+      }
+      .report-table tbody tr:hover {
+        background: var(--accent-soft);
       }
       .check-inline {
         display: flex;
@@ -2311,7 +2396,8 @@
             </button>
             <button
               class="nav-item nav-placeholder"
-              title="Reports — MIS & consolidated reporting (backend phase)"
+              id="nav-reports"
+              title="Reports — MIS detail report (Excel format)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -2985,6 +3071,44 @@
           </button>
         </div>
         <div id="misBody"></div>
+      </div>
+    </div>
+
+    <!-- Modal: MIS detail report (Excel format, L&D Admin) -->
+    <div class="modal-wrap" id="reportModal">
+      <div class="modal report-modal">
+        <div class="modal-head">
+          <h3>L&amp;D MIS Report</h3>
+          <button class="modal-close" data-close="reportModal" title="Close">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="15"
+              height="15"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="report-controls">
+          <label class="report-month-label">
+            Month
+            <input type="month" id="report-month" />
+          </label>
+          <button class="btn" id="report-load" type="button">Load</button>
+          <span class="report-spacer"></span>
+          <span class="report-count" id="report-count"></span>
+          <button class="btn btn-primary" id="report-export" type="button">
+            Export CSV
+          </button>
+        </div>
+        <div id="reportBody" class="report-body">
+          <div style="padding: 20px; color: var(--ink-3)">Select a month and click Load.</div>
+        </div>
       </div>
     </div>
 
@@ -4273,6 +4397,7 @@
           document.getElementById("new-location").value = "";
           document.getElementById("new-location").readOnly = false;
           document.getElementById("new-branch").value = "";
+          state.selectedBranch = "";
           document.getElementById("new-branch").readOnly = false;
           document.getElementById("new-zone").value = "";
           document.getElementById("new-region").value = "";
@@ -4362,6 +4487,7 @@
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-location", ev.training_location || "");
           f("new-branch", ev.branch || "");
+          if (ev.branch) dialogFn.branchSelect(ev.branch);
           f("new-zone", ev.zone || "");
           f("new-region", ev.region || "");
           f("new-district", ev.district || "");
@@ -4738,6 +4864,146 @@
             showToast("MIS email sending — backend integration pending");
           };
         }
+
+        /* ---------- MIS detail report (Excel format, L&D Admin) ---------- */
+        state.reportData = null;
+
+        function openReportModal() {
+          if (!role().showMis) {
+            showToast("Reports are available to L&D Admin only");
+            return;
+          }
+          var d = state.viewDate || new Date(today);
+          var key =
+            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          var mEl = document.getElementById("report-month");
+          if (mEl) mEl.value = key;
+          loadReport();
+          document.getElementById("reportModal").classList.add("open");
+        }
+
+        function loadReport() {
+          var mEl = document.getElementById("report-month");
+          var m = mEl ? mEl.value : "";
+          if (!m) {
+            showToast("Select a month first");
+            return;
+          }
+          var body = document.getElementById("reportBody");
+          body.innerHTML =
+            '<div style="padding:20px;color:var(--ink-3)">Loading report…</div>';
+          document.getElementById("report-count").textContent = "";
+          api("get_mis_report", { month: m })
+            .then(function (res) {
+              state.reportData = res;
+              renderReport(res);
+            })
+            .catch(function (e) {
+              state.reportData = null;
+              body.innerHTML =
+                '<div style="padding:20px;color:var(--ink-3)">' +
+                esc((e && e.message) || "Could not load report") +
+                "</div>";
+            });
+        }
+
+        function renderReport(res) {
+          var cols = (res && res.columns) || [];
+          var rows = (res && res.rows) || [];
+          var body = document.getElementById("reportBody");
+          var countEl = document.getElementById("report-count");
+          if (countEl) countEl.textContent = rows.length + " rows";
+          var head =
+            "<thead><tr>" +
+            cols
+              .map(function (c) {
+                return "<th>" + esc(c.label) + "</th>";
+              })
+              .join("") +
+            "</tr></thead>";
+          var tbody;
+          if (!rows.length) {
+            tbody =
+              '<tr><td colspan="' +
+              cols.length +
+              '" style="padding:16px;color:var(--ink-3);text-align:center">' +
+              "No trainings found for this month." +
+              "</td></tr>";
+          } else {
+            tbody = rows
+              .map(function (r) {
+                return (
+                  "<tr>" +
+                  cols
+                    .map(function (c) {
+                      var v = r[c.key];
+                      return "<td>" + esc(v == null ? "" : v) + "</td>";
+                    })
+                    .join("") +
+                  "</tr>"
+                );
+              })
+              .join("");
+          }
+          body.innerHTML =
+            '<table class="report-table">' +
+            head +
+            "<tbody>" +
+            tbody +
+            "</tbody></table>";
+        }
+
+        function exportReportCsv() {
+          var res = state.reportData;
+          if (!res || !res.rows.length) {
+            showToast("Load the report first");
+            return;
+          }
+          var cols = res.columns;
+          var m = (document.getElementById("report-month") || {}).value || "month";
+          var lines = [
+            cols.map(function (c) { return csvCell(c.label); }).join(","),
+          ];
+          res.rows.forEach(function (r) {
+            lines.push(
+              cols
+                .map(function (c) {
+                  return csvCell(r[c.key]);
+                })
+                .join(","),
+            );
+          });
+          var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
+            type: "text/csv;charset=utf-8;",
+          });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "L&D_MIS_Report_" + m + ".csv";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+          }, 100);
+        }
+
+        function csvCell(v) {
+          var s = String(v == null ? "" : v);
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+
+        document
+          .getElementById("report-load")
+          .addEventListener("click", loadReport);
+        document
+          .getElementById("report-export")
+          .addEventListener("click", exportReportCsv);
+        document
+          .getElementById("report-month")
+          .addEventListener("change", loadReport);
+        document
+          .getElementById("nav-reports")
+          .addEventListener("click", openReportModal);
 
         /* ---------- Toast ---------- */
         var toastTimer = null;
@@ -5345,18 +5611,6 @@
           agenda.addEventListener("focus", expand);
           agenda.addEventListener("blur", maybeCollapse);
         })();
-
-        var schedulerBtn = document.getElementById("btn-scheduler");
-        if (schedulerBtn) {
-          schedulerBtn.onclick = function () {
-            var fd = document.getElementById("new-from-date");
-            if (!fd) return;
-            fd.focus();
-            if (fd.showPicker) {
-              try { fd.showPicker(); } catch (e) {}
-            }
-          };
-        }
 
         /* ============================================================
            TRAININGS TAB — list view
