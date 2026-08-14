@@ -3673,7 +3673,7 @@
                 <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                   <!-- HSN/SAC -->
                   <div class="form-group" style="flex: 1; margin-bottom: 0 !important;">
-                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">HSN/SAC</label>
+                    <label class="form-label" style="font-size: 0.8rem !important; margin-bottom: 4px !important;">HSN/SAC <span style="color: var(--accent-color);">*</span></label>
                     <div class="searchable-select-wrapper">
                       <input
                         type="text"
@@ -10660,7 +10660,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">HSN/SAC</label>
+          <label class="form-label">HSN/SAC <span style="color: var(--accent-color);">*</span></label>
           <div class="searchable-select-wrapper">
             <input
               type="text"
@@ -16354,16 +16354,18 @@
           );
           return;
         }
-        // Validate HSN/SAC Code if provided
+        // Validate HSN/SAC Code
         if (!this.createItemForm.gst_hsn_code && this.createItemForm.gst_hsn_code_display) {
           this.createItemForm.gst_hsn_code = this.createItemForm.gst_hsn_code_display;
         }
-        if (this.createItemForm.gst_hsn_code) {
-          const hsnVal = String(this.createItemForm.gst_hsn_code).trim();
-          if (hsnVal && !/^\d{6}$|^\d{8}$/.test(hsnVal)) {
-            frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
-            return;
-          }
+        const hsnVal = String(this.createItemForm.gst_hsn_code || "").trim();
+        if (!hsnVal) {
+          frappe.msgprint("HSN/SAC Code is required. Please enter a valid HSN/SAC code.");
+          return;
+        }
+        if (!/^\d{6}$|^\d{8}$/.test(hsnVal)) {
+          frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
+          return;
         }
 
         this.creatingItem = true;
