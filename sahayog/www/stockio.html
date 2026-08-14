@@ -17874,14 +17874,10 @@
         };
 
         // Create Stock Entry
-          const res = await frappe.call({
-            method: this.assetIdEdited
-              ? "sahayog.doc_events.asset.create_asset_ignore_links"
-              : "frappe.client.insert",
-            args: this.assetIdEdited
-              ? { doc_data: doc }
-              : { doc },
-          });
+        const res = await frappe.call({
+          method: "frappe.client.insert",
+          args: { doc: stockEntry },
+        });
 
         if (res.message) {
           // Submit the Stock Entry
