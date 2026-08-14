@@ -16354,16 +16354,19 @@
           );
           return;
         }
-        // Validate HSN/SAC Code if provided
+        // Validate HSN/SAC Code
         if (!this.createItemForm.gst_hsn_code && this.createItemForm.gst_hsn_code_display) {
           this.createItemForm.gst_hsn_code = this.createItemForm.gst_hsn_code_display;
         }
-        if (this.createItemForm.gst_hsn_code) {
-          const hsnVal = String(this.createItemForm.gst_hsn_code).trim();
-          if (hsnVal && !/^\d{6}$|^\d{8}$/.test(hsnVal)) {
-            frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
-            return;
-          }
+        let hsnVal = String(this.createItemForm.gst_hsn_code || "").trim();
+        if (!hsnVal) {
+          hsnVal = "030289";
+          this.createItemForm.gst_hsn_code = "030289";
+          this.createItemForm.gst_hsn_code_display = "030289";
+        }
+        if (!/^\d{6}$|^\d{8}$/.test(hsnVal)) {
+          frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
+          return;
         }
 
         this.creatingItem = true;
