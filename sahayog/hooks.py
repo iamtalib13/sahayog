@@ -443,9 +443,13 @@ scheduler_events = {
             "sahayog.tasks.monthly_leave_credit"
         ],
 
-        # Run daily at 3:00 AM — auto-setup leave allocation and generate lead report
+        # Run daily at 3:00 AM — auto-setup leave allocation
         "0 3 * * *": [
-            "sahayog.tasks.auto_setup_new_employee_leave",
+            "sahayog.tasks.auto_setup_new_employee_leave"
+        ],
+
+        # Run daily at 3:30 AM — generate fast lead report
+        "30 3 * * *": [
             "sahayog.scrm.api.report_access.generate_fast_lead_report"
         ],
 
