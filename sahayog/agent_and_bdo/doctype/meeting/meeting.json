@@ -113,6 +113,7 @@
    "depends_on": "eval:doc.branch",
    "fieldname": "attendee_type",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Attendee Type",
    "options": "\nAgent\nEmployee"
   },
@@ -147,7 +148,8 @@
    "description": "E.g. Product Knowledge, Soft Skills, Induction Batch 12",
    "fieldname": "training_program",
    "fieldtype": "Data",
-   "label": "Training Program / Title"
+   "label": "Training Program / Title",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.ld_training == 1",
@@ -286,7 +288,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-05 17:02:15.455057",
+ "modified": "2026-08-10 14:44:18.341934",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Meeting",
