@@ -15,6 +15,22 @@ def _fmt_date(d):
     return formatdate(d, "dd-mm-YYYY") if d else "—"
 
 
+def _emails_enabled():
+    """Global on/off switch for L&D scheduler mails (Sahayog Settings).
+
+    Defaults to enabled so existing behaviour is never broken (e.g. before
+    the setting is synced, or if the field is missing).
+    """
+    try:
+        return bool(
+            frappe.db.get_single_value(
+                "Sahayog Settings", "enable_ld_email_notifications"
+            )
+        )
+    except Exception:
+        return True
+
+
 def _fmt_time(t):
     if not t:
         return "—"
@@ -29,6 +45,8 @@ def send_pre_training_reminders():
     Daily task: Send reminder emails for L&D trainings scheduled N days from today.
     Dedup via Training.pre_reminder_sent flag.
     """
+    if not _emails_enabled():
+        return
     target_date = add_days(today(), PRE_TRAINING_REMINDER_DAYS)
 
     trainings = frappe.db.get_all(
@@ -63,6 +81,8 @@ def send_post_training_closures():
     and have training_delivered = 1 but closure not yet sent.
     Dedup via Training.closure_sent flag.
     """
+    if not _emails_enabled():
+        return
     yesterday = add_days(today(), -1)
 
     trainings = frappe.db.get_all(
