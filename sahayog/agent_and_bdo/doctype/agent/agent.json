@@ -25,7 +25,10 @@
   "approved_by",
   "approved_on",
   "employee",
-  "amended_from"
+  "amended_from",
+  "commission_details_tab",
+  "get_commission",
+  "commission_json"
  ],
  "fields": [
   {
@@ -113,6 +116,7 @@
   {
    "fieldname": "agent_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Agent Status",
    "options": "\nInactive\nActive",
    "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
@@ -178,12 +182,27 @@
    "label": "Agent Type",
    "options": "\nRDDSA\nDDDSA",
    "search_index": 1
+  },
+  {
+   "fieldname": "commission_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Commission Details"
+  },
+  {
+   "fieldname": "commission_json",
+   "fieldtype": "JSON",
+   "label": "Commission"
+  },
+  {
+   "fieldname": "get_commission",
+   "fieldtype": "Button",
+   "label": "Get Commission"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-07 16:27:22.253226",
+ "modified": "2026-08-08 15:44:56.019959",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

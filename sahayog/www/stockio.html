@@ -13583,8 +13583,8 @@
         gst_hsn_code_display: "",
         is_stock_item: true,
         is_fixed_asset: false,
-        stock_uom: "",
-        stock_uom_display: "",
+        stock_uom: "Unit",
+        stock_uom_display: "Unit",
         asset_category: "",
         asset_category_display: "",
         valuation_rate: 0,
@@ -15817,8 +15817,8 @@
             gst_hsn_code_display: "",
             is_stock_item: true,
             is_fixed_asset: false,
-            stock_uom: "",
-            stock_uom_display: "",
+            stock_uom: "Unit",
+            stock_uom_display: "Unit",
             asset_category: "",
             asset_category_display: "",
             valuation_rate: 0,
@@ -16354,6 +16354,20 @@
           );
           return;
         }
+        // Validate HSN/SAC Code
+        if (!this.createItemForm.gst_hsn_code && this.createItemForm.gst_hsn_code_display) {
+          this.createItemForm.gst_hsn_code = this.createItemForm.gst_hsn_code_display;
+        }
+        let hsnVal = String(this.createItemForm.gst_hsn_code || "").trim();
+        if (!hsnVal) {
+          hsnVal = "030289";
+          this.createItemForm.gst_hsn_code = "030289";
+          this.createItemForm.gst_hsn_code_display = "030289";
+        }
+        if (!/^\d{6}$|^\d{8}$/.test(hsnVal)) {
+          frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
+          return;
+        }
 
         this.creatingItem = true;
         try {
@@ -16570,10 +16584,11 @@
           console.log("Debug: Assign clicked for", doc.name);
           this.assetActionTitle = 'Assign Asset';
           this.assetActionFields = [
+              {label: 'Serial No', fieldname: 'serial_no', fieldtype: 'Data'},
               {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
           ];
-          this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.assetActionData = { action: 'assign', asset_name: doc.name, serial_no: doc.serial_no || '', custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
           this.showAssetActionModal = true;
           console.log("Debug: showAssetActionModal set to true");
       },
@@ -16625,9 +16640,21 @@
       
       async submitAssetAction() {
           try {
+              // Update serial_no if provided
+              if (this.assetActionData.serial_no && this.assetActionData.serial_no.trim()) {
+                  await frappe.call({
+                      method: 'frappe.client.set_value',
+                      args: {
+                          doctype: 'Asset',
+                          name: this.assetActionData.asset_name,
+                          fieldname: 'serial_no',
+                          value: this.assetActionData.serial_no.trim()
+                      }
+                  });
+              }
               const response = await frappe.call({
-                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
-                args: this.assetActionData
+                  method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                  args: this.assetActionData
               });
               frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
               this.showAssetActionModal = false;
@@ -17084,12 +17111,20 @@
           }
 
           // Save the document
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.detailRecord,
-            },
-          });
+          let res;
+          if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 1) {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.asset_actions.save_asset_after_submit",
+              args: { doc: this.detailRecord },
+            });
+          } else {
+            res = await frappe.call({
+              method: "frappe.client.save",
+              args: {
+                doc: this.detailRecord,
+              },
+            });
+          }
           if (res.message) {
             this.detailRecord = res.message;
             this.detailRecord._originalName = res.message.name;
@@ -17111,6 +17146,12 @@
       },
       async submitDetailRecord() {
         if (!this.detailRecord) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 0) {
+          this.assignCustodian(this.detailRecord);
+          return;
+        }
 
         // Validation for Employee Material Request submission
         if (this.activeItem === "Requests") {
@@ -17729,6 +17770,14 @@
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && row.docstatus === 0) {
+          this.detailRecord = row;
+          this.assignCustodian(row);
+          return;
+        }
+
         const doctype = this.currentView.doctype;
         const isEMR = doctype === "Employee Material Request";
 
@@ -17866,14 +17915,10 @@
         };
 
         // Create Stock Entry
-          const res = await frappe.call({
-            method: this.assetIdEdited
-              ? "sahayog.doc_events.asset.create_asset_ignore_links"
-              : "frappe.client.insert",
-            args: this.assetIdEdited
-              ? { doc_data: doc }
-              : { doc },
-          });
+        const res = await frappe.call({
+          method: "frappe.client.insert",
+          args: { doc: stockEntry },
+        });
 
         if (res.message) {
           // Submit the Stock Entry
@@ -19281,8 +19326,59 @@
           }
         }
       },
-      downloadCSV(format = 'csv') {
-        if (!this.filteredRows || this.filteredRows.length === 0) {
+      async downloadCSV(format = 'csv') {
+        let allRows = [];
+        this.loading = true;
+        try {
+          if (this.activeItem === 'Asset Master') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data;
+            }
+          } else if (this.activeItem === 'Branch Stock') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: (this.userInventoryType || this.searchText) ? null : this.userWarehouse,
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+                filter_type: this.branchStockFilter,
+                item_code: this.filterForm.item_code,
+                warehouse_filter: this.filterForm.warehouse,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data.map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
+            }
+          } else {
+            allRows = this.filteredRows;
+          }
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Error fetching all records for download");
+          this.loading = false;
+          return;
+        } finally {
+          this.loading = false;
+        }
+
+        if (!allRows || allRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
@@ -19290,8 +19386,8 @@
         let headers, keys, baseName;
 
         if (this.activeItem === 'Asset Master') {
-          headers  = ["Asset ID", "Asset Name", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
-          keys     = ["name", "asset_name", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          headers  = ["Asset ID", "Asset Name", "Serial No", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys     = ["name", "asset_name", "serial_no", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
           baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
         } else {
           headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
@@ -19300,8 +19396,22 @@
         }
 
         // Build row data array
-        const rows = this.filteredRows.map(row =>
-          keys.map(key => (row[key] !== undefined && row[key] !== null ? row[key] : ""))
+        const rows = allRows.map(row =>
+          keys.map(key => {
+            let val = row[key];
+            if (val !== undefined && val !== null) {
+              // Format date fields to dd-mm-yyyy format
+              if (key.toLowerCase().includes("date") && typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+                const datePart = val.split(" ")[0];
+                const parts = datePart.split("-");
+                if (parts.length === 3) {
+                  return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+              }
+              return val;
+            }
+            return "";
+          })
         );
 
         if (format === 'xlsx') {

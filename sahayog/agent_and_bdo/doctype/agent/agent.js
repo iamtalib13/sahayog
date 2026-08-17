@@ -2,10 +2,48 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Agent", {
+  get_commission(frm) {
+    if (frm.is_new()) {
+      frappe.msgprint(__("Please save the document first."));
+      return;
+    }
+    const agent_code = frm.doc.agent_code || frm.doc.name;
+    frappe.call({
+      method: "sahayog.agent_and_bdo.doctype.agent.agent.fetch_agent_commission",
+      args: {
+        agent_code: agent_code,
+      },
+      freeze: true,
+      freeze_message: __("Scanning SS & VS Report for commission data..."),
+      callback: (r) => {
+        if (r.message && r.message.status === "success") {
+          frm.set_value("commission_json", r.message.commission_json);
+          frm.refresh_field("commission_json");
+          frappe.show_alert({
+            message: r.message.message,
+            indicator: "green",
+          });
+        } else {
+          frappe.msgprint({
+            title: __("Scan Failed"),
+            message: r.message ? r.message.message : __("Could not fetch commission data"),
+            indicator: "red",
+          });
+        }
+      },
+    });
+  },
+
   refresh(frm) {
     frm.clear_custom_buttons();
     frm.trigger("employee_details");
     frm.trigger("read_only_fields");
+
+    if (!frm.is_new()) {
+      frm.add_custom_button(__("Get Commission"), () => {
+        frm.trigger("get_commission");
+      });
+    }
 
     // --- Feature: Update From Finacle ---
     if (!frm.is_new() && (frappe.user.has_role("System Manager") || frappe.user.has_role("Employee"))) {

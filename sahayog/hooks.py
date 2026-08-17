@@ -229,6 +229,7 @@ permission_query_conditions = {
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
     "Item": "sahayog.permissions.get_item_permission",
     "Loan Application": "sahayog.permissions.get_loan_application_permission",
+    "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -242,6 +243,7 @@ has_permission = {
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
     "Item": "sahayog.permissions.has_item_permission",
     "Loan Application": "sahayog.permissions.has_loan_application_permission",
+    "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.has_permission",
 }
 
 # DocType Class
@@ -441,9 +443,13 @@ scheduler_events = {
             "sahayog.tasks.monthly_leave_credit"
         ],
 
-        # Run daily at 3:00 AM — auto-setup leave allocation and generate lead report
+        # Run daily at 3:00 AM — auto-setup leave allocation
         "0 3 * * *": [
-            "sahayog.tasks.auto_setup_new_employee_leave",
+            "sahayog.tasks.auto_setup_new_employee_leave"
+        ],
+
+        # Run daily at 3:30 AM — generate fast lead report
+        "30 3 * * *": [
             "sahayog.scrm.api.report_access.generate_fast_lead_report"
         ],
 
@@ -738,3 +744,14 @@ fixtures = [
     },
 
 ]
+
+# Scheduled Tasks
+# ---------------
+scheduler_events = {
+	"cron": {
+		# 08:45 AM IST - Daily Bulk Update of Agent Commission JSON for all agents
+		"45 8 * * *": [
+			"sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
+		]
+	}
+}
