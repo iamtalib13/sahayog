@@ -22,6 +22,7 @@
   "branch_access",
   "email_tab",
   "send",
+  "enable_ld_email_notifications",
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
@@ -82,6 +83,13 @@
    "fieldname": "send",
    "fieldtype": "Check",
    "label": "Send Email"
+  },
+  {
+   "default": "1",
+   "description": "When unchecked, L&D pre-training reminder and post-training closure emails are paused (scheduler skips them).",
+   "fieldname": "enable_ld_email_notifications",
+   "fieldtype": "Check",
+   "label": "Enable L&D Email Notifications"
   },
   {
    "fieldname": "petty_cash_management_tab",
