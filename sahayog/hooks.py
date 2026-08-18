@@ -462,6 +462,11 @@ scheduler_events = {
         "0 9 * * *": [
             "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
         ],
+
+        # Run daily at 8:45 AM — Bulk Update of Agent Commission JSON for all agents
+        "45 8 * * *": [
+            "sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
+        ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -744,14 +749,3 @@ fixtures = [
     },
 
 ]
-
-# Scheduled Tasks
-# ---------------
-scheduler_events = {
-	"cron": {
-		# 08:45 AM IST - Daily Bulk Update of Agent Commission JSON for all agents
-		"45 8 * * *": [
-			"sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
-		]
-	}
-}
