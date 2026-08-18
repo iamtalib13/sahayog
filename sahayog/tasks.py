@@ -126,6 +126,9 @@ def monthly_leave_credit():
             if not alloc:
                 continue
 
+            # _get_or_create_yearly_allocation returns a dict; normalise for attribute access
+            alloc = frappe._dict(alloc)
+
             # Skip if allocation was created this month (new_leaves_allocated covers it)
             if (
                 getdate(alloc.from_date).year == today_date.year
