@@ -18,13 +18,13 @@
   "role",
   "auth_id",
   "status",
+  "employee",
   "bdo_details_section",
   "requested_by",
   "requested_on",
   "column_break_nbix",
   "approved_by",
   "approved_on",
-  "employee",
   "amended_from",
   "commission_details_tab",
   "get_commission",
@@ -99,6 +99,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:frappe.user.has_role('System Manager')",
    "fieldname": "bdo_details_section",
    "fieldtype": "Section Break",
    "label": "Allocation Details"
@@ -202,7 +203,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-08 15:44:56.019959",
+ "modified": "2026-08-18 12:58:28.766388",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

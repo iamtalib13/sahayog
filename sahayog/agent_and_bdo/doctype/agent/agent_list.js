@@ -146,7 +146,6 @@ function setupRoleBasedActions(listview) {
   }
 
   if (frappe.session.user === "Administrator" || hasRequiredRole) {
-    setupBulkUnallocateButton(listview);
     setupBulkTransferButton(listview);
   }
 }

@@ -294,6 +294,7 @@ def convert_date_format(val: Any) -> str:
 def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract and transform raw agent data from Finacle DB row into standard Frappe fields dictionary.
+    Sets status to 'Allocated' if auth_id contains a numeric employee ID, else 'Unallocated'.
 
     Args:
         agent: Dictionary containing raw agent details fetched from Finacle DB.
@@ -304,12 +305,22 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     agent = agent or {}
     auth_id = agent.get("auth_id") or ""
 
-    # Clean Employee ID
-    employee_raw = auth_id.upper().replace("SAH0", "") if auth_id.upper().startswith("SAH0") else auth_id
-    employee = re.sub(r"\D", "", employee_raw).lstrip("0") or "0"
+    # Parse numeric employee ID from auth_id
+    auth_str = str(auth_id).strip()
+    employee_raw = (
+        auth_str.upper().replace("SAH0", "")
+        if auth_str.upper().startswith("SAH0")
+        else auth_str
+    )
+    digits = re.sub(r"\D", "", employee_raw).lstrip("0")
 
-    # Determine status
-    status = "Allocated" if auth_id else "Unallocated"
+    # If numeric value exists in auth_id, it represents an employee -> Allocated
+    if digits:
+        employee = digits
+        status = "Allocated"
+    else:
+        employee = None
+        status = "Unallocated"
 
     # Date conversion
     creation_date = convert_date_format(agent.get("agent_start_date"))
@@ -498,6 +509,7 @@ def create_agent(agent: Dict[str, Any], agent_code: str, creation_date: Optional
 def update_agent_from_finacle(agent_code: str) -> Dict[str, Any]:
     """
     Fetch and update details for a specific agent from Finacle.
+    Updates status to 'Allocated' if auth_id contains a numeric employee ID, else 'Unallocated'.
     """
     conn = None
     cursor = None

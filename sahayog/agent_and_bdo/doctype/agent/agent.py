@@ -7,22 +7,19 @@ from typing import Any, Dict, List, Optional, Union
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, getdate, nowdate, add_months
 
 
 class Agent(Document):
     """
     Controller for Agent DocType.
-    Manages agent status, user/employee allocation requests, and status lifecycle.
+    Manages agent metadata, commission scanning, and active/inactive status lifecycle.
+    Note: Allocation and Unallocation workflows are disabled.
     """
 
     def validate(self) -> None:
         """Validate agent state before saving."""
         self.set_agent_type_from_code()
-
-        # If both auth_id and employee are blank, force status to Unallocated
-        if not self.auth_id and not self.employee and self.status == "Allocated":
-            self.status = "Unallocated"
 
     def set_agent_type_from_code(self) -> None:
         """Extract and set agent_type (RDDSA / DDDSA) based on agent_code or document name."""
@@ -39,60 +36,37 @@ class Agent(Document):
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
 
-        if self.status == "Unallocated":
-            self.clear_allocation_fields()
-
     def set_employee_from_auth_id(self) -> None:
-        """Extract employee number from auth_id if it starts with SAH prefix."""
+        """Extract employee number from auth_id and update status accordingly."""
         if not self.auth_id:
+            self.employee = None
+            self.status = "Unallocated"
             return
 
-        auth = self.auth_id.strip().upper()
-        if auth.startswith("SAH"):
-            match = re.search(r"\d+", auth)
-            if match:
-                number_part = match.group(0).lstrip("0")
-                self.employee = number_part if number_part else ""
-            else:
-                self.employee = ""
+        auth_str = str(self.auth_id).strip()
+        employee_raw = (
+            auth_str.upper().replace("SAH0", "")
+            if auth_str.upper().startswith("SAH0")
+            else auth_str
+        )
+        digits = re.sub(r"\D", "", employee_raw).lstrip("0")
+
+        if digits:
+            self.employee = digits
+            self.status = "Allocated"
         else:
-            self.employee = ""
+            self.employee = None
+            self.status = "Unallocated"
 
     @frappe.whitelist()
     def approve_allocation(self) -> Dict[str, Union[bool, str]]:
-        """Approve allocation request and bind employee to agent."""
-        self.approved_by = frappe.session.user
-        self.approved_on = now_datetime()
-        self.status = "Allocated"
-
-        if self.requested_by:
-            employee = frappe.db.get_value(
-                "Employee", {"user_id": self.requested_by}, "name", cache=True
-            )
-            if employee:
-                self.employee = employee
-            else:
-                frappe.throw(
-                    _("No Employee record found for user {0}").format(self.requested_by)
-                )
-
-        self.save()
-        return {
-            "success": True,
-            "message": _("Agent Allocated Successfully"),
-        }
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
     def reject_allocation(self) -> Dict[str, Union[bool, str]]:
-        """Reject allocation request and revert status to Unallocated."""
-        self.requested_by = None
-        self.requested_on = None
-        self.status = "Unallocated"
-        self.save()
-        return {
-            "success": True,
-            "message": _("Agent Allocation Rejected"),
-        }
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
     def clear_allocation_fields(self) -> None:
         """Clear all allocation fields on agent without saving."""
@@ -105,93 +79,23 @@ class Agent(Document):
 
     @frappe.whitelist()
     def unallocate_agent(self) -> Dict[str, Union[bool, str]]:
-        """Unallocate agent and clear all allocation metadata."""
-        self.status = "Unallocated"
-        self.clear_allocation_fields()
-        self.save()
-        return {
-            "success": True,
-            "message": _("Agent Unallocated Successfully"),
-        }
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
     def allocation_request(
         self, approver_user_id: Optional[str] = None
     ) -> Dict[str, Union[bool, str]]:
-        """Raise an allocation request targeting selected approver user."""
-        if not approver_user_id:
-            frappe.throw(_("Approver selection is required"))
-
-        user_enabled = frappe.db.get_value(
-            "User", approver_user_id, "enabled", cache=True
-        )
-        if user_enabled is None:
-            frappe.throw(_("Selected approver user does not exist"))
-        elif not user_enabled:
-            frappe.throw(_("Selected approver user is disabled"))
-
-        employee = frappe.db.get_value(
-            "Employee",
-            {"user_id": approver_user_id, "status": "Active"},
-            ["name", "employee_name"],
-            as_dict=True,
-            cache=True,
-        )
-
-        if not employee:
-            frappe.throw(_("No active employee found for selected approver"))
-
-        self.requested_by = frappe.session.user
-        self.requested_on = now_datetime()
-        self.status = "Pending"
-        self.approved_by = approver_user_id
-        self.save()
-
-        return {
-            "success": True,
-            "message": _("Allocation request sent to {0} for approval").format(
-                employee.employee_name
-            ),
-        }
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
 
 @frappe.whitelist()
 def bulk_unallocate(
     agent_names: Union[List[str], str, None] = None
 ) -> Dict[str, Any]:
-    """Unallocate selected agents in bulk without N+1 query overhead."""
-    if isinstance(agent_names, str):
-        agent_names = frappe.parse_json(agent_names)
-
-    if not agent_names:
-        return {
-            "success": False,
-            "message": _("No agents selected for unallocation"),
-        }
-
-    if not isinstance(agent_names, (list, tuple)):
-        agent_names = [agent_names]
-
-    frappe.db.set_value(
-        "Agent",
-        {"name": ["in", agent_names]},
-        {
-            "status": "Unallocated",
-            "requested_by": None,
-            "requested_on": None,
-            "approved_by": None,
-            "approved_on": None,
-            "employee": None,
-            "auth_id": None,
-        },
-        update_modified=True,
-    )
-
-    return {
-        "success": True,
-        "count": len(agent_names),
-        "message": _("{0} agent(s) unallocated successfully").format(len(agent_names)),
-    }
+    """Disabled method."""
+    frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
 
 @frappe.whitelist()
@@ -359,14 +263,22 @@ def get_approver_details(user_id: Optional[str] = None) -> Optional[Dict[str, An
 
 @frappe.whitelist()
 def get_employee_info(employee: str) -> Dict[str, Any]:
-    """Fetch employee details safely and efficiently."""
+    """Fetch employee details safely and efficiently from Employee DocType."""
     if not employee:
         return {}
 
     emp_details = frappe.db.get_value(
         "Employee",
         employee,
-        ["employee_number", "employee_name", "branch", "department", "designation"],
+        [
+            "name",
+            "employee_name",
+            "branch",
+            "department",
+            "designation",
+            "company_email",
+            "cell_number",
+        ],
         as_dict=True,
         cache=True,
     )
@@ -406,10 +318,10 @@ def evaluate_agent_status_from_json(comm_dict: dict) -> str:
     if not comm_dict:
         return "Inactive"
 
-    today = frappe.utils.getdate(frappe.utils.nowdate())
+    today = getdate(nowdate())
     recent_4_months = []
     for i in range(4):
-        dt = frappe.utils.add_months(today, -i)
+        dt = add_months(today, -i)
         year_str = str(dt.year)
         month_str = str(dt.month).zfill(2)
         recent_4_months.append((year_str, month_str))
@@ -480,7 +392,7 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
     agent_status = evaluate_agent_status_from_json(result)
     commission_json_str = frappe.as_json(result)
 
-    # Superfast Direct MariaDB SQL Update of commission_json and agent_status
+    # Direct MariaDB SQL Update of commission_json and agent_status
     frappe.db.sql(
         """
         UPDATE `tabAgent` 
@@ -503,7 +415,7 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
 @frappe.whitelist()
 def bulk_update_agent_commissions() -> Dict[str, Any]:
     """
-    Superfast Bulk Update of commission_json and agent_status for ALL agents in tabAgent.
+    Bulk Update of commission_json and agent_status for ALL agents in tabAgent.
     1. Single Grouped Raw SQL Scan from tabSS and VS Report for all agents.
     2. Evaluates agent_status (Active / Inactive) for 4-month window (current + 3 prior months).
     3. Bulk updates tabAgent using direct SQL.
