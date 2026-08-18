@@ -100,7 +100,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Draft\nPending\nApproved\nRejected",
+   "options": "Draft\nPending\nApproved\nRejected\nCancelled",
    "read_only": 1
   },
   {

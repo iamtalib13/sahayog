@@ -574,6 +574,44 @@ def approve_attendance_correction(request_id, action="Approved"):
     
     return {"success": True, "message": _("Request {0} successfully").format(action)}
 
+@frappe.whitelist()
+def cancel_attendance_correction(employee, attendance_date):
+    """Cancel a pending attendance correction request (mistake / change of mind)."""
+    if not employee or not attendance_date:
+        frappe.throw(_("Employee and date are required"))
+
+    correction = frappe.db.get_value(
+        "Attendance Correction",
+        {
+            "employee": employee,
+            "attendance_date": attendance_date,
+            "status": "Pending",
+        },
+        "name",
+    )
+
+    if not correction:
+        frappe.throw(_("No pending correction request found for this date."))
+
+    doc = frappe.get_doc("Attendance Correction", correction)
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_authorized = any(
+        r in roles for r in ["HR Manager", "HR User", "Branch Manager", "Administrator"]
+    )
+
+    if doc.requested_by != user and not is_authorized:
+        frappe.throw(
+            _("You can only cancel your own correction requests."),
+            frappe.PermissionError,
+        )
+
+    doc.status = "Cancelled"
+    doc.save(ignore_permissions=True)
+
+    return {"success": True, "message": _("Correction request cancelled")}
+
 def _get_employee_holiday_dates(employee, from_date, to_date):
     """Return dict {date: description} of holidays for an employee within date range."""
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")

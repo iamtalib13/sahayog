@@ -5340,7 +5340,7 @@
           else if (histStatus === "On Leave") cls += " leave-d";
           else if (histStatus && histStatus.startsWith("Holiday"))
             cls += " holiday-d";
-          else if (histStatus && histStatus.includes("Pending Correction"))
+          else if (histStatus && histStatus.includes("Correction"))
             cls += " pending-corr-d";
           else if (
             histStatus &&
@@ -5380,8 +5380,12 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            cell.onclick = () =>
-              openCorrectionModal(key, histStatus || "Not Marked");
+            if (histStatus && histStatus.includes("Correction")) {
+              cell.onclick = () => confirmCancelCorrection(key);
+            } else {
+              cell.onclick = () =>
+                openCorrectionModal(key, histStatus || "Not Marked");
+            }
             cell.style.cursor = "pointer";
           }
 
@@ -5411,6 +5415,24 @@
 
       function closeCorrectionModal() {
         document.getElementById("correctionModal").style.display = "none";
+      }
+
+      async function confirmCancelCorrection(date) {
+        const ok = await showConfirmDialog(
+          `A correction request is already pending for ${new Date(
+            date,
+          ).toLocaleDateString("en-IN")}.\n\nCancel the pending request?`,
+        );
+        if (!ok) return;
+        const res = await callAPI(
+          "cancel_attendance_correction",
+          { employee: selectedMemberId, attendance_date: date },
+          "attendance",
+        );
+        if (res && res.success) {
+          showToast(res.message);
+          loadCalendarHistory();
+        }
       }
 
       async function submitCorrection() {
