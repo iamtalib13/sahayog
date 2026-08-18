@@ -5332,12 +5332,16 @@ Pending Regularization
 
           let cls = "cal-d";
           const histStatus = attendanceHistory[key];
+          // baseStatus strips any " (…)" suffix so CSS classification always
+          // matches the underlying attendance status, even when the tooltip
+          // carries extra context like "(Regularization Approved)".
+          const baseStatus = histStatus ? histStatus.replace(/ \(.*\)$/, "") : histStatus;
 
           if (isToday) cls += " today-d";
-          if (histStatus === "Present") cls += " present-d";
-          else if (histStatus === "Absent") cls += " absent-d";
-          else if (histStatus === "Half Day") cls += " half-d";
-          else if (histStatus === "On Leave") cls += " leave-d";
+          if (baseStatus === "Present") cls += " present-d";
+          else if (baseStatus === "Absent") cls += " absent-d";
+          else if (baseStatus === "Half Day") cls += " half-d";
+          else if (baseStatus === "On Leave") cls += " leave-d";
           else if (histStatus && histStatus.startsWith("Holiday"))
             cls += " holiday-d";
           else if (histStatus && histStatus.includes("Correction"))
@@ -5364,7 +5368,7 @@ Pending Regularization
               "Pending Half Day": "Half Day Leave Request Pending",
             };
             cell.title =
-              titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
+              titleMap[histStatus] || histStatus || (isWeekend ? "Weekly Off" : key);
           }
 
           // Disable dates before employee's date of joining
