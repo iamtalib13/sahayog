@@ -643,6 +643,29 @@ def get_fast_lead_report_info():
     }
 
 
+def get_user_triggered_by_string(user=None):
+    user = user or frappe.session.user
+    if not user or user in ["Guest", "None"]:
+        return "⏰ Automatic System Cron Scheduler (3:30 AM IST)"
+
+    if user == "Administrator":
+        return "System Administrator (Administrator Account)"
+
+    try:
+        emp = frappe.db.get_value("Employee", {"user_id": user}, ["employee_name", "employee_number"], as_dict=True)
+        if emp and emp.get("employee_name"):
+            emp_name = emp.get("employee_name")
+            emp_num = emp.get("employee_number")
+            if emp_num:
+                return f"{emp_name} (Emp ID: {emp_num})"
+            return f"{emp_name} ({user})"
+
+        full_name = frappe.db.get_value("User", user, "full_name") or user
+        return f"{full_name} ({user})"
+    except Exception:
+        return f"{user}"
+
+
 @frappe.whitelist()
 def trigger_fast_lead_report_job(force_rebuild=False):
     """Enqueues generate_fast_lead_report in Frappe background long worker to prevent HTTP 504 Gateway Timeout."""
@@ -667,6 +690,8 @@ def trigger_fast_lead_report_job(force_rebuild=False):
             "force_rebuild": force_rebuild
         }
 
+    triggered_by = get_user_triggered_by_string(user)
+
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
     prev_active_filename = info.get("active_filename", "lead_report.csv")
     prev_active_path = os.path.join(site_private_path, prev_active_filename)
@@ -688,7 +713,8 @@ def trigger_fast_lead_report_job(force_rebuild=False):
         queue="long",
         timeout=3600,
         is_async=True,
-        force_rebuild=force_rebuild
+        force_rebuild=force_rebuild,
+        triggered_by=triggered_by
     )
 
     return {
@@ -705,22 +731,30 @@ def trigger_fast_lead_report_job(force_rebuild=False):
 #          it to timestamped CSV in private/files with zero-downtime backup.
 # ==============================================================================
 @frappe.whitelist()
-def generate_fast_lead_report(force_rebuild=False):
+def generate_fast_lead_report(force_rebuild=False, triggered_by=None):
     import shutil
     import datetime
     import csv
 
-    user = frappe.session.user
+    if frappe.flags.in_scheduler or frappe.session.user in ["Guest", None, ""]:
+        frappe.set_user("Administrator")
+        user = "Administrator"
+    else:
+        user = frappe.session.user
+
     roles = frappe.get_roles(user)
     is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
 
     if isinstance(force_rebuild, str):
         force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
 
+    if not triggered_by:
+        triggered_by = get_user_triggered_by_string(frappe.session.user)
+
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
 
     try:
-        return _execute_lead_report_generation(force_rebuild, site_private_path)
+        return _execute_lead_report_generation(force_rebuild, site_private_path, triggered_by=triggered_by)
     except Exception as e:
         info = get_report_info()
         info["status"] = "Ready"
@@ -729,7 +763,7 @@ def generate_fast_lead_report(force_rebuild=False):
         raise e
 
 
-def _execute_lead_report_generation(force_rebuild, site_private_path):
+def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_by=None):
     import shutil
     import datetime
     import csv
@@ -923,7 +957,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path):
         "size_mb": updated_info["size_mb"],
         "size_kb": updated_info["size_kb"],
         "filepath": new_filepath,
-        "latest_sample": latest_sample
+        "latest_sample": latest_sample,
+        "triggered_by": triggered_by or get_user_triggered_by_string()
     }
 
     try:
@@ -945,6 +980,7 @@ def send_crm_report_sync_email(summary_data):
     subject = f"[CRM Report Sync] Fast Lead Report Sync Completed - {now_str}"
 
     latest_sample = summary_data.get("latest_sample", {})
+    triggered_by_str = summary_data.get("triggered_by", "⏰ Automatic System Cron Scheduler (3:30 AM IST)")
 
     message = f"""
     <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -964,6 +1000,10 @@ def send_crm_report_sync_email(summary_data):
                 <tr style="border-bottom: 1px solid #eeeeee;">
                     <td style="padding: 10px 0; font-weight: bold; color: #555;">Execution Time:</td>
                     <td style="padding: 10px 0; color: #111;">{now_str} IST</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Executed By / Source:</td>
+                    <td style="padding: 10px 0; color: #0056b3; font-weight: bold;">{triggered_by_str}</td>
                 </tr>
                 <tr style="border-bottom: 1px solid #eeeeee;">
                     <td style="padding: 10px 0; font-weight: bold; color: #555;">Sync Method:</td>
