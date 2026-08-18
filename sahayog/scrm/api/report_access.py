@@ -766,15 +766,13 @@ def _execute_lead_report_generation(force_rebuild, site_private_path):
 
     # 1. Decide date query criteria
     if not file_exists:
-        # Full initial dump or forced rebuild from 1st July 2026 onwards
-        where_clause = "l.creation >= '2026-07-01 00:00:00'"
+        # Full initial dump or forced rebuild: Fetch ALL historical lead records from Day 1 of CRM
+        where_clause = "1=1"
     else:
         # Incremental Sync: Catch creations or modifications from last 3 days
         where_clause = """
-            l.creation >= '2026-07-01 00:00:00' AND (
-                l.creation >= '{start_datetime}' OR
-                l.modified >= '{start_datetime}'
-            )
+            l.creation >= '{start_datetime}' OR
+            l.modified >= '{start_datetime}'
         """.format(start_datetime=start_datetime)
 
     query = """
