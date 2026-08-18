@@ -423,8 +423,10 @@ scheduler_events = {
         # ],
 
         # Run daily at midnight — Sync District and State from Sahayog Branch
+        # and auto-approve pending attendance corrections
         "0 0 * * *": [
-            "sahayog.tasks.sync_district_state"
+            "sahayog.tasks.sync_district_state",
+            "sahayog.tasks.auto_approve_attendance_corrections"
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
@@ -479,7 +481,6 @@ scheduler_events = {
     #     "sahayog.tasks.all"
     # ],
     "hourly": [
-        "sahayog.tasks.auto_approve_attendance_corrections",
         "sahayog.tasks.auto_approve_leave_applications",
     ],
 
