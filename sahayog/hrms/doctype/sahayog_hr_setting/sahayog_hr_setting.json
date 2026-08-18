@@ -96,7 +96,8 @@
    "default": "0",
    "fieldname": "allow_hr_to_mark_attendance",
    "fieldtype": "Check",
-   "label": "Allow HR To mark Attendance"
+   "label": "Allow HR To mark Attendance",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
@@ -135,6 +136,12 @@
    "read": 1,
    "role": "HR Support Manager",
    "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "HR Manager",
    "write": 1
   }
  ],
