@@ -677,6 +677,21 @@ def get_employee_calendar(employee, month, year):
             history[date_str] = "Pending Correction"
         else:
             history[date_str] = f"{history[date_str]} (Correction Pending)"
+
+    # Add approved correction context — appends to the actual attendance status
+    # so the calendar CSS class (and approval workflow) remain completely untouched.
+    approved_corrections = frappe.get_all("Attendance Correction",
+        filters={
+            "employee": employee,
+            "attendance_date": ["between", [first_day, last_day]],
+            "status": "Approved"
+        },
+        fields=["attendance_date"]
+    )
+    for corr in approved_corrections:
+        date_str = str(corr.attendance_date)
+        base = history.get(date_str) or "Not Marked"
+        history[date_str] = f"{base} (Regularization Approved)"
     
     # Add leave days
     for leave in leaves:
