@@ -5422,6 +5422,8 @@
           `A correction request is already pending for ${new Date(
             date,
           ).toLocaleDateString("en-IN")}.\n\nCancel the pending request?`,
+          "Cancel",
+          "Keep",
         );
         if (!ok) return;
         const res = await callAPI(
@@ -7006,7 +7008,7 @@
         `;
       }
 
-      function showConfirmDialog(message) {
+      function showConfirmDialog(message, okLabel = "OK", cancelLabel = "Cancel") {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
           overlay.style.cssText =
@@ -7022,8 +7024,8 @@
           box.innerHTML = `
             <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, "<br>")}</div>
             <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
-              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">Cancel</button>
-              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">OK</button>
+              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">${cancelLabel}</button>
+              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">${okLabel}</button>
             </div>
           `;
           overlay.appendChild(box);
