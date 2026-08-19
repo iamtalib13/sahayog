@@ -126,6 +126,9 @@ def monthly_leave_credit():
             if not alloc:
                 continue
 
+            # _get_or_create_yearly_allocation returns a dict; normalise for attribute access
+            alloc = frappe._dict(alloc)
+
             # Skip if allocation was created this month (new_leaves_allocated covers it)
             if (
                 getdate(alloc.from_date).year == today_date.year
@@ -280,6 +283,8 @@ def auto_approve_leave_applications():
             doc = frappe.get_doc("Leave Application", la.name)
             if not frappe.db.get_value("Employee", doc.employee, "custom_is_support_staff"):
                 continue
+            from sahayog.api.leave import _delete_advance_deduction
+            _delete_advance_deduction(doc.name)
             doc.status = "Approved"
             doc.flags.ignore_permissions = True
             doc.save()

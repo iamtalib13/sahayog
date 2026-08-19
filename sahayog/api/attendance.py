@@ -574,6 +574,44 @@ def approve_attendance_correction(request_id, action="Approved"):
     
     return {"success": True, "message": _("Request {0} successfully").format(action)}
 
+@frappe.whitelist()
+def cancel_attendance_correction(employee, attendance_date):
+    """Cancel a pending attendance correction request (mistake / change of mind)."""
+    if not employee or not attendance_date:
+        frappe.throw(_("Employee and date are required"))
+
+    correction = frappe.db.get_value(
+        "Attendance Correction",
+        {
+            "employee": employee,
+            "attendance_date": attendance_date,
+            "status": "Pending",
+        },
+        "name",
+    )
+
+    if not correction:
+        frappe.throw(_("No pending correction request found for this date."))
+
+    doc = frappe.get_doc("Attendance Correction", correction)
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_authorized = any(
+        r in roles for r in ["HR Manager", "HR User", "Branch Manager", "Administrator"]
+    )
+
+    if doc.requested_by != user and not is_authorized:
+        frappe.throw(
+            _("You can only cancel your own correction requests."),
+            frappe.PermissionError,
+        )
+
+    doc.status = "Cancelled"
+    doc.save(ignore_permissions=True)
+
+    return {"success": True, "message": _("Correction request cancelled")}
+
 def _get_employee_holiday_dates(employee, from_date, to_date):
     """Return dict {date: description} of holidays for an employee within date range."""
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
@@ -639,8 +677,24 @@ def get_employee_calendar(employee, month, year):
             history[date_str] = "Pending Correction"
         else:
             history[date_str] = f"{history[date_str]} (Correction Pending)"
+
+    # Add approved correction context — appends to the actual attendance status
+    # so the calendar CSS class (and approval workflow) remain completely untouched.
+    approved_corrections = frappe.get_all("Attendance Correction",
+        filters={
+            "employee": employee,
+            "attendance_date": ["between", [first_day, last_day]],
+            "status": "Approved"
+        },
+        fields=["attendance_date"]
+    )
+    for corr in approved_corrections:
+        date_str = str(corr.attendance_date)
+        base = history.get(date_str) or "Not Marked"
+        history[date_str] = f"{base} (Regularization Approved)"
     
-    # Add leave days
+    # Add leave days — append approved context so the calendar tooltip shows
+    # "(Leave Approved)" (mirrors the "(Regularization Approved)" pattern).
     for leave in leaves:
         start = getdate(leave.from_date)
         end = getdate(leave.to_date)
@@ -651,7 +705,8 @@ def get_employee_calendar(employee, month, year):
                 (leave.half_day_date and str(leave.half_day_date) == ds)
                 or (not leave.half_day_date and start == end)
             )
-            history[ds] = "Half Day" if is_half else "On Leave"
+            base = "Half Day" if is_half else "On Leave"
+            history[ds] = f"{base} (Leave Approved)"
             curr = add_days(curr, 1)
 
     # Add pending (Open) leave requests

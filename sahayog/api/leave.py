@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import flt, getdate
 
 @frappe.whitelist(allow_guest=False)
 def get_leave_types():
@@ -86,11 +86,42 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     doc = frappe.get_doc(doc_data)
     
     doc.insert(ignore_permissions=True)
+
+    # Deduct leave balance immediately at apply time (advance deduction).
+    # On approval this entry is removed and re-created by the standard HRMS
+    # submit; on rejection it is deleted, which refunds the balance.
+    _create_advance_deduction(doc, requested_days, holiday_list)
+
     return {
         "success": True,
         "message": _("Leave Applied Successfully"),
         "name": doc.name
     }
+
+
+def _create_advance_deduction(doc, requested_days, holiday_list):
+    """Create a negative Leave Ledger Entry so the balance drops at apply time."""
+    from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+
+    is_lwp = frappe.db.get_value("Leave Type", doc.leave_type, "is_lwp") or 0
+    args = dict(
+        leaves=flt(requested_days) * -1,
+        from_date=getdate(doc.from_date),
+        to_date=getdate(doc.to_date),
+        is_lwp=is_lwp,
+        holiday_list=holiday_list or "",
+    )
+    create_leave_ledger_entry(doc, args, submit=True)
+
+
+def _delete_advance_deduction(leave_application_name):
+    """Remove the advance-deduction ledger entry for an Open leave application.
+    Precise delete by transaction_name — an Open application has exactly one
+    ledger entry (the advance deduction), so allocation/expiry entries are safe."""
+    frappe.db.sql(
+        "DELETE FROM `tabLeave Ledger Entry` WHERE transaction_name = %s",
+        (leave_application_name,),
+    )
 
 @frappe.whitelist(allow_guest=False)
 def get_pending_leaves():
@@ -150,6 +181,12 @@ def update_leave_status(leave_id, status):
         frappe.throw(_("Invalid status"))
 
     doc = frappe.get_doc("Leave Application", leave_id)
+
+    # Balance was already deducted at apply time. Remove that advance entry now —
+    # on Approval the standard HRMS submit re-creates the deduction; on Rejection
+    # this removal IS the refund. No-op for legacy leaves without an advance entry.
+    _delete_advance_deduction(doc.name)
+
     doc.status = status
     
     # Submitting an approved leave automatically handles balance deduction in HRMS

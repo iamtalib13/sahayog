@@ -1147,7 +1147,7 @@
         style="display: none"
         onclick="switchTab('corrections', this)"
       >
-        ✏️ Correction Approvals
+        ✏️ Attendance Regularization
       </button>
       <button
         class="nav-tab"
@@ -2902,7 +2902,7 @@
                     font-family: &quot;Syne&quot;, sans-serif;
                   "
                 >
-                  Correction Request
+                  Attendance Regularization
                 </h3>
                 <div
                   style="
@@ -2966,7 +2966,7 @@
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
                     <option value="Half Day">Half Day</option>
-                    <option value="Work From Home">Work From Home</option>
+                    <option value="On Duty">On Duty</option>
                   </select>
                 </div>
 
@@ -2977,7 +2977,7 @@
                       font-weight: 600;
                       color: var(--muted);
                     "
-                    >Reason for Correction</label
+                    >Reason for Regularization</label
                   >
                   <textarea
                     id="corrReason"
@@ -3128,7 +3128,7 @@
                       margin: 0;
                     "
                   >
-                    Correction History
+                    Regularization History
                   </h3>
                   <button
                     onclick="closeCorrectionHistoryModal()"
@@ -3249,7 +3249,7 @@
                     class="cl-dot"
                     style="background: #fffbeb; border: 1px dashed #d97706"
                   ></div>
-                  Pending Correction
+Pending Regularization
                 </div>
               </div>
               <div class="summary-strip" id="calSummary">
@@ -3403,7 +3403,7 @@
           if (data.corrections && data.corrections.total > 0) {
             correctionHtml = `
                 <div class="dash-section">
-                    <div class="dash-sec-title">Correction Requests</div>
+                    <div class="dash-sec-title">Regularization Requests</div>
                     <div class="corr-grid">
                         <div class="corr-item" onclick="showCorrectionHistory('pending')" style="background:#fff7ed; border:1px solid #fed7aa; cursor:pointer;">
                             <span class="corr-val" style="color:#c2410c">${data.corrections.pending_count}</span>
@@ -3422,9 +3422,9 @@
           } else {
             correctionHtml = `
                 <div class="dash-section">
-                    <div class="dash-sec-title">Correction Requests</div>
+                    <div class="dash-sec-title">Regularization Requests</div>
                     <div style="padding:15px; text-align:center; background:#f8fafc; border-radius:12px; font-size:11px; color:var(--muted); border:1px dashed #e2e8f0;">
-                        No correction requests found for ${monthName}
+                        No regularization requests found for ${monthName}
                     </div>
                 </div>`;
           }
@@ -3628,7 +3628,7 @@
         const title = document.getElementById("correctionHistoryTitle");
 
         let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
-        title.textContent = `${displayTitle} Correction Requests (${list.length})`;
+        title.textContent = `${displayTitle} Regularization Requests (${list.length})`;
 
         if (list.length === 0) {
           container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
@@ -4388,7 +4388,7 @@
         }
 
         if (data.length === 0) {
-          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} correction requests found.</div>`;
+          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} regularization requests found.</div>`;
           return;
         }
 
@@ -4733,7 +4733,7 @@
           }
           if (corrTab) {
             corrTab.style.display = "flex";
-            corrTab.textContent = "✏️ Correction Approvals";
+            corrTab.textContent = "✏️ Attendance Regularization";
           }
           if (hrTab) hrTab.style.display = "flex";
           const reportsTab = document.getElementById("tabReports");
@@ -4881,7 +4881,7 @@
                     <div class="stat-icon" style="background: #fff7ed; color: #c2410c;">🛠️</div>
                     <div style="min-width:0;">
                         <div class="stat-val" style="color:#c2410c;">${data.pending_requests.corrections}</div>
-                        <div class="stat-lbl">Pending Corrections</div>
+                        <div class="stat-lbl">Pending Regularizations</div>
                     </div>
                 </div>
             </div>
@@ -5332,15 +5332,19 @@
 
           let cls = "cal-d";
           const histStatus = attendanceHistory[key];
+          // baseStatus strips any " (…)" suffix so CSS classification always
+          // matches the underlying attendance status, even when the tooltip
+          // carries extra context like "(Regularization Approved)".
+          const baseStatus = histStatus ? histStatus.replace(/ \(.*\)$/, "") : histStatus;
 
           if (isToday) cls += " today-d";
-          if (histStatus === "Present") cls += " present-d";
-          else if (histStatus === "Absent") cls += " absent-d";
-          else if (histStatus === "Half Day") cls += " half-d";
-          else if (histStatus === "On Leave") cls += " leave-d";
+          if (baseStatus === "Present") cls += " present-d";
+          else if (baseStatus === "Absent") cls += " absent-d";
+          else if (baseStatus === "Half Day") cls += " half-d";
+          else if (baseStatus === "On Leave") cls += " leave-d";
           else if (histStatus && histStatus.startsWith("Holiday"))
             cls += " holiday-d";
-          else if (histStatus && histStatus.includes("Pending Correction"))
+          else if (histStatus && histStatus.includes("Correction"))
             cls += " pending-corr-d";
           else if (
             histStatus &&
@@ -5359,12 +5363,12 @@
               Absent: "Absent",
               "Half Day": "Half Day",
               "On Leave": "On Leave",
-              "Pending Correction": "Correction Request Pending",
+              "Pending Correction": "Regularization Request Pending",
               "Pending Leave": "Leave Request Pending",
               "Pending Half Day": "Half Day Leave Request Pending",
             };
             cell.title =
-              titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
+              titleMap[histStatus] || histStatus || (isWeekend ? "Weekly Off" : key);
           }
 
           // Disable dates before employee's date of joining
@@ -5380,8 +5384,12 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            cell.onclick = () =>
-              openCorrectionModal(key, histStatus || "Not Marked");
+            if (histStatus && histStatus.includes("Correction")) {
+              cell.onclick = () => confirmCancelCorrection(key);
+            } else {
+              cell.onclick = () =>
+                openCorrectionModal(key, histStatus || "Not Marked");
+            }
             cell.style.cursor = "pointer";
           }
 
@@ -5411,6 +5419,26 @@
 
       function closeCorrectionModal() {
         document.getElementById("correctionModal").style.display = "none";
+      }
+
+      async function confirmCancelCorrection(date) {
+        const ok = await showConfirmDialog(
+          `A regularization request is already pending for ${new Date(
+            date,
+          ).toLocaleDateString("en-IN")}.\n\nCancel the pending request?`,
+          "Cancel",
+          "Keep",
+        );
+        if (!ok) return;
+        const res = await callAPI(
+          "cancel_attendance_correction",
+          { employee: selectedMemberId, attendance_date: date },
+          "attendance",
+        );
+        if (res && res.success) {
+          showToast(res.message);
+          loadCalendarHistory();
+        }
       }
 
       async function submitCorrection() {
@@ -6060,7 +6088,7 @@
           },
           {
             name: "SS Attendance Regularization and In Out Report",
-            desc: "Daily punch in/out times, attendance status & correction request status",
+            desc: "Daily punch in/out times, attendance status & regularization request status",
             icon: "⏱️",
             adminOnly: true,
           },
@@ -6984,7 +7012,7 @@
         `;
       }
 
-      function showConfirmDialog(message) {
+      function showConfirmDialog(message, okLabel = "OK", cancelLabel = "Cancel") {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
           overlay.style.cssText =
@@ -7000,8 +7028,8 @@
           box.innerHTML = `
             <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, "<br>")}</div>
             <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
-              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">Cancel</button>
-              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">OK</button>
+              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">${cancelLabel}</button>
+              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">${okLabel}</button>
             </div>
           `;
           overlay.appendChild(box);

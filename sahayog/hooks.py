@@ -255,6 +255,7 @@ override_doctype_class = {
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
+    "Leave Application": "sahayog.override.leave_application.CustomLeaveApplication",
     "Serial and Batch Bundle": "sahayog.override.serial_batch_bundle_naming.CustomSerialAndBatchBundle",
     # "Report": "sahayog.override.report.CustomReport"
 
@@ -423,8 +424,10 @@ scheduler_events = {
         # ],
 
         # Run daily at midnight — Sync District and State from Sahayog Branch
+        # and auto-approve pending attendance corrections
         "0 0 * * *": [
-            "sahayog.tasks.sync_district_state"
+            "sahayog.tasks.sync_district_state",
+            "sahayog.tasks.auto_approve_attendance_corrections"
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
@@ -462,6 +465,11 @@ scheduler_events = {
         "0 9 * * *": [
             "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
         ],
+
+        # Run daily at 8:45 AM — Bulk Update of Agent Commission JSON for all agents
+        "45 8 * * *": [
+            "sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
+        ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -474,8 +482,9 @@ scheduler_events = {
     #     "sahayog.tasks.all"
     # ],
     "hourly": [
-        "sahayog.tasks.auto_approve_attendance_corrections",
-        "sahayog.tasks.auto_approve_leave_applications",
+        # TEMPORARILY DISABLED — auto-approval of leave applications paused.
+        # Re-enable by uncommenting the line below when management wants it back.
+        # "sahayog.tasks.auto_approve_leave_applications",
     ],
 
     # "weekly": [
@@ -744,14 +753,3 @@ fixtures = [
     },
 
 ]
-
-# Scheduled Tasks
-# ---------------
-scheduler_events = {
-	"cron": {
-		# 08:45 AM IST - Daily Bulk Update of Agent Commission JSON for all agents
-		"45 8 * * *": [
-			"sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
-		]
-	}
-}

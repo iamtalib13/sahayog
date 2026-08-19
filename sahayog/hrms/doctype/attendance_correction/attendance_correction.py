@@ -15,6 +15,9 @@ class AttendanceCorrection(Document):
 
     def apply_correction(self):
         """Update or create the Attendance record based on the request."""
+        # "On Duty" is not a native Attendance status; store it as Present
+        status = "Present" if self.requested_status == "On Duty" else self.requested_status
+
         # Find existing attendance
         att_name = frappe.db.get_value("Attendance", {
             "employee": self.employee,
@@ -29,7 +32,7 @@ class AttendanceCorrection(Document):
                 attendance.cancel()
             
             # Update and submit
-            frappe.db.set_value("Attendance", attendance.name, "status", self.requested_status)
+            frappe.db.set_value("Attendance", attendance.name, "status", status)
             frappe.db.set_value("Attendance", attendance.name, "docstatus", 0)
             
             attendance = frappe.get_doc("Attendance", attendance.name)
@@ -43,7 +46,7 @@ class AttendanceCorrection(Document):
                 "doctype": "Attendance",
                 "employee": self.employee,
                 "attendance_date": self.attendance_date,
-                "status": self.requested_status,
+                "status": status,
                 "company": company
             })
             attendance.flags.ignore_permissions = True

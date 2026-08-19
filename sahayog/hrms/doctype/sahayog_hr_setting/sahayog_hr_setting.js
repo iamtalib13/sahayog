@@ -3,7 +3,34 @@
 
 frappe.ui.form.on("Sahayog HR Setting", {
 	refresh(frm) {
-		if (!frm.doc.employee_master) return;
+		const user_roles = frappe.user_roles || [];
+		const is_hr_manager = user_roles.includes("HR Manager");
+		const is_system_manager = user_roles.includes("System Manager");
+		const is_hr_support = user_roles.includes("HR Support Manager") || user_roles.includes("HR Support Executive");
+
+		// JSON mein allow_hr_to_mark_attendance read_only:1 hai,
+		// isliye baki roles ke liye ise wapas editable karna padega.
+		if (!is_hr_manager || is_system_manager || is_hr_support) {
+			frm.set_df_property("allow_hr_to_mark_attendance", "read_only", 0);
+		}
+
+		// HR Manager (jo System Manager / HR Support nahi hai):
+		// sirf allow_hr_to_mark_attendance editable, baki sab read-only.
+		if (is_hr_manager && !is_system_manager && !is_hr_support) {
+			frm.set_df_property("allow_hr_to_mark_attendance", "read_only", 0);
+			const layout_types = ["Section Break", "Column Break", "Tab Break"];
+			(frm.meta.fields || []).forEach((field) => {
+				if (
+					field.fieldname &&
+					field.fieldname !== "allow_hr_to_mark_attendance" &&
+					!layout_types.includes(field.fieldtype)
+				) {
+					frm.set_df_property(field.fieldname, "read_only", 1);
+				}
+			});
+		}
+
+		if (!frm.doc.employee_master || (is_hr_manager && !is_system_manager && !is_hr_support)) return;
 
 		frm.add_custom_button(__("Insert Employee"), () => {
 			frappe.confirm(
