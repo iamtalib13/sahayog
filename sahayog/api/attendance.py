@@ -693,7 +693,8 @@ def get_employee_calendar(employee, month, year):
         base = history.get(date_str) or "Not Marked"
         history[date_str] = f"{base} (Regularization Approved)"
     
-    # Add leave days
+    # Add leave days — append approved context so the calendar tooltip shows
+    # "(Leave Approved)" (mirrors the "(Regularization Approved)" pattern).
     for leave in leaves:
         start = getdate(leave.from_date)
         end = getdate(leave.to_date)
@@ -704,7 +705,8 @@ def get_employee_calendar(employee, month, year):
                 (leave.half_day_date and str(leave.half_day_date) == ds)
                 or (not leave.half_day_date and start == end)
             )
-            history[ds] = "Half Day" if is_half else "On Leave"
+            base = "Half Day" if is_half else "On Leave"
+            history[ds] = f"{base} (Leave Approved)"
             curr = add_days(curr, 1)
 
     # Add pending (Open) leave requests
