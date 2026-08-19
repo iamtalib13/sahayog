@@ -94,7 +94,7 @@ def execute(filters=None):
         FROM `tabSalary Register` sr
         LEFT JOIN `tabEmployee` e ON e.name = sr.employee
         {conditions}
-        ORDER BY sr.branch, sr.employee_name
+        ORDER BY CAST(REGEXP_REPLACE(sr.employee, '[^0-9]', '') AS UNSIGNED), sr.employee
     """, {
         "from_date": from_date,
         "to_date": to_date,

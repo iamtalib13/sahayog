@@ -135,7 +135,7 @@ def execute(filters=None):
                {_state_select}
         FROM `tabEmployee` e
         WHERE e.custom_is_support_staff = 1 {emp_conditions}
-        ORDER BY e.branch, e.employee_name
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, filters, as_dict=True)
 
     if not employees:
