@@ -283,6 +283,8 @@ def auto_approve_leave_applications():
             doc = frappe.get_doc("Leave Application", la.name)
             if not frappe.db.get_value("Employee", doc.employee, "custom_is_support_staff"):
                 continue
+            from sahayog.api.leave import _delete_advance_deduction
+            _delete_advance_deduction(doc.name)
             doc.status = "Approved"
             doc.flags.ignore_permissions = True
             doc.save()
