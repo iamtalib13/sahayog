@@ -72,7 +72,7 @@ def execute(filters=None):
             OR (lle.creation BETWEEN %(from)s AND %(to)s)
           )
           {emp_conditions}
-        ORDER BY e.branch, e.employee_name, lle.leave_type, lle.creation
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name, lle.leave_type, lle.creation
     """, {
         "from": from_date,
         "to": to_date,
