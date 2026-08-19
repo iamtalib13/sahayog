@@ -43,7 +43,7 @@ def execute(filters=None):
         SELECT e.name, e.employee_name, e.branch, e.department
         FROM `tabEmployee` e
         WHERE e.custom_is_support_staff = 1 {conditions}
-        ORDER BY e.branch, e.employee_name
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, filters, as_dict=True)
 
     if not employees:
