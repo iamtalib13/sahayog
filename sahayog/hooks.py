@@ -481,7 +481,9 @@ scheduler_events = {
     #     "sahayog.tasks.all"
     # ],
     "hourly": [
-        "sahayog.tasks.auto_approve_leave_applications",
+        # TEMPORARILY DISABLED — auto-approval of leave applications paused.
+        # Re-enable by uncommenting the line below when management wants it back.
+        # "sahayog.tasks.auto_approve_leave_applications",
     ],
 
     # "weekly": [
