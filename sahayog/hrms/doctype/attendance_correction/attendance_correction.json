@@ -54,7 +54,7 @@
    "fieldname": "requested_status",
    "fieldtype": "Select",
    "label": "Requested Status",
-   "options": "Present\nAbsent\nHalf Day\nWork From Home",
+   "options": "Present\nAbsent\nHalf Day\nOn Duty",
    "reqd": 1
   },
   {
