@@ -63,7 +63,7 @@ def execute(filters=None):
         WHERE la.docstatus = 1
             AND %(today)s BETWEEN la.from_date AND la.to_date
             {conditions}
-        ORDER BY e.branch, e.employee_name, la.leave_type
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name, la.leave_type
     """, {**filters, "today": frappe.utils.today()}, as_dict=1)
 
     for row in data:
