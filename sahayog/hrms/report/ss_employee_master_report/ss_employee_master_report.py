@@ -92,7 +92,7 @@ def execute(filters=None):
             e.bank_name, e.bank_ac_no, e.reports_to, e.status, e.relieving_date
         FROM `tabEmployee` e
         {conditions}
-        ORDER BY e.branch, e.employee_name
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, filters, as_dict=1)
 
     return columns, data
