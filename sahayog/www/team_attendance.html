@@ -2726,13 +2726,37 @@
                       "
                       >Reason for Leaving *</label
                     >
-                    <textarea
-                      id="exit_reason"
-                      class="member-select"
-                      rows="3"
-                      required
-                      placeholder="e.g. Personal reasons, better opportunity..."
-                    ></textarea>
+                    <select id="exit_reason" class="member-select" required>
+                      <option value="" disabled selected>
+                        Select reason...
+                      </option>
+                      <optgroup label="Voluntary">
+                        <option value="Health Issue">Health Issue</option>
+                        <option value="Family Issue">Family Issue</option>
+                        <option value="Personal Issue">Personal Issue</option>
+                        <option value="Marriage">Marriage</option>
+                        <option value="Better Career Opportunities">
+                          Better Career Opportunities
+                        </option>
+                        <option value="Higher Studies">Higher Studies</option>
+                        <option value="Absconding">Absconding</option>
+                        <option value="Work Environment/Culture">
+                          Work Environment/Culture
+                        </option>
+                      </optgroup>
+                      <optgroup label="Involuntary">
+                        <option value="Performance Issue">
+                          Performance Issue
+                        </option>
+                        <option value="Termination of Services">
+                          Termination of Services
+                        </option>
+                        <option value="Asked to Go">Asked to Go</option>
+                        <option value="Not Joined">Not Joined</option>
+                        <option value="Death">Death</option>
+                        <option value="Others">Others</option>
+                      </optgroup>
+                    </select>
                   </div>
                   <div style="margin-bottom: 20px">
                     <label
@@ -6090,13 +6114,13 @@ Pending Regularization
             name: "SS Attendance Regularization and In Out Report",
             desc: "Daily punch in/out times, attendance status & regularization request status",
             icon: "⏱️",
-            adminOnly: true,
+            adminOnly: false,
           },
           {
             name: "SS Leave Transaction Report",
             desc: "Leave ledger: opening balance, credited, availed, closing balance per leave type",
             icon: "📋",
-            adminOnly: true,
+            adminOnly: false,
           },
         ];
 
