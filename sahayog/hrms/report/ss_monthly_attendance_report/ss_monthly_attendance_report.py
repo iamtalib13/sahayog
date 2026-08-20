@@ -171,6 +171,21 @@ def execute(filters=None):
         key = f"{a.employee}|{a.attendance_date}"
         att_map[key] = a
 
+    # ---- Fetch Approved Regularizations (On Duty) ----
+    corrections = frappe.db.sql("""
+        SELECT ac.employee, ac.attendance_date
+        FROM `tabAttendance Correction` ac
+        WHERE ac.employee IN %(employees)s
+          AND ac.attendance_date BETWEEN %(from_date)s AND %(to_date)s
+          AND ac.status = 'Approved'
+    """, {
+        "employees": emp_names,
+        "from_date": from_date,
+        "to_date": to_date,
+    }, as_dict=True)
+
+    od_keys = {f"{c.employee}|{c.attendance_date}" for c in corrections}
+
     # ---- Fetch Holiday Lists ----
     # Collect unique holiday lists
     hl_names = list(set(e.holiday_list for e in employees if e.holiday_list))
@@ -262,17 +277,27 @@ def execute(filters=None):
             is_wo = d in ewo or d.weekday() == 6
 
             if att:
-                code = get_attendance_code(att.status, att.leave_type, is_hol, is_wo)
-                if att.status == "Present" or att.status == "Half Day":
-                    total_present += 0.5 if att.status == "Half Day" else 1
+                # Approved regularization -> On Duty (OD), counted as Present
+                is_od = att.status == "Present" and key in od_keys
+                if is_od:
+                    code = "OD"
+                    total_present += 1
+                else:
+                    code = get_attendance_code(att.status, att.leave_type, is_hol, is_wo)
+                    if att.status == "Present":
+                        total_present += 1
+                    elif att.status == "Half Day":
+                        total_present += 0.5
                 total_days += 1
             else:
-                if is_wo:
-                    code = "WO"
-                elif is_hol:
+                if is_hol:
                     code = "H"
+                    total_present += 1
+                elif is_wo:
+                    code = "WO"
+                    total_present += 1
                 else:
-                    code = ""
+                    code = "A"
 
             row[d.strftime("%d_%m_%Y")] = code
 
