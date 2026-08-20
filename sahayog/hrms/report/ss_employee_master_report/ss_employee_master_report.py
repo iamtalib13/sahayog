@@ -13,7 +13,6 @@ def execute(filters=None):
         {"label": "Date of Confirmation", "fieldname": "final_confirmation_date","fieldtype": "Date", "width": 130},
         {"label": "Department",           "fieldname": "department",             "fieldtype": "Data", "width": 140},
         {"label": "Designation",          "fieldname": "designation",            "fieldtype": "Data", "width": 140},
-        {"label": "Grade",                "fieldname": "grade",                  "fieldtype": "Data", "width": 100},
         {"label": "CXO Level",            "fieldname": "cxo_level",              "fieldtype": "Data", "width": 100},
         {"label": "Employment Type",      "fieldname": "employment_type",        "fieldtype": "Data", "width": 130},
         {"label": "Business Unit",        "fieldname": "custom_division",        "fieldtype": "Data", "width": 130},
@@ -92,7 +91,7 @@ def execute(filters=None):
     data = frappe.db.sql(f"""
         SELECT
             e.employee_number, e.employee_name, e.gender, e.date_of_birth, e.date_of_joining,
-            e.final_confirmation_date, e.department, e.designation, e.grade, e.cxo_level,
+            e.final_confirmation_date, e.department, e.designation, e.cxo_level,
             e.employment_type, e.custom_division, e.custom_cluter,
             sb.state,
             e.custom_zone, e.custom_region, e.custom_district,
