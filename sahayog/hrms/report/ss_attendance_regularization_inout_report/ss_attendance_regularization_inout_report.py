@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.utils import getdate
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 
 def execute(filters=None):
@@ -20,14 +20,18 @@ def execute(filters=None):
         {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 170},
         {"label": "Branch", "fieldname": "branch", "fieldtype": "Data", "width": 140},
         {"label": "Department", "fieldname": "department", "fieldtype": "Data", "width": 130},
+        {"label": "Shift", "fieldname": "shift", "fieldtype": "Data", "width": 110},
+        {"label": "Shift In-Time", "fieldname": "shift_in_time", "fieldtype": "Data", "width": 90},
+        {"label": "Shift Out-Time", "fieldname": "shift_out_time", "fieldtype": "Data", "width": 90},
         {"label": "Date", "fieldname": "attendance_date", "fieldtype": "Date", "width": 100},
         {"label": "Punch In", "fieldname": "punch_in", "fieldtype": "Data", "width": 80},
         {"label": "Punch Out", "fieldname": "punch_out", "fieldtype": "Data", "width": 80},
         {"label": "Attendance Status", "fieldname": "attendance_status", "fieldtype": "Data", "width": 120},
-        {"label": "Correction Status", "fieldname": "correction_status", "fieldtype": "Data", "width": 120},
+        {"label": "Regularization Status", "fieldname": "correction_status", "fieldtype": "Data", "width": 120},
         {"label": "Requested Status", "fieldname": "requested_status", "fieldtype": "Data", "width": 120},
-        {"label": "Correction Reason", "fieldname": "correction_reason", "fieldtype": "Data", "width": 200},
+        {"label": "Regularization Reason", "fieldname": "correction_reason", "fieldtype": "Data", "width": 200},
         {"label": "Approved By", "fieldname": "approved_by", "fieldtype": "Data", "width": 120},
+        {"label": "Approval Name", "fieldname": "approval_name", "fieldtype": "Data", "width": 150},
         {"label": "Approval Date", "fieldname": "approval_date", "fieldtype": "Datetime", "width": 140},
     ]
 
@@ -40,7 +44,7 @@ def execute(filters=None):
         conditions += " AND e.department = %(department)s"
 
     employees = frappe.db.sql(f"""
-        SELECT e.name, e.employee_name, e.branch, e.department
+        SELECT e.name, e.employee_name, e.branch, e.department, e.default_shift
         FROM `tabEmployee` e
         WHERE e.custom_is_support_staff = 1 {conditions}
         ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
@@ -50,6 +54,16 @@ def execute(filters=None):
         return columns, []
 
     emp_names = [e.name for e in employees]
+
+    # Fetch Shift Type timings
+    shift_map = {}
+    for s in frappe.db.sql("SELECT name, start_time, end_time FROM `tabShift Type`", as_dict=True):
+        shift_map[s.name] = s
+
+    def fmt_shift_time(td):
+        if not td:
+            return ""
+        return (datetime.min + td).strftime("%H:%M")
 
     # Fetch Attendance records
     attendances = frappe.db.sql("""
@@ -96,6 +110,15 @@ def execute(filters=None):
     for c in corrections:
         corr_map[(c.employee, str(c.attendance_date))] = c
 
+    # Approver full names
+    approver_ids = list({c.approved_by for c in corrections if c.approved_by})
+    approver_names = {}
+    if approver_ids:
+        for u in frappe.db.sql(
+            "SELECT name, full_name FROM `tabUser` WHERE name IN %(ids)s",
+            {"ids": approver_ids}, as_dict=True):
+            approver_names[u.name] = u.full_name or u.name
+
     # Build data rows — one row per employee per date
     data = []
     emp_info = {e.name: e for e in employees}
@@ -122,6 +145,9 @@ def execute(filters=None):
                 "employee_name": emp_info[ename].employee_name,
                 "branch": emp_info[ename].branch,
                 "department": emp_info[ename].department,
+                "shift": emp_info[ename].default_shift or "",
+                "shift_in_time": fmt_shift_time(shift_map.get(emp_info[ename].default_shift, {}).start_time) if emp_info[ename].default_shift and shift_map.get(emp_info[ename].default_shift) else "",
+                "shift_out_time": fmt_shift_time(shift_map.get(emp_info[ename].default_shift, {}).end_time) if emp_info[ename].default_shift and shift_map.get(emp_info[ename].default_shift) else "",
                 "attendance_date": d,
                 "punch_in": pi,
                 "punch_out": po,
@@ -130,6 +156,7 @@ def execute(filters=None):
                 "requested_status": req_status,
                 "correction_reason": reason,
                 "approved_by": approved_by,
+                "approval_name": approver_names.get(approved_by, ""),
                 "approval_date": approval_date,
             })
             d += timedelta(days=1)
