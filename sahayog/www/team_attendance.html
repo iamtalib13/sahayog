@@ -6588,7 +6588,9 @@ Pending Regularization
         let totalCreated = 0,
           totalFailed = 0,
           totalSkipped = 0,
-          allErrors = [];
+          totalUpdated = 0,
+          allErrors = [],
+          allRows = [];
 
         const resultsDiv = document.getElementById("importResults");
         resultsDiv.style.display = "block";
@@ -6633,7 +6635,9 @@ Pending Regularization
             totalCreated += res.created || 0;
             totalFailed += res.failed || 0;
             totalSkipped += res.skipped || 0;
+            totalUpdated += res.updated || 0;
             allErrors = allErrors.concat(res.errors || []);
+            allRows = allRows.concat(res.rows || []);
 
             // Log each error/skip to console for easy debugging
             (res.errors || []).forEach((e) => {
@@ -6668,32 +6672,72 @@ Pending Regularization
         }
 
         // ── Render result summary ────────────────────────────────────────────
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✅ Created: <span style="color:var(--success)">${totalCreated}</span>
-          &nbsp;⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span>
-          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        const errorMap = {};
+        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+
+        const statusStyle = {
+          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
+          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
+          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+        };
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
+          ${totalUpdated > 0 ? `<span>✏️ Updated: <span style="color:#15803d">${totalUpdated}</span></span>` : ""}
+          <span>✅ Created: <span style="color:var(--success)">${totalCreated}</span></span>
+          <span>⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span></span>
+          <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allErrors.length > 0) {
-          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details (check browser console for full log):</div>`;
-          html += allErrors
-            .map((e) => {
-              // Distinguish skipped (duplicates) vs actual failures by error text
-              const isSkip =
-                e.error && e.error.toLowerCase().includes("already exist");
-              const bg = isSkip ? "#fffbeb" : "#fff1f2";
-              const bc = isSkip ? "#fde68a" : "#fecaca";
-              const icon = isSkip ? "⏭" : "❌";
-              return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+        if (allRows.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Employee Status</div>
+          <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="background:#f8fafc; border-bottom:1px solid var(--border); position:sticky; top:0;">
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Status</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Remark</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${allRows.map(r => {
+                  const s = statusStyle[r.status] || { bg: "#fff", border: "#e5e7eb", color: "#374151", icon: "•" };
+                  const err = errorMap[r.row] || "";
+                  return `<tr style="border-bottom:1px solid #f3f4f6;">
+                    <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
+                    <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
+                    <td style="padding:6px 10px;">${r.name}</td>
+                    <td style="padding:6px 10px;">
+                      <span style="background:${s.bg}; border:1px solid ${s.border}; color:${s.color}; border-radius:20px; padding:2px 10px; font-weight:700; font-size:11px; white-space:nowrap;">
+                        ${s.icon} ${r.status}
+                      </span>
+                    </td>
+                    <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
+        } else if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
+          html += allErrors.map((e) => {
+            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
+            const bg = isSkip ? "#fffbeb" : "#fff1f2";
+            const bc = isSkip ? "#fde68a" : "#fecaca";
+            const icon = isSkip ? "⏭" : "❌";
+            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
               ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-            })
-            .join("");
+          }).join("");
         }
 
         resultsDiv.innerHTML = html;
 
-        if (totalCreated > 0) fetchTeamData();
+        if (totalCreated > 0 || totalUpdated > 0) fetchTeamData();
       }
 
       async function submitUpdate() {
