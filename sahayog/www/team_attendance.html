@@ -2715,7 +2715,24 @@
                       required
                     />
                   </div>
-                  <div style="margin-bottom: 20px">
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Resignation Type *</label
+                    >
+                    <select id="exit_resignation_type" class="member-select" required onchange="onResignationTypeChange()">
+                      <option value="" disabled selected>Select type...</option>
+                      <option value="Voluntary">Voluntary</option>
+                      <option value="Involuntary">Involuntary</option>
+                    </select>
+                  </div>
+                  <div style="margin-bottom: 14px" id="exitReasonWrap" hidden>
                     <label
                       style="
                         font-size: 12px;
@@ -2727,35 +2744,7 @@
                       >Reason for Leaving *</label
                     >
                     <select id="exit_reason" class="member-select" required>
-                      <option value="" disabled selected>
-                        Select reason...
-                      </option>
-                      <optgroup label="Voluntary">
-                        <option value="Health Issue">Health Issue</option>
-                        <option value="Family Issue">Family Issue</option>
-                        <option value="Personal Issue">Personal Issue</option>
-                        <option value="Marriage">Marriage</option>
-                        <option value="Better Career Opportunities">
-                          Better Career Opportunities
-                        </option>
-                        <option value="Higher Studies">Higher Studies</option>
-                        <option value="Absconding">Absconding</option>
-                        <option value="Work Environment/Culture">
-                          Work Environment/Culture
-                        </option>
-                      </optgroup>
-                      <optgroup label="Involuntary">
-                        <option value="Performance Issue">
-                          Performance Issue
-                        </option>
-                        <option value="Termination of Services">
-                          Termination of Services
-                        </option>
-                        <option value="Asked to Go">Asked to Go</option>
-                        <option value="Not Joined">Not Joined</option>
-                        <option value="Death">Death</option>
-                        <option value="Others">Others</option>
-                      </optgroup>
+                      <option value="" disabled selected>Select reason...</option>
                     </select>
                   </div>
                   <div style="margin-bottom: 20px">
@@ -6794,6 +6783,23 @@ Pending Regularization
         document.getElementById("exitEmployeeForm").reset();
         document.getElementById("exit_emp_search_input").value = "";
         document.getElementById("exit_emp_select").value = "";
+        document.getElementById("exitReasonWrap").hidden = true;
+      }
+
+      function onResignationTypeChange() {
+        const type = document.getElementById("exit_resignation_type").value;
+        const wrap = document.getElementById("exitReasonWrap");
+        const sel = document.getElementById("exit_reason");
+        const reasons = {
+          "Voluntary": ["Health Issue","Family Issue","Personal Issue","Marriage","Better Career Opportunities","Higher Studies","Absconding","Work Environment/Culture"],
+          "Involuntary": ["Performance Issue","Termination of Services","Asked to Go","Not Joined","Death","Others"]
+        };
+        if (!type) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        sel.innerHTML = '<option value="" disabled selected>Select reason...</option>';
+        (reasons[type] || []).forEach(r => {
+          sel.innerHTML += `<option value="${r}">${r}</option>`;
+        });
       }
 
       async function submitExitEmployee() {
@@ -6809,6 +6815,7 @@ Pending Regularization
           "exit_relieving_date",
         ).value;
         const reason = document.getElementById("exit_reason").value;
+        const resignation_type = document.getElementById("exit_resignation_type").value;
 
         if (
           resignation_date &&
@@ -6861,6 +6868,7 @@ Pending Regularization
             resignation_letter_date: resignation_date,
             relieving_date,
             reason_for_leaving: reason,
+            resignation_type,
             attachment_url,
           },
           "employee",
