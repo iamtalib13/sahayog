@@ -6775,7 +6775,7 @@ Pending Regularization
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch, mode: "update" },
+              { rows: batch, mode: "update", force_update: 1 },
               "employee",
             );
           } catch (apiErr) {
