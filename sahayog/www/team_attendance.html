@@ -380,6 +380,10 @@
         background: #f3f4f6;
         color: #9ca3af;
       }
+      .pill-pending {
+        background: #fef3c7;
+        color: #d97706;
+      }
 
       /* CALENDAR PANEL */
       .cal-head {
@@ -4177,7 +4181,7 @@ Pending Regularization
       }
 
       async function updatePendingBadges() {
-        if (!isHR()) return;
+        if (!isHR() && !isBranchManager()) return;
         const leaves = await callAPI("get_pending_leaves", {}, "leave");
         const corr = await callAPI(
           "get_pending_attendance_corrections",
@@ -4196,11 +4200,13 @@ Pending Regularization
 
       function switchTab(tab, btn) {
         if (
-          (tab === "leave" ||
-            tab === "corrections" ||
-            tab === "hr_dashboard") &&
-          !isHR()
+          (tab === "leave" || tab === "corrections") &&
+          !isHR() && !isBranchManager()
         ) {
+          showToast("You are not authorized to access this tab.");
+          return;
+        }
+        if (tab === "hr_dashboard" && !isHR()) {
           showToast("You are not authorized to access this tab.");
           return;
         }
@@ -4270,6 +4276,21 @@ Pending Regularization
           }
         }
 
+        // Branch Manager: Exit button visibility
+        if (isBranchManager()) {
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          if (tab === "attendance") {
+            if (calPanel) calPanel.style.display = "block";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+          } else {
+            if (calPanel) calPanel.style.display = "none";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
+          }
+        }
+
         if (tab === "attendance") {
           if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
           if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
@@ -4278,9 +4299,9 @@ Pending Regularization
           if (dirCardHead) dirCardHead.style.display = "flex";
           const empStatusFilters = document.getElementById("empStatusFilters");
           if (empStatusFilters) {
-            empStatusFilters.style.display = isHR() ? "flex" : "none";
+            empStatusFilters.style.display = (isHR() || isBranchManager()) ? "flex" : "none";
             // Reset to Active when switching to attendance tab
-            if (isHR() && employeeStatusFilter !== "Active") {
+            if ((isHR() || isBranchManager()) && employeeStatusFilter !== "Active") {
               employeeStatusFilter = "Active";
               document
                 .querySelectorAll("#empStatusFilters .ftab")
@@ -4408,7 +4429,7 @@ Pending Regularization
         container.innerHTML = data
           .map((c) => {
             let actionsHtml = "";
-            if (c.status === "Pending") {
+            if (c.status === "Pending" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
@@ -4416,7 +4437,7 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                c.status === "Approved" ? "pill-present" : "pill-absent";
+                c.status === "Approved" ? "pill-present" : c.status === "Pending" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
             }
 
@@ -4569,7 +4590,7 @@ Pending Regularization
               .replace(/\//g, "-");
 
             let actionsHtml = "";
-            if (l.status === "Open") {
+            if (l.status === "Open" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
@@ -4577,7 +4598,7 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                l.status === "Approved" ? "pill-present" : "pill-absent";
+                l.status === "Approved" ? "pill-present" : l.status === "Open" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
             }
 
@@ -4767,6 +4788,34 @@ Pending Regularization
           if (isFirstLoad) {
             isFirstLoad = false;
             switchTab("hr_dashboard", hrTab);
+          }
+          populateAllFilters();
+          updatePendingBadges();
+        } else if (isBranchManager()) {
+          isFirstLoad = false;
+          if (attendanceTab) attendanceTab.textContent = "👥 Staff Directory";
+          if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          if (leaveTab) {
+            leaveTab.style.display = "flex";
+            leaveTab.textContent = "📝 Leave Requests";
+          }
+          if (corrTab) {
+            corrTab.style.display = "flex";
+            corrTab.textContent = "✏️ Regularization";
+          }
+          if (hrTab) hrTab.style.display = "none";
+          if (hrFilters) hrFilters.style.display = "none";
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
+          const empStatusFilters = document.getElementById("empStatusFilters");
+          if (empStatusFilters) {
+            empStatusFilters.style.display =
+              currentTab === "attendance" ? "flex" : "none";
+          }
+          if (isFirstLoad) {
+            isFirstLoad = false;
           }
           populateAllFilters();
           updatePendingBadges();
@@ -5200,6 +5249,8 @@ Pending Regularization
               extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
             if (isHR()) {
               actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            } else if (isBranchManager()) {
+              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
             }
           } else {
             // Active employee — normal rendering
@@ -5233,14 +5284,19 @@ Pending Regularization
               const canManage = isBranchManager() || s.is_self;
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
-                  actionsHtml = "";
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 } else if (!status || status === "Not Marked") {
                   actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
                     <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
                     <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
                     <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
                 } else if (status === "Present" && !s.check_out) {
-                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                  actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                } else {
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 }
               }
             }
@@ -5861,7 +5917,7 @@ Pending Regularization
         const content = document.getElementById("dashboardContent");
         document.querySelector(".drawer-header span").textContent =
           "Employee Profile";
-        document.getElementById("drawerEditBtn").style.display = "inline-block";
+        document.getElementById("drawerEditBtn").style.display = (isHR() || isAdmin()) ? "inline-block" : "none";
         content.innerHTML =
           '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
