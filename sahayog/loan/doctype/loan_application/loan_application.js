@@ -702,10 +702,9 @@ frappe.ui.form.on("Loan Application", {
               return;
             }
             frappe.call({
-              method: 'frappe.client.set_value',
+              method: 'sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation',
               args: {
-                doctype: frm.doc.doctype,
-                name: frm.doc.name,
+                docname: frm.doc.name,
                 fieldname: 'branch_code',
                 value: values.branch_code
               },
@@ -765,63 +764,36 @@ frappe.ui.form.on("Loan Application", {
           primary_action(values) {
             frappe.db.get_value('Employee', values.assigned_employee, 'employee_name', (emp_res) => {
               let emp_name = emp_res ? emp_res.employee_name : '';
-              frappe.call({
-                method: 'frappe.client.set_value',
-                args: {
-                  doctype: frm.doc.doctype,
-                  name: frm.doc.name,
-                  fieldname: {
-                    'lead_converter': values.assigned_employee,
-                    'lead_converter_name': emp_name,
-                    'branch_code': values.branch_code
-                  }
-                },
-                freeze: true,
-                freeze_message: __('Assigning Case & Granting Access...'),
-              callback: function (r) {
-                if (!r.exc) {
-                  // Fetch user_id for the assigned employee and grant DocShare access
-                  frappe.db.get_value('Employee', values.assigned_employee, 'user_id', (res) => {
-                    if (res && res.user_id) {
-                      // First grant access to the new assigned user
-                      frappe.call({
-                        method: 'frappe.share.add',
-                        args: {
-                          doctype: frm.doc.doctype,
-                          name: frm.doc.name,
-                          user: res.user_id,
-                          read: 1,
-                          write: 1,
-                          submit: 1,
-                          share: 1
-                        },
-                        callback: function() {
-                          // Next, revoke access from original owner/generator if different from new assignee
-                          if (frm.doc.owner && frm.doc.owner !== res.user_id) {
-                            frappe.call({
-                              method: 'frappe.share.remove',
-                              args: {
-                                doctype: frm.doc.doctype,
-                                name: frm.doc.name,
-                                user: frm.doc.owner
-                              }
-                            });
-                          }
-                          frappe.show_alert({ message: __('Case assigned and shared successfully!'), indicator: 'green' });
-                          d.hide();
-                          frm.reload_doc();
-                        }
-                      });
-                    } else {
-                      frappe.show_alert({ message: __('Case assigned successfully!'), indicator: 'green' });
+              
+              // Fetch user_id for the assigned employee first
+              frappe.db.get_value('Employee', values.assigned_employee, 'user_id', (res) => {
+                let new_user_id = res ? res.user_id : null;
+
+                frappe.call({
+                  method: 'sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation',
+                  args: {
+                    docname: frm.doc.name,
+                    fieldname: {
+                      'lead_converter': values.assigned_employee,
+                      'lead_converter_name': emp_name,
+                      'branch_code': values.branch_code
+                    },
+                    new_user_id: new_user_id,
+                    original_owner_id: frm.doc.owner
+                  },
+                  freeze: true,
+                  freeze_message: __('Assigning Case & Granting Access...'),
+                  callback: function (r) {
+                    if (!r.exc) {
+                      frappe.show_alert({ message: __('Case assigned and shared successfully!'), indicator: 'green' });
                       d.hide();
+                      frm.reload_doc();
                     }
-                  });
-                }
-              }
+                  }
+                });
+              });
             });
-          });
-        }
+          }
         });
         d.show();
       }, __("Update Loan Case"));
