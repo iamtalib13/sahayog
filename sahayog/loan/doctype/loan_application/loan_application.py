@@ -260,3 +260,23 @@ def get_branch_loan_user_employees(doctype, txt, searchfield, start, page_len, f
         "start": start,
         "page_len": page_len
     })
+
+@frappe.whitelist()
+def update_loan_field_without_validation(docname, fieldname, value=None, new_user_id=None, original_owner_id=None):
+    """
+    Directly update a field without triggering document validations.
+    Also handles sharing logic if new_user_id is provided.
+    """
+    if isinstance(fieldname, str) and fieldname.startswith("{"):
+        fieldname = frappe.parse_json(fieldname)
+    
+    frappe.db.set_value("Loan Application", docname, fieldname, value)
+
+    # Handle document sharing logic from the backend
+    if new_user_id:
+        frappe.share.add("Loan Application", docname, new_user_id, read=1, write=1, submit=1, share=1)
+        
+        if original_owner_id and original_owner_id != new_user_id:
+            frappe.share.remove("Loan Application", docname, original_owner_id)
+
+    return {"status": "success"}
