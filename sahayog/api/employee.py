@@ -696,8 +696,17 @@ def bulk_import_employees(rows, mode="insert"):
 @frappe.whitelist()
 def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, resignation_type=None, attachment_url=None):
     roles = frappe.get_roles(frappe.session.user)
-    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+    is_hr = any(r in roles for r in ["HR Manager", "HR User", "Administrator"])
+    is_branch_manager = "Branch Manager" in roles
+
+    if not is_hr and not is_branch_manager:
         frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if is_branch_manager:
+        emp_branch = frappe.db.get_value("Employee", employee, "sahayog_branch")
+        mgr = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
+        if emp_branch != mgr:
+            frappe.throw(_("Not authorized to exit this employee"), frappe.PermissionError)
 
     if not frappe.db.exists("Employee", employee):
         frappe.throw(_("Employee {0} not found").format(employee))
@@ -820,8 +829,17 @@ def update_employee_profile(employee, data):
 @frappe.whitelist()
 def get_employee_profile(employee):
     roles = frappe.get_roles(frappe.session.user)
-    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+    is_hr = any(r in roles for r in ["HR Manager", "HR User", "Administrator"])
+    is_branch_manager = "Branch Manager" in roles
+
+    if not is_hr and not is_branch_manager:
         frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if is_branch_manager:
+        emp_branch = frappe.db.get_value("Employee", employee, "sahayog_branch")
+        mgr = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
+        if emp_branch != mgr:
+            frappe.throw(_("Not authorized to view this employee"), frappe.PermissionError)
 
     _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
     _profile_fields = [
