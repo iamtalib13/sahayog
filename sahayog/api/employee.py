@@ -306,7 +306,7 @@ def create_support_staff(data):
     }
 
 @frappe.whitelist()
-def bulk_import_employees(rows, mode="insert"):
+def bulk_import_employees(rows, mode="insert", force_update=0):
     import json
 
     # ── Permission check ──────────────────────────────────────────────────────
@@ -321,7 +321,7 @@ def bulk_import_employees(rows, mode="insert"):
     logger = frappe.logger("bulk_employee_import", allow_site=True, max_size=5, file_count=3)
     logger.info(f"[BulkImport] Started — {len(rows)} row(s) received by user: {frappe.session.user}, mode: {mode}")
 
-    results = {"created": 0, "failed": 0, "skipped": 0, "updated": 0, "errors": []}
+    results = {"created": 0, "failed": 0, "skipped": 0, "updated": 0, "errors": [], "rows": []}
 
     # ── Only these fields are validated as mandatory during import ────────────
     MANDATORY_FIELDS = {
@@ -332,6 +332,8 @@ def bulk_import_employees(rows, mode="insert"):
         "designation": "Designation",
         "department": "Department",
     }
+    if force_update:
+        MANDATORY_FIELDS["employee_number"] = "Employee Code"
 
     # ── Fetch table columns ONCE outside the loop ─────────────────────────────
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
@@ -355,6 +357,7 @@ def bulk_import_employees(rows, mode="insert"):
                 logger.warning(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
                 results["failed"] += 1
                 results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                results["rows"].append({"row": i, "employee": "", "name": emp_label, "status": "Failed"})
                 continue
 
             # ── Resolve custom field column names for this DB ──────────────────
@@ -443,6 +446,7 @@ def bulk_import_employees(rows, mode="insert"):
                     logger.info(f"[BulkImport] Row {i} ({emp_label}) SKIPPED — {reason}")
                     results["skipped"] += 1
                     results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    results["rows"].append({"row": i, "employee": existing_employee, "name": emp_label, "status": "Skipped"})
                     continue
                 else:
                     # ── Update mode: fill missing fields using direct SQL ──────
@@ -451,6 +455,7 @@ def bulk_import_employees(rows, mode="insert"):
                     updated_fields = []
 
                     field_map = {
+                        "employee_number": ("employee_number", lambda v: v.strip()),
                         "first_name": ("first_name", lambda v: v.strip()),
                         "middle_name": ("middle_name", lambda v: v.strip()),
                         "last_name": ("last_name", lambda v: v.strip()),
@@ -465,6 +470,9 @@ def bulk_import_employees(rows, mode="insert"):
                         "branch": ("branch", lambda v: v.strip()),
                         "sol_id": ("sol_id", lambda v: v.strip()),
                         "sahayog_branch": ("sahayog_branch", lambda v: v.strip()),
+                        "custom_zone": ("custom_zone", lambda v: v.strip()),
+                        "custom_region": ("custom_region", lambda v: v.strip()),
+                        "custom_district": ("custom_district", lambda v: v.strip()),
                         "mobile_number": ("cell_number", lambda v: v.strip()),
                         "personal_email": ("personal_email", lambda v: v.strip()),
                         "bank_name": ("bank_name", lambda v: v.strip()),
@@ -481,7 +489,7 @@ def bulk_import_employees(rows, mode="insert"):
                         csv_val = row.get(csv_key)
                         if csv_val:
                             parsed = transform(csv_val)
-                            if parsed is not None and parsed != "" and not emp.get(doc_field):
+                            if parsed is not None and parsed != "" and (force_update or not emp.get(doc_field)):
                                 update_dict[doc_field] = parsed
                                 updated_fields.append(doc_field)
 
@@ -494,13 +502,14 @@ def bulk_import_employees(rows, mode="insert"):
                         custom_map["uhid_number"] = _uhid_col
                     for csv_key, doc_field in custom_map.items():
                         csv_val = row.get(csv_key)
-                        if csv_val and not emp.get(doc_field):
+                        if csv_val and (force_update or not emp.get(doc_field)):
                             update_dict[doc_field] = csv_val
                             updated_fields.append(doc_field)
 
                     if update_dict:
                         frappe.db.set_value("Employee", existing_employee, update_dict)
                         results["updated"] += 1
+                        results["rows"].append({"row": i, "employee": existing_employee, "name": emp_label, "status": "Employee Updated"})
                         logger.info(f"[BulkImport] Row {i} ({emp_label}) — updated fields: {', '.join(updated_fields)}")
 
                         # Also update SQL-level fields if needed
@@ -538,6 +547,7 @@ def bulk_import_employees(rows, mode="insert"):
                     else:
                         logger.info(f"[BulkImport] Row {i} ({emp_label}) — no empty fields to update")
                         results["skipped"] += 1
+                        results["rows"].append({"row": i, "employee": existing_employee, "name": emp_label, "status": "Skipped (No Changes)"})
                     continue
 
             # ── 3. Date range validation ───────────────────────────────────────
@@ -548,6 +558,7 @@ def bulk_import_employees(rows, mode="insert"):
                 logger.warning(f"[BulkImport] Row {i} ({emp_label}) FAILED — {reason}")
                 results["failed"] += 1
                 results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                results["rows"].append({"row": i, "employee": "", "name": emp_label, "status": "Failed"})
                 continue
 
             # ── 4. Reporting Manager — skip silently if not found ──────────────
@@ -664,12 +675,14 @@ def bulk_import_employees(rows, mode="insert"):
             # Commit each employee individually so one failure doesn't roll back others
             frappe.db.commit()
             results["created"] += 1
+            results["rows"].append({"row": i, "employee": new_emp.name, "name": emp_label, "status": "Employee Created"})
             logger.info(f"[BulkImport] Row {i} ({emp_label}) — SUCCESS, created as '{new_emp.name}'")
 
         except Exception as e:
             frappe.db.rollback()
             error_msg = str(e)
             results["failed"] += 1
+            results["rows"].append({"row": i, "employee": "", "name": emp_label, "status": "Failed"})
             results["errors"].append({"row": i, "name": emp_label, "error": error_msg})
             logger.error(
                 f"[BulkImport] Row {i} ({emp_label}) — EXCEPTION: {error_msg}",
