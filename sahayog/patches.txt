@@ -61,3 +61,4 @@ sahayog.patches.add_ld_roles_and_settings
 sahayog.patches.update_leave_policy_2026
 sahayog.patches.backfill_final_confirmation_date
 sahayog.patches.assign_support_staff_holiday_lists
+sahayog.patches.add_resignation_type_to_employee

@@ -52,13 +52,29 @@ def get_team_attendance_data(employee_status="Active"):
         else:
             filters = {**base_filter, "status": employee_status}
     elif "Branch Manager" in roles:
-        # Branch Managers manage all active staff in their branch (using sahayog_branch/sol_id)
         branch_id = manager.sahayog_branch or manager.sol_id
-        if branch_id:
-            filters = {"sahayog_branch": branch_id, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
+        base_branch_filter = {"sahayog_branch": branch_id, "user_id": ["!=", user], "custom_is_support_staff": 1} if branch_id else {"reports_to": manager.name, "user_id": ["!=", user], "custom_is_support_staff": 1}
+        # Status counts for Branch Manager
+        count_result = frappe.db.sql("""
+            SELECT
+                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'Left' THEN 1 ELSE 0 END) as left_count,
+                COUNT(*) as all_count
+            FROM `tabEmployee`
+            WHERE (user_id != %s OR user_id IS NULL) AND custom_is_support_staff = 1 AND sahayog_branch = %s
+        """, (user, branch_id), as_dict=True)
+        if count_result:
+            status_counts = {
+                "Active": count_result[0].active,
+                "Left": count_result[0].left_count,
+                "All": count_result[0].all_count,
+            }
+        if employee_status == "all":
+            filters = base_branch_filter
+        elif employee_status == "Left":
+            filters = {**base_branch_filter, "status": "Left"}
         else:
-            # Fallback to reports_to if branch not set (for safety)
-            filters = {"reports_to": manager.name, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
+            filters = {**base_branch_filter, "status": employee_status}
     else:
         # Regular employees only manage themselves
         filters = {"name": manager.name} if manager else {"user_id": user}

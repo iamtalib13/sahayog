@@ -380,6 +380,10 @@
         background: #f3f4f6;
         color: #9ca3af;
       }
+      .pill-pending {
+        background: #fef3c7;
+        color: #d97706;
+      }
 
       /* CALENDAR PANEL */
       .cal-head {
@@ -1401,7 +1405,7 @@
                   "
                   onclick="openImportModal()"
                 >
-                  ⬆ Import
+                   ⬆ Update
                 </button>
                 <button
                   id="btnUpdateEmployees"
@@ -2357,13 +2361,20 @@
                     class="member-select"
                     style="padding: 6px; font-size: 12px; margin-bottom: 10px"
                   />
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <label style="font-size: 11px; color: var(--muted); font-weight: 600;">Update Existing Values:</label>
+                    <select id="importForceUpdate" class="member-select" style="padding: 4px 8px; font-size: 11px; width: auto;">
+                      <option value="no" selected>No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
                   <button
                     onclick="submitImport()"
                     id="btnSubmitImport"
                     class="btn-in"
                     style="width: 100%; padding: 10px; font-weight: 700"
                   >
-                    Import Employees
+                    Update
                   </button>
                 </div>
 
@@ -2715,7 +2726,24 @@
                       required
                     />
                   </div>
-                  <div style="margin-bottom: 20px">
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Resignation Type *</label
+                    >
+                    <select id="exit_resignation_type" class="member-select" required onchange="onResignationTypeChange()">
+                      <option value="" disabled selected>Select type...</option>
+                      <option value="Voluntary">Voluntary</option>
+                      <option value="Involuntary">Involuntary</option>
+                    </select>
+                  </div>
+                  <div style="margin-bottom: 14px" id="exitReasonWrap" hidden>
                     <label
                       style="
                         font-size: 12px;
@@ -2727,35 +2755,7 @@
                       >Reason for Leaving *</label
                     >
                     <select id="exit_reason" class="member-select" required>
-                      <option value="" disabled selected>
-                        Select reason...
-                      </option>
-                      <optgroup label="Voluntary">
-                        <option value="Health Issue">Health Issue</option>
-                        <option value="Family Issue">Family Issue</option>
-                        <option value="Personal Issue">Personal Issue</option>
-                        <option value="Marriage">Marriage</option>
-                        <option value="Better Career Opportunities">
-                          Better Career Opportunities
-                        </option>
-                        <option value="Higher Studies">Higher Studies</option>
-                        <option value="Absconding">Absconding</option>
-                        <option value="Work Environment/Culture">
-                          Work Environment/Culture
-                        </option>
-                      </optgroup>
-                      <optgroup label="Involuntary">
-                        <option value="Performance Issue">
-                          Performance Issue
-                        </option>
-                        <option value="Termination of Services">
-                          Termination of Services
-                        </option>
-                        <option value="Asked to Go">Asked to Go</option>
-                        <option value="Not Joined">Not Joined</option>
-                        <option value="Death">Death</option>
-                        <option value="Others">Others</option>
-                      </optgroup>
+                      <option value="" disabled selected>Select reason...</option>
                     </select>
                   </div>
                   <div style="margin-bottom: 20px">
@@ -4188,7 +4188,7 @@ Pending Regularization
       }
 
       async function updatePendingBadges() {
-        if (!isHR()) return;
+        if (!isHR() && !isBranchManager()) return;
         const leaves = await callAPI("get_pending_leaves", {}, "leave");
         const corr = await callAPI(
           "get_pending_attendance_corrections",
@@ -4207,11 +4207,13 @@ Pending Regularization
 
       function switchTab(tab, btn) {
         if (
-          (tab === "leave" ||
-            tab === "corrections" ||
-            tab === "hr_dashboard") &&
-          !isHR()
+          (tab === "leave" || tab === "corrections") &&
+          !isHR() && !isBranchManager()
         ) {
+          showToast("You are not authorized to access this tab.");
+          return;
+        }
+        if (tab === "hr_dashboard" && !isHR()) {
           showToast("You are not authorized to access this tab.");
           return;
         }
@@ -4281,6 +4283,21 @@ Pending Regularization
           }
         }
 
+        // Branch Manager: Exit button visibility
+        if (isBranchManager()) {
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          if (tab === "attendance") {
+            if (calPanel) calPanel.style.display = "block";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+          } else {
+            if (calPanel) calPanel.style.display = "none";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
+          }
+        }
+
         if (tab === "attendance") {
           if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
           if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
@@ -4289,9 +4306,9 @@ Pending Regularization
           if (dirCardHead) dirCardHead.style.display = "flex";
           const empStatusFilters = document.getElementById("empStatusFilters");
           if (empStatusFilters) {
-            empStatusFilters.style.display = isHR() ? "flex" : "none";
+            empStatusFilters.style.display = (isHR() || isBranchManager()) ? "flex" : "none";
             // Reset to Active when switching to attendance tab
-            if (isHR() && employeeStatusFilter !== "Active") {
+            if ((isHR() || isBranchManager()) && employeeStatusFilter !== "Active") {
               employeeStatusFilter = "Active";
               document
                 .querySelectorAll("#empStatusFilters .ftab")
@@ -4419,7 +4436,7 @@ Pending Regularization
         container.innerHTML = data
           .map((c) => {
             let actionsHtml = "";
-            if (c.status === "Pending") {
+            if (c.status === "Pending" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
@@ -4427,7 +4444,7 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                c.status === "Approved" ? "pill-present" : "pill-absent";
+                c.status === "Approved" ? "pill-present" : c.status === "Pending" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
             }
 
@@ -4580,7 +4597,7 @@ Pending Regularization
               .replace(/\//g, "-");
 
             let actionsHtml = "";
-            if (l.status === "Open") {
+            if (l.status === "Open" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
@@ -4588,7 +4605,7 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                l.status === "Approved" ? "pill-present" : "pill-absent";
+                l.status === "Approved" ? "pill-present" : l.status === "Open" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
             }
 
@@ -4778,6 +4795,34 @@ Pending Regularization
           if (isFirstLoad) {
             isFirstLoad = false;
             switchTab("hr_dashboard", hrTab);
+          }
+          populateAllFilters();
+          updatePendingBadges();
+        } else if (isBranchManager()) {
+          isFirstLoad = false;
+          if (attendanceTab) attendanceTab.textContent = "👥 Staff Directory";
+          if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          if (leaveTab) {
+            leaveTab.style.display = "flex";
+            leaveTab.textContent = "📝 Leave Requests";
+          }
+          if (corrTab) {
+            corrTab.style.display = "flex";
+            corrTab.textContent = "✏️ Regularization";
+          }
+          if (hrTab) hrTab.style.display = "none";
+          if (hrFilters) hrFilters.style.display = "none";
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
+          const empStatusFilters = document.getElementById("empStatusFilters");
+          if (empStatusFilters) {
+            empStatusFilters.style.display =
+              currentTab === "attendance" ? "flex" : "none";
+          }
+          if (isFirstLoad) {
+            isFirstLoad = false;
           }
           populateAllFilters();
           updatePendingBadges();
@@ -5211,6 +5256,8 @@ Pending Regularization
               extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
             if (isHR()) {
               actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            } else if (isBranchManager()) {
+              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
             }
           } else {
             // Active employee — normal rendering
@@ -5244,14 +5291,19 @@ Pending Regularization
               const canManage = isBranchManager() || s.is_self;
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
-                  actionsHtml = "";
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 } else if (!status || status === "Not Marked") {
                   actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
                     <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
                     <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
                     <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
                 } else if (status === "Present" && !s.check_out) {
-                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                  actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                } else {
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 }
               }
             }
@@ -5872,7 +5924,7 @@ Pending Regularization
         const content = document.getElementById("dashboardContent");
         document.querySelector(".drawer-header span").textContent =
           "Employee Profile";
-        document.getElementById("drawerEditBtn").style.display = "inline-block";
+        document.getElementById("drawerEditBtn").style.display = (isHR() || isAdmin()) ? "inline-block" : "none";
         content.innerHTML =
           '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
@@ -6275,6 +6327,7 @@ Pending Regularization
       }
 
       const IMPORT_COLUMNS = [
+        "employee_number",
         "first_name",
         "middle_name",
         "last_name",
@@ -6283,6 +6336,9 @@ Pending Regularization
         "date_of_joining",
         "designation",
         "department",
+        "custom_zone",
+        "custom_region",
+        "custom_district",
         "sol_id",
         "mobile_number",
         "pan_number",
@@ -6385,6 +6441,7 @@ Pending Regularization
 
       function downloadImportTemplate() {
         const sampleRow = [
+          "P1",
           "John",
           "Kumar",
           "Doe",
@@ -6393,6 +6450,9 @@ Pending Regularization
           "01-06-2024",
           "Peon",
           "Support Staff",
+          "West",
+          "Mumbai",
+          "Mumbai City",
           "SOL001",
           "9876543210",
           "ABCDE1234F",
@@ -6411,14 +6471,18 @@ Pending Regularization
         ];
         // Add a note row indicating mandatory fields
         const noteRow = [
+          "Optional",
+          "*Mandatory*",
+          "Optional",
+          "*Mandatory*",
           "*Mandatory*",
           "Optional",
           "*Mandatory*",
           "*Mandatory*",
           "*Mandatory*",
-          "*Mandatory*",
-          "*Mandatory*",
-          "*Mandatory*",
+          "Optional",
+          "Optional",
+          "Optional",
           "Optional",
           "Optional",
           "Optional",
@@ -6514,7 +6578,7 @@ Pending Regularization
           console.warn("[ImportEmployees] No data rows found in the CSV.");
           showToast("No data rows found in CSV");
           btn.disabled = false;
-          btn.textContent = "Import Employees";
+          btn.textContent = "Update";
           return;
         }
 
@@ -6524,7 +6588,9 @@ Pending Regularization
         let totalCreated = 0,
           totalFailed = 0,
           totalSkipped = 0,
-          allErrors = [];
+          totalUpdated = 0,
+          allErrors = [],
+          allRows = [];
 
         const resultsDiv = document.getElementById("importResults");
         resultsDiv.style.display = "block";
@@ -6543,10 +6609,11 @@ Pending Regularization
           );
 
           let res = null;
+          const forceUpdate = document.getElementById("importForceUpdate").value === "yes" ? 1 : 0;
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch },
+              { rows: batch, mode: forceUpdate ? "update" : "insert", force_update: forceUpdate },
               "employee",
             );
           } catch (apiErr) {
@@ -6568,7 +6635,9 @@ Pending Regularization
             totalCreated += res.created || 0;
             totalFailed += res.failed || 0;
             totalSkipped += res.skipped || 0;
+            totalUpdated += res.updated || 0;
             allErrors = allErrors.concat(res.errors || []);
+            allRows = allRows.concat(res.rows || []);
 
             // Log each error/skip to console for easy debugging
             (res.errors || []).forEach((e) => {
@@ -6589,7 +6658,7 @@ Pending Regularization
         }
 
         btn.disabled = false;
-        btn.textContent = "Import Employees";
+        btn.textContent = "Update";
 
         console.log(
           `[ImportEmployees] Done — Created: ${totalCreated}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`,
@@ -6603,32 +6672,66 @@ Pending Regularization
         }
 
         // ── Render result summary ────────────────────────────────────────────
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✅ Created: <span style="color:var(--success)">${totalCreated}</span>
-          &nbsp;⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span>
-          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        const errorMap = {};
+        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+
+        const statusStyle = {
+          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
+          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
+          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+        };
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
+          ${totalUpdated > 0 ? `<span>✏️ Updated: <span style="color:#15803d">${totalUpdated}</span></span>` : ""}
+          <span>✅ Created: <span style="color:var(--success)">${totalCreated}</span></span>
+          <span>⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span></span>
+          <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allErrors.length > 0) {
-          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details (check browser console for full log):</div>`;
-          html += allErrors
-            .map((e) => {
-              // Distinguish skipped (duplicates) vs actual failures by error text
-              const isSkip =
-                e.error && e.error.toLowerCase().includes("already exist");
-              const bg = isSkip ? "#fffbeb" : "#fff1f2";
-              const bc = isSkip ? "#fde68a" : "#fecaca";
-              const icon = isSkip ? "⏭" : "❌";
-              return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+        const failedRows = allRows.filter(r => r.status === "Failed");
+        if (failedRows.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
+          <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="background:#f8fafc; border-bottom:1px solid var(--border); position:sticky; top:0;">
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${failedRows.map(r => {
+                  const err = errorMap[r.row] || "";
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                    <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
+                    <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
+                    <td style="padding:6px 10px;">${r.name}</td>
+                    <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
+        } else if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
+          html += allErrors.map((e) => {
+            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
+            const bg = isSkip ? "#fffbeb" : "#fff1f2";
+            const bc = isSkip ? "#fde68a" : "#fecaca";
+            const icon = isSkip ? "⏭" : "❌";
+            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
               ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-            })
-            .join("");
+          }).join("");
         }
 
         resultsDiv.innerHTML = html;
 
-        if (totalCreated > 0) fetchTeamData();
+        if (totalCreated > 0 || totalUpdated > 0) fetchTeamData();
       }
 
       async function submitUpdate() {
@@ -6695,7 +6798,8 @@ Pending Regularization
         let totalCreated = 0,
           totalUpdated = 0,
           totalFailed = 0,
-          allErrors = [];
+          allErrors = [],
+          allRows = [];
 
         const resultsDiv = document.getElementById("updateResults");
         resultsDiv.style.display = "block";
@@ -6709,7 +6813,7 @@ Pending Regularization
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch, mode: "update" },
+              { rows: batch, mode: "update", force_update: 1 },
               "employee",
             );
           } catch (apiErr) {
@@ -6727,6 +6831,7 @@ Pending Regularization
             totalCreated += res.created || 0;
             totalFailed += res.failed || 0;
             allErrors = allErrors.concat(res.errors || []);
+            allRows = allRows.concat(res.rows || []);
           }
 
           if (b < totalBatches - 1) {
@@ -6737,21 +6842,50 @@ Pending Regularization
         btn.disabled = false;
         btn.textContent = "Update Employees";
 
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✏️ Updated: <span style="color:#15803d">${totalUpdated}</span>
-          &nbsp;✅ Created (new): <span style="color:var(--success)">${totalCreated}</span>
-          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        // Build error map for quick lookup
+        const errorMap = {};
+        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+
+        const statusStyle = {
+          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
+          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
+          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+        };
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
+          <span>✏️ Updated: <span style="color:#15803d">${totalUpdated}</span></span>
+          <span>✅ Created (new): <span style="color:var(--success)">${totalCreated}</span></span>
+          <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allErrors.length > 0) {
-          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
-          html += allErrors
-            .map((e) => {
-              return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
-              ❌ <b>Row ${e.row} — ${e.name}:</b> ${e.error}
-            </div>`;
-            })
-            .join("");
+        const failedRowsU = allRows.filter(r => r.status === "Failed");
+        if (failedRowsU.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
+          <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="background:#f8fafc; border-bottom:1px solid var(--border); position:sticky; top:0;">
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${failedRowsU.map(r => {
+                  const err = errorMap[r.row] || "";
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                    <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
+                    <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
+                    <td style="padding:6px 10px;">${r.name}</td>
+                    <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
         }
 
         resultsDiv.innerHTML = html;
@@ -6794,6 +6928,23 @@ Pending Regularization
         document.getElementById("exitEmployeeForm").reset();
         document.getElementById("exit_emp_search_input").value = "";
         document.getElementById("exit_emp_select").value = "";
+        document.getElementById("exitReasonWrap").hidden = true;
+      }
+
+      function onResignationTypeChange() {
+        const type = document.getElementById("exit_resignation_type").value;
+        const wrap = document.getElementById("exitReasonWrap");
+        const sel = document.getElementById("exit_reason");
+        const reasons = {
+          "Voluntary": ["Health Issue","Family Issue","Personal Issue","Marriage","Better Career Opportunities","Higher Studies","Absconding","Work Environment/Culture"],
+          "Involuntary": ["Performance Issue","Termination of Services","Asked to Go","Not Joined","Death","Others"]
+        };
+        if (!type) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        sel.innerHTML = '<option value="" disabled selected>Select reason...</option>';
+        (reasons[type] || []).forEach(r => {
+          sel.innerHTML += `<option value="${r}">${r}</option>`;
+        });
       }
 
       async function submitExitEmployee() {
@@ -6809,6 +6960,7 @@ Pending Regularization
           "exit_relieving_date",
         ).value;
         const reason = document.getElementById("exit_reason").value;
+        const resignation_type = document.getElementById("exit_resignation_type").value;
 
         if (
           resignation_date &&
@@ -6861,6 +7013,7 @@ Pending Regularization
             resignation_letter_date: resignation_date,
             relieving_date,
             reason_for_leaving: reason,
+            resignation_type,
             attachment_url,
           },
           "employee",
