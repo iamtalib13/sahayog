@@ -6690,8 +6690,9 @@ Pending Regularization
           <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allRows.length > 0) {
-          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Employee Status</div>
+        const failedRows = allRows.filter(r => r.status === "Failed");
+        if (failedRows.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
           <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead>
@@ -6699,23 +6700,16 @@ Pending Regularization
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
-                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Status</th>
-                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Remark</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
                 </tr>
               </thead>
               <tbody>
-                ${allRows.map(r => {
-                  const s = statusStyle[r.status] || { bg: "#fff", border: "#e5e7eb", color: "#374151", icon: "•" };
+                ${failedRows.map(r => {
                   const err = errorMap[r.row] || "";
-                  return `<tr style="border-bottom:1px solid #f3f4f6;">
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
                     <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
                     <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
                     <td style="padding:6px 10px;">${r.name}</td>
-                    <td style="padding:6px 10px;">
-                      <span style="background:${s.bg}; border:1px solid ${s.border}; color:${s.color}; border-radius:20px; padding:2px 10px; font-weight:700; font-size:11px; white-space:nowrap;">
-                        ${s.icon} ${r.status}
-                      </span>
-                    </td>
                     <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
                   </tr>`;
                 }).join("")}
@@ -6866,8 +6860,9 @@ Pending Regularization
           <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allRows.length > 0) {
-          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Employee Status</div>
+        const failedRowsU = allRows.filter(r => r.status === "Failed");
+        if (failedRowsU.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
           <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead>
@@ -6875,23 +6870,16 @@ Pending Regularization
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
                   <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
-                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Status</th>
-                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Remark</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
                 </tr>
               </thead>
               <tbody>
-                ${allRows.map(r => {
-                  const s = statusStyle[r.status] || { bg: "#fff", border: "#e5e7eb", color: "#374151", icon: "•" };
+                ${failedRowsU.map(r => {
                   const err = errorMap[r.row] || "";
-                  return `<tr style="border-bottom:1px solid #f3f4f6;">
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
                     <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
                     <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
                     <td style="padding:6px 10px;">${r.name}</td>
-                    <td style="padding:6px 10px;">
-                      <span style="background:${s.bg}; border:1px solid ${s.border}; color:${s.color}; border-radius:20px; padding:2px 10px; font-weight:700; font-size:11px; white-space:nowrap;">
-                        ${s.icon} ${r.status}
-                      </span>
-                    </td>
                     <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
                   </tr>`;
                 }).join("")}
