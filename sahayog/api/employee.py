@@ -694,7 +694,7 @@ def bulk_import_employees(rows, mode="insert"):
 
 
 @frappe.whitelist()
-def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, attachment_url=None):
+def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, resignation_type=None, attachment_url=None):
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
@@ -717,6 +717,8 @@ def process_employee_exit(employee, resignation_letter_date, relieving_date, rea
         "reason_for_leaving": reason_for_leaving,
         "status": "Left"
     }
+    if resignation_type:
+        update_values["custom_resignation_type"] = resignation_type
 
     if attachment_url:
         update_values["custom_resignation_letter"] = attachment_url
