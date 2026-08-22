@@ -5580,17 +5580,12 @@ Pending Regularization
           empSel.value = selectedMemberId;
         }
 
-        const leaveTypes = await callAPI("get_leave_types", {}, "leave");
-        const sel = document.getElementById("leaveTypeSel");
-        sel.innerHTML = '<option value="">— Select Leave Type —</option>';
-        if (leaveTypes) {
-          leaveTypes.forEach((lt) => {
-            const opt = document.createElement("option");
-            opt.value = lt.name;
-            opt.textContent = lt.name;
-            sel.appendChild(opt);
-          });
-        }
+        // When employee changes, refresh leave types for EL eligibility
+        empSel.onchange = () => _loadLeaveTypesForEmployee(empSel.value);
+
+        // Load leave types for initially selected employee
+        await _loadLeaveTypesForEmployee(empSel.value);
+
         // No date restriction — any past or future date allowed for leave application
         document.getElementById("fromDate").min = "";
         document.getElementById("toDate").min = "";
@@ -5598,6 +5593,25 @@ Pending Regularization
         halfChk.checked = false;
         document.getElementById("toDate").disabled = false;
         document.getElementById("leaveModal").style.display = "flex";
+      }
+
+      async function _loadLeaveTypesForEmployee(empId) {
+        const leaveTypes = await callAPI("get_leave_types", { employee: empId || "" }, "leave");
+        const sel = document.getElementById("leaveTypeSel");
+        sel.innerHTML = '<option value="">— Select Leave Type —</option>';
+        if (leaveTypes) {
+          leaveTypes.forEach((lt) => {
+            const opt = document.createElement("option");
+            opt.value = lt.name;
+            opt.textContent = lt.name;
+            if (lt.el_restricted) {
+              opt.disabled = true;
+              opt.textContent = `${lt.name} — 🔒 Available after confirmation (${lt.confirmation_date ? new Date(lt.confirmation_date).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) : "date not set"})`;
+              opt.style.color = "#9ca3af";
+            }
+            sel.appendChild(opt);
+          });
+        }
       }
 
       function toggleHalfDay() {
