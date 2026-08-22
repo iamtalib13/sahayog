@@ -5591,9 +5591,10 @@ Pending Regularization
             sel.appendChild(opt);
           });
         }
-        // Set dynamic date safeguard rules
-        document.getElementById("fromDate").min = todayKey;
-        document.getElementById("toDate").min = todayKey;
+        // HR can apply leave for any date (past or future); others only future
+        const minDate = isHR() ? "" : todayKey;
+        document.getElementById("fromDate").min = minDate;
+        document.getElementById("toDate").min = minDate;
         const halfChk = document.getElementById("halfDayChk");
         halfChk.checked = false;
         document.getElementById("toDate").disabled = false;
