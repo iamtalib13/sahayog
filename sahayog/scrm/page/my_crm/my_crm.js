@@ -3760,12 +3760,27 @@ createLead() {
   //       }
   //     },
   //   });
-
+  //
   //   dialog.show();
   // }
 
   createAppointment() {
     const me = this;
+
+    const validateApptFormState = () => {
+      const party = d.$wrapper.find("#create_appt_lead").val();
+      const time = d.$wrapper.find("#create_appt_time").val();
+
+      const isValid = !!party && !!time;
+      const btn = d.get_primary_btn();
+      if (btn) {
+        if (isValid) {
+          btn.show();
+        } else {
+          btn.hide();
+        }
+      }
+    };
 
     const d = new frappe.ui.Dialog({
       title: "Create New Appointment",
@@ -3909,6 +3924,7 @@ createLead() {
             d.$wrapper.find("#create_appt_lead").val(lead);
             if (!lead) {
               d.$wrapper.find("#create_appt_name, #create_appt_phone, #create_appt_email").val("");
+              validateApptFormState();
               return;
             }
 
@@ -3919,6 +3935,7 @@ createLead() {
               d.$wrapper.find("#create_appt_phone").val(r.message.mobile_no || "");
               d.$wrapper.find("#create_appt_email").val(r.message.email_id || `${lead}@lead.local`);
             }
+            validateApptFormState();
           }
         },
         parent: d.$wrapper.find("#lead_link_edit_container"),
@@ -3930,7 +3947,13 @@ createLead() {
     d.show();
     d.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
     renderCreateTab();
-}
+
+    // Event listener for Scheduled Date & Time change
+    d.$wrapper.on("change input", "#create_appt_time", validateApptFormState);
+
+    // Initial check (button will be hidden initially because Lead & Time are empty)
+    validateApptFormState();
+  }
 
   exportData() {
     const doctype = this.state.section === "lead" ? "Lead" : "Appointment";
