@@ -2414,15 +2414,6 @@ dialog.$wrapper.find(".modal-title").css({
             </style>
           `,
         },
-        {
-          fieldname: "tab_navigation",
-          fieldtype: "HTML",
-          options: `
-              <div class="custom-tabs-wrapper" style="display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 15px;">
-                  <div class="tab-link active" id="tab-create-appt-btn" style="padding: 10px 25px; cursor: pointer; color: #006264; border-bottom: 3px solid #006264; font-weight: bold;">Appointment Details</div>
-              </div>
-          `,
-        },
         { fieldname: "create_wrapper", fieldtype: "HTML" },
       ],
       primary_action_label: "Create Appointment",
