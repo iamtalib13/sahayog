@@ -1371,6 +1371,19 @@ async fetchAssignedLeads() {
             setTimeout(() => $apptInput.css("border", "1px solid #d1d8dd"), 3000);
             return; 
         }
+        
+        // If appointment time is provided, remarks/notes is mandatory
+        if (input_appt_time) {
+            const remarks = d.$wrapper.find("#new_appt_rem_edit").val().trim();
+            if (!remarks) {
+                showError(__('Please enter Remarks / Notes for the appointment.'));
+                d.$wrapper.find("#tab-appt-btn").trigger("click");
+                const $remarksInput = d.$wrapper.find("#new_appt_rem_edit");
+                $remarksInput.css("border", "2px solid #ff5858");
+                setTimeout(() => $remarksInput.css("border", "1px solid #d1d8dd"), 3000);
+                return;
+            }
+        }
     }
 
     // Backend validate hook (validate_duplicate_lead) duplicate check karega
@@ -1555,7 +1568,10 @@ async fetchAssignedLeads() {
                             <div style="display:flex; flex-wrap: wrap; gap:10px;">
                                 <input type="datetime-local" id="new_appt_t_edit" class="form-control" style="flex: 1; min-width:200px;">
                             </div>
-                            <textarea id="new_appt_rem_edit" class="form-control" rows="2" placeholder="Appointment remarks..." style="resize:none; font-size: 13px;"></textarea>
+                            <div>
+                                <label style="font-size: 13px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Remarks / Notes <span style="color: #ff5858;">*</span></label>
+                                <textarea id="new_appt_rem_edit" class="form-control" rows="2" placeholder="Enter appointment details (required for Follow Up status)..." style="resize:none; font-size: 13px;"></textarea>
+                            </div>
                         </div>
                         <h6 style="font-weight:600; margin-bottom:12px;">Appointment History</h6>
                         <div style="overflow-x: auto;">
@@ -2414,9 +2430,20 @@ dialog.$wrapper.find(".modal-title").css({
         const btn = d.get_primary_btn();
         const party = d.$wrapper.find("#create_appt_lead").val();
         const time = d.$wrapper.find("#create_appt_time").val();
+        const remarks = d.$wrapper.find("#create_appt_remarks").val().trim();
 
         if (!party) return frappe.msgprint("Please select a Lead");
         if (!time) return frappe.msgprint("Please select Date & Time");
+        if (!remarks) {
+            frappe.msgprint({ 
+                title: "Required", 
+                indicator: "red", 
+                message: "Please enter Remarks / Notes for the appointment" 
+            });
+            d.$wrapper.find("#create_appt_remarks").css("border", "2px solid #ff5858");
+            setTimeout(() => d.$wrapper.find("#create_appt_remarks").css("border", "1px solid #d1d8dd"), 3000);
+            return;
+        }
 
         // Backend validate hook (validate_duplicate_appointment) duplicate check karega
 
@@ -2516,8 +2543,8 @@ dialog.$wrapper.find(".modal-title").css({
                       </div>
                   </div>
                   <div class="form-group" style="margin-top:10px;">
-                      <label class="control-label">Remarks / Notes</label>
-                      <textarea id="create_appt_remarks" class="form-control" rows="3" style="resize:none;" placeholder="Enter any specific requirements..."></textarea>
+                      <label class="control-label">Remarks / Notes <span style="color: #ff5858;">*</span></label>
+                      <textarea id="create_appt_remarks" class="form-control" rows="3" style="resize:none;" placeholder="Enter appointment details (required)..."></textarea>
                   </div>
               </div>
           </div>
