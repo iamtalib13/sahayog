@@ -5994,7 +5994,15 @@ Pending Regularization
 
         // read-only input helper
         const ro = (value) =>
-          `<input value="${value || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly>`;
+          `<input value="${value || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">`;
+
+        // name-only text input: letters, spaces, dots, hyphens, apostrophes only (no numbers/special chars)
+        const nameInp = (name, value, required = false) =>
+          `<input name="${name}" value="${value || ""}" type="text" class="member-select"
+            style="padding:6px 10px;font-size:12px;margin-top:2px;"
+            ${required ? "required" : ""}
+            oninput="this.value=this.value.replace(/[^a-zA-Z\\s.\\-']/g,''); editProfileNameChanged();"
+            autocomplete="off">`;
 
         // plain text input helper
         const inp = (name, value, type = "text", extra = "") =>
@@ -6030,10 +6038,16 @@ Pending Regularization
             <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Employee Code</label>${ro(e.employee_number || e.name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">First Name *</label>${inp("first_name", e.first_name, "text", 'oninput="editProfileNameChanged()"')}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${inp("middle_name", e.middle_name, "text", 'oninput="editProfileNameChanged()"')}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Last Name *</label>${inp("last_name", e.last_name, "text", 'oninput="editProfileNameChanged()"')}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employee Name (Full)</label><input id="edit_employee_name_full" value="${e.employee_name || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly tabindex="-1"></div>
+                <div><label style="font-size:11px;color:var(--muted);">First Name *</label>${nameInp("first_name", e.first_name, true)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${nameInp("middle_name", e.middle_name, false)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Last Name *</label>${nameInp("last_name", e.last_name, true)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Employee Name (Full)
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input id="edit_employee_name_full" value="${e.employee_name || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Gender</label>${sel("gender", e.gender, ["", "Male", "Female", "Other"])}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Birth</label>${dt("date_of_birth", fmtDate(e.date_of_birth))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Marital Status</label>${sel("marital_status", e.marital_status, ["", "Single", "Married", "Divorced", "Widowed"])}</div>
@@ -6045,11 +6059,42 @@ Pending Regularization
                 <div><label style="font-size:11px;color:var(--muted);">Designation</label>${asyncSel("designation", e.designation, "edit_designation")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Department</label>${asyncSel("department", e.department, "edit_department")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${asyncSel("employment_type", e.employment_type, "edit_employment_type")}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label><input name="sahayog_branch" id="edit_sol_id" value="${e.sahayog_branch || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;" oninput="editProfileBranchChanged(this.value)"></div>
-                <div><label style="font-size:11px;color:var(--muted);">Zone</label><input name="custom_zone" id="edit_zone" value="${e.custom_zone || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
-                <div><label style="font-size:11px;color:var(--muted);">Region</label><input name="custom_region" id="edit_region" value="${e.custom_region || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
-                <div><label style="font-size:11px;color:var(--muted);">District</label><input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Branch Name
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled from Branch Code</span>
+                  </label>
+                  <input name="branch" id="edit_branch_name" value="${e.branch || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label>
+                  <select name="sahayog_branch" id="edit_sol_id" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    onchange="editProfileBranchChanged(this.value)">
+                    <option value="${e.sahayog_branch || ""}">${e.sahayog_branch || "Loading..."}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Zone
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_zone" id="edit_zone" value="${e.custom_zone || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Region
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_region" id="edit_region" value="${e.custom_region || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">District
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Shift</label>${asyncSel("default_shift", e.default_shift, "edit_shift")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Joining</label>${dt("date_of_joining", fmtDate(e.date_of_joining))}</div>
@@ -6077,18 +6122,48 @@ Pending Regularization
             </div>
             <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Mobile (10 digits)</label>${inp("cell_number", e.cell_number, "tel", 'maxlength="10" inputmode="numeric" pattern="[0-9]{10}"')}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Mobile (10 digits)</label>
+                  <input name="cell_number" value="${e.cell_number || ""}" type="tel" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="10" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
-                <div><label style="font-size:11px;color:var(--muted);">PAN Number (e.g. ABCDE1234F)</label>${inp("custom_pan_number", e.custom_pan_number, "text", 'maxlength="10" style="padding:6px 10px;font-size:12px;margin-top:2px;text-transform:uppercase;"')}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number (12 digits)</label>${inp("custom_aadhar_number", e.custom_aadhar_number, "text", 'maxlength="12" inputmode="numeric" pattern="[0-9]{12}"')}</div>
-                <div><label style="font-size:11px;color:var(--muted);">UHID Number (numeric)</label>${inp("custom_uhid_number", e.custom_uhid_number, "text", 'inputmode="numeric"')}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">PAN Number (e.g. ABCDE1234F)</label>
+                  <input name="custom_pan_number" value="${e.custom_pan_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;text-transform:uppercase;"
+                    maxlength="10"
+                    oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Aadhaar Number (12 digits)</label>
+                  <input name="custom_aadhar_number" value="${e.custom_aadhar_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="12" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12);">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">UHID Number (numeric only)</label>
+                  <input name="custom_uhid_number" value="${e.custom_uhid_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
             </div>
             <div class="dash-section"><div class="dash-sec-title">Banking</div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Bank Name</label>${inp("bank_name", e.bank_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Account Number (9–18 digits)</label>
+                  <input name="bank_ac_no" value="${e.bank_ac_no || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="18" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,18);">
+                </div>
               </div>
             </div>
             ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
@@ -6139,8 +6214,8 @@ Pending Regularization
           if (z) z.value = details.zone || "";
           if (r) r.value = details.region || "";
           if (d) d.value = details.district || "";
-          // Also update branch name if returned
-          const b = document.querySelector("#empEditForm input[name='branch']");
+          // Also update branch name (read-only field with id="edit_branch_name")
+          const b = document.getElementById("edit_branch_name");
           if (b && details.branch) b.value = details.branch;
         }
       }
@@ -6205,12 +6280,13 @@ Pending Regularization
           });
         };
 
-        const [depts, desigs, empTypes, shifts, divisions] = await Promise.all([
+        const [depts, desigs, empTypes, shifts, divisions, branches] = await Promise.all([
           callAPI("get_departments", {}, "employee"),
           callAPI("get_designations", {}, "employee"),
           callAPI("get_employment_types", {}, "employee"),
           callAPI("get_shifts", {}, "employee"),
           callAPI("get_divisions", {}, "employee"),
+          callAPI("get_sahayog_branches", {}, "employee"),
         ]);
 
         if (depts)    _fill("edit_department",      e.department,      depts);
@@ -6218,6 +6294,21 @@ Pending Regularization
         if (empTypes) _fill("edit_employment_type", e.employment_type, empTypes);
         if (shifts)   _fill("edit_shift",           e.default_shift,   shifts);
         if (divisions)_fill("edit_business_unit",   e.custom_division, divisions);
+
+        // Populate SOL ID / Branch Code dropdown
+        if (branches) {
+          const solSel = document.getElementById("edit_sol_id");
+          if (solSel) {
+            solSel.innerHTML = `<option value="">-- Select Branch Code --</option>`;
+            branches.forEach(b => {
+              const opt = document.createElement("option");
+              opt.value = b.name;
+              opt.textContent = b.name;
+              if (b.name === e.sahayog_branch) opt.selected = true;
+              solSel.appendChild(opt);
+            });
+          }
+        }
       }
 
       async function saveEmployeeProfile() {
