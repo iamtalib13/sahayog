@@ -3323,6 +3323,31 @@ createLead() {
       return phoneRegex.test(phone);
     };
 
+    const validateFormState = () => {
+      const mobile = dialog.get_value("mobile_no");
+      const name = dialog.get_value("first_name");
+      const source = dialog.get_value("source");
+      const status = dialog.get_value("status");
+
+      const isPhoneValid = validateIndianPhone(mobile);
+      const isNameValid = name && name.trim().length > 0;
+      const isSourceValid = !!source;
+      const isStatusValid = !!status;
+
+      const hasProducts = productsData.length > 0;
+      const areProductsValid = hasProducts && productsData.every(p => p.product && p.product.toString().trim() && p.product_amount && p.product_amount > 0);
+
+      const isValid = isPhoneValid && isNameValid && isSourceValid && isStatusValid && areProductsValid;
+      const btn = dialog.get_primary_btn();
+      if (btn) {
+        if (isValid) {
+          btn.show();
+        } else {
+          btn.hide();
+        }
+      }
+    };
+
     const dialog = new frappe.ui.Dialog({
       title: "Create New Lead",
       fields: [
@@ -3346,21 +3371,30 @@ createLead() {
                 dialog.set_value("first_name", "");
                 existingContact = null;
                 lastCheckedMobile = null;
+                validateFormState();
                 if (!phone) return;
             }
             if (phone.length === 10) {
               if (!validateIndianPhone(phone)) {
                 frappe.show_alert({ message: __("Invalid mobile number (6-9)"), indicator: "orange" }, 3);
                 dialog.set_value("first_name", "");
+                validateFormState();
                 return;
               }
             } else if (phone.length > 10) {
               frappe.show_alert({ message: __("Mobile number cannot exceed 10 digits"), indicator: "red" }, 3);
+              validateFormState();
               return;
-            } else { return; }
+            } else {
+              validateFormState();
+              return;
+            }
 
             // Same number hai jo pehle check ho chuka hai — skip
-            if (phone === lastCheckedMobile) return;
+            if (phone === lastCheckedMobile) {
+              validateFormState();
+              return;
+            }
             lastCheckedMobile = phone;
 
             // Check localStorage cache first
@@ -3379,6 +3413,7 @@ createLead() {
                   dialog.set_value("first_name", "");
                   dialog.set_df_property("first_name", "read_only", 0);
                 }
+                validateFormState();
                 return;
               }
             } catch (e) { }
@@ -3407,16 +3442,28 @@ createLead() {
                 dialog.set_df_property("first_name", "read_only", 0);
               }
             } catch (error) { }
+            validateFormState();
           },
         },
-        { fieldname: "first_name", fieldtype: "Data", label: "Full Name", reqd: 1 },
+        {
+          fieldname: "first_name",
+          fieldtype: "Data",
+          label: "Full Name",
+          reqd: 1,
+          onchange: function () {
+            validateFormState();
+          }
+        },
         { fieldname: "column_break_1", fieldtype: "Column Break" },
         { 
             fieldname: "source", 
             fieldtype: "Link", 
             label: "Source", 
             options: "Lead Source", 
-            reqd: 1
+            reqd: 1,
+            onchange: function () {
+              validateFormState();
+            }
         },
         {
           fieldname: "status",
@@ -3425,6 +3472,9 @@ createLead() {
           options: "Lead",
           default: "Lead",
           reqd: 1,
+          onchange: function () {
+            validateFormState();
+          }
         },
         { fieldname: "section_break_products", fieldtype: "Section Break", label: "Products" },
         { fieldname: "product_html", fieldtype: "HTML" },
@@ -3536,6 +3586,7 @@ createLead() {
               onchange: function () {
                 const val = this.get_value();
                 productsData[index].product = val;
+                validateFormState();
               },
             },
             parent: tr.find(`.product-link-wrapper-${index}`),
@@ -3547,18 +3598,22 @@ createLead() {
             if (val < 0) val = 0;
             $(this).val(val);
             productsData[index].product_amount = val;
+            validateFormState();
           });
           tr.find(".lead-product-del-btn").on("click", function () {
             productsData.splice(index, 1);
             renderRows();
+            validateFormState();
           });
         });
       };
       dialog.$wrapper.find("#lead-add-product-btn").on("click", () => {
         productsData.push({ product: "", product_name: "", product_amount: 0 });
         renderRows();
+        validateFormState();
       });
       renderRows();
+      validateFormState();
     };
 
     const sourceField = dialog.get_field("source");
@@ -3581,7 +3636,13 @@ createLead() {
         if (val !== currentVal) {
             dialog.set_value("mobile_no", val);
         }
+        validateFormState();
     });
+
+    // Attach listeners for other fields
+    dialog.get_field("first_name").$input.on("input", validateFormState);
+    dialog.get_field("source").$input.on("change", validateFormState);
+    dialog.get_field("status").$input.on("change", validateFormState);
 
     renderProductTable();
     dialog.$wrapper.find(".modal-dialog").css({ "max-width": "800px", width: "95%" });
