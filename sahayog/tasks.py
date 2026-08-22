@@ -196,11 +196,27 @@ def auto_setup_new_employee_leave():
         for lt_name, rate in LEAVE_MONTHLY_RATES.items():
             from_date = max(emp.date_of_joining, fy_start)
 
-            # Pro-rata if joining this month, else full monthly rate
-            if (
+            # If employee joined after the 20th of the month, no leave credit
+            # for that joining month — allocation starts from 1st of next month.
+            if emp.date_of_joining.day > 20:
+                from calendar import monthrange as _mr
+                doj = emp.date_of_joining
+                # Move to 1st of next month
+                if doj.month == 12:
+                    first_of_next = getdate(f"{doj.year + 1}-01-01")
+                else:
+                    first_of_next = getdate(f"{doj.year}-{doj.month + 1:02d}-01")
+                # If next month's 1st is still in the future, skip for now —
+                # monthly_leave_credit will handle it on that date.
+                if first_of_next > today_date:
+                    continue
+                from_date = max(first_of_next, fy_start)
+                new_leaves = rate  # full rate, first credit on next month's 1st
+            elif (
                 emp.date_of_joining.year == today_date.year
                 and emp.date_of_joining.month == today_date.month
             ):
+                # Joined this month on or before the 20th — pro-rata
                 month_days = monthrange(today_date.year, today_date.month)[1]
                 days_employed = month_days - emp.date_of_joining.day + 1
                 factor = flt(days_employed / month_days, 4)
