@@ -5591,10 +5591,9 @@ Pending Regularization
             sel.appendChild(opt);
           });
         }
-        // HR can apply leave for any date (past or future); others only future
-        const minDate = isHR() ? "" : todayKey;
-        document.getElementById("fromDate").min = minDate;
-        document.getElementById("toDate").min = minDate;
+        // No date restriction — any past or future date allowed for leave application
+        document.getElementById("fromDate").min = "";
+        document.getElementById("toDate").min = "";
         const halfChk = document.getElementById("halfDayChk");
         halfChk.checked = false;
         document.getElementById("toDate").disabled = false;
