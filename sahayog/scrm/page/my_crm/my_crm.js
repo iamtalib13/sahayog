@@ -3342,8 +3342,10 @@ createLead() {
       if (btn) {
         if (isValid) {
           btn.show();
+          dialog.$wrapper.find("#lead-mandatory-warning").hide();
         } else {
           btn.hide();
+          dialog.$wrapper.find("#lead-mandatory-warning").show();
         }
       }
     };
@@ -3351,6 +3353,20 @@ createLead() {
     const dialog = new frappe.ui.Dialog({
       title: "Create New Lead",
       fields: [
+        {
+          fieldname: "mandatory_info_html",
+          fieldtype: "HTML",
+          options: `
+            <div id="lead-mandatory-warning" style="margin-top: 5px; margin-bottom: 15px; color: #dc2626; font-size: 13px; font-weight: 500; text-align: center; display: block; animation: blinker 1.5s linear infinite;">
+              ⚠️ Please fill all mandatory details (Name, Phone, Source, Status, and at least one Product with Amount > 0) to enable the Create Lead button.
+            </div>
+            <style>
+              @keyframes blinker {
+                50% { opacity: 0.35; }
+              }
+            </style>
+          `,
+        },
         {
           fieldname: "customer_info_html",
           fieldtype: "HTML",
@@ -3621,6 +3637,30 @@ createLead() {
     sourceField.get_query = function() { return { filters: { "custom_active": 1 } }; };
 
     dialog.show();
+
+   const $warning = dialog.$wrapper.find("#lead-mandatory-warning");
+
+$warning.detach().appendTo(dialog.$wrapper.find(".modal-header"));
+
+$warning.css({
+    "margin": "0",
+    "padding": "0px 45px 15px 20px",
+    "text-align": "left",
+    "white-space": "normal",
+    "overflow-wrap": "break-word",
+    "line-height": "1.4",
+    "width": "100%",
+    "box-sizing": "border-box"
+});
+
+dialog.$wrapper.find(".modal-header").css({
+    "display": "block",
+    "padding": "0"
+});
+
+dialog.$wrapper.find(".modal-title").css({
+    "padding": "18px 45px 12px 20px"
+});
     
     // Phone Number Input Validation (Numeric only & Max 10 digits)
     const $mobileInput = dialog.get_field("mobile_no").$input;
@@ -3776,8 +3816,10 @@ createLead() {
       if (btn) {
         if (isValid) {
           btn.show();
+          d.$wrapper.find("#appt-mandatory-warning").hide();
         } else {
           btn.hide();
+          d.$wrapper.find("#appt-mandatory-warning").show();
         }
       }
     };
@@ -3785,6 +3827,20 @@ createLead() {
     const d = new frappe.ui.Dialog({
       title: "Create New Appointment",
       fields: [
+        {
+          fieldname: "appt_mandatory_info_html",
+          fieldtype: "HTML",
+          options: `
+            <div id="appt-mandatory-warning" style="margin-top: 5px; margin-bottom: 15px; color: #dc2626; font-size: 13px; font-weight: 500; text-align: center; display: block; animation: blinker 1.5s linear infinite;">
+              ⚠️ Please select a Lead and Scheduled Date & Time to enable the Create Appointment button.
+            </div>
+            <style>
+              @keyframes blinker {
+                50% { opacity: 0.35; }
+              }
+            </style>
+          `,
+        },
         {
           fieldname: "tab_navigation",
           fieldtype: "HTML",
