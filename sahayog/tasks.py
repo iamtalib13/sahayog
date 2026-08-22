@@ -62,7 +62,9 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
     if prev:
         # Renewal: start right after the old allocation expired so HRMS's
         # get_previous_allocation can pick it up and carry forward its unused leaves.
-        from_date = max(add_days(prev.to_date, 1), fy_start)
+        # Do NOT clamp to fy_start — if prev expired mid-year (e.g. Jan 31),
+        # the new allocation must start Feb 1, not Apr 1.
+        from_date = add_days(prev.to_date, 1)
         to_date = fy_end
         carry_forward = 1
     else:
@@ -105,11 +107,14 @@ def monthly_leave_credit():
     from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
 
     today_date = getdate(today())
-    if today_date.day != 1:
-        return
-
-    first_of_month = today_date
+    first_of_month = today_date.replace(day=1)
     _, year_end = _fiscal_year_bounds(today_date)
+
+    # Guard: only run on or after the 1st of the month,
+    # but allow re-runs (e.g. if scheduler was down on the 1st) up to the 5th.
+    # The already_credited check below prevents duplicate credits regardless.
+    if today_date.day > 5:
+        return
 
     employees = frappe.get_all(
         "Employee",
@@ -210,7 +215,10 @@ def auto_setup_new_employee_leave():
                 # monthly_leave_credit will handle it on that date.
                 if first_of_next > today_date:
                     continue
-                from_date = max(first_of_next, fy_start)
+                # Use first_of_next as-is — do NOT clamp to fy_start.
+                # fy_start clamping would wrongly push a Jan/Feb/Mar joiner's
+                # allocation to April of the next FY.
+                from_date = first_of_next
                 new_leaves = rate  # full rate, first credit on next month's 1st
             elif (
                 emp.date_of_joining.year == today_date.year
