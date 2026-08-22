@@ -4801,7 +4801,7 @@ Pending Regularization
         } else if (isBranchManager()) {
           isFirstLoad = false;
           if (attendanceTab) attendanceTab.textContent = "👥 Staff Directory";
-          if (btnApplyLeave) btnApplyLeave.style.display = "none";
+          if (btnApplyLeave) btnApplyLeave.style.display = "inline-block";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Requests";
@@ -5991,17 +5991,29 @@ Pending Regularization
         const isHRMgr =
           userRoles.includes("HR Manager") ||
           userRoles.includes("Administrator");
-        const inp = (name, value, type = "text") =>
-          `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+
+        // read-only input helper
+        const ro = (value) =>
+          `<input value="${value || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly>`;
+
+        // plain text input helper
+        const inp = (name, value, type = "text", extra = "") =>
+          `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;" ${extra}>`;
+
+        // select helper (static options)
         const sel = (name, value, options) => {
           let opts = options
-            .map(
-              (o) =>
-                `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`,
-            )
+            .map((o) => `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`)
             .join("");
           return `<select name="${name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">${opts}</select>`;
         };
+
+        // async-populated select helper (populated after render)
+        const asyncSel = (name, value, id) =>
+          `<select name="${name}" id="${id}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">
+             <option value="${value || ""}">${value || "Loading..."}</option>
+           </select>`;
+
         const dt = (name, value) =>
           `<input name="${name}" value="${value || ""}" type="date" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
 
@@ -6017,11 +6029,11 @@ Pending Regularization
           <form id="empEditForm" onsubmit="event.preventDefault(); saveEmployeeProfile();">
             <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Employee Code</label><input value="${e.employee_number || e.name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
-                <div><label style="font-size:11px;color:var(--muted);">First Name</label>${inp("first_name", e.first_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${inp("middle_name", e.middle_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Last Name</label>${inp("last_name", e.last_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employee Name (Full)</label>${inp("employee_name", e.employee_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employee Code</label>${ro(e.employee_number || e.name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">First Name *</label>${inp("first_name", e.first_name, "text", 'oninput="editProfileNameChanged()"')}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${inp("middle_name", e.middle_name, "text", 'oninput="editProfileNameChanged()"')}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Last Name *</label>${inp("last_name", e.last_name, "text", 'oninput="editProfileNameChanged()"')}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employee Name (Full)</label><input id="edit_employee_name_full" value="${e.employee_name || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly tabindex="-1"></div>
                 <div><label style="font-size:11px;color:var(--muted);">Gender</label>${sel("gender", e.gender, ["", "Male", "Female", "Other"])}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Birth</label>${dt("date_of_birth", fmtDate(e.date_of_birth))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Marital Status</label>${sel("marital_status", e.marital_status, ["", "Single", "Married", "Divorced", "Widowed"])}</div>
@@ -6030,21 +6042,34 @@ Pending Regularization
             </div>
             <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${asyncSel("designation", e.designation, "edit_designation")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Department</label>${asyncSel("department", e.department, "edit_department")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${asyncSel("employment_type", e.employment_type, "edit_employment_type")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch Code (Sahayog Branch)</label>${inp("sahayog_branch", e.sahayog_branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Zone</label>${inp("custom_zone", e.custom_zone)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Region</label>${inp("custom_region", e.custom_region)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">District</label>${inp("custom_district", e.custom_district)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Shift</label>${inp("default_shift", e.default_shift)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${inp("custom_division", e.custom_division)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label><input name="sahayog_branch" id="edit_sol_id" value="${e.sahayog_branch || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;" oninput="editProfileBranchChanged(this.value)"></div>
+                <div><label style="font-size:11px;color:var(--muted);">Zone</label><input name="custom_zone" id="edit_zone" value="${e.custom_zone || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
+                <div><label style="font-size:11px;color:var(--muted);">Region</label><input name="custom_region" id="edit_region" value="${e.custom_region || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
+                <div><label style="font-size:11px;color:var(--muted);">District</label><input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
+                <div><label style="font-size:11px;color:var(--muted);">Shift</label>${asyncSel("default_shift", e.default_shift, "edit_shift")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Joining</label>${dt("date_of_joining", fmtDate(e.date_of_joining))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Confirmation</label>${dt("final_confirmation_date", fmtDate(e.final_confirmation_date))}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Reporting Manager</label>
+                  <div style="position:relative;">
+                    <input id="edit_reports_to_input" value="${e.reports_to_name || e.reports_to || ""}" class="member-select" placeholder="Search manager..." autocomplete="off"
+                      style="padding:6px 10px;font-size:12px;margin-top:2px;width:100%;"
+                      oninput="filterEditReportingManager(this.value)"
+                      onfocus="showEditReportingDropdown()"
+                      onblur="hideEditReportingDropdown()">
+                    <input type="hidden" name="reports_to" id="edit_reports_to_value" value="${e.reports_to || ""}">
+                    <div id="edit_reports_to_dropdown"
+                      style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                  </div>
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Status</label>${sel("status", e.status, ["Active", "Left"])}</div>
-                <div id="leftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
+                <div id="editLeftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
                   <div><label style="font-size:11px;color:var(--muted);">Resignation Date</label>${dt("resignation_letter_date", fmtDate(e.resignation_letter_date))}</div>
                   <div><label style="font-size:11px;color:var(--muted);">Relieving Date</label>${dt("relieving_date", fmtDate(e.relieving_date))}</div>
                 </div>
@@ -6052,11 +6077,11 @@ Pending Regularization
             </div>
             <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Mobile</label>${inp("cell_number", e.cell_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Mobile (10 digits)</label>${inp("cell_number", e.cell_number, "tel", 'maxlength="10" inputmode="numeric" pattern="[0-9]{10}"')}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
-                <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">PAN Number (e.g. ABCDE1234F)</label>${inp("custom_pan_number", e.custom_pan_number, "text", 'maxlength="10" style="padding:6px 10px;font-size:12px;margin-top:2px;text-transform:uppercase;"')}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number (12 digits)</label>${inp("custom_aadhar_number", e.custom_aadhar_number, "text", 'maxlength="12" inputmode="numeric" pattern="[0-9]{12}"')}</div>
+                <div><label style="font-size:11px;color:var(--muted);">UHID Number (numeric)</label>${inp("custom_uhid_number", e.custom_uhid_number, "text", 'inputmode="numeric"')}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
             </div>
@@ -6066,31 +6091,133 @@ Pending Regularization
                 <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
               </div>
             </div>
-            ${
-              isHRMgr
-                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Medical Deduction</label>${inp("custom_medical_deduction", e.custom_medical_deduction, "number")}</div>
               </div>
-            </div>`
-                : ""
-            }
+            </div>` : ""}
             <div style="display:flex;gap:10px;padding-top:10px;">
               <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
               <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
             </div>
           </form>
         `;
-        // Toggle Left fields based on Status dropdown
+
+        // ── Status toggle ─────────────────────────────────────────────────────
         const statusSel = document.querySelector("select[name='status']");
         if (statusSel) {
           statusSel.addEventListener("change", function () {
-            document.getElementById("leftFields").style.display =
+            document.getElementById("editLeftFields").style.display =
               this.value === "Left" ? "grid" : "none";
           });
         }
+
+        // ── Populate async dropdowns ──────────────────────────────────────────
+        _populateEditDropdowns(e);
+      }
+
+      // Auto-compute Employee Full Name from first+middle+last
+      function editProfileNameChanged() {
+        const f = (document.querySelector("#empEditForm input[name='first_name']")?.value || "").trim();
+        const m = (document.querySelector("#empEditForm input[name='middle_name']")?.value || "").trim();
+        const l = (document.querySelector("#empEditForm input[name='last_name']")?.value || "").trim();
+        const full = [f, m, l].filter(Boolean).join(" ");
+        const el = document.getElementById("edit_employee_name_full");
+        if (el) el.value = full;
+      }
+
+      // Auto-fetch Zone/Region/District from branch on SOL ID change
+      async function editProfileBranchChanged(sol_id) {
+        if (!sol_id) return;
+        const details = await callAPI("get_branch_details_by_sol_id", { sol_id }, "employee");
+        if (details) {
+          const z = document.getElementById("edit_zone");
+          const r = document.getElementById("edit_region");
+          const d = document.getElementById("edit_district");
+          if (z) z.value = details.zone || "";
+          if (r) r.value = details.region || "";
+          if (d) d.value = details.district || "";
+          // Also update branch name if returned
+          const b = document.querySelector("#empEditForm input[name='branch']");
+          if (b && details.branch) b.value = details.branch;
+        }
+      }
+
+      // Reporting manager searchable dropdown helpers (edit form)
+      function filterEditReportingManager(query) {
+        const dd = document.getElementById("edit_reports_to_dropdown");
+        const items = dd.querySelectorAll(".edit-mgr-item");
+        const q = query.toLowerCase();
+        items.forEach((item) => {
+          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+      }
+      function showEditReportingDropdown() {
+        const dd = document.getElementById("edit_reports_to_dropdown");
+        if (!dd) return;
+        if (!dd.hasChildNodes() && window._empList) {
+          window._empList.forEach((emp) => {
+            const item = document.createElement("div");
+            item.className = "edit-mgr-item";
+            item.dataset.value = emp.name;
+            item.textContent = emp.employee_name + " (" + emp.name + ")";
+            item.style.cssText = "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => (item.style.background = "#f0f2f8");
+            item.onmouseout  = () => (item.style.background = "");
+            item.onmousedown = (ev) => {
+              ev.preventDefault();
+              document.getElementById("edit_reports_to_value").value = emp.name;
+              document.getElementById("edit_reports_to_input").value = item.textContent;
+              dd.style.display = "none";
+            };
+            dd.appendChild(item);
+          });
+        }
+        dd.style.display = "block";
+      }
+      function hideEditReportingDropdown() {
+        setTimeout(() => {
+          const dd = document.getElementById("edit_reports_to_dropdown");
+          if (dd) dd.style.display = "none";
+        }, 150);
+      }
+
+      // Populate Designation, Department, Employment Type, Shift, Business Unit dropdowns
+      async function _populateEditDropdowns(e) {
+        // Ensure employee list is loaded for reporting manager
+        if (!window._empList) {
+          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
+        }
+
+        const _fill = (id, currentVal, items, labelKey = "name") => {
+          const sel = document.getElementById(id);
+          if (!sel) return;
+          sel.innerHTML = `<option value="">-- Select --</option>`;
+          items.forEach(item => {
+            const v = item[labelKey] || item;
+            const opt = document.createElement("option");
+            opt.value = v;
+            opt.textContent = v;
+            if (v === currentVal) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        };
+
+        const [depts, desigs, empTypes, shifts, divisions] = await Promise.all([
+          callAPI("get_departments", {}, "employee"),
+          callAPI("get_designations", {}, "employee"),
+          callAPI("get_employment_types", {}, "employee"),
+          callAPI("get_shifts", {}, "employee"),
+          callAPI("get_divisions", {}, "employee"),
+        ]);
+
+        if (depts)    _fill("edit_department",      e.department,      depts);
+        if (desigs)   _fill("edit_designation",     e.designation,     desigs);
+        if (empTypes) _fill("edit_employment_type", e.employment_type, empTypes);
+        if (shifts)   _fill("edit_shift",           e.default_shift,   shifts);
+        if (divisions)_fill("edit_business_unit",   e.custom_division, divisions);
       }
 
       async function saveEmployeeProfile() {
@@ -6098,6 +6225,53 @@ Pending Regularization
         const fd = new FormData(form);
         const data = {};
         fd.forEach((v, k) => (data[k] = v));
+
+        // ── Validation (same rules as creation form) ──────────────────────────
+        const firstName  = (data.first_name  || "").trim();
+        const middleName = (data.middle_name || "").trim();
+        const lastName   = (data.last_name   || "").trim();
+
+        if (!validateName(firstName,  "First Name"))  return;
+        if (middleName && !validateName(middleName, "Middle Name")) return;
+        if (!validateName(lastName,   "Last Name"))   return;
+
+        // Auto-update employee_name from name parts
+        data.employee_name = [firstName, middleName, lastName].filter(Boolean).join(" ");
+
+        const mobile = (data.cell_number || "").replace(/\D/g, "");
+        if (mobile && mobile.length !== 10) {
+          showToast("Mobile Number must be exactly 10 digits."); return;
+        }
+        if (mobile) data.cell_number = mobile;
+
+        const pan = (data.custom_pan_number || "").toUpperCase().trim();
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+          showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F)."); return;
+        }
+        if (pan) data.custom_pan_number = pan;
+
+        const aadhaar = (data.custom_aadhar_number || "").replace(/\D/g, "");
+        if (aadhaar && aadhaar.length !== 12) {
+          showToast("Aadhaar Number must be exactly 12 digits."); return;
+        }
+        if (aadhaar) data.custom_aadhar_number = aadhaar;
+
+        const uhid = (data.custom_uhid_number || "").trim();
+        if (uhid && !/^\d+$/.test(uhid)) {
+          showToast("UHID Number must contain only digits."); return;
+        }
+
+        // Zone/Region/District come from read-only inputs — pick them up via DOM
+        const z = document.getElementById("edit_zone");
+        const r = document.getElementById("edit_region");
+        const d = document.getElementById("edit_district");
+        if (z) data.custom_zone     = z.value;
+        if (r) data.custom_region   = r.value;
+        if (d) data.custom_district = d.value;
+
+        // Reporting manager from hidden input
+        const rtv = document.getElementById("edit_reports_to_value");
+        if (rtv) data.reports_to = rtv.value;
 
         const btn = document.getElementById("btnSaveProfile");
         btn.disabled = true;
@@ -6125,8 +6299,7 @@ Pending Regularization
             _currentProfileData = updated;
             renderEmployeeProfileView(updated);
           }
-          document.getElementById("drawerEditBtn").style.display =
-            "inline-block";
+          document.getElementById("drawerEditBtn").style.display = "inline-block";
         }
       }
 
