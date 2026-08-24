@@ -1,0 +1,10 @@
+[
+  {
+    "doctype": "Email Template",
+    "name": "Disciplinary - SCN",
+    "subject": "Show Cause Notice Issued for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
+    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>This is to inform you that a disciplinary case of type <strong>\"{{ doc.case_type }}\"</strong> has been initiated by HR Department for the employee <strong>{{ doc.employee_name }}</strong> (Employee ID: {{ doc.employee_id }}).</p>\n\n<h4>Case Details:</h4>\n<ul>\n    <li><strong>Case ID:</strong> {{ doc.case_id }}</li>\n    <li><strong>Branch:</strong> {{ doc.branch_name }}</li>\n    <li><strong>Issue Date:</strong> {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</li>\n    <li><strong>Initiated By:</strong> HR Department</li>\n</ul>\n\n<p>The Show Cause Notice has been generated and forwarded to the respective branch for further action.</p>\n\n<p>Please find the relevant document(s) attached:<br>\n<strong>{{ doc.document_upload }}</strong></p>\n\n<p><strong>Remarks:</strong><br>\n{{ doc.remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>",
+    "use_html": 1,
+    "docstatus": 0
+  }
+]
