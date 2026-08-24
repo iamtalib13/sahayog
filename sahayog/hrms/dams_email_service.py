@@ -134,6 +134,7 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
         reference_doctype=doctype,
         reference_name=docname,
         attachments=attachments,
+        expose_recipients="header",
         now=True
     )
 
