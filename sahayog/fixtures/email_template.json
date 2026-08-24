@@ -6,5 +6,45 @@
     "response_html": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>This is to inform you that a disciplinary case of type <strong>\"{{ doc.case_type }}\"</strong> has been initiated by HR Department for the employee <strong>{{ doc.employee_name }}</strong> (Employee ID: {{ doc.employee_id }}).</p>\n\n<h4>Case Details:</h4>\n<ul>\n    <li><strong>Case ID:</strong> {{ doc.case_id }}</li>\n    <li><strong>Branch:</strong> {{ doc.branch_name }}</li>\n    <li><strong>Issue Date:</strong> {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</li>\n    <li><strong>Initiated By:</strong> HR Department</li>\n</ul>\n\n<p>The Show Cause Notice has been generated and forwarded to the respective branch for further action.</p>\n\n<p>Please find the relevant document(s) attached:<br>\n<strong>{{ doc.document_upload }}</strong></p>\n\n<p><strong>Remarks:</strong><br>\n{{ doc.remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>",
     "use_html": 1,
     "docstatus": 0
+  },
+  {
+    "doctype": "Email Template",
+    "name": "Suspension Process",
+    "subject": "Suspension Notice for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
+    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>This is to inform you that a <strong>suspension process</strong> has been initiated under the case type <strong>{{ doc.case_type }}</strong>.</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ doc.case_id }}</li>\n    <li>Suspension From: {{ doc.suspension_from_date.strftime('%d-%m-%Y') if doc.suspension_from_date else '' }}</li>\n    <li>Suspension To: {{ doc.suspension_to_date.strftime('%d-%m-%Y') if doc.suspension_to_date else '' }}</li>\n    <li>Number of Days: {{ doc.days_of_suspension }}</li>\n</ul>\n\n<p>The suspension notice has been forwarded to the respective branch for further action.</p>\n\n<p>Remarks: {{ doc.remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>",
+    "use_html": 1,
+    "docstatus": 0
+  },
+  {
+    "doctype": "Email Template",
+    "name": "Domestic Enquiry Notice",
+    "subject": "Domestic Enquiry Notice for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
+    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>\nNotice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_enquiry.strftime('%d-%m-%Y') if doc.date_of_enquiry else '' }}</strong> at \n<strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n\n<p><strong>Details:</strong></p>\n\n<ul>\n    <li><strong>Case ID:</strong> {{ doc.case_id }}</li>\n    <li><strong>Case Type:</strong> {{ doc.case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</li>\n</ul>\n\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n\n<p><strong>Remarks:</strong> {{ doc.remarks }}</p>\n\n<p>\nRegards,<br>\nHR Department\n</p>",
+    "use_html": 1,
+    "docstatus": 0
+  },
+  {
+    "doctype": "Email Template",
+    "name": "Reminder Notice of Enquiry",
+    "subject": "Revised Notice of Enquiry for {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
+    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_2nd_enquiry.strftime('%d-%m-%Y') if doc.date_of_2nd_enquiry else '' }}</strong> at <strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n\n<p>Details:</p>\n<ul>\n    <li>Case ID: {{ doc.case_id }}</li>\n    <li>Case Type: {{ doc.case_type }}</li>\n    <li><strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</li>\n</ul>\n\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n\n<p>Remarks: {{ doc.remarks }}</p>\n\n<p>Regards,<br>\nHR Department</p>",
+    "use_html": 1,
+    "docstatus": 0
+  },
+  {
+    "doctype": "Email Template",
+    "name": "Unauthorized Absence",
+    "subject": "Unauthorized Absence Notice \u2013 {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
+    "response_html": "<p>Dear Team,</p>\n\n<p>\n    This is to inform you that <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    from <strong>{{ doc.branch_name }}</strong> has been marked as \n    <strong>Unauthorized Absent</strong> on \n    <strong>{{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</strong>.\n</p>\n\n<p>\n    <strong>Case Details:</strong><br>\n    Case ID: {{ doc.case_id }}<br>\n    Level: {{ doc.level }}<br>\n    Issue Reported to HR On: {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}<br>\n    Issue In Details: {{ doc.issue_in_details or \"No remarks provided.\" }}\n</p>\n\n<p>Kindly take the required action as per the Unauthorized Absence process.</p>\n\n<p>Regards,<br>\nHR Department</p>",
+    "use_html": 1,
+    "docstatus": 0
+  },
+  {
+    "doctype": "Email Template",
+    "name": "Reminder Of Unauthorized Absence",
+    "subject": "Reminder of Unauthorized Absence \u2013 {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
+    "response_html": "<p>Dear Team,</p>\n\n<p>\n    A <strong>Reminder of Unauthorized Absence letter</strong> has been initiated \n    for <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    by the HR department and sent to the respective branch.\n</p>\n\n<p><strong>Case Details:</strong></p>\n<ul>\n    <li><strong>Case ID:</strong> {{ doc.case_id }}</li>\n    <li><strong>Level:</strong> {{ doc.level }}</li>\n    <li><strong>Branch:</strong> {{ doc.branch_name }}</li>\n    <li><strong>Issue Occurred On:</strong> {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</li>\n    <li><strong>Issue Reported to HR:</strong> {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}</li>\n    <li><strong>Issue In details:</strong> {{ doc.issue_in_details or \"No remarks provided.\" }}</li>\n</ul>\n\n<p>Kindly take the necessary action as per the Unauthorized Absence policy.</p>\n\n<p>Regards,<br>\nHR Department</p>",
+    "use_html": 1,
+    "docstatus": 0
   }
 ]
