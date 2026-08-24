@@ -1,7 +1,6 @@
 from frappe.model.document import Document
 import frappe
 import frappe
-from frappe.utils import formatdate
 from frappe import _
 
 class ResponsetoSCN(Document):
@@ -56,19 +55,11 @@ def check_employee_email(employee):
 def send_response_scn_email(docname):
     doc = frappe.get_doc("Response to SCN", docname)
 
-    # Convert to dictionary for Jinja template
-    doc_dict = doc.as_dict()
-
-    # Optional: format dates
-    if doc_dict.get("issue_occurrence_date"):
-        doc_dict["issue_occurrence_date"] = formatdate(doc_dict["issue_occurrence_date"])
-
-    # Load template
+    # Load template (dates formatted via strftime in template)
     template = frappe.get_doc("Email Template", "Response to SCN")
-    
-    # Use standard 'doc' context
+
     context = {"doc": doc}
-    
+
     message = frappe.render_template(template.response_html, context)
     subject = frappe.render_template(template.subject, context)
 
@@ -80,9 +71,9 @@ def send_response_scn_email(docname):
 
     # Attachments if any
     attachments = []
-    if doc_dict.get("document_upload"):
+    if doc.document_upload:
         try:
-            file_doc = frappe.get_doc("File", {"file_url": doc_dict["document_upload"]})
+            file_doc = frappe.get_doc("File", {"file_url": doc.document_upload})
             attachments.append({
                 "fname": file_doc.file_name,
                 "fcontent": file_doc.get_content()
