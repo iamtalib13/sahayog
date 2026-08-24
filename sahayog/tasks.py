@@ -62,7 +62,9 @@ def _get_or_create_yearly_allocation(emp, lt_name, today_date):
     if prev:
         # Renewal: start right after the old allocation expired so HRMS's
         # get_previous_allocation can pick it up and carry forward its unused leaves.
-        from_date = max(add_days(prev.to_date, 1), fy_start)
+        # Do NOT clamp to fy_start — if prev expired mid-year (e.g. Jan 31),
+        # the new allocation must start Feb 1, not Apr 1.
+        from_date = add_days(prev.to_date, 1)
         to_date = fy_end
         carry_forward = 1
     else:
@@ -105,11 +107,14 @@ def monthly_leave_credit():
     from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
 
     today_date = getdate(today())
-    if today_date.day != 1:
-        return
-
-    first_of_month = today_date
+    first_of_month = today_date.replace(day=1)
     _, year_end = _fiscal_year_bounds(today_date)
+
+    # Guard: only run on or after the 1st of the month,
+    # but allow re-runs (e.g. if scheduler was down on the 1st) up to the 5th.
+    # The already_credited check below prevents duplicate credits regardless.
+    if today_date.day > 5:
+        return
 
     employees = frappe.get_all(
         "Employee",
@@ -196,11 +201,30 @@ def auto_setup_new_employee_leave():
         for lt_name, rate in LEAVE_MONTHLY_RATES.items():
             from_date = max(emp.date_of_joining, fy_start)
 
-            # Pro-rata if joining this month, else full monthly rate
-            if (
+            # If employee joined after the 20th of the month, no leave credit
+            # for that joining month — allocation starts from 1st of next month.
+            if emp.date_of_joining.day > 20:
+                from calendar import monthrange as _mr
+                doj = emp.date_of_joining
+                # Move to 1st of next month
+                if doj.month == 12:
+                    first_of_next = getdate(f"{doj.year + 1}-01-01")
+                else:
+                    first_of_next = getdate(f"{doj.year}-{doj.month + 1:02d}-01")
+                # If next month's 1st is still in the future, skip for now —
+                # monthly_leave_credit will handle it on that date.
+                if first_of_next > today_date:
+                    continue
+                # Use first_of_next as-is — do NOT clamp to fy_start.
+                # fy_start clamping would wrongly push a Jan/Feb/Mar joiner's
+                # allocation to April of the next FY.
+                from_date = first_of_next
+                new_leaves = rate  # full rate, first credit on next month's 1st
+            elif (
                 emp.date_of_joining.year == today_date.year
                 and emp.date_of_joining.month == today_date.month
             ):
+                # Joined this month on or before the 20th — pro-rata
                 month_days = monthrange(today_date.year, today_date.month)[1]
                 days_employed = month_days - emp.date_of_joining.day + 1
                 factor = flt(days_employed / month_days, 4)

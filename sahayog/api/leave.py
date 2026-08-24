@@ -3,8 +3,33 @@ from frappe import _
 from frappe.utils import flt, getdate
 
 @frappe.whitelist(allow_guest=False)
-def get_leave_types():
-    return frappe.get_all("Leave Type", fields=["name"])
+def get_leave_types(employee=None):
+    leave_types = frappe.get_all("Leave Type", fields=["name"])
+
+    # If employee provided, check EL eligibility (requires confirmation)
+    el_eligible = True
+    confirmation_date = None
+    if employee:
+        emp = frappe.db.get_value(
+            "Employee", employee,
+            ["final_confirmation_date", "employee_name"],
+            as_dict=True
+        )
+        if emp:
+            from frappe.utils import getdate, today
+            confirmation_date = str(emp.final_confirmation_date) if emp.final_confirmation_date else None
+            el_eligible = bool(
+                emp.final_confirmation_date and
+                getdate(emp.final_confirmation_date) <= getdate(today())
+            )
+
+    for lt in leave_types:
+        lt["el_restricted"] = (
+            not el_eligible and "earned" in lt.name.lower()
+        )
+        lt["confirmation_date"] = confirmation_date
+
+    return leave_types
 
 from sahayog.api.attendance import get_leave_balances
 
@@ -26,6 +51,24 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     # Half day can only be applied for a single day
     if half_day:
         to_date = from_date
+
+    # Earned Leave is only available after confirmation (permanent employees only)
+    if "earned" in leave_type.lower():
+        emp_data = frappe.db.get_value(
+            "Employee", employee,
+            ["final_confirmation_date", "employee_name"],
+            as_dict=True
+        )
+        if not emp_data or not emp_data.final_confirmation_date:
+            frappe.throw(_(
+                "Earned Leave can only be availed after confirmation. "
+                "{0} has not been confirmed yet."
+            ).format(emp_data.employee_name if emp_data else employee))
+        if getdate(from_date) < getdate(emp_data.final_confirmation_date):
+            frappe.throw(_(
+                "Earned Leave can only be availed on or after the Date of Confirmation ({0}). "
+                "{1} is still on probation until that date."
+            ).format(emp_data.final_confirmation_date, emp_data.employee_name))
 
     # Check Balance
     balances = get_leave_balances(employee)
