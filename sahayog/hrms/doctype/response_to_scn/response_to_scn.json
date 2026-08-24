@@ -148,8 +148,7 @@
    "fieldname": "domestic_enquiry",
    "fieldtype": "Select",
    "label": "Domestic Enquiry",
-   "options": "\nYes\nNo",
-   "read_only": 1
+   "options": "\nYes\nNo"
   },
   {
    "fieldname": "section_break_kpne",
@@ -194,7 +193,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-27 15:06:49.763135",
+ "modified": "2026-08-24 15:15:36.449212",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Response to SCN",

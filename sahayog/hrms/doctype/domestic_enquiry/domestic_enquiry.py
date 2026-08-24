@@ -75,19 +75,9 @@ def send_domestic_enquiry_email(docname):
     if not final_email:
         frappe.throw("No email found for this employee.")
 
-    # Prepare data for template
-    doc_dict = doc.as_dict()
-
-    # Format date
-    from frappe.utils import formatdate
-
-    if doc.date_of_enquiry:
-        doc_dict["date_of_enquiry"] = formatdate(doc.date_of_enquiry)
-
-    # Load Email Template
+    # Load Email Template (dates formatted via strftime in template)
     template = frappe.get_doc("Email Template", "Domestic Enquiry Notice")
 
-    # Use standard 'doc' context
     context = {"doc": doc}
 
     # Render Email

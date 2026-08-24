@@ -81,19 +81,8 @@ def send_reminder_enquiry_email(docname, print_format):
     if not emp.company_email:
         frappe.throw("No email found for this employee.")
 
-    doc_dict = doc.as_dict()
-
-    from frappe.utils import formatdate
-
-    if doc.date_of_2nd_enquiry:
-        doc_dict["date_of_2nd_enquiry"] = formatdate(doc.date_of_2nd_enquiry)
-
-    if doc.issue_occurrence_date:
-        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
-
     template = frappe.get_doc("Email Template", "Reminder Notice of Enquiry")
-    
-    # Use standard 'doc' context
+
     context = {"doc": doc}
 
     message = frappe.render_template(template.response_html, context)
