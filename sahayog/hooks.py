@@ -458,7 +458,7 @@ scheduler_events = {
         # Daily at 10:00 PM (22:00)
         "0 22 * * *": [
             "sahayog.branch_score_card.doctype.crl_monitoring_and_branch_opening_and_closing.crl_monitoring_and_branch_opening_and_closing.sync_daily_crl"
-        ]  
+        ],  
 
         # Run daily at 3:30 AM — generate fast lead report
         "30 3 * * *": [
