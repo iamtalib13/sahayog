@@ -1,94 +1,3 @@
-# import frappe
-# from frappe.model.document import Document
-# from sahayog.petty_cash_management.permissions import get_user_allowed_branches # [NEW IMPORT]
-# from frappe.utils import flt
-
-# class BranchPettyCashAccount(Document):
-
-#     def validate(self):
-#         actual_branch_type = frappe.db.get_value("Sahayog Branch", self.branch, "branch_type")
-
-#         if not self.monthly_limit:
-#             if actual_branch_type == "Metro":
-#                 self.monthly_limit = 25000
-#             else:
-#                 self.monthly_limit = 15000
-
-#          # 2. [NEW] Auto-generate GL Sub Code
-#         # Logic: Branch Code (e.g., 1001) + Fixed Suffix (01390200001)
-#         if self.branch:
-#             account_suffix = "01390200001"
-#             self.gl_sub_code = f"{self.branch}{account_suffix}"
-
-#     def get_current_balance(self):
-#         # 1. Total Funds Allocated
-#         total_funds = frappe.db.sql("""
-#             SELECT COALESCE(SUM(amount), 0)
-#             FROM `tabPetty Cash Transaction`
-#             WHERE branch = %s AND transaction_type = 'Fund Allocation' AND docstatus = 1
-#         """, self.branch)[0][0]
-
-#         # 2. Total Expenses (CHANGED: Sum 'amount_deducted' from Parent, not child items)
-#         # This allows us to partially deduct funds initially, then deduct the rest later.
-#         total_expenses = frappe.db.sql("""
-#             SELECT COALESCE(SUM(amount_deducted), 0)
-#             FROM `tabPetty Cash Transaction`
-#             WHERE branch = %s
-#             AND transaction_type = 'Expense'
-#             AND docstatus = 1
-#         """, self.branch)[0][0]
-
-#         return (total_funds - total_expenses) or 0
-
-
-#     # [NEW] SECURITY CHECK
-#     def has_permission(self, permtype="read"):
-#         allowed_branches = get_user_allowed_branches()
-
-#         if allowed_branches is None:
-#             return True
-
-#         if self.branch in allowed_branches:
-#             return True
-
-#         return False
-
-#     def update_unsettled_cash(self, amount, transaction_type):
-#         """
-#         Updates the Unsettled Cash (Cash-In-Hand) tracker.
-#         transaction_type: 'Withdrawal' (Finacle Debit) or 'Expense' (Portal Submission)
-#         """
-#         current_val = flt(self.unsettled_cash)
-#         amount = flt(amount)
-
-#         if transaction_type == "Withdrawal":
-#             # Money left the bank -> User has cash now -> Unsettled Cash INCREASES
-#             self.unsettled_cash = current_val + amount
-
-#         elif transaction_type == "Expense":
-#             # User submitted bills -> Cash is accounted for -> Unsettled Cash DECREASES
-#             self.unsettled_cash = current_val - amount
-
-#         # Validation: Negative Cash in Hand logic
-#         if self.unsettled_cash < 0:
-#             frappe.msgprint(f"Note: Unsettled Cash is negative ({self.unsettled_cash}). This implies a reimbursement claim is pending.")
-
-#         # Save ignoring permissions (System update)
-#         self.save(ignore_permissions=True)
-
-#         # Check for Hoarding
-#         self.check_cash_hoarding()
-
-#     def check_cash_hoarding(self):
-#         """Alert HO if branch is holding too much cash without bills"""
-#         THRESHOLD = 2000 # Configurable limit (e.g., ₹2000)
-
-#         if self.unsettled_cash > THRESHOLD:
-#             # OPTIONAL: Send a system notification or email
-#             # frappe.sendmail(recipients="ho_manager@sahayog.com", subject="Cash Hoarding Alert", ...)
-#             print(f"⚠️ ALERT: Branch {self.branch} is holding ₹{self.unsettled_cash} (Limit: ₹{THRESHOLD})")
-
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -107,13 +16,6 @@ class BranchPettyCashAccount(Document):
     def validate(self):
 
         # [NEW] SECURITY CHECK
-        # if not self.name:
-        #     return
-
-        # old = frappe.db.get_value(self.doctype, self.name, "is_fund_source")
-        # if cint(old) != cint(self.is_fund_source) and not frappe.has_role("HO Petty Cash Manager"):
-        #     frappe.throw(_("You are not allowed to change Fund Source."))
-
         if not self.name:
             return
 
@@ -122,9 +24,44 @@ class BranchPettyCashAccount(Document):
             if not frappe.utils.has_common(["HO Petty Cash Manager"], frappe.get_roles()):
                 frappe.throw(_("You are not allowed to change Fund Source."))
 
-        # [NEW] Validation
-        actual_branch_type = frappe.db.get_value(
-            "Sahayog Branch", self.branch, "branch_type")
+        # # [NEW] Validation
+        # actual_branch_type = frappe.db.get_value(
+        #     "Sahayog Branch", self.branch, "branch_type")
+
+        # if not self.monthly_limit:
+        #     if actual_branch_type == "Metro":
+        #         self.monthly_limit = 30000
+        #     else:
+        #         self.monthly_limit = 25000
+
+        # # 1. Auto-generate GL Sub Code
+        # # if self.branch:
+        # #     account_suffix = "01390200001"
+        # #     self.gl_sub_code = f"{self.branch}{account_suffix}"
+
+        # # 1. Auto-generate GL Sub Code only for non-Zonal branches
+        # if self.branch:
+        #     actual_branch_type = frappe.db.get_value(
+        #         "Sahayog Branch", self.branch, "branch_type"
+        #     )
+
+        #     if actual_branch_type == "Zonal":
+        #         if frappe.session.user == "Administrator":
+        #             self.gl_sub_code = self.gl_sub_code or ""
+        #         else:
+        #             self.gl_sub_code = ""
+        #     else:
+        #         account_suffix = "01390200001"
+        #         self.gl_sub_code = f"{self.branch}{account_suffix}"
+
+        branch_values = frappe.db.get_value(
+            "Sahayog Branch",
+            self.branch,
+            ["branch_type", "entity_id", "entity_type"],
+            as_dict=True
+        )
+
+        actual_branch_type = branch_values.branch_type if branch_values else None
 
         if not self.monthly_limit:
             if actual_branch_type == "Metro":
@@ -132,10 +69,21 @@ class BranchPettyCashAccount(Document):
             else:
                 self.monthly_limit = 25000
 
-        # 1. Auto-generate GL Sub Code
         if self.branch:
-            account_suffix = "01390200001"
-            self.gl_sub_code = f"{self.branch}{account_suffix}"
+            if actual_branch_type == "Zonal":
+                self.entity_id = branch_values.entity_id if branch_values else ""
+                self.entity_type = branch_values.entity_type if branch_values else ""
+
+                if frappe.session.user == "Administrator":
+                    self.gl_sub_code = self.gl_sub_code or ""
+                else:
+                    self.gl_sub_code = ""
+            else:
+                self.entity_id = ""
+                self.entity_type = ""
+                self.branch_type = actual_branch_type
+                account_suffix = "01390200001"
+                self.gl_sub_code = f"{self.branch}{account_suffix}"
 
         # 2. [IMPORTANT] Create the Account in Chart of Accounts
         self.create_ledger_account()
@@ -228,17 +176,6 @@ class BranchPettyCashAccount(Document):
 
         return (total_funds - total_expenses) or 0
 
-    # def has_permission(self, permtype="read"):
-    #     allowed_branches = get_user_allowed_branches()
-
-    #     if allowed_branches is None:
-    #         return True
-
-    #     if self.branch in allowed_branches:
-    #         return True
-
-    #     return False
-
     def has_permission(self, ptype="read", user=None):
         if not user:
             user = frappe.session.user
@@ -282,18 +219,6 @@ class BranchPettyCashAccount(Document):
             print(
                 f"⚠️ ALERT: Branch {self.branch} is holding ₹{self.unsettled_cash}")
 
-    # def on_update(self):
-    #     """
-    #     Triggered every time the document is saved.
-    #     If the go_live_date was changed, recalculate the unsettled cash immediately.
-    #     """
-    #     if not self.is_new() and self.has_value_changed('go_live_date'):
-    #         # Import our specific function
-    #         from sahayog.petty_cash_management.api.auto_cash_withdrawal_sync import sync_single_branch_withdrawal
-
-    #         # Execute it INSTANTLY, completely skipping the background queue
-    #         sync_single_branch_withdrawal(self.name)
-
     def on_update(self):
         """
         Triggered every time the document is saved.
@@ -331,41 +256,6 @@ class BranchPettyCashAccount(Document):
                 indicator="blue",
                 alert=True
             )
-
-    # working
-    # def adjust_current_balance(self, amount, operation, reference_doctype=None, reference_name=None):
-    #     amount = flt(amount)
-
-    #     if amount <= 0:
-    #         frappe.throw(_("Amount must be greater than zero."))
-
-    #     current_balance = flt(frappe.db.get_value(
-    #         self.doctype, self.name, "current_balance"))
-
-    #     if operation == "deduct":
-    #         if current_balance < amount:
-    #             frappe.throw(
-    #                 _("Insufficient Current Balance for branch {0}. Available: {1}, Required: {2}").format(
-    #                     self.branch, current_balance, amount
-    #                 )
-    #             )
-    #         new_balance = current_balance - amount
-
-    #     elif operation == "credit":
-    #         new_balance = current_balance + amount
-
-    #     else:
-    #         frappe.throw(_("Invalid balance operation: {0}").format(operation))
-
-    #     frappe.db.set_value(
-    #         self.doctype,
-    #         self.name,
-    #         "current_balance",
-    #         new_balance,
-    #         update_modified=False
-    #     )
-
-    #     return new_balance
 
     def adjust_current_balance(self, amount, operation, reference_doctype=None, reference_name=None):
         amount = flt(amount)

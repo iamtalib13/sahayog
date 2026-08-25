@@ -36,11 +36,6 @@ from sahayog.petty_cash_management.permissions import get_user_allowed_branches
 
 class PettyCashTransaction(Document):
 
-    # def before_cancel(self):
-    #     if self.approval_status in ["Approved", "Verified"]:
-    #         frappe.throw(
-    #             "This transaction cannot be cancelled after HO limit approval or verification.")
-
     def before_insert(self):
         if not self.transaction_date:
             self.transaction_date = nowdate()
@@ -75,12 +70,6 @@ class PettyCashTransaction(Document):
             self.generate_item_gl_codes()
 
             self.calculate_limit_breakdown()
-
-            # if self.transaction_type == "Expense":
-            #     total_expense = sum(flt(item.amount) for item in self.items)
-            #     self.amount = total_expense
-            #     self.generate_item_gl_codes()
-            #     self.calculate_limit_breakdown()
 
         # [NEW ADDITION] Auto-set Source Account for Fund Allocation
         if self.transaction_type == "Fund Allocation":
@@ -195,20 +184,56 @@ class PettyCashTransaction(Document):
             finally:
                 frappe.set_user(original_user)
 
+    # def generate_item_gl_codes(self):
+    #     if not self.branch or not self.items:
+    #         return
+
+    #     # 1. Collect all Category IDs from the child table rows
+    #     # 'item.expense_category' stores the ID (e.g., '1004'), not the name
+    #     category_ids = [
+    #         item.expense_category for item in self.items if item.expense_category]
+
+    #     # 2. Fetch Suffixes for these IDs
+    #     # Returns dict: {'1004': '01840390001', '1005': '...'}
+    #     category_map = {}
+    #     if category_ids:
+    #         # We filter by 'name' (the ID) because that's what is stored in the link field
+    #         results = frappe.get_all(
+    #             "Expense Category",
+    #             filters={"name": ["in", category_ids]},
+    #             fields=["name", "finacle_gl_code"],
+    #             as_list=True
+    #         )
+    #         category_map = {row[0]: row[1] for row in results}
+
+    #     # 3. Apply Logic: Branch Code + Suffix
+    #     for item in self.items:
+    #         # Get suffix using the Link field value (ID)
+    #         suffix = category_map.get(item.expense_category)
+
+    #         if suffix:
+    #             item.finacle_gl_code = f"{self.branch}{suffix}"
+    #         else:
+    #             item.finacle_gl_code = ""
+
     def generate_item_gl_codes(self):
         if not self.branch or not self.items:
             return
 
-        # 1. Collect all Category IDs from the child table rows
-        # 'item.expense_category' stores the ID (e.g., '1004'), not the name
-        category_ids = [
-            item.expense_category for item in self.items if item.expense_category]
+        branch_type = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": self.branch},
+            "branch_type"
+        )
 
-        # 2. Fetch Suffixes for these IDs
-        # Returns dict: {'1004': '01840390001', '1005': '...'}
+        gl_prefix = "1000" if branch_type == "Zonal" else self.branch
+
+        category_ids = [
+            item.expense_category for item in self.items if item.expense_category
+        ]
+
         category_map = {}
         if category_ids:
-            # We filter by 'name' (the ID) because that's what is stored in the link field
             results = frappe.get_all(
                 "Expense Category",
                 filters={"name": ["in", category_ids]},
@@ -217,13 +242,11 @@ class PettyCashTransaction(Document):
             )
             category_map = {row[0]: row[1] for row in results}
 
-        # 3. Apply Logic: Branch Code + Suffix
         for item in self.items:
-            # Get suffix using the Link field value (ID)
             suffix = category_map.get(item.expense_category)
 
             if suffix:
-                item.finacle_gl_code = f"{self.branch}{suffix}"
+                item.finacle_gl_code = f"{gl_prefix}{suffix}"
             else:
                 item.finacle_gl_code = ""
 
@@ -256,6 +279,10 @@ class PettyCashTransaction(Document):
             self.source_bank_account = account_name[0][0]
 
     def validate(self):
+        # Validate Active Expense Categories
+        self.validate_active_expense_categories()
+
+        self.validate_branch_wallet_status()
 
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
@@ -313,13 +340,6 @@ class PettyCashTransaction(Document):
             self.current_unsettled_cash = flt(
                 wallet_values.unsettled_cash)  # <--- New Field
 
-    # def validate_bill_dates(self):
-    #     current_date = getdate(nowdate())
-    #     for item in self.items:
-    #         if item.bill_date and getdate(item.bill_date) > current_date:
-    #             frappe.throw(
-    #                 _("Row #{0}: Bill Date cannot be in the future.").format(item.idx))
-
     def validate_bill_dates(self):
         today = getdate(nowdate())
 
@@ -337,67 +357,6 @@ class PettyCashTransaction(Document):
                     frappe.throw(
                         f"Row #{row.idx}: Bill Date cannot be older than 30 days from today."
                     )
-
-    # def calculate_limit_breakdown(self):
-    #     """
-    #     Calculates how much of the expense is within limit and how much exceeds.
-    #     Populates amount_within_limit and amount_exceeding_limit.
-    #     """
-    #     if self.transaction_type != "Expense":
-    #         return
-
-    #     branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "branch_type")
-
-    #     # Group by category
-    #     current_tx_categories = {}
-    #     for item in self.items:
-    #         current_tx_categories.setdefault(item.expense_category, 0.0)
-    #         current_tx_categories[item.expense_category] += flt(item.amount)
-
-    #     total_within = 0.0
-    #     total_exceeding = 0.0
-
-    #     first_day = get_first_day(self.transaction_date)
-    #     last_day = get_last_day(self.transaction_date)
-
-    #     for category_id, tx_amount in current_tx_categories.items():
-    #         # Get Config
-    #         category_doc = frappe.get_doc("Expense Category", category_id)
-    #         limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
-
-    #         if limit <= 0:
-    #             # Unlimited
-    #             total_within += tx_amount
-    #             continue
-
-    #         # Get Spent (excluding this doc)
-    #         spent_sql = """
-    #             SELECT COALESCE(SUM(child.amount), 0)
-    #             FROM `tabPetty Cash Transaction Item` child
-    #             JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
-    #             WHERE parent.branch = %s
-    #               AND child.expense_category = %s
-    #               AND parent.transaction_date BETWEEN %s AND %s
-    #               AND parent.docstatus = 1
-    #               AND parent.name != %s
-    #         """
-    #         already_spent = frappe.db.sql(spent_sql, (self.branch, category_id, first_day, last_day, self.name or "New"))[0][0]
-
-    #         remaining_limit = max(flt(limit) - flt(already_spent), 0)
-
-    #         if tx_amount <= remaining_limit:
-    #             # Fully within limit
-    #             total_within += tx_amount
-    #         else:
-    #             # Split Logic
-    #             can_spend = remaining_limit
-    #             excess = tx_amount - remaining_limit
-
-    #             total_within += can_spend
-    #             total_exceeding += excess
-
-    #     self.amount_within_limit = total_within
-    #     self.amount_exceeding_limit = total_exceeding
 
     def calculate_limit_breakdown(self):
         """
@@ -425,7 +384,13 @@ class PettyCashTransaction(Document):
 
         for category_id, tx_amount in current_tx_categories.items():
             category_doc = frappe.get_doc("Expense Category", category_id)
-            limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+            # limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+            if branch_type == "Metro":
+                limit = category_doc.metro_limit
+            elif branch_type == "Zonal":
+                limit = category_doc.zonal_limit
+            else:
+                limit = category_doc.non_metro_limit
 
             # Unlimited check
             if limit == 0:
@@ -493,129 +458,6 @@ class PettyCashTransaction(Document):
         if self.amount_exceeding_limit > 0:
             frappe.msgprint(_("Warning: Expenses exceed category limits by ₹{0}. This amount will NOT be deducted until approved by HO.").format(
                 self.amount_exceeding_limit), alert=True)
-
-    # old
-    # def on_submit(self):
-
-    #      # On Submit, Trigger Finacle API
-    #     if self.transaction_type == "Fund Allocation":
-    #         # self.db_set('approval_status', 'Posted') # Set status to Posted
-    #         self.process_finacle_transfer()
-
-    #     # 1. Update Unsettled Cash if this is an Expense
-    #     if self.transaction_type == "Expense":
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-
-    #         # Deduct the total amount from their "Cash in Hand" bucket (Liability)
-    #         # This is the ONLY place where money "leaves" the wallet in our portal
-    #         wallet.update_unsettled_cash(self.amount, "Expense")
-
-    #         # 2. Handle Status & Limits
-    #         if self.amount_exceeding_limit > 0:
-    #             # Scenario 2: Exceeding Limit
-    #             self.db_set('amount_deducted', self.amount_within_limit)
-    #             self.db_set('approval_status', 'Pending Approval')
-    #             frappe.msgprint(_("Transaction Submitted. ₹{0} deducted. ₹{1} pending HO Approval.").format(self.amount_within_limit, self.amount_exceeding_limit))
-    #         else:
-    #             # Scenario 1: Within Limit
-    #             self.db_set('amount_deducted', self.amount)
-    #             self.db_set('approval_status', 'Approved')
-
-    #     elif self.transaction_type == "Fund Allocation":
-    #         self.db_set('amount_deducted', 0)
-    #         self.db_set('approval_status', 'Posted')
-
-    #     self.update_wallet()
-
-    # # [NEW] Create Draft Journal Entry
-    #     if self.transaction_type == "Expense":
-    #         self.create_journal_entry()
-
-    #     self.update_wallet()
-
-    # old
-    # def on_submit(self):
-    #     # 1. Check the Global Control Switch
-    #     enable_integration = frappe.db.get_single_value("Finacle Settings", "enable_finacle_integration")
-
-    #     if enable_integration:
-    #         # --- OLD LOGIC (Finacle Mode) ---
-    #         # Create Journal Entry only if integration is enabled
-    #         self.create_journal_entry()
-    #     else:
-    #         # --- NEW LOGIC (Manual Mode) ---
-    #         # Do nothing. Just let it submit.
-    #         # No Journal Entry is created.
-    #         pass
-    #     # # 1. Fund Allocation Logic
-    #     # if self.transaction_type == "Fund Allocation":
-    #     #     # We do NOT set 'Posted' here yet. We let the process function decide.
-    #     #     self.process_finacle_transfer()
-
-    #     # [FIX] Only trigger the Finacle API call if this is a MANUAL entry.
-    #     # If posted_to_finacle is 1, the money is already there, so we skip this.
-    #     if self.transaction_type == "Fund Allocation" and not self.posted_to_finacle:
-    #         self.process_finacle_transfer()
-
-    #     # If it IS a synced entry, we might just want to update the status to "Success" locally
-    #     elif self.transaction_type == "Fund Allocation" and self.posted_to_finacle:
-    #          frappe.msgprint(_("Fund Allocation Synced from Finacle successfully."))
-
-    #     # 2. Expense Logic (Existing)
-    #     elif self.transaction_type == "Expense":
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {"branch": self.branch})
-    #         wallet.update_unsettled_cash(self.amount, "Expense")
-
-    #         if self.amount_exceeding_limit > 0:
-    #             self.db_set('amount_deducted', self.amount_within_limit)
-    #             self.db_set('approval_status', 'Pending Approval')
-    #         else:
-    #             self.db_set('amount_deducted', self.amount)
-    #             self.db_set('approval_status', 'Approved')
-
-    #         self.create_journal_entry()
-    #         self.update_wallet()
-
-    # previous
-    # def on_submit(self):
-    #     # --- 1. Fund Allocation Logic (unchanged) ---
-    #     if self.transaction_type == "Fund Allocation":
-    #         if not self.posted_to_finacle:
-    #             # Only process if not already synced from Finacle
-    #             self.process_finacle_transfer()
-    #         else:
-    #             frappe.msgprint(
-    #                 _("Fund Allocation Synced from Finacle successfully."))
-
-    #     # --- 2. Expense Logic (Modified for Switch) ---
-    #     elif self.transaction_type == "Expense":
-    #         # A. Always update wallet tracking (This is internal Frappe logic, independent of Finacle)
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {
-    #                                 "branch": self.branch})
-    #         wallet.update_unsettled_cash(self.amount, "Expense")
-
-    #         # B. Handle Limits (Internal Approval Logic)
-    #         if self.amount_exceeding_limit > 0:
-    #             self.db_set('amount_deducted', self.amount_within_limit)
-    #             self.db_set('approval_status', 'Pending Approval')
-    #         else:
-    #             self.db_set('amount_deducted', self.amount)
-    #             self.db_set('approval_status', 'Approved')
-
-    #         # C. CONTROL SWITCH: Journal Entry Creation
-    #         # [UPDATE] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
-    #         enable_integration = frappe.db.get_single_value(
-    #             "Sahayog Settings", "enable_finacle_integration")
-
-    #         if enable_integration:
-    #             # OLD FLOW: Create JE -> Update Wallet -> Wait for Verification API
-    #             self.create_journal_entry()
-    #         else:
-    #             # NEW FLOW: Skip JE -> Just Update Wallet -> Wait for Manual Verification
-    #             pass
-
-    #         # D. Update Wallet Balance (Internal)
-    #         self.update_wallet()
 
     def on_submit(self):
         if self.transaction_type == "Expense":
@@ -761,143 +603,6 @@ class PettyCashTransaction(Document):
 
         finally:
             frappe.set_user(original_user)
-
-    # def process_finacle_transfer(self):
-    #     if not self.journal_entry_ref:
-    #         frappe.throw(_("Journal Entry Reference is missing. Please save the document again."))
-
-    #     # 1. Call API
-    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
-    #     status = response.get("status")
-
-    #     # 2. Fetch the Linked Journal Entry Document
-    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
-
-    #     if status == "SUCCESS":
-    #         # --- SUCCESS PATH ---
-    #         tran_id = response.get("trn_id")
-
-    #         # A. Submit the Journal Entry (Change status from Draft -> Submitted/Journal Entry)
-    #         if je_doc.docstatus == 0:
-    #             je_doc.flags.ignore_permissions = True
-    #             je_doc.submit()
-
-    #         # B. Update Fields on Current Doc
-    #         self.db_set('finacle_tran_id', tran_id)
-    #         self.db_set('finacle_tran_date', nowdate())
-    #         self.db_set('approval_status', 'Posted') # NOW we mark it Posted
-
-    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
-
-    #         # Since this is inside on_submit, returning normally allows the
-    #         # Petty Cash Transaction to finalize its submission (docstatus=1).
-
-    #     else:
-    #         # --- FAILURE PATH ---
-    #         error_msg = response.get("message", "Unknown Finacle Error")
-
-    #         # A. Log Error details to fields (using db.set_value to persist despite rollback)
-    #         # We update 'finacle_tran_particular' and 'finacle_tran_date'
-    #         frappe.db.set_value(self.doctype, self.name, {
-    #             "finacle_tran_particular": f"FAILED: {error_msg}",
-    #             "finacle_tran_date": nowdate()
-    #         })
-
-    #         # B. Ensure Journal Entry stays Draft (It already is, just ensuring we don't submit it)
-    #         # (No action needed, just don't call .submit())
-
-    #         # C. STOP Submission of Petty Cash Transaction
-    #         # Throwing an error rolls back the "Submit" action for THIS document.
-    #         # The User will see the error popup, and the document stays Draft (docstatus=0).
-    #         # The "Submit" button will remain available.
-    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
-
-    # def process_finacle_transfer(self):
-    #     if not self.journal_entry_ref:
-    #         frappe.throw(_("Journal Entry Reference is missing."))
-
-    #     # Mark that we tried submitting
-    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
-    #     frappe.db.commit() # Save this flag immediately!
-
-    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
-    #     status = response.get("status")
-
-    #     # Load JE to check status
-    #     je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
-
-    #     if status == "SUCCESS":
-    #         tran_id = response.get("trn_id")
-
-    #         # Submit JE if not already
-    #         if je_doc.docstatus == 0:
-    #             je_doc.flags.ignore_permissions = True
-    #             je_doc.submit()
-
-    #         self.db_set('finacle_tran_id', tran_id)
-    #         self.db_set('finacle_tran_date', nowdate())
-    #         self.db_set('approval_status', 'Posted')
-    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
-
-    #     elif status == "SKIPPED" and je_doc.docstatus == 1:
-    #         # Special Case: It was already done!
-    #         # Just ensure our record reflects it
-    #         self.db_set('approval_status', 'Posted')
-    #         frappe.msgprint(_("Transaction was already processed successfully."), indicator='green')
-
-    #     else:
-    #         # FAILURE
-    #         error_msg = response.get("message", "Unknown Finacle Error")
-
-    #         # Save Error Log & Force Commit
-    #         frappe.db.set_value(self.doctype, self.name, {
-    #             "finacle_tran_particular": f"FAILED: {error_msg}",
-    #             "finacle_tran_date": nowdate()
-    #         })
-    #         frappe.db.commit() # <--- CRITICAL FIX
-
-    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
-
-    # def process_finacle_transfer(self):
-    #     if not self.journal_entry_ref:
-    #         frappe.throw(_("Journal Entry Reference is missing."))
-
-    #     # 1. Mark Attempted (Locks fields in UI)
-    #     frappe.db.set_value(self.doctype, self.name, "submission_attempted", 1)
-    #     frappe.db.commit()
-
-    #     # 2. Call API
-    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
-    #     status = response.get("status")
-
-    #     # 3. Handle Response
-    #     if status == "SUCCESS":
-    #         # --- SUCCESS ---
-    #         tran_id = response.get("trn_id")
-
-    #         # Submit Linked Journal Entry
-    #         je_doc = frappe.get_doc("Journal Entry", self.journal_entry_ref)
-    #         if je_doc.docstatus == 0:
-    #             je_doc.flags.ignore_permissions = True
-    #             je_doc.submit()
-
-    #         # Update Success Fields
-    #         self.db_set('finacle_tran_id', tran_id)
-    #         self.db_set('finacle_tran_date', nowdate())
-    #         self.db_set('approval_status', 'Posted')
-
-    #         frappe.msgprint(_(f"Finacle Transfer Successful! ID: {tran_id}"), indicator='green')
-
-    #     else:
-    #         # --- FAILURE ---
-    #         error_msg = response.get("message", "Unknown Finacle Error")
-
-    #         # We do NOT update 'finacle_tran_particular'. We keep it empty.
-
-    #         # Just Throw Error
-    #         # This shows the popup message to the user
-    #         # And rolls back the main transaction (keeping Doc in Draft)
-    #         frappe.throw(_(f"Finacle Transaction Failed: {error_msg}"))
 
     def process_finacle_transfer(self):
         if not self.journal_entry_ref:
@@ -1083,24 +788,6 @@ class PettyCashTransaction(Document):
 
         return new_account.name
 
-    # previous code
-    # def on_cancel(self):
-
-    #     # If cancelled, the cash is legally "back" with the user (unaccounted for)
-    #     if self.transaction_type == "Expense":
-    #         wallet = frappe.get_doc("Branch Petty Cash Account", {
-    #                                 "branch": self.branch})
-    #         # Treat it like a Withdrawal (Add it back to liability)
-    #         wallet.update_unsettled_cash(self.amount, "Withdrawal")
-
-    #     # Refund whatever was deducted
-    #     self.amount_deducted = 0
-    #     # self.approval_status = "Draft"
-    #     self.approval_status = "Canceled"
-    #     self.db_set("approval_status", "Canceled")
-
-    #     self.update_wallet()
-
     # new flow
 
     def on_cancel(self):
@@ -1128,40 +815,6 @@ class PettyCashTransaction(Document):
             frappe.db.set_value("Branch Petty Cash Account", {
                                 "branch": self.branch}, "last_funded_on", self.transaction_date)
 
-    # previous
-    # @frappe.whitelist()
-    # def ho_approve_limit(self):
-    #     """
-    #     Scenario 2 Step 2: HO Manager approves the excess.
-    #     """
-    #     # if "HO Petty Cash Manager" not in frappe.get_roles():
-    #     #     frappe.throw(_("Only HO Petty Cash Manager can approve limits."))
-
-    #     user_roles = frappe.get_roles()
-    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
-    #         frappe.throw("Only HO Petty Cash Manager or Approver can approve.")
-
-    #     if self.docstatus != 1 or self.approval_status != "Pending Approval":
-    #         frappe.throw(_("Document is not pending approval."))
-
-    #     # Deduct the remaining amount
-    #     self.amount_deducted = self.amount  # Now we deduct the full amount
-    #     self.approval_status = "Approved"  # Limit is cleared
-
-    #     self.db_set('amount_deducted', self.amount)
-    #     self.db_set('approval_status', 'Approved')
-
-    #     # Update Wallet Balance
-    #     self.update_wallet()
-
-    #     # frappe.msgprint(_("Limit Exceedance Approved. Full amount deducted from wallet."))
-    #     frappe.msgprint(
-    #         msg="Limit Exceedance Approved. Full amount deducted from wallet.",
-    #         title="Message",
-    #         indicator='blue',
-    #         alert=True  # <--- Added this to make it a floating alert
-    #     )
-
     @frappe.whitelist()
     def ho_approve_limit(self):
         user_roles = frappe.get_roles()
@@ -1186,31 +839,6 @@ class PettyCashTransaction(Document):
             title=_("Message"),
             indicator="blue"
         )
-
-    # new flow
-
-    # @frappe.whitelist()
-    # def ho_approve_limit(self):
-    #     user_roles = frappe.get_roles()
-
-    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
-    #         frappe.throw(
-    #             _("Only HO Petty Cash Manager or Approver can approve."))
-
-    #     if self.docstatus != 1 or self.approval_status != "Pending Approval":
-    #         frappe.throw(_("Document is not pending approval."))
-
-    #     self.db_set("amount_deducted", self.amount, update_modified=False)
-    #     self.db_set("approval_status", "Approved", update_modified=False)
-
-    #     if self.is_legacy_unsettled_cash_flow_enabled():
-    #         self.update_wallet()
-
-    #     frappe.msgprint(
-    #         msg=_("Limit Exceedance Approved. Full amount approved."),
-    #         title=_("Message"),
-    #         indicator="blue"
-    #     )
 
     def apply_new_flow_pending_approval_deduction(self):
         if self.transaction_type != "Expense":
@@ -1241,302 +869,6 @@ class PettyCashTransaction(Document):
                     target_total, update_modified=False)
         self.db_set("wallet_effect_reference_status",
                     self.approval_status, update_modified=False)
-
-    # old
-    # @frappe.whitelist()
-    # def ho_verify_bill(self):
-    #     """
-    #     Scenario 1 & 2 Final Step: HO Manager verifies bills.
-    #     Triggers Future Finacle Logic.
-    #     """
-    #     if "HO Petty Cash Manager" not in frappe.get_roles():
-    #         frappe.throw(_("Only HO Petty Cash Manager can verify."))
-
-    #     if self.approval_status != "Approved":
-    #          frappe.throw(_("Document must be Approved (Limits Cleared) before Verification."))
-
-    #     # 1. Update Status
-    #     self.approval_status = "Verified"
-    #     self.db_set('approval_status', 'Verified')
-    #     self.approved_by = frappe.session.user
-    #     self.db_set('approved_by', frappe.session.user)
-
-    #     # 2. TRIGGER FINACLE (Placeholder)
-    #     # self.trigger_finacle_api()
-
-    #     frappe.msgprint(_("Bills Verified. Ready for Finacle Integration."))
-
-    #      # [NEW] SECURITY CHECK
-
-    # @frappe.whitelist()
-    # def ho_verify_bill(self):
-    #     """
-    #     Scenario 1 & 2 Final Step: HO Manager verifies bills.
-    #     Uses frappe.db.set_value to update submitted document fields directly.
-    #     """
-
-    #     # 1. Permission Check
-    #     if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
-    #         frappe.throw(_("Only HO Petty Cash Manager can verify."))
-
-    #     # 2. Status Check
-    #     if self.approval_status != "Approved":
-    #         frappe.throw(_("Document must be in 'Approved' status before Verification."))
-
-    #     # 3. Validate Journal Entry Reference
-    #     if not self.journal_entry_ref:
-    #         frappe.throw(_("Journal Entry Reference is missing."))
-
-    #     if not frappe.db.exists("Journal Entry", self.journal_entry_ref):
-    #          frappe.throw(_("Linked Journal Entry {0} not found.").format(self.journal_entry_ref))
-
-    #     # 4. Trigger Finacle API
-    #     response = individual_finacle_fund_transfer_api(self.journal_entry_ref)
-
-    #     # 5. Handle Response
-    #     if response.get("status") == "SUCCESS":
-    #         # --- SUCCESS SCENARIO ---
-    #         # We use set_value with a dictionary to update multiple fields at once on the DB level
-    #         frappe.db.set_value(self.doctype, self.name, {
-    #             "finacle_tran_id": response.get("trn_id"),
-    #             "finacle_tran_date": nowdate(),
-    #             "approval_status": "Verified",
-    #             "approved_by": frappe.session.user
-    #         })
-
-    #         frappe.msgprint(
-    #             msg=f"Bills Verified & Processed in Finacle successfully.<br>Transaction ID: <b>{response.get('trn_id')}</b>",
-    #             title="Verification Complete",
-    #             indicator='green'
-    #         )
-
-    #     else:
-    #         # --- FAILURE SCENARIO ---
-    #         error_msg = response.get("message", "Unknown Finacle Error")
-
-    #         # Update only the error field directly in DB
-    #         frappe.db.set_value(self.doctype, self.name, "finacle_tran_particular", error_msg)
-
-    #         frappe.msgprint(
-    #             msg=f"Finacle Transaction Failed.<br>Reason: {error_msg}",
-    #             title="Verification Stopped",
-    #             indicator='red'
-    #         )
-
-
-##############################################################
-# previous
-
-    # @frappe.whitelist()
-    # def ho_verify_bill(self):
-    #     """
-    #     Modified to support Manual Mode (File Download)
-    #     """
-    #     # Permission Check (Same as before)
-    #     # if "HO Petty Cash Manager" not in frappe.get_roles() and frappe.session.user != "Administrator":
-    #     #     frappe.throw(_("Only HO Petty Cash Manager can verify."))
-
-    #     user_roles = frappe.get_roles()
-    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
-    #         frappe.throw("Only HO Petty Cash Manager or Verifier can verify.")
-
-    #     if self.approval_status != "Approved":
-    #         frappe.throw(_("Document must be Approved before Verification."))
-
-    #     # [FIX] Fetch from 'Sahayog Settings' instead of 'Finacle Settings'
-    #     enable_integration = frappe.db.get_single_value(
-    #         "Sahayog Settings", "enable_finacle_integration")
-
-    #     if enable_integration:
-    #         # --- OLD LOGIC (Finacle Mode) ---
-    #         if not self.journal_entry_ref:
-    #             frappe.throw(_("Journal Entry Reference is missing."))
-
-    #         # Call your existing API function
-    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
-    #         response = individual_finacle_fund_transfer_api(
-    #             self.journal_entry_ref)
-
-    #         if response.get("status") == "SUCCESS":
-    #             frappe.db.set_value(self.doctype, self.name, {
-    #                 "finacle_tran_id": response.get("trn_id"),
-    #                 "finacle_tran_date": nowdate(),
-    #                 "approval_status": "Verified",
-    #                 "approved_by": frappe.session.user
-    #             })
-
-    #             frappe.msgprint(
-    #                 # msg=f"Finacle Success: {response.get('message')}",
-    #                 msg=(f"Finacle Success: {response.get('trn_id')}"),
-    #                 title="Success",
-    #                 indicator='green',
-    #                 alert=True  # <--- Added this to make it a floating alert
-    #             )
-
-    #             # frappe.msgprint(f"Finacle Success: {response.get('trn_id')}")
-    #         else:
-    #             frappe.msgprint(
-    #                 # msg=f"Finacle Failed: {response.get('message')}",
-    #                 msg=(f"Finacle Failed: {response.get('message')}"),
-    #                 title="Error",
-    #                 indicator='red',
-    #                 alert=True  # <--- Added this to make it a floating alert
-    #             )
-
-    #             # frappe.msgprint(f"Finacle Failed: {response.get('message')}")
-
-    #     else:
-    #         # --- NEW LOGIC (Manual/Excel Mode) ---
-    #         # Just mark it as Verified so the download buttons appear
-    #         frappe.db.set_value(self.doctype, self.name, {
-    #             "approval_status": "Verified",
-    #             "approved_by": frappe.session.user,
-    #             "finacle_tran_date": nowdate(),  # Log when it was manually verified
-    #             "finacle_tran_particular": "Manual Verification (TTUM Mode)"
-    #         })
-
-    #         # frappe.msgprint(
-    #         #     msg="Record Verified Manually. Please download the TTUM/Excel files now.",
-    #         #     title="Verified (Offline Mode)",
-    #         #     indicator='green'
-    #         # )
-
-    #         frappe.msgprint(
-    #             msg="Record Verified Manually. Please download the TTUM/Excel files now.",
-    #             title="Verified (Offline Mode)",
-    #             indicator='green',
-    #             alert=True  # <--- Added this to make it a floating alert
-    #         )
-
-    # new flow
-
-    # new giving error
-    # @frappe.whitelist()
-    # def ho_verify_bill(self):
-    #     user_roles = frappe.get_roles()
-
-    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
-    #         frappe.throw(
-    #             _("Only HO Petty Cash Manager or Verifier can verify."))
-
-    #     if self.approval_status != "Approved":
-    #         frappe.throw(_("Document must be Approved before Verification."))
-
-    #     enable_integration = cint(
-    #         frappe.db.get_single_value(
-    #             "Sahayog Settings", "enable_finacle_integration") or 0
-    #     )
-
-    #     if enable_integration:
-    #         if not self.journalentryref:
-    #             frappe.throw(_("Journal Entry Reference is missing."))
-
-    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
-
-    #         response = individual_finacle_fund_transfer_api(
-    #             self.journalentryref)
-
-    #         if response.get("status") != "SUCCESS":
-    #             frappe.msgprint({
-    #                 "message": _("Finacle Failed: {0}").format(response.get("message")),
-    #                 "title": _("Error"),
-    #                 "indicator": "red",
-    #                 "alert": True
-    #             })
-    #             return
-
-    #         frappe.db.set_value(
-    #             self.doctype,
-    #             self.name,
-    #             {
-    #                 "finacle_tran_id": response.get("trn_id"),
-    #                 "finacle_tran_date": nowdate(),
-    #                 "approved_by": frappe.session.user
-    #             },
-    #             update_modified=False
-    #         )
-    #     else:
-    #         self.db_set("approved_by", frappe.session.user,
-    #                     update_modified=False)
-
-    #     if self.is_legacy_unsettled_cash_flow_enabled():
-    #         self.db_set("approval_status", "Verified", update_modified=False)
-    #     else:
-    #         self.apply_new_flow_terminal_credit("Verified")
-    #         self.db_set("approval_status", "Verified", update_modified=False)
-
-    #     frappe.msgprint({
-    #         "ho_verify_bill": _("Bills Verified successfully."),
-    #         "title": _("Verification Complete"),
-    #         "indicator": "green",
-    #         "alert": True
-    #     })
-
-    ############################################################################
-
-    # @frappe.whitelist()
-    # #
-    # @frappe.whitelist()
-    # def ho_verify_bill(self):
-    #     user_roles = frappe.get_roles()
-
-    #     if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
-    #         frappe.throw(
-    #             _("Only HO Petty Cash Manager or Verifier can verify."))
-
-    #     if self.approval_status != "Approved":
-    #         frappe.throw(_("Document must be Approved before Verification."))
-
-    #     enable_integration = cint(
-    #         frappe.db.get_single_value(
-    #             "Sahayog Settings", "enable_finacle_integration") or 0
-    #     )
-
-    #     if enable_integration:
-    #         if not self.journal_entry_ref:
-    #             frappe.throw(_("Journal Entry Reference is missing."))
-
-    #         from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
-
-    #         response = individual_finacle_fund_transfer_api(
-    #             self.journal_entry_ref)
-
-    #         if response.get("status") != "SUCCESS":
-    #             frappe.msgprint(
-    #                 msg=_("Finacle Failed: {0}").format(
-    #                     response.get("message")),
-    #                 title=_("Error"),
-    #                 indicator="red"
-    #             )
-    #             return
-
-    #         frappe.db.set_value(
-    #             self.doctype,
-    #             self.name,
-    #             {
-    #                 "finacle_tran_id": response.get("trn_id"),
-    #                 "finacle_tran_date": now_datetime(),
-    #                 "approved_by": frappe.session.user
-    #             },
-    #             update_modified=False
-    #         )
-    #     else:
-    #         self.db_set("approved_by", frappe.session.user,
-    #                     update_modified=False)
-
-    #     if self.is_legacy_unsettled_cash_flow_enabled():
-    #         self.db_set("approval_status", "Verified", update_modified=False)
-    #     else:
-    #         self.apply_new_flow_terminal_credit("Verified")
-    #         self.db_set("approval_status", "Verified", update_modified=False)
-
-    #     frappe.msgprint(
-    #         msg=_("Bills Verified successfully."),
-    #         title=_("Verification Complete"),
-    #         indicator="green"
-    #     )
-
-        ############################################################################
 
     from frappe.utils import now_datetime
 
@@ -1601,27 +933,6 @@ class PettyCashTransaction(Document):
             title=_("Verification Complete"),
             indicator="green"
         )
-
-    # def has_permission(self, permtype="read"):
-    #     """
-    #     This method is called automatically by Frappe when accessing a document via URL/Form.
-    #     """
-    #     # 1. Get allowed branches for current user
-    #     allowed_branches = get_user_allowed_branches()
-
-    #     # 2. If None, it means they are Admin/Manager -> Allow
-    #     if allowed_branches is None:
-    #         return True
-
-    #     # 3. Check if the document's branch is in the allowed list
-    #     # If the document is new (no branch yet), allow creation so they can select their branch
-    #     if self.is_new():
-    #         return True
-
-    #     if self.branch in allowed_branches:
-    #         return True
-
-    #     return False
 
     def has_permission(self, ptype="read", user=None):
         if not user:
@@ -1697,31 +1008,6 @@ class PettyCashTransaction(Document):
 
         return new_cc.name
 
-    # def download_transaction_excel(self):
-    #     data = []
-    #     # Header
-    #     data.append(["Branch Code", "Branch Name", "Date", "Total Amount", "Expense Category", "Vendor", "Bill No", "Amount", "Description"])
-
-    #     for row in self.items:
-    #         data.append([
-    #             self.branch,
-    #             self.branch_name,
-    #             self.transaction_date,
-    #             self.amount,
-    #             row.expense_category,
-    #             row.vendor_name,
-    #             row.bill_number,
-    #             row.amount,
-    #             row.description
-    #         ])
-
-    #     xlsx_file = make_xlsx(data, "Petty Cash Report")
-
-    #     frappe.response['filename'] = f"{self.name}.xlsx"
-    #     # [FIX] Add .getvalue() here to convert BytesIO to bytes
-    #     frappe.response['filecontent'] = xlsx_file.getvalue()
-    #     frappe.response['type'] = 'binary'
-
     def download_transaction_excel(self):
         """
         Generates a detailed CSV report for this specific transaction.
@@ -1750,7 +1036,7 @@ class PettyCashTransaction(Document):
         # 2. Define CSV Headers
         headers = [
             "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-            "Total Amount", "Wallet Balance", "Cash in Hand",
+            "Total Amount", "Wallet Balance",  # "Cash in Hand",
             "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
             "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
             # Child Item Fields
@@ -1777,7 +1063,7 @@ class PettyCashTransaction(Document):
                 self.transaction_type,
                 fmt(self.amount),
                 fmt(self.current_branch_balance),
-                fmt(self.current_unsettled_cash),
+                # fmt(self.current_unsettled_cash),
                 self.approval_status,
                 fmt(self.amount_within_limit),
                 fmt(self.amount_exceeding_limit),
@@ -1806,16 +1092,6 @@ class PettyCashTransaction(Document):
         writer.writerow(headers)
         writer.writerows(rows)
 
-        # # 5. Set Response
-        # # Move to start of stream
-        # output.seek(0)
-        # csv_content = output.getvalue()
-        # output.close()
-
-        # frappe.response['filename'] = f"{self.name}.csv"
-        # frappe.response['filecontent'] = csv_content
-        # frappe.response['type'] = 'csv'
-
         # 5. Set Response
         output.seek(0)
         csv_content = output.getvalue()
@@ -1828,14 +1104,18 @@ class PettyCashTransaction(Document):
         # We manually created the CSV content, so we treat it as a file download.
         frappe.response['type'] = 'binary'
 
-    # working on spacing logic and dynamic narrative in the text file generation
     # def download_transaction_txt(self):
     #     content = []
+    #     from frappe.utils import getdate
     #     date_obj = getdate(self.transaction_date)
-    #     ttum_date = date_obj.strftime("%b%y").upper() # JAN26
-    #     currency_str = f"INR{self.branch}"
+    #     ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
+    #     # currency_str = f"INR{self.branch}"
+    #     if self.branch_type == "Zonal":
+    #         currency_str = f"INR1000"
+    #     else:
+    #         currency_str = f"INR{self.branch}"
 
-    #     narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} STRYEX {self.name}"
+    #     narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
     #     debitDescription = ""
     #     total_debit = 0.0
 
@@ -1846,7 +1126,11 @@ class PettyCashTransaction(Document):
 
     #         amount_str = "{:.2f}".format(row.amount)
     #         total_debit += row.amount
-    #         debitDescription = f"{row.description}" if row.description else narrative_suffix
+
+    #         # Generate the description and restrict it to exactly 30 characters
+    #         raw_desc = f"{row.description}" if row.description else narrative_suffix
+    #         debitDescription = raw_desc[:30]  # <--- ADDED 30 CHAR LIMIT HERE
+
     #         # --- SPACING LOGIC ---
     #         # Standard Finacle width is 17.
     #         # Logic: Calculate space for 17 width. If < 10, force 10.
@@ -1862,9 +1146,10 @@ class PettyCashTransaction(Document):
     #         content.append(line)
 
     #     # --- 2. CREDIT ROW (Branch Wallet) ---
-    #     wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {"branch": self.branch}, "gl_sub_code")
+    #     wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
+    #                                     "branch": self.branch}, "gl_sub_code")
     #     if not wallet_gl:
-    #          frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
+    #         frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
 
     #     total_amount_str = "{:.2f}".format(total_debit)
 
@@ -1876,7 +1161,11 @@ class PettyCashTransaction(Document):
     #     space_str = " " * padding_count
     #     # ---------------------------------------
 
-    #     credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{narrative_suffix}"
+    #     # Restrict the credit narrative to exactly 30 characters
+    #     # <--- ADDED 30 CHAR LIMIT HERE
+    #     creditDescription = narrative_suffix[:30]
+
+    #     credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
     #     content.append(credit_line)
 
     #     final_txt = "\n".join(content)
@@ -1888,9 +1177,14 @@ class PettyCashTransaction(Document):
     def download_transaction_txt(self):
         content = []
         from frappe.utils import getdate
+
         date_obj = getdate(self.transaction_date)
         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-        currency_str = f"INR{self.branch}"
+
+        if self.branch_type == "Zonal":
+            currency_str = f"INR1000"
+        else:
+            currency_str = f"INR{self.branch}"
 
         narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
         debitDescription = ""
@@ -1904,45 +1198,67 @@ class PettyCashTransaction(Document):
             amount_str = "{:.2f}".format(row.amount)
             total_debit += row.amount
 
-            # Generate the description and restrict it to exactly 30 characters
             raw_desc = f"{row.description}" if row.description else narrative_suffix
-            debitDescription = raw_desc[:30]  # <--- ADDED 30 CHAR LIMIT HERE
+            debitDescription = raw_desc[:30]
 
-            # --- SPACING LOGIC ---
-            # Standard Finacle width is 17.
-            # Logic: Calculate space for 17 width. If < 10, force 10.
             padding_count = 17 - len(amount_str)
             if padding_count < 10:
                 padding_count = 10
 
             space_str = " " * padding_count
-            # ---------------------
 
-            # Format: GL <1sp> CURR <4sp> D <padding> AMOUNT REMARKS
             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
             content.append(line)
 
         # --- 2. CREDIT ROW (Branch Wallet) ---
-        wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-                                        "branch": self.branch}, "gl_sub_code")
+        wallet_gl = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": self.branch},
+            "gl_sub_code"
+        )
         if not wallet_gl:
             frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
 
         total_amount_str = "{:.2f}".format(total_debit)
 
-        # --- SPACING LOGIC (Same for Credit) ---
         padding_count = 17 - len(total_amount_str)
         if padding_count < 10:
             padding_count = 10
 
         space_str = " " * padding_count
-        # ---------------------------------------
 
-        # Restrict the credit narrative to exactly 30 characters
-        # <--- ADDED 30 CHAR LIMIT HERE
-        creditDescription = narrative_suffix[:30]
+        # Keep description exactly 30 chars
+        creditDescription = narrative_suffix[:30].ljust(30)
 
         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+
+        # --- 3. ADD ENTITY DETAILS ONLY FOR ZONAL ---
+        if self.branch_type == "Zonal":
+            entity_id = str(self.entity_id or "").strip()
+            entity_type = str(self.entity_type or "").strip()
+
+            # only append if entity_id exists
+            if entity_id:
+                extra_spaces_after_desc = " " * 852
+
+                if len(entity_id) == 4:
+                    entity_id_padding = " " * 12
+                elif len(entity_id) == 5:
+                    entity_id_padding = " " * 11
+                else:
+                    entity_id_padding = ""
+
+                entity_type_padding = " " * 5
+
+                credit_line = (
+                    f"{credit_line}"
+                    f"{extra_spaces_after_desc}"
+                    f"{entity_id}"
+                    f"{entity_id_padding}"
+                    f"{entity_type}"
+                    f"{entity_type_padding}"
+                )
+
         content.append(credit_line)
 
         final_txt = "\n".join(content)
@@ -1957,6 +1273,64 @@ class PettyCashTransaction(Document):
                 frappe.throw(
                     f"Row #{row.idx}: Description cannot be more than 30 characters including spaces."
                 )
+
+    # def validate_active_expense_categories(self):
+    #     for row in self.items:
+    #         if row.expense_category:
+    #             is_active = frappe.db.get_value(
+    #                 "Expense Category",
+    #                 row.expense_category,
+    #                 "is_active",
+    #             )
+
+    #             if not cint(is_active):
+    #                 frappe.throw(
+    #                     _("Row #{0}: Expense Category {1} is inactive and cannot be used.").format(
+    #                         row.idx, row.expense_category
+    #                     )
+    #                 )
+
+    def validate_active_expense_categories(self):
+        for row in self.items:
+            if row.expense_category:
+                category_values = frappe.db.get_value(
+                    "Expense Category",
+                    row.expense_category,
+                    ["is_active", "category_name"],
+                    as_dict=True
+                )
+
+                if category_values and not cint(category_values.is_active):
+                    display_name = category_values.category_name or row.expense_category
+
+                    frappe.throw(
+                        _("Row #{0}: Expense Category {1} is inactive and cannot be used.").format(
+                            row.idx, display_name
+                        )
+                    )
+
+    def validate_branch_wallet_status(self):
+        if not self.branch:
+            return
+
+        wallet_status = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": self.branch},
+            "status"
+        )
+
+        if not wallet_status:
+            frappe.throw(
+                _("Branch Petty Cash Account for branch '{0}' not found.").format(
+                    self.branch)
+            )
+
+        if wallet_status != "Active":
+            frappe.throw(
+                _("Cannot create Petty Cash Transaction for branch '{0}' because Branch Petty Cash Account status is '{1}', not Active.").format(
+                    self.branch, wallet_status
+                )
+            )
 
     def is_legacy_unsettled_cash_flow_enabled(self):
         return cint(
@@ -2038,39 +1412,6 @@ class PettyCashTransaction(Document):
         )
 
         self.db_set("wallet_terminal_action", action, update_modified=False)
-    # working
-    # def validate_expense_against_active_wallet(self):
-    #     if self.transaction_type != "Expense":
-    #         return
-
-    #     wallet_data = frappe.db.get_value(
-    #         "Branch Petty Cash Account",
-    #         {"branch": self.branch},
-    #         ["current_balance", "unsettled_cash"],
-    #         as_dict=True
-    #     )
-
-    #     if not wallet_data:
-    #         return
-
-    #     current_balance = flt(wallet_data.current_balance)
-    #     unsettled_cash = flt(wallet_data.unsettled_cash)
-
-    #     if self.is_legacy_unsettled_cash_flow_enabled():
-    #         total_buying_power = current_balance + unsettled_cash
-    #         if total_buying_power < flt(self.amount):
-    #             frappe.throw(
-    #                 _("Insufficient Funds. Bank: {0}, Cash-in-Hand: {1}, Total: {2}, Required: {3}").format(
-    #                     current_balance, unsettled_cash, total_buying_power, self.amount
-    #                 )
-    #             )
-    #     else:
-    #         if current_balance < flt(self.amount):
-    #             frappe.throw(
-    #                 _("Insufficient Current Balance. Available: {0}, Required: {1}").format(
-    #                     current_balance, self.amount
-    #                 )
-    #             )
 
     def validate_expense_against_active_wallet(self):
         if self.transaction_type != "Expense":
@@ -2113,45 +1454,43 @@ class PettyCashTransaction(Document):
                     )
                 )
 
+
 # @frappe.whitelist()
-# def get_category_limit_status(branch, category, transaction_date, doc_name=None):
+# def get_category_limit_status(branch, category, transaction_date, docname=None):
 #     """
-#     Returns the remaining limit for a specific category and branch for the current month.
+#     API used by Client Script to show available limit.
 #     """
 #     if not branch or not category or not transaction_date:
 #         return 0
 
-#     # 1. Get Branch Type
-#     branch_type = frappe.db.get_value("Branch Petty Cash Account", {"branch": branch}, "branch_type")
-#     if not branch_type:
-#         return 0
-
-#     # 2. Get Category Limit
+#     branch_type = frappe.db.get_value("Branch Petty Cash Account", {
+#                                       "branch": branch}, "branch_type")
 #     category_doc = frappe.get_doc("Expense Category", category)
 #     limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
 
-#     # If unlimited, return a high number
-#     if limit <= 0:
+#     if limit == 0:
 #         return 999999999
 
-#     # 3. Calculate Already Spent
 #     first_day = get_first_day(transaction_date)
 #     last_day = get_last_day(transaction_date)
 
+#     # Same SQL Update Here
 #     spent_sql = """
-#         SELECT COALESCE(SUM(child.amount), 0)
-#         FROM `tabPetty Cash Transaction Item` child
-#         JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
-#         WHERE parent.branch = %s
-#           AND child.expense_category = %s
-#           AND parent.transaction_date BETWEEN %s AND %s
-#           AND parent.docstatus = 1
-#           AND parent.name != %s
-#     """
-#     spent = frappe.db.sql(spent_sql, (branch, category, first_day, last_day, doc_name or "New"))[0][0]
+#             SELECT COALESCE(SUM(child.amount), 0)
+#             FROM `tabPetty Cash Transaction Item` child
+#             JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+#             WHERE parent.branch = %s
+#               AND child.expense_category = %s
+#               AND parent.transaction_date BETWEEN %s AND %s
+#               AND parent.docstatus = 1
+#               AND parent.approval_status != 'Verified'
+#               AND parent.name != %s
+#         """
 
-#     available = flt(limit) - flt(spent)
-#     return max(available, 0)
+#     already_spent = frappe.db.sql(
+#         spent_sql, (branch, category, first_day, last_day, docname or "New"))[0][0]
+
+#     return max(flt(limit) - flt(already_spent), 0)
 
 
 @frappe.whitelist()
@@ -2162,55 +1501,50 @@ def get_category_limit_status(branch, category, transaction_date, docname=None):
     if not branch or not category or not transaction_date:
         return 0
 
-    branch_type = frappe.db.get_value("Branch Petty Cash Account", {
-                                      "branch": branch}, "branch_type")
+    branch_type = frappe.db.get_value(
+        "Branch Petty Cash Account",
+        {"branch": branch},
+        "branch_type"
+    )
+
     category_doc = frappe.get_doc("Expense Category", category)
-    limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+
+    if branch_type == "Metro":
+        limit = category_doc.metro_limit
+    elif branch_type == "Zonal":
+        limit = category_doc.zonal_limit
+        # if category_doc.zonal_limit != 0:
+        #     limit = category_doc.zonal_limit
+        # else:
+        #     frappe.db.set_value("Expense Category",
+        #                         category, "zonal_limit", 10)
+        #     limit = category_doc.zonal_limit
+    else:
+        limit = category_doc.non_metro_limit
 
     if limit == 0:
-        return 999999999
+        return 0
 
     first_day = get_first_day(transaction_date)
     last_day = get_last_day(transaction_date)
 
-    # Same SQL Update Here
     spent_sql = """
-            SELECT COALESCE(SUM(child.amount), 0)
-            FROM `tabPetty Cash Transaction Item` child
-            JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
-            WHERE parent.branch = %s 
-              AND child.expense_category = %s
-              AND parent.transaction_date BETWEEN %s AND %s
-              AND parent.docstatus = 1
-              AND parent.approval_status != 'Verified'
-              AND parent.name != %s
-        """
+        SELECT COALESCE(SUM(child.amount), 0)
+        FROM `tabPetty Cash Transaction Item` child
+        JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
+        WHERE parent.branch = %s 
+          AND child.expense_category = %s
+          AND parent.transaction_date BETWEEN %s AND %s
+          AND parent.docstatus = 1
+          AND parent.approval_status != 'Verified'
+          AND parent.name != %s
+    """
 
     already_spent = frappe.db.sql(
-        spent_sql, (branch, category, first_day, last_day, docname or "New"))[0][0]
+        spent_sql, (branch, category, first_day, last_day, docname or "New")
+    )[0][0]
 
     return max(flt(limit) - flt(already_spent), 0)
-
-# old
-# @frappe.whitelist()
-# def get_branch_balance(branch):
-#     """
-#     Returns both Bank Balance and Unsettled Cash for the UI.
-#     """
-#     if not branch:
-#         return {}
-
-#     data = frappe.db.get_value("Branch Petty Cash Account",
-#                                {"branch": branch},
-#                                ["current_balance", "unsettled_cash"],
-#                                as_dict=True
-#                                )
-
-#     # Return 0 if None
-#     return {
-#         "current_balance": flt(data.current_balance) if data else 0.0,
-#         "unsettled_cash": flt(data.unsettled_cash) if data else 0.0
-#     }
 
 # new flow
 
@@ -2293,9 +1627,12 @@ def download_transaction_report(filters=None):
         "transaction_date",
         "branch",
         "branch_name",
+        "branch_type",
+        "entity_type",
+        "entity_id",
         "amount",
         "current_branch_balance",
-        "current_unsettled_cash",
+        # "current_unsettled_cash",
         "approval_status",
         "amount_within_limit",
         "amount_exceeding_limit",
@@ -2341,7 +1678,10 @@ def download_transaction_report(filters=None):
     # Headers
     headers = [
         "Transaction ID", "Transaction Type", "Date", "Branch Code", "Branch Name",
-        "Amount (₹)", "Balance (₹)", "Cash in Hand (₹)", "Approval Status",
+        "Branch Type", "Entity Type", "Entity ID",
+        "Amount (₹)", "Balance (₹)",
+        #   "Cash in Hand (₹)",
+        "Approval Status",
         "Within Limit (₹)", "Exceeding Limit (₹)", "Amount Deducted (₹)",
         "Approved By", "Finacle Txn ID", "Finacle Date", "Remarks",
         "Status", "Created On", "Modified On", "Created By", "Modified By"
@@ -2368,9 +1708,12 @@ def download_transaction_report(filters=None):
                 '%d-%m-%Y') if txn.get('transaction_date') else '',
             txn.get('branch'),
             txn.get('branch_name'),
+            txn.get('branch_type'),
+            txn.get('entity_type'),
+            txn.get('entity_id'),
             txn.get('amount', 0),
             txn.get('current_branch_balance', 0),
-            txn.get('current_unsettled_cash', 0),
+            # txn.get('current_unsettled_cash', 0),
             txn.get('approval_status'),
             txn.get('amount_within_limit', 0),
             txn.get('amount_exceeding_limit', 0),
@@ -2395,7 +1738,9 @@ def download_transaction_report(filters=None):
             cell.border = border
 
             # Format currency columns
-            if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
+            # if col_num in [6, 7, 8, 10, 11, 12]:  # Amount columns
+            # if col_num in [9, 10, 11, 13, 14, 15]:
+            if col_num in [9, 10,  13, 14, 15]:
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal='right')
 
@@ -2454,321 +1799,59 @@ def download_txt_api(name):     # <--- Renamed
     doc.download_transaction_txt()
 
 
-# Add this at the very bottom of petty_cash_transaction.py
-
-# def get_permission_query_conditions(user):
-#     """
-#     Filters the List View / frappe.db.get_list queries at the database level.
-#     """
-#     if not user:
-#         user = frappe.session.user
-
-#     # Allow full access for Admin and Managers
-#     if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
-#         return None
-
-#     # Fetch dynamic branch from Employee profile
-#     employee_branch = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
-
-#     if employee_branch:
-#         # Return SQL condition to only show records matching the employee's branch
-#         return f"`tabPetty Cash Transaction`.branch = {frappe.db.escape(employee_branch)}"
-
-#     # If the user has no active employee record or branch, show them nothing
-#     return "1=0"
-
-
-# def has_permission(doc, user):
-#     """
-#     Prevents direct access to unauthorized records via direct URL/Form View.
-#     """
-#     if not user:
-#         user = frappe.session.user
-
-#     # Allow full access for Admin and Managers
-#     if user == "Administrator" or "HO Petty Cash Manager" in frappe.get_roles(user):
-#         return True
-
-#     employee_branch = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
-
-#     # Only allow access if the document's branch matches the employee's active branch
-#     if employee_branch and doc.branch == employee_branch:
-#         return True
-
-#     return False
-
-
-# ==============================================================================
-# [NEW] CONSOLIDATED DOWNLOAD APIs - Same date (LIST VIEW)
-# ==============================================================================
-
-# @frappe.whitelist()
-# def download_consolidated_txt_api():
-#     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
-#     from frappe.utils import nowdate, getdate
-#     import base64
-
-#     # 1. Permission Check
-#     # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-#     #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
-
-#     # 1. Permission Check
-#     user_roles = frappe.get_roles()
-#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-#         frappe.throw(
-#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
-
-#     today = nowdate()
-
-#     # 2. Fetch all matching transactions (Today + Verified)
-#     transactions = frappe.get_all(
-#         "Petty Cash Transaction",
-#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
-#         pluck="name",
-#         order_by="creation ASC"
-#     )
-
-#     # [FIX] Return JSON response instead of msgprint for no data
-#     if not transactions:
-#         return {
-#             "status": "no_data",
-#             "message": f"No verified transactions found for today ({today})."
-#         }
-
-#     content = []
-
-#     # 3. Loop through each document and aggregate TTUM lines
-#     for txn_name in transactions:
-#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
-
-#         date_obj = getdate(doc.finacle_tran_date)
-#         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-#         currency_str = f"INR{doc.branch}"
-
-#         narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
-#         total_debit = 0.0
-
-#         # --- DEBIT ROWS (Expenses) ---
-#         for row in doc.items:
-#             if not row.finacle_gl_code:
-#                 frappe.throw(
-#                     f"Row #{row.idx} in {doc.name} is missing Finacle GL Code")
-
-#             amount_str = "{:.2f}".format(row.amount)
-#             total_debit += row.amount
-
-#             raw_desc = f"{row.description}" if row.description else narrative_suffix
-#             # 30 char limit exactly like single view
-#             debitDescription = raw_desc[:30]
-
-#             # Formatting/Spacing matching single doc view
-#             padding_count = 17 - len(amount_str)
-#             if padding_count < 10:
-#                 padding_count = 10
-#             space_str = " " * padding_count
-
-#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
-#             content.append(line)
-
-#         # --- CREDIT ROW (Branch Wallet) ---
-#         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-#                                         "branch": doc.branch}, "gl_sub_code")
-#         if not wallet_gl:
-#             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
-
-#         total_amount_str = "{:.2f}".format(total_debit)
-#         padding_count = 17 - len(total_amount_str)
-#         if padding_count < 10:
-#             padding_count = 10
-#         space_str = " " * padding_count
-#         creditDescription = narrative_suffix[:30]
-
-#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
-#         content.append(credit_line)
-
-#     final_txt = "\n".join(content)
-
-#     # 4. Return JSON response with file data
-#     return {
-#         "status": "success",
-#         "filename": f"Consolidated_TTUM_{today}.txt",
-#         "filecontent": final_txt
-#     }
-
-
-# @frappe.whitelist()
-# def download_consolidated_excel_api():
-#     """
-#     Generates a Consolidated CSV/Excel report for all Verified transactions of the current date.
-#     Each expense item from child table appears as a separate row (matching single transaction format).
-#     """
-#     from frappe.utils import nowdate
-#     import csv
-#     import io
-#     import base64
-
-#     # 1. Permission Check
-#     # if frappe.session.user != "Administrator" and "HO Petty Cash Manager" not in frappe.get_roles():
-#     #     frappe.throw("Only HO Petty Cash Manager or Administrator can download consolidated files.")
-
-#     # 1. Permission Check
-#     user_roles = frappe.get_roles()
-#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
-#         frappe.throw(
-#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
-
-#     today = nowdate()
-#     print("date is:", today)
-
-#     # 2. Fetch all matching transactions (Today + Verified)
-#     transactions = frappe.get_all(
-#         "Petty Cash Transaction",
-#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
-#         pluck="name",
-#         order_by="creation ASC"
-#     )
-
-#     # [FIX] Return JSON response instead of msgprint for no data
-#     if not transactions:
-#         return {
-#             "status": "no_data",
-#             "message": f"No verified transactions found for today ({today})."
-#         }
-
-#     output = io.StringIO()
-#     writer = csv.writer(output)
-
-#     # Write BOM for Excel UTF-8 compatibility
-#     output.write('\ufeff')
-
-#     # 3. Headers - Matching your single transaction Excel format exactly
-#     headers = [
-#         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-#         "Total Amount", "Wallet Balance", "Cash in Hand",
-#         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
-#         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
-#         # Child Item Fields
-#         "Expense Category", "Vendor", "Bill No", "Item Amount", "Description", "Expense GL Code"
-#     ]
-#     writer.writerow(headers)
-
-#     # Helper to format amounts safely
-#     def fmt(val):
-#         return flt(val) if val else 0.0
-
-#     # 4. Loop through each transaction and expand child items into separate rows
-#     for txn_name in transactions:
-#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
-
-#         # Fetch Wallet GL Code
-#         wallet_gl_code = frappe.db.get_value("Branch Petty Cash Account", {
-#                                              "branch": doc.branch}, "gl_sub_code") or ""
-
-#         # Fetch Category Names Map (Optimized - fetch all at once)
-#         category_ids = [
-#             row.expense_category for row in doc.items if row.expense_category]
-#         category_map = {}
-#         if category_ids:
-#             categories = frappe.get_all("Expense Category", filters={
-#                                         "name": ["in", category_ids]}, fields=["name", "category_name"])
-#             for cat in categories:
-#                 category_map[cat.name] = cat.category_name
-
-#         # IMPORTANT: Each expense item becomes a separate row
-#         for row in doc.items:
-#             # Resolve Category Name
-#             cat_name = category_map.get(
-#                 row.expense_category, row.expense_category)
-
-#             row_data = [
-#                 doc.name,
-#                 doc.branch,
-#                 doc.branch_name,
-#                 doc.transaction_date,
-#                 doc.transaction_type,
-#                 fmt(doc.amount),
-#                 fmt(doc.current_branch_balance),
-#                 fmt(doc.current_unsettled_cash),
-#                 doc.approval_status,
-#                 fmt(doc.amount_within_limit),
-#                 fmt(doc.amount_exceeding_limit),
-#                 fmt(doc.amount_deducted),
-#                 doc.approved_by,
-#                 doc.custom_ttum_remarks,
-#                 doc.finacle_tran_particular,
-#                 wallet_gl_code,
-#                 # Child Data (each item in separate row)
-#                 cat_name,
-#                 row.vendor_name,
-#                 row.bill_number,
-#                 fmt(row.amount),
-#                 row.description,
-#                 row.finacle_gl_code
-#             ]
-#             writer.writerow(row_data)
-
-#     # 5. Return JSON response with base64 encoded file
-#     output.seek(0)
-#     csv_content = output.getvalue()
-#     output.close()
-
-#     # Encode to base64 for safe JSON transport
-#     file_data = base64.b64encode(csv_content.encode('utf-8')).decode('utf-8')
-
-#     return {
-#         "status": "success",
-#         "filename": f"Consolidated_Report_{today}.csv",
-#         "filecontent": file_data
-#     }
-
-
-# ==============================================================================
-# [NEW] CONSOLIDATED DOWNLOAD APIs - old version  (LIST VIEW)
-# ==============================================================================
-
 # @frappe.whitelist()
 # def download_consolidated_txt_api(transaction_date=None):
-#     """Generates a Consolidated TTUM Text file for all Verified transactions of the current date."""
+#     """Generates a Consolidated TTUM Text file for all Verified transactions of the selected date."""
 #     from frappe.utils import nowdate, getdate
-#     import base64
 
-#     # 1. Permission Check
 #     user_roles = frappe.get_roles()
-#     if frappe.session.user != "Administrator" and not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles):
+#     if frappe.session.user != "Administrator" and not set(
+#         ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+#     ).intersection(user_roles):
 #         frappe.throw(
-#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files.")
+#             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+#         )
 
-#     today = transaction_date or nowdate()
+#     selected_date = str(getdate(transaction_date)
+#                         ) if transaction_date else nowdate()
 
-#     # 2. Fetch all matching transactions (Today + Verified)
 #     transactions = frappe.get_all(
 #         "Petty Cash Transaction",
-#         filters={"finacle_tran_date": today, "approval_status": "Verified"},
+#         filters={
+#             "finacle_tran_date": selected_date,
+#             "approval_status": "Verified"
+#         },
 #         pluck="name",
 #         order_by="creation ASC"
 #     )
 
-#     # [FIX] Return JSON response instead of msgprint for no data
 #     if not transactions:
 #         return {
 #             "status": "no_data",
-#             "message": f"No verified transactions found for today ({today})."
+#             "message": f"No verified transactions found for {selected_date}."
 #         }
 
 #     content = []
 
-#     # 3. Loop through each document and aggregate TTUM lines
 #     for txn_name in transactions:
 #         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
 
 #         date_obj = getdate(doc.finacle_tran_date)
-#         ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
-#         currency_str = f"INR{doc.branch}"
+#         ttum_date = date_obj.strftime("%b%y").upper()
+#         # currency_str = f"INR{doc.branch}"
+#         if doc.branch_type == "Zonal":
+#             currency_str = f"INR1000"
+#         else:
+#             currency_str = f"INR{doc.branch}"
 
-#         narrative_suffix = doc.custom_ttum_remarks if doc.custom_ttum_remarks else f"{ttum_date} STRYEX {doc.name}"
+#         narrative_suffix = (
+#             doc.custom_ttum_remarks
+#             if doc.custom_ttum_remarks
+#             else f"{ttum_date} {doc.name}"
+#         )
+
 #         total_debit = 0.0
 
-#         # --- DEBIT ROWS (Expenses) ---
 #         for row in doc.items:
 #             if not row.finacle_gl_code:
 #                 frappe.throw(
@@ -2777,20 +1860,22 @@ def download_txt_api(name):     # <--- Renamed
 #             amount_str = "{:.2f}".format(row.amount)
 #             total_debit += row.amount
 
-#             raw_desc = f"{row.description}" if row.description else narrative_suffix
-#             debitDescription = raw_desc[:30]
+#             raw_desc = row.description if row.description else narrative_suffix
+#             debit_description = raw_desc[:30]
 
 #             padding_count = 17 - len(amount_str)
 #             if padding_count < 10:
 #                 padding_count = 10
 #             space_str = " " * padding_count
 
-#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+#             line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debit_description}"
 #             content.append(line)
 
-#         # --- CREDIT ROW (Branch Wallet) ---
-#         wallet_gl = frappe.db.get_value("Branch Petty Cash Account", {
-#                                         "branch": doc.branch}, "gl_sub_code")
+#         wallet_gl = frappe.db.get_value(
+#             "Branch Petty Cash Account",
+#             {"branch": doc.branch},
+#             "gl_sub_code"
+#         )
 #         if not wallet_gl:
 #             frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
 
@@ -2799,17 +1884,16 @@ def download_txt_api(name):     # <--- Renamed
 #         if padding_count < 10:
 #             padding_count = 10
 #         space_str = " " * padding_count
-#         creditDescription = narrative_suffix[:30]
+#         credit_description = narrative_suffix[:30]
 
-#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+#         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
 #         content.append(credit_line)
 
 #     final_txt = "\n".join(content)
 
-#     # 4. Return JSON response with file data
 #     return {
 #         "status": "success",
-#         "filename": f"Consolidated_TTUM_{today}.txt",
+#         "filename": f"Consolidated_TTUM_{selected_date}.txt",
 #         "filecontent": final_txt
 #     }
 
@@ -2853,7 +1937,11 @@ def download_consolidated_txt_api(transaction_date=None):
 
         date_obj = getdate(doc.finacle_tran_date)
         ttum_date = date_obj.strftime("%b%y").upper()
-        currency_str = f"INR{doc.branch}"
+
+        if doc.branch_type == "Zonal":
+            currency_str = f"INR1000"
+        else:
+            currency_str = f"INR{doc.branch}"
 
         narrative_suffix = (
             doc.custom_ttum_remarks
@@ -2895,9 +1983,36 @@ def download_consolidated_txt_api(transaction_date=None):
         if padding_count < 10:
             padding_count = 10
         space_str = " " * padding_count
-        credit_description = narrative_suffix[:30]
+
+        credit_description = narrative_suffix[:30].ljust(30)
 
         credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+
+        if doc.branch_type == "Zonal":
+            entity_id = str(doc.entity_id or "").strip()
+            entity_type = str(doc.entity_type or "").strip()
+
+            if entity_id:
+                extra_spaces_after_desc = " " * 852
+
+                if len(entity_id) == 4:
+                    entity_id_padding = " " * 12
+                elif len(entity_id) == 5:
+                    entity_id_padding = " " * 11
+                else:
+                    entity_id_padding = ""
+
+                entity_type_padding = " " * 5
+
+                credit_line = (
+                    f"{credit_line}"
+                    f"{extra_spaces_after_desc}"
+                    f"{entity_id}"
+                    f"{entity_id_padding}"
+                    f"{entity_type}"
+                    f"{entity_type_padding}"
+                )
+
         content.append(credit_line)
 
     final_txt = "\n".join(content)
@@ -2955,11 +2070,14 @@ def download_consolidated_excel_api(transaction_date=None):
         "Transaction ID",
         "Branch Code",
         "Branch Name",
+        "Branch Type",
+        "Entity Type",
+        "Entity ID",
         "Date",
         "Type",
         "Total Amount",
         "Wallet Balance",
-        "Cash in Hand",
+        # "Cash in Hand",
         "Approval Status",
         "Within Limit",
         "Exceeding Limit",
@@ -3007,11 +2125,14 @@ def download_consolidated_excel_api(transaction_date=None):
                 doc.name,
                 doc.branch,
                 doc.branch_name,
+                doc.branch_type,
+                doc.entity_type,
+                doc.entity_id,
                 doc.transaction_date,
                 doc.transaction_type,
                 "{:.2f}".format(doc.amount or 0),
                 "{:.2f}".format(doc.current_branch_balance or 0),
-                "{:.2f}".format(doc.current_unsettled_cash or 0),
+                # "{:.2f}".format(doc.current_unsettled_cash or 0),
                 doc.approval_status,
                 "{:.2f}".format(doc.amount_within_limit or 0),
                 "{:.2f}".format(doc.amount_exceeding_limit or 0),
@@ -3039,6 +2160,235 @@ def download_consolidated_excel_api(transaction_date=None):
     }
 
 
+# @frappe.whitelist()
+# def download_detailed_report_by_date_range(from_date=None, to_date=None):
+#     """
+#     Download detailed Excel report for all Petty Cash Transactions
+#     between from_date and to_date based on transaction_date.
+#     Each child item is expanded as a separate row.
+#     """
+#     import base64
+#     import tempfile
+#     import os
+#     import openpyxl
+#     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+#     from openpyxl.utils import get_column_letter
+#     from frappe.utils import getdate, flt
+#     from datetime import datetime
+
+#     if not from_date or not to_date:
+#         frappe.throw("Start Date and End Date are required.")
+
+#     from_date = getdate(from_date)
+#     to_date = getdate(to_date)
+
+#     if from_date > to_date:
+#         frappe.throw("Start Date cannot be greater than End Date.")
+
+#     transaction_names = frappe.get_all(
+#         "Petty Cash Transaction",
+#         filters=[
+#             ["transaction_date", ">=", from_date],
+#             ["transaction_date", "<=", to_date]
+#         ],
+#         pluck="name",
+#         order_by="transaction_date asc, creation asc"
+#     )
+
+#     if not transaction_names:
+#         frappe.throw(f"No records found between {from_date} and {to_date}.")
+
+#     wb = openpyxl.Workbook()
+#     ws = wb.active
+#     ws.title = "Detailed Petty Cash Report"
+
+#     header_fill = PatternFill(start_color="1F4E78",
+#                               end_color="1F4E78", fill_type="solid")
+#     header_font = Font(bold=True, color="FFFFFF", size=11)
+#     border = Border(
+#         left=Side(style="thin"),
+#         right=Side(style="thin"),
+#         top=Side(style="thin"),
+#         bottom=Side(style="thin")
+#     )
+
+#     headers = [
+#         "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
+#         "Total Amount", "Wallet Balance", "Cash in Hand",
+#         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
+#         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
+#         "Expense Category", "Vendor", "Bill No", "Bill Date", "Item Amount",
+#         "Description", "Expense GL Code", "Bill Attachment",
+#         "Posted To Finacle", "Finacle Txn ID", "Finacle Date",
+#         "Remarks", "Doc Status", "Created On", "Modified On", "Created By", "Modified By"
+#     ]
+
+#     for colnum, header in enumerate(headers, 1):
+#         cell = ws.cell(row=1, column=colnum)
+#         cell.value = header
+#         cell.fill = header_fill
+#         cell.font = header_font
+#         cell.alignment = Alignment(horizontal="center", vertical="center")
+#         cell.border = border
+
+#     def fmt(val):
+#         return flt(val) if val else 0.0
+
+#     excel_row = 2
+#     status_map = {0: "Draft", 1: "Submitted", 2: "Cancelled"}
+
+#     for txn_name in transaction_names:
+#         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+#         wallet_gl_code = frappe.db.get_value(
+#             "Branch Petty Cash Account",
+#             {"branch": doc.branch},
+#             "gl_sub_code"
+#         ) or ""
+
+#         category_ids = [
+#             row.expense_category for row in doc.items if row.expense_category]
+#         category_map = {}
+
+#         if category_ids:
+#             categories = frappe.get_all(
+#                 "Expense Category",
+#                 filters={"name": ["in", category_ids]},
+#                 fields=["name", "category_name"]
+#             )
+#             for cat in categories:
+#                 category_map[cat.name] = cat.category_name
+
+#         if doc.items:
+#             for row in doc.items:
+#                 cat_name = category_map.get(
+#                     row.expense_category, row.expense_category)
+
+#                 row_data = [
+#                     doc.name,
+#                     doc.branch,
+#                     doc.branch_name,
+#                     doc.transaction_date.strftime(
+#                         "%d-%m-%Y") if doc.transaction_date else "",
+#                     doc.transaction_type,
+#                     fmt(doc.amount),
+#                     fmt(doc.current_branch_balance),
+#                     fmt(doc.current_unsettled_cash),
+#                     doc.approval_status,
+#                     fmt(doc.amount_within_limit),
+#                     fmt(doc.amount_exceeding_limit),
+#                     fmt(doc.amount_deducted),
+#                     doc.approved_by,
+#                     doc.custom_ttum_remarks,
+#                     doc.finacle_tran_particular,
+#                     wallet_gl_code,
+#                     cat_name,
+#                     row.vendor_name,
+#                     row.bill_number,
+#                     row.bill_date.strftime(
+#                         "%d-%m-%Y") if row.bill_date else "",
+#                     fmt(row.amount),
+#                     row.description,
+#                     row.finacle_gl_code,
+#                     row.bill_attachment,
+#                     doc.posted_to_finacle,
+#                     doc.finacle_tran_id,
+#                     doc.finacle_tran_date.strftime(
+#                         "%d-%m-%Y") if doc.finacle_tran_date else "",
+#                     doc.remarks,
+#                     status_map.get(doc.docstatus, "Unknown"),
+#                     doc.creation.strftime(
+#                         "%d-%m-%Y %H:%M") if doc.creation else "",
+#                     doc.modified.strftime(
+#                         "%d-%m-%Y %H:%M") if doc.modified else "",
+#                     doc.owner,
+#                     doc.modified_by
+#                 ]
+
+#                 for colnum, value in enumerate(row_data, 1):
+#                     cell = ws.cell(row=excel_row, column=colnum)
+#                     cell.value = value
+#                     cell.border = border
+
+#                     if colnum in [6, 7, 8, 10, 11, 12, 21]:
+#                         cell.number_format = '#,##0.00'
+#                         cell.alignment = Alignment(horizontal="right")
+#                     else:
+#                         cell.alignment = Alignment(vertical="top")
+
+#                 excel_row += 1
+#         else:
+#             row_data = [
+#                 doc.name,
+#                 doc.branch,
+#                 doc.branch_name,
+#                 doc.transaction_date.strftime(
+#                     "%d-%m-%Y") if doc.transaction_date else "",
+#                 doc.transaction_type,
+#                 fmt(doc.amount),
+#                 fmt(doc.current_branch_balance),
+#                 fmt(doc.current_unsettled_cash),
+#                 doc.approval_status,
+#                 fmt(doc.amount_within_limit),
+#                 fmt(doc.amount_exceeding_limit),
+#                 fmt(doc.amount_deducted),
+#                 doc.approved_by,
+#                 doc.custom_ttum_remarks,
+#                 doc.finacle_tran_particular,
+#                 wallet_gl_code,
+#                 "", "", "", "", 0.0, "", "", "",
+#                 doc.posted_to_finacle,
+#                 doc.finacle_tran_id,
+#                 doc.finacle_tran_date.strftime(
+#                     "%d-%m-%Y") if doc.finacle_tran_date else "",
+#                 doc.remarks,
+#                 status_map.get(doc.docstatus, "Unknown"),
+#                 doc.creation.strftime(
+#                     "%d-%m-%Y %H:%M") if doc.creation else "",
+#                 doc.modified.strftime(
+#                     "%d-%m-%Y %H:%M") if doc.modified else "",
+#                 doc.owner,
+#                 doc.modified_by
+#             ]
+
+#             for colnum, value in enumerate(row_data, 1):
+#                 cell = ws.cell(row=excel_row, column=colnum)
+#                 cell.value = value
+#                 cell.border = border
+#             excel_row += 1
+
+#     for colnum in range(1, len(headers) + 1):
+#         column_letter = get_column_letter(colnum)
+#         max_length = 0
+#         for cell in ws[column_letter]:
+#             try:
+#                 if cell.value:
+#                     max_length = max(max_length, len(str(cell.value)))
+#             except Exception:
+#                 pass
+#         ws.column_dimensions[column_letter].width = min(max_length + 2, 40)
+
+#     ws.freeze_panes = "A2"
+
+#     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+#     wb.save(tmp.name)
+#     tmp.close()
+
+#     with open(tmp.name, "rb") as f:
+#         content = f.read()
+
+#     os.unlink(tmp.name)
+
+#     filedata = base64.b64encode(content).decode("utf-8")
+#     filename = f"Petty_Cash_Detailed_Report_{from_date}_to_{to_date}.xlsx"
+
+#     return {
+#         "filename": filename,
+#         "filecontent": filedata,
+#         "recordcount": len(transaction_names)
+#     }
+
+
 @frappe.whitelist()
 def download_detailed_report_by_date_range(from_date=None, to_date=None):
     """
@@ -3064,12 +2414,28 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
     if from_date > to_date:
         frappe.throw("Start Date cannot be greater than End Date.")
 
+    filters = [
+        ["transaction_date", ">=", from_date],
+        ["transaction_date", "<=", to_date]
+    ]
+
+    user_roles = frappe.get_roles(frappe.session.user)
+    if "Branch User" in user_roles:
+        user_branch = frappe.db.get_value(
+            "Employee",
+            {"user_id": frappe.session.user, "status": "Active"},
+            "sahayog_branch"
+        )
+
+        if not user_branch:
+            frappe.throw(
+                "No active Employee record with Sahayog Branch found for the current user.")
+
+        filters.append(["branch", "=", user_branch])
+
     transaction_names = frappe.get_all(
         "Petty Cash Transaction",
-        filters=[
-            ["transaction_date", ">=", from_date],
-            ["transaction_date", "<=", to_date]
-        ],
+        filters=filters,
         pluck="name",
         order_by="transaction_date asc, creation asc"
     )
@@ -3092,8 +2458,10 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
     )
 
     headers = [
-        "Transaction ID", "Branch Code", "Branch Name", "Date", "Type",
-        "Total Amount", "Wallet Balance", "Cash in Hand",
+        "Transaction ID", "Branch Code", "Branch Name", "Branch Type",
+        "Entity Type",
+        "Entity ID", "Date", "Type",
+        "Total Amount", "Wallet Balance",  # "Cash in Hand",
         "Approval Status", "Within Limit", "Exceeding Limit", "Deducted Amount",
         "Approved By", "TTUM Remarks", "Finacle Remarks", "Branch Petty Cash Account",
         "Expense Category", "Vendor", "Bill No", "Bill Date", "Item Amount",
@@ -3147,12 +2515,15 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
                     doc.name,
                     doc.branch,
                     doc.branch_name,
+                    doc.branch_type,
+                    doc.entity_type,
+                    doc.entity_id,
                     doc.transaction_date.strftime(
                         "%d-%m-%Y") if doc.transaction_date else "",
                     doc.transaction_type,
                     fmt(doc.amount),
                     fmt(doc.current_branch_balance),
-                    fmt(doc.current_unsettled_cash),
+                    # fmt(doc.current_unsettled_cash),
                     doc.approval_status,
                     fmt(doc.amount_within_limit),
                     fmt(doc.amount_exceeding_limit),
@@ -3201,6 +2572,9 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
                 doc.name,
                 doc.branch,
                 doc.branch_name,
+                doc.branch_type,
+                doc.entity_type,
+                doc.entity_id,
                 doc.transaction_date.strftime(
                     "%d-%m-%Y") if doc.transaction_date else "",
                 doc.transaction_type,
@@ -3266,3 +2640,29 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
         "filecontent": filedata,
         "recordcount": len(transaction_names)
     }
+
+
+@frappe.whitelist()
+def check_branch_wallet_active(branch):
+    if not branch:
+        return {"status": "missing"}
+
+    wallet_status = frappe.db.get_value(
+        "Branch Petty Cash Account",
+        {"branch": branch},
+        "status"
+    )
+
+    if not wallet_status:
+        return {
+            "status": "not_found",
+            "message": _("Branch Petty Cash Account not found for branch {0}.").format(branch)
+        }
+
+    if wallet_status != "Active":
+        return {
+            "status": "inactive",
+            "message": _("Branch Petty Cash Account for branch {0} is {1}. Transactions are not allowed.").format(branch, wallet_status)
+        }
+
+    return {"status": "active"}

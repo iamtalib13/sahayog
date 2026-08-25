@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import nowdate, nowtime, getdate, add_days
+from frappe.utils import nowdate, nowtime, getdate, add_days, flt
 
 @frappe.whitelist(allow_guest=False)
 def get_team_attendance_data(employee_status="Active"):
@@ -52,13 +52,29 @@ def get_team_attendance_data(employee_status="Active"):
         else:
             filters = {**base_filter, "status": employee_status}
     elif "Branch Manager" in roles:
-        # Branch Managers manage all active staff in their branch (using sahayog_branch/sol_id)
         branch_id = manager.sahayog_branch or manager.sol_id
-        if branch_id:
-            filters = {"sahayog_branch": branch_id, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
+        base_branch_filter = {"sahayog_branch": branch_id, "user_id": ["!=", user], "custom_is_support_staff": 1} if branch_id else {"reports_to": manager.name, "user_id": ["!=", user], "custom_is_support_staff": 1}
+        # Status counts for Branch Manager
+        count_result = frappe.db.sql("""
+            SELECT
+                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'Left' THEN 1 ELSE 0 END) as left_count,
+                COUNT(*) as all_count
+            FROM `tabEmployee`
+            WHERE (user_id != %s OR user_id IS NULL) AND custom_is_support_staff = 1 AND sahayog_branch = %s
+        """, (user, branch_id), as_dict=True)
+        if count_result:
+            status_counts = {
+                "Active": count_result[0].active,
+                "Left": count_result[0].left_count,
+                "All": count_result[0].all_count,
+            }
+        if employee_status == "all":
+            filters = base_branch_filter
+        elif employee_status == "Left":
+            filters = {**base_branch_filter, "status": "Left"}
         else:
-            # Fallback to reports_to if branch not set (for safety)
-            filters = {"reports_to": manager.name, "status": "Active", "user_id": ["!=", user], "custom_is_support_staff": 1}
+            filters = {**base_branch_filter, "status": employee_status}
     else:
         # Regular employees only manage themselves
         filters = {"name": manager.name} if manager else {"user_id": user}
@@ -574,6 +590,44 @@ def approve_attendance_correction(request_id, action="Approved"):
     
     return {"success": True, "message": _("Request {0} successfully").format(action)}
 
+@frappe.whitelist()
+def cancel_attendance_correction(employee, attendance_date):
+    """Cancel a pending attendance correction request (mistake / change of mind)."""
+    if not employee or not attendance_date:
+        frappe.throw(_("Employee and date are required"))
+
+    correction = frappe.db.get_value(
+        "Attendance Correction",
+        {
+            "employee": employee,
+            "attendance_date": attendance_date,
+            "status": "Pending",
+        },
+        "name",
+    )
+
+    if not correction:
+        frappe.throw(_("No pending correction request found for this date."))
+
+    doc = frappe.get_doc("Attendance Correction", correction)
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_authorized = any(
+        r in roles for r in ["HR Manager", "HR User", "Branch Manager", "Administrator"]
+    )
+
+    if doc.requested_by != user and not is_authorized:
+        frappe.throw(
+            _("You can only cancel your own correction requests."),
+            frappe.PermissionError,
+        )
+
+    doc.status = "Cancelled"
+    doc.save(ignore_permissions=True)
+
+    return {"success": True, "message": _("Correction request cancelled")}
+
 def _get_employee_holiday_dates(employee, from_date, to_date):
     """Return dict {date: description} of holidays for an employee within date range."""
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
@@ -618,7 +672,7 @@ def get_employee_calendar(employee, month, year):
             "from_date": ["<=", last_day],
             "to_date": [">=", first_day]
         },
-        fields=["from_date", "to_date", "leave_type"]
+        fields=["from_date", "to_date", "leave_type", "half_day", "half_day_date"]
     )
     
     # Format for easy frontend mapping
@@ -639,14 +693,63 @@ def get_employee_calendar(employee, month, year):
             history[date_str] = "Pending Correction"
         else:
             history[date_str] = f"{history[date_str]} (Correction Pending)"
+
+    # Add approved correction context — appends to the actual attendance status
+    # so the calendar CSS class (and approval workflow) remain completely untouched.
+    approved_corrections = frappe.get_all("Attendance Correction",
+        filters={
+            "employee": employee,
+            "attendance_date": ["between", [first_day, last_day]],
+            "status": "Approved"
+        },
+        fields=["attendance_date"]
+    )
+    for corr in approved_corrections:
+        date_str = str(corr.attendance_date)
+        base = history.get(date_str) or "Not Marked"
+        history[date_str] = f"{base} (Regularization Approved)"
     
-    # Add leave days
+    # Add leave days — append approved context so the calendar tooltip shows
+    # "(Leave Approved)" (mirrors the "(Regularization Approved)" pattern).
     for leave in leaves:
         start = getdate(leave.from_date)
         end = getdate(leave.to_date)
         curr = start
         while curr <= end:
-            history[str(curr)] = "On Leave"
+            ds = str(curr)
+            is_half = leave.half_day and (
+                (leave.half_day_date and str(leave.half_day_date) == ds)
+                or (not leave.half_day_date and start == end)
+            )
+            base = "Half Day" if is_half else "On Leave"
+            history[ds] = f"{base} (Leave Approved)"
+            curr = add_days(curr, 1)
+
+    # Add pending (Open) leave requests
+    pending_leaves = frappe.get_all("Leave Application",
+        filters={
+            "employee": employee,
+            "status": "Open",
+            "from_date": ["<=", last_day],
+            "to_date": [">=", first_day]
+        },
+        fields=["from_date", "to_date", "half_day", "half_day_date"]
+    )
+    for pl in pending_leaves:
+        start = getdate(pl.from_date)
+        end = getdate(pl.to_date)
+        curr = start
+        while curr <= end:
+            ds = str(curr)
+            is_half = pl.half_day and (
+                (pl.half_day_date and str(pl.half_day_date) == ds)
+                or (not pl.half_day_date and start == end)
+            )
+            label = "Pending Half Day" if is_half else "Pending Leave"
+            if ds not in history:
+                history[ds] = label
+            else:
+                history[ds] = f"{history[ds]} (Leave Pending)"
             curr = add_days(curr, 1)
 
     # Add holiday dates (only if no attendance/leave already marked)
@@ -660,7 +763,12 @@ def get_employee_calendar(employee, month, year):
 
 @frappe.whitelist(allow_guest=False)
 def get_leave_balances(employee):
-    """Fetch leave balances for the given employee."""
+    """Fetch accurate leave balances for the given employee.
+
+    Computed from the Leave Ledger so the shown balance always reflects the
+    initial allocation, monthly accrual credits, carry-forward and leave
+    deductions (including half-day leaves).
+    """
     from frappe.utils import today
     
     # Fetch active leave allocations (valid for today's date)
@@ -676,20 +784,33 @@ def get_leave_balances(employee):
     )
 
     for alloc in allocations:
-        # Calculate used leaves ONLY within the allocation period
-        total_used = frappe.db.sql("""
-            SELECT COALESCE(SUM(total_leave_days), 0)
-            FROM `tabLeave Application`
+        # Total credited so far in this period (initial + monthly accrual + carry forward)
+        total_allocated = frappe.db.sql("""
+            SELECT COALESCE(SUM(leaves), 0)
+            FROM `tabLeave Ledger Entry`
             WHERE employee = %s
               AND leave_type = %s
-              AND status = 'Approved'
               AND docstatus = 1
+              AND is_expired = 0
+              AND leaves > 0
               AND from_date >= %s
-              AND to_date <= %s
+              AND from_date <= %s
         """, (employee, alloc.leave_type, alloc.from_date, alloc.to_date))[0][0] or 0
 
-        # Recalculate accurate balance
-        alloc.unused_leaves = alloc.total_leaves_allocated - total_used
+        # Net available = credits minus debits (approved leave applications)
+        unused = frappe.db.sql("""
+            SELECT COALESCE(SUM(leaves), 0)
+            FROM `tabLeave Ledger Entry`
+            WHERE employee = %s
+              AND leave_type = %s
+              AND docstatus = 1
+              AND is_expired = 0
+              AND from_date >= %s
+              AND from_date <= %s
+        """, (employee, alloc.leave_type, alloc.from_date, alloc.to_date))[0][0] or 0
+
+        alloc.total_leaves_allocated = flt(total_allocated)
+        alloc.unused_leaves = flt(unused)
         
         # Remove internal fields not needed in frontend
         alloc.pop("from_date", None)
@@ -853,108 +974,135 @@ def upload_leave_allocations():
     from frappe.utils.xlsxutils import read_xlsx_file_from_attached_file
 
     roles = frappe.get_roles(frappe.session.user)
-    if not any(r in roles for r in ["Administrator"]):
+    if not any(r in roles for r in ["Administrator", "HR Manager", "HR User"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
 
     file_doc = frappe.request.files.get("file")
     if not file_doc:
-        frappe.throw(_("No file uploaded"))
+        return {"success": False, "message": _("No file uploaded")}
 
-    ext = file_doc.filename.rsplit(".", 1)[-1].lower() if "." in file_doc.filename else ""
-    content = file_doc.read()
+    try:
+        ext = file_doc.filename.rsplit(".", 1)[-1].lower() if "." in file_doc.filename else ""
+        content = file_doc.read()
 
-    if ext == "csv":
-        rows = read_csv_content(content)
-    elif ext in ("xlsx", "xls"):
-        rows = read_xlsx_file_from_attached_file(frappe.get_doc({
-            "doctype": "File",
-            "file_name": file_doc.filename,
-            "content": content,
-        }))
-    else:
-        frappe.throw(_("Unsupported file format. Please upload CSV or XLSX"))
+        if ext == "csv":
+            rows = read_csv_content(content)
+        elif ext in ("xlsx", "xls"):
+            rows = read_xlsx_file_from_attached_file(frappe.get_doc({
+                "doctype": "File",
+                "file_name": file_doc.filename,
+                "content": content,
+            }))
+        else:
+            return {"success": False, "message": _("Unsupported file format: '{0}'. Please upload CSV or XLSX").format(ext or "unknown")}
 
-    if not rows or len(rows) < 2:
-        frappe.throw(_("File is empty or has no data rows"))
+        if not rows or len(rows) < 2:
+            return {"success": False, "message": _("File is empty or has no data rows")}
 
-    header = [h.strip().lower() for h in rows[0]]
-    required = ["employee code", "leave type", "new leaves"]
-    for req in required:
-        if req not in header:
-            frappe.throw(_("Missing required column: '{0}'. Found columns: {1}").format(req, ", ".join(header)))
+        header = [h.strip().lower() for h in rows[0]]
+        required = ["employee code", "leave type", "new leaves"]
+        missing_cols = [r for r in required if r not in header]
+        if missing_cols:
+            return {"success": False, "message": _("Missing required column(s): {0}. Found columns: {1}").format(", ".join(missing_cols), ", ".join(header))}
 
-    results = {"created": 0, "updated": 0, "errors": []}
+        results = {"created": 0, "updated": 0, "errors": []}
 
-    for i, row in enumerate(rows[1:], start=2):
-        if not any(row):
-            continue
-        row_data = {}
-        for j, col in enumerate(header):
-            val = row[j].strip() if j < len(row) and row[j] else ""
-            row_data[col] = val
+        for i, row in enumerate(rows[1:], start=2):
+            if not any(row):
+                continue
+            row_data = {}
+            for j, col in enumerate(header):
+                val = row[j].strip() if j < len(row) and row[j] else ""
+                row_data[col] = val
 
-        emp_code = row_data.get("employee code", "").strip()
-        leave_type = row_data.get("leave type", "").strip()
-        new_leaves = frappe.utils.flt(row_data.get("new leaves", 0))
-        from_date = row_data.get("from date", "").strip()
-        to_date = row_data.get("to date", "").strip()
+            emp_code = row_data.get("employee code", "").strip()
+            leave_type = row_data.get("leave type", "").strip()
+            new_leaves = frappe.utils.flt(row_data.get("new leaves", 0))
+            from_date = row_data.get("from date", "").strip()
+            to_date = row_data.get("to date", "").strip()
 
-        if not emp_code or not leave_type or new_leaves <= 0:
-            results["errors"].append(f"Row {i}: Missing required fields (employee code, leave type, valid new leaves)")
-            continue
+            if not emp_code or not leave_type or new_leaves <= 0:
+                results["errors"].append(f"Row {i}: Missing required fields (employee code, leave type, valid new leaves)")
+                continue
 
-        if not frappe.db.exists("Employee", emp_code):
-            results["errors"].append(f"Row {i}: Employee '{emp_code}' not found")
-            continue
+            if not frappe.db.exists("Employee", emp_code):
+                results["errors"].append(f"Row {i}: Employee '{emp_code}' not found")
+                continue
 
-        if not frappe.db.exists("Leave Type", leave_type):
-            results["errors"].append(f"Row {i}: Leave Type '{leave_type}' not found")
-            continue
+            if not frappe.db.exists("Leave Type", leave_type):
+                results["errors"].append(f"Row {i}: Leave Type '{leave_type}' not found")
+                continue
 
-        try:
-            # Determine allocation period
-            if not from_date:
-                from_date = frappe.utils.today()
-            if not to_date:
-                to_date = f"{frappe.utils.getdate(from_date).year}-12-31"
+            try:
+                # Normalize dates to YYYY-MM-DD
+                try:
+                    from_date = str(getdate(from_date)) if from_date else ""
+                    to_date = str(getdate(to_date)) if to_date else ""
+                except Exception as de:
+                    results["errors"].append(f"Row {i}: Invalid date format: {de}")
+                    continue
 
-            # Check for existing allocation
-            existing = frappe.db.get_value("Leave Allocation", {
-                "employee": emp_code,
-                "leave_type": leave_type,
-                "docstatus": 1,
-                "from_date": ("<=", to_date),
-                "to_date": (">=", from_date),
-            }, "name")
+                # Determine allocation period
+                if not from_date:
+                    from_date = frappe.utils.today()
+                if not to_date:
+                    to_date = f"{frappe.utils.getdate(from_date).year}-12-31"
+                elif getdate(to_date) < getdate(from_date):
+                    results["errors"].append(f"Row {i}: To Date ({to_date}) is before From Date ({from_date})")
+                    continue
 
-            if existing:
-                doc = frappe.get_doc("Leave Allocation", existing)
-                doc.new_leaves_allocated = new_leaves
-                doc.from_date = from_date
-                doc.to_date = to_date
-                doc.save(ignore_permissions=True)
-                doc.submit()
-                results["updated"] += 1
-            else:
-                doc = frappe.get_doc({
-                    "doctype": "Leave Allocation",
+                # Check for existing allocation
+                existing = frappe.db.get_value("Leave Allocation", {
                     "employee": emp_code,
                     "leave_type": leave_type,
-                    "from_date": from_date,
-                    "to_date": to_date,
-                    "new_leaves_allocated": new_leaves,
-                    "carry_forward": 0,
-                })
-                doc.insert(ignore_permissions=True)
-                doc.submit()
-                results["created"] += 1
-        except Exception as e:
-            results["errors"].append(f"Row {i}: {str(e)}")
+                    "docstatus": 1,
+                    "from_date": ("<=", to_date),
+                    "to_date": (">=", from_date),
+                }, "name")
 
-    return {
-        "success": True,
-        "message": _("Created: {0}, Updated: {1}, Errors: {2}").format(
-            results["created"], results["updated"], len(results["errors"])
-        ),
-        "details": results,
-    }
+                if existing:
+                    doc = frappe.get_doc("Leave Allocation", existing)
+                    doc.new_leaves_allocated = new_leaves
+                    doc.from_date = from_date
+                    doc.to_date = to_date
+                    try:
+                        doc.save(ignore_permissions=True)
+                        if doc.docstatus == 0:
+                            doc.submit()
+                    except Exception:
+                        doc.db_set({
+                            "new_leaves_allocated": new_leaves,
+                            "from_date": from_date,
+                            "to_date": to_date,
+                        })
+                    results["updated"] += 1
+                else:
+                    doc = frappe.get_doc({
+                        "doctype": "Leave Allocation",
+                        "employee": emp_code,
+                        "leave_type": leave_type,
+                        "from_date": from_date,
+                        "to_date": to_date,
+                        "new_leaves_allocated": new_leaves,
+                        "carry_forward": 0,
+                    })
+                    doc.insert(ignore_permissions=True)
+                    doc.submit()
+                    results["created"] += 1
+            except Exception as e:
+                results["errors"].append(f"Row {i}: {str(e)}")
+
+        return {
+            "success": True,
+            "message": _("Created: {0}, Updated: {1}, Errors: {2}").format(
+                results["created"], results["updated"], len(results["errors"])
+            ),
+            "details": results,
+        }
+    except Exception as e:
+        import traceback
+        frappe.log_error(traceback.format_exc(), "Upload Leave Allocations")
+        return {
+            "success": False,
+            "message": _("Unexpected error during upload: {0}").format(str(e)),
+        }

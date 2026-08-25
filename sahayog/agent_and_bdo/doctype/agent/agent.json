@@ -10,6 +10,7 @@
   "agent_name",
   "phone_number",
   "agent_status",
+  "agent_type",
   "creation_date",
   "column_break_dxwu",
   "branch_code",
@@ -17,14 +18,17 @@
   "role",
   "auth_id",
   "status",
+  "employee",
   "bdo_details_section",
   "requested_by",
   "requested_on",
   "column_break_nbix",
   "approved_by",
   "approved_on",
-  "employee",
-  "amended_from"
+  "amended_from",
+  "commission_details_tab",
+  "get_commission",
+  "commission_json"
  ],
  "fields": [
   {
@@ -48,7 +52,8 @@
    "fieldname": "phone_number",
    "fieldtype": "Data",
    "label": "Phone Number",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "branch_code",
@@ -81,7 +86,8 @@
    "in_standard_filter": 1,
    "label": "Status",
    "options": "Unallocated\nAllocated\nPending",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "agent_details_section",
@@ -93,6 +99,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:frappe.user.has_role('System Manager')",
    "fieldname": "bdo_details_section",
    "fieldtype": "Section Break",
    "label": "Allocation Details"
@@ -109,9 +116,12 @@
   },
   {
    "fieldname": "agent_status",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Agent Status",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "options": "\nInactive\nActive",
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "requested_by",
@@ -147,13 +157,15 @@
    "fieldname": "auth_id",
    "fieldtype": "Data",
    "label": "Auth ID",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "creation_date",
    "fieldtype": "Date",
    "label": "Creation Date",
-   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')"
+   "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
+   "search_index": 1
   },
   {
    "fieldname": "amended_from",
@@ -164,12 +176,34 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "agent_type",
+   "fieldtype": "Select",
+   "label": "Agent Type",
+   "options": "\nRDDSA\nDDDSA",
+   "search_index": 1
+  },
+  {
+   "fieldname": "commission_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Commission Details"
+  },
+  {
+   "fieldname": "commission_json",
+   "fieldtype": "JSON",
+   "label": "Commission"
+  },
+  {
+   "fieldname": "get_commission",
+   "fieldtype": "Button",
+   "label": "Get Commission"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-16 11:01:33.765437",
+ "modified": "2026-08-18 12:58:28.766388",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

@@ -1,15 +1,40 @@
 import frappe
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import flt, getdate
 
 @frappe.whitelist(allow_guest=False)
-def get_leave_types():
-    return frappe.get_all("Leave Type", fields=["name"])
+def get_leave_types(employee=None):
+    leave_types = frappe.get_all("Leave Type", fields=["name"])
+
+    # If employee provided, check EL eligibility (requires confirmation)
+    el_eligible = True
+    confirmation_date = None
+    if employee:
+        emp = frappe.db.get_value(
+            "Employee", employee,
+            ["final_confirmation_date", "employee_name"],
+            as_dict=True
+        )
+        if emp:
+            from frappe.utils import getdate, today
+            confirmation_date = str(emp.final_confirmation_date) if emp.final_confirmation_date else None
+            el_eligible = bool(
+                emp.final_confirmation_date and
+                getdate(emp.final_confirmation_date) <= getdate(today())
+            )
+
+    for lt in leave_types:
+        lt["el_restricted"] = (
+            not el_eligible and "earned" in lt.name.lower()
+        )
+        lt["confirmation_date"] = confirmation_date
+
+    return leave_types
 
 from sahayog.api.attendance import get_leave_balances
 
 @frappe.whitelist(allow_guest=False)
-def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False):
+def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False, half_day=False):
     from frappe.utils import date_diff, getdate
 
     if not employee or not leave_type:
@@ -19,6 +44,32 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     if isinstance(force, str):
         force = force.lower() in ("true", "1", "yes")
 
+    # Normalize half_day param (comes as string from API call)
+    if isinstance(half_day, str):
+        half_day = half_day.lower() in ("true", "1", "yes")
+
+    # Half day can only be applied for a single day
+    if half_day:
+        to_date = from_date
+
+    # Earned Leave is only available after confirmation (permanent employees only)
+    if "earned" in leave_type.lower():
+        emp_data = frappe.db.get_value(
+            "Employee", employee,
+            ["final_confirmation_date", "employee_name"],
+            as_dict=True
+        )
+        if not emp_data or not emp_data.final_confirmation_date:
+            frappe.throw(_(
+                "Earned Leave can only be availed after confirmation. "
+                "{0} has not been confirmed yet."
+            ).format(emp_data.employee_name if emp_data else employee))
+        if getdate(from_date) < getdate(emp_data.final_confirmation_date):
+            frappe.throw(_(
+                "Earned Leave can only be availed on or after the Date of Confirmation ({0}). "
+                "{1} is still on probation until that date."
+            ).format(emp_data.final_confirmation_date, emp_data.employee_name))
+
     # Check Balance
     balances = get_leave_balances(employee)
     leave_bal = next((b for b in balances if b.leave_type == leave_type), None)
@@ -27,7 +78,7 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
         frappe.throw(_("No leave allocation found for {0}").format(leave_type))
         
     # Calculate requested days
-    requested_days = date_diff(getdate(to_date), getdate(from_date)) + 1
+    requested_days = 0.5 if half_day else date_diff(getdate(to_date), getdate(from_date)) + 1
     
     if leave_bal.unused_leaves < requested_days:
         frappe.throw(_("Insufficient balance. Available: {0}, Requested: {1}").format(leave_bal.unused_leaves, requested_days))
@@ -67,6 +118,10 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
         "description": reason or "Applied via Portal",
         "status": "Open"
     }
+
+    if half_day:
+        doc_data["half_day"] = 1
+        doc_data["half_day_date"] = from_date
     
     if holiday_list:
         doc_data["holiday_list"] = holiday_list
@@ -74,11 +129,42 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     doc = frappe.get_doc(doc_data)
     
     doc.insert(ignore_permissions=True)
+
+    # Deduct leave balance immediately at apply time (advance deduction).
+    # On approval this entry is removed and re-created by the standard HRMS
+    # submit; on rejection it is deleted, which refunds the balance.
+    _create_advance_deduction(doc, requested_days, holiday_list)
+
     return {
         "success": True,
         "message": _("Leave Applied Successfully"),
         "name": doc.name
     }
+
+
+def _create_advance_deduction(doc, requested_days, holiday_list):
+    """Create a negative Leave Ledger Entry so the balance drops at apply time."""
+    from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+
+    is_lwp = frappe.db.get_value("Leave Type", doc.leave_type, "is_lwp") or 0
+    args = dict(
+        leaves=flt(requested_days) * -1,
+        from_date=getdate(doc.from_date),
+        to_date=getdate(doc.to_date),
+        is_lwp=is_lwp,
+        holiday_list=holiday_list or "",
+    )
+    create_leave_ledger_entry(doc, args, submit=True)
+
+
+def _delete_advance_deduction(leave_application_name):
+    """Remove the advance-deduction ledger entry for an Open leave application.
+    Precise delete by transaction_name — an Open application has exactly one
+    ledger entry (the advance deduction), so allocation/expiry entries are safe."""
+    frappe.db.sql(
+        "DELETE FROM `tabLeave Ledger Entry` WHERE transaction_name = %s",
+        (leave_application_name,),
+    )
 
 @frappe.whitelist(allow_guest=False)
 def get_pending_leaves():
@@ -138,6 +224,12 @@ def update_leave_status(leave_id, status):
         frappe.throw(_("Invalid status"))
 
     doc = frappe.get_doc("Leave Application", leave_id)
+
+    # Balance was already deducted at apply time. Remove that advance entry now —
+    # on Approval the standard HRMS submit re-creates the deduction; on Rejection
+    # this removal IS the refund. No-op for legacy leaves without an advance entry.
+    _delete_advance_deduction(doc.name)
+
     doc.status = status
     
     # Submitting an approved leave automatically handles balance deduction in HRMS

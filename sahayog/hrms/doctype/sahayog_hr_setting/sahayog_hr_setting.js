@@ -3,7 +3,34 @@
 
 frappe.ui.form.on("Sahayog HR Setting", {
 	refresh(frm) {
-		if (!frm.doc.employee_master) return;
+		const user_roles = frappe.user_roles || [];
+		const is_hr_manager = user_roles.includes("HR Manager");
+		const is_system_manager = user_roles.includes("System Manager");
+		const is_hr_support = user_roles.includes("HR Support Manager") || user_roles.includes("HR Support Executive");
+
+		// JSON mein allow_hr_to_mark_attendance read_only:1 hai,
+		// isliye baki roles ke liye ise wapas editable karna padega.
+		if (!is_hr_manager || is_system_manager || is_hr_support) {
+			frm.set_df_property("allow_hr_to_mark_attendance", "read_only", 0);
+		}
+
+		// HR Manager (jo System Manager / HR Support nahi hai):
+		// sirf allow_hr_to_mark_attendance editable, baki sab read-only.
+		if (is_hr_manager && !is_system_manager && !is_hr_support) {
+			frm.set_df_property("allow_hr_to_mark_attendance", "read_only", 0);
+			const layout_types = ["Section Break", "Column Break", "Tab Break"];
+			(frm.meta.fields || []).forEach((field) => {
+				if (
+					field.fieldname &&
+					field.fieldname !== "allow_hr_to_mark_attendance" &&
+					!layout_types.includes(field.fieldtype)
+				) {
+					frm.set_df_property(field.fieldname, "read_only", 1);
+				}
+			});
+		}
+
+		if (!frm.doc.employee_master || (is_hr_manager && !is_system_manager && !is_hr_support)) return;
 
 		frm.add_custom_button(__("Insert Employee"), () => {
 			frappe.confirm(
@@ -22,8 +49,46 @@ frappe.ui.form.on("Sahayog HR Setting", {
 				}
 			);
 		}, __("Action"));
+
+		frm.add_custom_button(__("Load File Headers"), () => {
+			load_file_headers(frm);
+		}, __("Action"));
+	},
+
+	employee_master(frm) {
+		if (frm.doc.employee_master) {
+			load_file_headers(frm);
+		}
 	},
 });
+
+function load_file_headers(frm) {
+	frappe.call({
+		method: "sahayog.api.employee_master_import.get_file_headers",
+		callback: (res) => {
+			if (!res.message || !res.message.headers || !res.message.headers.length) {
+				frappe.msgprint(__("No headers found in the uploaded file."));
+				return;
+			}
+
+			const headers = res.message.headers;
+			const existing = frm.doc.field_mappings || [];
+
+			frm.clear_table("field_mappings");
+
+			headers.forEach((header) => {
+				const row = frm.add_child("field_mappings");
+				row.source_column = header;
+				row.target_field = header.toLowerCase().replace(/\s+/g, "_");
+				row.is_mandatory = 0;
+				row.enabled = 1;
+			});
+
+			frm.refresh_field("field_mappings");
+			frappe.msgprint(__("{0} field mappings loaded from file.", [headers.length]));
+		},
+	});
+}
 
 function run_batch_import(frm, mode) {
 	const action_label = mode === "insert" ? __("Insert") : __("Update");

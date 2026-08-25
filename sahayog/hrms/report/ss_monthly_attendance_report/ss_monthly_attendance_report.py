@@ -100,6 +100,7 @@ def execute(filters=None):
         {"label": "District", "fieldname": "custom_district", "fieldtype": "Data", "width": 100},
         {"label": "Branch Name", "fieldname": "branch", "fieldtype": "Data", "width": 140},
         {"label": "Date of Joining", "fieldname": "date_of_joining", "fieldtype": "Date", "width": 100},
+        {"label": "Relieving Date", "fieldname": "relieving_date", "fieldtype": "Date", "width": 100},
         {"label": "Shift", "fieldname": "default_shift", "fieldtype": "Data", "width": 80},
         {"label": "Reporting Manager", "fieldname": "reports_to", "fieldtype": "Data", "width": 130},
         {"label": "Manager Name", "fieldname": "reports_to_name", "fieldtype": "Data", "width": 150},
@@ -114,7 +115,8 @@ def execute(filters=None):
         })
 
     columns.append({"label": "Total Days", "fieldname": "total_days", "fieldtype": "Int", "width": 80})
-    columns.append({"label": "Total Present", "fieldname": "total_present", "fieldtype": "Int", "width": 100})
+    columns.append({"label": "Total Present", "fieldname": "total_present", "fieldtype": "Float", "width": 100})
+    columns.append({"label": "Total Absent", "fieldname": "total_absent", "fieldtype": "Float", "width": 100})
 
     # ---- Fetch Employees ----
     emp_conditions = "AND e.custom_is_support_staff = 1"
@@ -129,13 +131,13 @@ def execute(filters=None):
 
     employees = frappe.db.sql(f"""
         SELECT e.name, e.employee_name, e.branch, e.department, e.designation,
-               e.date_of_joining, e.custom_zone, e.custom_region, e.custom_district,
+               e.date_of_joining, e.relieving_date, e.custom_zone, e.custom_region, e.custom_district,
                e.sahayog_branch, e.reports_to, e.default_shift, e.custom_division,
                e.holiday_list
                {_state_select}
         FROM `tabEmployee` e
         WHERE e.custom_is_support_staff = 1 {emp_conditions}
-        ORDER BY e.branch, e.employee_name
+        ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, filters, as_dict=True)
 
     if not employees:
@@ -171,11 +173,27 @@ def execute(filters=None):
         key = f"{a.employee}|{a.attendance_date}"
         att_map[key] = a
 
+    # ---- Fetch Approved Regularizations (On Duty) ----
+    corrections = frappe.db.sql("""
+        SELECT ac.employee, ac.attendance_date
+        FROM `tabAttendance Correction` ac
+        WHERE ac.employee IN %(employees)s
+          AND ac.attendance_date BETWEEN %(from_date)s AND %(to_date)s
+          AND ac.status = 'Approved'
+    """, {
+        "employees": emp_names,
+        "from_date": from_date,
+        "to_date": to_date,
+    }, as_dict=True)
+
+    od_keys = {f"{c.employee}|{c.attendance_date}" for c in corrections}
+
     # ---- Fetch Holiday Lists ----
     # Collect unique holiday lists
     hl_names = list(set(e.holiday_list for e in employees if e.holiday_list))
     holiday_dates = set()
     weekly_off_dates = set()
+    holidays = []
 
     if hl_names:
         holidays = frappe.db.sql("""
@@ -242,6 +260,7 @@ def execute(filters=None):
             "custom_district": emp.custom_district,
             "branch": emp.branch,
             "date_of_joining": emp.date_of_joining,
+            "relieving_date": emp.relieving_date,
             "default_shift": emp.default_shift,
             "reports_to": emp.reports_to,
             "reports_to_name": rt_names.get(emp.reports_to, ""),
@@ -249,6 +268,7 @@ def execute(filters=None):
 
         total_days = 0
         total_present = 0
+        total_absent = 0
 
         for d in date_cols:
             key = f"{emp.name}|{d}"
@@ -261,22 +281,36 @@ def execute(filters=None):
             is_wo = d in ewo or d.weekday() == 6
 
             if att:
-                code = get_attendance_code(att.status, att.leave_type, is_hol, is_wo)
-                if att.status == "Present" or att.status == "Half Day":
-                    total_present += 0.5 if att.status == "Half Day" else 1
+                # Approved regularization -> On Duty (OD), counted as Present
+                is_od = att.status == "Present" and key in od_keys
+                if is_od:
+                    code = "OD"
+                    total_present += 1
+                else:
+                    code = get_attendance_code(att.status, att.leave_type, is_hol, is_wo)
+                    if att.status == "Present":
+                        total_present += 1
+                    elif att.status == "Half Day":
+                        total_present += 0.5
+                    elif att.status == "Absent":
+                        total_absent += 1
                 total_days += 1
             else:
-                if is_wo:
-                    code = "WO"
-                elif is_hol:
+                if is_hol:
                     code = "H"
+                    total_present += 1
+                elif is_wo:
+                    code = "WO"
+                    total_present += 1
                 else:
-                    code = ""
+                    code = "A"
+                    total_absent += 1
 
             row[d.strftime("%d_%m_%Y")] = code
 
         row["total_days"] = total_days
         row["total_present"] = flt(total_present, 1)
+        row["total_absent"] = flt(total_absent, 1)
         data.append(row)
 
     return columns, data

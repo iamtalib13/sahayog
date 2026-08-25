@@ -282,6 +282,8 @@ def _load_table_mappings(setting):
         return None
     mappings = []
     for row in setting.field_mappings:
+        if not row.enabled:
+            continue
         mappings.append({
             "source_column": row.source_column,
             "target_field": row.target_field,
@@ -299,16 +301,7 @@ def _get_mandatory_fields(table_mappings):
 def _build_field_map(headers, existing_cols, table_mappings=None):
     mapping = {}
 
-    # 1. Start with default FIELD_MAP for any columns present in headers
-    for h in headers:
-        clean = h.strip().lower().replace(" ", "_")
-        doc_field = FIELD_MAP.get(clean, clean)
-        if doc_field in existing_cols:
-            mapping[clean] = doc_field
-        elif f"custom_{doc_field}" in existing_cols:
-            mapping[clean] = f"custom_{doc_field}"
-
-    # 2. Overwrite/supplement with explicit table_mappings from settings child table
+    # If explicit enabled table_mappings exist, ONLY use those
     if table_mappings:
         for m in table_mappings:
             src = m.get("source_column", "").strip().lower().replace(" ", "_")
@@ -318,6 +311,16 @@ def _build_field_map(headers, existing_cols, table_mappings=None):
                     mapping[src] = tgt
                 elif f"custom_{tgt}" in existing_cols:
                     mapping[src] = f"custom_{tgt}"
+        return mapping
+
+    # Fallback: use default FIELD_MAP if no table_mappings configured
+    for h in headers:
+        clean = h.strip().lower().replace(" ", "_")
+        doc_field = FIELD_MAP.get(clean, clean)
+        if doc_field in existing_cols:
+            mapping[clean] = doc_field
+        elif f"custom_{doc_field}" in existing_cols:
+            mapping[clean] = f"custom_{doc_field}"
 
     return mapping
 
@@ -620,23 +623,25 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
         else:
             setattr(doc, doc_field, csv_val)
 
-    csv_first_name = row_dict.get(header_for.get("first_name"))
-    csv_middle_name = row_dict.get(header_for.get("middle_name"))
-    csv_last_name = row_dict.get(header_for.get("last_name"))
-    if csv_first_name:
-        fn, mn, ln = _split_name(
-            csv_first_name,
-            csv_middle_name if csv_middle_name and not doc.get("middle_name") else None,
-            csv_last_name if csv_last_name and not doc.get("last_name") else None,
-        )
-        if fn and fn != doc.first_name:
-            doc.first_name = fn
-        if mn and mn != doc.middle_name:
-            doc.middle_name = mn
-        if ln and ln != doc.last_name:
-            doc.last_name = ln
+    if "first_name" in field_map:
+        csv_first_name = row_dict.get(header_for.get("first_name"))
+        csv_middle_name = row_dict.get(header_for.get("middle_name"))
+        csv_last_name = row_dict.get(header_for.get("last_name"))
+        if csv_first_name:
+            fn, mn, ln = _split_name(
+                csv_first_name,
+                csv_middle_name if csv_middle_name and not doc.get("middle_name") else None,
+                csv_last_name if csv_last_name and not doc.get("last_name") else None,
+            )
+            if fn and fn != doc.first_name:
+                doc.first_name = fn
+            if mn and mn != doc.middle_name:
+                doc.middle_name = mn
+            if ln and ln != doc.last_name:
+                doc.last_name = ln
 
-    _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
+    if "sol_id" in field_map or "monthly_gross_salary" in field_map:
+        _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
 
     relieving = doc.relieving_date
     if relieving and getdate(relieving) <= getdate(today()):
@@ -783,6 +788,22 @@ def _build_summary(result, mode):
             lines.append(f"  ... and {len(result['errors']) - 20} more")
 
     return "\n".join(lines)
+
+
+@frappe.whitelist()
+def get_file_headers():
+    """Read headers from the uploaded Employee Master file and return them."""
+    setting = frappe.get_doc("Sahayog HR Setting")
+    file_url = setting.get("employee_master")
+    if not file_url:
+        return {"headers": []}
+
+    rows = _parse_file(file_url)
+    if not rows or len(rows) < 1:
+        return {"headers": []}
+
+    headers = [h.strip() for h in rows[0]]
+    return {"headers": headers}
 
 
 class _StopRow(Exception):

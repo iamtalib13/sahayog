@@ -22,20 +22,38 @@ def execute():
                 "ignore_user_permissions": 1,
             },
             {
+                "label": "Employee Name",
+                "fieldname": "custom_employee_name",
+                "fieldtype": "Data",
+                "insert_after": "custom_employee_id",
+            },
+            {
+                "label": "Designation",
+                "fieldname": "custom_designation",
+                "fieldtype": "Link",
+                "options": "Designation",
+                "insert_after": "custom_employee_name",
+            },
+            {
                 "label": "Branch",
                 "fieldname": "custom_branch",
                 "fieldtype": "Link",
                 "options" : "Branch",
-                "insert_after": "custom_employee_id",
+                "insert_after": "custom_designation",
                 "ignore_user_permissions": 1,
             },
-
+            {
+                "label": "District",
+                "fieldname": "custom_district",
+                "fieldtype": "Data",
+                "insert_after": "custom_branch",
+            },
             {
                 "label": "Region",
                 "fieldname": "custom_region",
                 "fieldtype": "Link",
                 "options" : "Region",
-                "insert_after": "custom_branch",
+                "insert_after": "custom_district",
                 "ignore_user_permissions": 1,
             },
             {

@@ -613,6 +613,94 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
   $container.append(`
         <div id="crm-app" v-scope @vue:mounted="init()">
+            <!-- Admin Control Panel Widget (Visible ONLY to Administrator / System Managers) -->
+            <div v-if="report_info && report_info.is_admin" class="admin-master-report-bar mb-2 py-1 px-3 rounded shadow-xs d-flex align-items-center justify-content-between" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; height: 38px;">
+                <div class="d-flex align-items-center" style="gap: 10px; overflow: hidden; white-space: nowrap;">
+                    <span class="font-weight-bold text-dark" style="font-size: 11px;">
+                        <i class="fa fa-shield text-primary mr-1"></i> Admin Report:
+                    </span>
+                    <span :class="['badge', report_info.status === 'Ready' ? 'badge-success' : 'badge-warning']" style="font-size: 10px; padding: 2px 6px;">
+                        {{ report_info.status === 'Ready' ? '🟢 Ready' : '⏳ ' + report_info.status }}
+                    </span>
+                    <span class="text-muted" v-if="report_info.active_filename">
+                        Active: <code class="text-primary font-weight-bold" style="font-size: 11px;">{{ report_info.active_filename }}</code> ({{ report_info.size_mb }}MB)
+                    </span>
+                    <span class="text-info font-weight-bold" v-if="report_info.backup_exists" title="Backup file active for live downloads during rebuild">
+                        | 🛡️ Backup Active ({{ report_info.backup_size_mb }}MB)
+                    </span>
+                    <span class="text-muted" v-if="report_info.last_generated_at">
+                        | <i class="fa fa-clock-o text-secondary"></i> {{ report_info.last_generated_at }}
+                    </span>
+                </div>
+
+                <div class="d-flex align-items-center" style="gap: 6px; flex-shrink: 0;">
+                    <button class="btn btn-xs btn-default font-weight-bold border" 
+                            @click="show_server_files_modal = true" title="View all CSV report files stored on server">
+                        <i class="fa fa-folder-open text-warning mr-1"></i> Files
+                    </button>
+
+                    <button class="btn btn-xs btn-primary font-weight-bold" 
+                            @click="syncIncrementalReport" 
+                            :disabled="report_info.status === 'Generating'" title="Manually sync latest 3-day lead data in-place">
+                        <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'sync'}"></i> 
+                        {{ (report_info.status === 'Generating' && active_report_action === 'sync') ? 'Syncing...' : 'Generate' }}
+                    </button>
+
+                    <button class="btn btn-xs btn-outline-danger font-weight-bold" 
+                            @click="confirmRebuildReport" 
+                            :disabled="report_info.status === 'Generating'" title="Rebuild full baseline report cleanly with backup fallback">
+                        <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'rebuild'}"></i> 
+                        {{ (report_info.status === 'Generating' && active_report_action === 'rebuild') ? 'Building...' : 'Rebuild' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal for Viewing Server Files -->
+            <div v-if="show_server_files_modal" class="modal-backdrop-custom d-flex align-items-center justify-content-center" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1050;" @click.self="show_server_files_modal = false">
+                <div class="bg-white rounded p-4 shadow-lg" style="width: 750px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                        <h5 class="m-0 font-weight-bold text-dark"><i class="fa fa-server text-primary mr-2"></i> Server Lead Report Files</h5>
+                        <button class="btn btn-sm btn-link text-muted" @click="show_server_files_modal = false"><i class="fa fa-times fa-lg"></i></button>
+                    </div>
+                    
+                    <table class="table table-bordered table-striped table-hover table-sm" style="font-size: 13px;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Filename</th>
+                                <th>Size</th>
+                                <th>Last Modified</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="f in report_info.server_files" :key="f.filename">
+                                <td><code>{{ f.filename }}</code></td>
+                                <td>{{ f.size_mb }} MB</td>
+                                <td>{{ f.modified_at }}</td>
+                                <td>
+                                    <span v-if="f.is_info" class="badge badge-secondary px-2 py-1">⚙️ Metadata</span>
+                                    <span v-else-if="f.is_active" class="badge badge-success px-2 py-1">🟢 Active</span>
+                                    <span v-else-if="f.is_backup" class="badge badge-info px-2 py-1">🛡️ Backup</span>
+                                    <span v-else class="badge badge-secondary px-2 py-1">Archived</span>
+                                </td>
+                                <td class="text-center">
+                                    <a :href="f.file_url" target="_blank" download class="btn btn-xs btn-primary font-weight-bold">
+                                        <i class="fa fa-download mr-1"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr v-if="!report_info.server_files || report_info.server_files.length === 0">
+                                <td colspan="5" class="text-center text-muted py-3">No report files found on server.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-right mt-3">
+                        <button class="btn btn-secondary btn-sm px-4" @click="show_server_files_modal = false">Close</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="ui-section-card">
                <div class="section-header">
                     <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 20px;">
@@ -661,22 +749,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                       <div class="export-dropdown" v-if="totalLeadsInReport > 0">
+                        <div v-if="totalLeadsInReport > 0">
                             <button class="btn-generate-sm"
-                                    @click.stop="toggleExportMenu" 
+                                    @click="downloadReport" 
                                     :disabled="loading">
-                                <i v-if="loading" class="fa fa-spinner fa-spin mr-1"></i>
-                                EXPORT <i class="fa fa-caret-down ml-1"></i>
+                                <i class="fa fa-download mr-1"></i> DOWNLOAD
                             </button>
-
-                            <div class="export-menu" v-if="show_export_menu">
-                                <div class="export-item" @click="exportCSV">
-                                    Export CSV
-                                </div>
-                                <div class="export-item" @click="exportZIP">
-                                    Export ZIP
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1029,6 +1107,80 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     transfer_loading: false,
     visible_branches: [],
     disabled_branches: [],
+    show_server_files_modal: false,
+    active_report_action: null,
+    report_info: {
+      is_admin: false,
+      status: "Loading...",
+      active_filename: "",
+      backup_filename: "",
+      backup_exists: false,
+      backup_size_mb: 0,
+      size_mb: 0,
+      last_generated_at: "-",
+      server_files: []
+    },
+
+    fetchReportInfo() {
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.get_fast_lead_report_info",
+        callback: (r) => {
+          if (r.message) {
+            this.report_info = r.message;
+            if (r.message.status === "Generating") {
+              setTimeout(() => { this.fetchReportInfo(); }, 5000);
+            } else {
+              this.active_report_action = null;
+            }
+          }
+        }
+      });
+    },
+    confirmRebuildReport() {
+      frappe.confirm(
+        __("Are you sure you want to trigger a full baseline report rebuild? <br><br><b>Note:</b> This will clean deleted leads. Live users will seamlessly continue downloading from active backup file without any disruption."),
+        () => {
+          this.rebuildFullReport();
+        }
+      );
+    },
+    rebuildFullReport() {
+      this.active_report_action = "rebuild";
+      this.report_info.status = "Generating";
+      frappe.show_alert({ message: __("Full Baseline Rebuild Started in Background Worker... Backup file active for live users."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.trigger_fast_lead_report_job",
+        args: { force_rebuild: true },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.show_alert({
+              message: __("Rebuild job enqueued in background worker. Live status auto-polling..."),
+              indicator: "blue"
+            });
+            this.fetchReportInfo();
+          }
+        }
+      });
+    },
+
+    syncIncrementalReport() {
+      this.active_report_action = "sync";
+      this.report_info.status = "Generating";
+      frappe.show_alert({ message: __("Syncing Latest 3-Day Incremental Lead Data in Background Worker..."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.trigger_fast_lead_report_job",
+        args: { force_rebuild: false },
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.show_alert({
+              message: __("Sync job enqueued in background worker. Live status auto-polling..."),
+              indicator: "blue"
+            });
+            this.fetchReportInfo();
+          }
+        }
+      });
+    },
 
     toggleExportMenu() {
       this.show_export_menu = !this.show_export_menu;
@@ -1046,25 +1198,46 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.updateCapsuleUI();
     },
 
-    exportCSV() {
+    /*
+     * generateFastReport()
+     * Triggered by 'Generate Fast Report' action.
+     * Calls python backend generate_fast_lead_report API to execute a high-speed
+     * SELECT ... INTO OUTFILE query which dumps all database leads directly to a master CSV file.
+     */
+    generateFastReport() {
       this.show_export_menu = false;
-
-      // 👇 Existing functionality untouched
-      this.applyFilters();
+      frappe.show_alert({ message: __("Generating CSV Report..."), indicator: "orange" });
+      frappe.call({
+        method: "sahayog.scrm.api.report_access.generate_fast_lead_report",
+        freeze: true,
+        freeze_message: __("Generating Fast Lead Report..."),
+        callback: (r) => {
+          if (r.message && r.message.status === "success") {
+            frappe.msgprint({
+              title: __("Report Generated"),
+              indicator: "green",
+              message: __(`Report generated successfully using <b>${r.message.method}</b>.<br>File Size: <b>${r.message.size_kb} KB</b>.<br>Click 'Download Report' to download the CSV.`)
+            });
+          }
+        }
+      });
     },
 
-    exportZIP() {
+    /*
+     * downloadReport()
+     * Triggered by the main 'DOWNLOAD' button on the CRM dashboard.
+     * Captures current active date range and filter dropdown selections from the UI,
+     * encodes them, and sends a direct browser download request to the python backend.
+     */
+    downloadReport() {
       this.show_export_menu = false;
-
-      // 👇 Abhi ke liye same function call karenge
-      // Later backend me format param add karenge
-      this.applyFilters("zip");
+      let from_date = this.employee_from_date;
+      let to_date = this.employee_to_date;
+      let filters_str = encodeURIComponent(JSON.stringify(this.selected));
+      let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
+      window.open(download_url, "_blank");
     },
-    // data() {
-    //   return {
-    //     date_input_key: 0,
-    //   };
-    // },
+  
     getSelectedCountText(key) {
       const count = this.selected[key].length;
       if (count === 0) return "All";
@@ -1082,7 +1255,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (!this.master_month) return "";
       return this.master_month + "-01";
     },
-
     get month_end() {
       if (!this.master_month) return "";
 
@@ -1150,7 +1322,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         0,
       );
     },
-
     get totalNotInterestedInReport() {
       return this.filteredEmployees.reduce(
         (sum, emp) => sum + (emp.total_not_interested || 0),
@@ -1227,7 +1398,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         ? Math.round((this.totalConvertedLeadsInReport / total) * 100)
         : 0;
     },
-
     get totalRevenue() {
       return this.filteredEmployees.reduce(
         (sum, e) => sum + (e.converted_amount || 0),
@@ -1239,7 +1409,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       if (emp.follow_ups >= 4) return { label: "Average", class: "bg-average" };
       return { label: "Bad", class: "bg-bad" };
     },
-
     getQualification(total) {
       return total >= 10
         ? { label: "Qualified", class: "bg-qualified" }
@@ -1270,6 +1439,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       this.fetchEmployeePerformance();
     },
+
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
       // 1. Agar ek bhi lead convert hui hai
@@ -1285,7 +1455,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         return { label: "Bad", class: "badge-pastel-red" };
       }
     },
-    // Status logic for Badges
     // Status logic for Badges
     getLeadStatus(count) {
       return count >= 10
@@ -1469,10 +1638,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         // active_popup ko null mat kijiye yahan, warna modal bhi band ho jayega
       });
       await this.fetchVisibleBranches();
+      this.fetchReportInfo();
     },
 
     // Watch for active_tab changes to load data automatically
-
     formatDisplayText(key, val) {
       if (val == null || val === undefined) return "";
 
@@ -1596,41 +1765,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
     },
 
-    async applyFilters(format = "csv") {
-      // Safety check: though button is hidden, we block the function too
-      if (this.totalLeadsInReport === 0) {
-        this.showNoLeadsMessage();
-        return;
-      }
-
-      this.loading = true;
-      page.set_intro(`
-        <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-          <i class="fa fa-spinner fa-spin mr-2"></i> <b>Generating Report...</b> Please stay on this page.
-        </div>
-      `);
-
-      const fromDate = this.employee_from_date;
-      const toDate = this.employee_to_date;
-
-      try {
-        let res = await frappe.call({
-          method: "sahayog.scrm.api.report_access.queue_leads_export",
-          args: {
-            from_date: fromDate,
-            to_date: toDate,
-            filters: this.selected,
-            format: format,
-          },
-        });
-        if (res.message?.status === "queued") {
-          this.checkStatus();
-        }
-      } catch (e) {
-        this.loading = false;
-      }
-    },
-
     showNoLeadsMessage() {
       page.set_intro(`
         <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
@@ -1639,76 +1773,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       `);
     },
 
-    checkStatus() {
-      let progress = 10;
-      let attempts = 0;
-      const maxAttempts = 60; // 5 minutes max (60 * 5s)
-
-      let timer = setInterval(async () => {
-        attempts++;
-
-        if (attempts > maxAttempts) {
-          clearInterval(timer);
-          this.loading = false;
-          page.set_intro(`
-            <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-              <i class="fa fa-clock-o mr-2"></i> <b>Timeout:</b> Export is taking too long. Please check back later.
-            </div>
-          `);
-          return;
-        }
-
-        let res = await frappe.call(
-          "sahayog.scrm.api.report_access.check_export_status",
-        );
-
-        if (progress < 90) progress += 10;
-
-        page.set_intro(`
-          <div class="p-2" style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 4px; font-size: 12px; color: #92400e;">
-            <i class="fa fa-spinner fa-spin mr-2"></i> <b>Processing (${progress}%)...</b> Fetching data.
-          </div>
-        `);
-
-        if (res.message?.status === "completed") {
-          clearInterval(timer);
-          this.loading = false;
-
-          if (res.message.row_count === 0) {
-            this.showNoLeadsMessage();
-            return;
-          }
-
-          const fileName = res.message.file_url.split("/").pop();
-          page.set_intro(`
-            <div class="p-2 blinking-success" style="background:#f0fdf4; border-left:4px solid #22c55e; border-radius:4px; font-size:12px; color:#166534;">
-              <div style="display:flex; justify-content:space-between;">
-                <span><i class="fa fa-check-circle"></i> <b>Export Ready</b></span>
-                <span><b>${res.message.row_count} rows</b></span>
-              </div>
-              <div style="margin-top:4px; font-size:11px;">📁 ${fileName}</div>
-            </div>
-          `);
-
-          // Trigger download
-          const a = document.createElement("a");
-          a.href = res.message.file_url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else if (res.message?.status === "failed") {
-          clearInterval(timer);
-          this.loading = false;
-          const errMsg = res.message.error || "Export failed.";
-          page.set_intro(
-            `<div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-              <i class="fa fa-exclamation-triangle mr-2"></i> <b>Error:</b> ${errMsg}
-            </div>`,
-          );
-        }
-      }, 5000);
-    },
     async fetchVisibleBranches() {
       let res = await frappe.call({
         method: "sahayog.scrm.api.report_access.get_branches_by_filters",

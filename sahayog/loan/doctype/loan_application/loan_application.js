@@ -14,6 +14,7 @@ frappe.ui.form.on("Loan Application", {
   //     );
   //   });
   // },
+  // lead_generator_code handles fetch_from automatically via Employee link
   father_husband_name: function(frm) {
         if (frm.doc.father_husband_name) {
             let formatted = frm.doc.father_husband_name.toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
@@ -658,6 +659,144 @@ frappe.ui.form.on("Loan Application", {
         frappe.set_route("/app/loan-management");
       });
       frm.custom_home_button_added = true;
+    }
+
+    // Lock form read-only if current user is previous generator/owner and case is re-assigned to someone else
+    if (!frm.is_new() && frm.doc.lead_converter) {
+      frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name", (r) => {
+        if (r && r.name && frm.doc.lead_converter !== r.name) {
+          const admin_roles = ["Administrator", "Credit Loan User", "System Manager"];
+          if (!frappe.user_roles.some(role => admin_roles.includes(role))) {
+            frm.disable_form();
+            frm.page.clear_actions();
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // CUSTOM BUTTONS: UPDATE BRANCH & ASSIGN CASE (For Admin & Credit Loan User)
+    // ==========================================
+    const allowed_roles = ["Administrator", "Credit Loan User", "System Manager"];
+    if (!frm.is_new() && frappe.user_roles.some(role => allowed_roles.includes(role))) {
+
+      // 1. UPDATE BRANCH BUTTON
+      frm.add_custom_button(__("Update Branch"), function () {
+        let d = new frappe.ui.Dialog({
+          title: __('Update Branch'),
+          fields: [
+            {
+              label: __('Select Branch'),
+              fieldname: 'branch_code',
+              fieldtype: 'Link',
+              options: 'Sahayog Branch',
+              default: frm.doc.branch_code,
+              reqd: 1
+            }
+          ],
+          primary_action_label: __('Update'),
+          primary_action(values) {
+            if (values.branch_code === frm.doc.branch_code) {
+              frappe.msgprint(__('Selected branch is already assigned.'));
+              d.hide();
+              return;
+            }
+            frappe.call({
+              method: 'sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation',
+              args: {
+                docname: frm.doc.name,
+                fieldname: 'branch_code',
+                value: values.branch_code
+              },
+              freeze: true,
+              freeze_message: __('Updating Branch...'),
+              callback: function (r) {
+                if (!r.exc) {
+                  frappe.show_alert({ message: __('Branch updated successfully'), indicator: 'green' });
+                  d.hide();
+                  frm.reload_doc();
+                }
+              }
+            });
+          }
+        });
+        d.show();
+      }, __("Update Loan Case"));
+
+      // 2. ASSIGN CASE BUTTON (Re-assign User, Update Branch & LC)
+      frm.add_custom_button(__("Assign Case"), function () {
+        let d = new frappe.ui.Dialog({
+          title: __('Assign Case to User'),
+          fields: [
+            {
+              label: __('Select Employee (New Assignee)'),
+              fieldname: 'assigned_employee',
+              fieldtype: 'Link',
+              options: 'Employee',
+              reqd: 1,
+              get_query() {
+                return {
+                  query: 'sahayog.loan.doctype.loan_application.loan_application.get_branch_loan_user_employees'
+                };
+              },
+              onchange() {
+                let emp = d.get_value('assigned_employee');
+                if (emp) {
+                  frappe.db.get_value('Employee', emp, ['sol_id', 'user_id'], (r) => {
+                    if (r && r.sol_id) {
+                      d.set_value('branch_code', r.sol_id);
+                    }
+                  });
+                }
+              }
+            },
+            {
+              label: __('Branch Code'),
+              fieldname: 'branch_code',
+              fieldtype: 'Link',
+              options: 'Sahayog Branch',
+              default: frm.doc.branch_code,
+              read_only: 1,
+              reqd: 1
+            }
+          ],
+          primary_action_label: __('Assign'),
+          primary_action(values) {
+            frappe.db.get_value('Employee', values.assigned_employee, 'employee_name', (emp_res) => {
+              let emp_name = emp_res ? emp_res.employee_name : '';
+              
+              // Fetch user_id for the assigned employee first
+              frappe.db.get_value('Employee', values.assigned_employee, 'user_id', (res) => {
+                let new_user_id = res ? res.user_id : null;
+
+                frappe.call({
+                  method: 'sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation',
+                  args: {
+                    docname: frm.doc.name,
+                    fieldname: {
+                      'lead_converter': values.assigned_employee,
+                      'lead_converter_name': emp_name,
+                      'branch_code': values.branch_code
+                    },
+                    new_user_id: new_user_id,
+                    original_owner_id: frm.doc.owner
+                  },
+                  freeze: true,
+                  freeze_message: __('Assigning Case & Granting Access...'),
+                  callback: function (r) {
+                    if (!r.exc) {
+                      frappe.show_alert({ message: __('Case assigned and shared successfully!'), indicator: 'green' });
+                      d.hide();
+                      frm.reload_doc();
+                    }
+                  }
+                });
+              });
+            });
+          }
+        });
+        d.show();
+      }, __("Update Loan Case"));
     }
 
 

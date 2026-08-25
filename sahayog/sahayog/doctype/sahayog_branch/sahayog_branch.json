@@ -25,13 +25,16 @@
   "branch_type",
   "section_break_ztqb",
   "br_cash_retention_limit_crl",
+  "column_break_equn",
+  "entity_id",
+  "entity_type",
   "section_break_zjir",
   "branch_details"
  ],
  "fields": [
   {
    "fieldname": "sol_id",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "SOL ID",
    "non_negative": 1,
    "reqd": 1,
@@ -135,8 +138,9 @@
   },
   {
    "fieldname": "branch_type",
-   "fieldtype": "Data",
-   "label": "Branch Type"
+   "fieldtype": "Select",
+   "label": "Branch Type",
+   "options": "\nMetro\nNon Metro\nZonal"
   },
   {
    "fieldname": "branch_code",
@@ -151,12 +155,32 @@
    "fieldname": "br_cash_retention_limit_crl",
    "fieldtype": "Currency",
    "label": "Br. Cash Retention Limit (CRL)"
+   "fieldname": "column_break_equn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "fieldname": "entity_id",
+   "fieldtype": "Select",
+   "label": "Entity ID",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "options": "\n9001\n9002\n9003\n9004\n9005\n9006\n9008\n9009\n9010\n9011\n9012"
+  },
+  {
+   "default": "RRCDM",
+   "depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "fieldname": "entity_type",
+   "fieldtype": "Select",
+   "label": "Entity Type",
+   "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
+   "options": "\nRRCDM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
  "modified": "2026-07-30 13:22:57.642616",
+ "modified": "2026-08-03 17:21:18.192008",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",

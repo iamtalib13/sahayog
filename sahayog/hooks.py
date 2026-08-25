@@ -228,6 +228,8 @@ permission_query_conditions = {
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.get_permission_query_conditions",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
     "Item": "sahayog.permissions.get_item_permission",
+    "Loan Application": "sahayog.permissions.get_loan_application_permission",
+    "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -240,6 +242,8 @@ has_permission = {
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
     "Item": "sahayog.permissions.has_item_permission",
+    "Loan Application": "sahayog.permissions.has_loan_application_permission",
+    "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.has_permission",
 }
 
 # DocType Class
@@ -251,6 +255,7 @@ override_doctype_class = {
     "User": "sahayog.override.user.CustomUser",
     "CRM Service Level Agreement": "sahayog.override.crm_service_level_agreement.CustomCRMServiceLevelAgreement",
     "Item": "sahayog.override.autoname_item.CustomItem",
+    "Leave Application": "sahayog.override.leave_application.CustomLeaveApplication",
     "Serial and Batch Bundle": "sahayog.override.serial_batch_bundle_naming.CustomSerialAndBatchBundle",
     # "Report": "sahayog.override.report.CustomReport"
 
@@ -410,25 +415,24 @@ doc_events = {
 # ---------------
 scheduler_events = {
     "cron": {
-        # Run daily at 5:00 AM — Early morning department ticket summary email
+        # Run daily at 5:00 AM — Early morning department ticket summary email & Agent sync job
         "0 5 * * *": [
-            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary",
+            "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
         # Run daily at 10:30 AM — Mid-morning follow-up ticket summary email
         "30 10 * * *": [
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
-        ],
-        # Run daily at 1:00 AM — Agent auto-creation sync job
-        "0 1 * * *": [
-            "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
         # "*/5 * * * *": [
         #     "sahayog.tasks.reset_auto_prepared_reports"
         # ],
 
         # Run daily at midnight — Sync District and State from Sahayog Branch
+        # and auto-approve pending attendance corrections
         "0 0 * * *": [
-            "sahayog.tasks.sync_district_state"
+            "sahayog.tasks.sync_district_state",
+            "sahayog.tasks.auto_approve_attendance_corrections"
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
@@ -447,7 +451,7 @@ scheduler_events = {
             "sahayog.tasks.monthly_leave_credit"
         ],
 
-        # Run daily at 3:00 AM — auto-setup leave allocation for new support staff
+        # Run daily at 3:00 AM — auto-setup leave allocation
         "0 3 * * *": [
             "sahayog.tasks.auto_setup_new_employee_leave"
         ],
@@ -455,6 +459,26 @@ scheduler_events = {
         "0 22 * * *": [
             "sahayog.branch_score_card.doctype.crl_monitoring_and_branch_opening_and_closing.crl_monitoring_and_branch_opening_and_closing.sync_daily_crl"
         ]  
+
+        # Run daily at 3:30 AM — generate fast lead report
+        "30 3 * * *": [
+            "sahayog.scrm.api.report_access.generate_fast_lead_report"
+        ],
+
+        # Run daily at 7:00 AM — L&D pre-training reminders (N days before training)
+        "0 7 * * *": [
+            "sahayog.agent_and_bdo.ld_notifications.send_pre_training_reminders"
+        ],
+
+        # Run daily at 9:00 AM — L&D post-training closure mails (for yesterday's trainings)
+        "0 9 * * *": [
+            "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
+        ],
+
+        # Run daily at 8:45 AM — Bulk Update of Agent Commission JSON for all agents
+        "45 8 * * *": [
+            "sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_agent_commissions"
+        ],
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [
@@ -467,8 +491,9 @@ scheduler_events = {
     #     "sahayog.tasks.all"
     # ],
     "hourly": [
-        "sahayog.tasks.auto_approve_attendance_corrections",
-        "sahayog.tasks.auto_approve_leave_applications",
+        # TEMPORARILY DISABLED — auto-approval of leave applications paused.
+        # Re-enable by uncommenting the line below when management wants it back.
+        # "sahayog.tasks.auto_approve_leave_applications",
     ],
 
     # "weekly": [
@@ -653,7 +678,7 @@ fixtures = [
     {"dt": "Task", "filters": [["is_template", "=", "1"]]},
     # Workspaces
     {"doctype": "Workspace", "filters": [
-        ["name", "in", ["Inventory Management"]]]},
+        ["name", "in", ["Inventory Management", "Marketing Activity Dashboard"]]]},
     # Custom HTML Blocks
     {
         "dt": "Custom HTML Block",
@@ -675,6 +700,7 @@ fixtures = [
                     "Finacle Dashboard",
                     "IT Dashboard",
                     "Petty Cash Dashboard Widget",
+                    "MAC Activity",
                 ],
             ]
         ],

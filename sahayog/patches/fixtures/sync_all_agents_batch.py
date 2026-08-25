@@ -77,10 +77,21 @@ def execute():
                         creation_date = convert_date_format(agent_start_date)
                         
                         auth_id = row.get("auth_id") or ""
-                        employee_raw = auth_id.upper().replace("SAH0", "") if auth_id.upper().startswith("SAH0") else auth_id
-                        employee = re.sub(r"\D", "", employee_raw).lstrip("0") or "0"
-                        status = "Allocated" if auth_id else "Unallocated"
-                        
+                        auth_str = str(auth_id).strip()
+                        employee_raw = (
+                            auth_str.upper().replace("SAH0", "")
+                            if auth_str.upper().startswith("SAH0")
+                            else auth_str
+                        )
+                        digits = re.sub(r"\D", "", employee_raw).lstrip("0")
+
+                        if digits:
+                            employee = digits
+                            status = "Allocated"
+                        else:
+                            employee = None
+                            status = "Unallocated"
+
                         frappe.db.set_value("Agent", agent_code, {
                             "creation_date": creation_date,
                             "agent_name": row.get("agent_name"),

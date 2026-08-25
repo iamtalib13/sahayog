@@ -1,7 +1,6 @@
 import frappe
 from frappe.model.document import Document
 from frappe import _
-from frappe.utils import formatdate
 class SuspensionProcess(Document):
     def autoname(self):
         """Generate structured name based on linked Disciplinary Case"""
@@ -90,29 +89,11 @@ def send_suspension_email(docname):
     if not final_email:
         frappe.throw("No email found for this employee.")
 
-    # Convert to dict for template rendering
-    doc_dict = doc.as_dict()
-
-    # Format all required date fields
-    if doc.suspension_from_date:
-        doc_dict["suspension_from_date"] = formatdate(doc.suspension_from_date)
-
-    if doc.suspension_to_date:
-        doc_dict["suspension_to_date"] = formatdate(doc.suspension_to_date)
-
-    # Some fields may come from the linked disciplinary case
-    if doc.issue_occurrence_date:
-        doc_dict["issue_occurrence_date"] = formatdate(doc.issue_occurrence_date)
-
-    if doc.issue_reported_to_hr:
-        doc_dict["issue_reported_to_hr"] = formatdate(doc.issue_reported_to_hr)
-
-    # Load suspension email template
+    # Load suspension email template (dates formatted via strftime in template)
     template = frappe.get_doc("Email Template", "Suspension Process")
-    
-    # Use standard 'doc' context
+
     context = {"doc": doc}
-    
+
     message = frappe.render_template(template.response_html, context)
     subject = frappe.render_template(template.subject, context)
 

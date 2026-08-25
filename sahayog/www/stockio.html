@@ -12,6 +12,8 @@
   rel="stylesheet"
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
 />
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- Premium UI Styles for StockIO -->
 <style>
@@ -1422,7 +1424,7 @@
       </div>
 
       <div style="margin-top: 16px; display: flex; justify-content: space-between;">
-        <button @click="copyAssetId(projectedAssetId.full_id)" style="padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+        <button @click="copyAssetId(createAssetForm.name || projectedAssetId.full_id)" style="padding: 8px 16px; background: #f1f5f9; color: #475569; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
           <i class="fas fa-copy" style="margin-right: 6px;"></i> Copy
         </button>
         <button @click="closeAssetIdPopup" style="padding: 8px 20px; background: #2980b9; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
@@ -1436,7 +1438,7 @@
     <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
       <h3 style="margin-top: 0;">[[ assetActionTitle ]]</h3>
       <div v-for="field in assetActionFields" :key="field.fieldname" class="form-group" style="margin-top: 16px; position: relative;">
-        <label class="form-label">[[ field.label ]]</label>
+        <label class="form-label">[[ field.label ]] <span v-if="field.optional" style="font-weight: 400; font-size: 0.75rem; color: var(--text-muted);">(Optional)</span></label>
         
         <!-- Searchable Select for Link fields -->
         <div v-if="field.fieldtype === 'Link'" class="searchable-select-wrapper" style="width: 100%;">
@@ -1598,7 +1600,7 @@
           <span style="white-space: nowrap;">[[ activeItem === 'Asset Master' ? 'Create New Asset' : (activeItem === 'Movements' ? 'Create New Asset Movement' : (activeItem === 'Requests' ? 'Create New Request' : (activeItem === 'Items' ? 'Create New Item' : (activeItem === 'Inward' ? 'Create New Inward' : (activeItem === 'Outward' ? 'Create New Outward' : 'Create ' + (currentView.createLabel || activeItem.slice(0, -1))))))) ]]</span>
           
           <!-- Asset ID Preview (Moved to top) -->
-          <div v-if="showAssetCreateView && projectedAssetId" style="
+          <div v-if="showAssetCreateView && (projectedAssetId || createAssetForm.name)" style="
               margin-left: 20px;
               padding: 8px 16px;
               border-left: 4px solid #2980b9;
@@ -1609,17 +1611,10 @@
           ">
               <span style="font-weight: 700; color: #2c3e50; margin-right: 10px;">Asset ID:</span>
               <span style="font-weight: 600; color: #2980b9;">
-                  [[ projectedAssetId.parts.slice(0, -2).join('/') + '/' ]]
-                  <span :style="{ color: createAssetForm.brand ? 'inherit' : '#ef4444' }">
-                      [[ createAssetForm.brand ? createAssetForm.brand.toUpperCase() : '[BRAND]' ]]
-                  </span>
-                  [[ '/' ]]
-                  <span :style="{ color: createAssetForm.serial_no ? 'inherit' : '#ef4444' }">
-                      [[ createAssetForm.serial_no ? createAssetForm.serial_no : '[SERIAL NO]' ]]
-                  </span>
+                  [[ createAssetForm.name || projectedAssetId.full_id ]]
               </span>
           </div>
-          <button v-if="showAssetCreateView && projectedAssetId" @click="editAssetId" style="background: none; border: none; cursor: pointer; margin-left: 8px; color: #64748b; font-size: 14px;" title="Edit Asset ID">
+          <button v-if="showAssetCreateView && (projectedAssetId || createAssetForm.name)" @click="editAssetId" style="background: none; border: none; cursor: pointer; margin-left: 8px; color: #64748b; font-size: 14px;" title="Edit Asset ID">
             <i class="fas fa-pencil-alt"></i>
           </button>
           
@@ -1881,6 +1876,15 @@
             detailRecord.hasOwnProperty('docstatus') ? 'docstatus' : 'status'))
             : '') ]]
           </span>
+          <button
+            v-if="activeItem === 'Asset Master' && showDetailView && detailRecord"
+            class="btn-view-toggle"
+            style="margin-left: 8px; width: 32px; height: 32px; font-size: 0.8rem;"
+            title="Edit"
+            @click="isEditing = true; detailRecord.asset_name = detailRecord.asset_name || ''"
+          >
+            <i class="fas fa-pencil-alt"></i>
+          </button>
 
           <!-- Inline Approval Flow -->
           <div
@@ -2474,6 +2478,103 @@
           <i class="fas fa-plus"></i>
           <span>Create</span>
         </button>
+        <!-- Download Format Picker -->
+        <div
+          v-if="activeItem === 'Asset Master' && !showDetailView && !showEMRCreateView && !showInwardCreateView && !showOutwardCreateView && !showItemCreateView && !showAssetCreateView && !showMovementCreateView && !showAccessCreateView"
+          style="position: relative;"
+        >
+          <button
+            class="btn-view-toggle"
+            @click.stop="showDownloadPopup = !showDownloadPopup"
+            title="Download"
+          >
+            <i class="fas fa-download"></i>
+          </button>
+
+          <!-- Format Picker Popup -->
+          <div
+            v-if="showDownloadPopup"
+            @click.stop
+            style="
+              position: absolute;
+              top: calc(100% + 12px);
+              right: 0;
+              width: 200px;
+              background: var(--bg-surface);
+              border: 1px solid var(--border-color);
+              border-radius: 12px;
+              box-shadow: 0 20px 50px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.12);
+              z-index: 2000;
+              overflow: hidden;
+              animation: whatsappPop 0.2s cubic-bezier(0.175,0.885,0.32,1.275);
+            "
+          >
+            <!-- Header -->
+            <div style="
+              background: #12a7a7;
+              color: #fff;
+              padding: 10px 14px;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              font-size: 13px;
+              font-weight: 700;
+            ">
+              <i class="fas fa-file-export" style="font-size: 12px;"></i>
+              Export As
+              <i class="fas fa-times" @click.stop="showDownloadPopup = false" style="margin-left: auto; cursor: pointer; opacity: 0.8;"></i>
+            </div>
+            <!-- Options -->
+            <div style="padding: 10px;display:flex;flex-direction:column;gap:8px;">
+              <button
+                @click.stop="downloadCSV('csv'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(69,231,231,0.08);
+                  border: 1.5px solid rgba(69,231,231,0.35);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(69,231,231,0.18)'"
+                onmouseout="this.style.background='rgba(69,231,231,0.08)'"
+              >
+                <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
+                CSV (.csv)
+              </button>
+              <button
+                @click.stop="downloadCSV('xlsx'); showDownloadPopup = false"
+                style="
+                  width: 100%;
+                  padding: 10px 14px;
+                  background: rgba(16,185,129,0.08);
+                  border: 1.5px solid rgba(16,185,129,0.3);
+                  border-radius: 8px;
+                  color: var(--text-main);
+                  font-size: 13px;
+                  font-weight: 700;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  transition: all 0.15s;
+                "
+                onmouseover="this.style.background='rgba(16,185,129,0.18)'"
+                onmouseout="this.style.background='rgba(16,185,129,0.08)'"
+              >
+                <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
+                Excel (.xlsx)
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -2935,6 +3036,17 @@
                       placeholder="Search Supplier"
                     />
                     <div class="searchable-select-dropdown" v-if="focusedField === 'supplier'">
+                      <!-- Create New Supplier Option -->
+                      <div
+                        v-if="inwardForm.supplier_display && inwardForm.supplier_display.trim() && !filteredSuppliers.some(s => s.name.toLowerCase() === inwardForm.supplier_display.toLowerCase() || (s.supplier_name && s.supplier_name.toLowerCase() === inwardForm.supplier_display.toLowerCase()))"
+                        class="searchable-select-option"
+                        style="padding: 10px 12px; font-size: 0.9rem; background: rgba(54, 150, 150, 0.1); border-bottom: 2px solid var(--border-color); font-weight: 700; color: #369696;"
+                        @mousedown="createAndSelectSupplier(inwardForm.supplier_display)"
+                      >
+                        <i class="fas fa-plus-circle" style="margin-right: 8px;"></i> Create New Supplier: "<span style="font-weight: 800;">[[ inwardForm.supplier_display ]]</span>"
+                      </div>
+                      
+                      <!-- Existing Suppliers -->
                       <div
                         v-for="sup in filteredSuppliers"
                         :key="sup.name"
@@ -2943,6 +3055,14 @@
                         @mousedown="inwardForm.supplier = sup.name; inwardForm.supplier_display = sup.supplier_name ? sup.name + ' - ' + sup.supplier_name : sup.name; focusedField = null;"
                       >
                         [[ sup.name ]] [[ sup.supplier_name ? '- ' + sup.supplier_name : '' ]]
+                      </div>
+                      
+                      <!-- No Results Message -->
+                      <div
+                        v-if="!inwardForm.supplier_display || !inwardForm.supplier_display.trim()"
+                        style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.85rem;"
+                      >
+                        Type to search or create new supplier
                       </div>
                     </div>
                   </div>
@@ -3794,11 +3914,11 @@
                     <div class="searchable-select-dropdown" v-if="focusedField === 'asset_location'">
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="createAssetForm.location = loc; createAssetForm.location_display = loc; focusedField = null;"
+                        @mousedown="createAssetForm.location = loc.sol_id; createAssetForm.location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -4245,12 +4365,12 @@
                             style="width: 100%; z-index: 50"
                           >
                             <div
-                              v-for="loc in locations.filter(l => !item.target_location_display || l.toLowerCase().includes(item.target_location_display.toLowerCase()))"
-                              :key="loc"
+                              v-for="loc in sahayog_branches.filter(b => !item.target_location_display || b.branch.toLowerCase().includes(item.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(item.target_location_display.toLowerCase()))"
+                              :key="loc.name"
                               class="searchable-select-option"
-                              @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                              @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                             >
-                              [[ loc ]]
+                              [[ loc.branch ]] ([[ loc.sol_id ]])
                             </div>
                           </div>
                         </div>
@@ -4767,12 +4887,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !asset.target_location_display || l.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !asset.target_location_display || b.branch.toLowerCase().includes(asset.target_location_display.toLowerCase()) || b.sol_id.toLowerCase().includes(asset.target_location_display.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="asset.target_location = loc; asset.target_location_display = loc; focusedField = null;"
+                                @mousedown="asset.target_location = loc.sol_id; asset.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -5290,7 +5410,13 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Receiver</span>
-                        <span class="info-value"
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.target_warehouse" placeholder="Search warehouse..." @input="emrEditSearch = $event.target.value" @focus="focusedField = 'emr_edit_receiver'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_receiver'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearch || w.toLowerCase().includes(emrEditSearch.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.target_warehouse = wh; emrEditSearch = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'target_warehouse') ]]</span
                         >
                       </div>
@@ -5302,7 +5428,13 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Provider</span>
-                        <span class="info-value"
+                        <div v-if="editingEMR" class="searchable-select-wrapper" style="width: 100%; position: relative;">
+                          <input type="text" class="form-input searchable-select-input" style="padding: 4px 8px; font-size: 13px; width: 100%;" :value="detailRecord.source_warehouse" placeholder="Search warehouse..." @input="emrEditSearchProvider = $event.target.value" @focus="focusedField = 'emr_edit_provider'" @blur="setTimeout(() => focusedField = null, 200)" />
+                          <div class="searchable-select-dropdown" v-if="focusedField === 'emr_edit_provider'" style="position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); max-height: 200px; overflow-y: auto; z-index: 1000; border-radius: 8px; box-shadow: var(--shadow-lg);">
+                            <div v-for="wh in warehouses.filter(w => !emrEditSearchProvider || w.toLowerCase().includes(emrEditSearchProvider.toLowerCase()))" :key="wh" class="searchable-select-option" style="padding: 6px 12px; cursor: pointer; font-size: 13px;" @mousedown="detailRecord.source_warehouse = wh; emrEditSearchProvider = ''; focusedField = null">[[ wh ]]</div>
+                          </div>
+                        </div>
+                        <span v-else class="info-value"
                           >[[ getFieldValue(detailRecord, 'source_warehouse') ]]</span
                         >
                       </div>
@@ -5324,7 +5456,8 @@
                       </div>
                       <div class="info-content">
                         <span class="info-label">Required By</span>
-                        <span class="info-value"
+                        <input v-if="editingEMR" type="date" v-model="detailRecord.required_by_date" style="padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; background: var(--bg-card); color: var(--text-main);" />
+                        <span v-else class="info-value"
                           >[[ detailRecord.required_by_date || '-' ]]</span
                         >
                       </div>
@@ -5352,6 +5485,19 @@
                           disabled
                           style="width: 16px; height: 16px; accent-color: #369696; margin-top: 4px;"
                         />
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && !editingEMR" class="info-item" style="cursor: pointer;" @click="startEditEMR()">
+                      <div class="info-icon" style="color: #369696">
+                        <i class="fas fa-pencil-alt"></i>
+                      </div>
+                    </div>
+                    <div v-if="isAdmin && activeItem === 'Requests' && editingEMR" class="info-item" style="cursor: pointer; gap: 4px;">
+                      <div class="info-icon" style="color: #22c55e" @click="saveEMRRecord()">
+                        <i class="fas fa-check"></i>
+                      </div>
+                      <div class="info-icon" style="color: #ef4444; margin-left: 8px;" @click="cancelEditEMR()">
+                        <i class="fas fa-times"></i>
                       </div>
                     </div>
                     <div class="info-item" v-if="activeItem === 'Requests'" style="cursor: pointer;" @click="showInfoNotAdded = !showInfoNotAdded">
@@ -6900,12 +7046,12 @@
                               style="width: 100%; z-index: 50"
                             >
                               <div
-                                v-for="loc in locations.filter(l => !detailRecord.location || l.toLowerCase().includes(detailRecord.location.toLowerCase()))"
-                                :key="loc"
+                                v-for="loc in sahayog_branches.filter(b => !detailRecord.location || b.branch.toLowerCase().includes(detailRecord.location.toLowerCase()) || b.sol_id.toLowerCase().includes(detailRecord.location.toLowerCase()))"
+                                :key="loc.name"
                                 class="searchable-select-option"
-                                @mousedown="detailRecord.location = loc; focusedField = null;"
+                                @mousedown="detailRecord.location = loc.sol_id; focusedField = null;"
                               >
-                                [[ loc ]]
+                                [[ loc.branch ]] ([[ loc.sol_id ]])
                               </div>
                             </div>
                           </div>
@@ -8404,6 +8550,10 @@
               
               <!-- Card View -->
               <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+                <div v-if="assetAvailability.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                  <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
+                  No [[ assetStatusFilter ]] items
+                </div>
                 <div v-for="item in assetAvailability" :key="item.item_code" class="analytics-card" @click="openAssetAvailability(item)" style="padding: 16px; flex-direction: column; align-items: flex-start; cursor: pointer;">
                     <div class="card-label" style="font-weight: 700; color: var(--text-main);">[[ item.item_name ]]</div>
                     <div class="card-value" style="font-size: 1.5rem;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">[[ item.count ]]</div>
@@ -8416,6 +8566,10 @@
 
               <!-- List View -->
               <div v-else class="rows-list" style="margin-top: 16px;">
+                 <div v-if="assetAvailability.length === 0" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                   <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
+                   No [[ assetStatusFilter ]] items
+                 </div>
                  <div v-for="item in assetAvailability" :key="item.item_code" class="list-row" @click="openAssetAvailability(item)" style="display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer;">
                      <div style="font-weight: 600;">[[ item.item_name ]]</div>
                      <div style="font-weight: 700;" :style="isAdmin && item.unmatched > 0 ? 'color: #ef4444;' : 'color: #369696;'">
@@ -8661,8 +8815,7 @@
                 :key="row.name"
                 class="list-row"
                 :class="{ selected: selectedRows.includes(row.name) }"
-                :style="(activeItem === 'Asset Master' && !isAdmin) ? 'cursor: default;' : ''"
-                @click="(activeItem === 'Asset Master' && !isAdmin) ? null : (serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
+                @click="(serialMode === 'itemwise' && activeItem === 'Serial No') ? openItemWiseSerials(row) : (currentView.detailFields ? openRecord(row) : toggleRowSelection(row.name))"
               >
                 <div
                   class="col-checkbox"
@@ -8869,7 +9022,7 @@
                     </button>
                     <button
                       class="btn-create-inline"
-                      @click.stop="!isAdmin ? redirectToAssetDesk(row.name) : openRecord(row)"
+                      @click.stop="openRecord(row)"
                       v-if="activeItem === 'Asset Master' && row.docstatus !== 0"
                     >
                       View
@@ -8969,15 +9122,52 @@
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
               </div>
+              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-left: auto;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
+                <i class="fas fa-layer-group"></i>
+                <span>Bulk Actions</span>
+              </div>
               <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
                 :disabled="loading"
+                style="margin-left: 8px;"
               >
                 <i class="fas fa-spinner fa-spin" v-if="loading"></i>
                 <i class="fas fa-plus" v-else></i>
                 <span>Load More</span>
+              </button>
+              <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #f87171, #dc2626) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkDeleteAssets()"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Delete ([[ selectedRows.length ]])</span>
+              </button>
+              <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkUpdateAssets()"
+              >
+                <i class="fas fa-save"></i>
+                <span>Update ([[ selectedRows.length ]])</span>
               </button>
               <button
                 v-if="activeItem === 'Branch Stock' && selectedRows.length > 0"
@@ -9042,7 +9232,7 @@
   >
     <div class="profile-modal" style="max-width: 600px;">
       <div class="profile-modal-header">
-        <h3>[[ assetAvailabilityModalData.title ]] - Available</h3>
+        <h3>[[ assetAvailabilityModalData.title ]] - [[ assetStatusFilter ]]</h3>
         <button class="profile-close" @click="showAssetAvailabilityModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 0;">
@@ -9055,9 +9245,9 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ sn.name ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
                 <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
@@ -9068,14 +9258,122 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Assets ([[ assetAvailabilityModalData.assets.length ]])
             </div>
-            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color);">
+            <div v-for="asset in assetAvailabilityModalData.assets" :key="asset.name" @click="showAssetAvailabilityModal = false; navigateTo('Asset Master'); openRecord({name: asset.name, item_code: asset.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
               <div>
-                <div style="font-weight: 600; color: var(--text-main);">[[ asset.name ]]</div>
-                <div style="font-size: 0.8rem; color: #999;">[[ asset.serial_no || 'No Serial' ]]</div>
+                <div style="font-weight: 600; color: #369696;">[[ asset.name ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ asset.item_code || 'No Item' ]]</div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ asset.location || '-' ]]</div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Actions Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetModal"
+    @click.self="showBulkAssetModal = false"
+  >
+    <div class="profile-modal" style="max-width: 420px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Asset Actions</h3>
+        <button class="profile-close" @click="showBulkAssetModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div @click="showBulkAssetModal = false; showBulkAssetInsertModal = true" style="display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#10b981';this.style.boxShadow='0 2px 12px rgba(16,185,129,0.15)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+            <div style="width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-file-import" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Bulk Insert</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Upload CSV/Excel to create new asset records</div>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem;"></i>
+          </div>
+          <div @click="showBulkAssetModal = false; showBulkAssetUpdateModal = true" style="display: flex; align-items: center; gap: 16px; padding: 20px; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6';this.style.boxShadow='0 2px 12px rgba(59,130,246,0.15)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+            <div style="width: 48px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-file-export" style="color: white; font-size: 1.2rem;"></i>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 1rem;">Bulk Update</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">Upload CSV/Excel to update existing asset records</div>
+            </div>
+            <i class="fas fa-chevron-right" style="margin-left: auto; color: var(--text-muted); font-size: 0.8rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Insert Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetInsertModal"
+    @click.self="showBulkAssetInsertModal = false"
+  >
+    <div class="profile-modal" style="max-width: 500px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Insert Assets</h3>
+        <button class="profile-close" @click="showBulkAssetInsertModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
+          </div>
+          <p style="color: var(--text-main); font-weight: 600; margin-bottom: 8px;">Upload your file</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files</p>
+          <input type="file" id="bulkAssetInsertFile" accept=".csv,.xlsx,.xls" style="display: none;" @change="handleBulkAssetInsertFile($event)" />
+          <label for="bulkAssetInsertFile" class="btn-create-inline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 8px; font-weight: 600;">
+            <i class="fas fa-upload"></i>
+            <span>Choose File</span>
+          </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadInsertTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #10b981; color: #10b981; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#10b981';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#10b981'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Update Modal -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showBulkAssetUpdateModal"
+    @click.self="showBulkAssetUpdateModal = false"
+  >
+    <div class="profile-modal" style="max-width: 500px;">
+      <div class="profile-modal-header">
+        <h3>Bulk Update Assets</h3>
+        <button class="profile-close" @click="showBulkAssetUpdateModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div style="text-align: center; padding: 40px 20px 20px;">
+          <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+            <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
+          </div>
+          <p style="color: var(--text-main); font-weight: 600; margin-bottom: 8px;">Upload your file</p>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Supports CSV and Excel files. Asset ID (name) is required.</p>
+          <input type="file" id="bulkAssetUpdateFile" accept=".csv,.xlsx,.xls" style="display: none;" @change="handleBulkAssetUpdateFile($event)" />
+          <label for="bulkAssetUpdateFile" class="btn-create-inline" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border-radius: 8px; font-weight: 600;">
+            <i class="fas fa-upload"></i>
+            <span>Choose File</span>
+          </label>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+          <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
+          <button @click="downloadUpdateTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #3b82f6; color: #3b82f6; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#3b82f6';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#3b82f6'">
+            <i class="fas fa-download"></i>
+            <span>Download Template</span>
+          </button>
         </div>
       </div>
     </div>
@@ -9758,11 +10056,11 @@
                     >
                       <div
                         v-for="loc in filteredLocations"
-                        :key="loc"
+                        :key="loc.name"
                         class="searchable-select-option"
-                        @mousedown="item.target_location = loc; item.target_location_display = loc; focusedField = null;"
+                        @mousedown="item.target_location = loc.sol_id; item.target_location_display = loc.branch + ' (' + loc.sol_id + ')'; focusedField = null;"
                       >
-                        [[ loc ]]
+                        [[ loc.branch ]] ([[ loc.sol_id ]])
                       </div>
                     </div>
                   </div>
@@ -10507,47 +10805,67 @@
     </div>
   </div>
 
-  <!-- Custom Confirmation Modal -->
-  <div
-    class="profile-modal-overlay"
-    v-if="confirmModal.show"
-    @click.self="confirmModal.show = false"
-  >
-    <div class="profile-modal" style="max-width: 400px">
-      <div class="profile-modal-header">
-        <h3 style="margin: 0">[[ confirmModal.title ]]</h3>
-        <button class="profile-close" @click="confirmModal.show = false">
-          &times;
-        </button>
-      </div>
-      <div class="profile-modal-body" style="padding: 24px; text-align: center">
-        <div
-          style="
-            width: 64px;
-            height: 64px;
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin: 0 auto 16px;
-          "
-        >
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <p
-          style="
-            color: var(--text-main);
-            font-size: 15px;
-            line-height: 1.5;
-            margin: 0;
-          "
-        >
-          [[ confirmModal.message ]]
-        </p>
-      </div>
+      <!-- Custom Confirmation Modal -->
+      <div
+        class="profile-modal-overlay"
+        v-if="confirmModal.show"
+        @click.self="confirmModal.show = false"
+      >
+        <div class="profile-modal" style="max-width: 400px">
+          <div class="profile-modal-header">
+            <h3 style="margin: 0">[[ confirmModal.title ]]</h3>
+            <button class="profile-close" @click="confirmModal.show = false">
+              &times;
+            </button>
+          </div>
+          <div class="profile-modal-body" style="padding: 24px; text-align: center">
+            <div
+              style="
+                width: 64px;
+                height: 64px;
+                background: rgba(239, 68, 68, 0.1);
+                color: #ef4444;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                margin: 0 auto 16px;
+              "
+            >
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <p
+              style="
+                color: var(--text-main);
+                font-size: 15px;
+                line-height: 1.5;
+                margin: 0;
+              "
+            >
+              [[ confirmModal.message ]]
+            </p>
+            <div v-if="confirmFields && confirmFields.length">
+              <div v-for="field in confirmFields" :key="field.fieldname" style="text-align: left; margin-top: 16px;">
+                <label style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px; display: block;">[[ field.label ]]</label>
+                <select
+                  v-if="field.type === 'select'"
+                  v-model="confirmFormData[field.fieldname]"
+                  style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-card); color: var(--text-main);"
+                >
+                  <option value="" disabled>Select [[ field.label ]]</option>
+                  <option v-for="opt in field.options" :key="opt.value" :value="opt.value">[[ opt.label ]]</option>
+                </select>
+                <input
+                  v-else
+                  type="text"
+                  v-model="confirmFormData[field.fieldname]"
+                  :placeholder="field.placeholder || ''"
+                  style="width: 100%; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 14px; background: var(--bg-card); color: var(--text-main);"
+                />
+              </div>
+            </div>
+          </div>
       <div
         class="profile-modal-footer"
         style="
@@ -10570,7 +10888,7 @@
           @click="executeConfirm()"
           style="background: #ef4444; border-color: #ef4444; margin: 0"
         >
-          Confirm Delete
+          [[ confirmModal.buttonText || 'Confirm' ]]
         </button>
       </div>
     </div>
@@ -12626,6 +12944,7 @@
         "Storage", "Vendor", "Warranty start date", "Warranty end date", "Make"
       ],
       showFilterPopup: false,
+      showDownloadPopup: false,
       activeFilterKey: null,
       invoiceNumbers: [],
       filterForm: {
@@ -13045,7 +13364,7 @@
             { label: "Action", key: "action", width: 1, type: "button" },
           ],
           detailFields: [
-            { label: "Asset Name", key: "asset_name" },
+            { label: "Asset Name", key: "name" },
             { label: "Serial No", key: "serial_no" },
             { label: "Item Code", key: "item_code" },
             { label: "Category", key: "asset_category" },
@@ -13157,7 +13476,7 @@
         localStorage.getItem("stockio_sidebar_collapsed") === "true",
       showUserMenu: false,
       showProfileModal: false,
-      showInfoNotAdded: false,
+      showInfoNotAdded: true,
       branchAccessDesignations: ["BRANCH MANAGER", "BRANCH OPERATION MANAGER", "CLUSTER OPERATION MANAGER"],
       profileData: null,
       showCreateItemModal: false,
@@ -13264,8 +13583,8 @@
         gst_hsn_code_display: "",
         is_stock_item: true,
         is_fixed_asset: false,
-        stock_uom: "",
-        stock_uom_display: "",
+        stock_uom: "Unit",
+        stock_uom_display: "Unit",
         asset_category: "",
         asset_category_display: "",
         valuation_rate: 0,
@@ -13350,7 +13669,13 @@
         title: "",
         message: "",
         onConfirm: null,
+        buttonText: "Confirm",
       },
+      confirmFields: [],
+      confirmFormData: {},
+      editingEMR: false,
+      emrEditSearch: "",
+      emrEditSearchProvider: "",
       showAssetCreateView: false,
       showAssetActions: false,
       showAssetActionModal: false,
@@ -13372,6 +13697,7 @@
       },
 
       createAssetForm: {
+        name: "",
         asset_name: "",
         item_code: "",
         item_code_display: "",
@@ -13396,6 +13722,7 @@
         remark: "",
         varient: "",
       },
+      assetSequence: 1,
       movementForm: {
         transaction_date: "",
         purpose: "Transfer",
@@ -13512,6 +13839,10 @@
       itemWiseModalData: { item_code: '', serials: [] },
       availableSerials: [],
       availableAssets: [],
+      assignedAssetsList: [],
+      showBulkAssetModal: false,
+      showBulkAssetInsertModal: false,
+      showBulkAssetUpdateModal: false,
 
       async getSerialWarehouseMap() {
         try {
@@ -13668,6 +13999,7 @@
                 }
             });
             const assignedAssets = assignedRes.message || [];
+            this.assignedAssetsList = assignedAssets;
             assignedAssets.forEach(asset => {
                 const item = fixedAssetItems.find(i => i.name === asset.item_code);
                 const isUnmatched = !item;
@@ -13705,6 +14037,12 @@
           }
           
           this.assetAvailability = Object.values(summaryMap).filter(item => this.isAdmin || item.unmatched < item.count);
+          
+          // If Available filter has no data, auto-switch to Assigned
+          if (this.assetStatusFilter === 'Available' && this.assetAvailability.length === 0) {
+            this.assetStatusFilter = 'Assigned';
+            await this.fetchAssetAvailability();
+          }
         } catch (e) {
           console.error("Error fetching asset availability:", e);
         }
@@ -13713,7 +14051,9 @@
       openAssetAvailability(item) {
         let serials = [];
         let assets = [];
-        if (this.assetGroupBy === 'Item') {
+        if (this.assetStatusFilter === 'Assigned') {
+            assets = this.assignedAssetsList.filter(a => a.item_code === item.item_code);
+        } else if (this.assetGroupBy === 'Item') {
             serials = this.availableSerials.filter(sn => sn.item_code === item.item_code);
             assets = this.availableAssets.filter(a => a.item_code === item.item_code);
         } else {
@@ -13973,10 +14313,28 @@
         let serial = this.createAssetForm.serial_no || '[SERIAL NO]';
         parts.push(serial);
 
+        // Incrementing sequence number
+        const seq = String(this.assetSequence || 1).padStart(3, '0');
+        parts.push(seq);
+
         return {
           parts: parts,
           full_id: parts.join('/')
         };
+      },
+      async fetchAssetSequence() {
+        try {
+          const res = await frappe.call({
+            method: "frappe.client.get_count",
+            args: {
+              doctype: "Asset",
+            },
+          });
+          this.assetSequence = (res.message || 0) + 1;
+        } catch (e) {
+          console.error("Error fetching asset sequence:", e);
+          this.assetSequence = 1;
+        }
       },
       editAssetId() {
         if (!this.projectedAssetId) return;
@@ -13986,42 +14344,29 @@
       },
       closeAssetIdPopup() {
         if (this.editedAssetId) {
-          const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
-          if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
-          if (parts.length >= 3) {
-            const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
-            const stateCode = parts[2].toUpperCase();
-            this.createAssetForm.state = stateMap[stateCode] || parts[2];
-          }
-          if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
-          if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
-          if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
-          if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
-          if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
-          this.createAssetForm.asset_name = this.editedAssetId;
+          this.createAssetForm.name = this.editedAssetId;
         }
         this.showAssetIdPopup = false;
       },
       onAssetIdInput() {
-        if (!this.editedAssetId) return;
-        const parts = this.editedAssetId.split('/').map(p => p.trim()).filter(p => p);
-        if (parts.length >= 2) this.createAssetForm.zone = parts[1] || '';
-        if (parts.length >= 3) {
-          const stateMap = { 'AN':'Andaman and Nicobar Islands','AP':'Andhra Pradesh','AR':'Arunachal Pradesh','AS':'Assam','BR':'Bihar','CH':'Chandigarh','CT':'Chhattisgarh','DN':'Dadra and Nagar Haveli and Daman and Diu','DL':'Delhi','GA':'Goa','GJ':'Gujarat','HR':'Haryana','HP':'Himachal Pradesh','JK':'Jammu and Kashmir','JH':'Jharkhand','KA':'Karnataka','KL':'Kerala','LA':'Ladakh','LD':'Lakshadweep','MP':'Madhya Pradesh','MH':'Maharashtra','MN':'Manipur','ML':'Meghalaya','MZ':'Mizoram','NL':'Nagaland','OR':'Odisha','PY':'Puducherry','PB':'Punjab','RJ':'Rajasthan','SK':'Sikkim','TN':'Tamil Nadu','TG':'Telangana','TR':'Tripura','UP':'Uttar Pradesh','UT':'Uttarakhand','WB':'West Bengal' };
-          const stateCode = parts[2].toUpperCase();
-          this.createAssetForm.state = stateMap[stateCode] || parts[2];
+        if (this.editedAssetId) {
+          this.createAssetForm.name = this.editedAssetId;
         }
-        if (parts.length >= 4) this.createAssetForm.branch_name = parts[3] || '';
-        if (parts.length >= 5) this.createAssetForm.division = parts[4] || '';
-        if (parts.length >= 6) this.createAssetForm.item_name = parts[5] || '';
-        if (parts.length >= 7) this.createAssetForm.brand = parts[6] || '';
-        if (parts.length >= 8) this.createAssetForm.serial_no = parts[7] || '';
-        this.createAssetForm.asset_name = this.editedAssetId;
       },
       copyAssetId(text) {
-        navigator.clipboard.writeText(text).then(() => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
+          });
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
           frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
-        });
+        }
       },
       get filteredWarehouses() {
         let q = "";
@@ -14212,8 +14557,11 @@
         const search = (
           this.createAssetForm.location_display || ""
         ).toLowerCase();
-        if (!search) return this.locations;
-        return this.locations.filter((l) => l.toLowerCase().includes(search));
+        if (!search) return this.sahayog_branches;
+        return this.sahayog_branches.filter((b) => 
+          (b.branch && b.branch.toLowerCase().includes(search)) || 
+          (b.sol_id && b.sol_id.toLowerCase().includes(search))
+        );
       },
 
       get filteredSerialNos() {
@@ -15297,6 +15645,36 @@
         window.location.href = `/app/asset/${encodeURIComponent(name)}`;
       },
 
+      editEMRRecord(row) {
+        if (!row || !row.name) return;
+        window.location.href = `/app/employee-material-request/${encodeURIComponent(row.name)}`;
+      },
+      startEditEMR() {
+        this.editingEMR = true;
+      },
+      cancelEditEMR() {
+        this.editingEMR = false;
+        this.fetchData("Employee Material Request");
+      },
+      async saveEMRRecord() {
+        try {
+          await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.update_emr_fields",
+            args: {
+              name: this.detailRecord.name,
+              target_warehouse: this.detailRecord.target_warehouse,
+              source_warehouse: this.detailRecord.source_warehouse,
+              required_by_date: this.detailRecord.required_by_date,
+            },
+          });
+          frappe.show_alert({ message: "Request updated", indicator: "green" });
+          this.editingEMR = false;
+          await this.fetchData("Employee Material Request");
+        } catch (e) {
+          console.error("Save EMR error:", e);
+          frappe.msgprint("Failed to save. Please try again.");
+        }
+      },
       handleCreate() {
         const doctype = this.currentView.createDoctype;
         if (doctype === "Employee Material Request") {
@@ -15439,8 +15817,8 @@
             gst_hsn_code_display: "",
             is_stock_item: true,
             is_fixed_asset: false,
-            stock_uom: "",
-            stock_uom_display: "",
+            stock_uom: "Unit",
+            stock_uom_display: "Unit",
             asset_category: "",
             asset_category_display: "",
             valuation_rate: 0,
@@ -15453,6 +15831,7 @@
           this.showAssetCreateView = true;
           this.showDetailView = false;
           this.createAssetForm = {
+            name: "",
             asset_name: "",
             asset_category: "",
             asset_category_display: "",
@@ -15480,6 +15859,8 @@
             is_existing_asset: true,
             is_composite_asset: false,
           };
+          // Fetch next sequence number
+          this.fetchAssetSequence();
           return;
         }
 
@@ -15643,13 +16024,197 @@
           },
         );
       },
+      async bulkDeleteAssets() {
+        this.showConfirm(
+          "Bulk Delete Assets",
+          `Are you sure you want to delete ${this.selectedRows.length} asset(s)? Submitted assets will be cancelled first.`,
+          async () => {
+            this.loading = true;
+            try {
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_bulk_actions.bulk_delete_assets",
+                args: { asset_names: this.selectedRows },
+              });
+              const result = res.message;
+              let msg = `${result.deleted} asset(s) deleted successfully`;
+              if (result.failed && result.failed.length > 0) {
+                msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+                console.error("Delete errors:", result.errors);
+              }
+              frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+              this.selectedRows = [];
+              await this.fetchData("Asset");
+            } catch (e) {
+              console.error("Bulk delete assets error:", e);
+              frappe.msgprint("Bulk delete failed");
+            } finally {
+              this.loading = false;
+            }
+          },
+        );
+      },
+      async bulkUpdateAssets() {
+        const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+        const locations = [...new Set(selected.map((r) => r.location).filter(Boolean))];
+        const currentLocation = locations.length === 1 ? locations[0] : "";
 
-      showConfirm(title, message, onConfirm) {
+        const branchOptions = (this.sahayog_branches || []).map((b) => ({
+          value: b.name,
+          label: b.name,
+        }));
+
+        const fields = [
+          {
+            fieldname: "location",
+            label: "Location",
+            type: "select",
+            options: branchOptions,
+          },
+        ];
+
+        const formData = { location: currentLocation };
+
+        this.showConfirm(
+          "Bulk Update Assets",
+          `Update location for ${this.selectedRows.length} asset(s)? Current location: ${currentLocation || "Mixed"}`,
+          async () => {
+            this.loading = true;
+            try {
+              const newLocation = this.confirmFormData.location;
+              if (!newLocation) {
+                frappe.msgprint("Please select a location");
+                this.loading = false;
+                return;
+              }
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets",
+                args: { asset_names: this.selectedRows, location: newLocation },
+              });
+              const result = res.message;
+              let msg = `${result.updated} asset(s) updated successfully`;
+              if (result.failed && result.failed.length > 0) {
+                msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+                console.error("Update errors:", result.errors);
+              }
+              frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+              this.selectedRows = [];
+              await this.fetchData("Asset");
+            } catch (e) {
+              console.error("Bulk update assets error:", e);
+              frappe.msgprint("Bulk update failed");
+            } finally {
+              this.loading = false;
+            }
+          },
+          fields,
+          formData,
+          "Update",
+        );
+      },
+      async handleBulkAssetInsertFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("is_private", 0);
+        try {
+          frappe.show_alert("Uploading file...", 3);
+          const uploadRes = await frappe.xhr({
+            url: "/api/method/upload_file",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+          });
+          const fileUrl = uploadRes.message.file_url;
+          frappe.show_alert("Processing bulk insert...", 5);
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
+            args: { file_url: fileUrl },
+          });
+          const result = res.message;
+          let msg = `${result.inserted} asset(s) inserted successfully`;
+          if (result.failed && result.failed.length > 0) {
+            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          }
+          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+          this.showBulkAssetInsertModal = false;
+          await this.fetchData("Asset");
+        } catch (e) {
+          console.error("Bulk insert assets error:", e);
+          frappe.msgprint("Bulk insert failed: " + (e.message || "Unknown error"));
+        }
+        event.target.value = "";
+      },
+      async handleBulkAssetUpdateFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("is_private", 0);
+        try {
+          frappe.show_alert("Uploading file...", 3);
+          const uploadRes = await frappe.xhr({
+            url: "/api/method/upload_file",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+          });
+          const fileUrl = uploadRes.message.file_url;
+          frappe.show_alert("Processing bulk update...", 5);
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets_from_file",
+            args: { file_url: fileUrl },
+          });
+          const result = res.message;
+          let msg = `${result.updated} asset(s) updated successfully`;
+          if (result.failed && result.failed.length > 0) {
+            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          }
+          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
+          this.showBulkAssetUpdateModal = false;
+          await this.fetchData("Asset");
+        } catch (e) {
+          console.error("Bulk update assets error:", e);
+          frappe.msgprint("Bulk update failed: " + (e.message || "Unknown error"));
+        }
+        event.target.value = "";
+      },
+      downloadInsertTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_insert_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      downloadUpdateTemplate() {
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "asset_update_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+
+      showConfirm(title, message, onConfirm, fields = [], formData = {}, buttonText = "Confirm") {
+        this.confirmFields = fields;
+        this.confirmFormData = formData;
         this.confirmModal = {
           show: true,
           title: title,
           message: message,
           onConfirm: onConfirm,
+          buttonText: buttonText,
         };
       },
 
@@ -15658,6 +16223,61 @@
         this.confirmModal.show = false;
         if (onConfirm) {
           await onConfirm();
+        }
+      },
+
+      async createAndSelectSupplier(supplierName) {
+        if (!supplierName || !supplierName.trim()) {
+          frappe.msgprint('Please enter a supplier name');
+          return;
+        }
+
+        try {
+          // Show loading indicator
+          frappe.show_progress('Creating Supplier', 50, 100, 'Please wait...');
+          
+          // Create new supplier
+          const newSupplier = await frappe.call({
+            method: 'frappe.client.insert',
+            args: {
+              doc: {
+                doctype: 'Supplier',
+                supplier_name: supplierName.trim(),
+                supplier_group: 'All Supplier Groups', // Default group
+                supplier_type: 'Company' // Default type
+              }
+            }
+          });
+
+          if (newSupplier && newSupplier.message) {
+            const supplier = newSupplier.message;
+            
+            // Add to suppliers list
+            this.suppliers.push({
+              name: supplier.name,
+              supplier_name: supplier.supplier_name
+            });
+            
+            // Select the newly created supplier
+            this.inwardForm.supplier = supplier.name;
+            this.inwardForm.supplier_display = supplier.name + ' - ' + supplier.supplier_name;
+            this.focusedField = null;
+            
+            frappe.show_alert({
+              message: `Supplier "${supplier.supplier_name}" created successfully`,
+              indicator: 'green'
+            }, 3);
+          }
+          
+          frappe.hide_progress();
+        } catch (error) {
+          frappe.hide_progress();
+          console.error('Error creating supplier:', error);
+          frappe.msgprint({
+            title: 'Error',
+            message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+            indicator: 'red'
+          });
         }
       },
 
@@ -15734,6 +16354,20 @@
           );
           return;
         }
+        // Validate HSN/SAC Code
+        if (!this.createItemForm.gst_hsn_code && this.createItemForm.gst_hsn_code_display) {
+          this.createItemForm.gst_hsn_code = this.createItemForm.gst_hsn_code_display;
+        }
+        let hsnVal = String(this.createItemForm.gst_hsn_code || "").trim();
+        if (!hsnVal) {
+          hsnVal = "030289";
+          this.createItemForm.gst_hsn_code = "030289";
+          this.createItemForm.gst_hsn_code_display = "030289";
+        }
+        if (!/^\d{6}$|^\d{8}$/.test(hsnVal)) {
+          frappe.msgprint("HSN/SAC Code should be 6 or 8 digits long. Please enter a valid HSN/SAC code.");
+          return;
+        }
 
         this.creatingItem = true;
         try {
@@ -15780,6 +16414,7 @@
 
       async submitAsset() {
         if (
+          !(this.createAssetForm.name || this.projectedAssetId?.full_id || "").trim() ||
           !this.createAssetForm.asset_name.trim() ||
           !this.createAssetForm.location ||
           !this.createAssetForm.item_code ||
@@ -15820,6 +16455,7 @@
             }
           }
 
+          const assetName = this.createAssetForm.name || (this.projectedAssetId ? this.projectedAssetId.full_id : "");
           const doc = {
           doctype: "Asset",
           asset_name: this.createAssetForm.asset_name,
@@ -15843,16 +16479,24 @@
           is_existing_asset: this.createAssetForm.is_existing_asset ? 1 : 0,
           is_composite_asset: this.createAssetForm.is_composite_asset ? 1 : 0,
           booked_fixed_asset: 1,
-          naming_series: "AST-",
           company: "Sahayog Multistate Credit Co-op Society Ltd",
           asset_owner: "Company",
           asset_owner_company: "Sahayog Multistate Credit Co-op Society Ltd",
           };
 
-          const res = await frappe.call({
-            method: "frappe.client.insert",
-            args: { doc },
-          });
+          let res;
+          if (!this.createAssetForm.name) {
+            doc.naming_series = "AST-";
+            res = await frappe.call({
+              method: "frappe.client.insert",
+              args: { doc: doc },
+            });
+          } else {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.asset_bulk_actions.create_asset_with_name",
+              args: { doc: doc, custom_name: assetName },
+            });
+          }
 
           if (res.message && res.message.name && this.createAssetForm.custom_remark) {
             await frappe.call({
@@ -15940,10 +16584,11 @@
           console.log("Debug: Assign clicked for", doc.name);
           this.assetActionTitle = 'Assign Asset';
           this.assetActionFields = [
-              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee'},
+              {label: 'Serial No', fieldname: 'serial_no', fieldtype: 'Data'},
+              {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
           ];
-          this.assetActionData = { action: 'assign', asset_name: doc.name, custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
+          this.assetActionData = { action: 'assign', asset_name: doc.name, serial_no: doc.serial_no || '', custodian: doc.custodian, location: doc.location, custodian_display: doc.custodian, location_display: doc.location };
           this.showAssetActionModal = true;
           console.log("Debug: showAssetActionModal set to true");
       },
@@ -15995,9 +16640,21 @@
       
       async submitAssetAction() {
           try {
+              // Update serial_no if provided
+              if (this.assetActionData.serial_no && this.assetActionData.serial_no.trim()) {
+                  await frappe.call({
+                      method: 'frappe.client.set_value',
+                      args: {
+                          doctype: 'Asset',
+                          name: this.assetActionData.asset_name,
+                          fieldname: 'serial_no',
+                          value: this.assetActionData.serial_no.trim()
+                      }
+                  });
+              }
               const response = await frappe.call({
-                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
-                args: this.assetActionData
+                  method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                  args: this.assetActionData
               });
               frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
               this.showAssetActionModal = false;
@@ -16433,14 +17090,44 @@
 
         this.loading = true;
         try {
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.detailRecord,
-            },
-          });
+          // Check if Asset ID (name) has changed for Asset Master
+          const originalName = this.detailRecord._originalName || this.detailRecord.name;
+          const newName = this.detailRecord.name;
+          
+          if (this.activeItem === "Asset Master" && originalName !== newName) {
+            // Rename the document first
+            const renameRes = await frappe.call({
+              method: "frappe.client.rename_doc",
+              args: {
+                doctype: "Asset",
+                old_name: originalName,
+                new_name: newName,
+              },
+            });
+            if (renameRes.message) {
+              this.detailRecord.name = renameRes.message;
+              this.detailRecord._originalName = renameRes.message;
+            }
+          }
+
+          // Save the document
+          let res;
+          if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 1) {
+            res = await frappe.call({
+              method: "sahayog.procurement.api.asset_actions.save_asset_after_submit",
+              args: { doc: this.detailRecord },
+            });
+          } else {
+            res = await frappe.call({
+              method: "frappe.client.save",
+              args: {
+                doc: this.detailRecord,
+              },
+            });
+          }
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: `${this.activeItem} updated successfully`,
@@ -16450,7 +17137,7 @@
         } catch (e) {
           console.error("Save error:", e);
           frappe.show_alert({
-            message: "Error updating request",
+            message: "Error updating record",
             indicator: "red",
           });
         } finally {
@@ -16459,6 +17146,12 @@
       },
       async submitDetailRecord() {
         if (!this.detailRecord) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && this.detailRecord.docstatus === 0) {
+          this.assignCustodian(this.detailRecord);
+          return;
+        }
 
         // Validation for Employee Material Request submission
         if (this.activeItem === "Requests") {
@@ -16510,6 +17203,7 @@
             });
             if (getRes.message) {
               this.detailRecord = getRes.message;
+              this.detailRecord._originalName = getRes.message.name;
             }
 
             let res;
@@ -16658,6 +17352,7 @@
           });
           if (freshRes.message) {
             this.detailRecord = freshRes.message;
+            this.detailRecord._originalName = freshRes.message.name;
           }
           await this.fetchData(this.currentView.doctype);
         } catch (e) {
@@ -17075,6 +17770,14 @@
       },
       async submitRowRecord(row) {
         if (!row || !row.name) return;
+
+        // For Asset Master drafts, open the Assign popup directly
+        if (this.activeItem === "Asset Master" && row.docstatus === 0) {
+          this.detailRecord = row;
+          this.assignCustodian(row);
+          return;
+        }
+
         const doctype = this.currentView.doctype;
         const isEMR = doctype === "Employee Material Request";
 
@@ -17212,14 +17915,10 @@
         };
 
         // Create Stock Entry
-          const res = await frappe.call({
-            method: this.assetIdEdited
-              ? "sahayog.doc_events.asset.create_asset_ignore_links"
-              : "frappe.client.insert",
-            args: this.assetIdEdited
-              ? { doc_data: doc }
-              : { doc },
-          });
+        const res = await frappe.call({
+          method: "frappe.client.insert",
+          args: { doc: stockEntry },
+        });
 
         if (res.message) {
           // Submit the Stock Entry
@@ -17676,8 +18375,9 @@
         }
       },
       async submitInward() {
-        // Validation
-        if (!this.inwardForm.supplier) {
+        // Validation — accept either a resolved supplier ID or a typed display name
+        const typedName = (this.inwardForm.supplier_display || '').trim();
+        if (!this.inwardForm.supplier && !typedName) {
           frappe.msgprint("Supplier is required");
           return;
         }
@@ -17688,6 +18388,66 @@
         ) {
           frappe.msgprint("At least one item is required");
           return;
+        }
+
+        // If supplier ID is not yet resolved, try to match typed text against existing suppliers
+        if (!this.inwardForm.supplier && typedName) {
+          const q = typedName.toLowerCase();
+          const match = this.suppliers.find(s =>
+            s.name.toLowerCase() === q ||
+            (s.supplier_name && s.supplier_name.toLowerCase() === q)
+          );
+          if (match) {
+            // Auto-select the matched existing supplier
+            this.inwardForm.supplier = match.name;
+            this.inwardForm.supplier_display = match.name + (match.supplier_name ? ' - ' + match.supplier_name : '');
+          }
+        }
+
+        // If still no supplier ID, create a new supplier automatically
+        if (!this.inwardForm.supplier && typedName) {
+          try {
+            frappe.show_progress('Creating Supplier', 30, 100, 'Creating supplier...');
+
+            const newSupplier = await frappe.call({
+              method: 'frappe.client.insert',
+              args: {
+                doc: {
+                  doctype: 'Supplier',
+                  supplier_name: typedName,
+                  supplier_group: 'All Supplier Groups',
+                  supplier_type: 'Company'
+                }
+              }
+            });
+
+            if (newSupplier && newSupplier.message) {
+              this.inwardForm.supplier = newSupplier.message.name;
+              this.inwardForm.supplier_display = newSupplier.message.name + ' - ' + newSupplier.message.supplier_name;
+
+              // Add to local suppliers list for future use
+              this.suppliers.push({
+                name: newSupplier.message.name,
+                supplier_name: newSupplier.message.supplier_name
+              });
+
+              frappe.show_alert({
+                message: `Supplier "${newSupplier.message.supplier_name}" created automatically`,
+                indicator: 'green'
+              }, 3);
+            }
+
+            frappe.hide_progress();
+          } catch (error) {
+            frappe.hide_progress();
+            console.error('Error creating supplier:', error);
+            frappe.msgprint({
+              title: 'Supplier Creation Failed',
+              message: 'Failed to create supplier: ' + (error.message || 'Unknown error'),
+              indicator: 'red'
+            });
+            return;
+          }
         }
 
         this.creatingInward = true;
@@ -17855,7 +18615,7 @@
       },
       async openRecord(row) {
         if (!row || !this.currentView.doctype) return;
-        if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
+        // if (this.activeItem === 'Asset Master' && !this.isAdmin) return;
         this.showEMRCreateView = false;
         this.showEMRMoreDetails = false;
         this.showDispatchHistory = false;
@@ -17880,6 +18640,7 @@
             });
             if (res.message) {
               this.detailRecord = res.message;
+              this.detailRecord._originalName = res.message.name;
 
               // Initialize display fields for movements
               if (this.activeItem === "Movements" && this.detailRecord.assets) {
@@ -17906,10 +18667,12 @@
               this.fetchComments(row.name);
             } else {
               this.detailRecord = row;
+              this.detailRecord._originalName = row.name;
             }
           } catch (e) {
             console.error("Failed to fetch full record:", e);
             this.detailRecord = row;
+            this.detailRecord._originalName = row.name;
           } finally {
             this.loading = false;
           }
@@ -18060,6 +18823,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingSerialInline = false;
             this.tempSerialNo = '';
             frappe.show_alert({
@@ -18092,6 +18856,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isAddingVarientInline = false;
             this.tempVarient = '';
             frappe.show_alert({
@@ -18173,6 +18938,7 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
             this.isEditing = false;
             frappe.show_alert({
               message: "Serial No updated successfully",
@@ -18205,9 +18971,8 @@
           });
           if (res.message) {
             this.detailRecord = res.message;
+            this.detailRecord._originalName = res.message.name;
           }
-        } catch (e) {
-          console.error("Error reverting Serial No edits:", e);
         } finally {
           this.loading = false;
         }
@@ -18561,30 +19326,124 @@
           }
         }
       },
-      downloadCSV() {
-        if (!this.filteredRows || this.filteredRows.length === 0) {
+      async downloadCSV(format = 'csv') {
+        let allRows = [];
+        this.loading = true;
+        try {
+          if (this.activeItem === 'Asset Master') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_asset_list",
+              args: {
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data;
+            }
+          } else if (this.activeItem === 'Branch Stock') {
+            const res = await frappe.call({
+              method: "sahayog.procurement.api.stock_balance_ledger.get_branch_stock",
+              args: {
+                warehouse: (this.userInventoryType || this.searchText) ? null : this.userWarehouse,
+                limit: 999999,
+                start: 0,
+                search_text: this.searchText,
+                filter_type: this.branchStockFilter,
+                item_code: this.filterForm.item_code,
+                warehouse_filter: this.filterForm.warehouse,
+              }
+            });
+            if (res.message && res.message.data) {
+              allRows = res.message.data.map((row) => {
+                const branch = this.sahayog_branches.find(b => b.name === row.warehouse) || {};
+                return {
+                  ...row,
+                  name: row.name || `${row.item_code}-${row.warehouse}`,
+                  branch_name: branch.branch || row.warehouse,
+                  warehouse_name: row.warehouse,
+                };
+              });
+            }
+          } else {
+            allRows = this.filteredRows;
+          }
+        } catch (e) {
+          console.error(e);
+          frappe.msgprint("Error fetching all records for download");
+          this.loading = false;
+          return;
+        } finally {
+          this.loading = false;
+        }
+
+        if (!allRows || allRows.length === 0) {
           frappe.msgprint("No data available to download");
           return;
         }
-        const headers = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-        const keys = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
-        let csvContent = "";
-        csvContent += headers.join(",") + "\r\n";
-        this.filteredRows.forEach(row => {
-          const rowData = keys.map(key => {
-            const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : "";
-            return '"' + val.replace(/"/g, '""') + '"';
+
+        let headers, keys, baseName;
+
+        if (this.activeItem === 'Asset Master') {
+          headers  = ["Asset ID", "Asset Name", "Serial No", "Item Code", "Category", "Location", "Custodian", "Status", "Purchase Date"];
+          keys     = ["name", "asset_name", "serial_no", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
+          baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
+        } else {
+          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
+          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          baseName = `Branch_Stock_${new Date().toISOString().slice(0,10)}`;
+        }
+
+        // Build row data array
+        const rows = allRows.map(row =>
+          keys.map(key => {
+            let val = row[key];
+            if (val !== undefined && val !== null) {
+              // Format date fields to dd-mm-yyyy format
+              if (key.toLowerCase().includes("date") && typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+                const datePart = val.split(" ")[0];
+                const parts = datePart.split("-");
+                if (parts.length === 3) {
+                  return `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+              }
+              return val;
+            }
+            return "";
+          })
+        );
+
+        if (format === 'xlsx') {
+          // Excel export via SheetJS
+          if (typeof XLSX === 'undefined') {
+            frappe.msgprint("Excel library not loaded. Please refresh and try again.");
+            return;
+          }
+          const wsData = [headers, ...rows];
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          // Auto column widths
+          ws['!cols'] = headers.map((h, i) => ({
+            wch: Math.max(h.length, ...rows.map(r => String(r[i] || '').length), 10)
+          }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, this.activeItem || 'Sheet1');
+          XLSX.writeFile(wb, baseName + '.xlsx');
+        } else {
+          // CSV export
+          let csvContent = headers.join(",") + "\r\n";
+          rows.forEach(rowArr => {
+            csvContent += rowArr.map(val => '"' + String(val).replace(/"/g, '""') + '"').join(",") + "\r\n";
           });
-          csvContent += rowData.join(",") + "\r\n";
-        });
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `Branch_Stock_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url  = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.setAttribute("href", url);
+          link.setAttribute("download", baseName + '.csv');
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       },
       async toggleRestrictInward() {
         try {

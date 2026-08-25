@@ -212,6 +212,27 @@
         background: #ddd;
         border-radius: 4px;
       }
+
+      /* Independent panel scrolling (Gmail/Outlook style) */
+      .main-grid > .card {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .main-grid .emp-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        overflow-y: auto;
+      }
+      .main-grid .cal-panel {
+        overflow-y: auto;
+      }
+      .main-grid #hrDashboardContent {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+      }
       .emp-row {
         display: flex;
         align-items: center;
@@ -359,6 +380,10 @@
         background: #f3f4f6;
         color: #9ca3af;
       }
+      .pill-pending {
+        background: #fef3c7;
+        color: #d97706;
+      }
 
       /* CALENDAR PANEL */
       .cal-head {
@@ -482,6 +507,12 @@
         background: #fffbeb;
         border: 1px dashed #d97706;
         color: #d97706;
+        font-weight: 600;
+      }
+      .cal-d.pending-leave-d {
+        background: #f0f9ff;
+        border: 1px dashed #3b82f6;
+        color: #2563eb;
         font-weight: 600;
       }
       .cal-d.woff {
@@ -1007,6 +1038,21 @@
       @media (max-width: 900px) {
         .main-grid {
           grid-template-columns: 1fr;
+          height: auto !important;
+        }
+        .main-grid > .card {
+          display: block;
+        }
+        .main-grid .emp-list {
+          flex: none;
+          max-height: 480px;
+        }
+        .main-grid .cal-panel {
+          overflow-y: visible;
+        }
+        .main-grid #hrDashboardContent {
+          flex: none;
+          overflow-y: visible;
         }
         .stats-row {
           grid-template-columns: repeat(2, 1fr);
@@ -1105,7 +1151,7 @@
         style="display: none"
         onclick="switchTab('corrections', this)"
       >
-        ✏️ Correction Approvals
+        ✏️ Attendance Regularization
       </button>
       <button
         class="nav-tab"
@@ -1359,7 +1405,7 @@
                   "
                   onclick="openImportModal()"
                 >
-                  ⬆ Import
+                   ⬆ Update
                 </button>
                 <button
                   id="btnUpdateEmployees"
@@ -2315,13 +2361,20 @@
                     class="member-select"
                     style="padding: 6px; font-size: 12px; margin-bottom: 10px"
                   />
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                    <label style="font-size: 11px; color: var(--muted); font-weight: 600;">Update Existing Values:</label>
+                    <select id="importForceUpdate" class="member-select" style="padding: 4px 8px; font-size: 11px; width: auto;">
+                      <option value="no" selected>No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
                   <button
                     onclick="submitImport()"
                     id="btnSubmitImport"
                     class="btn-in"
                     style="width: 100%; padding: 10px; font-weight: 700"
                   >
-                    Import Employees
+                    Update
                   </button>
                 </div>
 
@@ -2673,7 +2726,24 @@
                       required
                     />
                   </div>
-                  <div style="margin-bottom: 20px">
+                  <div style="margin-bottom: 14px">
+                    <label
+                      style="
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--muted);
+                        display: block;
+                        margin-bottom: 4px;
+                      "
+                      >Resignation Type *</label
+                    >
+                    <select id="exit_resignation_type" class="member-select" required onchange="onResignationTypeChange()">
+                      <option value="" disabled selected>Select type...</option>
+                      <option value="Voluntary">Voluntary</option>
+                      <option value="Involuntary">Involuntary</option>
+                    </select>
+                  </div>
+                  <div style="margin-bottom: 14px" id="exitReasonWrap" hidden>
                     <label
                       style="
                         font-size: 12px;
@@ -2684,13 +2754,9 @@
                       "
                       >Reason for Leaving *</label
                     >
-                    <textarea
-                      id="exit_reason"
-                      class="member-select"
-                      rows="3"
-                      required
-                      placeholder="e.g. Personal reasons, better opportunity..."
-                    ></textarea>
+                    <select id="exit_reason" class="member-select" required>
+                      <option value="" disabled selected>Select reason...</option>
+                    </select>
                   </div>
                   <div style="margin-bottom: 20px">
                     <label
@@ -2788,12 +2854,30 @@
                 >
                   <div>
                     <label>From Date</label>
-                    <input type="date" id="fromDate" class="member-select" />
+                    <input type="date" id="fromDate" class="member-select" onchange="onLeaveDateChanged()" />
                   </div>
                   <div>
                     <label>To Date</label>
                     <input type="date" id="toDate" class="member-select" />
                   </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-bottom: 10px;
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    id="halfDayChk"
+                    style="width: 16px; height: 16px"
+                    onchange="toggleHalfDay()"
+                  />
+                  <label style="margin-bottom: 0; cursor: pointer"
+                    >Half Day</label
+                  >
                 </div>
                 <div style="margin-bottom: 15px">
                   <label>Reason</label>
@@ -2842,7 +2926,7 @@
                     font-family: &quot;Syne&quot;, sans-serif;
                   "
                 >
-                  Correction Request
+                  Attendance Regularization
                 </h3>
                 <div
                   style="
@@ -2906,7 +2990,7 @@
                     <option value="Present">Present</option>
                     <option value="Absent">Absent</option>
                     <option value="Half Day">Half Day</option>
-                    <option value="Work From Home">Work From Home</option>
+                    <option value="On Duty">On Duty</option>
                   </select>
                 </div>
 
@@ -2917,7 +3001,7 @@
                       font-weight: 600;
                       color: var(--muted);
                     "
-                    >Reason for Correction</label
+                    >Reason for Regularization</label
                   >
                   <textarea
                     id="corrReason"
@@ -3068,7 +3152,7 @@
                       margin: 0;
                     "
                   >
-                    Correction History
+                    Regularization History
                   </h3>
                   <button
                     onclick="closeCorrectionHistoryModal()"
@@ -3189,7 +3273,7 @@
                     class="cl-dot"
                     style="background: #fffbeb; border: 1px dashed #d97706"
                   ></div>
-                  Pending Correction
+Pending Regularization
                 </div>
               </div>
               <div class="summary-strip" id="calSummary">
@@ -3343,7 +3427,7 @@
           if (data.corrections && data.corrections.total > 0) {
             correctionHtml = `
                 <div class="dash-section">
-                    <div class="dash-sec-title">Correction Requests</div>
+                    <div class="dash-sec-title">Regularization Requests</div>
                     <div class="corr-grid">
                         <div class="corr-item" onclick="showCorrectionHistory('pending')" style="background:#fff7ed; border:1px solid #fed7aa; cursor:pointer;">
                             <span class="corr-val" style="color:#c2410c">${data.corrections.pending_count}</span>
@@ -3362,9 +3446,9 @@
           } else {
             correctionHtml = `
                 <div class="dash-section">
-                    <div class="dash-sec-title">Correction Requests</div>
+                    <div class="dash-sec-title">Regularization Requests</div>
                     <div style="padding:15px; text-align:center; background:#f8fafc; border-radius:12px; font-size:11px; color:var(--muted); border:1px dashed #e2e8f0;">
-                        No correction requests found for ${monthName}
+                        No regularization requests found for ${monthName}
                     </div>
                 </div>`;
           }
@@ -3568,7 +3652,7 @@
         const title = document.getElementById("correctionHistoryTitle");
 
         let displayTitle = category.charAt(0).toUpperCase() + category.slice(1);
-        title.textContent = `${displayTitle} Correction Requests (${list.length})`;
+        title.textContent = `${displayTitle} Regularization Requests (${list.length})`;
 
         if (list.length === 0) {
           container.innerHTML = `<div style="padding:40px; text-align:center; color:var(--muted);">No ${category} requests found.</div>`;
@@ -4088,13 +4172,48 @@
         corrections: { pending: [], history: [] },
       };
 
+      function setPendingBadge(btnId, count) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        let badge = btn.querySelector(".pending-badge");
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "pending-badge";
+          badge.style.cssText =
+            "display:none;background:#ef4444;color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;line-height:1.4;vertical-align:middle;";
+          btn.appendChild(badge);
+        }
+        badge.textContent = count;
+        badge.style.display = count > 0 ? "inline-block" : "none";
+      }
+
+      async function updatePendingBadges() {
+        if (!isHR() && !isBranchManager()) return;
+        const leaves = await callAPI("get_pending_leaves", {}, "leave");
+        const corr = await callAPI(
+          "get_pending_attendance_corrections",
+          {},
+          "attendance",
+        );
+        setPendingBadge(
+          "tabLeaveRequests",
+          leaves && leaves.pending ? leaves.pending.length : 0,
+        );
+        setPendingBadge(
+          "tabCorrApproval",
+          corr && corr.pending ? corr.pending.length : 0,
+        );
+      }
+
       function switchTab(tab, btn) {
         if (
-          (tab === "leave" ||
-            tab === "corrections" ||
-            tab === "hr_dashboard") &&
-          !isHR()
+          (tab === "leave" || tab === "corrections") &&
+          !isHR() && !isBranchManager()
         ) {
+          showToast("You are not authorized to access this tab.");
+          return;
+        }
+        if (tab === "hr_dashboard" && !isHR()) {
           showToast("You are not authorized to access this tab.");
           return;
         }
@@ -4129,7 +4248,7 @@
         if (hrFilters) hrFilters.style.display = "none";
         if (hrDash) hrDash.style.display = "none";
         if (empList) empList.style.display = "block";
-        if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
+        if (statsRow) statsRow.style.display = "none";
         if (subTabs) subTabs.style.display = "none";
         if (empStatusFilters) empStatusFilters.style.display = "none";
         if (dirCardHead) dirCardHead.style.display = "none";
@@ -4164,16 +4283,32 @@
           }
         }
 
+        // Branch Manager: Exit button visibility
+        if (isBranchManager()) {
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              tab === "attendance" ? "inline-block" : "none";
+          if (tab === "attendance") {
+            if (calPanel) calPanel.style.display = "block";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+          } else {
+            if (calPanel) calPanel.style.display = "none";
+            if (mainGrid) mainGrid.style.gridTemplateColumns = "1fr";
+          }
+        }
+
         if (tab === "attendance") {
           if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
+          if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
           if (dirCardHead) dirCardHead.style.display = "flex";
           const empStatusFilters = document.getElementById("empStatusFilters");
           if (empStatusFilters) {
-            empStatusFilters.style.display = isHR() ? "flex" : "none";
+            empStatusFilters.style.display = (isHR() || isBranchManager()) ? "flex" : "none";
             // Reset to Active when switching to attendance tab
-            if (isHR() && employeeStatusFilter !== "Active") {
+            if ((isHR() || isBranchManager()) && employeeStatusFilter !== "Active") {
               employeeStatusFilter = "Active";
               document
                 .querySelectorAll("#empStatusFilters .ftab")
@@ -4219,6 +4354,7 @@
           if (hrDash) hrDash.style.display = "block";
           loadPayrollDashboard();
         }
+        fitMainGridHeight();
       }
 
       function switchSubTab(subTab) {
@@ -4259,6 +4395,10 @@
             pending: data.pending || [],
             history: data.history || [],
           };
+          setPendingBadge(
+            "tabCorrApproval",
+            (data.pending || []).length,
+          );
           renderCorrectionRequests();
         }
       }
@@ -4289,14 +4429,14 @@
         }
 
         if (data.length === 0) {
-          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} correction requests found.</div>`;
+          container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--muted)">No ${currentSubTab} regularization requests found.</div>`;
           return;
         }
 
         container.innerHTML = data
           .map((c) => {
             let actionsHtml = "";
-            if (c.status === "Pending") {
+            if (c.status === "Pending" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="updateCorrectionStatus('${c.name}', 'Approved')">Approve</button>
@@ -4304,7 +4444,7 @@
                 </div>`;
             } else {
               const statusClass =
-                c.status === "Approved" ? "pill-present" : "pill-absent";
+                c.status === "Approved" ? "pill-present" : c.status === "Pending" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
             }
 
@@ -4339,7 +4479,11 @@
         if (res && res.success) {
           showToast(`Request ${action}`);
           loadCorrectionRequests();
-          fetchTeamData(); // Refresh calendar if needed
+          // Do NOT call fetchTeamData() here — it re-renders the employee
+          // directory into #empList (the same container as the approvals list)
+          // and re-shows the search bar / select-all controls, which clobbers
+          // the corrections view. The calendar refreshes automatically when the
+          // user switches to the attendance tab.
         }
       }
 
@@ -4397,6 +4541,10 @@
             pending: res.pending || [],
             history: res.history || [],
           };
+          setPendingBadge(
+            "tabLeaveRequests",
+            (res.pending || []).length,
+          );
           renderLeaveRequests();
         }
       }
@@ -4449,7 +4597,7 @@
               .replace(/\//g, "-");
 
             let actionsHtml = "";
-            if (l.status === "Open") {
+            if (l.status === "Open" && !isBranchManager()) {
               actionsHtml = `
                 <div class="emp-actions">
                   <button class="btn-in" onclick="approveLeave('${l.name}')">Approve</button>
@@ -4457,7 +4605,7 @@
                 </div>`;
             } else {
               const statusClass =
-                l.status === "Approved" ? "pill-present" : "pill-absent";
+                l.status === "Approved" ? "pill-present" : l.status === "Open" ? "pill-pending" : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
             }
 
@@ -4573,6 +4721,19 @@
       }
 
       let isFirstLoad = true;
+
+      function fitMainGridHeight() {
+        const grid = document.querySelector(".main-grid");
+        if (!grid) return;
+        if (window.innerWidth <= 900) {
+          grid.style.height = "";
+          return;
+        }
+        const rect = grid.getBoundingClientRect();
+        const h = window.innerHeight - rect.top - 10;
+        if (h > 300) grid.style.height = h + "px";
+      }
+
       function updateTabVisibility() {
         const attendanceTab = document.getElementById("tabAttendance");
         const leaveTab = document.getElementById("tabLeaveRequests");
@@ -4613,7 +4774,7 @@
           }
           if (corrTab) {
             corrTab.style.display = "flex";
-            corrTab.textContent = "✏️ Correction Approvals";
+            corrTab.textContent = "✏️ Attendance Regularization";
           }
           if (hrTab) hrTab.style.display = "flex";
           const reportsTab = document.getElementById("tabReports");
@@ -4636,6 +4797,35 @@
             switchTab("hr_dashboard", hrTab);
           }
           populateAllFilters();
+          updatePendingBadges();
+        } else if (isBranchManager()) {
+          isFirstLoad = false;
+          if (attendanceTab) attendanceTab.textContent = "👥 Staff Directory";
+          if (btnApplyLeave) btnApplyLeave.style.display = "inline-block";
+          if (leaveTab) {
+            leaveTab.style.display = "flex";
+            leaveTab.textContent = "📝 Leave Requests";
+          }
+          if (corrTab) {
+            corrTab.style.display = "flex";
+            corrTab.textContent = "✏️ Regularization";
+          }
+          if (hrTab) hrTab.style.display = "none";
+          if (hrFilters) hrFilters.style.display = "none";
+          const btnExitEmployee = document.getElementById("btnExitEmployee");
+          if (btnExitEmployee)
+            btnExitEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
+          const empStatusFilters = document.getElementById("empStatusFilters");
+          if (empStatusFilters) {
+            empStatusFilters.style.display =
+              currentTab === "attendance" ? "flex" : "none";
+          }
+          if (isFirstLoad) {
+            isFirstLoad = false;
+          }
+          populateAllFilters();
+          updatePendingBadges();
         } else {
           isFirstLoad = false;
           if (attendanceTab) attendanceTab.textContent = "Attendance";
@@ -4645,6 +4835,7 @@
           if (hrTab) hrTab.style.display = "none";
           if (hrFilters) hrFilters.style.display = "none";
         }
+        fitMainGridHeight();
       }
 
       function populateAllFilters() {
@@ -4759,7 +4950,7 @@
                     <div class="stat-icon" style="background: #fff7ed; color: #c2410c;">🛠️</div>
                     <div style="min-width:0;">
                         <div class="stat-val" style="color:#c2410c;">${data.pending_requests.corrections}</div>
-                        <div class="stat-lbl">Pending Corrections</div>
+                        <div class="stat-lbl">Pending Regularizations</div>
                     </div>
                 </div>
             </div>
@@ -5065,6 +5256,8 @@
               extraInfo += `<div style="font-size:10px;color:var(--muted);margin-top:1px;">Reason: ${reason}</div>`;
             if (isHR()) {
               actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
+            } else if (isBranchManager()) {
+              actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
             }
           } else {
             // Active employee — normal rendering
@@ -5098,14 +5291,19 @@
               const canManage = isBranchManager() || s.is_self;
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
-                  actionsHtml = "";
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 } else if (!status || status === "Not Marked") {
                   actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
                     <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
                     <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
                     <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Absent')">✗ Absent</button>`;
                 } else if (status === "Present" && !s.check_out) {
-                  actionsHtml = `<button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                  actionsHtml = `
+                    <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
+                    <button class="btn-out" onclick="event.stopPropagation();markAttendance('${s.name}','Present','OUT')">⬆ Out</button>`;
+                } else {
+                  actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
                 }
               }
             }
@@ -5210,16 +5408,26 @@
 
           let cls = "cal-d";
           const histStatus = attendanceHistory[key];
+          // baseStatus strips any " (…)" suffix so CSS classification always
+          // matches the underlying attendance status, even when the tooltip
+          // carries extra context like "(Regularization Approved)".
+          const baseStatus = histStatus ? histStatus.replace(/ \(.*\)$/, "") : histStatus;
 
           if (isToday) cls += " today-d";
-          if (histStatus === "Present") cls += " present-d";
-          else if (histStatus === "Absent") cls += " absent-d";
-          else if (histStatus === "Half Day") cls += " half-d";
-          else if (histStatus === "On Leave") cls += " leave-d";
+          if (baseStatus === "Present") cls += " present-d";
+          else if (baseStatus === "Absent") cls += " absent-d";
+          else if (baseStatus === "Half Day") cls += " half-d";
+          else if (baseStatus === "On Leave") cls += " leave-d";
           else if (histStatus && histStatus.startsWith("Holiday"))
             cls += " holiday-d";
-          else if (histStatus && histStatus.includes("Pending Correction"))
+          else if (histStatus && histStatus.includes("Correction"))
             cls += " pending-corr-d";
+          else if (
+            histStatus &&
+            (histStatus.includes("Pending Leave") ||
+              histStatus.includes("Pending Half Day"))
+          )
+            cls += " pending-leave-d";
           else if (isWeekend) cls += " woff";
 
           cell.textContent = d;
@@ -5231,9 +5439,12 @@
               Absent: "Absent",
               "Half Day": "Half Day",
               "On Leave": "On Leave",
+              "Pending Correction": "Regularization Request Pending",
+              "Pending Leave": "Leave Request Pending",
+              "Pending Half Day": "Half Day Leave Request Pending",
             };
             cell.title =
-              titleMap[histStatus] || (isWeekend ? "Weekly Off" : key);
+              titleMap[histStatus] || histStatus || (isWeekend ? "Weekly Off" : key);
           }
 
           // Disable dates before employee's date of joining
@@ -5249,8 +5460,12 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            cell.onclick = () =>
-              openCorrectionModal(key, histStatus || "Not Marked");
+            if (histStatus && histStatus.includes("Correction")) {
+              cell.onclick = () => confirmCancelCorrection(key);
+            } else {
+              cell.onclick = () =>
+                openCorrectionModal(key, histStatus || "Not Marked");
+            }
             cell.style.cursor = "pointer";
           }
 
@@ -5282,6 +5497,26 @@
         document.getElementById("correctionModal").style.display = "none";
       }
 
+      async function confirmCancelCorrection(date) {
+        const ok = await showConfirmDialog(
+          `A regularization request is already pending for ${new Date(
+            date,
+          ).toLocaleDateString("en-IN")}.\n\nCancel the pending request?`,
+          "Cancel",
+          "Keep",
+        );
+        if (!ok) return;
+        const res = await callAPI(
+          "cancel_attendance_correction",
+          { employee: selectedMemberId, attendance_date: date },
+          "attendance",
+        );
+        if (res && res.success) {
+          showToast(res.message);
+          loadCalendarHistory();
+        }
+      }
+
       async function submitCorrection() {
         const employee = selectedMemberId;
         const date = document.getElementById("corrDate").dataset.raw;
@@ -5309,6 +5544,7 @@
         if (res && res.success) {
           showToast(res.message);
           closeCorrectionModal();
+          loadCalendarHistory();
         }
       }
 
@@ -5344,7 +5580,23 @@
           empSel.value = selectedMemberId;
         }
 
-        const leaveTypes = await callAPI("get_leave_types", {}, "leave");
+        // When employee changes, refresh leave types for EL eligibility
+        empSel.onchange = () => _loadLeaveTypesForEmployee(empSel.value);
+
+        // Load leave types for initially selected employee
+        await _loadLeaveTypesForEmployee(empSel.value);
+
+        // No date restriction — any past or future date allowed for leave application
+        document.getElementById("fromDate").min = "";
+        document.getElementById("toDate").min = "";
+        const halfChk = document.getElementById("halfDayChk");
+        halfChk.checked = false;
+        document.getElementById("toDate").disabled = false;
+        document.getElementById("leaveModal").style.display = "flex";
+      }
+
+      async function _loadLeaveTypesForEmployee(empId) {
+        const leaveTypes = await callAPI("get_leave_types", { employee: empId || "" }, "leave");
         const sel = document.getElementById("leaveTypeSel");
         sel.innerHTML = '<option value="">— Select Leave Type —</option>';
         if (leaveTypes) {
@@ -5352,13 +5604,28 @@
             const opt = document.createElement("option");
             opt.value = lt.name;
             opt.textContent = lt.name;
+            if (lt.el_restricted) {
+              opt.disabled = true;
+              opt.textContent = `${lt.name} — 🔒 Available after confirmation (${lt.confirmation_date ? new Date(lt.confirmation_date).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) : "date not set"})`;
+              opt.style.color = "#9ca3af";
+            }
             sel.appendChild(opt);
           });
         }
-        // Set dynamic date safeguard rules
-        document.getElementById("fromDate").min = todayKey;
-        document.getElementById("toDate").min = todayKey;
-        document.getElementById("leaveModal").style.display = "flex";
+      }
+
+      function toggleHalfDay() {
+        const chk = document.getElementById("halfDayChk");
+        const toDate = document.getElementById("toDate");
+        toDate.disabled = chk.checked;
+        onLeaveDateChanged();
+      }
+
+      function onLeaveDateChanged() {
+        if (document.getElementById("halfDayChk").checked) {
+          document.getElementById("toDate").value =
+            document.getElementById("fromDate").value;
+        }
       }
 
       function closeLeaveModal() {
@@ -5369,10 +5636,21 @@
         const employee = document.getElementById("leaveEmpSel").value;
         const leave_type = document.getElementById("leaveTypeSel").value;
         const from_date = document.getElementById("fromDate").value;
-        const to_date = document.getElementById("toDate").value;
+        let to_date = document.getElementById("toDate").value;
         const reason = document.getElementById("leaveReason").value;
+        const half_day = document.getElementById("halfDayChk").checked;
 
-        if (!employee || !leave_type || !from_date || !to_date) {
+        if (!employee || !leave_type || !from_date) {
+          showToast("Please fill all required fields");
+          return;
+        }
+
+        // Half day applies to a single day only
+        if (half_day) {
+          to_date = from_date;
+        }
+
+        if (!to_date) {
           showToast("Please fill all required fields");
           return;
         }
@@ -5390,6 +5668,7 @@
             from_date,
             to_date,
             reason,
+            half_day: half_day,
             force: force,
           },
           "leave",
@@ -5409,6 +5688,8 @@
         if (res && res.success) {
           showToast(res.message);
           closeLeaveModal();
+          loadCalendarHistory();
+          loadLeaveBalances(employee);
         } else if (res) {
           showToast("Error while applying leave");
         }
@@ -5505,7 +5786,8 @@
         const isHrUser = isHR();
 
         if (attendanceControls) {
-          attendanceControls.style.display = isMgr ? "flex" : "none";
+          attendanceControls.style.display =
+            isMgr || (isHrUser && allowHrToMarkAttendance) ? "flex" : "none";
         }
         if (searchBoxWrap) {
           searchBoxWrap.style.display = isMgr || isHrUser ? "flex" : "none";
@@ -5656,7 +5938,7 @@
         const content = document.getElementById("dashboardContent");
         document.querySelector(".drawer-header span").textContent =
           "Employee Profile";
-        document.getElementById("drawerEditBtn").style.display = "inline-block";
+        document.getElementById("drawerEditBtn").style.display = (isHR() || isAdmin()) ? "inline-block" : "none";
         content.innerHTML =
           '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
@@ -5723,17 +6005,37 @@
         const isHRMgr =
           userRoles.includes("HR Manager") ||
           userRoles.includes("Administrator");
-        const inp = (name, value, type = "text") =>
-          `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
+
+        // read-only input helper
+        const ro = (value) =>
+          `<input value="${value || ""}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">`;
+
+        // name-only text input: letters, spaces, dots, hyphens, apostrophes only (no numbers/special chars)
+        const nameInp = (name, value, required = false) =>
+          `<input name="${name}" value="${value || ""}" type="text" class="member-select"
+            style="padding:6px 10px;font-size:12px;margin-top:2px;"
+            ${required ? "required" : ""}
+            oninput="this.value=this.value.replace(/[^a-zA-Z\\s.\\-']/g,''); editProfileNameChanged();"
+            autocomplete="off">`;
+
+        // plain text input helper
+        const inp = (name, value, type = "text", extra = "") =>
+          `<input name="${name}" value="${value || ""}" type="${type}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;" ${extra}>`;
+
+        // select helper (static options)
         const sel = (name, value, options) => {
           let opts = options
-            .map(
-              (o) =>
-                `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`,
-            )
+            .map((o) => `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`)
             .join("");
           return `<select name="${name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">${opts}</select>`;
         };
+
+        // async-populated select helper (populated after render)
+        const asyncSel = (name, value, id) =>
+          `<select name="${name}" id="${id}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">
+             <option value="${value || ""}">${value || "Loading..."}</option>
+           </select>`;
+
         const dt = (name, value) =>
           `<input name="${name}" value="${value || ""}" type="date" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">`;
 
@@ -5749,11 +6051,17 @@
           <form id="empEditForm" onsubmit="event.preventDefault(); saveEmployeeProfile();">
             <div class="dash-section"><div class="dash-sec-title">Basic Information</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Employee Code</label><input value="${e.employee_number || e.name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;" readonly></div>
-                <div><label style="font-size:11px;color:var(--muted);">First Name</label>${inp("first_name", e.first_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${inp("middle_name", e.middle_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Last Name</label>${inp("last_name", e.last_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employee Name (Full)</label>${inp("employee_name", e.employee_name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employee Code</label>${ro(e.employee_number || e.name)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">First Name *</label>${nameInp("first_name", e.first_name, true)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Middle Name</label>${nameInp("middle_name", e.middle_name, false)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Last Name *</label>${nameInp("last_name", e.last_name, true)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Employee Name (Full)
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input id="edit_employee_name_full" value="${e.employee_name || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Gender</label>${sel("gender", e.gender, ["", "Male", "Female", "Other"])}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Birth</label>${dt("date_of_birth", fmtDate(e.date_of_birth))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Marital Status</label>${sel("marital_status", e.marital_status, ["", "Single", "Married", "Divorced", "Widowed"])}</div>
@@ -5762,21 +6070,65 @@
             </div>
             <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${inp("designation", e.designation)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Department</label>${inp("department", e.department)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${inp("employment_type", e.employment_type)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch</label>${inp("branch", e.branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Branch Code (Sahayog Branch)</label>${inp("sahayog_branch", e.sahayog_branch)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Zone</label>${inp("custom_zone", e.custom_zone)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Region</label>${inp("custom_region", e.custom_region)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">District</label>${inp("custom_district", e.custom_district)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Shift</label>${inp("default_shift", e.default_shift)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${inp("custom_division", e.custom_division)}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Designation</label>${asyncSel("designation", e.designation, "edit_designation")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Department</label>${asyncSel("department", e.department, "edit_department")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Employment Type</label>${asyncSel("employment_type", e.employment_type, "edit_employment_type")}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Branch Name
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled from Branch Code</span>
+                  </label>
+                  <input name="branch" id="edit_branch_name" value="${e.branch || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label>
+                  <select name="sahayog_branch" id="edit_sol_id" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    onchange="editProfileBranchChanged(this.value)">
+                    <option value="${e.sahayog_branch || ""}">${e.sahayog_branch || "Loading..."}</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Zone
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_zone" id="edit_zone" value="${e.custom_zone || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Region
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_region" id="edit_region" value="${e.custom_region || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">District
+                    <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
+                  </label>
+                  <input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                </div>
+                <div><label style="font-size:11px;color:var(--muted);">Shift</label>${asyncSel("default_shift", e.default_shift, "edit_shift")}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Joining</label>${dt("date_of_joining", fmtDate(e.date_of_joining))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Confirmation</label>${dt("final_confirmation_date", fmtDate(e.final_confirmation_date))}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager Code</label>${inp("reports_to", e.reports_to)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Reporting Manager</label>
+                  <div style="position:relative;">
+                    <input id="edit_reports_to_input" value="${e.reports_to_name || e.reports_to || ""}" class="member-select" placeholder="Search manager..." autocomplete="off"
+                      style="padding:6px 10px;font-size:12px;margin-top:2px;width:100%;"
+                      oninput="filterEditReportingManager(this.value)"
+                      onfocus="showEditReportingDropdown()"
+                      onblur="hideEditReportingDropdown()">
+                    <input type="hidden" name="reports_to" id="edit_reports_to_value" value="${e.reports_to || ""}">
+                    <div id="edit_reports_to_dropdown"
+                      style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                    </div>
+                  </div>
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Status</label>${sel("status", e.status, ["Active", "Left"])}</div>
-                <div id="leftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
+                <div id="editLeftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
                   <div><label style="font-size:11px;color:var(--muted);">Resignation Date</label>${dt("resignation_letter_date", fmtDate(e.resignation_letter_date))}</div>
                   <div><label style="font-size:11px;color:var(--muted);">Relieving Date</label>${dt("relieving_date", fmtDate(e.relieving_date))}</div>
                 </div>
@@ -5784,44 +6136,192 @@
             </div>
             <div class="dash-section"><div class="dash-sec-title">Contact & Identity</div>
               <div style="display:grid;gap:10px;">
-                <div><label style="font-size:11px;color:var(--muted);">Mobile</label>${inp("cell_number", e.cell_number)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Mobile (10 digits)</label>
+                  <input name="cell_number" value="${e.cell_number || ""}" type="tel" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="10" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Personal Email</label>${inp("personal_email", e.personal_email, "email")}</div>
-                <div><label style="font-size:11px;color:var(--muted);">PAN Number</label>${inp("custom_pan_number", e.custom_pan_number)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Aadhaar Number</label>${inp("custom_aadhar_number", e.custom_aadhar_number)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">UHID Number</label>${inp("custom_uhid_number", e.custom_uhid_number)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">PAN Number (e.g. ABCDE1234F)</label>
+                  <input name="custom_pan_number" value="${e.custom_pan_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;text-transform:uppercase;"
+                    maxlength="10"
+                    oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Aadhaar Number (12 digits)</label>
+                  <input name="custom_aadhar_number" value="${e.custom_aadhar_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="12" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12);">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">UHID Number (numeric only)</label>
+                  <input name="custom_uhid_number" value="${e.custom_uhid_number || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                </div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
             </div>
             <div class="dash-section"><div class="dash-sec-title">Banking</div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Bank Name</label>${inp("bank_name", e.bank_name)}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Account Number</label>${inp("bank_ac_no", e.bank_ac_no)}</div>
+                <div>
+                  <label style="font-size:11px;color:var(--muted);">Account Number (9–18 digits)</label>
+                  <input name="bank_ac_no" value="${e.bank_ac_no || ""}" type="text" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    maxlength="18" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,18);">
+                </div>
               </div>
             </div>
-            ${
-              isHRMgr
-                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Medical Deduction</label>${inp("custom_medical_deduction", e.custom_medical_deduction, "number")}</div>
               </div>
-            </div>`
-                : ""
-            }
+            </div>` : ""}
             <div style="display:flex;gap:10px;padding-top:10px;">
               <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
               <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
             </div>
           </form>
         `;
-        // Toggle Left fields based on Status dropdown
+
+        // ── Status toggle ─────────────────────────────────────────────────────
         const statusSel = document.querySelector("select[name='status']");
         if (statusSel) {
           statusSel.addEventListener("change", function () {
-            document.getElementById("leftFields").style.display =
+            document.getElementById("editLeftFields").style.display =
               this.value === "Left" ? "grid" : "none";
           });
+        }
+
+        // ── Populate async dropdowns ──────────────────────────────────────────
+        _populateEditDropdowns(e);
+      }
+
+      // Auto-compute Employee Full Name from first+middle+last
+      function editProfileNameChanged() {
+        const f = (document.querySelector("#empEditForm input[name='first_name']")?.value || "").trim();
+        const m = (document.querySelector("#empEditForm input[name='middle_name']")?.value || "").trim();
+        const l = (document.querySelector("#empEditForm input[name='last_name']")?.value || "").trim();
+        const full = [f, m, l].filter(Boolean).join(" ");
+        const el = document.getElementById("edit_employee_name_full");
+        if (el) el.value = full;
+      }
+
+      // Auto-fetch Zone/Region/District from branch on SOL ID change
+      async function editProfileBranchChanged(sol_id) {
+        if (!sol_id) return;
+        const details = await callAPI("get_branch_details_by_sol_id", { sol_id }, "employee");
+        if (details) {
+          const z = document.getElementById("edit_zone");
+          const r = document.getElementById("edit_region");
+          const d = document.getElementById("edit_district");
+          if (z) z.value = details.zone || "";
+          if (r) r.value = details.region || "";
+          if (d) d.value = details.district || "";
+          // Also update branch name (read-only field with id="edit_branch_name")
+          const b = document.getElementById("edit_branch_name");
+          if (b && details.branch) b.value = details.branch;
+        }
+      }
+
+      // Reporting manager searchable dropdown helpers (edit form)
+      function filterEditReportingManager(query) {
+        const dd = document.getElementById("edit_reports_to_dropdown");
+        const items = dd.querySelectorAll(".edit-mgr-item");
+        const q = query.toLowerCase();
+        items.forEach((item) => {
+          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+      }
+      function showEditReportingDropdown() {
+        const dd = document.getElementById("edit_reports_to_dropdown");
+        if (!dd) return;
+        if (!dd.hasChildNodes() && window._empList) {
+          window._empList.forEach((emp) => {
+            const item = document.createElement("div");
+            item.className = "edit-mgr-item";
+            item.dataset.value = emp.name;
+            item.textContent = emp.employee_name + " (" + emp.name + ")";
+            item.style.cssText = "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;";
+            item.onmouseover = () => (item.style.background = "#f0f2f8");
+            item.onmouseout  = () => (item.style.background = "");
+            item.onmousedown = (ev) => {
+              ev.preventDefault();
+              document.getElementById("edit_reports_to_value").value = emp.name;
+              document.getElementById("edit_reports_to_input").value = item.textContent;
+              dd.style.display = "none";
+            };
+            dd.appendChild(item);
+          });
+        }
+        dd.style.display = "block";
+      }
+      function hideEditReportingDropdown() {
+        setTimeout(() => {
+          const dd = document.getElementById("edit_reports_to_dropdown");
+          if (dd) dd.style.display = "none";
+        }, 150);
+      }
+
+      // Populate Designation, Department, Employment Type, Shift, Business Unit dropdowns
+      async function _populateEditDropdowns(e) {
+        // Ensure employee list is loaded for reporting manager
+        if (!window._empList) {
+          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
+        }
+
+        const _fill = (id, currentVal, items, labelKey = "name") => {
+          const sel = document.getElementById(id);
+          if (!sel) return;
+          sel.innerHTML = `<option value="">-- Select --</option>`;
+          items.forEach(item => {
+            const v = item[labelKey] || item;
+            const opt = document.createElement("option");
+            opt.value = v;
+            opt.textContent = v;
+            if (v === currentVal) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        };
+
+        const [depts, desigs, empTypes, shifts, divisions, branches] = await Promise.all([
+          callAPI("get_departments", {}, "employee"),
+          callAPI("get_designations", {}, "employee"),
+          callAPI("get_employment_types", {}, "employee"),
+          callAPI("get_shifts", {}, "employee"),
+          callAPI("get_divisions", {}, "employee"),
+          callAPI("get_sahayog_branches", {}, "employee"),
+        ]);
+
+        if (depts)    _fill("edit_department",      e.department,      depts);
+        if (desigs)   _fill("edit_designation",     e.designation,     desigs);
+        if (empTypes) _fill("edit_employment_type", e.employment_type, empTypes);
+        if (shifts)   _fill("edit_shift",           e.default_shift,   shifts);
+        if (divisions)_fill("edit_business_unit",   e.custom_division, divisions);
+
+        // Populate SOL ID / Branch Code dropdown
+        if (branches) {
+          const solSel = document.getElementById("edit_sol_id");
+          if (solSel) {
+            solSel.innerHTML = `<option value="">-- Select Branch Code --</option>`;
+            branches.forEach(b => {
+              const opt = document.createElement("option");
+              opt.value = b.name;
+              opt.textContent = b.name;
+              if (b.name === e.sahayog_branch) opt.selected = true;
+              solSel.appendChild(opt);
+            });
+          }
         }
       }
 
@@ -5830,6 +6330,53 @@
         const fd = new FormData(form);
         const data = {};
         fd.forEach((v, k) => (data[k] = v));
+
+        // ── Validation (same rules as creation form) ──────────────────────────
+        const firstName  = (data.first_name  || "").trim();
+        const middleName = (data.middle_name || "").trim();
+        const lastName   = (data.last_name   || "").trim();
+
+        if (!validateName(firstName,  "First Name"))  return;
+        if (middleName && !validateName(middleName, "Middle Name")) return;
+        if (!validateName(lastName,   "Last Name"))   return;
+
+        // Auto-update employee_name from name parts
+        data.employee_name = [firstName, middleName, lastName].filter(Boolean).join(" ");
+
+        const mobile = (data.cell_number || "").replace(/\D/g, "");
+        if (mobile && mobile.length !== 10) {
+          showToast("Mobile Number must be exactly 10 digits."); return;
+        }
+        if (mobile) data.cell_number = mobile;
+
+        const pan = (data.custom_pan_number || "").toUpperCase().trim();
+        if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
+          showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F)."); return;
+        }
+        if (pan) data.custom_pan_number = pan;
+
+        const aadhaar = (data.custom_aadhar_number || "").replace(/\D/g, "");
+        if (aadhaar && aadhaar.length !== 12) {
+          showToast("Aadhaar Number must be exactly 12 digits."); return;
+        }
+        if (aadhaar) data.custom_aadhar_number = aadhaar;
+
+        const uhid = (data.custom_uhid_number || "").trim();
+        if (uhid && !/^\d+$/.test(uhid)) {
+          showToast("UHID Number must contain only digits."); return;
+        }
+
+        // Zone/Region/District come from read-only inputs — pick them up via DOM
+        const z = document.getElementById("edit_zone");
+        const r = document.getElementById("edit_region");
+        const d = document.getElementById("edit_district");
+        if (z) data.custom_zone     = z.value;
+        if (r) data.custom_region   = r.value;
+        if (d) data.custom_district = d.value;
+
+        // Reporting manager from hidden input
+        const rtv = document.getElementById("edit_reports_to_value");
+        if (rtv) data.reports_to = rtv.value;
 
         const btn = document.getElementById("btnSaveProfile");
         btn.disabled = true;
@@ -5857,8 +6404,7 @@
             _currentProfileData = updated;
             renderEmployeeProfileView(updated);
           }
-          document.getElementById("drawerEditBtn").style.display =
-            "inline-block";
+          document.getElementById("drawerEditBtn").style.display = "inline-block";
         }
       }
 
@@ -5896,22 +6442,22 @@
           },
           {
             name: "SS Attendance Regularization and In Out Report",
-            desc: "Daily punch in/out times, attendance status & correction request status",
+            desc: "Daily punch in/out times, attendance status & regularization request status",
             icon: "⏱️",
-            adminOnly: true,
+            adminOnly: false,
           },
           {
             name: "SS Leave Transaction Report",
             desc: "Leave ledger: opening balance, credited, availed, closing balance per leave type",
             icon: "📋",
-            adminOnly: true,
+            adminOnly: false,
           },
         ];
 
         // Filter reports based on role
         const reports = allReports.filter(r => !r.adminOnly || isAdmin());
 
-        const uploadSection = isAdmin() ? `
+        const uploadSection = isHR() ? `
           <div style="margin-top:24px; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; box-shadow:var(--shadow);">
             <h4 style="font-family:'Syne',sans-serif; font-size:14px; color:var(--brand); margin:0 0 6px;">📥 Upload Leave Allocation</h4>
             <p style="font-size:11px; color:var(--muted); margin:0 0 14px;">Upload CSV/Excel file with columns: <strong>Employee Code, Leave Type, New Leaves, From Date, To Date</strong></p>
@@ -5951,6 +6497,19 @@
         `;
       }
 
+      function extractServerMessage(res) {
+        try {
+          if (res && res._server_messages) {
+            const msgs = JSON.parse(res._server_messages);
+            if (msgs && msgs.length) return JSON.parse(msgs[0]).message;
+          }
+        } catch (e) {}
+        if (res && res.message && typeof res.message === "string")
+          return res.message;
+        if (res && res.exc_type) return "Server Error (" + res.exc_type + ")";
+        return "";
+      }
+
       function uploadLeaveAllocation() {
         const fileInput = document.getElementById("leaveAllocUpload");
         const resultDiv = document.getElementById("leaveAllocResult");
@@ -5963,39 +6522,80 @@
         formData.append("file", fileInput.files[0]);
         resultDiv.innerHTML =
           '<span style="color:var(--muted);">Uploading... ⏳</span>';
-        fetch("/api/method/sahayog.api.attendance.upload_leave_allocations", {
-          method: "POST",
-          body: formData,
-          headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
-        })
-          .then((r) => r.json())
-          .then((res) => {
-            if (res.message && res.message.success) {
-              const d = res.message.details;
-              let html = `<span style="color:#16a34a; font-weight:600;">✅ ${res.message.message}</span>`;
-              if (d.errors && d.errors.length) {
-                html +=
-                  '<div style="margin-top:6px; max-height:150px; overflow-y:auto; font-size:11px; color:#dc2626;">';
-                d.errors.slice(0, 20).forEach((e) => {
-                  html += `<div>⚠ ${e}</div>`;
-                });
-                if (d.errors.length > 20)
-                  html += `<div>...and ${d.errors.length - 20} more errors</div>`;
-                html += "</div>";
-              }
-              resultDiv.innerHTML = html;
-            } else {
-              resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Upload failed: ${JSON.stringify(res)}</span>`;
-            }
+
+        const csrfToken = document.querySelector(
+          'meta[name="csrf-token"]',
+        )?.content;
+
+        try {
+          fetch("/api/method/sahayog.api.attendance.upload_leave_allocations", {
+            method: "POST",
+            body: formData,
+            headers: csrfToken ? { "X-Frappe-CSRF-Token": csrfToken } : {},
           })
-          .catch((err) => {
-            resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
-          });
+            .then(async (r) => {
+              const text = await r.text();
+              let res = null;
+              try {
+                res = JSON.parse(text);
+              } catch (e) {
+                res = null;
+              }
+
+              // 417 → server threw a validation / exception (frappe.throw)
+              if (r.status === 417) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg || "Validation error. Please check the file."}</span>`;
+                return;
+              }
+              // 403 → permission denied
+              if (r.status === 403) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg || "Permission Denied: Access Restricted."}</span>`;
+                return;
+              }
+              if (!r.ok) {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Server error (HTTP ${r.status}). ${msg}</span>`;
+                return;
+              }
+
+              if (res && res.message && res.message.success) {
+                const d = res.message.details || {};
+                let html = `<span style="color:#16a34a; font-weight:600;">✅ ${res.message.message}</span>`;
+                if (d.errors && d.errors.length) {
+                  html +=
+                    '<div style="margin-top:6px; max-height:150px; overflow-y:auto; font-size:11px; color:#dc2626;">';
+                  d.errors.slice(0, 20).forEach((e) => {
+                    html += `<div>⚠ ${e}</div>`;
+                  });
+                  if (d.errors.length > 20)
+                    html += `<div>...and ${d.errors.length - 20} more errors</div>`;
+                  html += "</div>";
+                }
+                resultDiv.innerHTML = html;
+              } else if (res && res.message && res.message.success === false) {
+                const msg =
+                  res.message.message || "Upload failed. Please check the file.";
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg}</span>`;
+              } else if (res && res.message && typeof res.message === "string") {
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${res.message}</span>`;
+              } else {
+                const msg = extractServerMessage(res);
+                resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Upload failed: ${msg || JSON.stringify(res)}</span>`;
+              }
+            })
+            .catch((err) => {
+              resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
+            });
+        } catch (err) {
+          resultDiv.innerHTML = `<span style="color:#dc2626;">❌ Error: ${err.message}</span>`;
+        }
       }
 
       function downloadLeaveAllocTemplate() {
         const csv =
-          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,2026-04-01,2026-03-31\nEMP001,Sick Leave,6,2026-04-01,2026-03-31\nEMP001,Earned Leave,15,2026-04-01,2026-03-31";
+          "Employee Code,Leave Type,New Leaves,From Date,To Date\nEMP001,Casual Leave,3,01-04-2026,31-03-2027\nEMP001,Sick Leave,6,01-04-2026,31-03-2027\nEMP001,Earned Leave,15,01-04-2026,31-03-2027";
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -6005,6 +6605,7 @@
       }
 
       const IMPORT_COLUMNS = [
+        "employee_number",
         "first_name",
         "middle_name",
         "last_name",
@@ -6013,6 +6614,9 @@
         "date_of_joining",
         "designation",
         "department",
+        "custom_zone",
+        "custom_region",
+        "custom_district",
         "sol_id",
         "mobile_number",
         "pan_number",
@@ -6115,6 +6719,7 @@
 
       function downloadImportTemplate() {
         const sampleRow = [
+          "P1",
           "John",
           "Kumar",
           "Doe",
@@ -6123,6 +6728,9 @@
           "01-06-2024",
           "Peon",
           "Support Staff",
+          "West",
+          "Mumbai",
+          "Mumbai City",
           "SOL001",
           "9876543210",
           "ABCDE1234F",
@@ -6141,14 +6749,18 @@
         ];
         // Add a note row indicating mandatory fields
         const noteRow = [
+          "Optional",
+          "*Mandatory*",
+          "Optional",
+          "*Mandatory*",
           "*Mandatory*",
           "Optional",
           "*Mandatory*",
           "*Mandatory*",
           "*Mandatory*",
-          "*Mandatory*",
-          "*Mandatory*",
-          "*Mandatory*",
+          "Optional",
+          "Optional",
+          "Optional",
           "Optional",
           "Optional",
           "Optional",
@@ -6244,7 +6856,7 @@
           console.warn("[ImportEmployees] No data rows found in the CSV.");
           showToast("No data rows found in CSV");
           btn.disabled = false;
-          btn.textContent = "Import Employees";
+          btn.textContent = "Update";
           return;
         }
 
@@ -6254,7 +6866,9 @@
         let totalCreated = 0,
           totalFailed = 0,
           totalSkipped = 0,
-          allErrors = [];
+          totalUpdated = 0,
+          allErrors = [],
+          allRows = [];
 
         const resultsDiv = document.getElementById("importResults");
         resultsDiv.style.display = "block";
@@ -6273,10 +6887,11 @@
           );
 
           let res = null;
+          const forceUpdate = document.getElementById("importForceUpdate").value === "yes" ? 1 : 0;
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch },
+              { rows: batch, mode: forceUpdate ? "update" : "insert", force_update: forceUpdate },
               "employee",
             );
           } catch (apiErr) {
@@ -6298,7 +6913,9 @@
             totalCreated += res.created || 0;
             totalFailed += res.failed || 0;
             totalSkipped += res.skipped || 0;
+            totalUpdated += res.updated || 0;
             allErrors = allErrors.concat(res.errors || []);
+            allRows = allRows.concat(res.rows || []);
 
             // Log each error/skip to console for easy debugging
             (res.errors || []).forEach((e) => {
@@ -6319,7 +6936,7 @@
         }
 
         btn.disabled = false;
-        btn.textContent = "Import Employees";
+        btn.textContent = "Update";
 
         console.log(
           `[ImportEmployees] Done — Created: ${totalCreated}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`,
@@ -6333,32 +6950,66 @@
         }
 
         // ── Render result summary ────────────────────────────────────────────
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✅ Created: <span style="color:var(--success)">${totalCreated}</span>
-          &nbsp;⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span>
-          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        const errorMap = {};
+        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+
+        const statusStyle = {
+          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
+          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
+          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+        };
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
+          ${totalUpdated > 0 ? `<span>✏️ Updated: <span style="color:#15803d">${totalUpdated}</span></span>` : ""}
+          <span>✅ Created: <span style="color:var(--success)">${totalCreated}</span></span>
+          <span>⏭ Skipped (duplicates): <span style="color:#f59e0b">${totalSkipped}</span></span>
+          <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allErrors.length > 0) {
-          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details (check browser console for full log):</div>`;
-          html += allErrors
-            .map((e) => {
-              // Distinguish skipped (duplicates) vs actual failures by error text
-              const isSkip =
-                e.error && e.error.toLowerCase().includes("already exist");
-              const bg = isSkip ? "#fffbeb" : "#fff1f2";
-              const bc = isSkip ? "#fde68a" : "#fecaca";
-              const icon = isSkip ? "⏭" : "❌";
-              return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+        const failedRows = allRows.filter(r => r.status === "Failed");
+        if (failedRows.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
+          <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="background:#f8fafc; border-bottom:1px solid var(--border); position:sticky; top:0;">
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${failedRows.map(r => {
+                  const err = errorMap[r.row] || "";
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                    <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
+                    <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
+                    <td style="padding:6px 10px;">${r.name}</td>
+                    <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
+        } else if (allErrors.length > 0) {
+          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
+          html += allErrors.map((e) => {
+            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
+            const bg = isSkip ? "#fffbeb" : "#fff1f2";
+            const bc = isSkip ? "#fde68a" : "#fecaca";
+            const icon = isSkip ? "⏭" : "❌";
+            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
               ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-            })
-            .join("");
+          }).join("");
         }
 
         resultsDiv.innerHTML = html;
 
-        if (totalCreated > 0) fetchTeamData();
+        if (totalCreated > 0 || totalUpdated > 0) fetchTeamData();
       }
 
       async function submitUpdate() {
@@ -6425,7 +7076,8 @@
         let totalCreated = 0,
           totalUpdated = 0,
           totalFailed = 0,
-          allErrors = [];
+          allErrors = [],
+          allRows = [];
 
         const resultsDiv = document.getElementById("updateResults");
         resultsDiv.style.display = "block";
@@ -6439,7 +7091,7 @@
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch, mode: "update" },
+              { rows: batch, mode: "update", force_update: 1 },
               "employee",
             );
           } catch (apiErr) {
@@ -6457,6 +7109,7 @@
             totalCreated += res.created || 0;
             totalFailed += res.failed || 0;
             allErrors = allErrors.concat(res.errors || []);
+            allRows = allRows.concat(res.rows || []);
           }
 
           if (b < totalBatches - 1) {
@@ -6467,21 +7120,50 @@
         btn.disabled = false;
         btn.textContent = "Update Employees";
 
-        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:10px;">
-          ✏️ Updated: <span style="color:#15803d">${totalUpdated}</span>
-          &nbsp;✅ Created (new): <span style="color:var(--success)">${totalCreated}</span>
-          &nbsp;❌ Failed: <span style="color:var(--danger)">${totalFailed}</span>
+        // Build error map for quick lookup
+        const errorMap = {};
+        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+
+        const statusStyle = {
+          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
+          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
+          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
+          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+        };
+
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
+          <span>✏️ Updated: <span style="color:#15803d">${totalUpdated}</span></span>
+          <span>✅ Created (new): <span style="color:var(--success)">${totalCreated}</span></span>
+          <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        if (allErrors.length > 0) {
-          html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
-          html += allErrors
-            .map((e) => {
-              return `<div style="font-size:11px; background:#fff1f2; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid #fecaca;">
-              ❌ <b>Row ${e.row} — ${e.name}:</b> ${e.error}
-            </div>`;
-            })
-            .join("");
+        const failedRowsU = allRows.filter(r => r.status === "Failed");
+        if (failedRowsU.length > 0) {
+          html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
+          <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+              <thead>
+                <tr style="background:#f8fafc; border-bottom:1px solid var(--border); position:sticky; top:0;">
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Row</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Employee Code</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Name</th>
+                  <th style="padding:7px 10px; text-align:left; color:var(--muted); font-weight:600;">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${failedRowsU.map(r => {
+                  const err = errorMap[r.row] || "";
+                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                    <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
+                    <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
+                    <td style="padding:6px 10px;">${r.name}</td>
+                    <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>`;
         }
 
         resultsDiv.innerHTML = html;
@@ -6524,6 +7206,23 @@
         document.getElementById("exitEmployeeForm").reset();
         document.getElementById("exit_emp_search_input").value = "";
         document.getElementById("exit_emp_select").value = "";
+        document.getElementById("exitReasonWrap").hidden = true;
+      }
+
+      function onResignationTypeChange() {
+        const type = document.getElementById("exit_resignation_type").value;
+        const wrap = document.getElementById("exitReasonWrap");
+        const sel = document.getElementById("exit_reason");
+        const reasons = {
+          "Voluntary": ["Health Issue","Family Issue","Personal Issue","Marriage","Better Career Opportunities","Higher Studies","Absconding","Work Environment/Culture"],
+          "Involuntary": ["Performance Issue","Termination of Services","Asked to Go","Not Joined","Death","Others"]
+        };
+        if (!type) { wrap.hidden = true; return; }
+        wrap.hidden = false;
+        sel.innerHTML = '<option value="" disabled selected>Select reason...</option>';
+        (reasons[type] || []).forEach(r => {
+          sel.innerHTML += `<option value="${r}">${r}</option>`;
+        });
       }
 
       async function submitExitEmployee() {
@@ -6539,6 +7238,7 @@
           "exit_relieving_date",
         ).value;
         const reason = document.getElementById("exit_reason").value;
+        const resignation_type = document.getElementById("exit_resignation_type").value;
 
         if (
           resignation_date &&
@@ -6591,6 +7291,7 @@
             resignation_letter_date: resignation_date,
             relieving_date,
             reason_for_leaving: reason,
+            resignation_type,
             attachment_url,
           },
           "employee",
@@ -6766,7 +7467,7 @@
         `;
       }
 
-      function showConfirmDialog(message) {
+      function showConfirmDialog(message, okLabel = "OK", cancelLabel = "Cancel") {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
           overlay.style.cssText =
@@ -6782,8 +7483,8 @@
           box.innerHTML = `
             <div style="margin-bottom:16px;font-size:14px;line-height:1.6;color:var(--text);">${message.replace(/\n/g, "<br>")}</div>
             <div style="display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;">
-              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">Cancel</button>
-              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">OK</button>
+              <button class="btn-clear" style="padding:9px 20px;" id="confirmCancelBtn">${cancelLabel}</button>
+              <button class="btn-in" style="padding:9px 24px;font-weight:700;" id="confirmOkBtn">${okLabel}</button>
             </div>
           `;
           overlay.appendChild(box);
@@ -7025,6 +7726,8 @@
           console.error(e);
         }
       }
+
+      window.addEventListener("resize", fitMainGridHeight);
 
       fetchTeamData();
     </script>

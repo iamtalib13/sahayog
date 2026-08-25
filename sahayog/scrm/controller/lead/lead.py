@@ -6,20 +6,22 @@ import re
 def update_employee_details(doc, method):
     if frappe.session.user != "Administrator":
         try:
-            # Fetch employee_number and location fields using get_value with tuple unpacking
+            # Fetch employee_number, employee_name, designation, and location fields using get_value
             result = frappe.db.get_value(
                 "Employee",
                 {"user_id": frappe.session.user},
-                ["employee_number", "branch", "custom_region", "custom_zone", "sol_id"],
+                ["employee_number", "employee_name", "designation", "branch", "custom_region", "custom_zone", "sol_id", "custom_district"],
             )
 
             if not result:
                 frappe.throw("Could not fetch employee details. Please ensure your employee profile is properly set.")
 
-            employee_number, branch, region, zone, sol_id = result
+            employee_number, employee_name, designation, branch, region, zone, sol_id, district = result
 
-            # Always set employee number
+            # Set employee detail fields
             doc.custom_employee_id = employee_number
+            doc.custom_employee_name = employee_name
+            doc.custom_designation = designation
 
             # Conditionally set other fields if values are available
             if branch:
@@ -30,6 +32,8 @@ def update_employee_details(doc, method):
                 doc.custom_zone = zone
             if sol_id:
                 doc.sol_id = sol_id
+            if district:
+                doc.custom_district = district
 
         except Exception:
             frappe.log_error(frappe.get_traceback(), "Lead Update Employee Details Error")
@@ -234,7 +238,7 @@ def assign_employee_to_lead(lead_name, user):
     employee = frappe.get_all(
         "Employee",
         filters={"user_id": user},
-        fields=["name", "custom_zone", "custom_region", "branch", "user_id"],
+        fields=["name", "employee_name", "designation", "custom_zone", "custom_region", "branch", "user_id", "custom_district"],
         limit=1,
     )
 
@@ -245,9 +249,12 @@ def assign_employee_to_lead(lead_name, user):
 
     # Update the Lead fields
     frappe.db.set_value("Lead", lead_name, "custom_employee_id", emp["name"])
+    frappe.db.set_value("Lead", lead_name, "custom_employee_name", emp["employee_name"])
+    frappe.db.set_value("Lead", lead_name, "custom_designation", emp["designation"])
     frappe.db.set_value("Lead", lead_name, "custom_zone", emp["custom_zone"])
     frappe.db.set_value("Lead", lead_name, "custom_region", emp["custom_region"])
     frappe.db.set_value("Lead", lead_name, "custom_branch", emp["branch"])
+    frappe.db.set_value("Lead", lead_name, "custom_district", emp["custom_district"])
 
     # ✅ Update lead_owner with the employee's user_id
     frappe.db.set_value("Lead", lead_name, "lead_owner", emp["user_id"])

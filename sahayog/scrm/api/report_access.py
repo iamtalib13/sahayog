@@ -1,3 +1,5 @@
+import os
+import csv
 import frappe
 from frappe.utils import now_datetime, getdate, date_diff, format_date
 
@@ -96,23 +98,6 @@ def empty_stats():
     }
 
 @frappe.whitelist()
-def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
-    user = frappe.session.user
-    from_date, to_date = validate_date_range(from_date, to_date)
-    
-    # Tracking counters for debugging
-    skip_reason_sol_pref = 0
-    skip_reason_no_branch = 0
-    skip_reason_zone_region_mismatch = 0
-    skip_reason_source = 0
-    skip_reason_product = 0
-
-    frappe.log_error(
-            "CRM INPUT DEBUG",
-            f"User:{user}, From:{from_date}, To:{to_date}, Filters:{filters}"
-        )
-    
-@frappe.whitelist()
 def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
     """Centralized helper to fetch and filter base leads. Prevents duplicate DB queries."""
     from_date, to_date = validate_date_range(from_date, to_date)
@@ -148,111 +133,86 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
         ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
         sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
 
-    # ---------- Fetch Leads ----------
-    lead_db_filters = [
-        ["creation", ">=", f"{from_date} 00:00:00"],
-        ["creation", "<=", f"{to_date} 23:59:59"]
+    # ---------- Build Query Conditions ----------
+    conditions = [
+        "l.creation >= %(from_date)s",
+        "l.creation <= %(to_date)s"
     ]
+    values = {
+        "from_date": f"{from_date} 00:00:00",
+        "to_date": f"{to_date} 23:59:59"
+    }
+
     if sol_ids_pref:
-        lead_db_filters.append(["sol_id", "in", list(sol_ids_pref)])
+        conditions.append("l.sol_id IN %(sol_ids_pref)s")
+        values["sol_ids_pref"] = tuple(sol_ids_pref)
     elif user != "Administrator" and not has_pref:
-        lead_db_filters.append(["lead_owner", "=", user])
+        conditions.append("l.lead_owner = %(lead_owner)s")
+        values["lead_owner"] = user
 
-    page_length = 20000
-    start = 0
-    leads = []
+    if products_pref:
+        conditions.append("lp.product IN %(products_pref)s")
+        values["products_pref"] = tuple(products_pref)
+    if sources_pref:
+        conditions.append("l.source IN %(sources_pref)s")
+        values["sources_pref"] = tuple(sources_pref)
+    if zones_pref:
+        conditions.append("b.zone IN %(zones_pref)s")
+        values["zones_pref"] = tuple(zones_pref)
+    if regions_pref:
+        allowed_regions = set(regions_pref)
+        for r in list(regions_pref):
+            allowed_regions |= REGION_ALIAS_MAP.get(r, set())
+        conditions.append("b.region IN %(regions_pref)s")
+        values["regions_pref"] = tuple(allowed_regions)
 
-    while True:
-        batch = frappe.get_all(
-            "Lead",
-            filters=lead_db_filters,
-            fields=["name", "status", "lead_name", "mobile_no", "phone", "source", "lead_owner", "sol_id", "creation"],
-            order_by="creation desc",
-            start=start,
-            limit_page_length=page_length
-        )
-        if not batch: break
-        leads.extend(batch)
-        start += page_length
+    # ---------- Single Optimized SQL Query ----------
+    query = """
+        SELECT
+            l.name,
+            l.status,
+            l.lead_name,
+            COALESCE(l.mobile_no, l.phone, '-') as contact,
+            l.source,
+            l.lead_owner,
+            l.sol_id,
+            l.creation,
+            COALESCE(lp.product, '-') as product_code,
+            COALESCE(lp.product_name, '-') as product_name,
+            COALESCE(lp.product_amount, 0) as amount,
+            COALESCE(emp.employee_name, '-') as employee_name,
+            COALESCE(emp.employee_number, '-') as employee_id,
+            COALESCE(emp.designation, '-') as designation,
+            b.branch,
+            b.district,
+            b.region,
+            b.zone
+        FROM `tabLead` l
+        LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+        LEFT JOIN `tabEmployee` emp ON emp.user_id = l.lead_owner AND emp.status = 'Active'
+        LEFT JOIN `tabSahayog Branch` b ON b.sol_id = l.sol_id
+        WHERE {where_clause}
+        ORDER BY l.creation DESC
+    """.format(
+        where_clause=" AND ".join(conditions)
+    )
 
-    if not leads:
-        return [], {}, {}, {}
-
-    # Pre-fetch lookup details
-    lead_names = [l.name for l in leads]
-    product_rows = frappe.get_all("Lead Product", filters={"parent": ["in", lead_names]}, fields=["parent", "product", "product_name", "product_amount"])
-    product_map = {}
-    for pr in product_rows:
-        product_map.setdefault(pr.parent, []).append(pr)
-
-    sol_ids = {str(l.sol_id) for l in leads if l.sol_id}
-    branch_map = get_branch_map(list(sol_ids))
-    employee_map = get_employee_map(list({l.lead_owner for l in leads if l.lead_owner}))
+    frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
+    raw_leads = frappe.db.sql(query, values, as_dict=True)
 
     final_leads = []
+    for r in raw_leads:
+        new_row = frappe._dict(r)
+        # Reconstruct branch_info dictionary for compatibility with frontend/KPI loops
+        new_row["branch_info"] = {
+            "branch": r.get("branch") or "No SOL",
+            "district": r.get("district") or "-",
+            "region": r.get("region") or "-",
+            "zone": r.get("zone") or "-"
+        }
+        final_leads.append(new_row)
 
-    for l in leads:
-        if user != "Administrator" and not has_pref:
-            if l.lead_owner != user:
-                continue
-
-        curr_sol = str(l.sol_id) if l.sol_id else ""
-        if sol_ids_pref and curr_sol not in sol_ids_pref:
-            continue
-
-        branch = branch_map.get(curr_sol) if curr_sol else None
-        
-        if branch:
-            lead_zone = norm(branch.zone)
-            lead_region = norm(branch.region)
-            zone_match = not zones_pref or (lead_zone in zones_pref)
-            
-            region_match = True
-            if is_all_regions: 
-                region_match = True
-            elif regions_pref:
-                allowed = set(regions_pref)
-                for r in list(regions_pref):
-                    allowed |= REGION_ALIAS_MAP.get(r, set())
-                region_match = lead_region in allowed
-
-            if not zone_match or not region_match:
-                continue
-        else:
-            if zones_pref or regions_pref:
-                continue
-
-        if sources_pref and norm(l.source) not in sources_pref:
-            continue
-
-        l_products = product_map.get(l.name, [])
-        matched_products = []
-        
-        if products_pref:
-            matched_products = [p for p in l_products if norm(p.product) in products_pref]
-            if not matched_products:
-                continue 
-        else:
-            matched_products = l_products if l_products else [{}]
-
-        emp = employee_map.get(l.lead_owner)
-
-        for p in matched_products:
-            new_row = l.copy()
-            new_row.update({
-                "product_code": p.get("product") or "-",
-                "product_name": p.get("product_name") or "-",
-                "amount": p.get("product_amount") or 0,
-                "employee_name": emp.employee_name if emp else "-",
-                "employee_id": emp.employee_number if emp else "-",
-                "designation": emp.designation if emp else "-",
-                "branch_info": branch or {"branch": "No SOL", "district": "-", "region": "-", "zone": "-"},
-                "contact": l.mobile_no or l.phone or "-"
-            })
-            final_leads.append(new_row)
-
-    return final_leads, branch_map, employee_map, product_map
-
+    return final_leads, {}, {}, {}
 
 @frappe.whitelist()
 def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
@@ -268,169 +228,11 @@ def get_leads(from_date, to_date, limit=None, offset=0, filters=None):
         }
     }
 
-
 def validate_date_range(from_date, to_date):
     if not from_date or not to_date: frappe.throw("Dates are required")
     f, t = getdate(from_date), getdate(to_date)
     if f > t: frappe.throw("From Date cannot be after To Date")
     return f, t
-
-
-# sahayog/scrm/api/report_access.py (Ke andar changes)
-
-@frappe.whitelist()
-def queue_leads_export(from_date, to_date, filters=None, format="csv"):
-    user = frappe.session.user
-
-    frappe.cache().set_value(
-        f"export_status_{user}",
-        {"status": "processing"},
-        expires_in_sec=600
-    )
-
-    frappe.enqueue(
-        method="sahayog.scrm.api.report_access.run_leads_export_job",
-        queue="long",
-        timeout=3600,
-        user=user,
-        from_date=from_date,
-        to_date=to_date,
-        filters=filters,
-        format=format
-    )
-    return {"status": "queued"}
-
-
-import io
-import csv
-import zipfile
-
-
-def run_leads_export_job(user, from_date, to_date, filters=None, format="csv"):
-    frappe.set_user(user)
-
-    try:
-        data = get_leads(from_date, to_date, filters=filters)
-        leads = data.get("leads", [])
-
-        headers = [
-            "Sr.No.", "Status", "Lead ID", "Customer", "Contact",
-            "Source", "Product Code", "Product Name", "Amount",
-            "Employee Name", "Employee ID", "Designation",
-            "SOL ID", "Branch", "District", "Region", "Zone", "Created On"
-        ]
-
-        # ---------- CREATE CSV IN MEMORY (FAST) ----------
-        output = io.StringIO()
-        writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-
-        writer.writerow(headers)
-
-        for i, l in enumerate(leads):
-            b = l.get("branch_info", {})
-            writer.writerow([
-                i + 1,
-                l.status,
-                l.name,
-                l.lead_name or "",
-                l.contact,
-                l.source or "",
-                l.product_code,
-                l.product_name,
-                l.amount,
-                l.employee_name,
-                l.employee_id,
-                l.designation,
-                l.sol_id or "-",
-                b.get("branch", "-"),
-                b.get("district", "-"),
-                b.get("region", "-"),
-                b.get("zone", "-"),
-                format_date(l.creation, "dd-mm-yyyy")
-            ])
-
-        csv_content = output.getvalue()
-        output.close()
-
-        # ---------- HANDLE FORMAT ----------
-        if format == "zip":
-            zip_buffer = io.BytesIO()
-
-            with zipfile.ZipFile(
-                zip_buffer,
-                "w",
-                compression=zipfile.ZIP_DEFLATED,
-                compresslevel=6  # balanced speed + compression
-            ) as zip_file:
-                zip_file.writestr(
-                    f"crm_leads_{from_date}_to_{to_date}.csv",
-                    csv_content
-                )
-
-            file_content = zip_buffer.getvalue()
-            filename = f"crm_leads_{from_date}_to_{to_date}.zip"
-
-        else:
-            file_content = csv_content
-            filename = f"crm_leads_{from_date}_to_{to_date}.csv"
-        
-        # ---------- SAVE FILE ----------
-        file_doc = frappe.get_doc({
-            "doctype": "File",
-            "file_name": filename,
-            "content": file_content,
-            "is_private": 1
-        }).insert(ignore_permissions=True)
-
-        status_data = {
-            "status": "completed",
-            "file_url": file_doc.file_url,
-            "row_count": len(leads),
-            "from_date": from_date,
-            "to_date": to_date
-        }
-
-        frappe.cache().set_value(
-            f"export_status_{user}",
-            status_data,
-            expires_in_sec=600
-        )
-
-        notify_user(
-            user,
-            f"Export Ready: {filename}. "
-            f"<a href='{file_doc.file_url}' target='_blank'>Download</a>"
-        )
-
-        frappe.db.commit()
-
-    except Exception as e:
-        frappe.db.rollback()
-        frappe.log_error(f"CRM Export Job Failed: {str(e)}", frappe.get_traceback())
-        frappe.cache().set_value(
-            f"export_status_{user}",
-            {"status": "failed", "error": str(e)},
-            expires_in_sec=600
-        )
-    
-@frappe.whitelist()
-def check_export_status():
-    return frappe.cache().get_value(f"export_status_{frappe.session.user}") or {"status": "pending"}
-
-def notify_user(user, message):
-    try:
-        notification_doc = frappe.new_doc("Notification Log")
-        notification_doc.update({
-            "for_user": user,
-            "subject": "Lead Export Ready",
-            "type": "Alert",
-            "document_type": "Lead",
-        })
-        notification_doc.insert(ignore_permissions=True)
-        frappe.db.commit()
-    except Exception:
-        frappe.log_error("Notify User Error", frappe.get_traceback())
-
 
 @frappe.whitelist()
 def get_employee_performance_data(from_date, to_date, sol_ids=None):
@@ -501,7 +303,6 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None):
             message=frappe.get_traceback()
         )
         raise
-
 
 @frappe.whitelist()
 def get_all_products_sources():
@@ -669,6 +470,7 @@ def transfer_employee_leads(target_employee, source_employee):
         )
 
         frappe.throw("Error occurred while transferring leads")
+
 @frappe.whitelist()
 def get_employee_lead_count(employee):
 
@@ -742,3 +544,672 @@ def get_branches_by_filters(zones=None, regions=None, sol_ids=None):
             )
             
     return branches
+
+# ==============================================================================
+# METHOD: generate_fast_lead_report()
+INFO_FILE_NAME = "lead_report_info.json"
+
+
+def get_report_info():
+    import json
+    info_path = frappe.get_site_path("private", "files", INFO_FILE_NAME)
+    if os.path.exists(info_path):
+        try:
+            with open(info_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_report_info(info_dict):
+    import json
+    info_path = frappe.get_site_path("private", "files", INFO_FILE_NAME)
+    with open(info_path, "w", encoding="utf-8") as f:
+        json.dump(info_dict, f, indent=2)
+
+
+@frappe.whitelist()
+def get_fast_lead_report_info():
+    """Whitelisted API for Admin Dashboard Widget to get live status of Master CSV report and server files list."""
+    import datetime
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    info = get_report_info()
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    active_filename = info.get("active_filename", "lead_report.csv")
+    active_path = os.path.join(site_private_path, active_filename)
+
+    backup_filename = info.get("backup_filename", "lead_report_backup.csv")
+    backup_path = os.path.join(site_private_path, backup_filename)
+    backup_exists = os.path.exists(backup_path)
+    backup_size_mb = round(os.path.getsize(backup_path) / (1024 * 1024), 2) if backup_exists else 0
+
+    file_exists = os.path.exists(active_path) or os.path.exists(os.path.join(site_private_path, "lead_report.csv"))
+    size_mb = 0
+    if os.path.exists(active_path):
+        size_mb = round(os.path.getsize(active_path) / (1024 * 1024), 2)
+    elif os.path.exists(os.path.join(site_private_path, "lead_report.csv")):
+        size_mb = round(os.path.getsize(os.path.join(site_private_path, "lead_report.csv")) / (1024 * 1024), 2)
+
+    server_files = []
+    if is_admin and os.path.exists(site_private_path):
+        for fname in sorted(os.listdir(site_private_path), reverse=True):
+            if (fname.startswith("lead_report") and fname.endswith(".csv")) or fname == "lead_report_info.json":
+                fpath = os.path.join(site_private_path, fname)
+                mtime = os.path.getmtime(fpath)
+                mtime_str = datetime.datetime.fromtimestamp(mtime).strftime("%d-%m-%Y %H:%M:%S")
+                fsize_mb = round(os.path.getsize(fpath) / (1024 * 1024), 2)
+                is_active = fname == active_filename or fname == "lead_report.csv"
+                is_backup = fname == backup_filename or fname == "lead_report_backup.csv"
+                is_info = fname == "lead_report_info.json"
+
+                server_files.append({
+                    "filename": fname,
+                    "size_mb": fsize_mb,
+                    "modified_at": mtime_str,
+                    "is_active": is_active and not is_info,
+                    "is_backup": is_backup and not is_active and not is_info,
+                    "is_info": is_info,
+                    "file_url": f"/private/files/{fname}"
+                })
+
+    status = info.get("status", "Ready" if file_exists else "Not Generated")
+
+    # Auto-heal stuck "Generating" status if info file was last updated > 10 minutes ago
+    info_file_path = os.path.join(site_private_path, INFO_FILE_NAME)
+    if status == "Generating" and os.path.exists(info_file_path):
+        mtime = os.path.getmtime(info_file_path)
+        if (datetime.datetime.now().timestamp() - mtime) > 600:
+            status = "Ready"
+            info["status"] = "Ready"
+            save_report_info(info)
+
+    return {
+        "is_admin": is_admin,
+        "status": status,
+        "last_generated_at": info.get("last_generated_at", "-"),
+        "active_filename": active_filename,
+        "backup_filename": backup_filename,
+        "backup_exists": backup_exists,
+        "backup_size_mb": backup_size_mb,
+        "size_mb": size_mb,
+        "total_records": info.get("total_records", 0),
+        "file_exists": file_exists,
+        "server_files": server_files
+    }
+
+
+def get_user_triggered_by_string(user=None):
+    user = user or frappe.session.user
+    if not user or user in ["Guest", "None"]:
+        return "⏰ Automatic System Cron Scheduler (3:30 AM IST)"
+
+    if user == "Administrator":
+        return "System Administrator (Administrator Account)"
+
+    try:
+        emp = frappe.db.get_value("Employee", {"user_id": user}, ["employee_name", "employee_number"], as_dict=True)
+        if emp and emp.get("employee_name"):
+            emp_name = emp.get("employee_name")
+            emp_num = emp.get("employee_number")
+            if emp_num:
+                return f"{emp_name} (Emp ID: {emp_num})"
+            return f"{emp_name} ({user})"
+
+        full_name = frappe.db.get_value("User", user, "full_name") or user
+        return f"{full_name} ({user})"
+    except Exception:
+        return f"{user}"
+
+
+@frappe.whitelist()
+def trigger_fast_lead_report_job(force_rebuild=False):
+    """Enqueues generate_fast_lead_report in Frappe background long worker to prevent HTTP 504 Gateway Timeout."""
+    import shutil
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    if not is_admin:
+        frappe.throw("Only Administrators can trigger master lead report generation.")
+
+    if isinstance(force_rebuild, str):
+        force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
+
+    info = get_report_info()
+
+    # Prevent duplicate background worker execution
+    if info.get("status") == "Generating":
+        return {
+            "status": "already_running",
+            "message": "Report generation is already running in background worker.",
+            "force_rebuild": force_rebuild
+        }
+
+    triggered_by = get_user_triggered_by_string(user)
+
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+    prev_active_filename = info.get("active_filename", "lead_report.csv")
+    prev_active_path = os.path.join(site_private_path, prev_active_filename)
+
+    backup_filename = "lead_report_backup.csv"
+    backup_filepath = os.path.join(site_private_path, backup_filename)
+    if os.path.exists(prev_active_path):
+        try:
+            shutil.copyfile(prev_active_path, backup_filepath)
+        except Exception:
+            pass
+
+    info["status"] = "Generating"
+    info["backup_filename"] = backup_filename if os.path.exists(backup_filepath) else prev_active_filename
+    save_report_info(info)
+
+    frappe.enqueue(
+        method="sahayog.scrm.api.report_access.generate_fast_lead_report",
+        queue="long",
+        timeout=3600,
+        is_async=True,
+        force_rebuild=force_rebuild,
+        triggered_by=triggered_by
+    )
+
+    return {
+        "status": "success",
+        "message": "Master report generation enqueued in background long worker.",
+        "force_rebuild": force_rebuild
+    }
+
+
+# ==============================================================================
+# METHOD: generate_fast_lead_report(force_rebuild=False)
+# PURPOSE: Executed by Cron Job or Admin manually. Runs MariaDB INTO OUTFILE
+#          query to dump all database lead records into /tmp/ first, then moves
+#          it to timestamped CSV in private/files with zero-downtime backup.
+# ==============================================================================
+@frappe.whitelist()
+def generate_fast_lead_report(force_rebuild=False, triggered_by=None):
+    import shutil
+    import datetime
+    import csv
+
+    if frappe.flags.in_scheduler or frappe.session.user in ["Guest", None, ""]:
+        frappe.set_user("Administrator")
+        user = "Administrator"
+    else:
+        user = frappe.session.user
+
+    roles = frappe.get_roles(user)
+    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+
+    if isinstance(force_rebuild, str):
+        force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
+
+    if not triggered_by:
+        triggered_by = get_user_triggered_by_string(frappe.session.user)
+
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    try:
+        return _execute_lead_report_generation(force_rebuild, site_private_path, triggered_by=triggered_by)
+    except Exception as e:
+        info = get_report_info()
+        info["status"] = "Ready"
+        save_report_info(info)
+        frappe.log_error(title="Fast Lead Report Generation Exception", message=frappe.get_traceback())
+        raise e
+
+
+def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_by=None):
+    import shutil
+    import datetime
+    import csv
+
+    info = get_report_info()
+    prev_active_filename = info.get("active_filename", "lead_report.csv")
+    prev_active_path = os.path.join(site_private_path, prev_active_filename)
+
+    standard_filepath = os.path.join(site_private_path, "lead_report.csv")
+    if not os.path.exists(prev_active_path) and os.path.exists(standard_filepath):
+        prev_active_path = standard_filepath
+        prev_active_filename = "lead_report.csv"
+
+    # Create backup file before rebuilding if active file exists
+    backup_filename = "lead_report_backup.csv"
+    backup_filepath = os.path.join(site_private_path, backup_filename)
+    if os.path.exists(prev_active_path):
+        try:
+            shutil.copyfile(prev_active_path, backup_filepath)
+        except Exception:
+            pass
+
+    file_exists = os.path.exists(prev_active_path) and not force_rebuild
+
+    # Mark status as Generating in info JSON
+    info["status"] = "Generating"
+    info["backup_filename"] = backup_filename if os.path.exists(backup_filepath) else prev_active_filename
+    save_report_info(info)
+
+    # Calculate rolling 3-day window
+    today = datetime.date.today()
+    start_date = today - datetime.timedelta(days=3)
+    start_datetime = f"{start_date} 00:00:00"
+
+    # 1. Decide date query criteria
+    if not file_exists:
+        # Full initial dump or forced rebuild: Fetch ALL historical lead records from Day 1 of CRM
+        where_clause = "1=1"
+    else:
+        # Incremental Sync: Catch creations or modifications from last 3 days
+        where_clause = """
+            l.creation >= '{start_datetime}' OR
+            l.modified >= '{start_datetime}'
+        """.format(start_datetime=start_datetime)
+
+    query = """
+        SELECT
+            l.name,
+            IFNULL(l.status, ''),
+            IFNULL(l.lead_name, ''),
+            IFNULL(COALESCE(l.mobile_no, l.phone), ''),
+            IFNULL(l.source, ''),
+            IFNULL(lp.product, ''),
+            IFNULL(lp.product_name, ''),
+            IFNULL(lp.product_amount, 0),
+            IFNULL(e.employee_name, ''),
+            IFNULL(e.employee_number, ''),
+            IFNULL(e.designation, ''),
+            IFNULL(l.sol_id, ''),
+            IFNULL(sb.branch, ''),
+            IFNULL(sb.district, ''),
+            IFNULL(sb.region, ''),
+            IFNULL(sb.zone, ''),
+            DATE_FORMAT(l.creation, '%d-%m-%Y') as created_on,
+            IFNULL(l.lead_owner, '')
+        FROM `tabLead` l
+        LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
+        LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
+        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
+        WHERE {where_clause}
+        ORDER BY l.creation DESC
+    """.format(where_clause=where_clause)
+
+    frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
+    db_leads = frappe.db.sql(query, as_list=True)
+
+    headers = [
+        "Lead ID", "Status", "Lead Name", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
+    ]
+
+    new_leads_map = {}
+    for row in db_leads:
+        lead_id = row[0]
+        new_leads_map.setdefault(lead_id, []).append(row)
+
+    unique_id = frappe.generate_hash(length=6)
+    temp_filepath = f"/tmp/lead_report_temp_{unique_id}.csv"
+
+    if not file_exists:
+        # Full initial dump or forced rebuild
+        with open(temp_filepath, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+            writer.writerow(headers)
+            for lead_id, rows in new_leads_map.items():
+                for r in rows:
+                    writer.writerow(r)
+    else:
+        # Incremental Sync
+        existing_rows = []
+        with open(prev_active_path, "r", encoding="utf-8") as f_in:
+            reader = csv.reader(f_in)
+            try:
+                file_headers = next(reader)
+            except StopIteration:
+                file_headers = headers
+
+            for r in reader:
+                if len(r) > 0:
+                    lead_id = r[0]
+                    if lead_id in new_leads_map:
+                        continue
+                    existing_rows.append(r)
+
+        with open(temp_filepath, "w", newline="", encoding="utf-8") as f_out:
+            writer = csv.writer(f_out, quoting=csv.QUOTE_ALL)
+            writer.writerow(file_headers)
+            for r in existing_rows:
+                writer.writerow(r)
+            for lead_id, rows in new_leads_map.items():
+                for r in rows:
+                    writer.writerow(r)
+
+    now_dt = frappe.utils.now_datetime()
+    now_formatted = now_dt.strftime("%d-%m-%Y %H:%M:%S")
+
+    # If force rebuild, generate new timestamped filename. Otherwise update existing active file.
+    if force_rebuild or not file_exists or not prev_active_filename or prev_active_filename == "lead_report.csv":
+        timestamp_str = now_dt.strftime("%Y%m%d_%H%M%S")
+        new_filename = f"lead_report_{timestamp_str}.csv"
+    else:
+        new_filename = prev_active_filename
+
+    new_filepath = os.path.join(site_private_path, new_filename)
+
+    # Atomic copy to active file and standard lead_report.csv
+    shutil.copyfile(temp_filepath, new_filepath)
+    shutil.copyfile(temp_filepath, standard_filepath)
+
+    try:
+        os.remove(temp_filepath)
+    except Exception:
+        pass
+
+    # Clean up older report CSV files on server during full rebuild
+    if force_rebuild:
+        try:
+            keep_files = set([new_filename, backup_filename, "lead_report.csv"])
+            for fname in os.listdir(site_private_path):
+                if fname.startswith("lead_report") and fname.endswith(".csv") and fname not in keep_files:
+                    old_fpath = os.path.join(site_private_path, fname)
+                    os.remove(old_fpath)
+        except Exception:
+            pass
+
+    file_size = os.path.getsize(new_filepath)
+    now_formatted = now_dt.strftime("%d-%m-%Y %H:%M:%S")
+
+    latest_sample = {}
+    if db_leads:
+        first_row = db_leads[0]
+        latest_sample = {
+            "lead_id": first_row[0],
+            "status": first_row[1],
+            "lead_name": first_row[2],
+            "sol_id": first_row[11],
+            "branch": first_row[12],
+            "created_on": first_row[16],
+        }
+
+    # Save updated info metadata
+    updated_info = {
+        "status": "Ready",
+        "active_filename": new_filename,
+        "backup_filename": backup_filename,
+        "last_generated_at": now_formatted,
+        "size_mb": round(file_size / (1024 * 1024), 2),
+        "size_kb": round(file_size / 1024, 2),
+        "filepath": new_filepath,
+        "latest_sample": latest_sample
+    }
+    save_report_info(updated_info)
+
+    sync_result = {
+        "status": "success",
+        "method": "Full Baseline Rebuild" if force_rebuild or not file_exists else "Incremental 3-Day Rolling Sync",
+        "filename": new_filename,
+        "processed_count": len(new_leads_map),
+        "size_mb": updated_info["size_mb"],
+        "size_kb": updated_info["size_kb"],
+        "filepath": new_filepath,
+        "latest_sample": latest_sample,
+        "triggered_by": triggered_by or get_user_triggered_by_string()
+    }
+
+    try:
+        send_crm_report_sync_email(sync_result)
+    except Exception:
+        frappe.log_error(title="CRM Report Sync Email Exception", message=frappe.get_traceback())
+
+    return sync_result
+
+
+def send_crm_report_sync_email(summary_data):
+    """Sends HTML email notification to designated emails after CRM Lead Report sync."""
+    recipients = [
+        "rishabh.rahangdale@sahayogmultistate.com",
+        "talib.s@sahayogmultistate.com"
+    ]
+
+    now_str = frappe.utils.now_datetime().strftime("%d-%m-%Y %H:%M:%S")
+    subject = f"[CRM Report Sync] Fast Lead Report Sync Completed - {now_str}"
+
+    latest_sample = summary_data.get("latest_sample", {})
+    triggered_by_str = summary_data.get("triggered_by", "⏰ Automatic System Cron Scheduler (3:30 AM IST)")
+
+    message = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <div style="background-color: #0056b3; color: white; padding: 18px 24px;">
+            <h2 style="margin: 0; font-size: 20px;">📊 CRM Fast Lead Report Sync Notification</h2>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+            <p style="font-size: 15px; color: #333; margin-top: 0;">
+                The master lead report CSV file has been successfully generated / updated on the server.
+            </p>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555; width: 40%;">Task / Cron Name:</td>
+                    <td style="padding: 10px 0; color: #111;"><code>generate_fast_lead_report</code></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Execution Time:</td>
+                    <td style="padding: 10px 0; color: #111;">{now_str} IST</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Executed By / Source:</td>
+                    <td style="padding: 10px 0; color: #0056b3; font-weight: bold;">{triggered_by_str}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Sync Method:</td>
+                    <td style="padding: 10px 0; color: #28a745; font-weight: bold;">{summary_data.get("method")}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Master CSV File:</td>
+                    <td style="padding: 10px 0; color: #111;"><code>{summary_data.get("filename", "lead_report.csv")}</code></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Processed Records Count:</td>
+                    <td style="padding: 10px 0; color: #111; font-weight: bold;">{summary_data.get("processed_count", 0):,} leads</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">Master CSV Size:</td>
+                    <td style="padding: 10px 0; color: #111;">{summary_data.get("size_mb", 0)} MB ({summary_data.get("size_kb", 0)} KB)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #eeeeee;">
+                    <td style="padding: 10px 0; font-weight: bold; color: #555;">File Path:</td>
+                    <td style="padding: 10px 0; color: #666; font-size: 12px; word-break: break-all;"><code>{summary_data.get("filepath")}</code></td>
+                </tr>
+            </table>
+
+            <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 16px; color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">
+                📌 Latest Synced Lead Sample
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; background-color: #f8f9fa; border-radius: 6px; padding: 10px;">
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Lead ID:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("lead_id", "-")}</td>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Status:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("status", "-")}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Lead Name:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("lead_name", "-")}</td>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">Created On:</td>
+                    <td style="padding: 8px; color: #111;">{latest_sample.get("created_on", "-")}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: bold; color: #555;">SOL ID / Branch:</td>
+                    <td style="padding: 8px; color: #111;" colspan="3">{latest_sample.get("sol_id", "-")} - {latest_sample.get("branch", "-")}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="background-color: #f1f3f5; color: #777; padding: 12px 24px; text-align: center; font-size: 12px;">
+            Sahayog SCRM System Automated Notification
+        </div>
+    </div>
+    """
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=message,
+        now=True
+    )
+
+
+# ==============================================================================
+# METHOD: download_fast_lead_report(from_date, to_date, filters=None)
+# PURPOSE: Triggered by user's 'DOWNLOAD' action on CRM Lead Report dashboard.
+#          Instead of querying database, it opens the pre-generated master CSV
+#          file on the server, parses the rows in Python, applies active
+#          filters line-by-line, and streams the filtered CSV to the browser.
+#          If master file is being generated, seamlessly streams from backup file!
+# ==============================================================================
+@frappe.whitelist()
+def download_fast_lead_report(from_date, to_date, filters=None):
+    import datetime
+    import csv
+    import io
+
+    info = get_report_info()
+    site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
+
+    active_filename = info.get("active_filename", "lead_report.csv")
+    backup_filename = info.get("backup_filename", "lead_report_backup.csv")
+
+    report_path = os.path.join(site_private_path, active_filename)
+    backup_path = os.path.join(site_private_path, backup_filename)
+    standard_path = os.path.join(site_private_path, "lead_report.csv")
+
+    # Seamless fallback to backup file if active file is Generating or missing!
+    if info.get("status") == "Generating" or not os.path.exists(report_path):
+        if os.path.exists(backup_path):
+            report_path = backup_path
+        elif os.path.exists(standard_path):
+            report_path = standard_path
+        else:
+            frappe.throw("Master lead report file is being generated for the first time. Please retry in 1 minute.")
+
+    from_date, to_date = validate_date_range(from_date, to_date)
+    ui_filters = frappe.parse_json(filters) if filters else {}
+
+    # 1. Preferences & UI filters parsing
+    user = frappe.session.user
+    has_pref = False
+    is_all_regions = False 
+    products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
+    
+    if user != "Administrator":
+        pref_res = get_user_report_preference_record(user)
+        if pref_res:
+            has_pref = True
+            p = pref_res[0]
+            is_all_regions = p.get("all_regions")
+            zones_pref = {norm(x) for x in p.get("zone", [])}
+            regions_pref = {norm(x) for x in p.get("region", [])}
+            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
+
+    # UI Filters Standardizing
+    if "product" in ui_filters:
+        products_pref = {norm(x) for x in ui_filters.get("product", [])}
+    if "source" in ui_filters:
+        sources_pref = {norm(x) for x in ui_filters.get("source", [])}
+    if "zone" in ui_filters:
+        ui_zones = {norm(x) for x in ui_filters.get("zone", [])}
+        zones_pref = zones_pref.intersection(ui_zones) if ui_zones else set()
+    if "region" in ui_filters:
+        ui_regions = {norm(x) for x in ui_filters.get("region", [])}
+        regions_pref = regions_pref.intersection(ui_regions) if ui_regions else set()
+    if "sol_id" in ui_filters:
+        ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
+        sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
+
+    current_emp_number = frappe.db.get_value("Employee", {"user_id": user}, "employee_number")
+
+    # 2. Date parser helper
+    def parse_csv_date(date_str):
+        try:
+            return datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
+        except:
+            return None
+
+    # Stream to memory
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    
+    headers = [
+        "Lead ID", "Status", "Lead Name", "Contact", "Source",
+        "Product Code", "Product Name", "Amount",
+        "Employee Name", "Employee ID", "Designation",
+        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
+    ]
+    writer.writerow(headers)
+
+    with open(report_path, "r", encoding="utf-8") as f_in:
+        reader = csv.reader(f_in)
+        
+        # Skip the header row
+        try:
+            next(reader)
+        except StopIteration:
+            pass
+
+        for row in reader:
+            if len(row) < 17:
+                continue
+
+            # A. Date Filter Check (row[16] is Created On)
+            row_date = parse_csv_date(row[16])
+            if not row_date or row_date < from_date or row_date > to_date:
+                continue
+
+            # B. Owner Preference (If no preference -> only own leads)
+            if user != "Administrator" and not has_pref:
+                if len(row) > 17 and row[17] != user:
+                    continue
+
+            # C. SOL ID Preference
+            curr_sol = row[11]
+            if sol_ids_pref and curr_sol not in sol_ids_pref:
+                continue
+
+            # D. Zone / Region Preference
+            curr_zone = norm(row[15])
+            curr_region = norm(row[14])
+            if zones_pref and curr_zone not in zones_pref:
+                continue
+            
+            region_match = True
+            if is_all_regions:
+                region_match = True
+            elif regions_pref:
+                allowed = set(regions_pref)
+                for r in list(regions_pref):
+                    allowed |= REGION_ALIAS_MAP.get(r, set())
+                region_match = curr_region in allowed
+            if not region_match:
+                continue
+
+            # E. UI Product Filter
+            if products_pref and norm(row[5]) not in products_pref:
+                continue
+
+            # F. UI Source Filter
+            if sources_pref and norm(row[4]) not in sources_pref:
+                continue
+
+            # Write matching row
+            writer.writerow(row)
+
+    filedata = output.getvalue().encode("utf-8")
+    output.close()
+
+    frappe.response['filename'] = f"filtered_lead_report_{from_date}_to_{to_date}.csv"
+    frappe.response['filecontent'] = filedata
+    frappe.response['type'] = "download"

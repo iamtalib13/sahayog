@@ -1,129 +1,75 @@
 # Copyright (c) 2025, Developer Team and contributors
 # For license information, please see license.txt
 
+import re
+from typing import Any, Dict, List, Optional, Union
+
 import frappe
 from frappe import _
 from frappe.model.document import Document
-import re
+from frappe.utils import now_datetime, getdate, nowdate, add_months
+
 
 class Agent(Document):
-    def validate(self):
-        if self.status == "Allocated":
-           self.agent_status = "LIVE"
+    """
+    Controller for Agent DocType.
+    Manages agent metadata, commission scanning, and active/inactive status lifecycle.
+    Note: Allocation and Unallocation workflows are disabled.
+    """
 
-         # --- Start of Feature Addition ---
-        # If both auth_id and employee are blank, force status to Unallocated
-        if not self.auth_id and not self.employee and self.status == "Allocated":
-            self.status = "Unallocated"
-        # --- End of Feature Addition ---
-        
+    def validate(self) -> None:
+        """Validate agent state before saving."""
+        self.set_agent_type_from_code()
 
-#         # Proceed only if employee exists
-#         if self.requested_by:
-#             expected_email = f"{self.employee}@sahayog.com"
-#             if str(self.requested_by).strip().lower() != expected_email.lower():
-#                 # frappe.throw(_(
-#                 #     f"Employee  '{self.employee}' and '{self.requested_by}' does not match, Please connect MIS Team or AppTech Team apptech@sahayogmultistate.com."
-#                 # ))
-#                 frappe.throw(_(
-#     f"""
-#     <div style='font-size:14px; line-height:1.6; color:#333;'>
-#         <p>
-#             <strong>Validation Error:</strong><br>
-#             Employee <b style='color:#d9534f;'>{self.employee}</b> 
-#             and Requested By <b style='color:#d9534f;'>{self.requested_by}</b> 
-#             do not match.
-#         </p>
-#         <p>
-#             Please contact the MIS Team or AppTech Team for verification.<br>
-#             <a href='mailto:apptech@sahayogmultistate.com' 
-#                style='color:#0275d8; text-decoration:none; font-weight:500;'>
-#                apptech@sahayogmultistate.com
-#             </a>
-#         </p>
-#     </div>
-#     """
-# ))
+    def set_agent_type_from_code(self) -> None:
+        """Extract and set agent_type (RDDSA / DDDSA) based on agent_code or document name."""
+        code = str(self.agent_code or self.name or "").upper()
+        if code.startswith("RDDSA"):
+            self.agent_type = "RDDSA"
+        elif code.startswith("DDDSA"):
+            self.agent_type = "DDDSA"
 
-
-
-
-    def before_save(self):
-        # if getattr(self, "_requested_by_validated", False):
-        #     return
+    def before_save(self) -> None:
+        """Actions to perform before saving document."""
         self._requested_by_validated = True
 
         if self.agent_name:
             self.agent_name = self.agent_name.upper()
 
-        if self.status == "Unallocated":
-            self.clear_allocation_fields()
-
-
-        # Skip if requested_by is blank
-        # if not self.requested_by:
-        #     return
-
-        # # Proceed only if employee exists
-        # if self.requested_by:
-        #     expected_email = f"{self.employee}@sahayog.com"
-        #     if str(self.requested_by).strip().lower() != expected_email.lower():
-        #         frappe.throw(_(
-        #             f"Invalid Requested By value. It must match '{expected_email}'."
-        #         ))
-
-        # Call helper method
-        # self.set_employee_from_auth_id()
-
-
-    def set_employee_from_auth_id(self):
-        """Extract employee number from auth_id if it starts with SAH"""
+    def set_employee_from_auth_id(self) -> None:
+        """Extract employee number from auth_id and update status accordingly."""
         if not self.auth_id:
-            # No auth_id → do nothing
+            self.employee = None
+            self.status = "Unallocated"
             return
 
-        auth = self.auth_id.strip().upper()
+        auth_str = str(self.auth_id).strip()
+        employee_raw = (
+            auth_str.upper().replace("SAH0", "")
+            if auth_str.upper().startswith("SAH0")
+            else auth_str
+        )
+        digits = re.sub(r"\D", "", employee_raw).lstrip("0")
 
-        if auth.startswith("SAH"):
-            match = re.search(r'\d+', auth)
-            if match:
-                number_part = match.group(0).lstrip('0')  # remove leading zeros
-                self.employee = number_part if number_part else ""
-            else:
-                self.employee = ""
+        if digits:
+            self.employee = digits
+            self.status = "Allocated"
         else:
-            # Not SAH prefix → clear employee
-            self.employee = ""
+            self.employee = None
+            self.status = "Unallocated"
 
     @frappe.whitelist()
-    def approve_allocation(self):
-        """Approve allocation and set employee"""
-        self.approved_by = frappe.session.user
-        self.approved_on = frappe.utils.now_datetime()
-        self.status = "Allocated"
-        
-        # Find Employee linked with requested_by user
-        if self.requested_by:
-            employee = frappe.db.get_value("Employee", {"user_id": self.requested_by}, "name")
-            if employee:
-                self.employee = employee
-            else:
-                frappe.throw(f"No Employee record found for user {self.requested_by}")
-        
-        self.save()
-        return {"success": True, "message": "Agent Allocated Successfully"}
+    def approve_allocation(self) -> Dict[str, Union[bool, str]]:
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
-    def reject_allocation(self):
-        """Reject allocation and clear request info"""
-        self.requested_by = None
-        self.requested_on = None
-        self.status = "Unallocated"
-        self.save()
-        return {"success": True, "message": "Agent Allocation Rejected"}
+    def reject_allocation(self) -> Dict[str, Union[bool, str]]:
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
-    def clear_allocation_fields(self):
-        """Clear allocation fields without saving"""
+    def clear_allocation_fields(self) -> None:
+        """Clear all allocation fields on agent without saving."""
         self.requested_by = None
         self.requested_on = None
         self.approved_by = None
@@ -132,174 +78,152 @@ class Agent(Document):
         self.auth_id = None
 
     @frappe.whitelist()
-    def unallocate_agent(self):
-        """Public method to unallocate and save changes"""
-        self.status = "Unallocated"
-        self.clear_allocation_fields()
-        self.save()
-        return {"success": True, "message": "Agent Unallocated Successfully"}
+    def unallocate_agent(self) -> Dict[str, Union[bool, str]]:
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
-    def allocation_request(self, approver_user_id=None):
-        """Raise allocation request with selected approver"""
-        doc = frappe.get_doc(self)
-        
-        # Validate approver_user_id
-        if not approver_user_id:
-            frappe.throw(_("Approver selection is required"))
-        
-        # Verify user exists and get employee details
-        user_doc = frappe.get_doc("User", approver_user_id)
-        if not user_doc.enabled:
-            frappe.throw(_("Selected approver user is disabled"))
-        
-        # Get employee details for this user
-        employee = frappe.db.get_value(
-            "Employee", 
-            {"user_id": approver_user_id, "status": "Active"}, 
-            ["name", "employee_name"], 
-            as_dict=True
-        )
-        
-        if not employee:
-            frappe.throw(_("No active employee found for selected approver"))
-        
-        # Skip branch validation since user is coming from filtered list
-        # The get_branch_managers function already filtered valid managers
-        
-        # Set allocation request fields
-        doc.requested_by = frappe.session.user
-        doc.requested_on = frappe.utils.now_datetime()
-        doc.status = "Pending"
-        doc.approved_by = approver_user_id  # Only user_id as requested
-        doc.save()
-        
+    def allocation_request(
+        self, approver_user_id: Optional[str] = None
+    ) -> Dict[str, Union[bool, str]]:
+        """Disabled method."""
+        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+
+
+@frappe.whitelist()
+def bulk_unallocate(
+    agent_names: Union[List[str], str, None] = None
+) -> Dict[str, Any]:
+    """Disabled method."""
+    frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+
+
+@frappe.whitelist()
+def bulk_transfer(
+    agent_names: Union[List[str], str, None] = None,
+    to_employee: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Transfer selected agents to another employee in bulk."""
+    if isinstance(agent_names, str):
+        agent_names = frappe.parse_json(agent_names)
+
+    if not agent_names:
         return {
-            "success": True,
-            "message": f"Allocation request sent to {employee.employee_name} for approval"
+            "success": False,
+            "message": _("No agents selected for transfer"),
         }
 
-@frappe.whitelist()
-def bulk_unallocate(agent_names: list[str] | str = None):
-    """Unallocate selected agents (bulk)"""
-    if isinstance(agent_names, str):
-        import json
-        agent_names = json.loads(agent_names)
-    
-    if not agent_names:
-        return {"success": False, "message": "No agents selected for unallocation"}
-    
-    for agent in agent_names:
-        doc = frappe.get_doc("Agent", agent)
-        doc.status = "Unallocated"
-        doc.requested_by = None
-        doc.requested_on = None
-        doc.approved_by = None
-        doc.approved_on = None
-        doc.employee = None
-        doc.save()
-    
-    return {
-        "success": True,
-        "count": len(agent_names),
-        "message": f"{len(agent_names)} agent(s) unallocated successfully",
-    }
-
-@frappe.whitelist()
-def bulk_transfer(agent_names: list[str] | str = None, to_employee: str = None):
-    """Transfer selected agents to another employee"""
-    if isinstance(agent_names, str):
-        import json
-        agent_names = json.loads(agent_names)
-    
-    if not agent_names:
-        return {"success": False, "message": "No agents selected for transfer"}
-    
     if not to_employee:
-        return {"success": False, "message": "Target employee not provided"}
-    
-    for agent in agent_names:
-        doc = frappe.get_doc("Agent", agent)
-        doc.employee = to_employee
-        doc.save()
-    
+        return {
+            "success": False,
+            "message": _("Target employee not provided"),
+        }
+
+    if not isinstance(agent_names, (list, tuple)):
+        agent_names = [agent_names]
+
+    frappe.db.set_value(
+        "Agent",
+        {"name": ["in", agent_names]},
+        "employee",
+        to_employee,
+        update_modified=True,
+    )
+
     return {
         "success": True,
         "count": len(agent_names),
-        "message": f"{len(agent_names)} agent(s) transferred to employee {to_employee} successfully",
+        "message": _(
+            "{0} agent(s) transferred to employee {1} successfully"
+        ).format(len(agent_names), to_employee),
     }
 
-# Module level functions (outside the class)
+
 @frappe.whitelist()
-def get_branch_managers(branch_code):
-    """Get all Branch Managers for given branch code - Grouped by designation"""
+def get_branch_managers(branch_code: str) -> List[Dict[str, Any]]:
+    """Get all Branch Managers for given branch code grouped & ordered by designation priority."""
     if not branch_code:
         frappe.throw(_("Branch Code is required"))
-    
-    # Exact designations as stored in the system
+
     allowed_designations = [
         "BRANCH MANAGER",
-        "Asst. Branch Manager", 
-        "Branch Operation Manager"
+        "Asst. Branch Manager",
+        "Branch Operation Manager",
     ]
-    
+
     try:
-        # Get all employees with exact designations for the specific branch
         managers = frappe.db.get_all(
             "Employee",
             filters={
                 "sol_id": branch_code,
                 "status": "Active",
                 "user_id": ["!=", ""],
-                "designation": ["in", allowed_designations]
+                "designation": ["in", allowed_designations],
             },
             fields=["name", "employee_name", "user_id", "designation", "sol_id"],
-            order_by="employee_name"
+            order_by="employee_name",
         )
-        
-        # Filter only valid managers with enabled users
-        valid_managers = []
-        for manager in managers:
-            if manager.user_id:
-                # Verify user exists and is enabled
-                user_enabled = frappe.db.get_value("User", manager.user_id, "enabled")
-                if user_enabled:
-                    valid_managers.append(manager)
-        
-        # Sort by designation priority as requested
-        def get_priority(manager):
-            designation_priority = {
-                "BRANCH MANAGER": 1,           # First priority
-                "Asst. Branch Manager": 2,     # Second priority  
-                "Branch Operation Manager": 3  # Third priority
-            }
-            return designation_priority.get(manager.designation, 4)
-        
-        valid_managers.sort(key=lambda x: (get_priority(x), x.employee_name))
-        
+
+        if not managers:
+            return []
+
+        user_ids = [m.user_id for m in managers if m.get("user_id")]
+        if not user_ids:
+            return []
+
+        # Bulk fetch enabled user IDs to eliminate N+1 queries
+        enabled_users = set(
+            frappe.db.get_all(
+                "User",
+                filters={"name": ["in", user_ids], "enabled": 1},
+                pluck="name",
+            )
+        )
+
+        valid_managers = [m for m in managers if m.user_id in enabled_users]
+
+        designation_priority = {
+            "BRANCH MANAGER": 1,
+            "Asst. Branch Manager": 2,
+            "Branch Operation Manager": 3,
+        }
+
+        valid_managers.sort(
+            key=lambda x: (
+                designation_priority.get(x.designation, 4),
+                x.employee_name,
+            )
+        )
+
         return valid_managers
-        
+
     except Exception as e:
-        frappe.log_error(f"Error in get_branch_managers: {str(e)}")
+        frappe.log_error(title="Error in get_branch_managers", message=str(e))
         return []
 
 
-
 @frappe.whitelist()
-def get_approver_details(user_id):
-    """Get employee details by user_id for approver display"""
+def get_approver_details(user_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Get employee details by user_id for approver display with fallback to User."""
     if not user_id:
         return None
-    
+
     try:
-        # First try to get employee details by user_id, including email and phone
         employee = frappe.db.get_value(
-            "Employee", 
-            {"user_id": user_id, "status": "Active"}, 
-            ["employee_name", "name", "designation", "branch", "company_email", "cell_number"], 
-            as_dict=True
+            "Employee",
+            {"user_id": user_id, "status": "Active"},
+            [
+                "employee_name",
+                "name",
+                "designation",
+                "branch",
+                "company_email",
+                "cell_number",
+            ],
+            as_dict=True,
+            cache=True,
         )
-        
+
         if employee:
             return {
                 "employee_name": employee.employee_name,
@@ -308,17 +232,17 @@ def get_approver_details(user_id):
                 "branch": employee.branch,
                 "company_email": employee.company_email,
                 "cell_number": employee.cell_number,
-                "display_name": employee.employee_name
+                "display_name": employee.employee_name,
             }
-        
-        # Fallback to User's full_name if employee not found
+
         user = frappe.db.get_value(
-            "User", 
-            user_id, 
-            ["full_name", "email"], 
-            as_dict=True
+            "User",
+            user_id,
+            ["full_name", "email"],
+            as_dict=True,
+            cache=True,
         )
-        
+
         if user:
             return {
                 "employee_name": None,
@@ -327,51 +251,250 @@ def get_approver_details(user_id):
                 "branch": None,
                 "company_email": None,
                 "cell_number": None,
-                "display_name": user.full_name or user.email
+                "display_name": user.full_name or user.email,
             }
-        
-        return {
-            "display_name": user_id
-        }
-        
-    except Exception as e:
-        frappe.log_error(f"Error getting approver details: {str(e)}")
-        return {
-            "display_name": user_id
-        }
 
+        return {"display_name": user_id}
+
+    except Exception as e:
+        frappe.log_error(title="Error in get_approver_details", message=str(e))
+        return {"display_name": user_id}
 
 
 @frappe.whitelist()
-def get_employee_info(employee):
-    """Fetch employee details safely"""
-    emp = frappe.get_all(
-        "Employee",
-        filters={"name": employee},
-        fields=[
-            "employee_number",
-            "employee_name", 
-            "branch",
-            "department",
-            "designation"
-        ],
-        limit_page_length=1
-    )
-    
-    if emp:
-        return emp[0]
-    else:
+def get_employee_info(employee: str) -> Dict[str, Any]:
+    """Fetch employee details safely and efficiently from Employee DocType."""
+    if not employee:
         return {}
 
+    emp_details = frappe.db.get_value(
+        "Employee",
+        employee,
+        [
+            "name",
+            "employee_name",
+            "branch",
+            "department",
+            "designation",
+            "company_email",
+            "cell_number",
+        ],
+        as_dict=True,
+        cache=True,
+    )
 
-def has_permission(doc, ptype, user):
-    # Allow Administrator everything
+    return emp_details or {}
+
+
+def has_permission(doc: Any, ptype: str, user: str) -> bool:
+    """Evaluate permission rules for Agent document."""
     if user == "Administrator":
         return True
 
-    # Block create for everyone else
     if ptype == "create":
         return False
 
-    # Allow read / write / etc based on role permissions
     return True
+
+
+@frappe.whitelist()
+def update_existing_agent_types() -> Dict[str, Any]:
+    """Populate agent_type field for all existing Agent records in the database."""
+    frappe.db.sql(
+        "UPDATE `tabAgent` SET agent_type = 'RDDSA' WHERE name LIKE 'RDDSA%%' OR agent_code LIKE 'RDDSA%%'"
+    )
+    frappe.db.sql(
+        "UPDATE `tabAgent` SET agent_type = 'DDDSA' WHERE name LIKE 'DDDSA%%' OR agent_code LIKE 'DDDSA%%'"
+    )
+    frappe.db.commit()
+    return {"status": "success", "message": "Updated agent_type for existing records"}
+
+
+def evaluate_agent_status_from_json(comm_dict: dict) -> str:
+    """
+    Evaluates agent_status ('Active' vs 'Inactive') based on commission in the Current Month + Last 3 Months (4-month window).
+    If total commission in these 4 months > 0: returns 'Active', else returns 'Inactive'.
+    """
+    if not comm_dict:
+        return "Inactive"
+
+    today = getdate(nowdate())
+    recent_4_months = []
+    for i in range(4):
+        dt = add_months(today, -i)
+        year_str = str(dt.year)
+        month_str = str(dt.month).zfill(2)
+        recent_4_months.append((year_str, month_str))
+
+    total_recent_commission = 0.0
+    for yr, mth in recent_4_months:
+        if yr in comm_dict and isinstance(comm_dict[yr], dict):
+            if mth in comm_dict[yr] and isinstance(comm_dict[yr][mth], dict):
+                mth_comm = float(comm_dict[yr][mth].get("total_commission", 0.0) or 0.0)
+                total_recent_commission += mth_comm
+
+    return "Active" if total_recent_commission > 0 else "Inactive"
+
+
+@frappe.whitelist()
+def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
+    """
+    Scans tabSS and VS Report for the specified agent_code (rm_id).
+    Builds and saves structured JSON hierarchy with Year-wise and Month-wise total commission,
+    and updates agent_status (Active / Inactive) based on 4-month commission window.
+    """
+    if not agent_code:
+        frappe.throw(_("Agent Code is required."))
+
+    agent_doc_name = frappe.db.get_value(
+        "Agent",
+        {"agent_code": agent_code},
+        "name"
+    ) or agent_code
+
+    records = frappe.db.sql("""
+        SELECT 
+            YEAR(`date`) AS `year`,
+            LPAD(MONTH(`date`), 2, '0') AS `month`,
+            report_type,
+            SUM(CAST(COALESCE(NULLIF(commission, ''), '0') AS DECIMAL(18,2))) AS total_commission
+        FROM `tabSS and VS Report`
+        WHERE rm_id = %s OR rm_id = %s
+        GROUP BY YEAR(`date`), MONTH(`date`), report_type
+        ORDER BY `year` DESC, `month` DESC, report_type ASC
+    """, (agent_code, agent_doc_name), as_dict=True)
+
+    result = {}
+    grand_total = 0.0
+
+    for row in records:
+        year_str = str(row["year"])
+        month_str = str(row["month"])
+        report_type = str(row["report_type"])
+        comm_val = float(row["total_commission"] or 0.0)
+
+        if year_str not in result:
+            result[year_str] = {
+                "total_commission": 0.0
+            }
+        if month_str not in result[year_str]:
+            result[year_str][month_str] = {
+                "total_commission": 0.0
+            }
+
+        result[year_str][month_str][report_type] = round(comm_val, 2)
+        result[year_str][month_str]["total_commission"] = round(result[year_str][month_str]["total_commission"] + comm_val, 2)
+        result[year_str]["total_commission"] = round(result[year_str]["total_commission"] + comm_val, 2)
+        grand_total = round(grand_total + comm_val, 2)
+
+    result["grand_total_commission"] = grand_total
+
+    agent_status = evaluate_agent_status_from_json(result)
+    commission_json_str = frappe.as_json(result)
+
+    # Direct MariaDB SQL Update of commission_json and agent_status
+    frappe.db.sql(
+        """
+        UPDATE `tabAgent` 
+        SET commission_json = %s, agent_status = %s, modified = NOW() 
+        WHERE name = %s OR agent_code = %s
+        """,
+        (commission_json_str, agent_status, agent_doc_name, agent_code)
+    )
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "data": result,
+        "agent_status": agent_status,
+        "commission_json": commission_json_str,
+        "message": _("Commission JSON & Status ({0}) updated for Agent {1}").format(agent_status, agent_code),
+    }
+
+
+@frappe.whitelist()
+def bulk_update_agent_commissions() -> Dict[str, Any]:
+    """
+    Bulk Update of commission_json and agent_status for ALL agents in tabAgent.
+    1. Single Grouped Raw SQL Scan from tabSS and VS Report for all agents.
+    2. Evaluates agent_status (Active / Inactive) for 4-month window (current + 3 prior months).
+    3. Bulk updates tabAgent using direct SQL.
+    """
+    records = frappe.db.sql("""
+        SELECT 
+            rm_id,
+            YEAR(`date`) AS `year`,
+            LPAD(MONTH(`date`), 2, '0') AS `month`,
+            report_type,
+            SUM(CAST(COALESCE(NULLIF(commission, ''), '0') AS DECIMAL(18,2))) AS total_commission
+        FROM `tabSS and VS Report`
+        WHERE rm_id IS NOT NULL AND rm_id != ''
+        GROUP BY rm_id, YEAR(`date`), MONTH(`date`), report_type
+        ORDER BY rm_id ASC, `year` DESC, `month` DESC, report_type ASC
+    """, as_dict=True)
+
+    agent_data = {}
+
+    for row in records:
+        rm_id = str(row["rm_id"]).strip()
+        year_str = str(row["year"])
+        month_str = str(row["month"])
+        report_type = str(row["report_type"])
+        comm_val = float(row["total_commission"] or 0.0)
+
+        if rm_id not in agent_data:
+            agent_data[rm_id] = {"grand_total_commission": 0.0}
+
+        if year_str not in agent_data[rm_id]:
+            agent_data[rm_id][year_str] = {"total_commission": 0.0}
+
+        if month_str not in agent_data[rm_id][year_str]:
+            agent_data[rm_id][year_str][month_str] = {"total_commission": 0.0}
+
+        agent_data[rm_id][year_str][month_str][report_type] = round(comm_val, 2)
+        agent_data[rm_id][year_str][month_str]["total_commission"] = round(
+            agent_data[rm_id][year_str][month_str]["total_commission"] + comm_val, 2
+        )
+        agent_data[rm_id][year_str]["total_commission"] = round(
+            agent_data[rm_id][year_str]["total_commission"] + comm_val, 2
+        )
+        agent_data[rm_id]["grand_total_commission"] = round(
+            agent_data[rm_id]["grand_total_commission"] + comm_val, 2
+        )
+
+    # Fetch all agents in tabAgent to update both active and inactive agents
+    all_agents = frappe.db.sql_list("SELECT name FROM `tabAgent` WHERE docstatus < 2")
+
+    now_time = now_datetime()
+    active_count = 0
+    inactive_count = 0
+
+    for agent_name in all_agents:
+        comm_dict = agent_data.get(agent_name, {})
+        agent_status = evaluate_agent_status_from_json(comm_dict)
+        comm_json_str = frappe.as_json(comm_dict) if comm_dict else None
+
+        if agent_status == "Active":
+            active_count += 1
+        else:
+            inactive_count += 1
+
+        frappe.db.sql("""
+            UPDATE `tabAgent`
+            SET commission_json = %s, agent_status = %s, modified = %s
+            WHERE name = %s OR agent_code = %s
+        """, (comm_json_str, agent_status, now_time, agent_name, agent_name))
+
+    frappe.db.commit()
+
+    msg = _("Successfully updated commission JSON & status for {0} agents ({1} Active, {2} Inactive).").format(
+        len(all_agents), active_count, inactive_count
+    )
+    frappe.logger("scheduler").info(msg)
+    return {
+        "status": "success",
+        "processed": len(all_agents),
+        "active_count": active_count,
+        "inactive_count": inactive_count,
+        "message": msg
+    }

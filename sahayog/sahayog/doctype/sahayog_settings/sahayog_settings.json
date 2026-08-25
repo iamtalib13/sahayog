@@ -16,15 +16,13 @@
   "column_break_yawa",
   "notification",
   "create_stockio_request",
+  "restrict_stationery_record_creation_on_the_sahayog_ticket",
   "section_break_onti",
   "wh_dept_map",
   "branch_access",
-  "agent_setting_tab",
-  "agent_automation_days",
-  "create_agents",
-  "column_break_wzyr",
   "email_tab",
   "send",
+  "enable_ld_email_notifications",
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
@@ -75,25 +73,6 @@
    "options": "Default Warehouse"
   },
   {
-   "fieldname": "agent_setting_tab",
-   "fieldtype": "Tab Break",
-   "label": "Agent Setting"
-  },
-  {
-   "fieldname": "agent_automation_days",
-   "fieldtype": "Data",
-   "label": "Agent Automation Days"
-  },
-  {
-   "fieldname": "column_break_wzyr",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "create_agents",
-   "fieldtype": "Button",
-   "label": "Create Agents"
-  },
-  {
    "fieldname": "email_tab",
    "fieldtype": "Tab Break",
    "label": "Email Permission"
@@ -104,6 +83,13 @@
    "fieldname": "send",
    "fieldtype": "Check",
    "label": "Send Email"
+  },
+  {
+   "default": "1",
+   "description": "When unchecked, L&D pre-training reminder and post-training closure emails are paused (scheduler skips them).",
+   "fieldname": "enable_ld_email_notifications",
+   "fieldtype": "Check",
+   "label": "Enable L&D Email Notifications"
   },
   {
    "fieldname": "petty_cash_management_tab",
@@ -165,13 +151,19 @@
   {
    "fieldname": "section_break_onti",
    "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "restrict_stationery_record_creation_on_the_sahayog_ticket",
+   "fieldtype": "Check",
+   "label": "Restrict stationery record creation on the sahayog ticket"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-07-13 17:57:43.567990",
+ "modified": "2026-08-07 12:48:30.000000",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",

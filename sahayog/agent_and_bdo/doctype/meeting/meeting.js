@@ -5,6 +5,9 @@ frappe.ui.form.on("Meeting", {
   refresh(frm) {
     format_time_field(frm, "start_time");
     format_time_field(frm, "end_time");
+    if (frm.doc.ld_training && !frm.doc.topic) {
+      frm.set_value("topic", "Training");
+    }
   },
   start_time(frm) {
     format_time_field(frm, "start_time");
@@ -17,30 +20,49 @@ frappe.ui.form.on("Meeting", {
     frm.set_value("attendee_type", "");
     frm.clear_table("attandees_table");
     frm.refresh_field("attandees_table");
-  },
-  attendee_type(frm) {
-    if (!frm.doc.branch || !frm.doc.attendee_type) return;
 
     frappe.call({
-      method: "sahayog.agent_and_bdo.doctype.meeting.meeting.get_branch_attendees",
-      args: {
-        branch: frm.doc.branch,
-        attendee_type: frm.doc.attendee_type,
-      },
+      method: "sahayog.agent_and_bdo.doctype.meeting.meeting.get_branch_geo",
+      args: { branch: frm.doc.branch },
       callback: function (r) {
-        if (!r.message || !r.message.length) return;
-
-        frm.clear_table("attandees_table");
-        r.message.forEach(function (row) {
-          let child = frm.add_child("attandees_table");
-          child.reference_doctype = row.reference_doctype;
-          child.agent_employee = row.agent_employee;
-          child.full_name = row.full_name;
-        });
-        frm.refresh_field("attandees_table");
+        if (!r.message) return;
+        if (r.message.zone) frm.set_value("zone", r.message.zone);
+        if (r.message.region) frm.set_value("region", r.message.region);
+        if (r.message.district) frm.set_value("district", r.message.district);
       },
     });
   },
+  ld_training(frm) {
+    if (frm.doc.ld_training && !frm.doc.topic) {
+      frm.set_value("topic", "Training");
+    }
+  },
+  // TODO: Auto-fetch of branch attendees is commented out until the requirement
+  // is confirmed with stakeholders (BRD does not explicitly cover it).
+  // Re-enable by uncommenting the block below.
+  // attendee_type(frm) {
+  //   if (!frm.doc.branch || !frm.doc.attendee_type) return;
+  //
+  //   frappe.call({
+  //     method: "sahayog.agent_and_bdo.doctype.meeting.meeting.get_branch_attendees",
+  //     args: {
+  //       branch: frm.doc.branch,
+  //       attendee_type: frm.doc.attendee_type,
+  //     },
+  //     callback: function (r) {
+  //       if (!r.message || !r.message.length) return;
+  //
+  //       frm.clear_table("attandees_table");
+  //       r.message.forEach(function (row) {
+  //         let child = frm.add_child("attandees_table");
+  //         child.reference_doctype = row.reference_doctype;
+  //         child.agent_employee = row.agent_employee;
+  //         child.full_name = row.full_name;
+  //       });
+  //       frm.refresh_field("attandees_table");
+  //     },
+  //   });
+  // },
 });
 frappe.ui.form.on("Attendees", {
   agent_employee(frm, cdt, cdn) {

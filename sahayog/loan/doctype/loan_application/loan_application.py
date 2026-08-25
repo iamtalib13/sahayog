@@ -7,11 +7,33 @@ import re
 class LoanApplication(Document):
     def validate(self):
         self.set_branch_code_from_employee()
+        self.set_lead_converter_from_user()
         self.validate_workflow_requirements()
         self.validate_basic_fields()
         if self.loan_type:
             self.run_rule_engine()
         self.calculate_payouts()
+
+    def set_lead_converter_from_user(self):
+        # Auto-set Lead Converter (LC) from current user
+        if not self.lead_converter:
+            emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"], as_dict=True)
+            if emp:
+                self.lead_converter = emp.name
+                self.lead_converter_name = emp.employee_name
+        elif self.lead_converter and not self.lead_converter_name:
+            emp_name = frappe.db.get_value("Employee", self.lead_converter, "employee_name")
+            if emp_name:
+                self.lead_converter_name = emp_name
+
+        # Auto-set Lead Generator (LG) details from creator/owner Employee record
+        creator_user = self.owner if not self.is_new() else frappe.session.user
+        emp_doc = frappe.db.get_value("Employee", {"user_id": creator_user}, ["name", "employee_name"], as_dict=True)
+        if emp_doc:
+            if not self.lead_generator_code:
+                self.lead_generator_code = emp_doc.name
+            if not self.lead_generator:
+                self.lead_generator = emp_doc.employee_name
 
     def set_branch_code_from_employee(self):
         if "Branch Loan User" not in frappe.get_roles(frappe.session.user):
@@ -219,3 +241,42 @@ def get_current_user_branch_code():
     )
 
     return employee.sol_id if employee and employee.sol_id else None
+
+
+@frappe.whitelist()
+def get_branch_loan_user_employees(doctype, txt, searchfield, start, page_len, filters):
+    """Custom link query to return only active Employees having 'Branch Loan User' role."""
+    return frappe.db.sql("""
+        SELECT e.name, e.employee_name
+        FROM `tabEmployee` e
+        JOIN `tabHas Role` hr ON hr.parent = e.user_id
+        WHERE hr.role = 'Branch Loan User'
+          AND e.status = 'Active'
+          AND (e.name LIKE %(txt)s OR e.employee_name LIKE %(txt)s)
+        ORDER BY e.employee_name ASC
+        LIMIT %(start)s, %(page_len)s
+    """, {
+        "txt": f"%{txt}%",
+        "start": start,
+        "page_len": page_len
+    })
+
+@frappe.whitelist()
+def update_loan_field_without_validation(docname, fieldname, value=None, new_user_id=None, original_owner_id=None):
+    """
+    Directly update a field without triggering document validations.
+    Also handles sharing logic if new_user_id is provided.
+    """
+    if isinstance(fieldname, str) and fieldname.startswith("{"):
+        fieldname = frappe.parse_json(fieldname)
+    
+    frappe.db.set_value("Loan Application", docname, fieldname, value)
+
+    # Handle document sharing logic from the backend
+    if new_user_id:
+        frappe.share.add("Loan Application", docname, new_user_id, read=1, write=1, submit=1, share=1)
+        
+        if original_owner_id and original_owner_id != new_user_id:
+            frappe.share.remove("Loan Application", docname, original_owner_id)
+
+    return {"status": "success"}

@@ -47,7 +47,7 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
             _("Asset action {0} is not allowed when status is {1}.").format(action, current_status or _("blank"))
         )
 
-    if action in {"assign", "transfer"} and not custodian:
+    if action == "transfer" and not custodian:
         frappe.throw(_("Custodian is required for this action."))
 
     if action in {"assign", "transfer", "return", "mark_available"} and not location:
@@ -143,3 +143,38 @@ def _create_asset_movement(asset, purpose, to_employee, target_location):
     movement.flags.ignore_validate = True
     movement.insert(ignore_permissions=True)
     movement.submit()
+
+
+@frappe.whitelist()
+def save_asset_after_submit(doc):
+    """Save an Asset document that is already submitted, bypassing update-after-submit validation."""
+    if isinstance(doc, str):
+        doc = frappe.parse_json(doc)
+
+    if not doc.get("name"):
+        frappe.throw(_("Document name is required"))
+
+    asset = frappe.get_doc("Asset", doc["name"])
+
+    if not (asset.has_permission("write") or asset.has_permission("submit")):
+        frappe.throw(_("You are not allowed to update this Asset."), frappe.PermissionError)
+
+    allowed_fields = [
+        "item_code", "asset_name", "serial_no", "custom_invoice_number",
+        "brand", "zone", "state", "location", "division",
+        "gross_purchase_amount", "available_for_use_date", "purchase_date",
+        "custodian", "department", "asset_category", "varient",
+    ]
+
+    for field in allowed_fields:
+        if field in doc:
+            asset.set(field, doc[field])
+
+    asset.flags.ignore_validate_update_after_submit = True
+    asset.save(ignore_permissions=True)
+    asset.reload()
+
+    return asset
+
+# save_asset_after_submit: Allows updating Asset fields (item_code, serial_no, etc.) after submission
+# by using ignore_validate_update_after_submit flag to bypass Frappe's generic post-submit validation.
