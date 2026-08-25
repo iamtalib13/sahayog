@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-30 11:26:44.821061",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_jwba",
+  "date",
+  "eod_closing_balance",
+  "cash_above_crl",
+  "branch_opening_time",
+  "branch_closing_time",
+  "sync_status",
+  "sync_log"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date"
+  },
+  {
+   "fieldname": "branch_opening_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Branch Opening Time"
+  },
+  {
+   "fieldname": "branch_closing_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Branch Closing Time"
+  },
+  {
+   "fieldname": "eod_closing_balance",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "EOD Closing Balance"
+  },
+  {
+   "fieldname": "cash_above_crl",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Cash Above CRL"
+  },
+  {
+   "fieldname": "section_break_jwba",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sync_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sync Status",
+   "options": "Fail\nPartially Success\nSuccess\nManually Success\nManually Partially Success\nManually Fail\nNo Record in Finacle"
+  },
+  {
+   "fieldname": "sync_log",
+   "fieldtype": "Small Text",
+   "label": "Sync Log"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-11 13:42:20.420326",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "CRL Monitoring Operation Tracker",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

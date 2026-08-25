@@ -398,7 +398,12 @@ doc_events = {
     },
     "Leave Application": {
         "validate": "sahayog.doc_events.leave_application.validate"
+    },
+    "*": {
+        "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
+        "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation"
     }
+    
 }
 
 # Scheduled Tasks
@@ -446,6 +451,10 @@ scheduler_events = {
         "0 3 * * *": [
             "sahayog.tasks.auto_setup_new_employee_leave"
         ],
+        # Daily at 10:00 PM (22:00)
+        "0 22 * * *": [
+            "sahayog.branch_score_card.doctype.crl_monitoring_and_branch_opening_and_closing.crl_monitoring_and_branch_opening_and_closing.sync_daily_crl"
+        ]  
     },
     # Runs all listed methods once per day (typically at midnight server time)
     "daily": [

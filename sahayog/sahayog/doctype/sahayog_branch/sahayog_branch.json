@@ -23,6 +23,8 @@
   "email_details_section",
   "email",
   "branch_type",
+  "section_break_ztqb",
+  "br_cash_retention_limit_crl",
   "section_break_zjir",
   "branch_details"
  ],
@@ -140,12 +142,21 @@
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
+  },
+  {
+   "fieldname": "section_break_ztqb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "br_cash_retention_limit_crl",
+   "fieldtype": "Currency",
+   "label": "Br. Cash Retention Limit (CRL)"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-23 13:39:07.816369",
+ "modified": "2026-07-30 13:22:57.642616",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
