@@ -104,11 +104,11 @@ frappe.ui.form.on('Account Opening Operations', {
                     }
 
                     .grid-body .grid-row:nth-child(even) {
-                        background-color: #f8fafc !important; /* Soft light gray for zebra rows */
+                        background-color: #f8fafc !important;
                     }
 
                     .grid-body .grid-row:hover {
-                        background-color: #f1f5f9 !important; /* Smooth hover effect */
+                        background-color: #f1f5f9 !important;
                     }
 
                     .grid-body:empty + .grid-empty,
@@ -121,10 +121,10 @@ frappe.ui.form.on('Account Opening Operations', {
                     .frappe-control select, 
                     .frappe-control textarea,
                     .control-input .like-disabled-input {
-                        background-color: #f8fafc !important; /* Soft light gray/slate background */
-                        border: 1px solid #e2e8f0 !important; /* Soft border */
-                        border-radius: 8px !important; /* Smooth rounded corners */
-                        color: #334155 !important; /* Dark readable text */
+                        background-color: #f8fafc !important;
+                        border: 1px solid #e2e8f0 !important;
+                        border-radius: 8px !important;
+                        color: #334155 !important;
                         padding: 6px 12px !important;
                         box-shadow: none !important;
                         transition: all 0.2s ease-in-out !important;
@@ -134,7 +134,7 @@ frappe.ui.form.on('Account Opening Operations', {
                     .form-control:focus, 
                     .frappe-control input:focus {
                         background-color: #ffffff !important;
-                        border-color: #2a7e78 !important; /* Matches table theme color */
+                        border-color: #2a7e78 !important;
                         box-shadow: 0 0 0 2px rgba(42, 126, 120, 0.15) !important;
                     }
 
@@ -150,7 +150,7 @@ frappe.ui.form.on('Account Opening Operations', {
             `);
         }
         
-        // 1. READ-ONLY VISIBILITY FIX (Blank rehne par bhi visible rahengi & edit block hongi)
+        // READ-ONLY VISIBILITY FIX
         const readonly_fields = [
             'total_ftr', 
             'total_ftnr', 
@@ -164,10 +164,7 @@ frappe.ui.form.on('Account Opening Operations', {
             readonly_fields.forEach(fieldname => {
                 let field = frm.get_field(fieldname);
                 if (field && field.$wrapper) {
-                    // Force field wrapper visible
                     field.$wrapper.show().removeClass('hidden');
-                    
-                    // Make input element HTML read-only and styled gray
                     field.$wrapper.find('input').attr('readonly', true).css({
                         'background-color': '#f1f5f9',
                         'cursor': 'not-allowed',
@@ -177,11 +174,11 @@ frappe.ui.form.on('Account Opening Operations', {
             });
         }, 200);
 
-        // 2. Calculations
+        // Calculations
         frm.trigger('calculate_ftr_ftnr_totals');
         frm.trigger('calculate_zero_ip_total');
 
-        // 3. Setup Tables
+        // Setup Tables
         ['table_dllf', 'table_zero_ip_funding'].forEach(fieldname => {
             let field = frm.get_field(fieldname);
             if (field) {
@@ -240,7 +237,6 @@ frappe.ui.form.on('Account Opening Operations', {
 
             let search_row = $('<div class="custom-search-filter-bar"></div>');
 
-            // Exact column width matching based on Header DOM
             header_row.find('.grid-row .col, .grid-heading-row > .col').each(function() {
                 let col = $(this);
                 let col_fieldname = col.attr('data-fieldname');
@@ -262,10 +258,8 @@ frappe.ui.form.on('Account Opening Operations', {
 
             header_row.after(search_row);
 
-            // REAL-TIME INPUT RESTRICTION & FILTERING
             field.grid.wrapper.off('input keyup change', '.custom-grid-search');
             field.grid.wrapper.on('input keyup change', '.custom-grid-search', function() {
-                // BLOCK ALPHABETS: ONLY NUMBERS, HYPHENS & SLASHES ALLOWED
                 let val = $(this).val();
                 let clean_val = val.replace(/[^0-9\-\/]/g, '');
                 if (val !== clean_val) {
@@ -310,7 +304,6 @@ frappe.ui.form.on('Account Opening Operations', {
                         }
                     });
 
-                    // MAINTAINS PERFECT FRACTION / ROW HEIGHT ALIGNMENT
                     if (match) {
                         row.removeClass('hidden').css('display', '');
                         visible_count++;
@@ -397,9 +390,8 @@ frappe.ui.form.on('Account Opening Operations', {
                 let docname = $(this).attr('data-docname');
                 let row_doc = (frm.doc.table_zero_ip_funding || []).find(d => d.name === docname);
 
-                if (row_doc) {
+                if (row_doc && row_doc.scheme_code !== selected_val) {
                     row_doc.scheme_code = selected_val;
-                    frm.dirty();
                 }
             });
 
@@ -410,12 +402,11 @@ frappe.ui.form.on('Account Opening Operations', {
         let ftnr_rows = frm.doc.table_dllf || [];
 
         if (ftnr_rows.length === 0) {
-            // Child table empty -> Set fields to null (blank)
-            frm.set_value('total_ftr', null);
-            frm.set_value('total_ftnr', null);
-            frm.set_value('grand_total', null);
-            frm.set_value('ftr_percentage', null);
-            frm.set_value('ftnr_percentage', null);
+            frm.set_value('total_ftr', null, null, true);
+            frm.set_value('total_ftnr', null, null, true);
+            frm.set_value('grand_total', null, null, true);
+            frm.set_value('ftr_percentage', null, null, true);
+            frm.set_value('ftnr_percentage', null, null, true);
         } else {
             let total_ftr = 0;
             let total_ftnr = 0;
@@ -434,11 +425,11 @@ frappe.ui.form.on('Account Opening Operations', {
                 ftnr_perc = flt((total_ftnr / grand_total) * 100, 2);
             }
 
-            frm.set_value('total_ftr', total_ftr);
-            frm.set_value('total_ftnr', total_ftnr);
-            frm.set_value('grand_total', grand_total);
-            frm.set_value('ftr_percentage', ftr_perc);
-            frm.set_value('ftnr_percentage', ftnr_perc);
+            frm.set_value('total_ftr', total_ftr, null, true);
+            frm.set_value('total_ftnr', total_ftnr, null, true);
+            frm.set_value('grand_total', grand_total, null, true);
+            frm.set_value('ftr_percentage', ftr_perc, null, true);
+            frm.set_value('ftnr_percentage', ftnr_perc, null, true);
         }
     },
 
@@ -446,29 +437,46 @@ frappe.ui.form.on('Account Opening Operations', {
         let zero_ip_rows = frm.doc.table_zero_ip_funding || [];
 
         if (zero_ip_rows.length === 0) {
-            // Child table empty -> Set field to null (blank)
-            frm.set_value('zero_ip_funding_count', null);
+            frm.set_value('zero_ip_funding_count', null, null, true);
         } else {
             let total = 0;
             zero_ip_rows.forEach(row => {
                 total += flt(row.zero_ip_funding);
             });
-            frm.set_value('zero_ip_funding_count', total);
+            frm.set_value('zero_ip_funding_count', total, null, true);
         }
     }
 });
 
-// Niche ke dono child table handlers main object ke BAAHAR honge:
-
+// 1. CHILD TABLE HANDLER: Account Opening FTNR Item
 frappe.ui.form.on('Account Opening FTNR Item', {
-    ftr(frm) { frm.trigger('calculate_ftr_ftnr_totals'); },
-    ftnr(frm) { frm.trigger('calculate_ftr_ftnr_totals'); },
-    table_dllf_remove(frm) { frm.trigger('calculate_ftr_ftnr_totals'); },
-    table_dllf_add(frm) { frm.trigger('calculate_ftr_ftnr_totals'); }
+    ftr(frm) { 
+        frm.trigger('calculate_ftr_ftnr_totals'); 
+    },
+    ftnr(frm) { 
+        frm.trigger('calculate_ftr_ftnr_totals'); 
+    },
+    table_dllf_add(frm) {
+        frm.trigger('calculate_ftr_ftnr_totals');
+        frm.save(); // Auto-save on row addition
+    },
+    table_dllf_remove(frm) {
+        frm.trigger('calculate_ftr_ftnr_totals');
+        frm.save(); // Auto-save on row removal
+    }
 });
 
+// 2. CHILD TABLE HANDLER: Zero IP Funding Tracker
 frappe.ui.form.on('Zero IP Funding Tracker', {
-    zero_ip_funding(frm) { frm.trigger('calculate_zero_ip_total'); },
-    table_zero_ip_funding_remove(frm) { frm.trigger('calculate_zero_ip_total'); },
-    table_zero_ip_funding_add(frm) { frm.trigger('calculate_zero_ip_total'); }
+    zero_ip_funding(frm) { 
+        frm.trigger('calculate_zero_ip_total'); 
+    },
+    table_zero_ip_funding_add(frm) { 
+        frm.trigger('calculate_zero_ip_total'); 
+        frm.save(); // Auto-save on row addition
+    },
+    table_zero_ip_funding_remove(frm) { 
+        frm.trigger('calculate_zero_ip_total'); 
+        frm.save(); // Auto-save on row removal
+    }
 });
