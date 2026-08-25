@@ -27,7 +27,19 @@
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
   "pending_request_dashboard_tab",
-  "pending_request_setting"
+  "pending_request_setting",
+  "password_security_tab",
+  "mandatory_password_reset_section",
+  "enable_mandatory_password_reset",
+  "next_password_reset_date",
+  "password_policy_section",
+  "min_password_length",
+  "require_uppercase",
+  "require_lowercase",
+  "require_number",
+  "allow_special_characters",
+  "password_expiry_warning_section",
+  "password_reset_reminder_days"
  ],
  "fields": [
   {
@@ -157,6 +169,77 @@
    "fieldname": "restrict_stationery_record_creation_on_the_sahayog_ticket",
    "fieldtype": "Check",
    "label": "Restrict stationery record creation on the sahayog ticket"
+  },
+  {
+   "fieldname": "password_security_tab",
+   "fieldtype": "Tab Break",
+   "label": "Password Security"
+  },
+  {
+   "fieldname": "mandatory_password_reset_section",
+   "fieldtype": "Section Break",
+   "label": "Mandatory Password Reset"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_mandatory_password_reset",
+   "fieldtype": "Check",
+   "label": "Enable Mandatory Password Reset"
+  },
+  {
+   "depends_on": "eval:doc.enable_mandatory_password_reset==1",
+   "description": "From this date onward, users must reset their password before accessing the application.",
+   "fieldname": "next_password_reset_date",
+   "fieldtype": "Date",
+   "label": "Next Password Reset Date",
+   "mandatory_depends_on": "eval:doc.enable_mandatory_password_reset==1"
+  },
+  {
+   "fieldname": "password_policy_section",
+   "fieldtype": "Section Break",
+   "label": "Password Policy"
+  },
+  {
+   "default": "8",
+   "fieldname": "min_password_length",
+   "fieldtype": "Int",
+   "label": "Minimum Password Length"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_uppercase",
+   "fieldtype": "Check",
+   "label": "Require Uppercase"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_lowercase",
+   "fieldtype": "Check",
+   "label": "Require Lowercase"
+  },
+  {
+   "default": "1",
+   "fieldname": "require_number",
+   "fieldtype": "Check",
+   "label": "Require Number"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_special_characters",
+   "fieldtype": "Check",
+   "label": "Allow Special Characters"
+  },
+  {
+   "fieldname": "password_expiry_warning_section",
+   "fieldtype": "Section Break",
+   "label": "Password Expiry Warning"
+  },
+  {
+   "default": "7",
+   "description": "Number of days before the reset date to start showing reminder warnings to users.",
+   "fieldname": "password_reset_reminder_days",
+   "fieldtype": "Int",
+   "label": "Password Reset Reminder Days"
   }
  ],
  "grid_page_length": 50,

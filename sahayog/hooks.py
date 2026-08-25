@@ -77,12 +77,15 @@ doctype_list_js = {
     "Lead": "public/js/lead_list.js",
     "Asset": "public/js/asset_list.js",
 }
-# app_include_js = "/assets/frappe/js/frappe-web.min.js"
-app_include_js = ["/assets/sahayog/js/assignmate.js",
-                  "/assets/sahayog/js/petite-vue.iife.js",
-                  "/assets/sahayog/js/dams_email.js",
-                  "/assets/sahayog/js/active_users_badge.js"
-                  ]
+app_include_js = [
+    "/assets/sahayog/js/assignmate.js",
+    "/assets/sahayog/js/petite-vue.iife.js",
+    "/assets/sahayog/js/dams_email.js",
+    "/assets/sahayog/js/active_users_badge.js",
+    "/assets/sahayog/js/password_security.js"
+]
+
+extend_bootinfo = "sahayog.api.password_security.boot_session"
 
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
