@@ -126,7 +126,7 @@ frappe.ui.form.on("Disciplinary Case", {
     }
 
     if (!frm.is_new()) {
-      frm.add_custom_button("Send Email", function () {
+      const send_email_btn = frm.add_custom_button("Send Email", function () {
         // 1. Fetch CC setting from Sahayog HR Setting
         frappe.db
           .get_single_value("Sahayog HR Setting", "disciplinary_case_cc")
@@ -568,6 +568,7 @@ frappe.ui.form.on("Disciplinary Case", {
           });
       });
     }
+    send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
     let today = frappe.datetime.now_date();
 
     if (frm.fields_dict.issue_occurrence_date) {
