@@ -567,8 +567,10 @@ frappe.ui.form.on("Disciplinary Case", {
             });
           });
       });
+      if (send_email_btn) {
+        send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+      }
     }
-    send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
     let today = frappe.datetime.now_date();
 
     if (frm.fields_dict.issue_occurrence_date) {
