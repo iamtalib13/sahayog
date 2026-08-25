@@ -526,7 +526,7 @@ refresh(frm) {
 
     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
     if (!frm.is_new() && frm.doc.status === "Closed" && can_manage_case_closure_buttons) {
-      frm.add_custom_button("Send Email", function () {
+      const send_email_btn = frm.add_custom_button("Send Email", function () {
         // Step 1: Validate employee email exists
         frappe.call({
           method:
@@ -547,6 +547,9 @@ refresh(frm) {
           },
         });
       });
+      if (send_email_btn) {
+        send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+      }
     }
 
     /* 
