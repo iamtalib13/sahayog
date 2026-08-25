@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-30 10:42:20.887162",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "crl_monitoring_tab",
+  "sol_id",
+  "column_break_fwgg",
+  "br_cash_retention_limit_crl",
+  "section_break_pofc",
+  "month",
+  "column_break_ruxj",
+  "year",
+  "section_break_ikje",
+  "crl_monitoring_actual_value",
+  "column_break_jpie",
+  "branch_opening_actual_value",
+  "column_break_xlnl",
+  "branch_closing_actual_value",
+  "section_break_mzqy",
+  "column_break_qfhf",
+  "table_nzzy",
+  "section_break_qlyd",
+  "from_date",
+  "column_break_vguy",
+  "to_date",
+  "re_sync"
+ ],
+ "fields": [
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Link",
+   "label": "SOL ID",
+   "options": "Sahayog Branch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "label": "Month",
+   "read_only": 1
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_pofc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_ruxj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_mzqy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "table_nzzy",
+   "fieldtype": "Table",
+   "options": "CRL Monitoring Operation Tracker",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fwgg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sol_id.br_cash_retention_limit_crl",
+   "fieldname": "br_cash_retention_limit_crl",
+   "fieldtype": "Currency",
+   "label": "Br. Cash Retention Limit (CRL)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_ikje",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "crl_monitoring_actual_value",
+   "fieldtype": "Data",
+   "label": "CRL Monitoring Actual Value"
+  },
+  {
+   "fieldname": "column_break_jpie",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch_opening_actual_value",
+   "fieldtype": "Data",
+   "label": "Branch Opening Actual Value"
+  },
+  {
+   "fieldname": "column_break_xlnl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch_closing_actual_value",
+   "fieldtype": "Data",
+   "label": "Branch Closing Actual Value"
+  },
+  {
+   "fieldname": "column_break_qfhf",
+   "fieldtype": "Column Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_qlyd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "column_break_vguy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "re_sync",
+   "fieldtype": "Button",
+   "label": "Re Sync"
+  },
+  {
+   "fieldname": "crl_monitoring_tab",
+   "fieldtype": "Tab Break",
+   "label": "CRL Monitoring "
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-25 11:36:31.826265",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "CRL Monitoring and Branch Opening and Closing",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

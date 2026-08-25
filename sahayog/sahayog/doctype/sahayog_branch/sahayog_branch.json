@@ -23,6 +23,8 @@
   "email_details_section",
   "email",
   "branch_type",
+  "section_break_ztqb",
+  "br_cash_retention_limit_crl",
   "column_break_equn",
   "entity_id",
   "entity_type",
@@ -146,6 +148,13 @@
    "label": "Branch Code"
   },
   {
+   "fieldname": "section_break_ztqb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "br_cash_retention_limit_crl",
+   "fieldtype": "Currency",
+   "label": "Br. Cash Retention Limit (CRL)"
    "fieldname": "column_break_equn",
    "fieldtype": "Column Break"
   },
@@ -170,6 +179,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
+ "modified": "2026-07-30 13:22:57.642616",
  "modified": "2026-08-03 17:21:18.192008",
  "modified_by": "Administrator",
  "module": "Sahayog",
