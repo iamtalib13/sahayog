@@ -8,9 +8,12 @@ window.sahayog = window.sahayog || {};
 sahayog.dams.add_send_email_button = function (frm) {
   if (frm.is_new()) return;
 
-  frm.add_custom_button(__("Send Email"), function () {
+  let btn = frm.add_custom_button(__("Send Email"), function () {
     sahayog.dams.open_email_composer(frm);
   });
+  if (btn) {
+    btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+  }
 };
 
 // ============================
