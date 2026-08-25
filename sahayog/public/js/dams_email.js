@@ -48,13 +48,7 @@ sahayog.dams.open_email_composer = function (frm) {
             print_format: defaults.print_format,
             print_formats: defaults.print_formats || null,
             recipients: recipients,
-            cc_setting_field: [
-                "Unauthorized Absence",
-                "Reminder Of Unauthorized Absence",
-                "Ex Parte Enquiry"
-            ].includes(frm.doc.doctype)
-              ? "unauthorized_absence_cc"
-              : "disciplinary_case_cc",
+            cc: defaults.cc,
           });
         },
       });
@@ -68,16 +62,15 @@ sahayog.dams.open_email_composer = function (frm) {
 sahayog.dams.render_email_dialog = function (frm, options) {
   console.log("DEBUG: Rendering dialog with options:", options);
 
-  frappe.db
-    .get_single_value("Sahayog HR Setting", options.cc_setting_field)
-    .then((fixed_cc) => {
-      frappe.call({
-        method: "sahayog.hrms.dams_email_service.get_email_template_preview",
-        args: {
-          template_name: options.template,
-          doctype: frm.doc.doctype,
-          docname: frm.doc.name,
-        },
+  let fixed_cc = options.cc || "";
+
+  frappe.call({
+    method: "sahayog.hrms.dams_email_service.get_email_template_preview",
+    args: {
+      template_name: options.template,
+      doctype: frm.doc.doctype,
+      docname: frm.doc.name,
+    },
         callback: function (r) {
           console.log("DEBUG: Template preview response:", r);
           const preview = r.message || {};
@@ -454,5 +447,4 @@ sahayog.dams.render_email_dialog = function (frm, options) {
           }, 100);
         },
       });
-    });
 };
