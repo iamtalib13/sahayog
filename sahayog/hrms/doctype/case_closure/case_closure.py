@@ -171,7 +171,7 @@ class CaseClosure(Document):
 
         required_fields = {
             "remarks": "Remarks",
-            "enquiry_status": "Enquiry Status",
+            # "enquiry_status": "Enquiry Status",  # not mandatory when status is Under Review
             # "enquiry_report_upload": "Enquiry Report Upload",
             "case_close_with": "Case Close With",
         }
@@ -208,7 +208,7 @@ class CaseClosure(Document):
 
         required_fields = {
             "remarks": "Remarks",
-            "enquiry_status": "Enquiry Status",
+            # "enquiry_status": "Enquiry Status",  # not mandatory when status is Under Review
             # "enquiry_report_upload": "Enquiry Report Upload",
             "case_close_with": "Case Close With",
         }
