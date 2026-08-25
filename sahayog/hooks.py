@@ -28,7 +28,7 @@ website_route_rules = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/sahayog/css/sahayog.css"
+app_include_css = "/assets/sahayog/css/disciplinary_case.css"
 # app_include_js = "/assets/sahayog/js/sahayog.js"
 
 # include js, css files in header of web template

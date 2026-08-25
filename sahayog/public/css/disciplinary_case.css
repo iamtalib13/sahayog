@@ -1,0 +1,18 @@
+/* ============================================================
+   Sahayog DAMS — Shared Button Styles
+   ============================================================ */
+
+/* Outlook-style Send Email button (#0078d4 Microsoft Blue) */
+.btn-send-email-outlook {
+  background-color: #0078d4 !important;
+  border-color: #0067b8 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+.btn-send-email-outlook:hover,
+.btn-send-email-outlook:focus {
+  background-color: #106ebe !important;
+  border-color: #005a9e !important;
+  color: #ffffff !important;
+}
