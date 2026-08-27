@@ -526,7 +526,7 @@ refresh(frm) {
 
     // ---------------- SEND EMAIL BUTTON (Only when Closed) ----------------
     if (!frm.is_new() && frm.doc.status === "Closed" && can_manage_case_closure_buttons) {
-      frm.add_custom_button("Send Email", function () {
+      const send_email_btn = frm.add_custom_button("Send Email", function () {
         // Step 1: Validate employee email exists
         frappe.call({
           method:
@@ -547,6 +547,9 @@ refresh(frm) {
           },
         });
       });
+      if (send_email_btn) {
+        send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+      }
     }
 
     /* 
@@ -687,7 +690,45 @@ refresh(frm) {
       frm.doc.status !== "Closed" &&
       can_manage_case_closure_buttons
     ) {
-      frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
+      const case_review_btn = frm.add_custom_button("Case Review", () => open_approver_dialog(frm));
+
+      // 🔵 DRAFT: Blink & highlight "Case Review" to guide the user
+      if (frm.doc.status === "Draft" || !frm.doc.status) {
+        case_review_btn
+          .removeClass("btn-default")
+          .addClass("btn-warning btn-case-review-highlight");
+
+        // Inject blink animation once
+        if (!document.getElementById("case-review-blink-style")) {
+          const style = document.createElement("style");
+          style.id = "case-review-blink-style";
+          style.innerHTML = `
+            @keyframes sahayog-blink {
+              0%   { opacity: 1; box-shadow: 0 0 0 0 rgba(255,193,7,0.7); }
+              50%  { opacity: 0.6; box-shadow: 0 0 0 6px rgba(255,193,7,0); }
+              100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,193,7,0); }
+            }
+            .btn-case-review-highlight {
+              animation: sahayog-blink 1.2s ease-in-out infinite;
+              font-weight: 600;
+            }
+            .btn-case-review-highlight::before {
+              content: "👉 ";
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        // Tooltip hint
+        case_review_btn.attr("title", "Start here — send the case for review before approving");
+      }
+
+      // 🟠 UNDER REVIEW: Change color to indicate review is in progress
+      if (frm.doc.status === "Under Review") {
+        case_review_btn
+          .removeClass("btn-default")
+          .addClass("btn-info");
+      }
     }
 
     // ---------------- REVIEWER MAIL SYNC ----------------
@@ -734,7 +775,7 @@ refresh(frm) {
           const data = r.message || {};
           if (!data.allowed) return;
 
-          frm.add_custom_button("Submit Feedback", function () {
+          const feedback_btn = frm.add_custom_button("Submit Feedback", function () {
             const d = new frappe.ui.Dialog({
               title: "Submit Feedback",
               fields: [
@@ -767,6 +808,36 @@ refresh(frm) {
             });
             d.show();
           });
+
+          // 🟢 UNDER REVIEW: Blink "Submit Feedback" so reviewer knows what to do
+          if (frm.doc.status === "Under Review") {
+            feedback_btn
+              .removeClass("btn-default")
+              .addClass("btn-success btn-submit-feedback-highlight");
+
+            // Inject blink animation once
+            if (!document.getElementById("submit-feedback-blink-style")) {
+              const style = document.createElement("style");
+              style.id = "submit-feedback-blink-style";
+              style.innerHTML = `
+                @keyframes sahayog-feedback-blink {
+                  0%   { opacity: 1; box-shadow: 0 0 0 0 rgba(40,167,69,0.7); }
+                  50%  { opacity: 0.6; box-shadow: 0 0 0 6px rgba(40,167,69,0); }
+                  100% { opacity: 1; box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+                }
+                .btn-submit-feedback-highlight {
+                  animation: sahayog-feedback-blink 1.2s ease-in-out infinite;
+                  font-weight: 600;
+                }
+                .btn-submit-feedback-highlight::before {
+                  content: "✍️ ";
+                }
+              `;
+              document.head.appendChild(style);
+            }
+
+            feedback_btn.attr("title", "Your feedback is pending — click here to submit");
+          }
         }
       });
     }

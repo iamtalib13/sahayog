@@ -126,7 +126,7 @@ frappe.ui.form.on("Disciplinary Case", {
     }
 
     if (!frm.is_new()) {
-      frm.add_custom_button("Send Email", function () {
+      const send_email_btn = frm.add_custom_button("Send Email", function () {
         // 1. Fetch CC setting from Sahayog HR Setting
         frappe.db
           .get_single_value("Sahayog HR Setting", "disciplinary_case_cc")
@@ -156,17 +156,18 @@ frappe.ui.form.on("Disciplinary Case", {
                 const d = new frappe.ui.Dialog({
                   title: " ",
                   size: "extra-large",
+                  class: "outlook-email-dialog",
                   fields: [
                     {
                       fieldtype: "HTML",
                       fieldname: "outlook_header",
                       options: `
                         <style>
-                          /* Dialog Container Reset */
-                          .modal-content { border-radius: 4px !important; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important; border: 1px solid #d2d0ce !important; }
-                          .modal-header { display: none !important; } 
-                          .modal-body { padding: 0 !important; background: #fff !important; }
-                          .modal-footer { display: none !important; } 
+                          /* Dialog Container Reset - scoped to outlook dialog only */
+                          .outlook-email-dialog .modal-content { border-radius: 4px !important; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important; border: 1px solid #d2d0ce !important; }
+                          .outlook-email-dialog .modal-header { display: none !important; } 
+                          .outlook-email-dialog .modal-body { padding: 0 !important; background: #fff !important; }
+                          .outlook-email-dialog .modal-footer { display: none !important; } 
                           
                           /* Outlook Top Action Bar */
                           .outlook-top-bar {
@@ -567,6 +568,9 @@ frappe.ui.form.on("Disciplinary Case", {
             });
           });
       });
+      if (send_email_btn) {
+        send_email_btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+      }
     }
     let today = frappe.datetime.now_date();
 

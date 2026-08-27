@@ -171,7 +171,7 @@ class CaseClosure(Document):
 
         required_fields = {
             "remarks": "Remarks",
-            "enquiry_status": "Enquiry Status",
+            # "enquiry_status": "Enquiry Status",  # not mandatory when status is Under Review
             # "enquiry_report_upload": "Enquiry Report Upload",
             "case_close_with": "Case Close With",
         }
@@ -208,7 +208,7 @@ class CaseClosure(Document):
 
         required_fields = {
             "remarks": "Remarks",
-            "enquiry_status": "Enquiry Status",
+            # "enquiry_status": "Enquiry Status",  # not mandatory when status is Under Review
             # "enquiry_report_upload": "Enquiry Report Upload",
             "case_close_with": "Case Close With",
         }
@@ -426,6 +426,8 @@ def close_linked_case(case_id):
             # Use db_set to bypass workflow/submission restrictions
             if frappe.db.has_column(doctype, "status"):
                 frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=False)
+            if frappe.db.has_column(doctype, "workflow_state"):
+                frappe.db.set_value(doctype, d.name, "workflow_state", "Closed", update_modified=False)
 
     frappe.db.commit()
 

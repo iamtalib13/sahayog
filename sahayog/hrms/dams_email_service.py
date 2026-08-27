@@ -31,9 +31,55 @@ def get_dams_email_defaults(doctype, docname):
         "unauthorized_absence_cc" if doctype in absence_doctypes else "disciplinary_case_cc"
     )
 
+    doc = frappe.get_doc(doctype, docname)
+    case_id = doc.get("case_id")
+    if not case_id and doctype in ["Disciplinary Case", "Unauthorized Absence"]:
+        case_id = docname
+        
+    historical_ccs = []
+    seen = set()
+    
+    if fixed_cc:
+        for email in fixed_cc.replace("\n", ",").split(","):
+            email = email.strip()
+            if email and email not in seen:
+                historical_ccs.append(email)
+                seen.add(email)
+
+    if case_id:
+        related_doctypes = [
+            "Disciplinary Case", "Suspension Process", "Response to SCN", 
+            "Domestic Enquiry", "Enquiry Reminder", "Case Closure", 
+            "Unauthorized Absence", "Reminder Of Unauthorized Absence", "Ex Parte Enquiry"
+        ]
+        case_docnames = [case_id]
+        for dt in related_doctypes:
+            try:
+                names = frappe.get_all(dt, filters={"case_id": case_id}, pluck="name")
+                case_docnames.extend(names)
+            except Exception:
+                pass
+                
+        if case_docnames:
+            email_queues = frappe.get_all(
+                "Email Queue",
+                filters={"reference_name": ["in", case_docnames]},
+                fields=["show_as_cc"],
+                order_by="creation asc"
+            )
+            for eq in email_queues:
+                if eq.show_as_cc:
+                    for email in eq.show_as_cc.replace("\n", ",").split(","):
+                        email = email.strip()
+                        if email and email not in seen:
+                            historical_ccs.append(email)
+                            seen.add(email)
+
+    combined_cc = ",".join(historical_ccs)
+
     response = {
         "template": template_mapping.get(doctype),
-        "cc": fixed_cc
+        "cc": combined_cc
     }
 
     if doctype == "Case Closure":
