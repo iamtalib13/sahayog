@@ -33,7 +33,9 @@ app_include_css = "/assets/sahayog/css/disciplinary_case.css"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/sahayog/css/sahayog.css"
-# web_include_js = "/assets/sahayog/js/sahayog.js"
+web_include_js = [
+    "/assets/sahayog/js/login_password_reset.js"
+]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "sahayog/public/scss/website"
