@@ -70,8 +70,8 @@ def create_system_sms_log(receiver_number, sms_message):
 
 def dispatch_sms_via_pinnacle_or_settings(receiver_number, sms_message):
     """
-    Delivers SMS using Pinnacle Gateway (with country code 91)
-    and records an SMS Log entry with 91 prefix.
+    Delivers SMS purely metadata-driven from Frappe's 'SMS Settings' DocType.
+    Extracts gateway url, apikey, sender/header, dltentityid, dlttempid dynamically.
     """
     settings = frappe.get_cached_doc("SMS Settings")
     if not settings.sms_gateway_url:
@@ -81,24 +81,25 @@ def dispatch_sms_via_pinnacle_or_settings(receiver_number, sms_message):
     clean_10_digits = digits_only[-10:] if len(digits_only) >= 10 else digits_only
     number_with_91 = f"91{clean_10_digits}"
 
-    # If Pinnacle genericapi or JSON receiver is configured
-    if "pinnacle" in settings.sms_gateway_url.lower():
-        api_key = "voYlBJ9gbCfJ"
-        sender = "SAYOGB"
-        dlt_entity_id = "1201158045902178423"
-        dlt_temp_id = "207164587236365447"
+    # Extract all parameters metadata from SMS Settings
+    params_dict = {}
+    for p in settings.parameters:
+        if p.parameter:
+            params_dict[p.parameter.strip().lower()] = (p.value or "").strip()
 
-        for p in settings.parameters:
-            if p.parameter.lower() == "apikey":
-                api_key = p.value
-            elif p.parameter.lower() == "sender":
-                sender = p.value
-            elif p.parameter.lower() in ("dltentityid", "peid"):
-                dlt_entity_id = p.value
-            elif p.parameter.lower() in ("dlttempid", "templateid"):
-                dlt_temp_id = p.value
+    # Dynamic extraction of metadata keys
+    api_key = params_dict.get("apikey") or params_dict.get("accesskey") or ""
+    sender = params_dict.get("sender") or params_dict.get("header") or ""
+    dlt_entity_id = params_dict.get("dltentityid") or params_dict.get("peid") or ""
+    dlt_temp_id = params_dict.get("dlttempid") or params_dict.get("templateid") or ""
+    msg_type = params_dict.get("messagetype") or "PM"
 
-        endpoint = "https://transapi.pinnacle.in/genericapi/JSONGenericReceiver"
+    if msg_type.upper() == "TXT":
+        msg_type = "PM"
+
+    # If Pinnacle JSON or generic API endpoint is configured
+    if "pinnacle" in settings.sms_gateway_url.lower() or "json" in settings.sms_gateway_url.lower():
+        endpoint = settings.sms_gateway_url.strip()
         payload = {
             "version": "1.0",
             "encrypt": "0",
@@ -107,7 +108,7 @@ def dispatch_sms_via_pinnacle_or_settings(receiver_number, sms_message):
                 {
                     "dest": [clean_10_digits],
                     "msg": sms_message,
-                    "type": "PM",
+                    "type": msg_type,
                     "header": sender,
                     "app_country": "1",
                     "country_cd": "91",
@@ -122,12 +123,13 @@ def dispatch_sms_via_pinnacle_or_settings(receiver_number, sms_message):
         res_json = response.json()
         if res_json.get("status", {}).get("code") not in ("200", 200):
             reason = res_json.get("status", {}).get("reason", "Gateway Rejected")
-            raise Exception(f"Pinnacle SMS Rejection: {reason}")
+            raise Exception(f"SMS Gateway Rejection: {reason}")
 
-        # Always log with 91 prefix
+        # Record standardized entry in SMS Log DocType
         create_system_sms_log(number_with_91, sms_message)
         return res_json
     else:
+        # Fallback to standard core Frappe SMS dispatcher
         from frappe.core.doctype.sms_settings.sms_settings import send_sms
         send_sms(receiver_list=[clean_10_digits], msg=sms_message)
         create_system_sms_log(number_with_91, sms_message)
