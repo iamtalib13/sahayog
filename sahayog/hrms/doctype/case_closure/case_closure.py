@@ -426,6 +426,8 @@ def close_linked_case(case_id):
             # Use db_set to bypass workflow/submission restrictions
             if frappe.db.has_column(doctype, "status"):
                 frappe.db.set_value(doctype, d.name, "status", "Closed", update_modified=False)
+            if frappe.db.has_column(doctype, "workflow_state"):
+                frappe.db.set_value(doctype, d.name, "workflow_state", "Closed", update_modified=False)
 
     frappe.db.commit()
 
