@@ -41,35 +41,30 @@ def update_employee_details(doc, method):
 
 
 def validate_duplicate_lead(doc, method):
-    """Server-side duplicate lead check — same mobile + product + amount within 7 days."""
+    """Server-side duplicate lead check — same mobile + product (amount ignored, no time limit)."""
     if not doc.mobile_no or not doc.get("custom_product_table"):
         return
 
-    from frappe.utils import add_days, nowdate
-    seven_days_ago = add_days(nowdate(), -7)
-
-    product_pairs = [
-        (row.product, row.product_amount)
+    product_list = [
+        row.product
         for row in doc.custom_product_table
-        if row.product and row.product_amount
+        if row.product
     ]
 
-    if not product_pairs:
+    if not product_list:
         return
 
     conditions = " OR ".join(
-        ["(lp.product = %s AND lp.product_amount = %s)"] * len(product_pairs)
+        ["lp.product = %s"] * len(product_list)
     )
-    params = [doc.mobile_no, seven_days_ago, doc.name or ""]
-    for product, amount in product_pairs:
-        params.extend([product, amount])
+    params = [doc.mobile_no, doc.name or ""]
+    params.extend(product_list)
 
     duplicates = frappe.db.sql(
         f"""
         SELECT l.name, lp.product, lp.product_amount FROM `tabLead` l
         JOIN `tabLead Product` lp ON lp.parent = l.name
         WHERE l.mobile_no = %s
-        AND l.creation >= %s
         AND l.name != %s
         AND ({conditions})
         LIMIT 1
@@ -82,7 +77,7 @@ def validate_duplicate_lead(doc, method):
         d = duplicates[0]
         frappe.throw(
             title="Duplicate Lead",
-            msg=f"A lead for Product <b>{d.product}</b> with amount <b>{d.product_amount}</b> already exists for this number within the last 7 days. (Lead: {d.name})"
+            msg=f"A lead for Product <b>{d.product}</b> already exists for this mobile number. (Lead: {d.name})"
         )
 
 
