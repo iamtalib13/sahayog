@@ -78,6 +78,7 @@ doctype_list_js = {
     "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
     "Lead": "public/js/lead_list.js",
     "Asset": "public/js/asset_list.js",
+    "Employee": "public/js/employee_list.js",
 }
 app_include_js = [
     "/assets/sahayog/js/assignmate.js",
@@ -444,9 +445,10 @@ scheduler_events = {
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
-        # Run daily at 2:00 AM — Sync Sahayog Branches from Finacle
+        # Run daily at 2:00 AM — Sync Sahayog Branches from Finacle & Process Relieved Employees
         "0 2 * * *": [
-            "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
+            "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
+            "sahayog.tasks.auto_process_relieved_employees"
         ],
 
         # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day

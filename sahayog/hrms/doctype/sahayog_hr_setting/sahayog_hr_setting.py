@@ -20,13 +20,13 @@ def update_employees():
 
 
 @frappe.whitelist()
-def init_import(mode="insert", batch_size=500):
+def init_import(mode="insert", batch_size=50):
     from sahayog.api.employee_master_import import init_import_session
     return init_import_session(mode=mode, batch_size=batch_size)
 
 
 @frappe.whitelist()
-def process_batch(mode="insert", batch_index=0, batch_size=500):
+def process_batch(mode="insert", batch_index=0, batch_size=50):
     from sahayog.api.employee_master_import import process_import_batch
     return process_import_batch(mode=mode, batch_index=batch_index, batch_size=batch_size)
 
