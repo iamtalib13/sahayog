@@ -348,9 +348,10 @@ def auto_approve_attendance_corrections():
 
 
 
+@frappe.whitelist()
 def auto_process_relieved_employees():
     """
-    Daily scheduled task (runs at 2:00 AM):
+    Daily scheduled task (runs at 2:00 AM) and manual trigger from Employee List:
     Find all Active employees whose relieving_date is in the past (<= today),
     set their status to 'Left', and disable their linked User accounts (enabled = 0).
     """
@@ -367,7 +368,12 @@ def auto_process_relieved_employees():
     )
 
     if not relieved_employees:
-        return
+        return {
+            "status": "success",
+            "message": _("No active employees found with past relieving date."),
+            "processed_count": 0,
+            "error_count": 0,
+        }
 
     processed_count = 0
     errors = []
@@ -397,5 +403,13 @@ def auto_process_relieved_employees():
     frappe.logger("scheduler").info(
         f"auto_process_relieved_employees: Processed {processed_count} employees to status 'Left'. Errors: {len(errors)}"
     )
+
+    return {
+        "status": "success",
+        "message": _("Successfully marked {0} employee(s) as 'Left' and disabled their User account(s).").format(processed_count),
+        "processed_count": processed_count,
+        "error_count": len(errors),
+    }
+
 
 

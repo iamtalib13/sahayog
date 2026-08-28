@@ -78,6 +78,7 @@ doctype_list_js = {
     "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
     "Lead": "public/js/lead_list.js",
     "Asset": "public/js/asset_list.js",
+    "Employee": "public/js/employee_list.js",
 }
 app_include_js = [
     "/assets/sahayog/js/assignmate.js",
