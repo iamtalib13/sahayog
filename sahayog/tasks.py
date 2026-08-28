@@ -352,19 +352,24 @@ def auto_approve_attendance_corrections():
 def auto_process_relieved_employees():
     """
     Daily scheduled task (runs at 2:00 AM) and manual trigger from Employee List:
-    Find all Active employees whose relieving_date is in the past (<= today),
+    Find all Active employees whose relieving_date is NOT NULL, NOT EMPTY, and <= today,
     set their status to 'Left', and disable their linked User accounts (enabled = 0).
     """
     current_date = getdate(today())
     
-    # Fetch employees who are Active but relieving_date has passed
-    relieved_employees = frappe.db.get_all(
-        "Employee",
-        filters={
-            "status": "Active",
-            "relieving_date": ["<=", current_date],
-        },
-        fields=["name", "employee_name", "user_id", "relieving_date"],
+    # Fetch employees who are Active AND explicitly have a valid relieving_date <= today
+    relieved_employees = frappe.db.sql(
+        """
+        SELECT name, employee_name, user_id, relieving_date
+        FROM `tabEmployee`
+        WHERE status = 'Active'
+          AND relieving_date IS NOT NULL
+          AND relieving_date != ''
+          AND relieving_date != '0000-00-00'
+          AND relieving_date <= %s
+        """,
+        (current_date,),
+        as_dict=True,
     )
 
     if not relieved_employees:
