@@ -921,6 +921,14 @@ def get_divisions():
     return frappe.get_all("Division", fields=["name"], order_by="name")
 
 @frappe.whitelist()
+def get_zones():
+    return frappe.get_all("Zone", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_regions():
+    return frappe.get_all("Region", fields=["name"], order_by="name")
+
+@frappe.whitelist()
 def get_shifts():
     return frappe.get_all("Shift Type", fields=["name"], order_by="name")
 
