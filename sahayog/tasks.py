@@ -349,6 +349,28 @@ def auto_approve_attendance_corrections():
 
 
 @frappe.whitelist()
+def get_relieved_employees_count():
+    """
+    Returns the count of Active employees whose relieving_date is in the past (<= today).
+    Used to show user confirmation with exact count before executing.
+    """
+    current_date = getdate(today())
+    count = frappe.db.sql(
+        """
+        SELECT count(*)
+        FROM `tabEmployee`
+        WHERE status = 'Active'
+          AND relieving_date IS NOT NULL
+          AND relieving_date != ''
+          AND relieving_date != '0000-00-00'
+          AND relieving_date <= %s
+        """,
+        (current_date,),
+    )[0][0]
+    return count
+
+
+@frappe.whitelist()
 def auto_process_relieved_employees():
     """
     Daily scheduled task (runs at 2:00 AM) and manual trigger from Employee List:
