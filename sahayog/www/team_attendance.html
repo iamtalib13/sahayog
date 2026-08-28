@@ -2068,6 +2068,10 @@
                             class="member-select"
                           >
                             <option value="">Select Business Unit</option>
+                            <option value="Retail Branch Banking">Retail Branch Banking</option>
+                            <option value="JLL">JLL</option>
+                            <option value="Head Office">Head Office</option>
+                            <option value="Two-Wheeler">Two-Wheeler</option>
                           </select>
                         </div>
                       </div>
@@ -6305,7 +6309,7 @@ Pending Regularization
         if (desigs)   _fill("edit_designation",     e.designation,     desigs);
         if (empTypes) _fill("edit_employment_type", e.employment_type, empTypes);
         if (shifts)   _fill("edit_shift",           e.default_shift,   shifts);
-        if (divisions)_fill("edit_business_unit",   e.custom_division, divisions);
+        if (true) _fill("edit_business_unit",   e.custom_division, ["Retail Branch Banking","JLL","Head Office","Two-Wheeler"]);
 
         // Populate SOL ID / Branch Code dropdown
         if (branches) {
