@@ -13,6 +13,8 @@
   "month",
   "column_break_ruxj",
   "year",
+  "column_break_mbbq",
+  "holiday_list",
   "section_break_ikje",
   "crl_monitoring_actual_value",
   "column_break_jpie",
@@ -136,12 +138,24 @@
    "fieldname": "crl_monitoring_tab",
    "fieldtype": "Tab Break",
    "label": "CRL Monitoring "
+  },
+  {
+   "fieldname": "column_break_mbbq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "BSC Holiday List 2026",
+   "fieldname": "holiday_list",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Holiday List",
+   "options": "Holiday List"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-25 11:36:31.826265",
+ "modified": "2026-08-28 14:03:03.501182",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "CRL Monitoring and Branch Opening and Closing",
