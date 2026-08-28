@@ -6159,11 +6159,9 @@ Pending Regularization
                     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12);">
                 </div>
                 <div>
-                  <label style="font-size:11px;color:var(--muted);">UHID Number (numeric only)</label>
+                  <label style="font-size:11px;color:var(--muted);">UHID Number</label>
                   <input name="custom_uhid_number" value="${e.custom_uhid_number || ""}" type="text" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
-                    inputmode="numeric"
-                    oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;">
                 </div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
@@ -6361,10 +6359,7 @@ Pending Regularization
         }
         if (aadhaar) data.custom_aadhar_number = aadhaar;
 
-        const uhid = (data.custom_uhid_number || "").trim();
-        if (uhid && !/^\d+$/.test(uhid)) {
-          showToast("UHID Number must contain only digits."); return;
-        }
+        // UHID may be alphanumeric — no digit-only restriction
 
         // Zone/Region/District come from read-only inputs — pick them up via DOM
         const z = document.getElementById("edit_zone");
