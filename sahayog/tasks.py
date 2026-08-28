@@ -382,7 +382,7 @@ def auto_process_relieved_employees():
     # Fetch employees who are Active AND explicitly have a valid relieving_date <= today
     relieved_employees = frappe.db.sql(
         """
-        SELECT name, employee_name, user_id, relieving_date
+        SELECT name, employee_number, employee_name, user_id, relieving_date
         FROM `tabEmployee`
         WHERE status = 'Active'
           AND relieving_date IS NOT NULL
@@ -410,9 +410,18 @@ def auto_process_relieved_employees():
             # 1. Update Employee status to 'Left'
             frappe.db.set_value("Employee", emp.name, "status", "Left", update_modified=True)
 
-            # 2. Disable linked User account
-            if emp.user_id and frappe.db.exists("User", emp.user_id):
-                frappe.db.set_value("User", emp.user_id, "enabled", 0, update_modified=True)
+            # 2. Disable linked User account (by user_id, employee_number, or email)
+            user_to_disable = emp.user_id
+            if not user_to_disable or not frappe.db.exists("User", user_to_disable):
+                # Fallback: check by employee_number@sahayog.com or employee_number
+                emp_num = emp.employee_number or emp.name
+                user_to_disable = (
+                    frappe.db.get_value("User", {"email": f"{emp_num}@sahayog.com"}, "name")
+                    or frappe.db.get_value("User", {"username": emp_num}, "name")
+                )
+
+            if user_to_disable and frappe.db.exists("User", user_to_disable):
+                frappe.db.set_value("User", user_to_disable, "enabled", 0, update_modified=True)
 
             processed_count += 1
         except Exception as e:
