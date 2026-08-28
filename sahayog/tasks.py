@@ -370,6 +370,8 @@ def auto_process_relieved_employees():
         return
 
     processed_count = 0
+    errors = []
+
     for emp in relieved_employees:
         try:
             # 1. Update Employee status to 'Left'
@@ -381,13 +383,19 @@ def auto_process_relieved_employees():
 
             processed_count += 1
         except Exception as e:
-            frappe.log_error(
-                message=f"Failed to mark Employee {emp.name} as Left: {str(e)}",
-                title="Error in auto_process_relieved_employees"
-            )
+            errors.append(f"Employee: {emp.name} ({emp.employee_name or ''}) - Error: {str(e)}")
 
     frappe.db.commit()
+
+    # Log single consolidated error log if there were any failures
+    if errors:
+        frappe.log_error(
+            message=f"Auto Process Relieved Employees encountered {len(errors)} error(s):\n\n" + "\n".join(errors),
+            title="Auto Process Relieved Employees - Consolidated Errors"
+        )
+
     frappe.logger("scheduler").info(
-        f"auto_process_relieved_employees: Processed {processed_count} employees to status 'Left'."
+        f"auto_process_relieved_employees: Processed {processed_count} employees to status 'Left'. Errors: {len(errors)}"
     )
+
 
