@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-14 11:52:44.113685",
+ "creation": "2026-08-03 12:24:24.397879",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -160,8 +160,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "fieldname": "enquiry_report",
@@ -212,7 +211,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-11 08:21:00.000000",
+ "modified": "2026-08-28 12:50:22.598616",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
