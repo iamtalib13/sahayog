@@ -1500,7 +1500,7 @@
                 id="statusFilterLeft"
                 onclick="switchEmployeeStatus('Left', this)"
               >
-                ○ Inactive (<span id="countLeft">0</span>)
+                ○ Resigned (<span id="countLeft">0</span>)
               </button>
               <button
                 class="ftab"
@@ -5332,7 +5332,7 @@ Pending Regularization
                 <div class="status-ring" style="background:${ringColor}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status === "Left" ? "Resigned" : s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
@@ -6127,7 +6127,7 @@ Pending Regularization
                     </div>
                   </div>
                 </div>
-                <div><label style="font-size:11px;color:var(--muted);">Status</label>${sel("status", e.status, ["Active", "Left"])}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Status</label><select name="status" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;"><option value="Active"${e.status === "Active" ? " selected" : ""}>Active</option><option value="Left"${e.status === "Left" ? " selected" : ""}>Resigned</option></select></div>
                 <div id="editLeftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
                   <div><label style="font-size:11px;color:var(--muted);">Resignation Date</label>${dt("resignation_letter_date", fmtDate(e.resignation_letter_date))}</div>
                   <div><label style="font-size:11px;color:var(--muted);">Relieving Date</label>${dt("relieving_date", fmtDate(e.relieving_date))}</div>
