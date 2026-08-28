@@ -62,6 +62,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "columns": 2,
    "fieldname": "month",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -155,7 +156,7 @@
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-25 12:02:33.802026",
+ "modified": "2026-08-27 12:08:41.514337",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Branch Score Card",

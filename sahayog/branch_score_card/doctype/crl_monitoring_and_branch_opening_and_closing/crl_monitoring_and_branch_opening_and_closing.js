@@ -118,7 +118,7 @@ function handle_score_fields_visibility(frm) {
         'branch_closing_actual_value'
     ];
 
-    // Fields ko JS level se Read-Only set karein (taaki UI se gayab na ho aur user input bhi lock rahe)
+    // Fields ko JS level se Read-Only lock rakhein
     score_fields.forEach(field => {
         frm.set_df_property(field, 'read_only', 1);
     });
@@ -126,11 +126,11 @@ function handle_score_fields_visibility(frm) {
     // Dynamically check child table length
     let child_rows = frm.doc.table_nzzy || [];
 
-    // CONDITION: Agar child table me KOI DATA NAHI HAI, to fields ko Blank (null) set karein
+    // CONDITION: Agar child table empty hai, to values ko "0" set karein (Blank / null nahi)
     if (child_rows.length === 0) {
         score_fields.forEach(field => {
-            if (frm.doc[field] !== null && frm.doc[field] !== "") {
-                frm.set_value(field, null);
+            if (frm.doc[field] !== "0" && frm.doc[field] !== 0) {
+                frm.set_value(field, "0");
             }
         });
     }

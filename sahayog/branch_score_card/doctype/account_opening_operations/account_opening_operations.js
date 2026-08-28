@@ -400,51 +400,34 @@ frappe.ui.form.on('Account Opening Operations', {
 
     calculate_ftr_ftnr_totals(frm) {
         let ftnr_rows = frm.doc.table_dllf || [];
+        let total_ftr = 0;
+        let total_ftnr = 0;
 
-        if (ftnr_rows.length === 0) {
-            frm.set_value('total_ftr', null, null, true);
-            frm.set_value('total_ftnr', null, null, true);
-            frm.set_value('grand_total', null, null, true);
-            frm.set_value('ftr_percentage', null, null, true);
-            frm.set_value('ftnr_percentage', null, null, true);
-        } else {
-            let total_ftr = 0;
-            let total_ftnr = 0;
+        ftnr_rows.forEach(row => {
+            total_ftr += flt(row.ftr);
+            total_ftnr += flt(row.ftnr);
+        });
 
-            ftnr_rows.forEach(row => {
-                total_ftr += flt(row.ftr);
-                total_ftnr += flt(row.ftnr);
-            });
+        let grand_total = total_ftr + total_ftnr;
+        let ftr_perc = grand_total > 0 ? flt((total_ftr / grand_total) * 100, 2) : 0;
+        let ftnr_perc = grand_total > 0 ? flt((total_ftnr / grand_total) * 100, 2) : 0;
 
-            let grand_total = total_ftr + total_ftnr;
-            let ftr_perc = 0;
-            let ftnr_perc = 0;
-
-            if (grand_total > 0) {
-                ftr_perc = flt((total_ftr / grand_total) * 100, 2);
-                ftnr_perc = flt((total_ftnr / grand_total) * 100, 2);
-            }
-
-            frm.set_value('total_ftr', total_ftr, null, true);
-            frm.set_value('total_ftnr', total_ftnr, null, true);
-            frm.set_value('grand_total', grand_total, null, true);
-            frm.set_value('ftr_percentage', ftr_perc, null, true);
-            frm.set_value('ftnr_percentage', ftnr_perc, null, true);
-        }
+        frm.set_value('total_ftr', total_ftr, null, true);
+        frm.set_value('total_ftnr', total_ftnr, null, true);
+        frm.set_value('grand_total', grand_total, null, true);
+        frm.set_value('ftr_percentage', ftr_perc, null, true);
+        frm.set_value('ftnr_percentage', ftnr_perc, null, true);
     },
 
     calculate_zero_ip_total(frm) {
         let zero_ip_rows = frm.doc.table_zero_ip_funding || [];
+        let total = 0;
+        
+        zero_ip_rows.forEach(row => {
+            total += flt(row.zero_ip_funding);
+        });
 
-        if (zero_ip_rows.length === 0) {
-            frm.set_value('zero_ip_funding_count', null, null, true);
-        } else {
-            let total = 0;
-            zero_ip_rows.forEach(row => {
-                total += flt(row.zero_ip_funding);
-            });
-            frm.set_value('zero_ip_funding_count', total, null, true);
-        }
+        frm.set_value('zero_ip_funding_count', total, null, true);
     }
 });
 

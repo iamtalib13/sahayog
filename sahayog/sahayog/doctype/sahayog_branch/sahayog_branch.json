@@ -154,7 +154,9 @@
   {
    "fieldname": "br_cash_retention_limit_crl",
    "fieldtype": "Currency",
-   "label": "Br. Cash Retention Limit (CRL)",
+   "label": "Br. Cash Retention Limit (CRL)"
+  },
+  {
    "fieldname": "column_break_equn",
    "fieldtype": "Column Break"
   },

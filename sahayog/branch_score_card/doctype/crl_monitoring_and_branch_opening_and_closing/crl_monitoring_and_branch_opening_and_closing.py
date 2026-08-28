@@ -7,6 +7,36 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import date_diff, getdate, now_datetime, flt
 
+# =============================================================
+# HELPER: HOLIDAY CHECK FUNCTION
+# =============================================================
+def is_holiday_date(target_date, sol_id=None, doc=None):
+    """
+    Checks if target_date is marked as Holiday in ERPNext Holiday List.
+    Reads from 'holiday_list' field or defaults to 'BSC Holiday List 2026'.
+    """
+    if not target_date:
+        return False
+
+    target_dt = getdate(target_date)
+    holiday_list_name = getattr(doc, "holiday_list", None) if doc else None
+    
+    # DB Lookup if doc instance is not passed directly
+    if not holiday_list_name and sol_id:
+        holiday_list_name = frappe.db.get_value(
+            "CRL Monitoring and Branch Opening and Closing", 
+            {"sol_id": str(sol_id).strip(), "year": str(target_dt.year), "month": target_dt.strftime("%B")}, 
+            "holiday_list"
+        )
+
+    # Fallback to exact DocType Name
+    if not holiday_list_name:
+        holiday_list_name = "BSC Holiday List 2026"
+
+    return bool(frappe.db.exists("Holiday", {
+        "parent": holiday_list_name,
+        "holiday_date": target_dt
+    }))
 
 class CRLMonitoringandBranchOpeningandClosing(Document):
 
@@ -241,14 +271,11 @@ def parse_time_val(val):
 # AUTOMATED SCHEDULER SYNC (Runs via Cron / Console)
 # =============================================================
 def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
-    """Daily Cron Function for Automated Tracking (Runs for T-1 / Yesterday)"""
+    """Daily Cron Function for Automated Tracking"""
     if target_date:
         sync_date = getdate(target_date)
     else:
         sync_date = date.today() - timedelta(days=1)
-
-    if sync_date.weekday() == 6:  # Skip Sunday
-        return 0
 
     month_name = sync_date.strftime("%B")
     year = sync_date.year
@@ -264,30 +291,40 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         frappe.log_error(frappe.get_traceback(), f"Cron Sync Connection Failed - {sync_date}")
         return 0
 
-    # Extract only SOLs that returned active Finacle data
     finacle_active_sols = set(oc_map.keys()).union(set(eod_map.keys()))
 
+    # Is Date par Finacle me bilkul data nahi hai AUR Sunday/Holiday hai, tabhi skip karo
+    is_off_day = (sync_date.weekday() == 6) or is_holiday_date(sync_date, sol_id=filter_sol_id)
+    if is_off_day and not finacle_active_sols:
+        return 0
+
+    # Original SOL Selection Logic
     if filter_sol_id:
         filter_sol_str = str(filter_sol_id).strip()
         target_sols = [filter_sol_str]
     else:
-        # Filters to process only active Finacle SOLs
         target_sols = list(finacle_active_sols)
 
     processed_count = 0
+    timestamp = now_datetime().strftime("%d-%m-%Y %H:%M:%S")
+    user_stamp = frappe.session.user
 
     for sol_id in target_sols:
         sol_id = str(sol_id).strip()
         parent_docname = f"{sol_id}-{month_name}-{year}"
-
         doc_exists = frappe.db.exists("CRL Monitoring and Branch Opening and Closing", parent_docname)
 
-        # Skip creation if no Finacle record exists and document is not pre-existing
-        if not doc_exists and sol_id not in finacle_active_sols:
+        has_record = (sol_id in oc_map) or (sol_id in eod_map)
+
+        # Agar Holiday/Sunday hai aur is particular SOL ka Finacle me koi data nahi mila -> Skip
+        if (is_off_day or is_holiday_date(sync_date, sol_id=sol_id)) and not has_record:
+            continue
+
+        if not doc_exists and not has_record:
             continue
 
         crl_limit = flt(frappe.db.get_value("Sahayog Branch", {"sol_id": sol_id}, "br_cash_retention_limit_crl") or 0)
-
+        
         if doc_exists:
             doc = frappe.get_doc("CRL Monitoring and Branch Opening and Closing", parent_docname)
         else:
@@ -299,13 +336,8 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
 
         doc.br_cash_retention_limit_crl = crl_limit
 
-        existing_row = None
-        for row in doc.table_nzzy:
-            if row.date and getdate(row.date) == getdate(sync_date):
-                existing_row = row
-                break
-
-        has_record = (sol_id in oc_map) or (sol_id in eod_map)
+        # OPTIMIZATION (Point 3): Memory mein fast row matching (next() iterator)
+        existing_row = next((row for row in doc.table_nzzy if row.date and getdate(row.date) == getdate(sync_date)), None)
 
         if not has_record:
             open_time_str = None
@@ -324,26 +356,26 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
             cash_above_crl = max(flt(eod_val) - crl_limit, 0.0) if crl_limit > 0 else 0.0
 
         missing = []
-        if not open_time_str:
-            missing.append("Opening time missing")
-        if not close_time_str:
-            missing.append("Closing time missing")
-        if not eod_exists:
-            missing.append("EOD balance missing")
+        if not open_time_str: missing.append("Opening time missing")
+        if not close_time_str: missing.append("Closing time missing")
+        if not eod_exists: missing.append("EOD balance missing")
+
+        # AUDIT TRAIL LOGGING (Point 2): Manual vs Automatic Trigger Tracking
+        trigger_prefix = f"Synced manually by {user_stamp} at {timestamp}" if force_resync else f"Automated Cron at {timestamp}"
 
         if not has_record or len(missing) == 3:
             status = "No Record in Finacle"
-            log = "No transaction record found in Finacle DB for this date."
+            log = f"[NO DATA] No transaction record found in Finacle DB ({trigger_prefix})."
             open_time_str = None
             close_time_str = None
             eod_val = None
             cash_above_crl = None
         elif not missing:
             status = "Manually Success" if force_resync else "Success"
-            log = "Data received successfully from Finacle."
+            log = f"[SUCCESS] Data received successfully from Finacle ({trigger_prefix})."
         else:
-            status = "Partially Success"
-            log = f"Missing: {', '.join(missing)}"
+            status = "Manually Partially Success" if force_resync else "Partially Success"
+            log = f"[PARTIAL] Missing: {', '.join(missing)} ({trigger_prefix})."
 
         row_payload = {
             "date": sync_date,
@@ -360,13 +392,6 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         else:
             doc.append("table_nzzy", row_payload)
 
-        for r in doc.table_nzzy:
-            if r.sync_status == "No Record in Finacle":
-                r.branch_opening_time = None
-                r.branch_closing_time = None
-                r.eod_closing_balance = None
-                r.cash_above_crl = None
-
         doc.sort_child_table_by_date()
         doc.save(ignore_permissions=True)
         processed_count += 1
@@ -381,44 +406,38 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
 def manual_sync_failed_partial(from_date=None, to_date=None):
     if not from_date or not to_date:
         frappe.throw(_("From Date and To Date are required"))
-
+        
     from_dt = getdate(from_date)
     to_dt = getdate(to_date)
     today_dt = date.today()
 
     if from_dt >= today_dt or to_dt >= today_dt:
-        frappe.throw(_("Manual Sync is only allowed up to yesterday. Today or future dates cannot be synced before daily scheduler execution."))
-
+        frappe.throw(_("Manual Sync is only allowed up to yesterday."))
     if from_dt > to_dt:
-        frappe.throw(_("From Date cannot be greater than To Date"))
-
+        frappe.throw(_("From Date cannot be greater than To Date."))
     if date_diff(to_dt, from_dt) + 1 > 31:
-        frappe.throw(_("Maximum 31 days range allowed"))
+        frappe.throw(_("Maximum 31 days range allowed."))
 
-    working_days = []
+    # Generate date range list
+    date_range = []
     curr_dt = from_dt
     while curr_dt <= to_dt:
-        if curr_dt.weekday() != 6:  # Skip Sunday
-            working_days.append(curr_dt)
+        date_range.append(curr_dt)
         curr_dt += timedelta(days=1)
 
-    total_days = len(working_days)
-    if total_days == 0:
-        return {
-            "status": "Warning",
-            "message": "Selected date range contains only Sundays.",
-            "indicator": "orange"
-        }
-
+    total_days = len(date_range)
     failed_days = 0
+    total_processed_records = 0
     error_logs = []
 
-    for idx, day in enumerate(working_days, start=1):
+    for idx, day in enumerate(date_range, start=1):
         try:
-            sync_daily_crl(target_date=day, force_resync=True)
+            # Catch return count from sync_daily_crl
+            count = sync_daily_crl(target_date=day, force_resync=True)
+            total_processed_records += (count or 0)
         except Exception as e:
             failed_days += 1
-            error_logs.append(f"Date {day}: {str(e)}")
+            error_logs.append(f"Date {day.strftime('%d-%m-%Y')}: {str(e)}")
 
         percent = int((idx / total_days) * 100)
         frappe.publish_realtime(
@@ -435,11 +454,45 @@ def manual_sync_failed_partial(from_date=None, to_date=None):
     if failed_days > 0:
         send_admin_failure_alert(total_days, total_days - failed_days, failed_days, error_logs, from_date, to_date)
 
-    return {
-        "status": "Success",
-        "message": f"Global Sync completed successfully for date range {from_date} to {to_date}.",
-        "indicator": "green" if failed_days == 0 else "orange"
-    }
+    from_str = from_dt.strftime("%d-%m-%Y")
+    to_str = to_dt.strftime("%d-%m-%Y")
+
+    # -------------------------------------------------------------
+    # DYNAMIC PROFESSIONAL MESSAGING LOGIC
+    # -------------------------------------------------------------
+    # Scenario A: Agar range mein koi bhi record update/create nahi hua
+    if total_processed_records == 0 and failed_days == 0:
+        if from_dt == to_dt:
+            if from_dt.weekday() == 6:
+                msg = f"No updates required for {from_str}. The selected date was a Sunday with no Finacle transaction activity."
+            elif is_holiday_date(from_dt):
+                msg = f"No updates required for {from_str}. The selected date was an official holiday with no Finacle transaction activity."
+            else:
+                msg = f"No updates required for {from_str}. All branch records are already up to date."
+        else:
+            msg = f"Global sync completed for {from_str} to {to_str}. Selected date range consists of non-working days (Sundays/Holidays) or already verified records."
+
+        return {
+            "status": "No Updates Required",
+            "message": msg,
+            "indicator": "blue"
+        }
+
+    # Scenario B: Exception / Partial Sync Failure
+    elif failed_days > 0:
+        return {
+            "status": "Partial Sync Complete",
+            "message": f"Global Sync processed {total_processed_records} record(s) between {from_str} and {to_str}. Encountered issues on {failed_days} day(s). System administrator notified.",
+            "indicator": "orange"
+        }
+
+    # Scenario C: Clean Success
+    else:
+        return {
+            "status": "Success",
+            "message": f"Global Sync completed successfully for date range {from_str} to {to_str}. Processed {total_processed_records} record(s).",
+            "indicator": "green"
+        }
 
 
 # =============================================================
@@ -500,8 +553,7 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
     today_dt = date.today()
 
     if from_date >= today_dt or to_date >= today_dt:
-        frappe.throw(_("Manual Re-Sync is only allowed for past dates (up to yesterday). Today or future dates cannot be synced before daily scheduler execution."))
-
+        frappe.throw(_("Manual Re-Sync is only allowed for past dates (up to yesterday)."))
     if from_date > to_date:
         frappe.throw(_("From Date cannot be greater than To Date"))
 
@@ -516,20 +568,18 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
 
     if from_date.month != doc_month_idx or from_date.year != doc_year:
         frappe.throw(_(f"From Date must belong to {doc.month} {doc_year} only!"))
-
     if to_date.month != doc_month_idx or to_date.year != doc_year:
         frappe.throw(_(f"To Date must belong to {doc.month} {doc_year} only!"))
 
     changed_records = 0
-    total_working_days = 0
-
     curr_dt = from_date
-    while curr_dt <= to_date:
-        if curr_dt.weekday() == 6:  # Skip Sunday
-            curr_dt += timedelta(days=1)
-            continue
+    
+    # Trackers for generating precise user message when changed_records == 0
+    sunday_count = 0
+    holiday_count = 0
+    total_requested_days = (to_date - from_date).days + 1
 
-        total_working_days += 1
+    while curr_dt <= to_date:
         timestamp = now_datetime().strftime("%d-%m-%Y %H:%M:%S")
         user_stamp = frappe.session.user
 
@@ -544,20 +594,32 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
             existing_row = next((r for r in doc.table_nzzy if r.date and getdate(r.date) == getdate(curr_dt)), None)
             if not existing_row:
                 existing_row = doc.append("table_nzzy", {"date": curr_dt})
-
             old_log = str(existing_row.sync_log or "").strip()
             existing_row.sync_status = "Fail"
             existing_row.sync_log = f"[NETWORK/DB FAIL] Connection Error: {str(e)} | Triggered by {user_stamp} at {timestamp}"
-            
             if old_log:
                 existing_row.sync_log += f" | Prior Log: ({old_log})"
-
             changed_records += 1
             curr_dt += timedelta(days=1)
             continue
 
         opening = opening_data.get(sol_id, {})
         has_finacle_record = (sol_id in opening_data) or (sol_id in eod_data)
+
+        # Check if it is holiday/sunday
+        is_sunday = (curr_dt.weekday() == 6)
+        is_holiday = is_holiday_date(curr_dt, sol_id=sol_id, doc=doc)
+
+        # Record counts for messaging
+        if is_sunday and not has_finacle_record:
+            sunday_count += 1
+        elif is_holiday and not has_finacle_record:
+            holiday_count += 1
+
+        # Agar holiday/sunday hai AUR Finacle me record bhi nahi mila -> Skip
+        if (is_sunday or is_holiday) and not has_finacle_record:
+            curr_dt += timedelta(days=1)
+            continue
 
         if not has_finacle_record:
             open_time = None
@@ -636,7 +698,6 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
                 if old_crl != new_crl: diffs.append(f"Cash > CRL: '{old_crl}' ➔ '{new_crl}'")
 
                 was_failed = old_status in ["Fail", "No Record in Finacle"] or "Error" in str(existing_row.sync_log or "")
-
                 existing_row.branch_opening_time = open_time
                 existing_row.branch_closing_time = close_time
                 existing_row.eod_closing_balance = eod_balance
@@ -645,7 +706,6 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
 
                 changes_summary = " | ".join(diffs)
                 scenario_tag = "[NETWORK/RECOVERY SUCCESS]" if (was_failed and new_status in valid_success_statuses) else "[DATA UPDATED]"
-
                 existing_row.sync_log = f"{scenario_tag} {new_log_prefix} (Synced by {user_stamp} at {timestamp}) | Changes: [{changes_summary}]"
                 changed_records += 1
         else:
@@ -663,28 +723,29 @@ def manual_resync_branch(docname, from_date=None, to_date=None):
         curr_dt += timedelta(days=1)
 
     if changed_records > 0:
-        for r in doc.table_nzzy:
-            if r.sync_status == "No Record in Finacle":
-                r.branch_opening_time = None
-                r.branch_closing_time = None
-                r.eod_closing_balance = None
-                r.cash_above_crl = None
-                
         doc.sort_child_table_by_date()
         doc.save(ignore_permissions=True)
         frappe.db.commit()
 
-    if total_working_days == 0:
-        return {
-            "status": "Sunday / Invalid Selection",
-            "message": "Selected dates fall on Sundays or contain no actionable records.",
-            "indicator": "orange"
-        }
-
+    # Dynamic Professional Response Message Handling
     if changed_records == 0:
+        if total_requested_days == 1:
+            date_fmt = from_date.strftime("%d-%m-%Y")
+            if sunday_count > 0:
+                msg = f"No updates required for SOL {sol_id}. The selected date ({date_fmt}) was a Sunday and no Finacle transactions were recorded."
+            elif holiday_count > 0:
+                msg = f"No updates required for SOL {sol_id}. The selected date ({date_fmt}) was an official holiday and no Finacle transactions were recorded."
+            else:
+                msg = f"No updates required for SOL {sol_id}. Data for {date_fmt} is already up to date."
+        else:
+            if sunday_count + holiday_count == total_requested_days:
+                msg = f"No updates required for SOL {sol_id}. The selected date range consists of non-working days (Sundays/Holidays) with no Finacle transaction activity."
+            else:
+                msg = f"No updates required for SOL {sol_id}. All records in the selected date range are already up to date."
+
         return {
             "status": "No Updates Required",
-            "message": f"No updates required for SOL {sol_id}. All records in range {from_date} to {to_date} are verified and up to date.",
+            "message": msg,
             "indicator": "blue"
         }
 
@@ -728,12 +789,19 @@ def check_document_sync_issues(docname):
         status = str(row.sync_status or "").strip()
         status_lower = status.lower()
 
-        # Check Sync Status Issues (Failed or Partial)
-        if status_lower in ["fail", "failed", "partially success", "manually partially success", "error"]:
-            log_detail = f" ({row.sync_log})" if row.sync_log else ""
-            issues.append(f"<b>{date_str}:</b> Data sync issue detected [Status: <b>{status}</b>]{log_detail}.")
+        is_sunday = (row_dt.weekday() == 6)
+        is_holiday = is_holiday_date(row_dt, sol_id=doc.sol_id, doc=doc)
 
-        # Real-time Data Anomaly Checks
+        # Skip sync status checks if the date is a Holiday or Sunday
+        if is_sunday or is_holiday:
+            continue
+
+        # Check Sync Status Issues (Failed, Partial, or No Record on Working Days)
+        if status_lower in ["fail", "failed", "partially success", "manually partially success", "error", "no record in finacle"]:
+            log_detail = f" — {row.sync_log}" if row.sync_log else ""
+            issues.append(f"<b>{date_str}</b>{log_detail}")
+
+        # Real-time Data Anomaly Checks for active working days
         elif status != "No Record in Finacle":
             if row.branch_opening_time and not row.branch_closing_time:
                 issues.append(f"<b>{date_str}:</b> Branch Opening Time is recorded, but Closing Time is missing.")
@@ -748,46 +816,26 @@ def check_document_sync_issues(docname):
         
         today = date.today()
         max_check_date = min(end_date, today - timedelta(days=1))
-        
-        # Safe Holiday List Fetch
-        holiday_list_name = frappe.db.get_single_value("Company", "default_holiday_list")
-        if not holiday_list_name and frappe.db.has_column("Sahayog Branch", "holiday_list"):
-            holiday_list_name = frappe.db.get_value("Sahayog Branch", {"sol_id": doc.sol_id}, "holiday_list")
-
-        holidays = []
-        if holiday_list_name:
-            holidays = frappe.get_all("Holiday", filters={"parent": holiday_list_name}, pluck="holiday_date")
-            holidays = [getdate(h) for h in holidays]
-
-        # Map existing child rows in-memory (No direct SQL table dependency)
-        row_map = {getdate(r.date): r for r in rows if r.date}
 
         current_dt = start_date
         while current_dt <= max_check_date:
             is_sunday = (current_dt.weekday() == 6)
-            is_holiday = current_dt in holidays
+            is_holiday = is_holiday_date(current_dt, sol_id=doc.sol_id, doc=doc)
 
+            # Check if missing strictly on a valid working day
             if not is_sunday and not is_holiday:
                 if current_dt not in existing_dates:
                     formatted_date = current_dt.strftime('%d-%m-%Y')
-                    
-                    matched_row = row_map.get(current_dt)
-                    if matched_row and getattr(matched_row, "sync_log", None):
-                        issue_msg = f"<b>{formatted_date}:</b> Sync Failure — {matched_row.sync_log}"
-                    elif matched_row and getattr(matched_row, "sync_status", None):
-                        issue_msg = f"<b>{formatted_date}:</b> Status: <b>{matched_row.sync_status}</b>"
-                    else:
-                        issue_msg = f"<b>{formatted_date}:</b> Data missing for working day (Scheduled Cron execution or data retrieval failed)."
-
-                    issues.append(issue_msg)
+                    issues.append(f"<b>{formatted_date}:</b> Data missing for working day (Scheduled Cron execution or data retrieval failed).")
 
             current_dt += timedelta(days=1)
 
     # 3. RESPONSE STRUCTURE
     if issues:
+        total_issues = len(issues)
         return {
             "has_issue": True,
-            "error_text": "• " + "<br>• ".join(issues)
+            "error_text": f"This document has a total of <b>{total_issues} working day entry missing/failed:</b><br><br>• " + "<br>• ".join(issues)
         }
     
     return {"has_issue": False}

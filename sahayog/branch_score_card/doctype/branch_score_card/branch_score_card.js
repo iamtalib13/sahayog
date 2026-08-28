@@ -334,20 +334,17 @@ frappe.ui.form.on("Branch Score Card", {
                     frm.doc.branch_name = temp_doc.branch_name;
                     frm.refresh_field("branch_name");
 
-                    frm.doc.table_cxyy = [];
+                    frm.clear_table("table_cxyy");
                     (temp_doc.table_cxyy || []).forEach(row => {
                         if (row.function && row.parameter) {
-                            frm.doc.table_cxyy.push({
-                                docstatus: 0,
-                                doctype: "Branch Score Card Item",
-                                function: row.function,
-                                parameter: row.parameter,
-                                weightage: row.weightage,
-                                data_source: row.data_source,
-                                scoring_rule: row.scoring_rule,
-                                scoring_methodology: row.scoring_methodology,
-                                score_obtain: row.score_obtain
-                            });
+                            let child = frm.add_child("table_cxyy");
+                            child.function = row.function;
+                            child.parameter = row.parameter;
+                            child.weightage = row.weightage;
+                            child.data_source = row.data_source;
+                            child.scoring_rule = row.scoring_rule;
+                            child.scoring_methodology = row.scoring_methodology;
+                            child.score_obtain = row.score_obtain;
                         }
                     });
                     frm.refresh_field("table_cxyy");
@@ -422,10 +419,8 @@ frappe.ui.form.on("Branch Score Card", {
                         let bg_class = (index % 2 === 0) ? "bsc-light-grey" : "bsc-light-blue";
 
                         let score_display = "";
-                        let val_str = (row.score_obtain !== null && row.score_obtain !== undefined) ? String(row.score_obtain).trim() : "";
-                        
-                        if (val_str !== "") {
-                            score_display = frappe.utils.escape_html(val_str);
+                        if (row.score_obtain !== null && row.score_obtain !== undefined && String(row.score_obtain).trim() !== "") {
+                            score_display = frappe.utils.escape_html(String(row.score_obtain));
                         }
 
                         rows_html += `<tr>`;
