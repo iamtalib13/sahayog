@@ -819,25 +819,9 @@ frappe.ui.form.on("Disciplinary Case", {
           document.body.appendChild(iframe);
 
           iframe.onload = () => {
-            const doc = iframe.contentWindow.document;
-            const style = doc.createElement("style");
-            style.innerHTML = `
-                    @page { size: A4; margin: 0 !important; }
-                    html, body {
-                        margin:0 !important; padding:0 !important;
-                        width:210mm !important; height:297mm !important;
-                        overflow:hidden !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-                    .print-page { position:relative; width:210mm; height:297mm; overflow:hidden; }
-                    .print-body { padding: 145px 30px 40px 30px; height:100%; box-sizing:border-box; page-break-inside: avoid; }
-                `;
-            doc.head.appendChild(style);
-
-            const original = doc.body.innerHTML;
-            doc.body.innerHTML = `<div class="print-page">${original}</div>`;
-
+            // Print the format as designed (built-in behaviour). The print
+            // format CSS already handles letterhead padding, Calibri 14,
+            // multi-page flow and the stamp, so no extra clipping wrapper here.
             setTimeout(() => {
               iframe.contentWindow.focus();
               iframe.contentWindow.print();
