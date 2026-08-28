@@ -348,56 +348,46 @@ def auto_approve_attendance_corrections():
 
 
 
-# def notify_inactive_ss():
-#     """
-#     Daily job: find agents with no call log activity for 90+ days.
-#     Uncomment and register in hooks.py daily scheduler to enable.
-#     """
-#     inactive_agents = frappe.db.sql(
-#         """
-#         SELECT
-#             a.name AS agent_code,
-#             a.agent_name,
-#             a.branch_name,
-#             MAX(acl.calling_date) AS last_call_date,
-#             DATEDIFF(CURDATE(), MAX(acl.calling_date)) AS days_since_last_call
-#         FROM `tabAgent` a
-#         LEFT JOIN `tabAgent Activation Call Log` acl
-#             ON acl.agent = a.name AND acl.docstatus = 1
-#         WHERE a.name NOT IN (
-#             SELECT agent FROM `tabAgent Activation Call Log`
-#             WHERE docstatus = 1 AND (exited = 1 OR want_to_exit = 1)
-#             AND agent IS NOT NULL
-#         )
-#         GROUP BY a.name, a.agent_name, a.branch_name
-#         HAVING last_call_date IS NULL
-#             OR DATEDIFF(CURDATE(), MAX(acl.calling_date)) >= 90
-#         ORDER BY days_since_last_call DESC
-#         """,
-#         as_dict=True,
-#     )
-#     if not inactive_agents:
-#         return
-#     trainer_heads = frappe.get_all(
-#         "Has Role", filters={"role": "Trainer Head", "parenttype": "User"}, pluck="parent"
-#     )
-#     if not trainer_heads:
-#         return
-#     rows = "".join(
-#         f"<tr><td>{a.agent_code}</td><td>{a.agent_name}</td><td>{a.branch_name or '-'}</td>"
-#         f"<td>{a.last_call_date or 'Never'}</td><td>{a.days_since_last_call or '90+'}</td></tr>"
-#         for a in inactive_agents
-#     )
-#     message = f"""
-#         <p>{len(inactive_agents)} SS(s) inactive for 90+ days.</p>
-#         <table border="1" cellpadding="4">
-#             <thead><tr><th>Code</th><th>Name</th><th>Branch</th><th>Last Call</th><th>Days</th></tr></thead>
-#             <tbody>{rows}</tbody>
-#         </table>
-#     """
-#     for user in trainer_heads:
-#         frappe.sendmail(
-#             recipients=[user],
-#             subject=f"Inactive SS Alert — {len(inactive_agents)} SS(s) inactive for 90+ days",
-#             message=message,
-#         )
+def auto_process_relieved_employees():
+    """
+    Daily scheduled task (runs at 2:00 AM):
+    Find all Active employees whose relieving_date is in the past (<= today),
+    set their status to 'Left', and disable their linked User accounts (enabled = 0).
+    """
+    current_date = getdate(today())
+    
+    # Fetch employees who are Active but relieving_date has passed
+    relieved_employees = frappe.db.get_all(
+        "Employee",
+        filters={
+            "status": "Active",
+            "relieving_date": ["<=", current_date],
+        },
+        fields=["name", "employee_name", "user_id", "relieving_date"],
+    )
+
+    if not relieved_employees:
+        return
+
+    processed_count = 0
+    for emp in relieved_employees:
+        try:
+            # 1. Update Employee status to 'Left'
+            frappe.db.set_value("Employee", emp.name, "status", "Left", update_modified=True)
+
+            # 2. Disable linked User account
+            if emp.user_id and frappe.db.exists("User", emp.user_id):
+                frappe.db.set_value("User", emp.user_id, "enabled", 0, update_modified=True)
+
+            processed_count += 1
+        except Exception as e:
+            frappe.log_error(
+                message=f"Failed to mark Employee {emp.name} as Left: {str(e)}",
+                title="Error in auto_process_relieved_employees"
+            )
+
+    frappe.db.commit()
+    frappe.logger("scheduler").info(
+        f"auto_process_relieved_employees: Processed {processed_count} employees to status 'Left'."
+    )
+
