@@ -28,12 +28,14 @@ website_route_rules = [
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/sahayog/css/sahayog.css"
+app_include_css = "/assets/sahayog/css/disciplinary_case.css"
 # app_include_js = "/assets/sahayog/js/sahayog.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/sahayog/css/sahayog.css"
-# web_include_js = "/assets/sahayog/js/sahayog.js"
+web_include_js = [
+    "/assets/sahayog/js/login_password_reset.js"
+]
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "sahayog/public/scss/website"
@@ -414,7 +416,7 @@ doc_events = {
     "Account Opening Operations": {
         "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
         "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
-    },
+    }
 }
 
 # Scheduled Tasks

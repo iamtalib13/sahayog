@@ -8,9 +8,12 @@ window.sahayog = window.sahayog || {};
 sahayog.dams.add_send_email_button = function (frm) {
   if (frm.is_new()) return;
 
-  frm.add_custom_button(__("Send Email"), function () {
+  let btn = frm.add_custom_button(__("Send Email"), function () {
     sahayog.dams.open_email_composer(frm);
   });
+  if (btn) {
+    btn.removeClass("btn-default").addClass("btn-send-email-outlook");
+  }
 };
 
 // ============================
@@ -45,13 +48,7 @@ sahayog.dams.open_email_composer = function (frm) {
             print_format: defaults.print_format,
             print_formats: defaults.print_formats || null,
             recipients: recipients,
-            cc_setting_field: [
-                "Unauthorized Absence",
-                "Reminder Of Unauthorized Absence",
-                "Ex Parte Enquiry"
-            ].includes(frm.doc.doctype)
-              ? "unauthorized_absence_cc"
-              : "disciplinary_case_cc",
+            cc: defaults.cc,
           });
         },
       });
@@ -65,16 +62,15 @@ sahayog.dams.open_email_composer = function (frm) {
 sahayog.dams.render_email_dialog = function (frm, options) {
   console.log("DEBUG: Rendering dialog with options:", options);
 
-  frappe.db
-    .get_single_value("Sahayog HR Setting", options.cc_setting_field)
-    .then((fixed_cc) => {
-      frappe.call({
-        method: "sahayog.hrms.dams_email_service.get_email_template_preview",
-        args: {
-          template_name: options.template,
-          doctype: frm.doc.doctype,
-          docname: frm.doc.name,
-        },
+  let fixed_cc = options.cc || "";
+
+  frappe.call({
+    method: "sahayog.hrms.dams_email_service.get_email_template_preview",
+    args: {
+      template_name: options.template,
+      doctype: frm.doc.doctype,
+      docname: frm.doc.name,
+    },
         callback: function (r) {
           console.log("DEBUG: Template preview response:", r);
           const preview = r.message || {};
@@ -96,17 +92,18 @@ sahayog.dams.render_email_dialog = function (frm, options) {
           const d = new frappe.ui.Dialog({
             title: " ",
             size: "extra-large",
+            class: "outlook-email-dialog",
             fields: [
               {
                 fieldtype: "HTML",
                 fieldname: "outlook_header",
                 options: `
                   <style>
-                    /* Dialog Container Reset */
-                    .modal-content { border-radius: 4px !important; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important; border: 1px solid #d2d0ce !important; }
-                    .modal-header { display: none !important; } 
-                    .modal-body { padding: 0 !important; background: #fff !important; }
-                    .modal-footer { display: none !important; } 
+                    /* Dialog Container Reset - scoped to outlook dialog only */
+                    .outlook-email-dialog .modal-content { border-radius: 4px !important; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.2) !important; border: 1px solid #d2d0ce !important; }
+                    .outlook-email-dialog .modal-header { display: none !important; } 
+                    .outlook-email-dialog .modal-body { padding: 0 !important; background: #fff !important; }
+                    .outlook-email-dialog .modal-footer { display: none !important; } 
                     
                     /* Outlook Top Action Bar */
                     .outlook-top-bar {
@@ -451,5 +448,4 @@ sahayog.dams.render_email_dialog = function (frm, options) {
           }, 100);
         },
       });
-    });
 };
