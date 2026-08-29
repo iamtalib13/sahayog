@@ -4142,7 +4142,19 @@
       const now = new Date();
       let calYear = now.getFullYear();
       let calMonth = now.getMonth();
-      const todayKey = now.toISOString().split("T")[0];
+      // Local YYYY-MM-DD (avoid toISOString() which shifts to UTC and breaks date boundaries in IST)
+      const fmtLocalDate = (d) =>
+        d.getFullYear() +
+        "-" +
+        String(d.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(d.getDate()).padStart(2, "0");
+      const todayKey = fmtLocalDate(now);
+      // Attendance cycle start (26th of prev/curr month) — mirrors backend get_cycle_bounds()
+      const cycleStart = (now.getDate() >= 26)
+        ? new Date(now.getFullYear(), now.getMonth(), 26)
+        : new Date(now.getFullYear(), now.getMonth() - 1, 26);
+      const cycleStartKey = fmtLocalDate(cycleStart);
 
       // ── API HELPERS ───────────────────────────────────────
       async function callAPI(method, params = {}, module = "attendance") {
@@ -5554,11 +5566,20 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
+            const cycleLocked = key < cycleStartKey;
             const lockedApproved =
               histStatus &&
               (histStatus.includes("Regularization Approved") ||
                 histStatus.includes("Leave Approved"));
-            if (lockedApproved) {
+            const canOverrideCycle = userRoles.some(
+              (r) => r === "HR Manager" || r === "Administrator" || r === "System Manager"
+            );
+            if (cycleLocked && !canOverrideCycle) {
+              cell.onclick = () =>
+                showToast(
+                  "Attendance cycle for this date is locked. Contact HR for an authorized override.",
+                );
+            } else if (lockedApproved) {
               cell.onclick = () => {
                 const msg = histStatus.includes("Leave Approved")
                   ? "Leave for this date is already approved and locked."
