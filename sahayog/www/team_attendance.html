@@ -6829,6 +6829,9 @@
         "permanent_address",
         "relieving_date",
         "resignation_letter_date",
+        "branch",
+        "sahayog_branch",
+        "custom_division",
       ];
 
       function openImportModal() {
@@ -6904,8 +6907,8 @@
         ];
         const csv = [
           IMPORT_COLUMNS.join(","),
-          noteRow.join(","),
-          sampleRow.join(","),
+          noteRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - noteRow.length)).fill("Optional")).join(","),
+          sampleRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - sampleRow.length)).fill("")).join(","),
         ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
@@ -6976,14 +6979,38 @@
         ];
         const csv = [
           IMPORT_COLUMNS.join(","),
-          noteRow.join(","),
-          sampleRow.join(","),
+          noteRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - noteRow.length)).fill("Optional")).join(","),
+          sampleRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - sampleRow.length)).fill("")).join(","),
         ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "employee_import_template.csv";
         a.click();
+      }
+
+      function buildPortalErrorCsv(allErrors, allRows) {
+        const header = ["Row", "Employee Code", "Name", "Reason"];
+        const lines = [header.join(",")];
+        (allErrors || []).forEach((e) => {
+          const rec = (allRows || []).find((r) => String(r.row) === String(e.row));
+          const emp = (rec && rec.employee) ? rec.employee : "";
+          const name = (rec && rec.name) ? rec.name : (e.name || "");
+          const reason = (e.error || "").replace(/"/g, '""');
+          const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+          lines.push([e.row, q(emp), q(name), q(reason)].join(","));
+        });
+        return lines.join("\n");
+      }
+
+      function portalErrorFileLink(allErrors, allRows) {
+        if (!allErrors || !allErrors.length) return "";
+        const csv = buildPortalErrorCsv(allErrors, allRows);
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        return `<div style="margin-top:10px;">
+          <a href="${url}" download="employee_import_errors.csv" style="display:inline-block; padding:8px 14px; background:var(--danger); color:#fff; border-radius:6px; font-size:12px; font-weight:600; text-decoration:none;">⬇ Download Error File (${allErrors.length} records)</a>
+        </div>`;
       }
 
       async function submitImport() {
@@ -7243,6 +7270,10 @@
             .join("");
         }
 
+        if (allErrors.length > 0) {
+          html += portalErrorFileLink(allErrors, allRows);
+        }
+
         resultsDiv.innerHTML = html;
 
         if (totalCreated > 0 || totalUpdated > 0) fetchTeamData();
@@ -7429,6 +7460,10 @@
               </tbody>
             </table>
           </div>`;
+        }
+
+        if (allErrors.length > 0) {
+          html += portalErrorFileLink(allErrors, allRows);
         }
 
         resultsDiv.innerHTML = html;
