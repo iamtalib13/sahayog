@@ -487,14 +487,28 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
     if not employee or not attendance_date or not requested_status or not reason:
         frappe.throw(_("All fields are required"))
 
-    # Check if a pending request already exists for this date and employee
-    existing = frappe.db.exists("Attendance Correction", {
+    # Check if any correction request already exists for this date
+    # (a pending one is still open; an approved one locks the date)
+    existing_status = frappe.db.get_value("Attendance Correction", {
         "employee": employee,
         "attendance_date": attendance_date,
-        "status": ["in", ["Draft", "Pending"]]
+        "status": ["in", ["Draft", "Pending", "Approved"]]
+    }, "status")
+    if existing_status:
+        if existing_status == "Approved":
+            frappe.throw(_("This date is already locked — a correction request for it has been approved."))
+        else:
+            frappe.throw(_("A correction request for this date is already pending."))
+
+    # Cross-lock: do not allow a correction if leave is already approved for this date
+    approved_leave = frappe.db.exists("Leave Application", {
+        "employee": employee,
+        "status": "Approved",
+        "from_date": ["<=", attendance_date],
+        "to_date": [">=", attendance_date]
     })
-    if existing:
-        frappe.throw(_("A correction request for this date is already pending."))
+    if approved_leave:
+        frappe.throw(_("Leave is already approved for this date, so a correction request cannot be submitted."))
 
     # Get current status
     current_status = frappe.db.get_value("Attendance", {
