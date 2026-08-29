@@ -1,6 +1,33 @@
 import frappe
 from frappe import _
-from frappe.utils import nowdate, nowtime, getdate, add_days, flt
+from frappe.utils import nowdate, nowtime, getdate, add_days, add_months, flt, formatdate
+
+
+def get_cycle_bounds(today=None):
+    """Return (start, end) of the attendance cycle containing `today`.
+
+    Cycle runs 26th of previous month to 25th of current month.
+    """
+    today = getdate(today) if today else getdate()
+    if today.day >= 26:
+        start = today.replace(day=26)
+        end = add_months(start, 1).replace(day=25)
+    else:
+        end = today.replace(day=25)
+        start = add_months(end, -1).replace(day=26)
+    return start, end
+
+
+def can_override_cycle_lock():
+    """Roles authorized to bypass the attendance cycle lock."""
+    roles = frappe.get_roles(frappe.session.user)
+    return bool(set(roles) & {"Administrator", "System Manager", "HR Manager"})
+
+
+def is_cycle_locked(date):
+    """True if `date` falls in a finalized (past) attendance cycle."""
+    start, _ = get_cycle_bounds()
+    return getdate(date) < start
 
 @frappe.whitelist(allow_guest=False)
 def get_team_attendance_data(employee_status="Active"):
@@ -486,6 +513,13 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
     """Create an Attendance Correction request from the portal."""
     if not employee or not attendance_date or not requested_status or not reason:
         frappe.throw(_("All fields are required"))
+
+    # Attendance cycle lock: block correction requests for finalized (past) cycles
+    if not can_override_cycle_lock() and is_cycle_locked(attendance_date):
+        frappe.throw(_(
+            "Attendance cycle for {0} is locked. Changes are not allowed; "
+            "contact HR for an authorized override."
+        ).format(formatdate(getdate(attendance_date), "dd-MMM-yyyy")))
 
     # Check if any correction request already exists for this date
     # (a pending one is still open; an approved one locks the date)
