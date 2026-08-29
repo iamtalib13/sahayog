@@ -35,7 +35,7 @@ from sahayog.api.attendance import get_leave_balances
 
 @frappe.whitelist(allow_guest=False)
 def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=False, half_day=False):
-    from frappe.utils import date_diff, getdate
+    from frappe.utils import date_diff, getdate, formatdate
 
     if not employee or not leave_type:
         frappe.throw(_("Employee and Leave Type are required"))
@@ -82,6 +82,45 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
     
     if leave_bal.unused_leaves < requested_days:
         frappe.throw(_("Insufficient balance. Available: {0}, Requested: {1}").format(leave_bal.unused_leaves, requested_days))
+
+    # Cross-lock: do not allow leave on dates already locked by an approved regularization
+    locked_correction = frappe.db.exists("Attendance Correction", {
+        "employee": employee,
+        "status": "Approved",
+        "attendance_date": ["between", [from_date, to_date]]
+    })
+    if locked_correction:
+        frappe.throw(_(
+            "Leave cannot be applied because regularization has already been approved "
+            "for one or more dates in this period."
+        ))
+
+    # Block overlapping leave with a clean, HTML-free message.
+    # HRMS's default overlap error embeds a raw <a href> tag that the portal
+    # would otherwise render as literal text.
+    overlap = frappe.db.get_value(
+        "Leave Application",
+        {
+            "employee": employee,
+            "docstatus": ["<", 2],
+            "status": ["not in", ["Rejected", "Cancelled"]],
+            "from_date": ["<=", to_date],
+            "to_date": [">=", from_date],
+        },
+        ["name", "leave_type", "from_date", "to_date"],
+        as_dict=True,
+    )
+    if overlap:
+        if overlap.from_date == overlap.to_date:
+            date_str = "for " + formatdate(overlap.from_date, "dd-MMM-yyyy")
+        else:
+            date_str = "from {0} to {1}".format(
+                formatdate(overlap.from_date, "dd-MMM-yyyy"),
+                formatdate(overlap.to_date, "dd-MMM-yyyy"),
+            )
+        frappe.throw(_("{0} already applied {1}. Leave Application: {2}").format(
+            overlap.leave_type, date_str, overlap.name
+        ))
 
     # Get Holiday List
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
