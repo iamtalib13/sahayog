@@ -414,7 +414,7 @@ doc_events = {
     "Account Opening Operations": {
         "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
         "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
-    },
+    }
 }
 
 # Scheduled Tasks
