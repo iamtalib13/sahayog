@@ -333,7 +333,8 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
         "department": "Department",
     }
     if force_update:
-        MANDATORY_FIELDS["employee_number"] = "Employee Code"
+        # While updating, only Employee Code is mandatory (HR requirement)
+        MANDATORY_FIELDS = {"employee_number": "Employee Code"}
 
     # ── Fetch table columns ONCE outside the loop ─────────────────────────────
     existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
@@ -473,6 +474,7 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                         "custom_zone": ("custom_zone", lambda v: v.strip()),
                         "custom_region": ("custom_region", lambda v: v.strip()),
                         "custom_district": ("custom_district", lambda v: v.strip()),
+                        "custom_division": ("custom_division", lambda v: v.strip()),
                         "mobile_number": ("cell_number", lambda v: v.strip()),
                         "personal_email": ("personal_email", lambda v: v.strip()),
                         "bank_name": ("bank_name", lambda v: v.strip()),
@@ -599,6 +601,7 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                 "department": row.get("department"),
                 "designation": row.get("designation"),
                 "branch": row.get("branch"),
+                "custom_division": row.get("custom_division"),
                 "sol_id": row.get("sol_id"),
                 "reports_to": reports_to,
                 "cell_number": row.get("mobile_number"),
@@ -919,6 +922,14 @@ def get_departments():
 @frappe.whitelist()
 def get_divisions():
     return frappe.get_all("Division", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_zones():
+    return frappe.get_all("Zone", fields=["name"], order_by="name")
+
+@frappe.whitelist()
+def get_regions():
+    return frappe.get_all("Region", fields=["name"], order_by="name")
 
 @frappe.whitelist()
 def get_shifts():

@@ -783,8 +783,14 @@
         }
       }
       @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(16px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       /* TOOLTIP */
@@ -1405,7 +1411,7 @@
                   "
                   onclick="openImportModal()"
                 >
-                   ⬆ Update
+                  ⬆ Update
                 </button>
                 <button
                   id="btnUpdateEmployees"
@@ -1500,7 +1506,7 @@
                 id="statusFilterLeft"
                 onclick="switchEmployeeStatus('Left', this)"
               >
-                ○ Inactive (<span id="countLeft">0</span>)
+                ○ Resigned (<span id="countLeft">0</span>)
               </button>
               <button
                 class="ftab"
@@ -2009,13 +2015,12 @@
                         "
                       >
                         <div>
-                          <label>Branch Code (SOL ID) *</label
-                          ><select
+                          <label>Branch Code (SOL ID)</label>
+                          <select
                             name="sol_id"
                             id="new_emp_sol_id"
                             class="member-select"
                             onchange="handleBranchCodeChange(this.value)"
-                            required
                           >
                             <option value="">Select Branch Code</option>
                           </select>
@@ -2027,28 +2032,27 @@
                             name="branch"
                             id="new_emp_branch_name"
                             class="member-select"
-                            readonly
                           />
                         </div>
                         <div>
                           <label>Zone</label
-                          ><input
-                            type="text"
+                          ><select
                             name="zone"
                             id="new_emp_zone"
                             class="member-select"
-                            readonly
-                          />
+                          >
+                            <option value="">Select Zone</option>
+                          </select>
                         </div>
                         <div>
                           <label>Region</label
-                          ><input
-                            type="text"
+                          ><select
                             name="region"
                             id="new_emp_region"
                             class="member-select"
-                            readonly
-                          />
+                          >
+                            <option value="">Select Region</option>
+                          </select>
                         </div>
                         <div>
                           <label>District</label
@@ -2057,7 +2061,6 @@
                             name="district_name"
                             id="new_emp_district"
                             class="member-select"
-                            readonly
                           />
                         </div>
                         <div>
@@ -2068,6 +2071,12 @@
                             class="member-select"
                           >
                             <option value="">Select Business Unit</option>
+                            <option value="Retail Branch Banking">
+                              Retail Branch Banking
+                            </option>
+                            <option value="JLL">JLL</option>
+                            <option value="Head Office">Head Office</option>
+                            <option value="Two-Wheeler">Two-Wheeler</option>
                           </select>
                         </div>
                       </div>
@@ -2361,9 +2370,27 @@
                     class="member-select"
                     style="padding: 6px; font-size: 12px; margin-bottom: 10px"
                   />
-                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <label style="font-size: 11px; color: var(--muted); font-weight: 600;">Update Existing Values:</label>
-                    <select id="importForceUpdate" class="member-select" style="padding: 4px 8px; font-size: 11px; width: auto;">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    <label
+                      style="
+                        font-size: 11px;
+                        color: var(--muted);
+                        font-weight: 600;
+                      "
+                      >Update Existing Values:</label
+                    >
+                    <select
+                      id="importForceUpdate"
+                      class="member-select"
+                      style="padding: 4px 8px; font-size: 11px; width: auto"
+                    >
                       <option value="no" selected>No</option>
                       <option value="yes">Yes</option>
                     </select>
@@ -2737,7 +2764,12 @@
                       "
                       >Resignation Type *</label
                     >
-                    <select id="exit_resignation_type" class="member-select" required onchange="onResignationTypeChange()">
+                    <select
+                      id="exit_resignation_type"
+                      class="member-select"
+                      required
+                      onchange="onResignationTypeChange()"
+                    >
                       <option value="" disabled selected>Select type...</option>
                       <option value="Voluntary">Voluntary</option>
                       <option value="Involuntary">Involuntary</option>
@@ -2755,7 +2787,9 @@
                       >Reason for Leaving *</label
                     >
                     <select id="exit_reason" class="member-select" required>
-                      <option value="" disabled selected>Select reason...</option>
+                      <option value="" disabled selected>
+                        Select reason...
+                      </option>
                     </select>
                   </div>
                   <div style="margin-bottom: 20px">
@@ -2854,7 +2888,12 @@
                 >
                   <div>
                     <label>From Date</label>
-                    <input type="date" id="fromDate" class="member-select" onchange="onLeaveDateChanged()" />
+                    <input
+                      type="date"
+                      id="fromDate"
+                      class="member-select"
+                      onchange="onLeaveDateChanged()"
+                    />
                   </div>
                   <div>
                     <label>To Date</label>
@@ -3273,7 +3312,7 @@
                     class="cl-dot"
                     style="background: #fffbeb; border: 1px dashed #d97706"
                   ></div>
-Pending Regularization
+                  Pending Regularization
                 </div>
               </div>
               <div class="summary-strip" id="calSummary">
@@ -3707,6 +3746,8 @@ Pending Regularization
         const divSel = document.getElementById("new_emp_division");
         const shiftSel = document.getElementById("new_emp_shift");
         const empTypeSel = document.getElementById("new_emp_employment_type");
+        const zoneSel = document.getElementById("new_emp_zone");
+        const regionSel = document.getElementById("new_emp_region");
         if (!window._empList) {
           window._empList = await callAPI(
             "get_employees_for_reporting",
@@ -3800,6 +3841,30 @@ Pending Regularization
               opt.value = b.name;
               opt.textContent = b.name;
               solIdSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (zoneSel && zoneSel.options.length <= 1) {
+          const zones = await callAPI("get_zones", {}, "employee");
+          if (zones) {
+            zones.forEach((z) => {
+              const opt = document.createElement("option");
+              opt.value = z.name;
+              opt.textContent = z.name;
+              zoneSel.appendChild(opt);
+            });
+          }
+        }
+
+        if (regionSel && regionSel.options.length <= 1) {
+          const regions = await callAPI("get_regions", {}, "employee");
+          if (regions) {
+            regions.forEach((r) => {
+              const opt = document.createElement("option");
+              opt.value = r.name;
+              opt.textContent = r.name;
+              regionSel.appendChild(opt);
             });
           }
         }
@@ -4077,7 +4142,19 @@ Pending Regularization
       const now = new Date();
       let calYear = now.getFullYear();
       let calMonth = now.getMonth();
-      const todayKey = now.toISOString().split("T")[0];
+      // Local YYYY-MM-DD (avoid toISOString() which shifts to UTC and breaks date boundaries in IST)
+      const fmtLocalDate = (d) =>
+        d.getFullYear() +
+        "-" +
+        String(d.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(d.getDate()).padStart(2, "0");
+      const todayKey = fmtLocalDate(now);
+      // Attendance cycle start (26th of prev/curr month) — mirrors backend get_cycle_bounds()
+      const cycleStart = (now.getDate() >= 26)
+        ? new Date(now.getFullYear(), now.getMonth(), 26)
+        : new Date(now.getFullYear(), now.getMonth() - 1, 26);
+      const cycleStartKey = fmtLocalDate(cycleStart);
 
       // ── API HELPERS ───────────────────────────────────────
       async function callAPI(method, params = {}, module = "attendance") {
@@ -4208,7 +4285,8 @@ Pending Regularization
       function switchTab(tab, btn) {
         if (
           (tab === "leave" || tab === "corrections") &&
-          !isHR() && !isBranchManager()
+          !isHR() &&
+          !isBranchManager()
         ) {
           showToast("You are not authorized to access this tab.");
           return;
@@ -4299,16 +4377,24 @@ Pending Regularization
         }
 
         if (tab === "attendance") {
-          if (controls) controls.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "flex";
-          if (statsRow) statsRow.style.display = (isHR() && !allowHrToMarkAttendance) ? "none" : "grid";
+          if (controls)
+            controls.style.display =
+              isHR() && !allowHrToMarkAttendance ? "none" : "flex";
+          if (statsRow)
+            statsRow.style.display =
+              isHR() && !allowHrToMarkAttendance ? "none" : "grid";
           if (searchWrap) searchWrap.style.display = "flex";
           if (hrFilters && isHR()) hrFilters.style.display = "flex";
           if (dirCardHead) dirCardHead.style.display = "flex";
           const empStatusFilters = document.getElementById("empStatusFilters");
           if (empStatusFilters) {
-            empStatusFilters.style.display = (isHR() || isBranchManager()) ? "flex" : "none";
+            empStatusFilters.style.display =
+              isHR() || isBranchManager() ? "flex" : "none";
             // Reset to Active when switching to attendance tab
-            if ((isHR() || isBranchManager()) && employeeStatusFilter !== "Active") {
+            if (
+              (isHR() || isBranchManager()) &&
+              employeeStatusFilter !== "Active"
+            ) {
               employeeStatusFilter = "Active";
               document
                 .querySelectorAll("#empStatusFilters .ftab")
@@ -4395,10 +4481,7 @@ Pending Regularization
             pending: data.pending || [],
             history: data.history || [],
           };
-          setPendingBadge(
-            "tabCorrApproval",
-            (data.pending || []).length,
-          );
+          setPendingBadge("tabCorrApproval", (data.pending || []).length);
           renderCorrectionRequests();
         }
       }
@@ -4444,7 +4527,11 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                c.status === "Approved" ? "pill-present" : c.status === "Pending" ? "pill-pending" : "pill-absent";
+                c.status === "Approved"
+                  ? "pill-present"
+                  : c.status === "Pending"
+                    ? "pill-pending"
+                    : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${c.status}</span>`;
             }
 
@@ -4541,10 +4628,7 @@ Pending Regularization
             pending: res.pending || [],
             history: res.history || [],
           };
-          setPendingBadge(
-            "tabLeaveRequests",
-            (res.pending || []).length,
-          );
+          setPendingBadge("tabLeaveRequests", (res.pending || []).length);
           renderLeaveRequests();
         }
       }
@@ -4605,7 +4689,11 @@ Pending Regularization
                 </div>`;
             } else {
               const statusClass =
-                l.status === "Approved" ? "pill-present" : l.status === "Open" ? "pill-pending" : "pill-absent";
+                l.status === "Approved"
+                  ? "pill-present"
+                  : l.status === "Open"
+                    ? "pill-pending"
+                    : "pill-absent";
               actionsHtml = `<span class="status-pill ${statusClass}">${l.status}</span>`;
             }
 
@@ -4747,7 +4835,10 @@ Pending Regularization
         if (isHR()) {
           if (attendanceTab)
             attendanceTab.textContent = "👤 Employee Directory";
-          if (btnApplyLeave) btnApplyLeave.style.display = allowHrToMarkAttendance ? "inline-block" : "none";
+          if (btnApplyLeave)
+            btnApplyLeave.style.display = allowHrToMarkAttendance
+              ? "inline-block"
+              : "none";
           // Button will be managed inside switchTab based on tab context
           if (btnCreateEmployee)
             btnCreateEmployee.style.display =
@@ -5092,22 +5183,31 @@ Pending Regularization
         dashContent.innerHTML = html;
       }
 
-      async function markAttendance(emp_id, status, log_type = "IN", force = false) {
+      async function markAttendance(
+        emp_id,
+        status,
+        log_type = "IN",
+        force = false,
+      ) {
         const btn = event?.target;
         if (btn) btn.disabled = true;
 
         const res = await callAPI(
           "mark_attendance",
-          { employee: emp_id, status: status, log_type: log_type, force: force },
+          {
+            employee: emp_id,
+            status: status,
+            log_type: log_type,
+            force: force,
+          },
           "attendance",
         );
 
         // Holiday warning — show confirmation dialog
         if (res && res.is_holiday) {
           if (btn) btn.disabled = false;
-          showHolidayConfirm(
-            res.holiday_name,
-            () => markAttendance(emp_id, status, log_type, true)
+          showHolidayConfirm(res.holiday_name, () =>
+            markAttendance(emp_id, status, log_type, true),
           );
           return;
         }
@@ -5313,7 +5413,9 @@ Pending Regularization
           }
 
           const checkboxHtml =
-            !isLeft && ((isHR() && allowHrToMarkAttendance) || (!isHR() && isBranchManager()))
+            !isLeft &&
+            ((isHR() && allowHrToMarkAttendance) ||
+              (!isHR() && isBranchManager()))
               ? `<input type="checkbox" class="emp-cb" ${isChecked ? "checked" : ""} onclick="event.stopPropagation();toggleEmpSelect('${s.name}',this)">`
               : "";
 
@@ -5332,7 +5434,7 @@ Pending Regularization
                 <div class="status-ring" style="background:${ringColor}"></div>
             </div>
             <div class="emp-info" onclick="selectMember('${s.name}')">
-                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status}</span>` : ""}</div>
+                <div class="emp-name">${s.employee_name} ${s.is_self ? '<span style="font-size:10px;background:var(--brand2);color:#fff;padding:1px 5px;border-radius:4px;margin-left:4px;">YOU</span>' : ""} <span style="font-size:10px;background:#f1f5f9;color:var(--muted);padding:1px 5px;border-radius:4px;margin-left:4px;font-weight:600;">${s.name}</span> ${s.status ? `<span style="font-size:10px;background:${s.status === "Active" ? "#f0fdf4" : s.status === "Left" ? "#fef2f2" : "#fefce8"};color:${s.status === "Active" ? "#16a34a" : s.status === "Left" ? "#dc2626" : "#a16207"};padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:600;">${s.status === "Left" ? "Resigned" : s.status}</span>` : ""}</div>
                 <div class="emp-role">${s.designation || "Staff"} ${s.sahayog_branch ? `• <span style="color:var(--brand2)">${s.sahayog_branch}</span>` : ""}</div>
                 ${s.department ? `<div style="font-size:10px; color:var(--muted); margin-top:2px;">${s.department}</div>` : ""}
                 ${timeInfo ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">${timeInfo}</div>` : ""}
@@ -5411,7 +5513,9 @@ Pending Regularization
           // baseStatus strips any " (…)" suffix so CSS classification always
           // matches the underlying attendance status, even when the tooltip
           // carries extra context like "(Regularization Approved)".
-          const baseStatus = histStatus ? histStatus.replace(/ \(.*\)$/, "") : histStatus;
+          const baseStatus = histStatus
+            ? histStatus.replace(/ \(.*\)$/, "")
+            : histStatus;
 
           if (isToday) cls += " today-d";
           if (baseStatus === "Present") cls += " present-d";
@@ -5444,7 +5548,9 @@ Pending Regularization
               "Pending Half Day": "Half Day Leave Request Pending",
             };
             cell.title =
-              titleMap[histStatus] || histStatus || (isWeekend ? "Weekly Off" : key);
+              titleMap[histStatus] ||
+              histStatus ||
+              (isWeekend ? "Weekly Off" : key);
           }
 
           // Disable dates before employee's date of joining
@@ -5460,7 +5566,27 @@ Pending Regularization
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            if (histStatus && histStatus.includes("Correction")) {
+            const cycleLocked = key < cycleStartKey;
+            const lockedApproved =
+              histStatus &&
+              (histStatus.includes("Regularization Approved") ||
+                histStatus.includes("Leave Approved"));
+            const canOverrideCycle = userRoles.some(
+              (r) => r === "HR Manager" || r === "Administrator" || r === "System Manager"
+            );
+            if (cycleLocked && !canOverrideCycle) {
+              cell.onclick = () =>
+                showToast(
+                  "Attendance cycle for this date is locked. Contact HR for an authorized override.",
+                );
+            } else if (lockedApproved) {
+              cell.onclick = () => {
+                const msg = histStatus.includes("Leave Approved")
+                  ? "Leave for this date is already approved and locked."
+                  : "Regularization for this date is already approved and locked.";
+                showToast(msg);
+              };
+            } else if (histStatus && histStatus.includes("Correction")) {
               cell.onclick = () => confirmCancelCorrection(key);
             } else {
               cell.onclick = () =>
@@ -5570,12 +5696,14 @@ Pending Regularization
       async function openLeaveModal() {
         const empSel = document.getElementById("leaveEmpSel");
         empSel.innerHTML = '<option value="">— Select Employee —</option>';
-        staff.filter(s => s.status === "Active").forEach((s) => {
-          const opt = document.createElement("option");
-          opt.value = s.name;
-          opt.textContent = `${s.employee_name} (${s.name})`;
-          empSel.appendChild(opt);
-        });
+        staff
+          .filter((s) => s.status === "Active")
+          .forEach((s) => {
+            const opt = document.createElement("option");
+            opt.value = s.name;
+            opt.textContent = `${s.employee_name} (${s.name})`;
+            empSel.appendChild(opt);
+          });
         if (selectedMemberId) {
           empSel.value = selectedMemberId;
         }
@@ -5596,7 +5724,11 @@ Pending Regularization
       }
 
       async function _loadLeaveTypesForEmployee(empId) {
-        const leaveTypes = await callAPI("get_leave_types", { employee: empId || "" }, "leave");
+        const leaveTypes = await callAPI(
+          "get_leave_types",
+          { employee: empId || "" },
+          "leave",
+        );
         const sel = document.getElementById("leaveTypeSel");
         sel.innerHTML = '<option value="">— Select Leave Type —</option>';
         if (leaveTypes) {
@@ -5606,7 +5738,7 @@ Pending Regularization
             opt.textContent = lt.name;
             if (lt.el_restricted) {
               opt.disabled = true;
-              opt.textContent = `${lt.name} — 🔒 Available after confirmation (${lt.confirmation_date ? new Date(lt.confirmation_date).toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"}) : "date not set"})`;
+              opt.textContent = `${lt.name} — 🔒 Available after confirmation (${lt.confirmation_date ? new Date(lt.confirmation_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "date not set"})`;
               opt.style.color = "#9ca3af";
             }
             sel.appendChild(opt);
@@ -5676,11 +5808,13 @@ Pending Regularization
 
         // Holiday warning — show confirmation dialog
         if (res && res.is_holiday) {
-          const names = res.holiday_names ? res.holiday_names.join(", ") : res.holiday_dates.join(", ");
+          const names = res.holiday_names
+            ? res.holiday_names.join(", ")
+            : res.holiday_dates.join(", ");
           showHolidayConfirm(
             "Leave period includes holidays: " + names,
             () => submitLeave(true),
-            "Apply Anyway"
+            "Apply Anyway",
           );
           return;
         }
@@ -5711,12 +5845,19 @@ Pending Regularization
 
       function showToast(msg) {
         const t = document.getElementById("toast");
-        t.textContent = msg;
+        // Strip any HTML markup so raw tags (e.g. <a href>) are never shown literally
+        const tmp = document.createElement("div");
+        tmp.innerHTML = msg;
+        t.textContent = tmp.textContent || msg;
         t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2800);
       }
 
-      function showHolidayConfirm(holidayDesc, onConfirm, confirmLabel = "Mark Anyway") {
+      function showHolidayConfirm(
+        holidayDesc,
+        onConfirm,
+        confirmLabel = "Mark Anyway",
+      ) {
         // Remove any existing holiday confirm dialog
         const existing = document.getElementById("holidayConfirmModal");
         if (existing) existing.remove();
@@ -5767,8 +5908,11 @@ Pending Regularization
 
         document.body.appendChild(modal);
 
-        document.getElementById("holidayConfirmCancel").onclick = () => modal.remove();
-        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+        document.getElementById("holidayConfirmCancel").onclick = () =>
+          modal.remove();
+        modal.onclick = (e) => {
+          if (e.target === modal) modal.remove();
+        };
         document.getElementById("holidayConfirmOk").onclick = () => {
           modal.remove();
           onConfirm();
@@ -5938,7 +6082,8 @@ Pending Regularization
         const content = document.getElementById("dashboardContent");
         document.querySelector(".drawer-header span").textContent =
           "Employee Profile";
-        document.getElementById("drawerEditBtn").style.display = (isHR() || isAdmin()) ? "inline-block" : "none";
+        document.getElementById("drawerEditBtn").style.display =
+          isHR() || isAdmin() ? "inline-block" : "none";
         content.innerHTML =
           '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
@@ -6025,7 +6170,10 @@ Pending Regularization
         // select helper (static options)
         const sel = (name, value, options) => {
           let opts = options
-            .map((o) => `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`)
+            .map(
+              (o) =>
+                `<option value="${o}"${value === o ? " selected" : ""}>${o}</option>`,
+            )
             .join("");
           return `<select name="${name}" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">${opts}</select>`;
         };
@@ -6078,7 +6226,7 @@ Pending Regularization
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled from Branch Code</span>
                   </label>
                   <input name="branch" id="edit_branch_name" value="${e.branch || ""}" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;">
                 </div>
                 <div>
                   <label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label>
@@ -6092,22 +6240,24 @@ Pending Regularization
                   <label style="font-size:11px;color:var(--muted);">Zone
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
                   </label>
-                  <input name="custom_zone" id="edit_zone" value="${e.custom_zone || ""}" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                  <select name="custom_zone" id="edit_zone" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">
+                    <option value="">Select Zone</option>
+                  </select>
                 </div>
                 <div>
                   <label style="font-size:11px;color:var(--muted);">Region
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
                   </label>
-                  <input name="custom_region" id="edit_region" value="${e.custom_region || ""}" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                  <select name="custom_region" id="edit_region" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;">
+                    <option value="">Select Region</option>
+                  </select>
                 </div>
                 <div>
                   <label style="font-size:11px;color:var(--muted);">District
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
                   </label>
                   <input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;background:#f0f0f0;cursor:not-allowed;" readonly tabindex="-1">
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;">
                 </div>
                 <div><label style="font-size:11px;color:var(--muted);">Shift</label>${asyncSel("default_shift", e.default_shift, "edit_shift")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
@@ -6127,7 +6277,7 @@ Pending Regularization
                     </div>
                   </div>
                 </div>
-                <div><label style="font-size:11px;color:var(--muted);">Status</label>${sel("status", e.status, ["Active", "Left"])}</div>
+                <div><label style="font-size:11px;color:var(--muted);">Status</label><select name="status" class="member-select" style="padding:6px 10px;font-size:12px;margin-top:2px;"><option value="Active"${e.status === "Active" ? " selected" : ""}>Active</option><option value="Left"${e.status === "Left" ? " selected" : ""}>Resigned</option></select></div>
                 <div id="editLeftFields" style="display:${e.status === "Left" ? "grid" : "none"};gap:10px;">
                   <div><label style="font-size:11px;color:var(--muted);">Resignation Date</label>${dt("resignation_letter_date", fmtDate(e.resignation_letter_date))}</div>
                   <div><label style="font-size:11px;color:var(--muted);">Relieving Date</label>${dt("relieving_date", fmtDate(e.relieving_date))}</div>
@@ -6159,11 +6309,9 @@ Pending Regularization
                     oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,12);">
                 </div>
                 <div>
-                  <label style="font-size:11px;color:var(--muted);">UHID Number (numeric only)</label>
+                  <label style="font-size:11px;color:var(--muted);">UHID Number</label>
                   <input name="custom_uhid_number" value="${e.custom_uhid_number || ""}" type="text" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
-                    inputmode="numeric"
-                    oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;">
                 </div>
                 <div><label style="font-size:11px;color:var(--muted);">Permanent Address</label><textarea name="permanent_address" class="member-select" rows="2" style="padding:6px 10px;font-size:12px;">${e.permanent_address || ""}</textarea></div>
               </div>
@@ -6180,13 +6328,17 @@ Pending Regularization
                 </div>
               </div>
             </div>
-            ${isHRMgr ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
+            ${
+              isHRMgr
+                ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Medical Deduction</label>${inp("custom_medical_deduction", e.custom_medical_deduction, "number")}</div>
               </div>
-            </div>` : ""}
+            </div>`
+                : ""
+            }
             <div style="display:flex;gap:10px;padding-top:10px;">
               <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
               <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
@@ -6209,9 +6361,18 @@ Pending Regularization
 
       // Auto-compute Employee Full Name from first+middle+last
       function editProfileNameChanged() {
-        const f = (document.querySelector("#empEditForm input[name='first_name']")?.value || "").trim();
-        const m = (document.querySelector("#empEditForm input[name='middle_name']")?.value || "").trim();
-        const l = (document.querySelector("#empEditForm input[name='last_name']")?.value || "").trim();
+        const f = (
+          document.querySelector("#empEditForm input[name='first_name']")
+            ?.value || ""
+        ).trim();
+        const m = (
+          document.querySelector("#empEditForm input[name='middle_name']")
+            ?.value || ""
+        ).trim();
+        const l = (
+          document.querySelector("#empEditForm input[name='last_name']")
+            ?.value || ""
+        ).trim();
         const full = [f, m, l].filter(Boolean).join(" ");
         const el = document.getElementById("edit_employee_name_full");
         if (el) el.value = full;
@@ -6220,7 +6381,11 @@ Pending Regularization
       // Auto-fetch Zone/Region/District from branch on SOL ID change
       async function editProfileBranchChanged(sol_id) {
         if (!sol_id) return;
-        const details = await callAPI("get_branch_details_by_sol_id", { sol_id }, "employee");
+        const details = await callAPI(
+          "get_branch_details_by_sol_id",
+          { sol_id },
+          "employee",
+        );
         if (details) {
           const z = document.getElementById("edit_zone");
           const r = document.getElementById("edit_region");
@@ -6240,7 +6405,9 @@ Pending Regularization
         const items = dd.querySelectorAll(".edit-mgr-item");
         const q = query.toLowerCase();
         items.forEach((item) => {
-          item.style.display = item.textContent.toLowerCase().includes(q) ? "" : "none";
+          item.style.display = item.textContent.toLowerCase().includes(q)
+            ? ""
+            : "none";
         });
       }
       function showEditReportingDropdown() {
@@ -6252,13 +6419,15 @@ Pending Regularization
             item.className = "edit-mgr-item";
             item.dataset.value = emp.name;
             item.textContent = emp.employee_name + " (" + emp.name + ")";
-            item.style.cssText = "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;";
+            item.style.cssText =
+              "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;";
             item.onmouseover = () => (item.style.background = "#f0f2f8");
-            item.onmouseout  = () => (item.style.background = "");
+            item.onmouseout = () => (item.style.background = "");
             item.onmousedown = (ev) => {
               ev.preventDefault();
               document.getElementById("edit_reports_to_value").value = emp.name;
-              document.getElementById("edit_reports_to_input").value = item.textContent;
+              document.getElementById("edit_reports_to_input").value =
+                item.textContent;
               dd.style.display = "none";
             };
             dd.appendChild(item);
@@ -6277,14 +6446,18 @@ Pending Regularization
       async function _populateEditDropdowns(e) {
         // Ensure employee list is loaded for reporting manager
         if (!window._empList) {
-          window._empList = await callAPI("get_employees_for_reporting", {}, "employee");
+          window._empList = await callAPI(
+            "get_employees_for_reporting",
+            {},
+            "employee",
+          );
         }
 
         const _fill = (id, currentVal, items, labelKey = "name") => {
           const sel = document.getElementById(id);
           if (!sel) return;
           sel.innerHTML = `<option value="">-- Select --</option>`;
-          items.forEach(item => {
+          items.forEach((item) => {
             const v = item[labelKey] || item;
             const opt = document.createElement("option");
             opt.value = v;
@@ -6294,27 +6467,39 @@ Pending Regularization
           });
         };
 
-        const [depts, desigs, empTypes, shifts, divisions, branches] = await Promise.all([
-          callAPI("get_departments", {}, "employee"),
-          callAPI("get_designations", {}, "employee"),
-          callAPI("get_employment_types", {}, "employee"),
-          callAPI("get_shifts", {}, "employee"),
-          callAPI("get_divisions", {}, "employee"),
-          callAPI("get_sahayog_branches", {}, "employee"),
-        ]);
+        const [depts, desigs, empTypes, shifts, divisions, branches, zones, regions] =
+          await Promise.all([
+            callAPI("get_departments", {}, "employee"),
+            callAPI("get_designations", {}, "employee"),
+            callAPI("get_employment_types", {}, "employee"),
+            callAPI("get_shifts", {}, "employee"),
+            callAPI("get_divisions", {}, "employee"),
+            callAPI("get_sahayog_branches", {}, "employee"),
+            callAPI("get_zones", {}, "employee"),
+            callAPI("get_regions", {}, "employee"),
+          ]);
 
-        if (depts)    _fill("edit_department",      e.department,      depts);
-        if (desigs)   _fill("edit_designation",     e.designation,     desigs);
-        if (empTypes) _fill("edit_employment_type", e.employment_type, empTypes);
-        if (shifts)   _fill("edit_shift",           e.default_shift,   shifts);
-        if (divisions)_fill("edit_business_unit",   e.custom_division, divisions);
+        if (depts) _fill("edit_department", e.department, depts);
+        if (desigs) _fill("edit_designation", e.designation, desigs);
+        if (empTypes)
+          _fill("edit_employment_type", e.employment_type, empTypes);
+        if (shifts) _fill("edit_shift", e.default_shift, shifts);
+        if (zones) _fill("edit_zone", e.custom_zone, zones);
+        if (regions) _fill("edit_region", e.custom_region, regions);
+        if (true)
+          _fill("edit_business_unit", e.custom_division, [
+            "Retail Branch Banking",
+            "JLL",
+            "Head Office",
+            "Two-Wheeler",
+          ]);
 
         // Populate SOL ID / Branch Code dropdown
         if (branches) {
           const solSel = document.getElementById("edit_sol_id");
           if (solSel) {
             solSel.innerHTML = `<option value="">-- Select Branch Code --</option>`;
-            branches.forEach(b => {
+            branches.forEach((b) => {
               const opt = document.createElement("option");
               opt.value = b.name;
               opt.textContent = b.name;
@@ -6332,46 +6517,50 @@ Pending Regularization
         fd.forEach((v, k) => (data[k] = v));
 
         // ── Validation (same rules as creation form) ──────────────────────────
-        const firstName  = (data.first_name  || "").trim();
+        const firstName = (data.first_name || "").trim();
         const middleName = (data.middle_name || "").trim();
-        const lastName   = (data.last_name   || "").trim();
+        const lastName = (data.last_name || "").trim();
 
-        if (!validateName(firstName,  "First Name"))  return;
+        if (!validateName(firstName, "First Name")) return;
         if (middleName && !validateName(middleName, "Middle Name")) return;
-        if (!validateName(lastName,   "Last Name"))   return;
+        if (!validateName(lastName, "Last Name")) return;
 
         // Auto-update employee_name from name parts
-        data.employee_name = [firstName, middleName, lastName].filter(Boolean).join(" ");
+        data.employee_name = [firstName, middleName, lastName]
+          .filter(Boolean)
+          .join(" ");
 
         const mobile = (data.cell_number || "").replace(/\D/g, "");
         if (mobile && mobile.length !== 10) {
-          showToast("Mobile Number must be exactly 10 digits."); return;
+          showToast("Mobile Number must be exactly 10 digits.");
+          return;
         }
         if (mobile) data.cell_number = mobile;
 
         const pan = (data.custom_pan_number || "").toUpperCase().trim();
         if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-          showToast("PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F)."); return;
+          showToast(
+            "PAN Number must be a valid 10-character PAN (e.g. ABCDE1234F).",
+          );
+          return;
         }
         if (pan) data.custom_pan_number = pan;
 
         const aadhaar = (data.custom_aadhar_number || "").replace(/\D/g, "");
         if (aadhaar && aadhaar.length !== 12) {
-          showToast("Aadhaar Number must be exactly 12 digits."); return;
+          showToast("Aadhaar Number must be exactly 12 digits.");
+          return;
         }
         if (aadhaar) data.custom_aadhar_number = aadhaar;
 
-        const uhid = (data.custom_uhid_number || "").trim();
-        if (uhid && !/^\d+$/.test(uhid)) {
-          showToast("UHID Number must contain only digits."); return;
-        }
+        // UHID may be alphanumeric — no digit-only restriction
 
         // Zone/Region/District come from read-only inputs — pick them up via DOM
         const z = document.getElementById("edit_zone");
         const r = document.getElementById("edit_region");
         const d = document.getElementById("edit_district");
-        if (z) data.custom_zone     = z.value;
-        if (r) data.custom_region   = r.value;
+        if (z) data.custom_zone = z.value;
+        if (r) data.custom_region = r.value;
         if (d) data.custom_district = d.value;
 
         // Reporting manager from hidden input
@@ -6404,7 +6593,8 @@ Pending Regularization
             _currentProfileData = updated;
             renderEmployeeProfileView(updated);
           }
-          document.getElementById("drawerEditBtn").style.display = "inline-block";
+          document.getElementById("drawerEditBtn").style.display =
+            "inline-block";
         }
       }
 
@@ -6455,9 +6645,10 @@ Pending Regularization
         ];
 
         // Filter reports based on role
-        const reports = allReports.filter(r => !r.adminOnly || isAdmin());
+        const reports = allReports.filter((r) => !r.adminOnly || isAdmin());
 
-        const uploadSection = isHR() ? `
+        const uploadSection = isHR()
+          ? `
           <div style="margin-top:24px; background:#fff; border:1.5px solid var(--border); border-radius:14px; padding:20px; box-shadow:var(--shadow);">
             <h4 style="font-family:'Syne',sans-serif; font-size:14px; color:var(--brand); margin:0 0 6px;">📥 Upload Leave Allocation</h4>
             <p style="font-size:11px; color:var(--muted); margin:0 0 14px;">Upload CSV/Excel file with columns: <strong>Employee Code, Leave Type, New Leaves, From Date, To Date</strong></p>
@@ -6468,7 +6659,8 @@ Pending Regularization
             </div>
             <div id="leaveAllocResult" style="margin-top:10px; font-size:12px;"></div>
           </div>
-        ` : "";
+        `
+          : "";
 
         document.getElementById("hrDashboardContent").innerHTML = `
           <div style="padding:4px 0 20px;">
@@ -6576,9 +6768,14 @@ Pending Regularization
                 resultDiv.innerHTML = html;
               } else if (res && res.message && res.message.success === false) {
                 const msg =
-                  res.message.message || "Upload failed. Please check the file.";
+                  res.message.message ||
+                  "Upload failed. Please check the file.";
                 resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${msg}</span>`;
-              } else if (res && res.message && typeof res.message === "string") {
+              } else if (
+                res &&
+                res.message &&
+                typeof res.message === "string"
+              ) {
                 resultDiv.innerHTML = `<span style="color:#dc2626;">❌ ${res.message}</span>`;
               } else {
                 const msg = extractServerMessage(res);
@@ -6632,6 +6829,9 @@ Pending Regularization
         "permanent_address",
         "relieving_date",
         "resignation_letter_date",
+        "branch",
+        "sahayog_branch",
+        "custom_division",
       ];
 
       function openImportModal() {
@@ -6707,8 +6907,8 @@ Pending Regularization
         ];
         const csv = [
           IMPORT_COLUMNS.join(","),
-          noteRow.join(","),
-          sampleRow.join(","),
+          noteRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - noteRow.length)).fill("Optional")).join(","),
+          sampleRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - sampleRow.length)).fill("")).join(","),
         ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
@@ -6779,14 +6979,38 @@ Pending Regularization
         ];
         const csv = [
           IMPORT_COLUMNS.join(","),
-          noteRow.join(","),
-          sampleRow.join(","),
+          noteRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - noteRow.length)).fill("Optional")).join(","),
+          sampleRow.concat(Array(Math.max(0, IMPORT_COLUMNS.length - sampleRow.length)).fill("")).join(","),
         ].join("\n");
         const blob = new Blob([csv], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "employee_import_template.csv";
         a.click();
+      }
+
+      function buildPortalErrorCsv(allErrors, allRows) {
+        const header = ["Row", "Employee Code", "Name", "Reason"];
+        const lines = [header.join(",")];
+        (allErrors || []).forEach((e) => {
+          const rec = (allRows || []).find((r) => String(r.row) === String(e.row));
+          const emp = (rec && rec.employee) ? rec.employee : "";
+          const name = (rec && rec.name) ? rec.name : (e.name || "");
+          const reason = (e.error || "").replace(/"/g, '""');
+          const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+          lines.push([e.row, q(emp), q(name), q(reason)].join(","));
+        });
+        return lines.join("\n");
+      }
+
+      function portalErrorFileLink(allErrors, allRows) {
+        if (!allErrors || !allErrors.length) return "";
+        const csv = buildPortalErrorCsv(allErrors, allRows);
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        return `<div style="margin-top:10px;">
+          <a href="${url}" download="employee_import_errors.csv" style="display:inline-block; padding:8px 14px; background:var(--danger); color:#fff; border-radius:6px; font-size:12px; font-weight:600; text-decoration:none;">⬇ Download Error File (${allErrors.length} records)</a>
+        </div>`;
       }
 
       async function submitImport() {
@@ -6887,11 +7111,18 @@ Pending Regularization
           );
 
           let res = null;
-          const forceUpdate = document.getElementById("importForceUpdate").value === "yes" ? 1 : 0;
+          const forceUpdate =
+            document.getElementById("importForceUpdate").value === "yes"
+              ? 1
+              : 0;
           try {
             res = await callAPI(
               "bulk_import_employees",
-              { rows: batch, mode: forceUpdate ? "update" : "insert", force_update: forceUpdate },
+              {
+                rows: batch,
+                mode: forceUpdate ? "update" : "insert",
+                force_update: forceUpdate,
+              },
               "employee",
             );
           } catch (apiErr) {
@@ -6951,14 +7182,41 @@ Pending Regularization
 
         // ── Render result summary ────────────────────────────────────────────
         const errorMap = {};
-        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+        allErrors.forEach((e) => {
+          errorMap[e.row] = e.error;
+        });
 
         const statusStyle = {
-          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
-          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
-          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
-          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
-          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+          "Employee Updated": {
+            bg: "#f0fdf4",
+            border: "#86efac",
+            color: "#15803d",
+            icon: "✏️",
+          },
+          "Employee Created": {
+            bg: "#f0fdf4",
+            border: "#86efac",
+            color: "#15803d",
+            icon: "✅",
+          },
+          Skipped: {
+            bg: "#f9fafb",
+            border: "#d1d5db",
+            color: "#6b7280",
+            icon: "⏭️",
+          },
+          "Skipped (No Changes)": {
+            bg: "#f9fafb",
+            border: "#d1d5db",
+            color: "#6b7280",
+            icon: "⏭️",
+          },
+          Failed: {
+            bg: "#fff1f2",
+            border: "#fecaca",
+            color: "#dc2626",
+            icon: "❌",
+          },
         };
 
         let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
@@ -6968,7 +7226,7 @@ Pending Regularization
           <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        const failedRows = allRows.filter(r => r.status === "Failed");
+        const failedRows = allRows.filter((r) => r.status === "Failed");
         if (failedRows.length > 0) {
           html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
           <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
@@ -6982,29 +7240,38 @@ Pending Regularization
                 </tr>
               </thead>
               <tbody>
-                ${failedRows.map(r => {
-                  const err = errorMap[r.row] || "";
-                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                ${failedRows
+                  .map((r) => {
+                    const err = errorMap[r.row] || "";
+                    return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
                     <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
                     <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
                     <td style="padding:6px 10px;">${r.name}</td>
                     <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
                   </tr>`;
-                }).join("")}
+                  })
+                  .join("")}
               </tbody>
             </table>
           </div>`;
         } else if (allErrors.length > 0) {
           html += `<div style="font-size:11px; font-weight:600; color:var(--muted); margin-bottom:6px;">Details:</div>`;
-          html += allErrors.map((e) => {
-            const isSkip = e.error && e.error.toLowerCase().includes("already exist");
-            const bg = isSkip ? "#fffbeb" : "#fff1f2";
-            const bc = isSkip ? "#fde68a" : "#fecaca";
-            const icon = isSkip ? "⏭" : "❌";
-            return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
+          html += allErrors
+            .map((e) => {
+              const isSkip =
+                e.error && e.error.toLowerCase().includes("already exist");
+              const bg = isSkip ? "#fffbeb" : "#fff1f2";
+              const bc = isSkip ? "#fde68a" : "#fecaca";
+              const icon = isSkip ? "⏭" : "❌";
+              return `<div style="font-size:11px; background:${bg}; padding:6px 10px; border-radius:6px; margin-bottom:5px; border:1px solid ${bc};">
               ${icon} <b>Row ${e.row} — ${e.name}:</b> ${e.error}
             </div>`;
-          }).join("");
+            })
+            .join("");
+        }
+
+        if (allErrors.length > 0) {
+          html += portalErrorFileLink(allErrors, allRows);
         }
 
         resultsDiv.innerHTML = html;
@@ -7122,14 +7389,41 @@ Pending Regularization
 
         // Build error map for quick lookup
         const errorMap = {};
-        allErrors.forEach(e => { errorMap[e.row] = e.error; });
+        allErrors.forEach((e) => {
+          errorMap[e.row] = e.error;
+        });
 
         const statusStyle = {
-          "Employee Updated":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✏️" },
-          "Employee Created":     { bg: "#f0fdf4", border: "#86efac", color: "#15803d", icon: "✅" },
-          "Skipped":              { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
-          "Skipped (No Changes)": { bg: "#f9fafb", border: "#d1d5db", color: "#6b7280", icon: "⏭️" },
-          "Failed":               { bg: "#fff1f2", border: "#fecaca", color: "#dc2626", icon: "❌" },
+          "Employee Updated": {
+            bg: "#f0fdf4",
+            border: "#86efac",
+            color: "#15803d",
+            icon: "✏️",
+          },
+          "Employee Created": {
+            bg: "#f0fdf4",
+            border: "#86efac",
+            color: "#15803d",
+            icon: "✅",
+          },
+          Skipped: {
+            bg: "#f9fafb",
+            border: "#d1d5db",
+            color: "#6b7280",
+            icon: "⏭️",
+          },
+          "Skipped (No Changes)": {
+            bg: "#f9fafb",
+            border: "#d1d5db",
+            color: "#6b7280",
+            icon: "⏭️",
+          },
+          Failed: {
+            bg: "#fff1f2",
+            border: "#fecaca",
+            color: "#dc2626",
+            icon: "❌",
+          },
         };
 
         let html = `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; gap:16px; flex-wrap:wrap;">
@@ -7138,7 +7432,7 @@ Pending Regularization
           <span>❌ Failed: <span style="color:var(--danger)">${totalFailed}</span></span>
         </div>`;
 
-        const failedRowsU = allRows.filter(r => r.status === "Failed");
+        const failedRowsU = allRows.filter((r) => r.status === "Failed");
         if (failedRowsU.length > 0) {
           html += `<div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Failed Rows</div>
           <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;">
@@ -7152,18 +7446,24 @@ Pending Regularization
                 </tr>
               </thead>
               <tbody>
-                ${failedRowsU.map(r => {
-                  const err = errorMap[r.row] || "";
-                  return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
+                ${failedRowsU
+                  .map((r) => {
+                    const err = errorMap[r.row] || "";
+                    return `<tr style="border-bottom:1px solid #f3f4f6; background:#fff1f2;">
                     <td style="padding:6px 10px; color:var(--muted);">${r.row}</td>
                     <td style="padding:6px 10px; font-weight:600; color:var(--brand);">${r.employee || "—"}</td>
                     <td style="padding:6px 10px;">${r.name}</td>
                     <td style="padding:6px 10px; color:#dc2626; font-size:11px;">${err}</td>
                   </tr>`;
-                }).join("")}
+                  })
+                  .join("")}
               </tbody>
             </table>
           </div>`;
+        }
+
+        if (allErrors.length > 0) {
+          html += portalErrorFileLink(allErrors, allRows);
         }
 
         resultsDiv.innerHTML = html;
@@ -7214,13 +7514,33 @@ Pending Regularization
         const wrap = document.getElementById("exitReasonWrap");
         const sel = document.getElementById("exit_reason");
         const reasons = {
-          "Voluntary": ["Health Issue","Family Issue","Personal Issue","Marriage","Better Career Opportunities","Higher Studies","Absconding","Work Environment/Culture"],
-          "Involuntary": ["Performance Issue","Termination of Services","Asked to Go","Not Joined","Death","Others"]
+          Voluntary: [
+            "Health Issue",
+            "Family Issue",
+            "Personal Issue",
+            "Marriage",
+            "Better Career Opportunities",
+            "Higher Studies",
+            "Absconding",
+            "Work Environment/Culture",
+          ],
+          Involuntary: [
+            "Performance Issue",
+            "Termination of Services",
+            "Asked to Go",
+            "Not Joined",
+            "Death",
+            "Others",
+          ],
         };
-        if (!type) { wrap.hidden = true; return; }
+        if (!type) {
+          wrap.hidden = true;
+          return;
+        }
         wrap.hidden = false;
-        sel.innerHTML = '<option value="" disabled selected>Select reason...</option>';
-        (reasons[type] || []).forEach(r => {
+        sel.innerHTML =
+          '<option value="" disabled selected>Select reason...</option>';
+        (reasons[type] || []).forEach((r) => {
           sel.innerHTML += `<option value="${r}">${r}</option>`;
         });
       }
@@ -7238,7 +7558,9 @@ Pending Regularization
           "exit_relieving_date",
         ).value;
         const reason = document.getElementById("exit_reason").value;
-        const resignation_type = document.getElementById("exit_resignation_type").value;
+        const resignation_type = document.getElementById(
+          "exit_resignation_type",
+        ).value;
 
         if (
           resignation_date &&
@@ -7467,7 +7789,11 @@ Pending Regularization
         `;
       }
 
-      function showConfirmDialog(message, okLabel = "OK", cancelLabel = "Cancel") {
+      function showConfirmDialog(
+        message,
+        okLabel = "OK",
+        cancelLabel = "Cancel",
+      ) {
         return new Promise((resolve) => {
           const overlay = document.createElement("div");
           overlay.style.cssText =

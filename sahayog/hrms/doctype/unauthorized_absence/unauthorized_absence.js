@@ -133,19 +133,8 @@ frappe.ui.form.on("Unauthorized Absence", {
     }, 1000);
   },
 
-  date_of_1st_letter(frm) {
-    let today = frappe.datetime.now_date();
-    if (frm.doc.date_of_1st_letter && frm.doc.date_of_1st_letter < today) {
-      frappe.msgprint({ title: __("Invalid Date"), message: __("You cannot select a past date for Date of Unauthorized Absence."), indicator: "red" });
-      frm.set_value("date_of_1st_letter", "");
-    }
-  },
-
   validate(frm) {
     let today = frappe.datetime.now_date();
-    if (frm.doc.date_of_1st_letter && frm.doc.date_of_1st_letter < today) {
-      frappe.throw(__("Date of Unauthorized Absence cannot be in past."));
-    }
     if (frm.doc.issue_occurrence_date && frm.doc.issue_occurrence_date > today) {
       frappe.throw(__("Issue Occurrence Date cannot be in the future."));
     }

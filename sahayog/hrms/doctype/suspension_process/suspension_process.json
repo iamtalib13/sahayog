@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-10-13 12:01:24.822566",
+ "creation": "2026-08-03 12:24:24.684550",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -131,8 +131,7 @@
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
-   "label": "Remarks",
-   "reqd": 1
+   "label": "Remarks"
   },
   {
    "fieldname": "section_break_fqsb",
@@ -207,7 +206,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-27 16:12:36.252541",
+ "modified": "2026-08-28 12:47:36.088299",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Suspension Process",
