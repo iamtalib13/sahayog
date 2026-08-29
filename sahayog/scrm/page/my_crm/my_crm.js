@@ -298,6 +298,21 @@ class MyCRM {
     localStorage.removeItem(`crm_assigned_leads_${frappe.session.user}`);
   }
 
+  // Confirmation helper
+  async confirmSave(message) {
+    return new Promise(resolve => {
+      const dlg = new frappe.ui.Dialog({
+        title: __('Confirm Action'),
+        fields: [{ fieldtype: 'HTML', options: `<p>${message}</p>` }],
+        primary_action_label: __('Yes'),
+        secondary_action_label: __('No'),
+        primary_action: () => { dlg.hide(); resolve(true); },
+        secondary_action: () => { dlg.hide(); resolve(false); },
+      });
+      dlg.show();
+    });
+  }
+
   // Page Setup (Petite-Vue Friendly)
   setupPage() {
     this.page.set_title_sub("");
@@ -1389,6 +1404,9 @@ async fetchAssignedLeads() {
     // Backend validate hook (validate_duplicate_lead) duplicate check karega
 
     // Save
+    if (!(await me.confirmSave(__('Are you sure you want to update this Lead?')))) {
+        return;
+    }
     btn.prop('disabled', true);
     freezeScreen("Updating Lead...");
 
@@ -1435,7 +1453,7 @@ async fetchAssignedLeads() {
         }
         frappe.show_alert({ message: __("Lead Updated Successfully"), indicator: "green" });
         d.hide();
-        await me.fetchData();
+        await me.refresh();
     } catch (e) {
         frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
     } finally {
@@ -1650,6 +1668,9 @@ async editAppointment(name) {
             primary_action_label: __("Update Appointment"),
             primary_action: async (values) => {
                 const btn = d.get_primary_btn();
+                if (!(await me.confirmSave(__('Are you sure you want to update this Appointment?')))) {
+                    return;
+                }
                 btn.prop('disabled', true);
                 freezeScreen("Updating Appointment...");
                 const final_values = {
@@ -1673,7 +1694,7 @@ async editAppointment(name) {
                     }
                     frappe.show_alert({ message: __("Appointment Updated"), indicator: "green" });
                     d.hide();
-                    await me.fetchData();
+                    await me.refresh();
                 } catch (e) {
                     frappe.msgprint({ title: "Error", indicator: "red", message: e.message || "Something went wrong" });
                 } finally {
@@ -1912,6 +1933,7 @@ renderWhatsAppCard(item) {
           this.state.appointmentCursor = null;
       }
 
+      await frappe.call({ method: "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache" });
       await this.fetchData(false, 100);
       this.showLocalData();
       $("#mycrm-list-container").scrollTop(0);
@@ -2219,6 +2241,9 @@ createLead() {
         // Backend validate hook (validate_duplicate_lead) duplicate check karega
 
         // Save
+        if (!(await this.confirmSave(__('Are you sure you want to create this Lead?')))) {
+          return;
+        }
         btn.prop('disabled', true);
         freezeScreen("Creating Lead...");
 
@@ -2439,6 +2464,9 @@ dialog.$wrapper.find(".modal-title").css({
         // Backend validate hook (validate_duplicate_appointment) duplicate check karega
 
         // Save
+        if (!(await me.confirmSave(__('Are you sure you want to create this Appointment?')))) {
+            return;
+        }
         btn.prop('disabled', true);
         freezeScreen("Creating Appointment...");
 

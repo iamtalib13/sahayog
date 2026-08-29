@@ -182,6 +182,7 @@ def _get_appointment_data(limit, offset, search_term, since=None):
     return appointments, next_cursor, total_count
 
 
+@frappe.whitelist()
 def invalidate_crm_cache(user=None):
     """Invalidate all CRM data cache for a user."""
     user = user or frappe.session.user
