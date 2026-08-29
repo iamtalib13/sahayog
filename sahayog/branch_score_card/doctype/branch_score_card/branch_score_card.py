@@ -109,8 +109,9 @@ class BranchScoreCard(Document):
         year_val = cint(self.year)
 
         # -----------------------------------------------------
-        # 6. READ CRL DATA (Defaults to 0 if child table rows missing)
+        # 6. READ CRL DATA (Updated with Day-wise Cutoff Logic)
         # -----------------------------------------------------
+        
         crl_doc = None
         crl_count = 0
         opening_delay_count = 0
@@ -131,25 +132,51 @@ class BranchScoreCard(Document):
                     "CRL Monitoring and Branch Opening and Closing",
                     crl_doc_name,
                 )
-                crl_rows = getattr(crl_doc, "table_nzzy", []) or []
+                
+                # Directly read pre-calculated actual values from CRL DocType if available
+                if getattr(crl_doc, "crl_monitoring_actual_value", None) is not None:
+                    crl_count = cint(crl_doc.crl_monitoring_actual_value)
+                    opening_delay_count = cint(crl_doc.branch_opening_actual_value)
+                    closing_delay_count = cint(crl_doc.branch_closing_actual_value)
+                else:
+                    # Fallback loop with accurate time & weekday logic
+                    crl_rows = getattr(crl_doc, "table_nzzy", []) or []
 
-                for d in crl_rows:
-                    if (
-                        d.cash_above_crl is not None
-                        and str(d.cash_above_crl).strip() != ""
-                        and flt(d.cash_above_crl) > 0
-                    ):
-                        crl_count += 1
+                    for d in crl_rows:
+                        if not d.date or d.sync_status == "No Record in Finacle":
+                            continue
 
-                    if d.branch_opening_time:
-                        opening_time = str(d.branch_opening_time).strip()
-                        if opening_time > "10:00:00":
-                            opening_delay_count += 1
+                        date_value = getdate(d.date)
+                        weekday = date_value.weekday()
 
-                    if d.branch_closing_time:
-                        closing_time = str(d.branch_closing_time).strip()
-                        if closing_time > "17:30:00":
-                            closing_delay_count += 1
+                        # Skip Sunday
+                        if weekday == 6:
+                            continue
+
+                        # 1. CRL Count
+                        if (
+                            d.cash_above_crl is not None
+                            and str(d.cash_above_crl).strip() != ""
+                            and flt(d.cash_above_crl) > 0
+                        ):
+                            crl_count += 1
+
+                        # 2. Opening Delay (> 10:00:00 AM)
+                        if d.branch_opening_time:
+                            o_time = self.convert_to_time(d.branch_opening_time) if hasattr(self, "convert_to_time") else get_time(d.branch_opening_time)
+                            if o_time and o_time > time(10, 0, 0):
+                                opening_delay_count += 1
+
+                        # 3. Closing Delay (Sat > 16:30:00, Mon-Fri > 18:00:00)
+                        if d.branch_closing_time:
+                            c_time = self.convert_to_time(d.branch_closing_time) if hasattr(self, "convert_to_time") else get_time(d.branch_closing_time)
+                            if c_time:
+                                # Saturday (Weekday 5): > 4:30 PM
+                                if weekday == 5 and c_time > time(16, 30, 0):
+                                    closing_delay_count += 1
+                                # Mon-Fri (Weekday 0-4): > 6:00 PM
+                                elif weekday < 5 and c_time > time(18, 0, 0):
+                                    closing_delay_count += 1
 
         # -----------------------------------------------------
         # 7. READ ACCOUNT OPENING DATA (Defaults to 0.0 / 0 if missing)
