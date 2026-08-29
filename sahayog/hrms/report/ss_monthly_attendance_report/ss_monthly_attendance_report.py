@@ -127,6 +127,13 @@ def execute(filters=None):
     if filters.get("department"):
         emp_conditions += " AND e.department = %(department)s"
 
+    # Exclude employees whose Last Working Date (relieving_date) falls before the cycle
+    # start, so backdated left/resigned staff no longer appear in the current report.
+    # Employees with an LWD within or after the cycle still appear (capped at LWD below).
+    emp_conditions += """
+      AND NOT (e.relieving_date IS NOT NULL AND e.relieving_date < %(from_date)s)
+    """
+
     _state_select = ", e.custom_state" if "custom_state" in {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")} else ""
 
     employees = frappe.db.sql(f"""
@@ -138,7 +145,7 @@ def execute(filters=None):
         FROM `tabEmployee` e
         WHERE e.custom_is_support_staff = 1 {emp_conditions}
         ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
-    """, filters, as_dict=True)
+    """, {**filters, "from_date": from_date}, as_dict=True)
 
     if not employees:
         return columns, []
@@ -270,7 +277,12 @@ def execute(filters=None):
         total_present = 0
         total_absent = 0
 
+        lwd = emp.relieving_date
         for d in date_cols:
+            # Only show attendance up to the employee's Last Working Date
+            if lwd and d > lwd:
+                row[d.strftime("%d_%m_%Y")] = ""
+                continue
             key = f"{emp.name}|{d}"
             att = att_map.get(key)
 
