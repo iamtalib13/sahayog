@@ -5554,7 +5554,18 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            if (histStatus && histStatus.includes("Correction")) {
+            const lockedApproved =
+              histStatus &&
+              (histStatus.includes("Regularization Approved") ||
+                histStatus.includes("Leave Approved"));
+            if (lockedApproved) {
+              cell.onclick = () => {
+                const msg = histStatus.includes("Leave Approved")
+                  ? "Leave for this date is already approved and locked."
+                  : "Regularization for this date is already approved and locked.";
+                showToast(msg);
+              };
+            } else if (histStatus && histStatus.includes("Correction")) {
               cell.onclick = () => confirmCancelCorrection(key);
             } else {
               cell.onclick = () =>
@@ -5813,7 +5824,10 @@
 
       function showToast(msg) {
         const t = document.getElementById("toast");
-        t.textContent = msg;
+        // Strip any HTML markup so raw tags (e.g. <a href>) are never shown literally
+        const tmp = document.createElement("div");
+        tmp.innerHTML = msg;
+        t.textContent = tmp.textContent || msg;
         t.classList.add("show");
         setTimeout(() => t.classList.remove("show"), 2800);
       }
