@@ -1,33 +1,23 @@
 frappe.pages["permission-config"].on_page_load = function (wrapper) {
-  // 1. Define required roles
-  const authorized_roles = ["Administrator", "Permission Manager"];
+  const authorized_roles = ["Administrator", "Permission Manager", "System Manager"];
   const user_roles = frappe.user_roles;
-
-  // 2. Check if user has at least one authorized role
-  const is_authorized = authorized_roles.some((role) =>
-    user_roles.includes(role),
-  );
+  const is_authorized = authorized_roles.some((role) => user_roles.includes(role));
 
   if (!is_authorized) {
-    // Show a clean Access Denied message
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; color: #57606a;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cf222e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
         <h2 style="margin-top: 20px; color: #24292f;">Access Denied</h2>
         <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6;">
-            You do not have the required permissions to access this page. 
-            Please contact your <strong>Administrator</strong> if you believe this is an error.
+            You do not have the required permissions to access this page.
         </p>
         <button class="btn btn-default btn-sm" style="margin-top: 15px;" onclick="frappe.set_route('')">
             Back to Home
         </button>
       </div>
     `;
-    return; // Stop execution of the rest of the page script
+    return;
   }
+
   const page = frappe.ui.make_app_page({
     parent: wrapper,
     title: "Permission Configuration",
@@ -38,1451 +28,1143 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     frappe.set_route("query-report", "Report Preference Report");
   });
 
-  $(wrapper).find(".page-content").css({ padding: "0", maxWidth: "none" });
+  $(wrapper).find(".page-content").css({ padding: "16px 20px", maxWidth: "none", background: "#f8fafc" });
   $(wrapper).find(".layout-main-section").css({ maxWidth: "none" });
 
-  frappe.require("/assets/sahayog/js/petite-vue.iife.js", () => {
-    page.main.html(`
+  let state = {
+    user: null,
+    full_name: "",
+    enabled: 1,
+    tag: "",
+    access_type: "Geographical (Zone / Region / District)",
+    zones: new Set(),
+    regions: new Set(),
+    districts: new Set(),
+    sol_ids: new Set(),
+    pref_list: [],
+    meta_data: {},
+    resolved_branches: []
+  };
+
+  function initPage() {
+    loadUserList(() => {
+      const route = frappe.get_route();
+      if (route[2]) {
+        selectUser(route[2]);
+      } else if (state.pref_list.length > 0) {
+        selectUser(state.pref_list[0].user);
+      } else {
+        renderDashboard();
+      }
+    });
+  }
+
+  function loadUserList(callback) {
+    frappe.call({
+      method: "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
+      callback: (r) => {
+        state.pref_list = r.message || [];
+        if (callback) callback();
+      }
+    });
+  }
+
+  function selectUser(userEmail) {
+    state.user = userEmail;
+    frappe.call({
+      method: "sahayog.scrm.doctype.report_preference.report_preference.get_widget_meta",
+      args: { user: userEmail || "" },
+      callback: function (r) {
+        state.meta_data = r.message || {};
+        let pref = state.meta_data.user_preference;
+
+        state.full_name = pref ? pref.full_name : "";
+        state.enabled = pref && pref.enabled !== undefined ? pref.enabled : 1;
+        state.tag = pref ? pref.tag : "";
+        state.access_type = pref && pref.access_type ? pref.access_type : "Geographical (Zone / Region / District)";
+        state.zones = new Set(pref && pref.zones ? pref.zones : []);
+        state.regions = new Set(pref && pref.regions ? pref.regions : []);
+        state.districts = new Set(pref && pref.districts ? pref.districts : []);
+        state.sol_ids = new Set(pref && pref.sol_ids ? pref.sol_ids : []);
+
+        calculateBranches(() => {
+          renderDashboard();
+        });
+      }
+    });
+  }
+
+  function calculateBranches(callback) {
+    let isGeo = state.access_type === "Geographical (Zone / Region / District)";
+    let zones = Array.from(state.zones);
+    let regions = Array.from(state.regions);
+    let districts = Array.from(state.districts);
+    let sol_ids = Array.from(state.sol_ids);
+
+    if ((isGeo && !zones.length) || (!isGeo && !sol_ids.length)) {
+      state.resolved_branches = [];
+      if (callback) callback();
+      return;
+    }
+
+    frappe.call({
+      method: "sahayog.scrm.doctype.report_preference.report_preference.get_preview_branches",
+      args: {
+        zones: zones,
+        regions: regions,
+        districts: districts,
+        sol_ids: sol_ids,
+        access_type: state.access_type
+      },
+      callback: function (r) {
+        state.resolved_branches = r.message || [];
+        if (callback) callback();
+      }
+    });
+  }
+
+  function autoSave() {
+    if (!state.user) return;
+
+    frappe.call({
+      method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
+      args: {
+        data: {
+          user: state.user,
+          enabled: state.enabled,
+          tag: state.tag,
+          access_type: state.access_type,
+          zones: Array.from(state.zones),
+          regions: Array.from(state.regions),
+          districts: Array.from(state.districts),
+          sol_ids: Array.from(state.sol_ids)
+        }
+      },
+      callback: function (r) {
+        if (r.message && r.message.status === "success") {
+          let $saveBtn = page.main.find("#f16-btn-save-all");
+          if ($saveBtn.length) {
+            $saveBtn.text("SAVED ✓").css("background", "#16a34a");
+            setTimeout(() => {
+              $saveBtn.text("SAVE ALL CHANGES").css("background", "#0f2942");
+            }, 1200);
+          }
+          frappe.show_alert({ message: __("Changes saved ✓"), indicator: "green" });
+        }
+      }
+    });
+  }
+
+  function renderDashboard() {
+    let meta = state.meta_data || {};
+    let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
+    let masterZones = meta.master_zones || [];
+    let allBranches = meta.all_branches || [];
+    let branches = state.resolved_branches || [];
+    let totalAllowedCount = branches.length;
+    let totalMasterCount = allBranches.length || 1;
+    let isGeo = state.access_type === "Geographical (Zone / Region / District)";
+    let hasZoneSelected = state.zones.size > 0;
+    let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
+    let userEmail = state.user || "no-user@sahayog.com";
+
+    // Build Nested Tree structures
+    let masterTree = {};
+    allBranches.forEach(b => {
+      let z = b.zone || "Unassigned Zone";
+      let r = b.region || "Unassigned Region";
+      let d = b.district || "Unassigned District";
+
+      if (!masterTree[z]) masterTree[z] = {};
+      if (!masterTree[z][r]) masterTree[z][r] = {};
+      if (!masterTree[z][r][d]) masterTree[z][r][d] = [];
+
+      masterTree[z][r][d].push(b);
+    });
+
+    let activeTree = {};
+    branches.forEach(b => {
+      let z = b.zone || "Unassigned Zone";
+      let r = b.region || "Unassigned Region";
+      let d = b.district || "Unassigned District";
+
+      if (!activeTree[z]) activeTree[z] = {};
+      if (!activeTree[z][r]) activeTree[z][r] = {};
+      if (!activeTree[z][r][d]) activeTree[z][r][d] = [];
+
+      activeTree[z][r][d].push(b);
+    });
+
+    let html = `
       <style>
-        /* ... existing styles ... */
-        * { box-sizing: border-box; }
-        #perm-root { 
-          height: calc(100vh - 110px); 
-          overflow: hidden; 
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-          color: #24292f;
+        .f16-root {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+          color: #0f172a;
+          max-width: 1400px;
+          margin: 0 auto;
         }
-        .perm-layout { 
-          display: flex; 
-          height: 100%; 
-          border: 1px solid #d0d7de;
+
+        .f16-dashboard-title {
+          font-size: 13.5px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #0f172a;
+          margin-bottom: 12px;
+        }
+
+        .f16-sec-heading {
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: #1e293b;
+          margin-top: 18px;
+          margin-bottom: 10px;
+        }
+
+        /* ROW 1: TOP DUAL CARDS */
+        .f16-top-row {
+          display: grid;
+          grid-template-columns: 1fr 1.15fr;
+          gap: 16px;
+          align-items: stretch;
+        }
+        @media (max-width: 960px) {
+          .f16-top-row { grid-template-columns: 1fr; }
+        }
+
+        .f16-scope-banner {
+          background: linear-gradient(135deg, #cbeafe 0%, #e0f2fe 100%);
+          border: 1px solid #93c5fd;
+          border-radius: 12px;
+          padding: 14px 18px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+        .f16-scope-icon-box {
+          width: 48px;
+          height: 48px;
+          background: #ffffff;
+          border: 1px solid #bfdbfe;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          color: #0284c7;
+          box-shadow: 0 2px 5px rgba(2, 132, 199, 0.08);
+          flex-shrink: 0;
+        }
+        .f16-scope-details {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .f16-scope-text-title {
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: #0369a1;
+        }
+        .f16-scope-pill-switch {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          background: #ffffff;
+          padding: 3px 12px;
+          border-radius: 9999px;
+          border: 1px solid #93c5fd;
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .f16-console-card {
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
+          padding: 14px 18px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 10px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+        .f16-console-header-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .f16-console-actions-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .f16-btn-console-white {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
           border-radius: 6px;
-          margin: 0 16px 16px 16px;
-          background: transparent;
-          box-shadow: 0 1px 2px rgba(27,31,36,0.04);
+          padding: 6px 12px;
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #334155;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .f16-btn-console-white:hover {
+          background: #f8fafc;
+          border-color: #94a3b8;
+          color: #0f172a;
+        }
+        .f16-btn-save-all {
+          background: #0f2942;
+          color: #ffffff;
+          border: 1px solid #0f2942;
+          border-radius: 6px;
+          padding: 6px 16px;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-shadow: 0 2px 6px rgba(15, 41, 66, 0.25);
+        }
+        .f16-btn-save-all:hover {
+          background: #1e3a5f;
+        }
+
+        /* ROW 2: USER PROFILE CONFIGURATION */
+        .f16-user-grid {
+          display: grid;
+          grid-template-columns: 1.4fr 1.3fr 1.3fr 1.1fr;
+          gap: 14px;
+        }
+        @media (max-width: 960px) { .f16-user-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 580px) { .f16-user-grid { grid-template-columns: 1fr; } }
+
+        .f16-card-box {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          padding: 10px 14px;
+          min-height: 64px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          position: relative;
+        }
+        .f16-card-box-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #64748b;
+          margin-bottom: 4px;
+        }
+        .f16-avatar {
+          width: 36px;
+          height: 36px;
+          background: #e2e8f0;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          color: #475569;
+          flex-shrink: 0;
+        }
+
+        .f16-pill-toggle {
+          width: 38px;
+          height: 20px;
+          background: #cbd5e1;
+          border-radius: 10px;
+          position: relative;
+          cursor: pointer;
+          transition: background 0.2s ease;
+          flex-shrink: 0;
+        }
+        .f16-pill-toggle.active { background: #16a34a; }
+        .f16-pill-toggle-thumb {
+          width: 16px;
+          height: 16px;
+          background: #ffffff;
+          border-radius: 50%;
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          transition: transform 0.2s ease;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .f16-pill-toggle.active .f16-pill-toggle-thumb { transform: translateX(18px); }
+
+        /* ROW 3: SPLIT PANEL */
+        .f16-panel-card {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
           overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          display: flex;
         }
-        
-        /* Pane Styling */
-        .perm-pane { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        .perm-main { width: 30%; border-right: 1px solid #d0d7de; background: transparent; }
-        .perm-sidebar { width: 70%; background: transparent; }
+        @media (max-width: 900px) { .f16-panel-card { flex-direction: column; } }
 
-        /* ... existing pane header/content styles ... */
-        .perm-pane-header { padding: 12px 16px; background: transparent; border-bottom: 1px solid #d0d7de; flex-shrink: 0; }
-        .perm-pane-header h3 { margin: 0; font-size: 14px; font-weight: 600; color: #24292f; }
-        .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 19px; }
-
-        /* Internal Components */
-        .perm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; 
-        padding-bottom: 12px; border-bottom: 1px solid #d0d7de; }
-        .perm-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #24292f; }
-        
-        .perm-search { position: relative; width: 100%; max-width: 320px; }
-        .perm-search input { 
-          width: 100%; padding: 5px 12px 5px 32px; border: 1px solid #d0d7de; border-radius: 6px; 
-          font-size: 14px; background-color: transparent; color: #24292f;
-          transition: border-color 0.2s, box-shadow 0.2s;
+        .f16-left-sidebar {
+          width: 250px;
+          background: #f8fafc;
+          border-right: 1px solid #cbd5e1;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
         }
-        .perm-search input:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3); background-color: transparent; }
-        .perm-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #57606a; }
-        
-        .perm-list { display: flex; flex-direction: column; gap: 0; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
-        .perm-card { 
-          padding: 12px 16px; border-bottom: 1px solid #d0d7de; background: transparent; cursor: pointer; transition: background 0.1s; 
+        @media (max-width: 900px) {
+          .f16-left-sidebar { width: 100%; border-right: none; border-bottom: 1px solid #cbd5e1; }
         }
-        .perm-card:last-child { border-bottom: none; }
-        .perm-card:hover { background: rgba(0,0,0,0.03); }
-        .perm-card.active { background: rgba(0,0,0,0.03); border-left: 2px solid #0969da; padding-left: 14px; }
-        
-        /* NEW STYLES FOR TAG BADGE */
-        .perm-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-        .perm-tag-badge { 
-            background: #e8eaed; color: #57606a; font-size: 10px; font-weight: 600; 
-            padding: 2px 6px; border-radius: 10px; border: 1px solid #d0d7de; margin-left: 8px;
+        .f16-sidebar-dark-header {
+          background: #0f172a;
+          color: #ffffff;
+          padding: 10px 14px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .f16-sidebar-tree-list {
+          padding: 8px 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          max-height: 480px;
+          overflow-y: auto;
+        }
+        .f16-sidebar-tree-item {
+          padding: 6px 8px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          color: #334155;
+        }
+        .f16-sidebar-tree-item:hover { background: #e2e8f0; color: #0f172a; }
+        .f16-sidebar-tree-item.active { background: #e0f2fe; color: #0369a1; font-weight: 700; }
+
+        .f16-right-table-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+        .f16-table-top-bar {
+          padding: 10px 16px;
+          background: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+        .f16-table-search-input {
+          max-width: 220px;
+          padding: 5px 12px;
+          font-size: 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          outline: none;
+          background: #f8fafc;
+        }
+        .f16-table-search-input:focus { border-color: #0284c7; background: #ffffff; }
+
+        .f16-table-container { max-height: 460px; overflow-y: auto; }
+        .f16-dashboard-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .f16-dashboard-table th {
+          position: sticky;
+          top: 0;
+          background: #0f172a;
+          color: #ffffff;
+          font-weight: 700;
+          font-size: 10.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          text-align: left;
+          padding: 10px 12px;
+          z-index: 2;
+        }
+        .f16-dashboard-table td {
+          padding: 8px 12px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #334155;
+          vertical-align: middle;
         }
 
-        .perm-card-name { font-size: 14px; font-weight: 600; color: #24292f; }
-        .perm-card-email { font-size: 12px; color: #57606a; }
-        
-        .perm-btn { padding: 5px 16px; background: transparent; color: #24292f; border: 1px solid #d0d7de; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 1px 0 rgba(27,31,36,0.04); transition: background 0.2s; }
-        .perm-btn:hover { background: rgba(0,0,0,0.03); }
-        
-        .perm-empty { padding: 32px; text-align: center; color: #57606a; border: 1px dashed #d0d7de; border-radius: 6px; font-size: 14px; }
-        .perm-sidebar-empty { padding: 64px 32px; text-align: center; color: #57606a; }
-        .perm-sidebar-empty svg { width: 40px; height: 40px; margin: 0 auto 16px; color: #d0d7de; }
-        
-        .perm-user-info { margin-bottom: 24px; padding: 16px; background: transparent; border: 1px solid #d0d7de; border-radius: 6px; }
-        .perm-user-info div { font-size: 13px; color: #24292f; margin-bottom: 8px; }
-        
-        .perm-section { margin-bottom: 32px; }
-        .perm-section-title { font-size: 12px; font-weight: 600; color: #57606a; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #d0d7de; }
-        .perm-field { margin-bottom: 24px; border: 1px dashed #d0d7de; padding: 12px; border-radius: 4px;}
-        .perm-flabel { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 600; color: #24292f; }
-        .perm-flink { font-size: 12px; font-weight: 600; color: #0969da; cursor: pointer; text-decoration: none; }
-        
-        .perm-check-grid { display: grid; gap: 8px; }
-        .perm-check-grid-zone, .perm-check-grid-region { grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); }
-        .perm-check-grid-multi { grid-template-columns: 1fr; }
-        
-        .perm-check-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px; background: transparent; cursor: pointer; transition: background 0.1s, border-color 0.1s; }
-        .perm-check-item:hover { background: rgba(0,0,0,0.03); }
-        .perm-check-item.selected { background: rgba(9, 105, 218, 0.05); border-color: #0969da; }
-        .perm-check-item input { margin: 0; cursor: pointer; accent-color: #0969da; }
-        .perm-check-item label { margin: 0; font-size: 13px; color: #24292f; cursor: pointer; flex: 1; font-weight: 400; }
-        
-        /* NEW STYLES FOR SELECT */
-        .perm-select {
-            width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px;
-            font-size: 14px; background-color: transparent; color: #24292f; cursor: pointer;
-            appearance: none; -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007CB2%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto;
+        .f16-row-zone-lvl { background: #f8fafc; font-weight: 700; color: #0f172a; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+        .f16-row-region-lvl { background: #ffffff; font-weight: 600; color: #1e293b; border-bottom: 1px solid #f1f5f9; }
+        .f16-row-district-lvl { background: #ffffff; color: #475569; border-bottom: 1px solid #f1f5f9; }
+        .f16-row-branch-lvl { background-color: #f0fdf4; border-bottom: 1px solid #dcfce7; }
+        .f16-row-branch-lvl:hover { background-color: #dcfce7; }
+
+        .f16-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+        .f16-badge-zone { background: #e0f2fe; color: #0369a1; }
+        .f16-badge-region { background: #f3e8ff; color: #7e22ce; }
+        .f16-badge-district { background: #fef3c7; color: #b45309; }
+        .f16-badge-branch { background: #dcfce7; color: #15803d; }
+
+        .rp-sol-pill {
+          font-family: ui-monospace, monospace;
+          font-weight: 700;
+          font-size: 11.5px;
+          color: #15803d;
+          background: #dcfce7;
+          padding: 2px 7px;
+          border-radius: 4px;
+          border: 1px solid #86efac;
+          display: inline-block;
         }
-        .perm-select:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3); }
+        .rp-tag-micro {
+          display: inline-block;
+          font-size: 10.5px;
+          font-weight: 600;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: #f1f5f9;
+          color: #475569;
+        }
 
-        .perm-no-options { padding: 16px; text-align: center; color: #57606a; font-size: 13px; border: 1px dashed #d0d7de; border-radius: 6px; }
+        .rp-perm-capsule {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 10px;
+          border-radius: 9999px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          background: #ffffff;
+          color: #334155;
+          border: 1px solid #cbd5e1;
+        }
+        .rp-perm-capsule.active {
+          background: #ecfdf5;
+          color: #065f46;
+          border-color: #6ee7b7;
+        }
+        .rp-capsule-dot { width: 5px; height: 5px; border-radius: 50%; background: #94a3b8; }
+        .rp-perm-capsule.active .rp-capsule-dot { background: #10b981; }
 
-        /* Search Results for Dialog */
-        .search-results-list { list-style: none; padding: 0; margin-top: 10px; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; background: transparent; }
-        .search-result-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.1s; display: flex; align-items: center; gap: 12px; }
-        .search-result-item:last-child { border-bottom: none; }
-        .search-result-item:hover { background: rgba(0,0,0,0.03); }
-        .search-result-item.selected { background: rgba(9, 105, 218, 0.05); }
-        .search-result-info { display: flex; flex-direction: column; }
-        .search-result-name { font-weight: 600; font-size: 13px; color: #24292f; }
-        .search-result-email { font-size: 11px; color: #57606a; }
-        .search-highlight { background: #fff2ac; padding: 0; border-radius: 2px; }
+        .f16-footer-row {
+          padding: 10px 16px;
+          background: #f8fafc;
+          border-top: 1px solid #e2e8f0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 11.5px;
+          color: #64748b;
+        }
+      </style>
 
-        /* Selected Pills */
-        .selected-users-wrapper { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; padding: 8px; border: 1px solid #d0d7de; border-radius: 6px; background: rgba(0,0,0,0.02); min-height: 40px; align-items: center; }
-        .selected-pill { display: flex; align-items: center; gap: 6px; padding: 2px 10px; background: #0969da; color: #fff; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .selected-pill .remove-user { cursor: pointer; font-size: 14px; line-height: 1; opacity: 0.8; }
-        
-        .perm-pane-content::-webkit-scrollbar { width: 6px; }
-        .perm-pane-content::-webkit-scrollbar-track { background: transparent; }
-        .perm-pane-content::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 10px; }
+      <div class="f16-root">
+        <!-- Main Dashboard Title -->
+        <div class="f16-dashboard-title">USER MANAGEMENT DASHBOARD</div>
 
-        /* Container for the row of chips */
-.perm-check-grid-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px; /* Space between chips */
-  align-items: center;
-}
-
-/* The Chip Itself */
-.perm-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  
-  /* Size & Shape */
-  min-width: 32px;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: 12px; /* Pill shape */
-  
-  /* Default Style (Unselected - Grey) */
-  background-color: #f0f4f6; /* Frappe light grey */
-  color: #6c7680;           /* Frappe dark grey text */
-  border: 1px solid transparent;
-  
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-}
-
-/* Hover State */
-.perm-chip:hover {
-  background-color: #e2e6ea;
-  color: #1b2024;
-}
-
-/* Selected State (Green like Frappe Status) */
-.perm-chip.selected {
-  background-color: #e8fdf0; /* Light green bg */
-  color: #2f9d58;           /* Dark green text */
-  border: 1px solid #2f9d58;
-}
-
-/* Hide the actual checkbox input completely */
-.perm-chip input {
-  display: none;
-}
-
-.perm-flabel-inline {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.perm-check-grid-chips-inline {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 8px;
-}
-
-.perm-pane-header {
-  display: flex; /* Enable flexbox */
-  justify-content: space-between; /* Push items to edges */
-  align-items: flex-start; /* Align top */
-  padding: 12px 16px;
-  background: transparent;
-  border-bottom: 1px solid #d0d7de;
-  flex-shrink: 0;
-}
-
-
-/* Toggle Switch Container */
-.perm-toggle {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-  margin-right: 8px; /* Space between toggle and badge */
-  vertical-align: middle;
-}
-
-/* Hide default checkbox */
-.perm-toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-/* The Slider */
-.perm-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #d1d8dd; /* Default Grey (Disabled) */
-  transition: .4s;
-  border-radius: 20px;
-}
-
-/* The Circle inside slider */
-.perm-slider:before {
-  position: absolute;
-  content: "";
-  height: 14px;
-  width: 14px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: .4s;
-  border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-/* Checked State (Enabled - Green) */
-.perm-toggle input:checked + .perm-slider {
-  background-color: #2f9d58; /* Frappe Green */
-}
-
-/* Move Circle when checked */
-.perm-toggle input:checked + .perm-slider:before {
-  transform: translateX(16px);
-}
-
-/* Focused State */
-.perm-toggle input:focus + .perm-slider {
-  box-shadow: 0 0 1px #2f9d58;
-}
-
-.perm-sidebar-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;    /* Horizontal center */
-  justify-content: center; /* Vertical center */
-  text-align: center;      /* Text alignment center */
-  height: 100%;            /* Take full height of parent */
-  padding: 64px 32px;
-  color: #57606a;
-}
-
-.perm-sidebar-empty svg {
-  margin-bottom: 16px;
-  color: #d0d7de;
-}
-
-
-/* Container for badge and menu */
-.perm-tag-container {
-    position: relative;
-    display: inline-block;
-}
-
-/* Make the badge look like a button */
-.perm-tag-badge-btn {
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.1s;
-}
-
-.perm-tag-badge-btn:active {
-    transform: scale(0.95);
-}
-
-/* Floating Menu Styling */
-.perm-tag-menu {
-    position: absolute;
-    top: 110%; /* Show below badge */
-    right: 0;
-    background: white;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 1000;
-    min-width: 120px;
-    overflow: hidden;
-}
-
-.perm-tag-option {
-    padding: 8px 12px;
-    font-size: 13px;
-    color: #24292f;
-    cursor: pointer;
-    transition: background 0.1s;
-}
-
-.perm-tag-option:hover {
-    background-color: #f6f8fa;
-}
-
-.perm-tag-option.active {
-    font-weight: 600;
-    color: #0969da;
-    background-color: #f0f7ff;
-}
-
-.perm-tag-option-none {
-    border-top: 1px solid #f0f0f0;
-    color: #cf222e; /* Red color for "No Tag" */
-}
-
-/* Container for the whole row */
-.perm-field-row {
-    display: flex;
-    flex-direction: row; /* Force side-by-side */
-    gap: 24px;          /* Space between Zone block and Region block */
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20px;
-}
-
-/* Individual field blocks (Zone/Region) */
-.perm-field-half {
-    flex: 1;            /* Each takes 50% width */
-    display: flex;
-    align-items: center; /* Vertical center label and chips */
-    min-width: 0;       /* Prevents overflow breaking flex */
-    border: 1px dashed #d0d7de;
-    padding: 12px;
-    border-radius: 4px;
-}
-
-/* Label and Chips Wrapper */
-.perm-flabel-inline {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    width: 100%;
-}
-
-/* Specific label styling to prevent shrinking */
-.perm-flabel-inline > span {
-    font-weight: 600;
-    font-size: 13px;
-    margin-right: 12px;
-    white-space: nowrap; /* Label won't break into 2 lines */
-}
-
-/* Chips container */
-.perm-check-grid-chips-inline {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap; /* Allows chips to wrap if too many, but stays in row */
-    gap: 6px;
-}
-
-/* Base badge style - consistent with your existing perm-tag-badge */
-.perm-tag-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 11px;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-}
-
-/* Color Mappings (Subtle Style) */
-.badge-green  { background-color: #e8fdf0; color: #2f9d58; border-color: #A6EFC0; } /* COM */
-.badge-blue   { background-color: #e7f5ff; color: #007be0; border-color: #A7D7FD; } /* ROM */
-.badge-orange { background-color: #fff8e6; color: #d09a0a; border-color: #FBDB73; } /* RM */
-.badge-purple { background-color: #f5f0ff; color: #6846e3; border-color: #D6C8FF; } /* AZM */
-.badge-cyan   { background-color: #e2f9ff; color: #008da6; border-color: #B2EBF2; } /* ZM */
-.badge-gray   { background-color: #f0f4f6; color: #6c7680; border-color: #d1d8dd; } /* Default / No Tag */
-
-
-/* Container for Label and Pencil */
-.perm-flabel-with-edit {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 4px;
-    font-weight: 600;
-    font-size: 13px;
-    margin-right: 12px;
-    white-space: nowrap;
-}
-
-.perm-edit-btn {
-    cursor: pointer;
-    color: #6c7680;
-    padding: 2px;
-    border-radius: 4px;
-    transition: background 0.2s, color 0.2s;
-    margin-bottom: 4px;
-}
-
-.perm-edit-btn:hover {
-   
-    color: #0969da;
-}
-
-/* Selected Pills Container */
-.selected-users-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    background: #fafbfc;
-    min-height: 40px;
-}
-
-.selected-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 10px;
-    background: #e8fdf0; /* Light green like your other selected items */
-    color: #2f9d58;
-    border: 1px solid #2f9d58;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.remove-user {
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    opacity: 0.7;
-}
-
-.remove-user:hover {
-    opacity: 1;
-}
-
-.selected-empty-text {
-    font-size: 13px;
-    color: #8c99a6;
-    font-style: italic;
-}
-
-
-.selected-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px; /* Space between text and X */
-    padding: 4px 12px;
-    background-color: #e8fdf0;
-    color: #2f9d58;
-    border: 1px solid #2f9d58;
-    border-radius: 16px;
-    font-size: 12px;
-}
-
-.remove-user {
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0 2px;
-    transition: color 0.2s;
-}
-
-.remove-user:hover {
-    color: #cf222e; /* Red on hover to indicate deletion */
-}
-
-.perm-sidebar-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;      /* Centers horizontally */
-    justify-content: center;   /* Centers vertically */
-    text-align: center;
-    height: 100%;             /* Ensures it spans the full sidebar height */
-    padding: 64px 32px;
-    color: #57606a;
-}
-    
-
-/* Ensure the SVG can rotate smoothly */
-.perm-tag-badge-btn svg {
-    transition: transform 0.2s ease; /* Smooth turning animation */
-    pointer-events: none; /* Let the click pass to the parent span */
-}
-
-/* When the menu is open, rotate the arrow 180 degrees */
-.perm-tag-badge.menu-open svg {
-    transform: rotate(180deg);
-}
-
-
-    </style>
-
-      <div id="perm-root" v-scope @vue:mounted="init()">
-        <div class="perm-layout">
-          
-          <div class="perm-main perm-pane">
-            <div class="perm-pane-header" style="display: none"><h3>Users</h3></div>
-            <div class="perm-pane-content">
-              <div class="perm-header">
-                <h3>Report Preferences</h3>
-                <button class="perm-btn" @click="createNew">+ New</button>
+        <!-- ROW 1: TOP DUAL CARDS -->
+        <div class="f16-top-row">
+          <!-- Card 1: Admin & Scope Banner -->
+          <div class="f16-scope-banner">
+            <div class="f16-scope-icon-box">🛡️</div>
+            <div class="f16-scope-details">
+              <div class="f16-scope-text-title">ADMIN & PERMISSION SCOPE</div>
+              <div class="f16-scope-pill-switch">
+                <div class="f16-pill-toggle ${isGeo ? 'active' : ''}" id="f16-switch-scope-mode">
+                  <div class="f16-pill-toggle-thumb"></div>
+                </div>
+                <span style="color: ${isGeo ? '#0369a1' : '#64748b'}; font-weight: 700;">
+                  ${isGeo ? 'GEOGRAPHICAL SCOPE' : 'Branch-Level View'}
+                </span>
+                <span style="color: #cbd5e1;">|</span>
+                <span style="color: #0284c7; font-weight: 500; cursor: pointer; text-decoration: underline;" id="f16-btn-toggle-scope-text">
+                  ${isGeo ? 'Branch-Level View' : 'Geographical Scope'}
+                </span>
               </div>
-              
-              <div class="perm-search" style="margin-bottom: 16px;">
-                <!-- SVG Icon -->
-                <svg class="perm-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <input type="text" placeholder="Search..." v-model="searchQuery" @input="filterList">
-              </div>
+            </div>
+          </div>
 
-              <div class="perm-list" v-if="filteredList.length">
-                <div v-for="item in filteredList" :key="item.name" 
-                     class="perm-card" 
-                     :class="{ active: selectedPref && selectedPref.user === item.user }"
-                     @click="selectPreference(item)">
-                  
-                  <!-- UPDATED: Display Tag Badge next to Name -->
-                  <div class="perm-card-top">
-    <!-- User Name -->
-    <div class="perm-card-name" v-html="highlight(item.full_name || item.user, searchQuery)"></div>
-    
-    <!-- UPDATED: Added :class to sync colors -->
-    <span v-if="item.tag" 
-          class="perm-tag-badge" 
-          :class="getTagClass(item.tag)"
-          style="font-size: 10px; padding: 2px 6px;">
-        [[ item.tag ]]
-    </span>
-</div>
+          <!-- Card 2: Action Console -->
+          <div class="f16-console-card">
+            <div class="f16-console-header-label">Action Console</div>
+            <div class="f16-console-actions-row">
+              <button type="button" class="f16-btn-console-white" id="f16-btn-reset-perm">
+                <span>✕</span> <span>Reset Permissions</span>
+              </button>
+              <button type="button" class="f16-btn-console-white" id="f16-btn-discard-perm">
+                <span>Discard Changes</span>
+              </button>
+              <button type="button" class="f16-btn-console-white" id="f16-btn-bulk-perm">
+                <span>🔄</span> <span>Bulk Update</span>
+              </button>
+              <button type="button" class="f16-btn-save-all" id="f16-btn-save-all">
+                <span>SAVE ALL CHANGES</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
-                  
-                  <div class="perm-card-email" v-html="highlight(item.user, searchQuery)"></div>
+        <!-- Section 2: User Profile Configuration -->
+        <div class="f16-sec-heading">USER PROFILE CONFIGURATION</div>
+
+        <!-- ROW 2: 4-CARDS USER GRID -->
+        <div class="f16-user-grid">
+          <!-- Card 1: User Identity -->
+          <div class="f16-card-box">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="f16-avatar">👤</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; font-size: 12.5px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  ${userName}
+                </div>
+                <div style="font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  (${userEmail})
                 </div>
               </div>
-
-              <div class="perm-empty" v-else>No users found.</div>
+              <span style="color: #94a3b8; font-size: 13px; cursor: pointer;" title="Select User" id="f16-btn-open-user-picker">✏️</span>
             </div>
           </div>
 
-          <div class="perm-sidebar perm-pane">
-            <div class="perm-pane-header">
-  
-          <!-- LEFT SIDE: Title and Details -->
-          <div v-if="!selectedPref">
-            <h3>Permission Details</h3>
+          <!-- Card 2: Permissions Tag -->
+          <div class="f16-card-box">
+            <div class="f16-card-box-label">Permissions Tag:</div>
+            <select class="form-control input-sm" id="rp-tag-select" style="background:#fff; font-size:11.5px; height:26px; border-color:#cbd5e1;">
+              <option value="">No Tag</option>
+              ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
           </div>
-          
-          <div v-else style="display: flex; flex-direction: column; gap: 4px;">
-            <h3 style="margin: 0;">Permission Details</h3>
-            <div style="font-size: 13px; color: #57606a; display: flex; align-items: center; gap: 12px;">
-              <span><strong>Employee Name:</strong> [[ selectedPref.full_name || '-' ]]</span>
-              <span style="color: #d0d7de;">|</span>
-              <span><strong>Employee ID:</strong> [[ selectedPref.user ? selectedPref.user.split('@')[0] : '-' ]]</span>
+
+          <!-- Card 3: Account Status -->
+          <div class="f16-card-box" style="flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="f16-card-box-label">Account Status:</div>
+              <div style="font-size: 12.5px; font-weight: 800; color: ${state.enabled ? '#16a34a' : '#64748b'}; letter-spacing: 0.03em;">
+                ${state.enabled ? 'ACTIVE' : 'DISABLED'}
+              </div>
+              <div style="font-size: 9px; color: #94a3b8;">Auto-save enabled</div>
+            </div>
+            <div class="f16-pill-toggle ${state.enabled ? 'active' : ''}" id="f16-toggle-user-status">
+              <div class="f16-pill-toggle-thumb"></div>
             </div>
           </div>
 
-          <!-- RIGHT SIDE: Toggle + Tag Badge -->
-          <div v-if="selectedPref" style="display: flex; align-items: center;">
-            
-          
-
-            <!-- TAG BADGE -->
-            <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
-        <!-- RIGHT SIDE: Toggle + Clickable Tag Badge -->
-        <!-- RIGHT SIDE: Toggle + Clickable Dynamic Tag Badge -->
-        <div v-if="selectedPref" style="display: flex; align-items: center;">
-            
-            <!-- ENABLED TOGGLE -->
-            <label class="perm-toggle" title="Enable/Disable" style="margin-top: 7px;">
-                <input type="checkbox" v-model="selectedPref.enabled" @change="autoSave">
-                <span class="perm-slider"></span>
-            </label>
-
-            <!-- TAG BADGE CONTAINER -->
-            <div class="perm-tag-container">
-    <span class="perm-tag-badge perm-tag-badge-btn" 
-          :class="[getTagClass(selectedPref.tag), { 'menu-open': showTagMenu }]"
-          style="font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;"
-          :style="{ opacity: selectedPref.enabled ? 1 : 0.6, cursor: selectedPref.enabled ? 'pointer' : 'not-allowed' }"
-          @click.stop="selectedPref.enabled ? toggleTagMenu() : notifyEnableToggle()">
-        
-        <!-- Tag Text -->
-        <span>[[ selectedPref.tag || 'No Tag' ]]</span>
-        
-        <!-- Down Arrow SVG (Now Rotates based on menu-open class) -->
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 9l6 6 6-6"></path>
-        </svg>
-    </span>
-
-    <!-- Floating Menu (v-if="showTagMenu") -->
-    <div v-if="showTagMenu && selectedPref.enabled" class="perm-tag-menu">
-        <div v-for="opt in allOptions.tag" :key="opt" class="perm-tag-option" :class="{ active: selectedPref.tag === opt }" @click="setTag(opt)">
-            [[ opt ]]
-        </div>
-        <div class="perm-tag-option perm-tag-option-none" @click="setTag('')">No Tag</div>
-    </div>
-</div>
-
-
-        </div>
-
-
-
+          <!-- Card 4: User Role -->
+          <div class="f16-card-box" style="flex-direction: row; align-items: center; justify-content: space-between;">
+            <div>
+              <div class="f16-card-box-label">User Role:</div>
+              <div style="font-weight: 700; font-size: 12px; color: #0f172a;">
+                ${state.tag || 'Regional Manager'}
+              </div>
+            </div>
+            <button type="button" class="f16-btn-console-white" id="f16-btn-role-change" style="padding: 2px 8px; font-size: 10.5px;">
+              Change Role
+            </button>
           </div>
-
         </div>
 
+        <!-- Section 3: Geographical Permission & Coverage -->
+        <div class="f16-sec-heading">GEOGRAPHICAL PERMISSION & COVERAGE</div>
 
-        <div class="perm-pane-content">
-  
-  <!-- CASE 1: No user is selected from the left list -->
-  <div v-if="!selectedPref" class="perm-sidebar-empty">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-    <div style="font-size: 14px; font-weight: 500;">No User Selected</div>
-    <div style="font-size: 13px; margin-top: 8px;">Select a user from the list to manage their permission preferences</div>
-  </div>
+        <!-- ROW 3: SPLIT PANEL -->
+        <div class="f16-panel-card">
+          <!-- LEFT SIDEBAR: COVERAGE SUMMARY -->
+          <div class="f16-left-sidebar">
+            <div class="f16-sidebar-dark-header">
+              <span>Coverage Summary</span>
+              <span>% Branches</span>
+            </div>
 
-  <!-- CASE 2: A user is selected -->
-  <div v-else>
-    
-    <!-- IF ENABLED: Show all the configuration settings -->
-    <div v-if="selectedPref.enabled">
-        
-        <!-- Geographic Filters Section -->
-        <div class="perm-section">
-          <div class="perm-section-title" style="display: none">Geographic Filters</div>
-          
-          <div class="perm-field-row">
-            <!-- Zone & Region side-by-side -->
-            <div class="perm-field-half">
-                <div class="perm-flabel-inline">
-                  <span>Zone</span>
-                  <div class="perm-check-grid-chips-inline">
-                    <div class="perm-chip" :class="{ selected: isAllSelected('zone') }" @click="toggleAll('zone')">ALL</div>
-                    <div v-for="opt in allOptions.zone" :key="opt" class="perm-chip" :class="{ selected: selectedPref.zone.includes(opt) }" @click="toggle('zone', opt)">[[ opt ]]</div>
+            <div class="f16-sidebar-tree-list">
+              ${Object.keys(masterTree).map(z => {
+                let zTotal = Object.values(masterTree[z]).reduce((acc, reg) => 
+                  acc + Object.values(reg).reduce((a, dist) => a + dist.length, 0), 0);
+                let zAllowed = activeTree[z] ? Object.values(activeTree[z]).reduce((acc, reg) => 
+                  acc + Object.values(reg).reduce((a, dist) => a + dist.length, 0), 0) : 0;
+                let zPct = ((zAllowed / totalMasterCount) * 100).toFixed(1);
+                let isZoneActive = state.zones.has(z);
+
+                return `
+                  <div class="f16-sidebar-tree-item ${isZoneActive ? 'active' : ''} f16-tree-item-zone" data-zone="${z}">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span style="font-size: 11px;">${isZoneActive ? '🟦' : '◻️'}</span>
+                      <b>${z}</b>
+                    </div>
+                    <span style="font-weight: 700; font-size: 11px; color: ${isZoneActive ? '#0369a1' : '#64748b'};">
+                      ${zPct}% (${zAllowed})
+                    </span>
                   </div>
+
+                  ${isZoneActive ? Object.keys(masterTree[z]).map(r => {
+                    let rAllowed = (activeTree[z] && activeTree[z][r]) ? Object.values(activeTree[z][r]).reduce((a, dist) => a + dist.length, 0) : 0;
+                    let isRegionActive = !state.regions.size || state.regions.has(r);
+
+                    return `
+                      <div class="f16-sidebar-tree-item ${isRegionActive ? 'active' : ''} f16-tree-item-region" data-zone="${z}" data-region="${r}" style="padding-left: 18px; font-size: 11px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span style="color: #94a3b8; font-size: 9px;">▪</span>
+                          <span>${r}</span>
+                        </div>
+                        <span style="color: #64748b;">${rAllowed} Br</span>
+                      </div>
+                    `;
+                  }).join('') : ''}
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- RIGHT MAIN TABLE -->
+          <div class="f16-right-table-area">
+            <!-- Top Table Toolbar -->
+            <div class="f16-table-top-bar">
+              <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
+                ${isGeo ? `
+                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span style="font-size: 11px; font-weight: 700; color: #475569;">ZONES:</span>
+                    ${masterZones.map(z => `
+                      <div class="rp-perm-capsule rp-zone-capsule ${state.zones.has(z) ? 'active' : ''}" data-zone="${z}">
+                        <span class="rp-capsule-dot"></span>
+                        <span>${z}</span>
+                      </div>
+                    `).join('')}
+                    <button type="button" class="btn btn-xs btn-link" id="f16-btn-select-all-zones" style="font-size: 11px; font-weight: 600; color: #0284c7;">Select All</button>
+                    <span style="color: #cbd5e1;">•</span>
+                    <button type="button" class="btn btn-xs btn-link" id="f16-btn-clear-all-zones" style="font-size: 11px; color: #64748b;">Clear</button>
+                  </div>
+                ` : `
+                  <div style="display: flex; align-items: center; gap: 6px; width: 100%; max-width: 420px; position: relative;">
+                    <input type="text" class="form-control input-sm" id="rp-table-sol-search-input" placeholder="Type or paste SOL ID (e.g. 1001, 1002)..." style="height: 28px; font-size: 11.5px;" />
+                    <button type="button" class="btn btn-xs btn-primary" id="rp-btn-add-sol-tokens" style="padding: 3px 10px; font-size: 11px;">+ Add</button>
+                    <div class="rp-dropdown-popover" id="rp-table-sol-dropdown" style="top: 32px;"></div>
+                  </div>
+                `}
+              </div>
+
+              <!-- Controls -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="f16-btn-console-white" id="f16-btn-expand-all" style="padding: 3px 8px; font-size: 10.5px;">▾ Expand All</button>
+                <button type="button" class="f16-btn-console-white" id="f16-btn-collapse-all" style="padding: 3px 8px; font-size: 10.5px;">▸ Collapse All</button>
+                <input type="text" class="f16-table-search-input" id="f16-table-search-box" placeholder="🔍 Search branch, SOL..." />
+              </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="f16-table-container">
+              ${isGeo && !hasZoneSelected ? `
+                <div style="padding: 44px; text-align: center; color: #94a3b8; font-size: 13px;">
+                  👈 Please select a <b>Zone</b> from above or sidebar to grant branch access.
                 </div>
-            </div>
-            <div class="perm-field-half">
-    <div class="perm-flabel-inline">
-      <span>Region</span>
-      <!-- Ensure the v-if is ONLY on this container -->
-      <div v-if="allOptions.region && allOptions.region.length" class="perm-check-grid-chips-inline">
-        
-        <!-- ALL Chip -->
-        <div class="perm-chip" 
-             :class="{ selected: isAllSelected('region') }" 
-             @click="toggleAll('region')">
-          ALL
-        </div>
-
-        <!-- Dynamic Chips -->
-        <div v-for="opt in allOptions.region" :key="opt" 
-             class="perm-chip" 
-             :class="{ selected: selectedPref.region.includes(opt) }" 
-             @click="toggle('region', opt)">
-          [[ opt ]]
-        </div>
-      </div>
-      
-      <!-- Show this if Region list is empty -->
-      <div v-else class="selected-empty-text" style="margin-left: 10px;">
-        No Regions available
-      </div>
-    </div>
-</div>
-
-          </div>
-
-          <!-- SOL ID Section -->
-          <div class="perm-field">
-            <div class="perm-flabel-with-edit">
-                <span>SOL ID</span>
-                <div class="perm-edit-btn" @click="openSolIdDialog" title="Edit SOL IDs">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+              ` : (!isGeo && !state.sol_ids.size ? `
+                <div style="padding: 44px; text-align: center; color: #94a3b8; font-size: 13px;">
+                  🔍 Type single SOL ID or paste comma separated list above to attach branches.
                 </div>
-                <div class="perm-edit-btn" @click="clearSolIds" title="Clear SOL IDs" style="color: #cf222e;" v-if="selectedPref && selectedPref.sol_id && selectedPref.sol_id.length > 0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+              ` : (totalAllowedCount === 0 ? `
+                <div style="padding: 40px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                  No branches found matching current criteria.
                 </div>
+              ` : `
+                <table class="f16-dashboard-table" id="f16-grid-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 32px; text-align: center;">
+                        <input type="checkbox" id="f16-select-all-chk" checked style="cursor: pointer;" />
+                      </th>
+                      <th style="width: 105px;">LEVEL</th>
+                      <th style="width: 110px;">ZONE</th>
+                      <th style="width: 130px;">REGION</th>
+                      <th style="width: 130px;">DISTRICT</th>
+                      <th>BRANCH NAME</th>
+                      <th style="width: 90px;">SOL ID</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${Object.keys(activeTree).map(z => {
+                      let zBranchesCount = Object.values(activeTree[z]).reduce((acc, reg) => 
+                        acc + Object.values(reg).reduce((a, dist) => a + dist.length, 0), 0);
+                      let zRegCount = Object.keys(activeTree[z]).length;
+                      let zKey = `zone-${z.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                      return `
+                        <!-- Level 1: ZONE ROW -->
+                        <tr class="f16-row-zone-lvl rp-tree-header-row" data-tree-key="${zKey}" data-zone-key="${zKey}" data-search="${z}">
+                          <td style="text-align: center;">
+                            <input type="checkbox" class="f16-row-chk f16-zone-chk" data-zone="${z}" checked />
+                          </td>
+                          <td>
+                            <span class="rp-tree-toggle-icon" id="icon-${zKey}">▸</span>
+                            <span class="f16-badge f16-badge-zone">Zone</span>
+                          </td>
+                          <td><b>${z}</b></td>
+                          <td><span class="text-muted">(${zRegCount} Regions)</span></td>
+                          <td><span class="text-muted">—</span></td>
+                          <td><span class="text-muted" style="font-weight: 600;">${zBranchesCount} Branches</span></td>
+                          <td>—</td>
+                        </tr>
+
+                        ${Object.keys(activeTree[z]).map(r => {
+                          let rBranchesCount = Object.values(activeTree[z][r]).reduce((a, dist) => a + dist.length, 0);
+                          let rDistCount = Object.keys(activeTree[z][r]).length;
+                          let rKey = `${zKey}-reg-${r.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                          return `
+                            <!-- Level 2: REGION ROW -->
+                            <tr class="f16-row-region-lvl rp-tree-header-row rp-under-zone-${zKey}" data-zone-parent="${zKey}" data-tree-key="${rKey}" data-reg-key="${rKey}" data-search="${z} ${r}" style="display: none;">
+                              <td style="text-align: center;">
+                                <input type="checkbox" class="f16-row-chk f16-region-chk" data-zone="${z}" data-region="${r}" checked />
+                              </td>
+                              <td>
+                                <span class="rp-tree-toggle-icon" id="icon-${rKey}">▸</span>
+                                <span class="f16-badge f16-badge-region">Region</span>
+                              </td>
+                              <td><span class="rp-tag-micro">${z}</span></td>
+                              <td><b>${r}</b></td>
+                              <td><span class="text-muted">(${rDistCount} Districts)</span></td>
+                              <td><span class="text-muted" style="font-weight: 600;">${rBranchesCount} Branches</span></td>
+                              <td>—</td>
+                            </tr>
+
+                            ${Object.keys(activeTree[z][r]).map(d => {
+                              let distBranches = activeTree[z][r][d];
+                              let dKey = `${rKey}-dist-${d.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                              return `
+                                <!-- Level 3: DISTRICT ROW -->
+                                <tr class="f16-row-district-lvl rp-tree-header-row rp-under-zone-${zKey} rp-under-reg-${rKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-tree-key="${dKey}" data-dist-key="${dKey}" data-search="${z} ${r} ${d}" style="display: none;">
+                                  <td style="text-align: center;">
+                                    <input type="checkbox" class="f16-row-chk f16-district-chk" data-district="${d}" checked />
+                                  </td>
+                                  <td>
+                                    <span class="rp-tree-toggle-icon" id="icon-${dKey}">▸</span>
+                                    <span class="f16-badge f16-badge-district">District</span>
+                                  </td>
+                                  <td><span class="rp-tag-micro">${z}</span></td>
+                                  <td><span class="rp-tag-micro">${r}</span></td>
+                                  <td><b>${d}</b></td>
+                                  <td><span class="text-muted" style="font-weight: 600;">${distBranches.length} Branches</span></td>
+                                  <td>—</td>
+                                </tr>
+
+                                <!-- Level 4: BRANCH ROWS -->
+                                ${distBranches.map(b => `
+                                  <tr class="f16-row-branch-lvl rp-under-zone-${zKey} rp-under-reg-${rKey} rp-under-dist-${dKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-dist-parent="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}" style="display: none;">
+                                    <td style="text-align: center;">
+                                      <input type="checkbox" class="f16-row-chk f16-branch-chk" data-sol="${b.sol_id}" checked />
+                                    </td>
+                                    <td>
+                                      <span class="rp-tree-toggle-icon" style="color: #94a3b8; font-size: 8px;">•</span>
+                                      <span class="f16-badge f16-badge-branch">Branch</span>
+                                    </td>
+                                    <td><span class="rp-tag-micro">${z}</span></td>
+                                    <td><span class="rp-tag-micro">${r}</span></td>
+                                    <td><span class="rp-tag-micro">${d}</span></td>
+                                    <td><b>${b.branch || '-'}</b></td>
+                                    <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
+                                  </tr>
+                                `).join('')}
+                              `;
+                            }).join('')}
+                          `;
+                        }).join('')}
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              `))}
             </div>
-            <div class="selected-users-wrapper">
-                <span v-if="!selectedPref.sol_id || selectedPref.sol_id.length === 0" class="selected-empty-text">No SOL IDs selected yet.</span>
-                <span v-for="sol in selectedPref.sol_id" :key="sol" class="selected-pill">[[ sol ]]<span class="remove-user" @click.stop="removeSolId(sol)">×</span></span>
+
+            <!-- Footer -->
+            <div class="f16-footer-row">
+              <div><b>Total records:</b> ${totalAllowedCount} Allowed / ${totalMasterCount} Master Branches</div>
+              <div style="font-size: 11px; color: #94a3b8;">Frappe v16 Dashboard View</div>
             </div>
           </div>
         </div>
-
-        <!-- New Finacle Report Permission Section -->
-        <!-- Finacle Report Permission Section -->
-<!-- Finacle Report Permission Section -->
-<div class="perm-section">
-  <div class="perm-field">
-    <!-- Headline: Same style as SOL ID -->
-    <div class="perm-flabel-with-edit">
-        <span>Finacle Report Permission</span>
-    </div>
-
-    <!-- The Box Wrapper: Contains all selectable chips -->
-    <div class="selected-users-wrapper" style="padding: 12px; min-height: 60px; background: #fafbfc;">
-        
-        <div class="perm-check-grid-chips-inline" style="margin: 0;">
-          <!-- ALL Chip -->
-          <div class="perm-chip" 
-               :class="{ selected: isAllRolesSelected() }" 
-               @click="toggleAllRoles()">
-            ALL
-          </div>
-
-          <!-- Vertical Separator line -->
-          <div style="width: 1px; height: 18px; background: #d0d7de; margin: 0 8px;"></div>
-
-          <!-- Dynamic Chips for each Role -->
-          <div v-for="pill in ['Admin', 'Audit', 'Branch', 'Finance', 'HR', 'JLL', 'Loan', 'MIS', 'Operation', 'TW', 'Vigilance']" 
-               :key="pill" 
-               class="perm-chip" 
-               :class="{ selected: (selectedPref.finacle_roles || []).includes(pill) }" 
-               @click="toggleRole(pill)">
-            [[ pill ]]
-            <!-- 'x' only shows if the pill is currently selected -->
-            
-          </div>
-        </div>
-
-        <!-- Helper message if nothing is selected (optional) -->
-        <div v-if="!selectedPref.finacle_roles || selectedPref.finacle_roles.length === 0" 
-             class="selected-empty-text" style="margin-top: 10px; width: 100%;">
-            No permissions selected. Click on a role above to assign.
-        </div>
-    </div>
-  </div>
-</div>
-
-
-
-
-        <!-- Lead Specific Filters Section -->
-        <div class="perm-section">
-          <div class="perm-section-title">Lead Specific Filters</div>
-          <!-- Product and Source code here... -->
-        </div>
-    </div>
-
-      <!-- IF DISABLED: Show the "Configuration Disabled" Message -->
-      <div v-else class="perm-sidebar-empty">
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <div style="font-size: 16px; font-weight: 600; color: #24292f; margin-top: 12px;">Configuration Disabled</div>
-          <div style="font-size: 13px; color: #57606a; margin-top: 8px; max-width: 300px; line-height: 1.5;">
-              Enable this user's preferences using the toggle above to configure report filters.
-          </div>
       </div>
+    `;
 
-    </div>
-  </div>
+    page.main.html(html);
+    attachEvents();
+  }
 
+  function attachEvents() {
+    let $m = page.main;
 
-          </div>
-        </div>
-      </div>
-    `);
+    // Scope Toggle
+    $m.find("#f16-switch-scope-mode, #f16-btn-toggle-scope-text").on("click", function () {
+      let isGeo = state.access_type === "Geographical (Zone / Region / District)";
+      state.access_type = isGeo ? "Specific Branches (SOL ID)" : "Geographical (Zone / Region / District)";
+      if (state.access_type === "Geographical (Zone / Region / District)") {
+        state.sol_ids.clear();
+      } else {
+        state.zones.clear();
+        state.regions.clear();
+        state.districts.clear();
+      }
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
 
-    PetiteVue.createApp({
-      $delimiters: ["[[", "]]"],
-      showTagMenu: false, // Tracks if the floating menu is open
-
-      prefList: [],
-      filteredList: [],
-      searchQuery: "",
-      selectedPref: null,
-      selectedUsers: [],
-      allOptions: {
-        zone: [],
-        region: [],
-        state: [],
-        district: [],
-        sol_id: [],
-        product: [],
-        source: [],
-        tag: [], // Added tag array
-      },
-      saveTimeout: null,
-
-      init() {
-        this.loadAllPreferences();
-        this.loadFieldOptions();
-
-        const route = frappe.get_route();
-        if (route[2]) {
-          this.selectPreference({ user: route[2] });
+    // User Picker Dialog
+    $m.find("#f16-btn-open-user-picker").on("click", function () {
+      let d = new frappe.ui.Dialog({
+        title: __("Select User"),
+        fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
+        primary_action_label: __("Load User"),
+        primary_action: function (values) {
+          d.hide();
+          selectUser(values.user);
         }
-      },
+      });
+      d.show();
+    });
 
-      loadAllPreferences() {
-        frappe.call({
-          method:
-            "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
-          callback: (r) => {
-            this.prefList = r.message || [];
-            this.filteredList = [...this.prefList];
-          },
+    // Tag Select
+    $m.find("#rp-tag-select").on("change", function () {
+      state.tag = $(this).val();
+      autoSave();
+    });
+
+    // Status Toggle
+    $m.find("#f16-toggle-user-status").on("click", function () {
+      state.enabled = state.enabled ? 0 : 1;
+      renderDashboard();
+      autoSave();
+    });
+
+    // Save All Button
+    $m.find("#f16-btn-save-all").on("click", function () {
+      autoSave();
+    });
+
+    // Reset Permissions Button
+    $m.find("#f16-btn-reset-perm").on("click", function () {
+      if (!state.user) return;
+      frappe.confirm(__(`Reset and clear all permissions for <b>${state.user}</b>?`), () => {
+        state.zones.clear();
+        state.regions.clear();
+        state.districts.clear();
+        state.sol_ids.clear();
+        autoSave();
+        calculateBranches(() => {
+          renderDashboard();
         });
-      },
+      });
+    });
 
-      loadFieldOptions() {
-        frappe.call({
-          method:
-            "sahayog.sahayog.page.permission_config.permission_config.get_field_options",
-          callback: (r) => {
-            const opts = r.message || {};
-            this.allOptions.zone = opts.zone || [];
-            this.allOptions.region = opts.region || [];
-            this.allOptions.state = opts.state || [];
-            this.allOptions.district = opts.district || [];
-            this.allOptions.sol_id = opts.sol_id || [];
-            this.allOptions.product = opts.product || [];
-            this.allOptions.source = opts.source || [];
-            this.allOptions.tag = opts.tag || []; // Load tag options
-          },
+    $m.find("#f16-btn-discard-perm").on("click", function () {
+      selectUser(state.user);
+    });
+
+    // Sidebar items click
+    $m.find(".f16-tree-item-zone").on("click", function () {
+      let z = $(this).data("zone");
+      if (state.zones.has(z)) {
+        state.zones.delete(z);
+      } else {
+        state.zones.add(z);
+      }
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
+
+    $m.find(".f16-tree-item-region").on("click", function (e) {
+      e.stopPropagation();
+      let r = $(this).data("region");
+      if (state.regions.has(r)) {
+        state.regions.delete(r);
+      } else {
+        state.regions.add(r);
+      }
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
+
+    // Top Bar Zone Capsules
+    $m.find(".rp-zone-capsule").on("click", function () {
+      let z = $(this).data("zone");
+      if (state.zones.has(z)) {
+        state.zones.delete(z);
+      } else {
+        state.zones.add(z);
+      }
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
+
+    $m.find("#f16-btn-select-all-zones").on("click", function () {
+      (state.meta_data.master_zones || []).forEach(z => state.zones.add(z));
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
+
+    $m.find("#f16-btn-clear-all-zones").on("click", function () {
+      state.zones.clear();
+      state.regions.clear();
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    });
+
+    // SOL Mode Search & Add Input
+    let $solInput = $m.find("#rp-table-sol-search-input");
+    let $solDropdown = $m.find("#rp-table-sol-dropdown");
+
+    function processSolTokens(val) {
+      if (!val) return;
+      let tokens = val.split(/[,;\s\n\r]+/).map(x => x.trim()).filter(Boolean);
+      if (!tokens.length) return;
+
+      tokens.forEach(tok => {
+        if (tok) state.sol_ids.add(String(tok));
+      });
+
+      $solInput.val("");
+      $solDropdown.hide().empty();
+      calculateBranches(() => {
+        renderDashboard();
+        autoSave();
+      });
+    }
+
+    $solInput.on("keydown", function (e) {
+      if (e.which === 13) {
+        e.preventDefault();
+        processSolTokens($(this).val());
+      }
+    });
+
+    $m.find("#rp-btn-add-sol-tokens").on("click", function () {
+      processSolTokens($solInput.val());
+    });
+
+    // Progressive Drilldown Click Handlers
+    $m.find(".f16-row-zone-lvl").on("click", function (e) {
+      if ($(e.target).is("input, button")) return;
+      let zKey = $(this).data("zone-key");
+      let $icon = $(this).find(`#icon-${zKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
+
+      if (isExpanding) {
+        $icon.text("▼");
+        $m.find(`.f16-row-region-lvl[data-zone-parent="${zKey}"]`).show();
+      } else {
+        $icon.text("▸");
+        $m.find(`.rp-under-zone-${zKey}`).hide();
+        $m.find(`.f16-row-region-lvl[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
+        $m.find(`.f16-row-district-lvl[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
+      }
+    });
+
+    $m.find(".f16-row-region-lvl").on("click", function (e) {
+      if ($(e.target).is("input, button")) return;
+      e.stopPropagation();
+      let rKey = $(this).data("reg-key");
+      let $icon = $(this).find(`#icon-${rKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
+
+      if (isExpanding) {
+        $icon.text("▼");
+        $m.find(`.f16-row-district-lvl[data-reg-parent="${rKey}"]`).show();
+      } else {
+        $icon.text("▸");
+        $m.find(`.rp-under-reg-${rKey}`).hide();
+        $m.find(`.f16-row-district-lvl[data-reg-parent="${rKey}"] .rp-tree-toggle-icon`).text("▸");
+      }
+    });
+
+    $m.find(".f16-row-district-lvl").on("click", function (e) {
+      if ($(e.target).is("input, button")) return;
+      e.stopPropagation();
+      let dKey = $(this).data("dist-key");
+      let $icon = $(this).find(`#icon-${dKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
+
+      if (isExpanding) {
+        $icon.text("▼");
+        $m.find(`.f16-row-branch-lvl[data-dist-parent="${dKey}"]`).show();
+      } else {
+        $icon.text("▸");
+        $m.find(`.f16-row-branch-lvl[data-dist-parent="${dKey}"]`).hide();
+      }
+    });
+
+    // Expand / Collapse All
+    $m.find("#f16-btn-expand-all").on("click", function () {
+      $m.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").show();
+      $m.find(".rp-tree-toggle-icon").each(function () {
+        if ($(this).text().trim() === "▸") $(this).text("▼");
+      });
+    });
+
+    $m.find("#f16-btn-collapse-all").on("click", function () {
+      $m.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
+      $m.find(".rp-tree-toggle-icon").each(function () {
+        if ($(this).text().trim() === "▼") $(this).text("▸");
+      });
+    });
+
+    // Search Filter
+    $m.find("#f16-table-search-box").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      if (!q) {
+        $m.find(".f16-row-zone-lvl").show();
+        $m.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
+        $m.find(".rp-tree-toggle-icon").each(function () {
+          if ($(this).text().trim() === "▼") $(this).text("▸");
         });
-      },
+        return;
+      }
 
-      filterList() {
-        const q = this.searchQuery.toLowerCase();
-        if (!q) {
-          this.filteredList = [...this.prefList];
-        } else {
-          this.filteredList = this.prefList.filter(
-            (p) =>
-              (p.full_name && p.full_name.toLowerCase().includes(q)) ||
-              (p.user && p.user.toLowerCase().includes(q)),
-          );
+      $m.find(".f16-row-zone-lvl, .f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
+
+      $m.find(".f16-row-branch-lvl").each(function () {
+        let sText = ($(this).data("search") || "").toLowerCase();
+        if (sText.includes(q)) {
+          $(this).show();
+          let pZone = $(this).data("zone-parent");
+          let pReg = $(this).data("reg-parent");
+          let pDist = $(this).data("dist-parent");
+
+          $m.find(`.f16-row-zone-lvl[data-zone-key="${pZone}"]`).show();
+          $m.find(`.f16-row-region-lvl[data-reg-key="${pReg}"]`).show();
+          $m.find(`.f16-row-district-lvl[data-dist-key="${pDist}"]`).show();
+
+          $m.find(`#icon-${pZone}`).text("▼");
+          $m.find(`#icon-${pReg}`).text("▼");
+          $m.find(`#icon-${pDist}`).text("▼");
         }
-      },
+      });
+    });
+  }
 
-      highlight(text, q) {
-        if (!q || !text) return text;
-        const searchVal = q.trim();
-        if (!searchVal) return text;
-        const regex = new RegExp(`(${searchVal})`, "gi");
-        return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-      },
-
-      getLabel(val) {
-        if (!val) return "";
-        return val.replace(/\D/g, "");
-      },
-
-      selectPreference(item) {
-        if (!item || !item.user) return;
-
-        const current_route = frappe.get_route();
-        if (current_route[2] !== item.user) {
-          frappe.set_route("permission-config", item.user);
-        }
-
-        frappe.call({
-          method:
-            "sahayog.sahayog.page.permission_config.permission_config.get_preference_detail",
-          args: { user: item.user },
-          callback: (r) => {
-            this.selectedPref = r.message || null;
-            if (this.selectedPref) {
-              // Ensure arrays are valid
-              this.selectedPref.zone = (this.selectedPref.zone || []).filter(
-                (v) => v,
-              );
-              this.selectedPref.region = (
-                this.selectedPref.region || []
-              ).filter((v) => v);
-              this.selectedPref.state = (this.selectedPref.state || []).filter(
-                (v) => v,
-              );
-              this.selectedPref.district = (
-                this.selectedPref.district || []
-              ).filter((v) => v);
-              this.selectedPref.sol_id = (
-                this.selectedPref.sol_id || []
-              ).filter((v) => v);
-              this.selectedPref.product = (
-                this.selectedPref.product || []
-              ).filter((v) => v);
-              this.selectedPref.source = (
-                this.selectedPref.source || []
-              ).filter((v) => v);
-
-              // Tag is a string, no filtering needed, but ensure it exists
-              if (!this.selectedPref.tag) this.selectedPref.tag = "";
-            }
-          },
-        });
-      },
-
-      // toggle(field, value) {
-      //   if (!this.selectedPref) return;
-      //   const arr = this.selectedPref[field];
-      //   const idx = arr.indexOf(value);
-      //   if (idx >= 0) arr.splice(idx, 1);
-      //   else arr.push(value);
-      //   this.autoSave();
-      // },
-
-      // toggleAll(field) {
-      //   if (!this.selectedPref) return;
-      //   if (this.isAllSelected(field)) {
-      //     this.selectedPref[field] = [];
-      //   } else {
-      //     this.selectedPref[field] = [...this.allOptions[field]];
-      //   }
-      //   this.autoSave();
-      // },
-
-      toggle(field, value) {
-        if (!this.selectedPref) return;
-
-        // VALIDATION: Block Region selection if Zone is empty
-        if (field === "region") {
-          if (!this.selectedPref.zone || this.selectedPref.zone.length === 0) {
-            frappe.show_alert(
-              {
-                message: __(
-                  "Please select at least one <strong>Zone</strong> first.",
-                ),
-                indicator: "orange",
-              },
-              3,
-            );
-            return;
-          }
-        }
-
-        // TOGGLE LOGIC: Add/Remove value
-        const arr = this.selectedPref[field];
-        const idx = arr.indexOf(value);
-
-        if (idx >= 0) {
-          arr.splice(idx, 1);
-        } else {
-          arr.push(value);
-        }
-
-        // AUTO-CLEAR: If Zone was emptied, clear Regions
-        if (field === "zone" && this.selectedPref.zone.length === 0) {
-          if (this.selectedPref.region && this.selectedPref.region.length > 0) {
-            this.selectedPref.region = [];
-            frappe.show_alert(
-              {
-                message: __("Regions cleared because no Zone is selected."),
-                indicator: "blue",
-              },
-              3,
-            );
-          }
-        }
-
-        // Save to DocType
-        this.autoSave();
-      },
-
-      toggleAll(field) {
-        if (!this.selectedPref) return;
-
-        // Block Region ALL if Zone empty
-        if (
-          field === "region" &&
-          (!this.selectedPref.zone || this.selectedPref.zone.length === 0)
-        ) {
-          frappe.show_alert(
-            {
-              message: __(
-                "Please select at least one <strong>Zone</strong> first.",
-              ),
-              indicator: "orange",
-            },
-            3,
-          );
-          return;
-        }
-
-        if (this.isAllSelected(field)) {
-          this.selectedPref[field] = [];
-        } else {
-          this.selectedPref[field] = [...this.allOptions[field]];
-        }
-
-        // AUTO-CLEAR: If Zone ALL was deselected (emptying zones), clear Regions
-        if (field === "zone" && this.selectedPref.zone.length === 0) {
-          this.selectedPref.region = [];
-          frappe.show_alert(
-            { message: __("Regions cleared."), indicator: "blue" },
-            2,
-          );
-        }
-
-        this.autoSave();
-      },
-
-      toggleRole(pill) {
-        if (!this.selectedPref.finacle_roles)
-          this.selectedPref.finacle_roles = [];
-        const arr = this.selectedPref.finacle_roles;
-        const idx = arr.indexOf(pill);
-
-        if (idx >= 0) arr.splice(idx, 1);
-        else arr.push(pill);
-
-        this.autoSave();
-      },
-
-      isAllRolesSelected() {
-        const all = [
-          "HR",
-          "JLL",
-          "MIS",
-          "Loan",
-          "Audit",
-          "Finance",
-          "Operation",
-          "TW",
-          "Branch",
-          "Admin",
-          "Vigilance",
-        ];
-        const sel = this.selectedPref.finacle_roles || [];
-        return sel.length === all.length;
-      },
-
-      toggleAllRoles() {
-        const all = [
-          "HR",
-          "JLL",
-          "MIS",
-          "Loan",
-          "Audit",
-          "Finance",
-          "Operation",
-          "TW",
-          "Branch",
-          "Admin",
-          "Vigilance",
-        ];
-        if (this.isAllRolesSelected()) {
-          this.selectedPref.finacle_roles = [];
-        } else {
-          this.selectedPref.finacle_roles = [...all];
-        }
-        this.autoSave();
-      },
-
-      isAllSelected(field) {
-        if (!this.selectedPref) return false;
-        const all = this.allOptions[field] || [];
-        const sel = this.selectedPref[field] || [];
-        return all.length > 0 && sel.length === all.length;
-      },
-
-      removeSolId(val) {
-        if (!this.selectedPref || !this.selectedPref.sol_id) return;
-
-        // Filter out the clicked SOL ID
-        this.selectedPref.sol_id = this.selectedPref.sol_id.filter(
-          (s) => s !== val,
-        );
-
-        // Show a small feedback alert (optional)
-        frappe.show_alert(
-          { message: `Removed ${val}`, indicator: "orange" },
-          2,
-        );
-
-        // Sync changes to the Report Preference DocType
-        this.autoSave();
-      },
-
-      clearSolIds() {
-        if (!this.selectedPref || !this.selectedPref.sol_id) return;
-        this.selectedPref.sol_id = [];
-        frappe.show_alert(
-          { message: __("SOL IDs cleared."), indicator: "green" },
-          2,
-        );
-        this.autoSave();
-      },
-
-      getTagClass(tag) {
-        const map = {
-          COM: "badge-green",
-          ROM: "badge-blue",
-          RM: "badge-orange",
-          AZM: "badge-purple",
-          ZM: "badge-cyan",
-        };
-        return map[tag] || "badge-gray";
-      },
-
-      toggleTagMenu() {
-        this.showTagMenu = !this.showTagMenu;
-
-        // Optional: Close menu when clicking anywhere else
-        if (this.showTagMenu) {
-          const close = () => {
-            this.showTagMenu = false;
-            window.removeEventListener("click", close);
-          };
-          setTimeout(() => window.addEventListener("click", close), 0);
-        }
-      },
-
-      setTag(val) {
-        if (!this.selectedPref) return;
-        this.selectedPref.tag = val;
-        this.showTagMenu = false; // Close menu after selection
-        this.autoSave(); // Save to Report Preference DocType
-      },
-
-      autoSave() {
-        clearTimeout(this.saveTimeout);
-        this.saveTimeout = setTimeout(() => {
-          frappe.call({
-            method:
-              "sahayog.sahayog.page.permission_config.permission_config.save_preference",
-            args: { data: this.selectedPref },
-            callback: (r) => {
-              if (r.message && r.message.success) {
-                frappe.show_alert({ message: "Saved", indicator: "green" }, 2);
-
-                // Refresh list to show updated tags immediately
-                this.loadAllPreferences();
-
-                // Re-fetch details to load server-populated values (e.g. auto-mapped SOL IDs)
-                if (this.selectedPref && this.selectedPref.user) {
-                  this.selectPreference({ user: this.selectedPref.user });
-                }
-              }
-            },
-          });
-        }, 800);
-      },
-
-      openSolIdDialog() {
-        if (!this.selectedPref) return;
-
-        // Initial state: load current selections from the record
-        this.tempSelectedSolIds = [...(this.selectedPref.sol_id || [])];
-
-        const d = new frappe.ui.Dialog({
-          title: "Select SOL IDs",
-          fields: [
-            {
-              label: "Search Branch",
-              fieldname: "search_text",
-              fieldtype: "Data",
-              placeholder: "Type branch name or SOL ID...",
-              reqd: 0,
-            },
-            { fieldname: "selected_area", fieldtype: "HTML" },
-            { fieldname: "results", fieldtype: "HTML" },
-          ],
-          primary_action_label: "Save",
-          primary_action: () => {
-            // Apply temp selections to the real record
-            this.selectedPref.sol_id = this.tempSelectedSolIds;
-            this.autoSave();
-            d.hide();
-            frappe.show_alert({
-              message: "SOL IDs updated",
-              indicator: "green",
-            });
-          },
-        });
-
-        const renderSelectedSols = () => {
-          const $area = d.fields_dict.selected_area.$wrapper;
-          if (this.tempSelectedSolIds.length === 0) {
-            $area.html(
-              '<div class="selected-users-wrapper"><span class="selected-empty-text">No SOL IDs selected yet</span></div>',
-            );
-            return;
-          }
-
-          let html = '<div class="selected-users-wrapper">';
-          this.tempSelectedSolIds.forEach((sol) => {
-            html += `<span class="selected-pill">${sol}<span class="remove-user" data-val="${sol}">&times;</span></span>`;
-          });
-          html += "</div>";
-          $area.html(html);
-
-          // Click on pill to remove
-          $area.find(".selected-pill").on("click", (e) => {
-            const val = $(e.currentTarget)
-              .find(".remove-user")
-              .attr("data-val");
-            this.tempSelectedSolIds = this.tempSelectedSolIds.filter(
-              (s) => s !== val,
-            );
-            renderSelectedSols();
-            // Uncheck in result list if visible
-            d.fields_dict.results.$wrapper
-              .find(`.search-result-item[data-sol="${val}"]`)
-              .removeClass("selected")
-              .find("input")
-              .prop("checked", false);
-          });
-        };
-
-        d.fields_dict.search_text.$input.on("input", () => {
-          let value = d.get_value("search_text");
-          if (!value || value.length < 1) {
-            d.fields_dict.results.$wrapper.html("");
-            return;
-          }
-
-          // Call a specific search for branches (adjust method path if needed)
-          frappe.call({
-            method:
-              "sahayog.sahayog.page.permission_config.permission_config.search_branch",
-            args: { search_text: value },
-            callback: (r) => {
-              let results = r.message || [];
-              let html =
-                '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
-
-              if (results.length === 0) {
-                html +=
-                  '<div style="padding:10px; color:#57606a; font-size:13px;">No branches found</div>';
-              } else {
-                // Inside search_branch callback
-                results.forEach((branch_doc) => {
-                  let isChecked = this.tempSelectedSolIds.includes(
-                    branch_doc.name,
-                  );
-                  html += `
-        <div class="search-result-item ${isChecked ? "selected" : ""}" data-sol="${branch_doc.name}">
-            <input type="checkbox" ${isChecked ? "checked" : ""} style="pointer-events:none;">
-            <div class="search-result-info">
-                <!-- branch_doc.branch is the descriptive name, branch_doc.name is the SOL ID -->
-                <div class="search-result-name">${branch_doc.branch || branch_doc.name}</div>
-                <div class="search-result-email">SOL ID: ${branch_doc.name}</div>
-            </div>
-        </div>`;
-                });
-              }
-              html += "</div>";
-
-              const $wrapper = d.fields_dict.results.$wrapper;
-              $wrapper.html(html);
-
-              $wrapper.find(".search-result-item").on("click", (e) => {
-                const $item = $(e.currentTarget);
-                const sol = $item.attr("data-sol");
-                const $checkbox = $item.find('input[type="checkbox"]');
-
-                if (this.tempSelectedSolIds.includes(sol)) {
-                  this.tempSelectedSolIds = this.tempSelectedSolIds.filter(
-                    (s) => s !== sol,
-                  );
-                  $item.removeClass("selected");
-                  $checkbox.prop("checked", false);
-                } else {
-                  this.tempSelectedSolIds.push(sol);
-                  $item.addClass("selected");
-                  $checkbox.prop("checked", true);
-                }
-                renderSelectedSols();
-              });
-            },
-          });
-        });
-
-        d.show();
-        renderSelectedSols();
-      },
-
-      createNew() {
-        // ... (create logic same as before, no changes needed for Tag unless you want to add tag selection in creation dialog too)
-        this.selectedUsers = [];
-        const d = new frappe.ui.Dialog({
-          title: "Create New Preference",
-          fields: [
-            {
-              label: "Search User",
-              fieldname: "search_text",
-              fieldtype: "Data",
-              placeholder: "Type user name or email...",
-              reqd: 1,
-            },
-            { fieldname: "selected_area", fieldtype: "HTML" },
-            { fieldname: "results", fieldtype: "HTML" },
-          ],
-          primary_action_label: "Create",
-          primary_action: (values) => {
-            if (this.selectedUsers.length === 0) {
-              frappe.msgprint("Please select at least one user.");
-              return;
-            }
-            const promises = this.selectedUsers.map((user) => {
-              return frappe.call({
-                method:
-                  "sahayog.sahayog.page.permission_config.permission_config.save_preference",
-                args: {
-                  data: {
-                    user: user,
-                    tag: "", // Default empty tag
-                    zone: [],
-                    region: [],
-                    state: [],
-                    district: [],
-                    sol_id: [],
-                    product: [],
-                    source: [],
-                  },
-                },
-              });
-            });
-
-            Promise.all(promises).then(() => {
-              frappe.show_alert(
-                {
-                  message: `Created for ${this.selectedUsers.length} users`,
-                  indicator: "green",
-                },
-                3,
-              );
-              this.loadAllPreferences();
-              d.hide();
-              if (this.selectedUsers.length > 0) {
-                setTimeout(() => {
-                  const newItem = this.prefList.find(
-                    (p) => p.user === this.selectedUsers[0],
-                  );
-                  if (newItem) this.selectPreference(newItem);
-                }, 500);
-              }
-            });
-          },
-        });
-
-        // ... (rest of search/pill logic same as before)
-        const renderSelectedUsers = () => {
-          const $area = d.fields_dict.selected_area.$wrapper;
-          if (this.selectedUsers.length === 0) {
-            $area.html(
-              '<div class="selected-users-wrapper"><span class="selected-empty-text">No users selected yet</span></div>',
-            );
-            d.get_primary_btn().text("Create");
-            return;
-          }
-          let html = '<div class="selected-users-wrapper">';
-          this.selectedUsers.forEach((user) => {
-            const displayName = user.split("@")[0];
-            html += `<span class="selected-pill" data-user="${user}">${displayName}<span class="remove-user" onclick="this.parentElement.click()">&times;</span></span>`;
-          });
-          html += "</div>";
-          $area.html(html);
-          $area.find(".selected-pill").on("click", (e) => {
-            const user = $(e.currentTarget).attr("data-user");
-            this.selectedUsers = this.selectedUsers.filter((u) => u !== user);
-            renderSelectedUsers();
-            d.fields_dict.results.$wrapper
-              .find(`.search-result-item[data-user="${user}"]`)
-              .removeClass("selected")
-              .find("input")
-              .prop("checked", false);
-          });
-          d.get_primary_btn().text(`Create (${this.selectedUsers.length})`);
-        };
-
-        renderSelectedUsers();
-
-        d.fields_dict.search_text.$input.on("input", () => {
-          let value = d.get_value("search_text");
-          if (!value || value.length < 1) {
-            d.fields_dict.results.$wrapper.html("");
-            return;
-          }
-          frappe.call({
-            method:
-              "sahayog.sahayog.page.permission_config.permission_config.search_user",
-            args: { search_text: value },
-            callback: (r) => {
-              let results = r.message || [];
-              let html =
-                '<div class="search-results-list" style="max-height: 250px; overflow-y: auto;">';
-              if (results.length === 0) {
-                html +=
-                  '<div style="padding:10px; color:#57606a; font-size:13px;">No users found</div>';
-              } else {
-                results.forEach((user) => {
-                  let highlightedName = this.highlight(user.name, value);
-                  let highlightedFullName = user.full_name
-                    ? this.highlight(user.full_name, value)
-                    : "";
-                  let isChecked = this.selectedUsers.includes(user.name);
-                  html += `<div class="search-result-item ${isChecked ? "selected" : ""}" data-user="${user.name}"><input type="checkbox" ${isChecked ? "checked" : ""} style="pointer-events:none;"><div class="search-result-info"><div class="search-result-name">${highlightedFullName || highlightedName}</div><div class="search-result-email">${highlightedName}</div></div></div>`;
-                });
-              }
-              html += "</div>";
-              const $wrapper = d.fields_dict.results.$wrapper;
-              $wrapper.html(html);
-              $wrapper.find(".search-result-item").on("click", (e) => {
-                const $item = $(e.currentTarget);
-                const user = $item.attr("data-user");
-                const $checkbox = $item.find('input[type="checkbox"]');
-                if (this.selectedUsers.includes(user)) {
-                  this.selectedUsers = this.selectedUsers.filter(
-                    (u) => u !== user,
-                  );
-                  $item.removeClass("selected");
-                  $checkbox.prop("checked", false);
-                } else {
-                  this.selectedUsers.push(user);
-                  $item.addClass("selected");
-                  $checkbox.prop("checked", true);
-                }
-                renderSelectedUsers();
-              });
-            },
-          });
-        });
-        d.show();
-      },
-    }).mount("#perm-root");
-  });
+  initPage();
 };
