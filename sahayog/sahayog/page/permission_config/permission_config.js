@@ -556,6 +556,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         .min-btn-save:hover { background: #1e293b; }
 
+        .min-btn-clear-perm {
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+          border-radius: 5px;
+          padding: 3px 9px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+        }
+        .min-btn-clear-perm:hover {
+          background: #fee2e2;
+          border-color: #ef4444;
+        }
+
         .min-box-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -734,6 +753,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   <option value="">No Tag</option>
                   ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
                 </select>
+
+                <!-- Clear Permissions Button -->
+                <button type="button" class="min-btn-clear-perm" id="min-btn-clear-all-perm" title="Clear all configured permissions for this user">
+                  <span>🧹 Clear</span>
+                </button>
 
                 <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
               </div>
@@ -944,6 +968,19 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     // Manual Save Button
     $m.find("#min-btn-save-manual").on("click", function () {
       autoSave(true);
+    });
+
+    // Clear All Permissions Button
+    $m.find("#min-btn-clear-all-perm").on("click", function () {
+      frappe.confirm(__("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"), () => {
+        state.zones.clear();
+        state.regions.clear();
+        state.districts.clear();
+        state.sol_ids.clear();
+        renderPage();
+        autoSave();
+        frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" });
+      });
     });
 
     // Toggle Status

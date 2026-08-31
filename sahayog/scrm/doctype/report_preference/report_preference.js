@@ -385,6 +385,25 @@ frappe.ui.form.on("Report Preference", {
         }
         .min-btn-save:hover { background: #1e293b; }
 
+        .min-btn-clear-perm {
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+          border-radius: 5px;
+          padding: 3px 10px;
+          font-size: 11px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .min-btn-clear-perm:hover {
+          background: #fee2e2;
+          border-color: #ef4444;
+        }
+
         .min-box-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -549,6 +568,11 @@ frappe.ui.form.on("Report Preference", {
               <option value="">No Tag</option>
               ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
             </select>
+
+            <!-- Clear Permissions Button -->
+            <button type="button" class="min-btn-clear-perm" id="min-btn-clear-all-perm" title="Clear all configured permissions for this user">
+              <span>🧹 Clear</span>
+            </button>
 
             <!-- Save Button -->
             <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
@@ -724,6 +748,19 @@ frappe.ui.form.on("Report Preference", {
     // Manual Save Button
     $w.find("#min-btn-save-manual").on("click", function () {
       frm.trigger("auto_save_preference", true);
+    });
+
+    // Clear All Permissions Button
+    $w.find("#min-btn-clear-all-perm").on("click", function () {
+      frappe.confirm(__("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"), () => {
+        frm.state.zones.clear();
+        frm.state.regions.clear();
+        frm.state.districts.clear();
+        frm.state.sol_ids.clear();
+        frm.trigger("render_minimal_widget");
+        frm.trigger("auto_save_preference");
+        frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" });
+      });
     });
 
     // Select User Dialog with Duplicate Validation
