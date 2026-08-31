@@ -134,10 +134,10 @@ frappe.ui.form.on("Report Preference", {
 
         .rp-workspace-card {
           background: #ffffff;
-          border: 1px solid var(--rp-border);
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.03);
+          border: none;
+          border-radius: 0;
+          overflow: visible;
+          box-shadow: none;
         }
 
         /* Top Bar */
@@ -145,8 +145,8 @@ frappe.ui.form.on("Report Preference", {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 14px 20px;
-          background: #ffffff;
+          padding: 6px 0 14px 0;
+          background: transparent;
           border-bottom: 1px solid var(--rp-border);
           gap: 12px;
           flex-wrap: wrap;
@@ -236,7 +236,7 @@ frappe.ui.form.on("Report Preference", {
 
         /* Inner Content Grid */
         .rp-content-body {
-          padding: 20px;
+          padding: 16px 0;
           display: flex;
           flex-direction: column;
           gap: 18px;
