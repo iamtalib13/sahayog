@@ -434,7 +434,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           padding: 10px 14px;
           background: #ffffff;
           margin-bottom: 8px;
-          transition: opacity 0.2s ease;
         }
         .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
@@ -446,6 +445,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           margin-top: 8px;
           max-height: 380px;
           overflow-y: auto;
+          scrollbar-width: thin;
         }
         .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .min-branch-table th {
@@ -485,8 +485,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border-color: #ef4444;
         }
 
-        .min-section-disabled {
-          opacity: 0.55;
+        .min-box-disabled {
+          opacity: 0.45;
           pointer-events: none;
           user-select: none;
           background: #f8fafc !important;
@@ -523,7 +523,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
 
         <!-- 1. GEO CONTROLS SECTION (Zone & Region Chips) -->
-        <div class="min-box-row ${!isGeo ? 'min-section-disabled' : ''}">
+        <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
           <div class="min-dashed-box">
             <span class="min-box-label">Zone</span>
             <div class="min-chip-container">
@@ -573,15 +573,15 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </div>
         </div>
 
-        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS VISIBLE, DISABLED IN GEO MODE) -->
-        <div class="min-sol-box ${isGeo ? 'min-section-disabled' : ''}">
+        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS SCROLLABLE, NON-EDITABLE IN GEO MODE) -->
+        <div class="min-sol-box">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
               ${!isGeo ? `
                 <span style="cursor: pointer; color: #0284c7; font-size: 11.5px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
               ` : `
-                <span style="color: #94a3b8; font-size: 11px; font-style: italic;">(Auto-Resolved from Geo selection • Switch to Branch Wise to manually edit)</span>
+                <span style="color: #64748b; font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Branches) • Scroll to inspect</span>
               `}
             </div>
 

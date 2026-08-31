@@ -462,7 +462,6 @@ frappe.ui.form.on("Report Preference", {
           padding: 10px 14px;
           background: #ffffff;
           margin-bottom: 8px;
-          transition: opacity 0.2s ease;
         }
         .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
@@ -474,6 +473,7 @@ frappe.ui.form.on("Report Preference", {
           margin-top: 8px;
           max-height: 380px;
           overflow-y: auto;
+          scrollbar-width: thin;
         }
         .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .min-branch-table th {
@@ -513,9 +513,8 @@ frappe.ui.form.on("Report Preference", {
           border-color: #ef4444;
         }
 
-        /* Disabled section styling */
-        .min-section-disabled {
-          opacity: 0.55;
+        .min-box-disabled {
+          opacity: 0.45;
           pointer-events: none;
           user-select: none;
           background: #f8fafc !important;
@@ -557,7 +556,7 @@ frappe.ui.form.on("Report Preference", {
         </div>
 
         <!-- 1. GEO CONTROLS SECTION (Zone & Region Chips) -->
-        <div class="min-box-row ${!isGeo ? 'min-section-disabled' : ''}">
+        <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
           <!-- Zone Box -->
           <div class="min-dashed-box">
             <span class="min-box-label">Zone</span>
@@ -609,15 +608,15 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS VISIBLE, DISABLED IN GEO MODE) -->
-        <div class="min-sol-box ${isGeo ? 'min-section-disabled' : ''}">
+        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS SCROLLABLE, NON-EDITABLE IN GEO MODE) -->
+        <div class="min-sol-box">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
               ${!isGeo ? `
                 <span style="cursor: pointer; color: #0284c7; font-size: 11.5px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
               ` : `
-                <span style="color: #94a3b8; font-size: 11px; font-style: italic;">(Auto-Resolved from Geo selection • Switch to Branch Wise to manually edit)</span>
+                <span style="color: #64748b; font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Branches) • Scroll to inspect</span>
               `}
             </div>
 
@@ -633,7 +632,7 @@ frappe.ui.form.on("Report Preference", {
             ` : ''}
           </div>
 
-          <!-- Direct Table for SOL Branches -->
+          <!-- Direct Table for SOL Branches (Always Scrollable!) -->
           ${displayBranches.length > 0 ? `
             <div class="min-branch-table-wrap">
               <table class="min-branch-table" id="min-sol-grid-table">
