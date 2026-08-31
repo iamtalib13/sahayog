@@ -32,10 +32,52 @@ def has_lead_permission(doc, ptype, user):
 
 
 def get_user_sol_ids(user):
-    rp = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    if not user:
+        return []
+
+    rp = frappe.db.get_value("Report Preference", {"user": user, "enabled": 1}, "name")
     if not rp:
         return []
-    return frappe.get_all("Sol Items", filters={"parent": rp}, pluck="sol_id")
+
+    doc = frappe.get_doc("Report Preference", rp)
+    access_type = doc.get("access_type") or "Geographical (Zone / Region / District)"
+
+    if access_type == "Specific Branches (SOL ID)":
+        return [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")]
+
+    # Geographical mode: dynamically query live branches from `Sahayog Branch`
+    zones = [d.zone for d in doc.get("zone", []) if d.get("zone")]
+    regions = [d.region for d in doc.get("region", []) if d.get("region")]
+    states = [d.state for d in doc.get("state", []) if d.get("state")]
+    districts = [d.district for d in doc.get("district", []) if d.get("district")]
+    specific_sols = [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")]
+
+    conditions = []
+    values = {}
+    if zones:
+        conditions.append("zone IN %(zones)s")
+        values["zones"] = tuple(zones)
+    if regions:
+        conditions.append("region IN %(regions)s")
+        values["regions"] = tuple(regions)
+    if states:
+        conditions.append("state IN %(states)s")
+        values["states"] = tuple(states)
+    if districts:
+        conditions.append("district IN %(districts)s")
+        values["districts"] = tuple(districts)
+
+    if not conditions:
+        return specific_sols
+
+    where_clause = " AND ".join(conditions)
+    db_sols = frappe.db.sql(
+        f"SELECT DISTINCT sol_id FROM `tabSahayog Branch` WHERE {where_clause} AND sol_id IS NOT NULL",
+        values,
+        pluck=True
+    )
+    all_sols = list(set([str(s) for s in db_sols if s] + specific_sols))
+    return all_sols
 
 
 def get_lead_permission(user, doctype=None):
@@ -49,24 +91,10 @@ def get_lead_permission(user, doctype=None):
 
     conditions = []
 
-    pref = get_user_report_preference_filters(user)
-    if pref:
-        pref_parts = []
-
-        if pref.get("sol_ids"):
-            sol_list = ", ".join(f"'{s}'" for s in pref["sol_ids"])
-            pref_parts.append(f"`tabLead`.sol_id IN ({sol_list})")
-
-        if pref.get("zones"):
-            zone_list = ", ".join(f"'{z}'" for z in pref["zones"])
-            pref_parts.append(f"`tabLead`.custom_zone IN ({zone_list})")
-
-        if pref.get("regions") and not pref.get("is_all_regions"):
-            region_list = ", ".join(f"'{r}'" for r in pref["regions"])
-            pref_parts.append(f"`tabLead`.custom_region IN ({region_list})")
-
-        if pref_parts:
-            conditions.append("(" + " and ".join(pref_parts) + ")")
+    user_sols = get_user_sol_ids(user)
+    if user_sols:
+        sol_list = ", ".join(f"'{s}'" for s in user_sols)
+        conditions.append(f"(`tabLead`.sol_id IN ({sol_list}))")
 
     conditions.append(f"`tabLead`.owner = '{user}'")
     conditions.append(f"`tabLead`._assign LIKE '%\"{user}\"%'")
@@ -75,14 +103,15 @@ def get_lead_permission(user, doctype=None):
 
 
 def get_user_report_preference_filters(user):
-    rp = frappe.db.get_value("Report Preference", {"user": user}, "name")
+    rp = frappe.db.get_value("Report Preference", {"user": user, "enabled": 1}, "name")
     if not rp:
         return None
 
     doc = frappe.get_doc("Report Preference", rp)
+    all_sols = get_user_sol_ids(user)
 
     result = {
-        "sol_ids": [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")],
+        "sol_ids": all_sols,
         "zones": [d.get("zone") for d in doc.get("zone", []) if d.get("zone")],
         "regions": [d.get("region") for d in doc.get("region", []) if d.get("region")],
         "is_all_regions": bool(doc.get("all_regions")),

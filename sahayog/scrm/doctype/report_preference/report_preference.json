@@ -6,38 +6,46 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "user_details_section",
+  "main_widget_section",
+  "widget_html",
+  "hidden_fields_section",
   "user",
-  "column_break_ckcs",
   "full_name",
-  "section_break_uvta",
   "enabled",
-  "geographical_filters_section",
+  "tag",
+  "access_type",
   "zone",
   "region",
-  "column_break_aagm",
   "state",
   "district",
-  "column_break_vlii",
   "sol_id",
-  "tag",
-  "lead_filters_section",
   "product",
-  "column_break_enpx",
   "source"
  ],
  "fields": [
   {
-   "fieldname": "user_details_section",
+   "fieldname": "main_widget_section",
    "fieldtype": "Section Break",
-   "label": "User Details"
+   "hide_border": 1
   },
   {
-   "description": "The user for whom these report preferences apply.",
+   "fieldname": "widget_html",
+   "fieldtype": "HTML",
+   "label": "Permission Management Workspace"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "hidden_fields_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Hidden System Fields"
+  },
+  {
    "fieldname": "user",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "User",
    "options": "User",
    "reqd": 1,
@@ -45,91 +53,11 @@
    "unique": 1
   },
   {
-   "description": "User Name",
    "fetch_from": "user.full_name",
    "fieldname": "full_name",
    "fieldtype": "Data",
-   "label": "Full Name"
-  },
-  {
-   "fieldname": "column_break_ckcs",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "geographical_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Geographical & Branch Filters"
-  },
-  {
-   "description": "Select specific zones for report filtering.",
-   "fieldname": "zone",
-   "fieldtype": "Table MultiSelect",
-   "label": "Zones",
-   "options": "Zone Items"
-  },
-  {
-   "depends_on": "eval:doc.zone && doc.zone.length > 0 && !doc.all_regions\n",
-   "description": "Select specific regions. Ignored if 'All Regions' is checked.",
-   "fieldname": "region",
-   "fieldtype": "Table MultiSelect",
-   "label": "Regions",
-   "options": "Region Items"
-  },
-  {
-   "fieldname": "column_break_aagm",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Filter by specific states.",
-   "fieldname": "state",
-   "fieldtype": "Table MultiSelect",
-   "label": "States",
-   "options": "State Items"
-  },
-  {
-   "description": "Filter by specific districts.",
-   "fieldname": "district",
-   "fieldtype": "Table MultiSelect",
-   "label": "Districts",
-   "options": "District Items"
-  },
-  {
-   "fieldname": "column_break_vlii",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Specific SOL IDs the user can access.",
-   "fieldname": "sol_id",
-   "fieldtype": "Table MultiSelect",
-   "label": "SOL IDs",
-   "options": "Sol Items"
-  },
-  {
-   "fieldname": "lead_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Lead Specific Filters"
-  },
-  {
-   "description": "Products the user is allowed to see in reports.",
-   "fieldname": "product",
-   "fieldtype": "Table MultiSelect",
-   "label": "Products",
-   "options": "Product Items"
-  },
-  {
-   "fieldname": "column_break_enpx",
-   "fieldtype": "Column Break"
-  },
-  {
-   "description": "Lead sources the user is allowed to see.",
-   "fieldname": "source",
-   "fieldtype": "Table MultiSelect",
-   "label": "Sources",
-   "options": "Source Items"
-  },
-  {
-   "fieldname": "section_break_uvta",
-   "fieldtype": "Section Break"
+   "label": "Full Name",
+   "read_only": 1
   },
   {
    "default": "1",
@@ -141,13 +69,64 @@
    "fieldname": "tag",
    "fieldtype": "Select",
    "label": "Tag",
-   "options": "COM\nROM\nRM\nAZM\nZM"
+   "options": "\nCOM\nROM\nRM\nAZM\nZM"
+  },
+  {
+   "default": "Geographical (Zone / Region / District)",
+   "fieldname": "access_type",
+   "fieldtype": "Select",
+   "label": "Access Type",
+   "options": "Geographical (Zone / Region / District)\nSpecific Branches (SOL ID)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Table MultiSelect",
+   "label": "Zones",
+   "options": "Zone Items"
+  },
+  {
+   "fieldname": "region",
+   "fieldtype": "Table MultiSelect",
+   "label": "Regions",
+   "options": "Region Items"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Table MultiSelect",
+   "label": "States",
+   "options": "State Items"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Table MultiSelect",
+   "label": "Districts",
+   "options": "District Items"
+  },
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Table MultiSelect",
+   "label": "SOL IDs",
+   "options": "Sol Items"
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Table MultiSelect",
+   "label": "Products",
+   "options": "Product Items"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Table MultiSelect",
+   "label": "Sources",
+   "options": "Source Items"
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-08 17:39:57.317295",
+ "modified": "2026-08-31 19:21:16.250396",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
