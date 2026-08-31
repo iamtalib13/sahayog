@@ -89,10 +89,13 @@ frappe.ui.form.on("Report Preference", {
     frm.clear_table("district");
     frm.clear_table("sol_id");
 
-    frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
-    frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
-    frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
-    frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
+    if (frm.state.access_type === "Geographical (Zone / Region / District)") {
+      frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
+      frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
+      frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
+    } else {
+      frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
+    }
   },
 
   auto_save_preference: function (frm, show_toast = true) {
@@ -133,6 +136,7 @@ frappe.ui.form.on("Report Preference", {
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
     let masterZones = meta.master_zones || [];
     let allBranches = meta.all_branches || [];
+    let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let userName = frm.state.full_name || (frm.state.user ? frm.state.user.split('@')[0] : "Select User");
     let userEmpId = frm.state.user ? frm.state.user.split('@')[0] : "-";
     let isNewDoc = frm.is_new() || !frm.state.user;
@@ -143,7 +147,6 @@ frappe.ui.form.on("Report Preference", {
       return { raw: z, label: num };
     });
 
-    // Available regions from selected zones
     let allRegionNames = Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))).sort();
     let availableRegionNames = allRegionNames;
     if (frm.state.zones.size > 0) {
@@ -159,7 +162,6 @@ frappe.ui.form.on("Report Preference", {
 
     let isAllZones = zoneOptions.length > 0 && zoneOptions.every(z => frm.state.zones.has(z.raw));
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
-
     let solList = Array.from(frm.state.sol_ids);
 
     let html = `
@@ -170,14 +172,13 @@ frappe.ui.form.on("Report Preference", {
           padding: 8px 0;
         }
 
-        /* Top Header */
         .min-perm-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding-bottom: 14px;
+          padding-bottom: 12px;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 16px;
+          margin-bottom: 14px;
         }
         .min-perm-title {
           font-size: 15px;
@@ -190,6 +191,34 @@ frappe.ui.form.on("Report Preference", {
           color: #475569;
         }
 
+        /* Scope Segmented Control */
+        .min-scope-control {
+          display: inline-flex;
+          background: #f1f5f9;
+          padding: 3px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+        }
+        .min-scope-seg {
+          padding: 4px 14px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #64748b;
+          transition: all 0.15s ease;
+          user-select: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .min-scope-seg:hover { color: #0f172a; }
+        .min-scope-seg.active {
+          background: #ffffff;
+          color: #0f172a;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
         /* Minimal Toggle Switch */
         .min-toggle-track {
           width: 40px;
@@ -200,9 +229,7 @@ frappe.ui.form.on("Report Preference", {
           cursor: pointer;
           transition: background 0.2s ease;
         }
-        .min-toggle-track.active {
-          background: #16a34a;
-        }
+        .min-toggle-track.active { background: #16a34a; }
         .min-toggle-thumb {
           width: 16px;
           height: 16px;
@@ -214,11 +241,8 @@ frappe.ui.form.on("Report Preference", {
           transition: transform 0.2s ease;
           box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
-        .min-toggle-track.active .min-toggle-thumb {
-          transform: translateX(18px);
-        }
+        .min-toggle-track.active .min-toggle-thumb { transform: translateX(18px); }
 
-        /* Minimal Dashed Control Boxes */
         .min-box-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -226,9 +250,7 @@ frappe.ui.form.on("Report Preference", {
           margin-bottom: 16px;
         }
         @media (max-width: 768px) {
-          .min-box-row {
-            grid-template-columns: 1fr;
-          }
+          .min-box-row { grid-template-columns: 1fr; }
         }
 
         .min-dashed-box {
@@ -248,7 +270,6 @@ frappe.ui.form.on("Report Preference", {
           min-width: 48px;
         }
 
-        /* Minimal Chips */
         .min-chip-container {
           display: flex;
           align-items: center;
@@ -273,10 +294,7 @@ frappe.ui.form.on("Report Preference", {
           user-select: none;
           transition: all 0.15s ease;
         }
-        .min-chip:hover {
-          background: #e2e8f0;
-          color: #0f172a;
-        }
+        .min-chip:hover { background: #e2e8f0; color: #0f172a; }
         .min-chip.selected {
           background: #ffffff;
           color: #16a34a;
@@ -284,7 +302,6 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 700;
         }
 
-        /* SOL ID Box */
         .min-sol-box {
           border: 1px dashed #cbd5e1;
           border-radius: 8px;
@@ -315,28 +332,16 @@ frappe.ui.form.on("Report Preference", {
           font-size: 11.5px;
           font-weight: 600;
         }
-        .min-sol-remove {
-          cursor: pointer;
-          font-size: 13px;
-          font-weight: bold;
-          line-height: 1;
-        }
-        .min-sol-remove:hover {
-          color: #dc2626;
-        }
+        .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
+        .min-sol-remove:hover { color: #dc2626; }
 
-        /* Branch Table (Only when SOL IDs exist) */
         .min-branch-table-wrap {
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           overflow: hidden;
           margin-top: 14px;
         }
-        .min-branch-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 12px;
-        }
+        .min-branch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .min-branch-table th {
           background: #f8fafc;
           padding: 8px 12px;
@@ -350,9 +355,7 @@ frappe.ui.form.on("Report Preference", {
           border-bottom: 1px solid #f1f5f9;
           color: #334155;
         }
-        .min-branch-table tr:hover {
-          background: #f8fafc;
-        }
+        .min-branch-table tr:hover { background: #f8fafc; }
       </style>
 
       <div class="min-perm-card">
@@ -373,6 +376,16 @@ frappe.ui.form.on("Report Preference", {
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Geo / Branch Wise Segmented Toggle -->
+            <div class="min-scope-control">
+              <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
+                <span>🌍 Geo Wise</span>
+              </div>
+              <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
+                <span>🏢 Branch Wise</span>
+              </div>
+            </div>
+
             <!-- Active Toggle -->
             <div class="min-toggle-track ${frm.state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
               <div class="min-toggle-thumb"></div>
@@ -386,91 +399,93 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        <!-- ZONE & REGION DASHED BOXES -->
-        <div class="min-box-row">
-          <!-- Zone Box -->
-          <div class="min-dashed-box">
-            <span class="min-box-label">Zone</span>
-            <div class="min-chip-container">
-              <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
-              ${zoneOptions.map(z => `
-                <div class="min-chip min-chip-zone ${frm.state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
-              `).join('')}
+        ${isGeo ? `
+          <!-- ZONE & REGION DASHED BOXES (GEO WISE) -->
+          <div class="min-box-row">
+            <!-- Zone Box -->
+            <div class="min-dashed-box">
+              <span class="min-box-label">Zone</span>
+              <div class="min-chip-container">
+                <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
+                ${zoneOptions.map(z => `
+                  <div class="min-chip min-chip-zone ${frm.state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Region Box -->
+            <div class="min-dashed-box">
+              <span class="min-box-label">Region</span>
+              <div class="min-chip-container">
+                ${regionOptions.length > 0 ? `
+                  <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
+                  ${regionOptions.map(r => `
+                    <div class="min-chip min-chip-region ${frm.state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
+                  `).join('')}
+                ` : `
+                  <span style="font-size: 12px; color: #94a3b8; font-style: italic;">No regions available</span>
+                `}
+              </div>
             </div>
           </div>
+        ` : `
+          <!-- SOL ID BOX (BRANCH WISE) -->
+          <div class="min-sol-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="min-box-label" style="min-width: unset;">SOL ID</span>
+                <span style="cursor: pointer; color: #64748b; font-size: 13px;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️</span>
+              </div>
+              ${solList.length > 0 ? `
+                <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
+              ` : ''}
+            </div>
 
-          <!-- Region Box -->
-          <div class="min-dashed-box">
-            <span class="min-box-label">Region</span>
-            <div class="min-chip-container">
-              ${regionOptions.length > 0 ? `
-                <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
-                ${regionOptions.map(r => `
-                  <div class="min-chip min-chip-region ${frm.state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
-                `).join('')}
+            <div class="min-sol-input-wrap">
+              ${solList.length === 0 ? `
+                <span style="color: #94a3b8; font-style: italic; font-size: 12px;">No SOL IDs selected yet. Click ✏️ to add branch SOLs.</span>
               ` : `
-                <span style="font-size: 12px; color: #94a3b8; font-style: italic;">No regions available</span>
+                ${solList.map(sol => `
+                  <span class="min-sol-pill">
+                    <span>${sol}</span>
+                    <span class="min-sol-remove" data-sol="${sol}">×</span>
+                  </span>
+                `).join('')}
               `}
             </div>
-          </div>
-        </div>
 
-        <!-- SOL ID BOX -->
-        <div class="min-sol-box">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="min-box-label" style="min-width: unset;">SOL ID</span>
-              <span style="cursor: pointer; color: #64748b; font-size: 13px;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️</span>
-            </div>
+            <!-- Branch Table (Only in SOL mode with selected branches) -->
             ${solList.length > 0 ? `
-              <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
+              <div class="min-branch-table-wrap">
+                <table class="min-branch-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 100px;">SOL ID</th>
+                      <th>Branch Name</th>
+                      <th>District</th>
+                      <th>Region</th>
+                      <th>Zone</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${solList.map(sol => {
+                      let b = allBranches.find(x => String(x.sol_id) === String(sol)) || {};
+                      return `
+                        <tr>
+                          <td><b style="color: #16a34a;">${sol}</b></td>
+                          <td><b>${b.branch || '-'}</b></td>
+                          <td>${b.district || '-'}</td>
+                          <td>${b.region || '-'}</td>
+                          <td>${b.zone || '-'}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
             ` : ''}
           </div>
-
-          <div class="min-sol-input-wrap">
-            ${solList.length === 0 ? `
-              <span style="color: #94a3b8; font-style: italic; font-size: 12px;">No SOL IDs selected yet. Click ✏️ to add branch SOLs.</span>
-            ` : `
-              ${solList.map(sol => `
-                <span class="min-sol-pill">
-                  <span>${sol}</span>
-                  <span class="min-sol-remove" data-sol="${sol}">×</span>
-                </span>
-              `).join('')}
-            `}
-          </div>
-
-          <!-- Branch Table (Only shown when SOL IDs are added) -->
-          ${solList.length > 0 ? `
-            <div class="min-branch-table-wrap">
-              <table class="min-branch-table">
-                <thead>
-                  <tr>
-                    <th style="width: 100px;">SOL ID</th>
-                    <th>Branch Name</th>
-                    <th>District</th>
-                    <th>Region</th>
-                    <th>Zone</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${solList.map(sol => {
-                    let b = allBranches.find(x => String(x.sol_id) === String(sol)) || {};
-                    return `
-                      <tr>
-                        <td><b style="color: #16a34a;">${sol}</b></td>
-                        <td><b>${b.branch || '-'}</b></td>
-                        <td>${b.district || '-'}</td>
-                        <td>${b.region || '-'}</td>
-                        <td>${b.zone || '-'}</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-          ` : ''}
-        </div>
+        `}
       </div>
     `;
 
@@ -483,6 +498,24 @@ frappe.ui.form.on("Report Preference", {
     let meta = frm.meta_data || {};
     let masterZones = meta.master_zones || [];
     let allBranches = meta.all_branches || [];
+
+    // Geo / Branch Wise Mode Switcher
+    $w.find(".min-scope-seg").on("click", function () {
+      let targetMode = $(this).data("mode");
+      if (frm.state.access_type === targetMode) return;
+
+      frm.state.access_type = targetMode;
+      if (targetMode === "Geographical (Zone / Region / District)") {
+        frm.state.sol_ids.clear();
+      } else {
+        frm.state.zones.clear();
+        frm.state.regions.clear();
+        frm.state.districts.clear();
+      }
+
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
 
     // Select User Dialog
     $w.find("#min-btn-change-user").on("click", function () {
