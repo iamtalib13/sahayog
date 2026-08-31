@@ -90,22 +90,37 @@ def get_widget_meta(user=None):
     tags = ["COM", "ROM", "RM", "AZM", "ZM"]
 
     pref_data = None
-    if user and frappe.db.exists("User", user):
+    if user:
         pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
+        if not pref_name and frappe.db.exists("Report Preference", user):
+            pref_name = user
+
         if pref_name:
             doc = frappe.get_doc("Report Preference", pref_name)
+
+            raw_zones = [d.zone for d in doc.get("zone", []) if d.zone]
+            raw_regions = [d.region for d in doc.get("region", []) if d.region]
+            raw_districts = [d.district for d in doc.get("district", []) if d.district]
+            raw_states = [d.state for d in doc.get("state", []) if d.state]
+            raw_sols = [str(d.sol_id) for d in doc.get("sol_id", []) if d.sol_id]
+
+            access_type = doc.access_type or "Geographical (Zone / Region / District)"
+            # Smart detection: If user has sol_ids set but NO zones/regions/districts, default to Branch Wise
+            if raw_sols and not (raw_zones or raw_regions or raw_districts):
+                access_type = "Specific Branches (SOL ID)"
+
             pref_data = {
                 "name": doc.name,
                 "user": doc.user,
                 "full_name": doc.full_name,
                 "enabled": bool(doc.enabled),
                 "tag": doc.tag or "",
-                "access_type": doc.access_type or "Geographical (Zone / Region / District)",
-                "zones": [d.zone for d in doc.get("zone", []) if d.zone],
-                "regions": [d.region for d in doc.get("region", []) if d.region],
-                "districts": [d.district for d in doc.get("district", []) if d.district],
-                "states": [d.state for d in doc.get("state", []) if d.state],
-                "sol_ids": [str(d.sol_id) for d in doc.get("sol_id", []) if d.sol_id],
+                "access_type": access_type,
+                "zones": raw_zones,
+                "regions": raw_regions,
+                "districts": raw_districts,
+                "states": raw_states,
+                "sol_ids": raw_sols,
             }
 
     def sort_natural(lst, is_region=False):
@@ -131,7 +146,7 @@ def get_widget_meta(user=None):
 def save_widget_preference(data):
     """
     Direct CRUD API for the HTML Widget.
-    Saves Report Preference in an atomic call.
+    Saves Report Preference in an atomic call without wiping out concurrent permissions.
     """
     if isinstance(data, str):
         data = json.loads(data)
@@ -146,6 +161,9 @@ def save_widget_preference(data):
         frappe.throw(_("Access Denied: Only Administrators/System Managers can modify Report Preferences."))
 
     pref_name = frappe.db.get_value("Report Preference", {"user": user_id}, "name")
+    if not pref_name and frappe.db.exists("Report Preference", user_id):
+        pref_name = user_id
+
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
     else:
@@ -163,20 +181,21 @@ def save_widget_preference(data):
     doc.set("state", [])
     doc.set("sol_id", [])
 
-    if access_type == "Geographical (Zone / Region / District)":
-        for z in data.get("zones", []):
-            if z:
-                doc.append("zone", {"zone": z})
-        for r in data.get("regions", []):
-            if r:
-                doc.append("region", {"region": r})
-        for d in data.get("districts", []):
-            if d:
-                doc.append("district", {"district": d})
-    else:
-        for sol in data.get("sol_ids", []):
-            if sol:
-                doc.append("sol_id", {"sol_id": str(sol)})
+    # Save zones, regions, districts
+    for z in data.get("zones", []):
+        if z:
+            doc.append("zone", {"zone": z})
+    for r in data.get("regions", []):
+        if r:
+            doc.append("region", {"region": r})
+    for d in data.get("districts", []):
+        if d:
+            doc.append("district", {"district": d})
+
+    # Save sol_ids
+    for sol in data.get("sol_ids", []):
+        if sol:
+            doc.append("sol_id", {"sol_id": str(sol)})
 
     frappe.flags.mute_messages = True
     doc.save(ignore_permissions=True)
@@ -204,38 +223,36 @@ def get_preview_branches(zones=None, regions=None, states=None, districts=None, 
     districts = _parse_input_list(districts)
     sol_ids = _parse_input_list(sol_ids)
 
-    if access_type == "Specific Branches (SOL ID)" or (sol_ids and not (zones or regions or states or districts)):
-        if not sol_ids:
-            return []
-        return frappe.get_all(
-            "Sahayog Branch",
-            filters={"sol_id": ["in", sol_ids], "branch_type": ["!=", "Zonal"]},
-            fields=["sol_id", "branch", "zone", "region", "district", "state"],
-            order_by="sol_id asc",
-            limit_page_length=500
-        )
-
-    if not (zones or regions or states or districts):
-        return []
-
     conditions = ["(branch_type IS NULL OR branch_type != 'Zonal')"]
     values = {}
 
+    geo_conditions = []
     if zones:
-        conditions.append("zone IN %(zones)s")
+        geo_conditions.append("zone IN %(zones)s")
         values["zones"] = tuple(zones)
     if regions:
-        conditions.append("region IN %(regions)s")
+        geo_conditions.append("region IN %(regions)s")
         values["regions"] = tuple(regions)
     if states:
-        conditions.append("state IN %(states)s")
+        geo_conditions.append("state IN %(states)s")
         values["states"] = tuple(states)
     if districts:
-        conditions.append("district IN %(districts)s")
+        geo_conditions.append("district IN %(districts)s")
         values["districts"] = tuple(districts)
 
-    where_clause = " AND ".join(conditions) if conditions else "1=1"
+    if geo_conditions and sol_ids:
+        geo_clause = " AND ".join(geo_conditions)
+        conditions.append(f"(({geo_clause}) OR sol_id IN %(sol_ids)s)")
+        values["sol_ids"] = tuple(sol_ids)
+    elif geo_conditions:
+        conditions.extend(geo_conditions)
+    elif sol_ids:
+        conditions.append("sol_id IN %(sol_ids)s")
+        values["sol_ids"] = tuple(sol_ids)
+    else:
+        return []
 
+    where_clause = " AND ".join(conditions)
     query = f"""
         SELECT sol_id, branch, zone, region, district, state
         FROM `tabSahayog Branch`

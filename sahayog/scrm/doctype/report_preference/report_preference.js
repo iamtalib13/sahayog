@@ -75,6 +75,19 @@ frappe.ui.form.on("Report Preference", {
     let sol_ids = (frm.doc.sol_id || []).map(d => String(d.sol_id)).filter(Boolean);
     if (!sol_ids.length && pref && pref.sol_ids) sol_ids = pref.sol_ids;
     frm.state.sol_ids = new Set(sol_ids);
+
+    let savedAccessType = frm.doc.access_type || (pref ? pref.access_type : null);
+    if (!savedAccessType) {
+      if (frm.state.sol_ids.size > 0 && frm.state.zones.size === 0 && frm.state.regions.size === 0) {
+        frm.state.access_type = "Specific Branches (SOL ID)";
+      } else {
+        frm.state.access_type = "Geographical (Zone / Region / District)";
+      }
+    } else if (savedAccessType === "Geographical (Zone / Region / District)" && frm.state.sol_ids.size > 0 && frm.state.zones.size === 0 && frm.state.regions.size === 0) {
+      frm.state.access_type = "Specific Branches (SOL ID)";
+    } else {
+      frm.state.access_type = savedAccessType;
+    }
   },
 
   sync_widget_state_to_doc: function (frm) {
@@ -89,13 +102,13 @@ frappe.ui.form.on("Report Preference", {
     frm.clear_table("district");
     frm.clear_table("sol_id");
 
-    if (frm.state.access_type === "Geographical (Zone / Region / District)") {
-      frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
-      frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
-      frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
-    } else {
-      frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
-    }
+    // Preserve zones, regions, districts
+    frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
+    frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
+    frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
+
+    // Preserve sol_ids
+    frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
   },
 
   auto_save_preference: function (frm, show_toast = true) {
@@ -281,11 +294,18 @@ frappe.ui.form.on("Report Preference", {
     // In Branch mode -> ALL master branches, with allowed/selected branches at the top!
     let displayBranches = [];
     if (isGeo) {
-      if (frm.state.zones.size > 0) {
+      let hasGeo = frm.state.zones.size > 0 || frm.state.regions.size > 0 || frm.state.districts.size > 0;
+      let hasSol = frm.state.sol_ids.size > 0;
+
+      if (hasGeo || hasSol) {
         displayBranches = allBranches.filter(b => {
-          let matchesZone = frm.state.zones.has(b.zone);
+          let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
           let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region);
-          return matchesZone && matchesRegion;
+          let matchesDistrict = frm.state.districts.size === 0 || frm.state.districts.has(b.district);
+          let matchesGeo = hasGeo && (matchesZone && matchesRegion && matchesDistrict);
+          let matchesSol = hasSol && frm.state.sol_ids.has(String(b.sol_id));
+
+          return matchesGeo || matchesSol;
         });
       }
     } else {

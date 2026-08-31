@@ -36,47 +36,50 @@ def get_user_sol_ids(user):
         return []
 
     rp = frappe.db.get_value("Report Preference", {"user": user, "enabled": 1}, "name")
+    if not rp and frappe.db.exists("Report Preference", user):
+        if frappe.db.get_value("Report Preference", user, "enabled"):
+            rp = user
+
     if not rp:
         return []
 
     doc = frappe.get_doc("Report Preference", rp)
-    access_type = doc.get("access_type") or "Geographical (Zone / Region / District)"
 
-    if access_type == "Specific Branches (SOL ID)":
-        return [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")]
-
-    # Geographical mode: dynamically query live branches from `Sahayog Branch`
+    # Pre-fetch all child records
     zones = [d.zone for d in doc.get("zone", []) if d.get("zone")]
     regions = [d.region for d in doc.get("region", []) if d.get("region")]
     states = [d.state for d in doc.get("state", []) if d.get("state")]
     districts = [d.district for d in doc.get("district", []) if d.get("district")]
     specific_sols = [str(d.sol_id) for d in doc.get("sol_id", []) if d.get("sol_id")]
 
-    conditions = []
+    # Build geo query conditions
+    geo_conditions = []
     values = {}
+
     if zones:
-        conditions.append("zone IN %(zones)s")
+        geo_conditions.append("zone IN %(zones)s")
         values["zones"] = tuple(zones)
     if regions:
-        conditions.append("region IN %(regions)s")
+        geo_conditions.append("region IN %(regions)s")
         values["regions"] = tuple(regions)
     if states:
-        conditions.append("state IN %(states)s")
+        geo_conditions.append("state IN %(states)s")
         values["states"] = tuple(states)
     if districts:
-        conditions.append("district IN %(districts)s")
+        geo_conditions.append("district IN %(districts)s")
         values["districts"] = tuple(districts)
 
-    if not conditions:
-        return specific_sols
+    db_sols = []
+    if geo_conditions:
+        where_clause = " AND ".join(["(branch_type IS NULL OR branch_type != 'Zonal')", "sol_id IS NOT NULL"] + geo_conditions)
+        db_sols = frappe.db.sql(
+            f"SELECT DISTINCT sol_id FROM `tabSahayog Branch` WHERE {where_clause}",
+            values,
+            pluck=True
+        )
 
-    where_clause = " AND ".join(conditions)
-    db_sols = frappe.db.sql(
-        f"SELECT DISTINCT sol_id FROM `tabSahayog Branch` WHERE {where_clause} AND sol_id IS NOT NULL",
-        values,
-        pluck=True
-    )
-    all_sols = list(set([str(s) for s in db_sols if s] + specific_sols))
+    # Union geo resolved sols with any specific sol_ids configured
+    all_sols = list(dict.fromkeys([str(s) for s in db_sols if s] + [str(s) for s in specific_sols if s]))
     return all_sols
 
 

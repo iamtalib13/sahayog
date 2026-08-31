@@ -124,11 +124,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         state.full_name = pref ? pref.full_name : "";
         state.enabled = pref && pref.enabled !== undefined ? pref.enabled : 1;
         state.tag = pref ? pref.tag : "";
-        state.access_type = pref && pref.access_type ? pref.access_type : "Geographical (Zone / Region / District)";
         state.zones = new Set(pref && pref.zones ? pref.zones : []);
         state.regions = new Set(pref && pref.regions ? pref.regions : []);
         state.districts = new Set(pref && pref.districts ? pref.districts : []);
         state.sol_ids = new Set(pref && pref.sol_ids ? pref.sol_ids : []);
+
+        // Smart access_type resolution:
+        let savedAccessType = pref ? pref.access_type : null;
+        if (!savedAccessType) {
+          if (state.sol_ids.size > 0 && state.zones.size === 0 && state.regions.size === 0) {
+            state.access_type = "Specific Branches (SOL ID)";
+          } else {
+            state.access_type = "Geographical (Zone / Region / District)";
+          }
+        } else if (savedAccessType === "Geographical (Zone / Region / District)" && state.sol_ids.size > 0 && state.zones.size === 0 && state.regions.size === 0) {
+          // If in DB it was set as Geographical, but only sol_ids exist (like 6880, 8751)
+          state.access_type = "Specific Branches (SOL ID)";
+        } else {
+          state.access_type = savedAccessType;
+        }
 
         renderPage();
       }
@@ -334,11 +348,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     let displayBranches = [];
     if (isGeo) {
-      if (state.zones.size > 0) {
+      let hasGeo = state.zones.size > 0 || state.regions.size > 0 || state.districts.size > 0;
+      let hasSol = state.sol_ids.size > 0;
+
+      if (hasGeo || hasSol) {
         displayBranches = allBranches.filter(b => {
-          let matchesZone = state.zones.has(b.zone);
+          let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
           let matchesRegion = state.regions.size === 0 || state.regions.has(b.region);
-          return matchesZone && matchesRegion;
+          let matchesDistrict = state.districts.size === 0 || state.districts.has(b.district);
+          let matchesGeo = hasGeo && (matchesZone && matchesRegion && matchesDistrict);
+          let matchesSol = hasSol && state.sol_ids.has(String(b.sol_id));
+
+          return matchesGeo || matchesSol;
         });
       }
     } else {
