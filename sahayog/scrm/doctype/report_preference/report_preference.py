@@ -36,16 +36,11 @@ class ReportPreference(Document):
         self.clean_mutually_exclusive_fields()
 
     def on_update(self):
-        # Invalidate cached permissions for this user
         frappe.cache().delete_value(f"user_allowed_sols:{self.user}")
         frappe.cache().delete_value(f"user_report_pref:{self.user}")
-        frappe.cache().delete_value(f"crm_branch_map:*")
+        frappe.cache().delete_value("crm_branch_map:*")
 
     def clean_mutually_exclusive_fields(self):
-        """
-        If Geographical mode is chosen, clear specific sol_id.
-        If Specific Branches mode is chosen, clear geographical filters.
-        """
         if self.access_type == "Geographical (Zone / Region / District)":
             self.set("sol_id", [])
         elif self.access_type == "Specific Branches (SOL ID)":
@@ -77,69 +72,175 @@ class ReportPreference(Document):
 
 
 @frappe.whitelist()
-def get_user_roles(user):
-    """Returns currently assigned department/finacle roles for user."""
-    if not user or not frappe.db.exists("User", user):
-        return []
-    current_roles = set(frappe.get_roles(user))
-    assigned_pills = [pill for pill, role in FINACLE_ROLES_MAP.items() if role in current_roles]
-    return assigned_pills
+def get_widget_meta(user=None):
+    """
+    Returns all metadata needed by the Pure HTML CRUD widget:
+    - Master lists of Zones, Regions, Districts, States, and all Branches
+    - Available department roles
+    - Current saved preference data for the specified user (if any)
+    """
+    # 1. Master options from Sahayog Branch
+    zones = frappe.db.sql(
+        "SELECT DISTINCT zone FROM `tabSahayog Branch` WHERE zone IS NOT NULL AND zone != '' ORDER BY zone ASC",
+        pluck=True
+    )
+    regions = frappe.db.sql(
+        "SELECT DISTINCT region FROM `tabSahayog Branch` WHERE region IS NOT NULL AND region != '' ORDER BY region ASC",
+        pluck=True
+    )
+    districts = frappe.db.sql(
+        "SELECT DISTINCT district FROM `tabSahayog Branch` WHERE district IS NOT NULL AND district != '' ORDER BY district ASC",
+        pluck=True
+    )
+    all_branches = frappe.get_all(
+        "Sahayog Branch",
+        fields=["sol_id", "branch", "zone", "region", "district"],
+        order_by="sol_id asc",
+        limit_page_length=2000
+    )
+
+    tags = ["COM", "ROM", "RM", "AZM", "ZM"]
+
+    roles_list = [
+        {"key": "HR", "label": "HR Report"},
+        {"key": "MIS", "label": "MIS Report"},
+        {"key": "Loan", "label": "Loan Report"},
+        {"key": "Audit", "label": "Audit Report"},
+        {"key": "Finance", "label": "Finance Report"},
+        {"key": "Operation", "label": "Operation Report"},
+        {"key": "TW", "label": "Two Wheeler Report"},
+        {"key": "Branch", "label": "Branch Report"},
+        {"key": "Admin", "label": "Report Admin"},
+        {"key": "Vigilance", "label": "Vigilance Report"},
+        {"key": "JLL", "label": "JLL Report"},
+        {"key": "IT", "label": "IT Report"},
+    ]
+
+    # 2. Existing preference and user roles if user is given
+    pref_data = None
+    assigned_roles = []
+
+    if user and frappe.db.exists("User", user):
+        user_roles = set(frappe.get_roles(user))
+        assigned_roles = [pill for pill, role_name in FINACLE_ROLES_MAP.items() if role_name in user_roles]
+
+        pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
+        if pref_name:
+            doc = frappe.get_doc("Report Preference", pref_name)
+            pref_data = {
+                "name": doc.name,
+                "user": doc.user,
+                "full_name": doc.full_name,
+                "enabled": bool(doc.enabled),
+                "tag": doc.tag or "",
+                "access_type": doc.access_type or "Geographical (Zone / Region / District)",
+                "zones": [d.zone for d in doc.get("zone", []) if d.zone],
+                "regions": [d.region for d in doc.get("region", []) if d.region],
+                "districts": [d.district for d in doc.get("district", []) if d.district],
+                "states": [d.state for d in doc.get("state", []) if d.state],
+                "sol_ids": [str(d.sol_id) for d in doc.get("sol_id", []) if d.sol_id],
+            }
+
+    return {
+        "master_zones": [z for z in zones if z],
+        "master_regions": [r for r in regions if r],
+        "master_districts": [d for d in districts if d],
+        "all_branches": all_branches,
+        "tags": tags,
+        "roles_list": roles_list,
+        "user_preference": pref_data,
+        "user_roles": assigned_roles,
+    }
 
 
 @frappe.whitelist()
-def sync_user_roles(user, roles):
-    """Sync department/finacle roles to User document."""
-    if not user:
-        return {"status": "error", "message": "User required"}
+def save_widget_preference(data):
+    """
+    Direct CRUD API for the HTML Widget.
+    Saves Report Preference and Syncs User Roles in a single atomic call.
+    """
+    if isinstance(data, str):
+        data = json.loads(data)
 
-    # Check permission
-    current_user_roles = set(frappe.get_roles(frappe.session.user))
-    can_manage = (
-        frappe.session.user == "Administrator"
-        or "System Manager" in current_user_roles
-        or "Permission Manager" in current_user_roles
-    )
-    if not can_manage:
-        frappe.throw(_("Access Denied: You do not have permission to sync user roles."))
+    user_id = data.get("user")
+    if not user_id:
+        frappe.throw(_("User is required"))
 
-    if isinstance(roles, str):
-        try:
-            roles = json.loads(roles)
-        except Exception:
-            roles = [r.strip() for r in roles.split(",") if r.strip()]
+    # Permission check
+    current_roles = set(frappe.get_roles(frappe.session.user))
+    if frappe.session.user != "Administrator" and not {"System Manager", "Permission Manager"}.intersection(current_roles):
+        frappe.throw(_("Access Denied: Only Administrators/System Managers can modify Report Preferences."))
 
-    roles = set(roles or [])
-    user_doc = frappe.get_doc("User", user)
-    existing_roles = {r.role for r in user_doc.roles}
+    # 1. Update/Create Report Preference
+    pref_name = frappe.db.get_value("Report Preference", {"user": user_id}, "name")
+    if pref_name:
+        doc = frappe.get_doc("Report Preference", pref_name)
+    else:
+        doc = frappe.new_doc("Report Preference")
+        doc.user = user_id
+
+    doc.enabled = 1 if data.get("enabled", True) else 0
+    doc.tag = data.get("tag") or ""
+    access_type = data.get("access_type") or "Geographical (Zone / Region / District)"
+    doc.access_type = access_type
+
+    doc.set("zone", [])
+    doc.set("region", [])
+    doc.set("district", [])
+    doc.set("state", [])
+    doc.set("sol_id", [])
+
+    if access_type == "Geographical (Zone / Region / District)":
+        for z in data.get("zones", []):
+            if z:
+                doc.append("zone", {"zone": z})
+        for r in data.get("regions", []):
+            if r:
+                doc.append("region", {"region": r})
+        for d in data.get("districts", []):
+            if d:
+                doc.append("district", {"district": d})
+    else:
+        for sol in data.get("sol_ids", []):
+            if sol:
+                doc.append("sol_id", {"sol_id": str(sol)})
+
+    frappe.flags.mute_messages = True
+    doc.save(ignore_permissions=True)
+
+    # 2. Sync User Roles
+    selected_roles = set(data.get("roles", []))
+    user_doc = frappe.get_doc("User", user_id)
+    existing_user_roles = {r.role for r in user_doc.roles}
     roles_changed = False
 
-    # Add selected
-    for pill in roles:
-        role_name = FINACLE_ROLES_MAP.get(pill)
-        if role_name and role_name not in existing_roles:
-            user_doc.add_roles(role_name)
+    for pill in selected_roles:
+        rname = FINACLE_ROLES_MAP.get(pill)
+        if rname and rname not in existing_user_roles:
+            user_doc.add_roles(rname)
             roles_changed = True
 
-    # Remove unselected mapped roles
-    for pill, role_name in FINACLE_ROLES_MAP.items():
-        if pill not in roles and role_name in existing_roles:
-            user_doc.remove_roles(role_name)
+    for pill, rname in FINACLE_ROLES_MAP.items():
+        if pill not in selected_roles and rname in existing_user_roles:
+            user_doc.remove_roles(rname)
             roles_changed = True
 
     if roles_changed:
-        frappe.flags.mute_messages = True
         user_doc.save(ignore_permissions=True)
-        frappe.flags.mute_messages = False
 
-    return {"status": "success", "roles": list(roles)}
+    frappe.flags.mute_messages = False
+    frappe.cache().delete_value(f"user_allowed_sols:{user_id}")
+    frappe.cache().delete_value(f"user_report_pref:{user_id}")
+
+    return {
+        "status": "success",
+        "name": doc.name,
+        "message": _("Report Preferences and Roles saved successfully!")
+    }
 
 
 @frappe.whitelist()
 def get_preview_branches(zones=None, regions=None, states=None, districts=None, sol_ids=None, access_type=None):
-    """
-    Returns list of matching branches from `Sahayog Branch` dynamically.
-    Used by the live table widget inside Report Preference.
-    """
     zones = _parse_input_list(zones)
     regions = _parse_input_list(regions)
     states = _parse_input_list(states)
@@ -157,7 +258,6 @@ def get_preview_branches(zones=None, regions=None, states=None, districts=None, 
             limit_page_length=500
         )
 
-    # Geographical mode
     if not (zones or regions or states or districts):
         return []
 
@@ -201,7 +301,6 @@ def _parse_input_list(val):
         parsed = []
         for item in val:
             if isinstance(item, dict):
-                # Handle Table MultiSelect rows e.g. {"zone": "Zone - 1"}
                 for k, v in item.items():
                     if k in ["zone", "region", "state", "district", "sol_id", "value", "name"] and v:
                         parsed.append(str(v).strip())
