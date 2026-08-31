@@ -544,10 +544,13 @@ frappe.ui.form.on("Report Preference", {
 
         .rp-tree-toggle-icon {
           display: inline-block;
+          width: 14px;
+          text-align: center;
           transition: transform 0.15s ease;
           font-size: 9px;
-          margin-right: 5px;
+          margin-right: 6px;
           color: #64748b;
+          user-select: none;
         }
         .rp-tree-toggle-icon.collapsed {
           transform: rotate(-90deg);
@@ -1139,6 +1142,7 @@ frappe.ui.form.on("Report Preference", {
                             ${distBranches.map(b => `
                               <tr class="rp-row-branch-leaf rp-child-of-${zKey} rp-child-of-${rKey} rp-child-of-${dKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-parent-dist="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}">
                                 <td>
+                                  <span class="rp-tree-toggle-icon" style="color: #94a3b8; font-size: 8px;">▸</span>
                                   <span class="rp-level-badge rp-level-badge-branch">Branch</span>
                                 </td>
                                 <td><span class="rp-tag-micro">${z}</span></td>
