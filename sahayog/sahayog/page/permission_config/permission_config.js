@@ -185,12 +185,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       let isSelected = state.zones.has(z);
       let zoneBranches = allBranches.filter(b => b.zone === z);
       let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
-      let hasSpecificRegions = state.regions.size > 0;
 
-      let activeRegions = zoneRegions;
-      if (hasSpecificRegions) {
-        activeRegions = zoneRegions.filter(r => state.regions.has(r));
-      }
+      // Only regions in state.regions for this zone
+      let activeRegions = zoneRegions.filter(r => state.regions.has(r));
+      let isAllRegionsAllowed = activeRegions.length === zoneRegions.length;
 
       let activeZoneBranches = zoneBranches.filter(b => activeRegions.includes(b.region));
       if (isSelected) {
@@ -210,7 +208,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         is_selected: isSelected,
         all_regions_count: zoneRegions.length,
         active_regions_count: activeRegions.length,
-        is_all_regions_allowed: !hasSpecificRegions,
+        is_all_regions_allowed: isAllRegionsAllowed,
         total_zone_branches: activeZoneBranches.length,
         all_zone_branches_count: zoneBranches.length,
         regions: regionDetails
@@ -508,6 +506,26 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           justify-content: space-between;
           align-items: center;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          transition: all 0.15s ease;
+        }
+        .min-tree-region-leaf:hover {
+          border-color: #86efac;
+          background: #f0fdf4;
+        }
+
+        .min-tree-remove-region {
+          cursor: pointer;
+          color: #94a3b8;
+          font-weight: bold;
+          font-size: 13px;
+          line-height: 1;
+          padding: 0 4px;
+          border-radius: 3px;
+          transition: all 0.15s ease;
+        }
+        .min-tree-remove-region:hover {
+          color: #dc2626;
+          background: #fee2e2;
         }
 
         .min-sol-box {
@@ -676,12 +694,17 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
                     <!-- Level 2: Region Leaves -->
                     <div class="min-tree-regions-container">
-                      ${item.regions.map(r => `
+                      ${item.regions.length > 0 ? item.regions.map(r => `
                         <div class="min-tree-region-leaf">
-                          <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
-                          <span style="color: #64748b; font-size: 10.5px; font-weight: 600;">${r.branch_count} Br</span>
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
+                            <span style="color: #64748b; font-size: 10px; font-weight: 600;">(${r.branch_count} Br)</span>
+                          </div>
+                          <span class="min-tree-remove-region" data-raw="${r.region}" title="Remove ${r.region}">×</span>
                         </div>
-                      `).join('')}
+                      `).join('') : `
+                        <div style="font-size: 10px; color: #94a3b8; font-style: italic; text-align: center; padding: 4px;">No regions selected</div>
+                      `}
                     </div>
                   ` : ''}
                 </div>
@@ -828,13 +851,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // Zone Chips & Tree Zone Nodes Click
+    // Zone Chips & Tree Zone Nodes Click: When Zone selected -> Auto-add all its regions by default!
     $m.find(".min-chip-zone, .min-tree-click-zone").on("click", function () {
       let z = $(this).data("raw");
+      let zoneBranches = allBranches.filter(b => b.zone === z);
+      let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean)));
+
       if (state.zones.has(z)) {
         state.zones.delete(z);
+        let remainingZoneRegions = new Set(allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
+        zoneRegions.forEach(r => {
+          if (!remainingZoneRegions.has(r)) {
+            state.regions.delete(r);
+          }
+        });
       } else {
         state.zones.add(z);
+        zoneRegions.forEach(r => state.regions.add(r));
       }
       renderPage();
       autoSave();
@@ -843,14 +876,16 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     $m.find("#min-chip-zone-all").on("click", function () {
       if (masterZones.every(z => state.zones.has(z))) {
         state.zones.clear();
+        state.regions.clear();
       } else {
         masterZones.forEach(z => state.zones.add(z));
+        allBranches.map(b => b.region).filter(Boolean).forEach(r => state.regions.add(r));
       }
       renderPage();
       autoSave();
     });
 
-    // Region Chips
+    // Region Chips Click
     $m.find(".min-chip-region").on("click", function () {
       let r = $(this).data("raw");
       if (state.regions.has(r)) {
@@ -858,6 +893,15 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       } else {
         state.regions.add(r);
       }
+      renderPage();
+      autoSave();
+    });
+
+    // Delete Region from Tree Leaf (× button)
+    $m.find(".min-tree-remove-region").on("click", function (e) {
+      e.stopPropagation();
+      let r = $(this).data("raw");
+      state.regions.delete(r);
       renderPage();
       autoSave();
     });
@@ -871,7 +915,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       }
 
       if (availableRegionNames.every(r => state.regions.has(r))) {
-        state.regions.clear();
+        availableRegionNames.forEach(r => state.regions.delete(r));
       } else {
         availableRegionNames.forEach(r => state.regions.add(r));
       }

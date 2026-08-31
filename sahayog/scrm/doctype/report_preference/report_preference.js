@@ -195,19 +195,17 @@ frappe.ui.form.on("Report Preference", {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
     let solList = Array.from(frm.state.sol_ids);
 
-    // Compute Connected Tree Data for ALL Zones (Default Disabled, Selected = Enabled Green)
+    // Compute Connected Tree Data for ALL Zones
     let totalGeoBranches = 0;
 
     let fullTreeData = sortedMasterZones.map(z => {
       let isSelected = frm.state.zones.has(z);
       let zoneBranches = allBranches.filter(b => b.zone === z);
       let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
-      let hasSpecificRegions = frm.state.regions.size > 0;
 
-      let activeRegions = zoneRegions;
-      if (hasSpecificRegions) {
-        activeRegions = zoneRegions.filter(r => frm.state.regions.has(r));
-      }
+      // Only regions that are in frm.state.regions for this zone
+      let activeRegions = zoneRegions.filter(r => frm.state.regions.has(r));
+      let isAllRegionsAllowed = activeRegions.length === zoneRegions.length;
 
       let activeZoneBranches = zoneBranches.filter(b => activeRegions.includes(b.region));
       if (isSelected) {
@@ -227,7 +225,7 @@ frappe.ui.form.on("Report Preference", {
         is_selected: isSelected,
         all_regions_count: zoneRegions.length,
         active_regions_count: activeRegions.length,
-        is_all_regions_allowed: !hasSpecificRegions,
+        is_all_regions_allowed: isAllRegionsAllowed,
         total_zone_branches: activeZoneBranches.length,
         all_zone_branches_count: zoneBranches.length,
         regions: regionDetails
@@ -446,7 +444,6 @@ frappe.ui.form.on("Report Preference", {
           user-select: none;
         }
 
-        /* By Default Disabled Style */
         .min-tree-zone-node.disabled {
           background: #f1f5f9;
           border: 1.5px dashed #cbd5e1;
@@ -463,7 +460,6 @@ frappe.ui.form.on("Report Preference", {
           color: #64748b;
         }
 
-        /* Enabled Green Style */
         .min-tree-zone-node.enabled {
           background: #ffffff;
           border: 2px solid #16a34a;
@@ -526,6 +522,26 @@ frappe.ui.form.on("Report Preference", {
           justify-content: space-between;
           align-items: center;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+          transition: all 0.15s ease;
+        }
+        .min-tree-region-leaf:hover {
+          border-color: #86efac;
+          background: #f0fdf4;
+        }
+
+        .min-tree-remove-region {
+          cursor: pointer;
+          color: #94a3b8;
+          font-weight: bold;
+          font-size: 13px;
+          line-height: 1;
+          padding: 0 4px;
+          border-radius: 3px;
+          transition: all 0.15s ease;
+        }
+        .min-tree-remove-region:hover {
+          color: #dc2626;
+          background: #fee2e2;
         }
 
         .min-sol-box {
@@ -699,12 +715,17 @@ frappe.ui.form.on("Report Preference", {
 
                     <!-- Level 2: Region Leaves -->
                     <div class="min-tree-regions-container">
-                      ${item.regions.map(r => `
+                      ${item.regions.length > 0 ? item.regions.map(r => `
                         <div class="min-tree-region-leaf">
-                          <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
-                          <span style="color: #64748b; font-size: 10.5px; font-weight: 600;">${r.branch_count} Br</span>
+                          <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
+                            <span style="color: #64748b; font-size: 10px; font-weight: 600;">(${r.branch_count} Br)</span>
+                          </div>
+                          <span class="min-tree-remove-region" data-raw="${r.region}" title="Remove ${r.region}">×</span>
                         </div>
-                      `).join('')}
+                      `).join('') : `
+                        <div style="font-size: 10px; color: #94a3b8; font-style: italic; text-align: center; padding: 4px;">No regions selected</div>
+                      `}
                     </div>
                   ` : ''}
                 </div>
@@ -869,13 +890,25 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Zone Chips & Tree Zone Nodes Click
+    // Zone Chips & Tree Zone Nodes Click: When Zone selected -> Auto-add all its regions by default!
     $w.find(".min-chip-zone, .min-tree-click-zone").on("click", function () {
       let z = $(this).data("raw");
+      let zoneBranches = allBranches.filter(b => b.zone === z);
+      let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean)));
+
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
+        // Remove regions that only belonged to this zone
+        let remainingZoneRegions = new Set(allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
+        zoneRegions.forEach(r => {
+          if (!remainingZoneRegions.has(r)) {
+            frm.state.regions.delete(r);
+          }
+        });
       } else {
         frm.state.zones.add(z);
+        // Default: Auto-select all regions of this newly added zone!
+        zoneRegions.forEach(r => frm.state.regions.add(r));
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
@@ -884,14 +917,16 @@ frappe.ui.form.on("Report Preference", {
     $w.find("#min-chip-zone-all").on("click", function () {
       if (masterZones.every(z => frm.state.zones.has(z))) {
         frm.state.zones.clear();
+        frm.state.regions.clear();
       } else {
         masterZones.forEach(z => frm.state.zones.add(z));
+        allBranches.map(b => b.region).filter(Boolean).forEach(r => frm.state.regions.add(r));
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
     });
 
-    // Region Chips
+    // Region Chips Click
     $w.find(".min-chip-region").on("click", function () {
       let r = $(this).data("raw");
       if (frm.state.regions.has(r)) {
@@ -899,6 +934,15 @@ frappe.ui.form.on("Report Preference", {
       } else {
         frm.state.regions.add(r);
       }
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    // Delete Region from Tree Leaf (× button)
+    $w.find(".min-tree-remove-region").on("click", function (e) {
+      e.stopPropagation();
+      let r = $(this).data("raw");
+      frm.state.regions.delete(r);
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
     });
@@ -912,7 +956,7 @@ frappe.ui.form.on("Report Preference", {
       }
 
       if (availableRegionNames.every(r => frm.state.regions.has(r))) {
-        frm.state.regions.clear();
+        availableRegionNames.forEach(r => frm.state.regions.delete(r));
       } else {
         availableRegionNames.forEach(r => frm.state.regions.add(r));
       }
