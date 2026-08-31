@@ -32,40 +32,77 @@ def validate_page_access():
 
 
 @frappe.whitelist()
-def get_all_preferences():
+def get_paginated_users(search=None, page=1, page_size=20):
     validate_page_access()
-    """Return all Report Preference records with user details for list display."""
-    prefs = frappe.get_all(
-        "Report Preference",
-        fields=["name", "user", "modified", "tag", "enabled", "access_type"],
-        order_by="modified desc",
-        limit_page_length=0,
-    )
+    try:
+        page = max(1, int(page))
+        page_size = min(100, max(1, int(page_size)))
+    except (ValueError, TypeError):
+        page = 1
+        page_size = 20
 
-    all_users = frappe.get_all("User", filters={"enabled": 1, "user_type": "System User"}, fields=["name", "full_name"])
-    user_names = {u.name: (u.full_name or u.name.split("@")[0]) for u in all_users}
+    offset = (page - 1) * page_size
+    search_term = f"%{search.strip()}%" if search and search.strip() else None
 
-    configured_user_ids = set()
-    for p in prefs:
-        configured_user_ids.add(p["user"])
-        p["full_name"] = user_names.get(p["user"]) or frappe.db.get_value("User", p["user"], "full_name") or p["user"].split("@")[0]
-        p["is_configured"] = True
+    query_conditions = ["u.enabled = 1", "u.user_type = 'System User'", "u.name NOT IN ('Guest')"]
+    params = {"page_size": page_size, "offset": offset}
 
-    unconfigured = []
-    for u in all_users:
-        if u.name not in configured_user_ids and u.name not in ("Guest",):
-            unconfigured.append({
-                "name": None,
-                "user": u.name,
-                "full_name": u.full_name or u.name.split("@")[0],
-                "tag": "",
-                "enabled": 0,
-                "access_type": "Geographical (Zone / Region / District)",
-                "is_configured": False
-            })
+    if search_term:
+        query_conditions.append(
+            "(u.name LIKE %(search)s OR u.full_name LIKE %(search)s OR rp.tag LIKE %(search)s)"
+        )
+        params["search"] = search_term
 
-    unconfigured.sort(key=lambda x: (x["full_name"] or "").lower())
-    return prefs + unconfigured
+    where_clause = " AND ".join(query_conditions)
+
+    # 1. Fast Total Count
+    count_sql = f"""
+        SELECT COUNT(u.name)
+        FROM `tabUser` u
+        LEFT JOIN `tabReport Preference` rp ON rp.user = u.name
+        WHERE {where_clause}
+    """
+    total_count = frappe.db.sql(count_sql, params)[0][0] or 0
+
+    # 2. Paginated Data with Limit & Offset (Strict 20 rows)
+    data_sql = f"""
+        SELECT
+            u.name as user,
+            COALESCE(NULLIF(u.full_name, ''), SUBSTRING_INDEX(u.name, '@', 1)) as full_name,
+            rp.name as pref_name,
+            rp.tag,
+            rp.enabled as pref_enabled,
+            rp.access_type,
+            rp.modified,
+            IF(rp.name IS NOT NULL, 1, 0) as is_configured
+        FROM `tabUser` u
+        LEFT JOIN `tabReport Preference` rp ON rp.user = u.name
+        WHERE {where_clause}
+        ORDER BY
+            is_configured DESC,
+            rp.modified DESC,
+            full_name ASC
+        LIMIT %(page_size)s OFFSET %(offset)s
+    """
+    rows = frappe.db.sql(data_sql, params, as_dict=True)
+
+    for r in rows:
+        r["enabled"] = r.get("pref_enabled") if r.get("is_configured") else 0
+
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
+
+    return {
+        "users": rows,
+        "total_count": total_count,
+        "total_pages": total_pages,
+        "page": page,
+        "page_size": page_size
+    }
+
+
+@frappe.whitelist()
+def get_all_preferences():
+    return get_paginated_users(page=1, page_size=20)
 
 
 @frappe.whitelist()

@@ -41,31 +41,54 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     regions: new Set(),
     districts: new Set(),
     sol_ids: new Set(),
-    pref_list: [],
     meta_data: {},
-    search_query: "",
+
+    // Strong Server-Side Pagination State
+    users: [],
+    total_count: 0,
+    total_pages: 1,
     current_page: 1,
-    page_size: 20
+    page_size: 20,
+    search_query: "",
+    search_timer: null,
+    is_loading_list: false
   };
 
   function initPage() {
-    loadUserList(() => {
+    fetchUserPage(1, "", () => {
       const route = frappe.get_route();
       if (route[2]) {
         selectUser(route[2]);
-      } else if (state.pref_list.length > 0) {
-        selectUser(state.pref_list[0].user);
+      } else if (state.users.length > 0) {
+        selectUser(state.users[0].user);
       } else {
         renderPage();
       }
     });
   }
 
-  function loadUserList(callback) {
+  // Pure Server-Side Pagination API Caller with SQL Limit & Offset
+  function fetchUserPage(pageNo, searchQuery, callback) {
+    state.is_loading_list = true;
+    state.current_page = pageNo || 1;
+    state.search_query = searchQuery !== undefined ? searchQuery : state.search_query;
+
     frappe.call({
-      method: "sahayog.sahayog.page.permission_config.permission_config.get_all_preferences",
+      method: "sahayog.sahayog.page.permission_config.permission_config.get_paginated_users",
+      args: {
+        page: state.current_page,
+        page_size: state.page_size,
+        search: state.search_query || ""
+      },
       callback: (r) => {
-        state.pref_list = r.message || [];
+        state.is_loading_list = false;
+        let data = r.message || {};
+        state.users = data.users || [];
+        state.total_count = data.total_count || 0;
+        state.total_pages = data.total_pages || 1;
+        state.current_page = data.page || 1;
+
+        renderSideListOnly();
         if (callback) callback();
       }
     });
@@ -124,12 +147,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           }, 1200);
         }
 
-        // Update list status in memory
-        let found = state.pref_list.find(x => x.user === state.user);
+        // Update list status in memory without re-fetching
+        let found = state.users.find(x => x.user === state.user);
         if (found) {
           found.tag = state.tag;
           found.enabled = state.enabled;
-          found.is_configured = true;
+          found.is_configured = 1;
         }
 
         renderSideListOnly();
@@ -150,41 +173,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         if (!values.user) return;
         d.hide();
         selectUser(values.user);
+        fetchUserPage(1, values.user);
       }
     });
     d.show();
   }
 
-  function getFilteredUsers() {
-    let q = (state.search_query || "").toLowerCase().trim();
-    if (!q) return state.pref_list;
-    return state.pref_list.filter(item => {
-      let name = (item.full_name || "").toLowerCase();
-      let user = (item.user || "").toLowerCase();
-      let tag = (item.tag || "").toLowerCase();
-      return name.includes(q) || user.includes(q) || tag.includes(q);
-    });
-  }
-
   function renderSideListOnly() {
-    let filtered = getFilteredUsers();
-    let totalItems = filtered.length;
-    let totalPages = Math.max(1, Math.ceil(totalItems / state.page_size));
-
-    if (state.current_page > totalPages) {
-      state.current_page = totalPages;
-    }
-
+    let items = state.users || [];
     let startIdx = (state.current_page - 1) * state.page_size;
-    let endIdx = Math.min(startIdx + state.page_size, totalItems);
-    let pageItems = filtered.slice(startIdx, endIdx);
+    let endIdx = Math.min(startIdx + items.length, state.total_count);
 
-    let itemsHtml = pageItems.map(item => {
+    let itemsHtml = items.map(item => {
       let isSelected = state.user === item.user;
       let shortName = item.full_name || item.user.split('@')[0];
       let empId = item.user.split('@')[0];
-      let isConfigured = item.is_configured !== false;
-      let isEnabled = item.enabled !== 0;
+      let isConfigured = item.is_configured == 1;
+      let isEnabled = item.enabled == 1;
 
       return `
         <div class="min-side-user-item ${isSelected ? 'active' : ''}" data-user="${item.user}">
@@ -200,22 +205,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </div>
           <div class="min-side-user-status">
             ${isConfigured ? (
-              isEnabled ? '<span title="Enabled" style="color: #16a34a; font-size: 10px;">🟢</span>' : '<span title="Disabled" style="color: #94a3b8; font-size: 10px;">⚪</span>'
+              isEnabled ? '<span title="Configured & Active" style="color: #16a34a; font-size: 10px;">🟢</span>' : '<span title="Configured & Inactive" style="color: #94a3b8; font-size: 10px;">⚪</span>'
             ) : '<span title="Not Configured" style="color: #f59e0b; font-size: 10px;">🟡</span>'}
           </div>
         </div>
       `;
     }).join('');
 
-    if (pageItems.length === 0) {
+    if (items.length === 0) {
       itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No users found</div>`;
     }
 
     page.main.find("#min-side-user-list").html(itemsHtml);
-    page.main.find("#min-side-page-info").text(`${startIdx + 1 > totalItems ? 0 : startIdx + 1}-${endIdx} of ${totalItems}`);
-    page.main.find("#min-side-page-num").text(`Page ${state.current_page}/${totalPages}`);
+    page.main.find("#min-side-header-count").text(state.total_count);
+    page.main.find("#min-side-page-info").text(`${state.total_count === 0 ? 0 : startIdx + 1}-${endIdx} of ${state.total_count}`);
+    page.main.find("#min-side-page-num").text(`Page ${state.current_page}/${state.total_pages}`);
     page.main.find("#min-side-btn-prev").prop("disabled", state.current_page <= 1);
-    page.main.find("#min-side-btn-next").prop("disabled", state.current_page >= totalPages);
+    page.main.find("#min-side-btn-next").prop("disabled", state.current_page >= state.total_pages);
 
     // Attach click to side items
     page.main.find(".min-side-user-item").on("click", function () {
@@ -306,7 +312,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           min-height: calc(100vh - 160px);
         }
 
-        /* 1. LEFT SIDE PANEL (20 Items Pagination & Search) */
+        /* 1. LEFT SIDE PANEL (Strong 20 Items Server-Side Pagination & Debounce Search) */
         .min-side-panel {
           width: 290px;
           min-width: 290px;
@@ -680,10 +686,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       </style>
 
       <div class="min-perm-layout">
-        <!-- 1. LEFT SIDEBAR PANEL (20-Item Pagination) -->
+        <!-- 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination) -->
         <div class="min-side-panel">
           <div class="min-side-header">
-            <span class="min-side-title">👥 Users (${state.pref_list.length})</span>
+            <span class="min-side-title">👥 Users (<b id="min-side-header-count">${state.total_count}</b>)</span>
             <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add User</button>
           </div>
 
@@ -898,11 +904,13 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       });
     }
 
-    // Side Search Input
+    // Debounced Search Input (300ms delay to eliminate server load)
     $m.find("#min-side-search-input").on("input", function () {
-      state.search_query = $(this).val();
-      state.current_page = 1;
-      renderSideListOnly();
+      let query = $(this).val();
+      clearTimeout(state.search_timer);
+      state.search_timer = setTimeout(() => {
+        fetchUserPage(1, query);
+      }, 300);
     });
 
     // Side Add User Button
@@ -910,20 +918,16 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       showSelectUserDialog();
     });
 
-    // Side Pagination Buttons (20 items per page)
+    // Side Pagination Buttons (Server-side fetch for target page only)
     $m.find("#min-side-btn-prev").on("click", function () {
       if (state.current_page > 1) {
-        state.current_page--;
-        renderSideListOnly();
+        fetchUserPage(state.current_page - 1);
       }
     });
 
     $m.find("#min-side-btn-next").on("click", function () {
-      let filtered = getFilteredUsers();
-      let totalPages = Math.max(1, Math.ceil(filtered.length / state.page_size));
-      if (state.current_page < totalPages) {
-        state.current_page++;
-        renderSideListOnly();
+      if (state.current_page < state.total_pages) {
+        fetchUserPage(state.current_page + 1);
       }
     });
 
