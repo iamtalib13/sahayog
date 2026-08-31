@@ -32,7 +32,7 @@ def validate_page_access():
 
 
 @frappe.whitelist()
-def get_paginated_users(search=None, page=1, page_size=20):
+def get_paginated_users(search=None, designation=None, branch=None, page=1, page_size=20):
     validate_page_access()
     try:
         page = max(1, int(page))
@@ -53,9 +53,17 @@ def get_paginated_users(search=None, page=1, page_size=20):
     ]
     params = {"page_size": page_size, "offset": offset}
 
+    if designation and designation.strip():
+        query_conditions.append("e.designation = %(designation)s")
+        params["designation"] = designation.strip()
+
+    if branch and branch.strip():
+        query_conditions.append("(e.sahayog_branch = %(branch)s OR sb.branch = %(branch)s)")
+        params["branch"] = branch.strip()
+
     if search_term:
         query_conditions.append(
-            "(e.name LIKE %(search)s OR e.employee_name LIKE %(search)s OR e.user_id LIKE %(search)s OR rp.tag LIKE %(search)s OR e.designation LIKE %(search)s)"
+            "(e.name LIKE %(search)s OR e.employee_name LIKE %(search)s OR e.user_id LIKE %(search)s OR rp.tag LIKE %(search)s OR e.designation LIKE %(search)s OR e.sahayog_branch LIKE %(search)s OR sb.branch LIKE %(search)s)"
         )
         params["search"] = search_term
 
@@ -65,6 +73,7 @@ def get_paginated_users(search=None, page=1, page_size=20):
     count_sql = f"""
         SELECT COUNT(e.name)
         FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = e.sahayog_branch
         LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
     """
@@ -77,6 +86,8 @@ def get_paginated_users(search=None, page=1, page_size=20):
             e.employee_name as full_name,
             e.name as employee_id,
             e.designation,
+            e.sahayog_branch as sol_id,
+            COALESCE(sb.branch, '') as branch_name,
             rp.name as pref_name,
             rp.tag,
             rp.enabled as pref_enabled,
@@ -84,6 +95,7 @@ def get_paginated_users(search=None, page=1, page_size=20):
             rp.modified,
             IF(rp.name IS NOT NULL, 1, 0) as is_configured
         FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = e.sahayog_branch
         LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
         ORDER BY
@@ -105,6 +117,37 @@ def get_paginated_users(search=None, page=1, page_size=20):
         "total_pages": total_pages,
         "page": page,
         "page_size": page_size
+    }
+
+
+@frappe.whitelist()
+def get_employee_filters_meta():
+    validate_page_access()
+    """Return distinct designations and branches for active employees sidebar filtering."""
+    designations = frappe.db.sql(
+        """
+        SELECT DISTINCT designation
+        FROM `tabEmployee`
+        WHERE status = 'Active' AND designation IS NOT NULL AND designation != ''
+        ORDER BY designation ASC
+        """,
+        pluck=True
+    )
+
+    branches = frappe.db.sql(
+        """
+        SELECT DISTINCT sb.sol_id, sb.branch
+        FROM `tabEmployee` e
+        INNER JOIN `tabSahayog Branch` sb ON sb.sol_id = e.sahayog_branch
+        WHERE e.status = 'Active' AND (sb.branch_type IS NULL OR sb.branch_type != 'Zonal')
+        ORDER BY sb.sol_id ASC
+        """,
+        as_dict=True
+    )
+
+    return {
+        "designations": designations,
+        "branches": branches
     }
 
 
