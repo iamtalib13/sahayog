@@ -103,54 +103,35 @@ frappe.ui.form.on("Report Preference", {
 
     frm.trigger("sync_widget_state_to_doc");
 
-    let $saveBtn = frm.fields_dict.widget_html.$wrapper.find("#min-btn-save-manual");
-    if ($saveBtn.length) {
+    let $saveBtn = frm.fields_dict.widget_html ? frm.fields_dict.widget_html.$wrapper.find("#min-btn-save-manual") : null;
+    if ($saveBtn && $saveBtn.length) {
       $saveBtn.text("Saving...").prop("disabled", true);
     }
 
-    frappe.call({
-      method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
-      args: {
-        data: {
-          user: frm.state.user,
-          enabled: frm.state.enabled,
-          tag: frm.state.tag,
-          access_type: frm.state.access_type,
-          zones: Array.from(frm.state.zones),
-          regions: Array.from(frm.state.regions),
-          districts: Array.from(frm.state.districts),
-          sol_ids: Array.from(frm.state.sol_ids)
-        }
-      },
-      callback: function (r) {
-        if ($saveBtn.length) {
-          $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("color", "#fff");
-          setTimeout(() => {
-            $saveBtn.text("Save").css("background", "").css("color", "");
-          }, 1200);
-        }
-        if (r.message && r.message.status === "success") {
-          if (r.message.doc) {
-            frappe.model.sync(r.message.doc);
-            if (frm.docname === r.message.name) {
-              frm.doc.modified = r.message.doc.modified;
-              frm.doc.creation = r.message.doc.creation;
-              frm.doc.__last_sync_on = r.message.doc.modified;
-            }
-          }
-          if (frm.dirty) {
-            frm.dirty(false);
-          }
-          if (show_toast) {
-            frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
-          }
-        }
+    frm.save("Save", function () {
+      if ($saveBtn && $saveBtn.length) {
+        $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("color", "#fff");
+        setTimeout(() => {
+          $saveBtn.text("Save").css("background", "").css("color", "");
+        }, 1200);
+      }
+      if (show_toast) {
+        frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
+      }
+    }, null, function () {
+      if ($saveBtn && $saveBtn.length) {
+        $saveBtn.text("Save").prop("disabled", false).css("background", "").css("color", "");
       }
     });
   },
 
   before_save: function (frm) {
     frm.trigger("sync_widget_state_to_doc");
+  },
+
+  after_save: function (frm) {
+    frm.trigger("sync_doc_to_widget_state");
+    frm.trigger("render_minimal_widget");
   },
 
   render_minimal_widget: function (frm) {
