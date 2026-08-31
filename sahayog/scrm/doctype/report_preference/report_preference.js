@@ -627,23 +627,13 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Zone Chips Click: Auto-add all regions of newly selected zone!
+    // Zone Chips Click: Toggle Zone without auto-selecting regions
     $w.find(".min-chip-zone").on("click", function () {
       let z = $(this).data("raw");
-      let zoneBranches = allBranches.filter(b => b.zone === z);
-      let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean)));
-
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
-        let remainingZoneRegions = new Set(allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
-        zoneRegions.forEach(r => {
-          if (!remainingZoneRegions.has(r)) {
-            frm.state.regions.delete(r);
-          }
-        });
       } else {
         frm.state.zones.add(z);
-        zoneRegions.forEach(r => frm.state.regions.add(r));
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
@@ -652,10 +642,8 @@ frappe.ui.form.on("Report Preference", {
     $w.find("#min-chip-zone-all").on("click", function () {
       if (masterZones.every(z => frm.state.zones.has(z))) {
         frm.state.zones.clear();
-        frm.state.regions.clear();
       } else {
         masterZones.forEach(z => frm.state.zones.add(z));
-        allBranches.map(b => b.region).filter(Boolean).forEach(r => frm.state.regions.add(r));
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
