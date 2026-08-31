@@ -162,6 +162,21 @@ frappe.ui.form.on("Report Preference", {
           color: var(--rp-primary);
           border-color: #cbd5e1;
         }
+        .rp-btn-danger-ghost {
+          background: transparent;
+          border: 1px solid #fecaca;
+          border-radius: 6px;
+          padding: 5px 12px;
+          font-size: 12px;
+          font-weight: 600;
+          color: #dc2626;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .rp-btn-danger-ghost:hover {
+          background: #fef2f2;
+          border-color: #f87171;
+        }
         .rp-btn-primary {
           background: #0f172a;
           color: #ffffff;
@@ -488,6 +503,9 @@ frappe.ui.form.on("Report Preference", {
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" class="rp-btn-danger-ghost" id="rp-btn-reset-all" title="Clear all zones, regions & save empty state">
+                🔄 Reset & Clear All
+              </button>
               <button type="button" class="rp-btn-ghost" id="rp-btn-discard">Discard</button>
               <button type="button" class="rp-btn-primary" id="rp-btn-direct-save">
                 <span>💾</span>
@@ -694,6 +712,56 @@ frappe.ui.form.on("Report Preference", {
           }
         }
       });
+    });
+
+    // Reset & Clear All Button
+    $w.find("#rp-btn-reset-all").on("click", function () {
+      if (!frm.state.user) {
+        frm.state.zones.clear();
+        frm.state.regions.clear();
+        frm.state.districts.clear();
+        frm.state.sol_ids.clear();
+        frm.state.tag = "";
+        frm.trigger("render_full_crud_widget");
+        frm.trigger("calculate_and_render_branches");
+        frappe.show_alert({ message: __("Filters cleared."), indicator: "blue" });
+        return;
+      }
+
+      frappe.confirm(
+        __(`Are you sure you want to <b>Reset and Clear all branch permissions</b> for <b>${frm.state.user}</b>?<br><br><small class="text-muted">This will revoke all assigned Zones/Regions and save the cleared state.</small>`),
+        () => {
+          frm.state.zones.clear();
+          frm.state.regions.clear();
+          frm.state.districts.clear();
+          frm.state.sol_ids.clear();
+          frm.state.tag = "";
+
+          frappe.call({
+            method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
+            args: {
+              data: {
+                user: frm.state.user,
+                enabled: frm.state.enabled,
+                tag: "",
+                access_type: "Geographical (Zone / Region / District)",
+                zones: [],
+                regions: [],
+                districts: [],
+                sol_ids: []
+              }
+            },
+            freeze: true,
+            freeze_message: __("Resetting Preferences & Permissions..."),
+            callback: function (r) {
+              if (r.message && r.message.status === "success") {
+                frappe.show_alert({ message: __("Preferences reset and saved successfully!"), indicator: "blue" });
+                frm.reload_doc();
+              }
+            }
+          });
+        }
+      );
     });
 
     $w.find("#rp-btn-discard").on("click", function () {
