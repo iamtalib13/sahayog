@@ -188,12 +188,12 @@ frappe.ui.form.on("Report Preference", {
           gap: 6px;
         }
 
-        /* Row 1: Top Dual Cards */
+        /* Row 1: Top Dual Cards - Compact Slim Design */
         .f16-top-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 22px;
+          grid-template-columns: 1.15fr 1fr;
+          gap: 10px;
+          margin-bottom: 14px;
         }
         @media (max-width: 900px) {
           .f16-top-grid {
@@ -201,86 +201,88 @@ frappe.ui.form.on("Report Preference", {
           }
         }
 
-        /* Scope Banner Card (Left) */
+        /* Scope Banner Card (Left) - Slim */
         .f16-scope-card {
           background: linear-gradient(135deg, #cbeafe 0%, #e0f2fe 100%);
           border: 1px solid #93c5fd;
-          border-radius: 14px;
-          padding: 16px 20px;
+          border-radius: 10px;
+          padding: 7px 12px;
           display: flex;
           align-items: center;
-          gap: 16px;
-          box-shadow: 0 2px 8px rgba(186, 230, 253, 0.35);
+          gap: 10px;
+          box-shadow: 0 1px 3px rgba(186, 230, 253, 0.35);
         }
         .f16-scope-icon-wrap {
-          width: 52px;
-          height: 52px;
+          width: 32px;
+          height: 32px;
           background: #ffffff;
           border: 1px solid #bfdbfe;
-          border-radius: 12px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 26px;
+          font-size: 16px;
           color: #0284c7;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+          flex-shrink: 0;
         }
         .f16-scope-title {
-          font-size: 13.5px;
+          font-size: 10.5px;
           font-weight: 800;
-          letter-spacing: 0.05em;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
           color: #0369a1;
-          margin-bottom: 6px;
+          margin-bottom: 2px;
         }
         .f16-scope-toggle-wrap {
           display: inline-flex;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
           background: #ffffff;
-          padding: 4px 12px;
+          padding: 2px 8px;
           border-radius: 9999px;
           border: 1px solid #bfdbfe;
-          font-size: 11.5px;
+          font-size: 11px;
           font-weight: 700;
         }
 
-        /* Action Console Card (Right) */
+        /* Action Console Card (Right) - Slim */
         .f16-action-console {
           background: #f1f5f9;
           border: 1px solid var(--f16-border-strong);
-          border-radius: 14px;
-          padding: 16px 20px;
+          border-radius: 10px;
+          padding: 7px 12px;
           display: flex;
-          flex-direction: column;
+          align-items: center;
           justify-content: space-between;
-          gap: 10px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          gap: 8px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .f16-console-header {
-          font-size: 13px;
+          font-size: 11.5px;
           font-weight: 700;
           color: #0f172a;
+          white-space: nowrap;
         }
         .f16-console-btn-group {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 5px;
           flex-wrap: wrap;
+          justify-content: flex-end;
         }
         .f16-btn-outline {
           background: #ffffff;
           border: 1px solid var(--f16-border-strong);
-          border-radius: 8px;
-          padding: 6px 14px;
-          font-size: 11.5px;
+          border-radius: 6px;
+          padding: 4px 9px;
+          font-size: 11px;
           font-weight: 600;
           color: #334155;
           cursor: pointer;
           transition: all 0.15s ease;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
         }
         .f16-btn-outline:hover {
           background: #f8fafc;
@@ -291,29 +293,29 @@ frappe.ui.form.on("Report Preference", {
           background: #0f2942;
           color: #ffffff;
           border: 1px solid #0f2942;
-          border-radius: 8px;
-          padding: 7px 18px;
-          font-size: 11.5px;
+          border-radius: 6px;
+          padding: 4px 12px;
+          font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.03em;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.15s ease;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          box-shadow: 0 2px 6px rgba(15, 41, 66, 0.25);
+          gap: 4px;
+          box-shadow: 0 1px 3px rgba(15, 41, 66, 0.2);
         }
         .f16-btn-save-primary:hover {
           background: #1e3a5f;
         }
 
-        /* Row 2: User Profile Configuration (4 Cards Grid) */
+        /* Row 2: User Profile Configuration (4 Cards Grid) - Compact */
         .f16-user-profile-grid {
           display: grid;
-          grid-template-columns: 1.4fr 1.3fr 1.3fr 1.1fr;
-          gap: 14px;
-          margin-bottom: 22px;
+          grid-template-columns: 1.4fr 1.2fr 1.2fr 1fr;
+          gap: 10px;
+          margin-bottom: 14px;
         }
         @media (max-width: 990px) {
           .f16-user-profile-grid {
@@ -329,13 +331,13 @@ frappe.ui.form.on("Report Preference", {
         .f16-subcard {
           background: #ffffff;
           border: 1px solid var(--f16-border-strong);
-          border-radius: 12px;
-          padding: 12px 16px;
+          border-radius: 10px;
+          padding: 8px 12px;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          min-height: 72px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          min-height: 56px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
           position: relative;
         }
         .f16-subcard-label {
@@ -645,27 +647,27 @@ frappe.ui.form.on("Report Preference", {
           <span>USER MANAGEMENT DASHBOARD</span>
         </div>
 
-        <!-- ROW 1: TOP DUAL CARDS -->
+        <!-- ROW 1: TOP DUAL CARDS (COMPACT & SLIM) -->
         <div class="f16-top-grid">
           <!-- Left Card: Admin & Permission Scope -->
           <div class="f16-scope-card">
             <div class="f16-scope-icon-wrap">
               <span>🛡️</span>
             </div>
-            <div>
+            <div style="flex: 1; min-width: 0;">
               <div class="f16-scope-title">ADMIN & PERMISSION SCOPE</div>
               <div class="f16-scope-toggle-wrap">
-                <div class="f16-switch" id="f16-toggle-scope-mode">
+                <div class="f16-switch" id="f16-toggle-scope-mode" style="width:28px; height:16px;">
                   <div class="f16-switch-track ${isGeo ? 'active' : ''}">
-                    <div class="f16-switch-thumb"></div>
+                    <div class="f16-switch-thumb" style="width:12px; height:12px; top:2px; left:2px; ${isGeo ? 'transform:translateX(12px);' : ''}"></div>
                   </div>
                 </div>
-                <span style="color: ${isGeo ? '#0369a1' : '#64748b'}; font-weight: 700;">
-                  ${isGeo ? 'GEOGRAPHICAL SCOPE' : 'Branch-Level View'}
+                <span style="color: ${isGeo ? '#0369a1' : '#64748b'}; font-weight: 700; white-space: nowrap;">
+                  ${isGeo ? 'Geographical Scope' : 'SOL-Wise Scope'}
                 </span>
                 <span style="color: #cbd5e1;">|</span>
-                <span style="color: ${!isGeo ? '#0369a1' : '#64748b'}; font-weight: 500; cursor: pointer;" id="f16-btn-switch-branch-view">
-                  ${isGeo ? 'Switch to Branch-Level View' : 'Switch to Geographical Scope'}
+                <span style="color: #0284c7; font-weight: 600; cursor: pointer; text-decoration: underline; white-space: nowrap;" id="f16-btn-switch-branch-view">
+                  ${isGeo ? 'Switch to SOL View' : 'Switch to Geo View'}
                 </span>
               </div>
             </div>
@@ -675,17 +677,17 @@ frappe.ui.form.on("Report Preference", {
           <div class="f16-action-console">
             <div class="f16-console-header">Action Console</div>
             <div class="f16-console-btn-group">
-              <button type="button" class="f16-btn-outline" id="f16-btn-reset-permissions">
-                <span>✕</span> <span>Reset Permissions</span>
+              <button type="button" class="f16-btn-outline" id="f16-btn-reset-permissions" title="Reset all permissions">
+                <span>✕</span> <span>Reset</span>
               </button>
               <button type="button" class="f16-btn-outline" id="f16-btn-discard-changes">
-                <span>Discard Changes</span>
+                <span>Discard</span>
               </button>
               <button type="button" class="f16-btn-outline" id="f16-btn-bulk-update">
-                <span>🔄</span> <span>Bulk Update</span>
+                <span>🔄</span> <span>Bulk</span>
               </button>
               <button type="button" class="f16-btn-save-primary" id="rp-btn-save-all">
-                <span>SAVE ALL CHANGES</span>
+                <span>SAVE</span>
               </button>
             </div>
           </div>
