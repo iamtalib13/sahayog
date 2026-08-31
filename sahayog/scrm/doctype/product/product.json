@@ -17,8 +17,19 @@
   "group_subname",
   "group_subname_category",
   "commission_parameters",
+  "commission_type",
+  "commission_eligible_amount",
+  "slab_1_limit",
+  "slab_1_rate",
+  "slab_3_rate",
+  "column_break_ueqj",
   "commission_rate",
-  "commission_eligible_amount"
+  "commission_rate_upto_one_year",
+  "commission_rate_above_one_year",
+  "slab_2_limit",
+  "slab_2_rate",
+  "section_break_xyly",
+  "deferred_commission_schedule"
  ],
  "fields": [
   {
@@ -87,19 +98,74 @@
   },
   {
    "fieldname": "commission_rate",
-   "fieldtype": "Percent",
+   "fieldtype": "Float",
    "label": "Commission Rate"
   },
   {
    "fieldname": "commission_eligible_amount",
    "fieldtype": "Int",
    "label": "Commission Eligible Amount"
+  },
+  {
+   "fieldname": "commission_type",
+   "fieldtype": "Select",
+   "label": "Commission Type",
+   "options": "\nFixed Rate\nAge Based\nEligible Amount Based\nDeferred"
+  },
+  {
+   "fieldname": "commission_rate_upto_one_year",
+   "fieldtype": "Float",
+   "label": "Commission Rate Upto One Year"
+  },
+  {
+   "fieldname": "commission_rate_above_one_year",
+   "fieldtype": "Float",
+   "label": "Commission Rate Above One Year"
+  },
+  {
+   "fieldname": "slab_1_limit",
+   "fieldtype": "Currency",
+   "label": "Slab 1 Limit"
+  },
+  {
+   "fieldname": "slab_1_rate",
+   "fieldtype": "Float",
+   "label": "Slab 1 Rate"
+  },
+  {
+   "fieldname": "slab_2_limit",
+   "fieldtype": "Currency",
+   "label": "Slab 2 Limit"
+  },
+  {
+   "fieldname": "slab_2_rate",
+   "fieldtype": "Float",
+   "label": "Slab 2 Rate"
+  },
+  {
+   "fieldname": "slab_3_rate",
+   "fieldtype": "Float",
+   "label": "Slab 3 Rate"
+  },
+  {
+   "fieldname": "column_break_ueqj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_xyly",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "deferred_commission_schedule",
+   "fieldtype": "Table",
+   "label": "Deferred Commission Schedule",
+   "options": "Deferred Commission Schedule"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-31 16:26:54.195428",
+ "modified": "2026-08-31 17:10:18.290557",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
