@@ -89,13 +89,10 @@ frappe.ui.form.on("Report Preference", {
     frm.clear_table("district");
     frm.clear_table("sol_id");
 
-    if (frm.state.access_type === "Geographical (Zone / Region / District)") {
-      frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
-      frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
-      frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
-    } else {
-      frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
-    }
+    frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
+    frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
+    frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
+    frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
   },
 
   auto_save_preference: function (frm, show_toast = true) {
@@ -141,7 +138,6 @@ frappe.ui.form.on("Report Preference", {
     let userEmpId = frm.state.user ? frm.state.user.split('@')[0] : "-";
     let isNewDoc = frm.is_new() || !frm.state.user;
 
-    // Numeric Zone Numbers Map: "Zone -1" -> "1", etc.
     let zoneOptions = masterZones.map(z => {
       let num = (z.match(/\d+/) || [z])[0];
       return { raw: z, label: num };
@@ -191,7 +187,6 @@ frappe.ui.form.on("Report Preference", {
           color: #475569;
         }
 
-        /* Scope Segmented Control */
         .min-scope-control {
           display: inline-flex;
           background: #f1f5f9;
@@ -219,7 +214,6 @@ frappe.ui.form.on("Report Preference", {
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Minimal Toggle Switch */
         .min-toggle-track {
           width: 40px;
           height: 22px;
@@ -517,17 +511,34 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Select User Dialog
+    // Select User Dialog with STRICT ONE USER ONE PREFERENCE VALIDATION
     $w.find("#min-btn-change-user").on("click", function () {
       let d = new frappe.ui.Dialog({
         title: __("Select User"),
         fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-        primary_action_label: __("Load User"),
+        primary_action_label: __("Select User"),
         primary_action: function (values) {
-          d.hide();
-          frm.state.user = values.user;
-          frm.doc.user = values.user;
-          frm.trigger("load_user_preference_into_widget");
+          if (!values.user) return;
+
+          frappe.db.get_value("Report Preference", { user: values.user }, ["name", "user"], function (res) {
+            if (res && res.name && res.name !== frm.doc.name) {
+              frappe.msgprint({
+                title: __("User Already Configured"),
+                indicator: "orange",
+                message: __(
+                  `Report Preference is already configured for user <b>${values.user}</b>.<br><br>` +
+                  `Ek user ke liye sirf ek hi Report Preference record ban sakta hai.<br><br>` +
+                  `<a class="btn btn-xs btn-primary" href="/app/report-preference/${res.name}">Click Here to Open Existing Record</a>`
+                )
+              });
+              return;
+            }
+
+            d.hide();
+            frm.state.user = values.user;
+            frm.doc.user = values.user;
+            frm.trigger("load_user_preference_into_widget");
+          });
         }
       });
       d.show();

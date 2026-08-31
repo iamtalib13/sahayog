@@ -125,7 +125,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
     let userEmpId = state.user ? state.user.split('@')[0] : "-";
 
-    // Numeric Zone Numbers Map: "Zone -1" -> "1", etc.
     let zoneOptions = masterZones.map(z => {
       let num = (z.match(/\d+/) || [z])[0];
       return { raw: z, label: num };
@@ -357,7 +356,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </div>
 
           <div style="display: flex; align-items: center; gap: 12px;">
-            <!-- Geo / Branch Wise Segmented Toggle -->
             <div class="min-scope-control">
               <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
                 <span>🌍 Geo Wise</span>
@@ -496,13 +494,14 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // Select User Dialog
+    // Select User Dialog with Duplicate Validation
     $m.find("#min-btn-change-user").on("click", function () {
       let d = new frappe.ui.Dialog({
         title: __("Select User"),
         fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-        primary_action_label: __("Load User"),
+        primary_action_label: __("Select User"),
         primary_action: function (values) {
+          if (!values.user) return;
           d.hide();
           selectUser(values.user);
         }
