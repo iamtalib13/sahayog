@@ -129,8 +129,21 @@ frappe.ui.form.on("Report Preference", {
             $saveBtn.text("Save").css("background", "").css("color", "");
           }, 1200);
         }
-        if (r.message && r.message.status === "success" && show_toast) {
-          frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
+        if (r.message && r.message.status === "success") {
+          if (r.message.doc) {
+            frappe.model.sync(r.message.doc);
+            if (frm.docname === r.message.name) {
+              frm.doc.modified = r.message.doc.modified;
+              frm.doc.creation = r.message.doc.creation;
+              frm.doc.__last_sync_on = r.message.doc.modified;
+            }
+          }
+          if (frm.dirty) {
+            frm.dirty(false);
+          }
+          if (show_toast) {
+            frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
+          }
         }
       }
     });

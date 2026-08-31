@@ -186,6 +186,8 @@ def save_widget_preference(data):
     return {
         "status": "success",
         "name": doc.name,
+        "modified": str(doc.modified),
+        "doc": doc.as_dict(),
         "message": _("Report Preferences saved successfully!")
     }
 
