@@ -638,6 +638,7 @@ frappe.ui.form.on("Report Preference", {
               <table class="min-branch-table" id="min-sol-grid-table">
                 <thead>
                   <tr>
+                    <th style="width: 42px; text-align: center;">Sr.</th>
                     ${!isGeo ? `
                       <th style="width: 32px; text-align: center;">
                         <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
@@ -652,8 +653,9 @@ frappe.ui.form.on("Report Preference", {
                   </tr>
                 </thead>
                 <tbody>
-                  ${displayBranches.map(b => `
+                  ${displayBranches.map((b, idx) => `
                     <tr>
+                      <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
                       ${!isGeo ? `
                         <td style="text-align: center;">
                           <input type="checkbox" class="min-sol-row-chk" data-sol="${b.sol_id}" style="cursor: pointer;" />
