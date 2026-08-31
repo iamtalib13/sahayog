@@ -60,7 +60,7 @@ frappe.ui.form.on("Report Preference", {
     frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
-    frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
+    frm.state.access_type = "Geographical (Zone / Region / District)";
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones) zones = pref.zones;
@@ -84,20 +84,16 @@ frappe.ui.form.on("Report Preference", {
     frm.doc.full_name = frm.state.full_name;
     frm.doc.enabled = frm.state.enabled ? 1 : 0;
     frm.doc.tag = frm.state.tag || "";
-    frm.doc.access_type = frm.state.access_type || "Geographical (Zone / Region / District)";
+    frm.doc.access_type = "Geographical (Zone / Region / District)";
 
     frm.clear_table("zone");
     frm.clear_table("region");
     frm.clear_table("district");
     frm.clear_table("sol_id");
 
-    if (frm.state.access_type === "Geographical (Zone / Region / District)") {
-      frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
-      frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
-      frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
-    } else if (frm.state.access_type === "Specific Branches (SOL ID)") {
-      frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
-    }
+    frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
+    frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
+    frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
 
     frm.dirty();
   },
@@ -316,7 +312,7 @@ frappe.ui.form.on("Report Preference", {
           background: var(--rp-surface-subtle);
         }
 
-        /* Direct Clean Table Card */
+        /* Table Section Card with Integrated Capsules */
         .rp-table-section-card {
           background: #ffffff;
           border: 1px solid var(--rp-border);
@@ -353,6 +349,77 @@ frappe.ui.form.on("Report Preference", {
         }
         .rp-table-search-box:focus {
           border-color: var(--rp-accent);
+        }
+
+        /* Interactive Permission Capsules Bar */
+        .rp-permission-capsules-bar {
+          padding: 12px 16px;
+          background: #ffffff;
+          border-bottom: 1px solid var(--rp-border);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .rp-capsule-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .rp-capsule-label {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--rp-text-muted);
+          min-width: 65px;
+        }
+        .rp-perm-capsule {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 12px;
+          border-radius: 9999px;
+          font-size: 11.5px;
+          font-weight: 500;
+          cursor: pointer;
+          background: #ffffff;
+          color: #475569;
+          border: 1px solid var(--rp-border);
+          transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+        }
+        .rp-perm-capsule:hover {
+          border-color: #94a3b8;
+          background: #f1f5f9;
+        }
+        .rp-perm-capsule.active {
+          background: #ecfdf5;
+          color: #065f46;
+          border-color: #6ee7b7;
+          font-weight: 600;
+          box-shadow: 0 1px 2px rgba(16, 185, 129, 0.12);
+        }
+        .rp-capsule-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #94a3b8;
+        }
+        .rp-perm-capsule.active .rp-capsule-dot {
+          background: #10b981;
+        }
+        .rp-capsule-action-btn {
+          background: transparent;
+          border: none;
+          color: var(--rp-text-muted);
+          font-size: 11px;
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0 4px;
+        }
+        .rp-capsule-action-btn:hover {
+          color: var(--rp-primary);
         }
 
         /* Table Structure */
@@ -478,7 +545,7 @@ frappe.ui.form.on("Report Preference", {
               </div>
             </div>
 
-            <!-- Direct Clean Table View -->
+            <!-- Table Section Card with Integrated Zone & Region Capsules -->
             <div id="rp-branch-coverage-slot"></div>
           </div>
         </div>
@@ -491,7 +558,6 @@ frappe.ui.form.on("Report Preference", {
 
   attach_widget_events: function (frm) {
     let $w = frm.fields_dict.widget_html.$wrapper;
-    let meta = frm.meta_data || {};
 
     // User Live Search
     let $userInput = $w.find("#rp-user-search-input");
@@ -607,11 +673,11 @@ frappe.ui.form.on("Report Preference", {
             user: frm.state.user,
             enabled: frm.state.enabled,
             tag: frm.state.tag,
-            access_type: frm.state.access_type,
+            access_type: "Geographical (Zone / Region / District)",
             zones: Array.from(frm.state.zones),
             regions: Array.from(frm.state.regions),
             districts: Array.from(frm.state.districts),
-            sol_ids: Array.from(frm.state.sol_ids)
+            sol_ids: []
           }
         },
         freeze: true,
@@ -634,12 +700,11 @@ frappe.ui.form.on("Report Preference", {
     let zones = Array.from(frm.state.zones);
     let regions = Array.from(frm.state.regions);
     let districts = Array.from(frm.state.districts);
-    let sol_ids = Array.from(frm.state.sol_ids);
 
-    // If no specific filters selected yet, show all master branches (117 branches)
-    if (!zones.length && !regions.length && !districts.length && !sol_ids.length && frm.meta_data && frm.meta_data.all_branches) {
+    // If nothing selected yet, show all branches by default
+    if (!zones.length && !regions.length && !districts.length && frm.meta_data && frm.meta_data.all_branches) {
       frm.resolved_branches = frm.meta_data.all_branches;
-      frm.trigger("render_direct_table_view");
+      frm.trigger("render_table_with_capsules");
       return;
     }
 
@@ -649,23 +714,23 @@ frappe.ui.form.on("Report Preference", {
         zones: zones,
         regions: regions,
         districts: districts,
-        sol_ids: sol_ids,
-        access_type: frm.state.access_type
+        sol_ids: [],
+        access_type: "Geographical (Zone / Region / District)"
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
-        if (!frm.resolved_branches.length && frm.meta_data && frm.meta_data.all_branches) {
-          frm.resolved_branches = frm.meta_data.all_branches;
-        }
-        frm.trigger("render_direct_table_view");
+        frm.trigger("render_table_with_capsules");
       }
     });
   },
 
-  render_direct_table_view: function (frm) {
+  render_table_with_capsules: function (frm) {
     let $slot = frm.fields_dict.widget_html.$wrapper.find("#rp-branch-coverage-slot");
     if (!$slot.length) return;
 
+    let meta = frm.meta_data || {};
+    let masterZones = meta.master_zones || [];
+    let masterRegions = meta.master_regions || [];
     let branches = frm.resolved_branches || [];
     let totalCount = branches.length;
 
@@ -675,45 +740,120 @@ frappe.ui.form.on("Report Preference", {
         <div class="rp-table-top-bar">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569;">
-              🏢 Active Branch Coverage
+              🏢 Branch Permission & Coverage
             </span>
-            <span class="rp-table-badge" id="rp-table-live-count">${totalCount} Branches</span>
+            <span class="rp-table-badge" id="rp-table-live-count">${totalCount} Branches Allowed</span>
           </div>
 
-          <input type="text" class="rp-table-search-box" id="rp-table-filter-search" placeholder="🔍 Search branch, SOL..." />
+          <input type="text" class="rp-table-search-box" id="rp-table-filter-search" placeholder="🔍 Search branch, SOL, zone..." />
+        </div>
+
+        <!-- Integrated Permission Capsules (Zone & Region) -->
+        <div class="rp-permission-capsules-bar">
+          <!-- Zone Capsules -->
+          <div class="rp-capsule-row">
+            <span class="rp-capsule-label">ZONES:</span>
+            ${masterZones.map(z => `
+              <div class="rp-perm-capsule rp-zone-capsule ${frm.state.zones.has(z) ? 'active' : ''}" data-zone="${z}">
+                <span class="rp-capsule-dot"></span>
+                <span>${z}</span>
+              </div>
+            `).join('')}
+            <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-zones">Clear</button>
+          </div>
+
+          <!-- Region Capsules -->
+          <div class="rp-capsule-row">
+            <span class="rp-capsule-label">REGIONS:</span>
+            ${masterRegions.map(r => `
+              <div class="rp-perm-capsule rp-region-capsule ${frm.state.regions.has(r) ? 'active' : ''}" data-region="${r}">
+                <span class="rp-capsule-dot"></span>
+                <span>${r}</span>
+              </div>
+            `).join('')}
+            <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+          </div>
         </div>
 
         <!-- Direct Clean Table -->
         <div class="rp-table-scroll-wrap">
-          <table class="rp-minimal-grid-table" id="rp-branch-grid-table">
-            <thead>
-              <tr>
-                <th style="width: 100px;">SOL ID</th>
-                <th>Branch Name</th>
-                <th style="width: 140px;">Zone</th>
-                <th style="width: 140px;">Region</th>
-                <th style="width: 160px;">District</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${branches.map(b => `
-                <tr class="rp-table-branch-row" data-search="${String(b.sol_id)} ${b.branch || ''} ${b.district || ''} ${b.region || ''} ${b.zone || ''}">
-                  <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
-                  <td><b>${b.branch || '-'}</b></td>
-                  <td><span class="rp-tag-micro">${b.zone || '-'}</span></td>
-                  <td><span class="rp-tag-micro">${b.region || '-'}</span></td>
-                  <td><span class="rp-tag-micro">${b.district || '-'}</span></td>
+          ${totalCount === 0 ? `
+            <div style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+              No branches selected. Click on Zone or Region capsules above to grant branch access.
+            </div>
+          ` : `
+            <table class="rp-minimal-grid-table" id="rp-branch-grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 100px;">SOL ID</th>
+                  <th>Branch Name</th>
+                  <th style="width: 140px;">Zone</th>
+                  <th style="width: 140px;">Region</th>
+                  <th style="width: 160px;">District</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${branches.map(b => `
+                  <tr class="rp-table-branch-row" data-search="${String(b.sol_id)} ${b.branch || ''} ${b.district || ''} ${b.region || ''} ${b.zone || ''}">
+                    <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
+                    <td><b>${b.branch || '-'}</b></td>
+                    <td><span class="rp-tag-micro">${b.zone || '-'}</span></td>
+                    <td><span class="rp-tag-micro">${b.region || '-'}</span></td>
+                    <td><span class="rp-tag-micro">${b.district || '-'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `}
         </div>
       </div>
     `;
 
     $slot.html(tableHtml);
 
-    // Instant Search
+    // Zone Capsule Click: Toggle permission in state
+    $slot.find(".rp-zone-capsule").on("click", function () {
+      let z = $(this).data("zone");
+      if (frm.state.zones.has(z)) {
+        frm.state.zones.delete(z);
+        $(this).removeClass("active");
+      } else {
+        frm.state.zones.add(z);
+        $(this).addClass("active");
+      }
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    $slot.find("#rp-btn-clear-all-zones").on("click", function () {
+      frm.state.zones.clear();
+      $slot.find(".rp-zone-capsule").removeClass("active");
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    // Region Capsule Click: Toggle permission in state
+    $slot.find(".rp-region-capsule").on("click", function () {
+      let r = $(this).data("region");
+      if (frm.state.regions.has(r)) {
+        frm.state.regions.delete(r);
+        $(this).removeClass("active");
+      } else {
+        frm.state.regions.add(r);
+        $(this).addClass("active");
+      }
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    $slot.find("#rp-btn-clear-all-regions").on("click", function () {
+      frm.state.regions.clear();
+      $slot.find(".rp-region-capsule").removeClass("active");
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    // Instant Search in Table
     $slot.find("#rp-table-filter-search").on("input", function () {
       let q = $(this).val().toLowerCase().trim();
       let visibleCount = 0;
@@ -726,7 +866,7 @@ frappe.ui.form.on("Report Preference", {
       });
 
       $slot.find("#rp-table-live-count").text(
-        q ? `${visibleCount} / ${totalCount} Branches` : `${totalCount} Branches`
+        q ? `${visibleCount} / ${totalCount} Branches Allowed` : `${totalCount} Branches Allowed`
       );
     });
   }
