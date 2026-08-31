@@ -16,15 +16,9 @@ def get_agents_sol_wise(user=None):
 
     conditions = []
 
-    # ✅ Step 2: Get additional sol_ids from Report Preference
-    additional_sol_ids = []
-    if frappe.db.exists("Report Preference", {"user": user, "enabled": 1}):
-        additional_sol_ids = frappe.get_all(
-            "Sol Items",
-            filters={"parent": user, "parenttype": "Report Preference"},
-            pluck="sol_id"
-        )
-        additional_sol_ids = [sol for sol in additional_sol_ids if sol]
+    # ✅ Step 2: Get additional sol_ids from Report Preference dynamically
+    from sahayog.permissions import get_user_sol_ids
+    additional_sol_ids = get_user_sol_ids(user)
 
     if additional_sol_ids:
         formatted_sols = ", ".join(f"'{sol}'" for sol in additional_sol_ids)

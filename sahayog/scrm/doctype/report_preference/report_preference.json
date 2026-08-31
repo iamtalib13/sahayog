@@ -10,17 +10,22 @@
   "user",
   "column_break_ckcs",
   "full_name",
-  "section_break_uvta",
   "enabled",
+  "tag",
+  "roles_section",
+  "roles_html",
   "geographical_filters_section",
+  "access_type",
+  "section_break_geo_fields",
   "zone",
   "region",
   "column_break_aagm",
   "state",
   "district",
-  "column_break_vlii",
+  "section_break_sol_field",
   "sol_id",
-  "tag",
+  "branch_preview_section",
+  "branch_preview_html",
   "lead_filters_section",
   "product",
   "column_break_enpx",
@@ -38,6 +43,7 @@
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "User",
    "options": "User",
    "reqd": 1,
@@ -49,27 +55,63 @@
    "fetch_from": "user.full_name",
    "fieldname": "full_name",
    "fieldtype": "Data",
-   "label": "Full Name"
+   "label": "Full Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ckcs",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "geographical_filters_section",
-   "fieldtype": "Section Break",
-   "label": "Geographical & Branch Filters"
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
   },
   {
-   "description": "Select specific zones for report filtering.",
+   "fieldname": "tag",
+   "fieldtype": "Select",
+   "label": "Tag",
+   "options": "\nCOM\nROM\nRM\nAZM\nZM"
+  },
+  {
+   "fieldname": "roles_section",
+   "fieldtype": "Section Break",
+   "label": "Department & Finacle Roles"
+  },
+  {
+   "fieldname": "roles_html",
+   "fieldtype": "HTML",
+   "label": "Role Control"
+  },
+  {
+   "fieldname": "geographical_filters_section",
+   "fieldtype": "Section Break",
+   "label": "Branch & Geographical Access Scope"
+  },
+  {
+   "default": "Geographical (Zone / Region / District)",
+   "fieldname": "access_type",
+   "fieldtype": "Select",
+   "label": "Access Type",
+   "options": "Geographical (Zone / Region / District)\nSpecific Branches (SOL ID)",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.access_type === 'Geographical (Zone / Region / District)'",
+   "fieldname": "section_break_geo_fields",
+   "fieldtype": "Section Break",
+   "hide_border": 1
+  },
+  {
+   "description": "Select specific zones. All current & future branches in these zones will be accessible automatically.",
    "fieldname": "zone",
    "fieldtype": "Table MultiSelect",
    "label": "Zones",
    "options": "Zone Items"
   },
   {
-   "depends_on": "eval:doc.zone && doc.zone.length > 0 && !doc.all_regions\n",
-   "description": "Select specific regions. Ignored if 'All Regions' is checked.",
+   "description": "Select specific regions. All branches in these regions will be accessible.",
    "fieldname": "region",
    "fieldtype": "Table MultiSelect",
    "label": "Regions",
@@ -94,20 +136,34 @@
    "options": "District Items"
   },
   {
-   "fieldname": "column_break_vlii",
-   "fieldtype": "Column Break"
+   "depends_on": "eval:doc.access_type === 'Specific Branches (SOL ID)'",
+   "fieldname": "section_break_sol_field",
+   "fieldtype": "Section Break",
+   "hide_border": 1
   },
   {
-   "description": "Specific SOL IDs the user can access.",
+   "description": "Specify exact SOL IDs the user can access.",
    "fieldname": "sol_id",
    "fieldtype": "Table MultiSelect",
    "label": "SOL IDs",
    "options": "Sol Items"
   },
   {
+   "fieldname": "branch_preview_section",
+   "fieldtype": "Section Break",
+   "label": "Active Branch Coverage Preview"
+  },
+  {
+   "fieldname": "branch_preview_html",
+   "fieldtype": "HTML",
+   "label": "Branch Preview"
+  },
+  {
+   "collapsed": 1,
+   "collapsible": 1,
    "fieldname": "lead_filters_section",
    "fieldtype": "Section Break",
-   "label": "Lead Specific Filters"
+   "label": "Lead Specific Filters (Optional)"
   },
   {
    "description": "Products the user is allowed to see in reports.",
@@ -126,28 +182,12 @@
    "fieldtype": "Table MultiSelect",
    "label": "Sources",
    "options": "Source Items"
-  },
-  {
-   "fieldname": "section_break_uvta",
-   "fieldtype": "Section Break"
-  },
-  {
-   "default": "1",
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Enabled"
-  },
-  {
-   "fieldname": "tag",
-   "fieldtype": "Select",
-   "label": "Tag",
-   "options": "COM\nROM\nRM\nAZM\nZM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-08 17:39:57.317295",
+ "modified": "2026-08-31 17:40:00.000000",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
