@@ -7,7 +7,6 @@ frappe.ui.form.on("Report Preference", {
       enabled: 1,
       tag: "",
       access_type: "Geographical (Zone / Region / District)",
-      roles: new Set(),
       zones: new Set(),
       regions: new Set(),
       districts: new Set(),
@@ -17,7 +16,6 @@ frappe.ui.form.on("Report Preference", {
   },
 
   refresh: function (frm) {
-    // Hide standard Frappe form elements if any are left
     frm.toggle_display("hidden_fields_section", false);
     frm.trigger("init_widget");
   },
@@ -57,15 +55,12 @@ frappe.ui.form.on("Report Preference", {
 
   sync_doc_to_widget_state: function (frm) {
     let pref = frm.meta_data.user_preference;
-    let roles = frm.meta_data.user_roles || [];
 
     frm.state.user = frm.doc.user || (pref ? pref.user : "");
     frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
     frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
-
-    frm.state.roles = new Set(roles);
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones) zones = pref.zones;
@@ -109,16 +104,6 @@ frappe.ui.form.on("Report Preference", {
 
   before_save: function (frm) {
     frm.trigger("sync_widget_state_to_doc");
-    if (frm.doc.user && frm.state.roles) {
-      frappe.call({
-        method: "sahayog.scrm.doctype.report_preference.report_preference.sync_user_roles",
-        args: {
-          user: frm.doc.user,
-          roles: Array.from(frm.state.roles)
-        },
-        async: false
-      });
-    }
   },
 
   render_full_crud_widget: function (frm) {
@@ -127,7 +112,6 @@ frappe.ui.form.on("Report Preference", {
     let meta = frm.meta_data || {};
     let masterZones = meta.master_zones || [];
     let masterRegions = meta.master_regions || [];
-    let rolesList = meta.roles_list || [];
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
     let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let isNewDoc = frm.is_new() || !frm.state.user;
@@ -175,7 +159,7 @@ frappe.ui.form.on("Report Preference", {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 5px 12px;
+          padding: 6px 14px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 500;
@@ -333,7 +317,7 @@ frappe.ui.form.on("Report Preference", {
       <div class="rp-workspace">
         <!-- 0. TOP USER CONFIGURATION BAR -->
         <div class="rp-card-block" style="background: #f1f5f9; border-color: #cbd5e1;">
-          <div class="rp-section-title">👤 User & Status Configuration</div>
+          <div class="rp-section-title">👤 User Configuration & Status</div>
           
           <div class="rp-top-user-bar">
             <!-- User Selector / Search -->
@@ -383,28 +367,9 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        <!-- 1. ROLES SECTION -->
+        <!-- 1. ACCESS SCOPE CRUD SECTION -->
         <div class="rp-card-block">
-          <div class="rp-flex-between">
-            <div class="rp-section-title">⚡ 1. Department & Finacle Report Roles</div>
-            <div>
-              <button type="button" class="btn btn-xs btn-default" id="rp-btn-select-all-roles">Select All</button>
-              <button type="button" class="btn btn-xs btn-default" id="rp-btn-clear-roles">Clear</button>
-            </div>
-          </div>
-          <div class="rp-pill-grid" id="rp-roles-container">
-            ${rolesList.map(r => `
-              <div class="rp-chip rp-role-chip ${frm.state.roles.has(r.key) ? 'selected' : ''}" data-role="${r.key}">
-                <span class="rp-chip-dot"></span>
-                <span>${r.label}</span>
-              </div>
-            `).join("")}
-          </div>
-        </div>
-
-        <!-- 2. ACCESS SCOPE CRUD SECTION -->
-        <div class="rp-card-block">
-          <div class="rp-section-title">📍 2. Branch Access Scope & Filters</div>
+          <div class="rp-section-title">📍 Branch Access Scope & Filters</div>
           
           <div class="rp-mode-tabs">
             <div class="rp-mode-tab ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
@@ -480,10 +445,10 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        <!-- 3. LIVE RESOLVED BRANCHES DRILLDOWN SLOT -->
+        <!-- 2. LIVE RESOLVED BRANCHES DRILLDOWN SLOT -->
         <div id="rp-branch-coverage-slot"></div>
 
-        <!-- 4. SAVE & ACTIONS BAR -->
+        <!-- 3. SAVE & ACTIONS BAR -->
         <div class="rp-save-bar">
           <button type="button" class="btn btn-sm btn-default" id="rp-btn-discard">Discard Changes</button>
           <button type="button" class="btn btn-sm btn-primary" id="rp-btn-direct-save">💾 Save Preferences</button>
@@ -590,31 +555,6 @@ frappe.ui.form.on("Report Preference", {
         $btn.removeClass("active");
         $label.text("Disabled").css("color", "#64748b");
       }
-      frm.trigger("sync_widget_state_to_doc");
-    });
-
-    // Role Toggles
-    $w.find(".rp-role-chip").on("click", function () {
-      let r = $(this).data("role");
-      if (frm.state.roles.has(r)) {
-        frm.state.roles.delete(r);
-        $(this).removeClass("selected");
-      } else {
-        frm.state.roles.add(r);
-        $(this).addClass("selected");
-      }
-      frm.trigger("sync_widget_state_to_doc");
-    });
-
-    $w.find("#rp-btn-select-all-roles").on("click", function () {
-      (meta.roles_list || []).forEach(r => frm.state.roles.add(r.key));
-      $w.find(".rp-role-chip").addClass("selected");
-      frm.trigger("sync_widget_state_to_doc");
-    });
-
-    $w.find("#rp-btn-clear-roles").on("click", function () {
-      frm.state.roles.clear();
-      $w.find(".rp-role-chip").removeClass("selected");
       frm.trigger("sync_widget_state_to_doc");
     });
 
@@ -741,7 +681,7 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("calculate_and_render_branches");
     });
 
-    // Save Button
+    // Direct Save Button
     $w.find("#rp-btn-direct-save").on("click", function () {
       if (!frm.state.user) {
         frappe.msgprint(__("Please select a User first."));
@@ -756,7 +696,6 @@ frappe.ui.form.on("Report Preference", {
             enabled: frm.state.enabled,
             tag: frm.state.tag,
             access_type: frm.state.access_type,
-            roles: Array.from(frm.state.roles),
             zones: Array.from(frm.state.zones),
             regions: Array.from(frm.state.regions),
             districts: Array.from(frm.state.districts),

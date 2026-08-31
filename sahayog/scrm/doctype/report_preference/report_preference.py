@@ -4,21 +4,6 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
-FINACLE_ROLES_MAP = {
-    "HR": "HR Department Report",
-    "JLL": "JLL Department Report",
-    "MIS": "MIS Department Report",
-    "Loan": "Loan Department Report",
-    "Audit": "Audit Department Report",
-    "Finance": "Finance Department Report",
-    "Operation": "Operation Department Report",
-    "TW": "Two Wheeler Department Report",
-    "Branch": "Branch Report",
-    "Admin": "Finacle Report Admin",
-    "Vigilance": "Vigilance Department Report",
-    "IT": "IT Department Report",
-}
-
 
 class ReportPreference(Document):
 
@@ -68,18 +53,17 @@ class ReportPreference(Document):
             }
         )
         if existing:
-            frappe.throw(_("Report Preference already exists for this user."))
+            frappe.throw(_("Report Preference already exists for user {0}.").format(self.user))
 
 
 @frappe.whitelist()
 def get_widget_meta(user=None):
     """
-    Returns all metadata needed by the Pure HTML CRUD widget:
+    Returns metadata needed by the Pure HTML CRUD widget:
     - Master lists of Zones, Regions, Districts, States, and all Branches
-    - Available department roles
+    - Available tags
     - Current saved preference data for the specified user (if any)
     """
-    # 1. Master options from Sahayog Branch
     zones = frappe.db.sql(
         "SELECT DISTINCT zone FROM `tabSahayog Branch` WHERE zone IS NOT NULL AND zone != '' ORDER BY zone ASC",
         pluck=True
@@ -101,29 +85,8 @@ def get_widget_meta(user=None):
 
     tags = ["COM", "ROM", "RM", "AZM", "ZM"]
 
-    roles_list = [
-        {"key": "HR", "label": "HR Report"},
-        {"key": "MIS", "label": "MIS Report"},
-        {"key": "Loan", "label": "Loan Report"},
-        {"key": "Audit", "label": "Audit Report"},
-        {"key": "Finance", "label": "Finance Report"},
-        {"key": "Operation", "label": "Operation Report"},
-        {"key": "TW", "label": "Two Wheeler Report"},
-        {"key": "Branch", "label": "Branch Report"},
-        {"key": "Admin", "label": "Report Admin"},
-        {"key": "Vigilance", "label": "Vigilance Report"},
-        {"key": "JLL", "label": "JLL Report"},
-        {"key": "IT", "label": "IT Report"},
-    ]
-
-    # 2. Existing preference and user roles if user is given
     pref_data = None
-    assigned_roles = []
-
     if user and frappe.db.exists("User", user):
-        user_roles = set(frappe.get_roles(user))
-        assigned_roles = [pill for pill, role_name in FINACLE_ROLES_MAP.items() if role_name in user_roles]
-
         pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
         if pref_name:
             doc = frappe.get_doc("Report Preference", pref_name)
@@ -147,9 +110,7 @@ def get_widget_meta(user=None):
         "master_districts": [d for d in districts if d],
         "all_branches": all_branches,
         "tags": tags,
-        "roles_list": roles_list,
         "user_preference": pref_data,
-        "user_roles": assigned_roles,
     }
 
 
@@ -157,7 +118,7 @@ def get_widget_meta(user=None):
 def save_widget_preference(data):
     """
     Direct CRUD API for the HTML Widget.
-    Saves Report Preference and Syncs User Roles in a single atomic call.
+    Saves Report Preference in an atomic call.
     """
     if isinstance(data, str):
         data = json.loads(data)
@@ -171,7 +132,6 @@ def save_widget_preference(data):
     if frappe.session.user != "Administrator" and not {"System Manager", "Permission Manager"}.intersection(current_roles):
         frappe.throw(_("Access Denied: Only Administrators/System Managers can modify Report Preferences."))
 
-    # 1. Update/Create Report Preference
     pref_name = frappe.db.get_value("Report Preference", {"user": user_id}, "name")
     if pref_name:
         doc = frappe.get_doc("Report Preference", pref_name)
@@ -207,35 +167,15 @@ def save_widget_preference(data):
 
     frappe.flags.mute_messages = True
     doc.save(ignore_permissions=True)
-
-    # 2. Sync User Roles
-    selected_roles = set(data.get("roles", []))
-    user_doc = frappe.get_doc("User", user_id)
-    existing_user_roles = {r.role for r in user_doc.roles}
-    roles_changed = False
-
-    for pill in selected_roles:
-        rname = FINACLE_ROLES_MAP.get(pill)
-        if rname and rname not in existing_user_roles:
-            user_doc.add_roles(rname)
-            roles_changed = True
-
-    for pill, rname in FINACLE_ROLES_MAP.items():
-        if pill not in selected_roles and rname in existing_user_roles:
-            user_doc.remove_roles(rname)
-            roles_changed = True
-
-    if roles_changed:
-        user_doc.save(ignore_permissions=True)
-
     frappe.flags.mute_messages = False
+
     frappe.cache().delete_value(f"user_allowed_sols:{user_id}")
     frappe.cache().delete_value(f"user_report_pref:{user_id}")
 
     return {
         "status": "success",
         "name": doc.name,
-        "message": _("Report Preferences and Roles saved successfully!")
+        "message": _("Report Preferences saved successfully!")
     }
 
 
@@ -327,7 +267,6 @@ def search_user(search_text=None, current_docname=None):
         LIMIT 10
     """, {"starts": search_query}, as_dict=True)
 
-    # Check which users already have a Report Preference
     existing_map = {}
     existing_records = frappe.get_all(
         "Report Preference",
