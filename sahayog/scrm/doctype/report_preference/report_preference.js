@@ -134,8 +134,96 @@ frappe.ui.form.on("Report Preference", {
     frm.trigger("render_minimal_widget");
   },
 
+  show_select_user_dialog: function (frm) {
+    let d = new frappe.ui.Dialog({
+      title: __("Select User"),
+      fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
+      primary_action_label: __("Select User"),
+      primary_action: function (values) {
+        if (!values.user) return;
+
+        frappe.db.get_value("Report Preference", { user: values.user }, ["name", "user"], function (res) {
+          if (res && res.name && res.name !== frm.doc.name) {
+            frappe.msgprint({
+              title: __("User Already Configured"),
+              indicator: "orange",
+              message: __(
+                `Report Preference is already configured for user <b>${values.user}</b>.<br><br>` +
+                `Ek user ke liye sirf ek hi Report Preference record ban sakta hai.<br><br>` +
+                `<a class="btn btn-xs btn-primary" href="/app/report-preference/${res.name}">Click Here to Open Existing Record</a>`
+              )
+            });
+            return;
+          }
+
+          d.hide();
+          frm.state.user = values.user;
+          frm.doc.user = values.user;
+          frm.trigger("load_user_preference_into_widget");
+        });
+      }
+    });
+    d.show();
+  },
+
   render_minimal_widget: function (frm) {
     if (!frm.fields_dict.widget_html) return;
+
+    // IF NO USER SELECTED YET -> SHOW SELECT USER PROMPT ONLY
+    if (!frm.state.user) {
+      let initialHtml = `
+        <style>
+          .min-initial-card {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 40px 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 16px auto;
+            max-width: 580px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          }
+          .min-initial-btn {
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #0f172a;
+            padding: 8px 24px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+          }
+          .min-initial-btn:hover {
+            background: #1e293b;
+          }
+        </style>
+        <div class="min-initial-card">
+          <div style="font-size: 38px; margin-bottom: 12px;">👤</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Select User to Configure Preferences</div>
+          <div style="font-size: 12.5px; color: #64748b; margin-bottom: 20px; line-height: 1.5;">
+            Report Preference configure karne ke liye pehle user select karein.<br>
+            User select karte hi Geographical aur Branch-Wise controls open ho jayenge.
+          </div>
+          <button type="button" class="min-initial-btn" id="min-btn-initial-select-user">
+            <span>🔍 Select User</span>
+          </button>
+        </div>
+      `;
+      frm.fields_dict.widget_html.$wrapper.html(initialHtml);
+      frm.fields_dict.widget_html.$wrapper.find("#min-btn-initial-select-user").on("click", function () {
+        frm.trigger("show_select_user_dialog");
+      });
+      return;
+    }
 
     let meta = frm.meta_data || {};
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
@@ -144,7 +232,7 @@ frappe.ui.form.on("Report Preference", {
     let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let userName = frm.state.full_name || (frm.state.user ? frm.state.user.split('@')[0] : "Select User");
     let userEmpId = frm.state.user ? frm.state.user.split('@')[0] : "-";
-    let isNewDoc = frm.is_new() || !frm.state.user;
+    let isNewDoc = frm.is_new() || !frm.doc.name;
 
     function sortZones(list) {
       return [...list].sort((a, b) => {
@@ -188,7 +276,6 @@ frappe.ui.form.on("Report Preference", {
     let isAllZones = zoneOptions.length > 0 && zoneOptions.every(z => frm.state.zones.has(z.raw));
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
 
-    // Determine Table Branches: If in Geo mode, preview resolved Geo branches; if in Branch mode, show sol_ids.
     let displayBranches = [];
     if (isGeo) {
       if (frm.state.zones.size > 0) {
@@ -446,7 +533,7 @@ frappe.ui.form.on("Report Preference", {
               <span><b>Employee ID:</b> ${userEmpId}</span>
               ${isNewDoc ? `
                 <span style="margin-left: 8px;">
-                  <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Select User</button>
+                  <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Change User</button>
                 </span>
               ` : ''}
             </div>
@@ -640,35 +727,7 @@ frappe.ui.form.on("Report Preference", {
 
     // Select User Dialog with Duplicate Validation
     $w.find("#min-btn-change-user").on("click", function () {
-      let d = new frappe.ui.Dialog({
-        title: __("Select User"),
-        fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-        primary_action_label: __("Select User"),
-        primary_action: function (values) {
-          if (!values.user) return;
-
-          frappe.db.get_value("Report Preference", { user: values.user }, ["name", "user"], function (res) {
-            if (res && res.name && res.name !== frm.doc.name) {
-              frappe.msgprint({
-                title: __("User Already Configured"),
-                indicator: "orange",
-                message: __(
-                  `Report Preference is already configured for user <b>${values.user}</b>.<br><br>` +
-                  `Ek user ke liye sirf ek hi Report Preference record ban sakta hai.<br><br>` +
-                  `<a class="btn btn-xs btn-primary" href="/app/report-preference/${res.name}">Click Here to Open Existing Record</a>`
-                )
-              });
-              return;
-            }
-
-            d.hide();
-            frm.state.user = values.user;
-            frm.doc.user = values.user;
-            frm.trigger("load_user_preference_into_widget");
-          });
-        }
-      });
-      d.show();
+      frm.trigger("show_select_user_dialog");
     });
 
     // Toggle Status

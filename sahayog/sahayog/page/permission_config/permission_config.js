@@ -127,7 +127,76 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     });
   }
 
+  function showSelectUserDialog() {
+    let d = new frappe.ui.Dialog({
+      title: __("Select User"),
+      fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
+      primary_action_label: __("Select User"),
+      primary_action: function (values) {
+        if (!values.user) return;
+        d.hide();
+        selectUser(values.user);
+      }
+    });
+    d.show();
+  }
+
   function renderPage() {
+    if (!state.user) {
+      let initialHtml = `
+        <style>
+          .min-initial-card {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 40px 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            max-width: 580px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          }
+          .min-initial-btn {
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #0f172a;
+            padding: 8px 24px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s ease;
+          }
+          .min-initial-btn:hover {
+            background: #1e293b;
+          }
+        </style>
+        <div class="min-initial-card">
+          <div style="font-size: 38px; margin-bottom: 12px;">👤</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Select User to Configure Permissions</div>
+          <div style="font-size: 12.5px; color: #64748b; margin-bottom: 20px; line-height: 1.5;">
+            Permission configuration dekhne ya edit karne ke liye pehle user select karein.<br>
+            User select karte hi Geographical aur Branch-Wise controls open ho jayenge.
+          </div>
+          <button type="button" class="min-initial-btn" id="min-btn-initial-select-user">
+            <span>🔍 Select User</span>
+          </button>
+        </div>
+      `;
+      page.main.html(initialHtml);
+      page.main.find("#min-btn-initial-select-user").on("click", function () {
+        showSelectUserDialog();
+      });
+      return;
+    }
+
     let meta = state.meta_data || {};
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
     let masterZones = meta.master_zones || [];
@@ -434,7 +503,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
               <span style="color: #cbd5e1; margin: 0 6px;">|</span>
               <span><b>Employee ID:</b> ${userEmpId}</span>
               <span style="margin-left: 8px;">
-                <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Select User</button>
+                <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Change User</button>
               </span>
             </div>
           </div>
@@ -621,17 +690,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     // Select User Dialog
     $m.find("#min-btn-change-user").on("click", function () {
-      let d = new frappe.ui.Dialog({
-        title: __("Select User"),
-        fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-        primary_action_label: __("Select User"),
-        primary_action: function (values) {
-          if (!values.user) return;
-          d.hide();
-          selectUser(values.user);
-        }
-      });
-      d.show();
+      showSelectUserDialog();
     });
 
     // Toggle Status
