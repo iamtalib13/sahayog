@@ -152,7 +152,6 @@ frappe.ui.form.on("Report Preference", {
     let userEmpId = frm.state.user ? frm.state.user.split('@')[0] : "-";
     let isNewDoc = frm.is_new() || !frm.state.user;
 
-    // Helper natural sorting functions
     function sortZones(list) {
       return [...list].sort((a, b) => {
         let numA = parseInt((String(a).match(/\d+/) || [9999])[0], 10);
@@ -173,7 +172,6 @@ frappe.ui.form.on("Report Preference", {
       });
     }
 
-    // Sorted Zone Numbers Map: Z1 to Z6
     let sortedMasterZones = sortZones(masterZones);
     let zoneOptions = sortedMasterZones.map(z => {
       let num = (z.match(/\d+/) || [z])[0];
@@ -197,11 +195,11 @@ frappe.ui.form.on("Report Preference", {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
     let solList = Array.from(frm.state.sol_ids);
 
-    // Compute Centered Flowchart Tree Data (Sorted Z1 to Z6)
-    let selectedZonesList = sortZones(Array.from(frm.state.zones));
+    // Compute Connected Tree Data for ALL Zones (Default Disabled, Selected = Enabled Green)
     let totalGeoBranches = 0;
 
-    let geoTreeData = selectedZonesList.map(z => {
+    let fullTreeData = sortedMasterZones.map(z => {
+      let isSelected = frm.state.zones.has(z);
       let zoneBranches = allBranches.filter(b => b.zone === z);
       let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
       let hasSpecificRegions = frm.state.regions.size > 0;
@@ -212,7 +210,9 @@ frappe.ui.form.on("Report Preference", {
       }
 
       let activeZoneBranches = zoneBranches.filter(b => activeRegions.includes(b.region));
-      totalGeoBranches += activeZoneBranches.length;
+      if (isSelected) {
+        totalGeoBranches += activeZoneBranches.length;
+      }
 
       let regionDetails = activeRegions.map(r => {
         let rBranches = zoneBranches.filter(b => b.region === r);
@@ -224,10 +224,12 @@ frappe.ui.form.on("Report Preference", {
 
       return {
         zone: z,
+        is_selected: isSelected,
         all_regions_count: zoneRegions.length,
         active_regions_count: activeRegions.length,
         is_all_regions_allowed: !hasSpecificRegions,
         total_zone_branches: activeZoneBranches.length,
+        all_zone_branches_count: zoneBranches.length,
         regions: regionDetails
       };
     });
@@ -396,28 +398,28 @@ frappe.ui.form.on("Report Preference", {
         .min-tree-root-box {
           background: #0f172a;
           color: #ffffff;
-          padding: 8px 18px;
+          padding: 8px 20px;
           border-radius: 24px;
           font-size: 12.5px;
           font-weight: 700;
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
           z-index: 2;
         }
 
         .min-tree-vertical-stem {
           width: 2px;
-          height: 22px;
-          background: #94a3b8;
+          height: 20px;
+          background: #cbd5e1;
         }
 
         .min-tree-zones-row {
           display: flex;
           justify-content: center;
           align-items: flex-start;
-          gap: 24px;
+          gap: 16px;
           width: 100%;
           flex-wrap: wrap;
           position: relative;
@@ -427,58 +429,99 @@ frappe.ui.form.on("Report Preference", {
           display: flex;
           flex-direction: column;
           align-items: center;
-          min-width: 180px;
-          max-width: 240px;
+          flex: 1;
+          min-width: 160px;
+          max-width: 200px;
           position: relative;
         }
 
+        /* Zone Node - Disabled / Enabled Styles */
         .min-tree-zone-node {
-          background: #ffffff;
-          border: 1.5px solid #3b82f6;
           border-radius: 10px;
-          padding: 8px 14px;
+          padding: 8px 12px;
           text-align: center;
-          box-shadow: 0 2px 5px rgba(59, 130, 246, 0.08);
           width: 100%;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          user-select: none;
         }
-        .min-tree-zone-heading {
-          font-weight: 800;
-          font-size: 13px;
+
+        /* By Default Disabled Style */
+        .min-tree-zone-node.disabled {
+          background: #f1f5f9;
+          border: 1.5px dashed #cbd5e1;
+          color: #94a3b8;
+          opacity: 0.7;
+        }
+        .min-tree-zone-node.disabled:hover {
+          opacity: 1;
+          border-color: #94a3b8;
+          background: #e2e8f0;
+          color: #475569;
+        }
+        .min-tree-zone-node.disabled .min-tree-zone-heading {
+          color: #64748b;
+        }
+
+        /* Enabled Green Style */
+        .min-tree-zone-node.enabled {
+          background: #ffffff;
+          border: 2px solid #16a34a;
+          color: #16a34a;
+          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
+        }
+        .min-tree-zone-node.enabled .min-tree-zone-heading {
           color: #0f172a;
-          margin-bottom: 3px;
+          font-weight: 800;
         }
+
+        .min-tree-zone-heading {
+          font-size: 13px;
+          margin-bottom: 3px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
         .min-tree-zone-badge-all {
-          font-size: 10.5px;
+          font-size: 10px;
           font-weight: 700;
           color: #16a34a;
           background: #dcfce7;
-          padding: 2px 7px;
+          padding: 2px 6px;
           border-radius: 6px;
           display: inline-block;
         }
         .min-tree-zone-badge-partial {
-          font-size: 10.5px;
+          font-size: 10px;
           font-weight: 700;
           color: #0369a1;
           background: #e0f2fe;
-          padding: 2px 7px;
+          padding: 2px 6px;
           border-radius: 6px;
+          display: inline-block;
+        }
+        .min-tree-zone-badge-off {
+          font-size: 10px;
+          font-weight: 600;
+          color: #94a3b8;
           display: inline-block;
         }
 
         .min-tree-regions-container {
           display: flex;
           flex-direction: column;
-          gap: 5px;
+          gap: 4px;
           width: 100%;
           margin-top: 6px;
         }
         .min-tree-region-leaf {
           background: #ffffff;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #bbf7d0;
           border-radius: 6px;
-          padding: 5px 10px;
-          font-size: 11.5px;
+          padding: 4px 8px;
+          font-size: 11px;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -611,7 +654,7 @@ frappe.ui.form.on("Report Preference", {
             </div>
           </div>
 
-          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM (SORTED Z1 TO Z6) -->
+          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM (ALL ZONES CONNECTED, ENABLED GREEN) -->
           <div class="min-flowchart-card">
             <!-- Level 0: Root User Node -->
             <div class="min-tree-root-box">
@@ -623,45 +666,50 @@ frappe.ui.form.on("Report Preference", {
             <!-- Stem Line -->
             <div class="min-tree-vertical-stem"></div>
 
-            ${geoTreeData.length === 0 ? `
-              <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 12.5px; background: #ffffff; border-radius: 8px; border: 1px dashed #cbd5e1; width: 100%; max-width: 420px;">
-                👈 Select a <b>Zone</b> above to attach geographical branches to this user.
-              </div>
-            ` : `
-              <!-- Level 1: Connected Zones Row (Z1 to Z6) -->
-              <div class="min-tree-zones-row">
-                ${geoTreeData.map(item => `
-                  <div class="min-tree-zone-col">
-                    <!-- Zone Node -->
-                    <div class="min-tree-zone-node">
-                      <div class="min-tree-zone-heading">🟦 ${item.zone}</div>
-                      ${item.is_all_regions_allowed ? `
+            <!-- Level 1: Connected Zones Row (Z1 to Z6, default disabled, selected enabled green) -->
+            <div class="min-tree-zones-row">
+              ${fullTreeData.map(item => `
+                <div class="min-tree-zone-col">
+                  <!-- Zone Node (Clickable) -->
+                  <div class="min-tree-zone-node min-tree-click-zone ${item.is_selected ? 'enabled' : 'disabled'}" data-raw="${item.zone}" title="${item.is_selected ? 'Click to Disable Zone' : 'Click to Enable Zone'}">
+                    <div class="min-tree-zone-heading">
+                      <span>${item.is_selected ? '🟢' : '⚪'}</span>
+                      <b>${item.zone}</b>
+                    </div>
+                    ${item.is_selected ? (
+                      item.is_all_regions_allowed ? `
                         <div class="min-tree-zone-badge-all">
-                          All ${item.all_regions_count} Regions Allowed (${item.total_zone_branches} Br)
+                          All ${item.all_regions_count} Regions (${item.total_zone_branches} Br)
                         </div>
                       ` : `
                         <div class="min-tree-zone-badge-partial">
                           ${item.active_regions_count} of ${item.all_regions_count} Regions (${item.total_zone_branches} Br)
                         </div>
-                      `}
-                    </div>
+                      `
+                    ) : `
+                      <div class="min-tree-zone-badge-off">
+                        Disabled (${item.all_zone_branches_count} Br)
+                      </div>
+                    `}
+                  </div>
 
+                  ${item.is_selected ? `
                     <!-- Stem to regions -->
-                    <div class="min-tree-vertical-stem" style="height: 12px;"></div>
+                    <div class="min-tree-vertical-stem" style="height: 10px; background: #86efac;"></div>
 
                     <!-- Level 2: Region Leaves -->
                     <div class="min-tree-regions-container">
                       ${item.regions.map(r => `
                         <div class="min-tree-region-leaf">
-                          <span style="font-weight: 600; color: #1e293b;">🔹 ${r.region}</span>
-                          <span style="color: #64748b; font-size: 11px; font-weight: 600;">${r.branch_count} Br</span>
+                          <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
+                          <span style="color: #64748b; font-size: 10.5px; font-weight: 600;">${r.branch_count} Br</span>
                         </div>
                       `).join('')}
                     </div>
-                  </div>
-                `).join('')}
-              </div>
-            `}
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
           </div>
         ` : `
           <!-- SOL ID BOX (BRANCH WISE - PURE TABLE VIEW) -->
@@ -740,7 +788,6 @@ frappe.ui.form.on("Report Preference", {
     let masterZones = meta.master_zones || [];
     let allBranches = meta.all_branches || [];
 
-    // Helper natural sorting functions
     function sortRegions(list) {
       return [...list].sort((a, b) => {
         let isHoA = String(a).toLowerCase().includes("head office") || String(a).toUpperCase() === "HO";
@@ -822,8 +869,8 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Zone Chips
-    $w.find(".min-chip-zone").on("click", function () {
+    // Zone Chips & Tree Zone Nodes Click
+    $w.find(".min-chip-zone, .min-tree-click-zone").on("click", function () {
       let z = $(this).data("raw");
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
