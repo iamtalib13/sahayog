@@ -293,7 +293,16 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         });
       }
     } else {
-      displayBranches = allBranches;
+      displayBranches = [...allBranches].sort((a, b) => {
+        let isSelA = state.sol_ids.has(String(a.sol_id)) ? 1 : 0;
+        let isSelB = state.sol_ids.has(String(b.sol_id)) ? 1 : 0;
+        if (isSelA !== isSelB) {
+          return isSelB - isSelA;
+        }
+        let numA = parseInt(String(a.sol_id), 10) || 0;
+        let numB = parseInt(String(b.sol_id), 10) || 0;
+        return numA - numB;
+      });
     }
 
     let selectedSolCount = allBranches.filter(b => state.sol_ids.has(String(b.sol_id))).length;

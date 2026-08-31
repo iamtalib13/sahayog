@@ -278,7 +278,7 @@ frappe.ui.form.on("Report Preference", {
 
     // Branch list to display:
     // In Geo mode -> Resolved branches from selected zones/regions.
-    // In Branch mode -> ALL master branches from Sahayog Branch!
+    // In Branch mode -> ALL master branches, with allowed/selected branches at the top!
     let displayBranches = [];
     if (isGeo) {
       if (frm.state.zones.size > 0) {
@@ -289,7 +289,16 @@ frappe.ui.form.on("Report Preference", {
         });
       }
     } else {
-      displayBranches = allBranches;
+      displayBranches = [...allBranches].sort((a, b) => {
+        let isSelA = frm.state.sol_ids.has(String(a.sol_id)) ? 1 : 0;
+        let isSelB = frm.state.sol_ids.has(String(b.sol_id)) ? 1 : 0;
+        if (isSelA !== isSelB) {
+          return isSelB - isSelA;
+        }
+        let numA = parseInt(String(a.sol_id), 10) || 0;
+        let numB = parseInt(String(b.sol_id), 10) || 0;
+        return numA - numB;
+      });
     }
 
     let selectedSolCount = allBranches.filter(b => frm.state.sol_ids.has(String(b.sol_id))).length;
