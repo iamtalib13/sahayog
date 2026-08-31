@@ -28,7 +28,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     frappe.set_route("query-report", "Report Preference Report");
   });
 
-  $(wrapper).find(".page-content").css({ padding: "12px 16px", maxWidth: "none" });
+  $(wrapper).find(".page-content").css({ padding: "8px 12px", maxWidth: "none" });
   $(wrapper).find(".layout-main-section").css({ maxWidth: "none" });
 
   let state = {
@@ -42,7 +42,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     districts: new Set(),
     sol_ids: new Set(),
     pref_list: [],
-    meta_data: {}
+    meta_data: {},
+    search_query: "",
+    current_page: 1,
+    page_size: 20
   };
 
   function initPage() {
@@ -120,6 +123,17 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             $saveBtn.text("Save").css("background", "").css("color", "");
           }, 1200);
         }
+
+        // Update list status in memory
+        let found = state.pref_list.find(x => x.user === state.user);
+        if (found) {
+          found.tag = state.tag;
+          found.enabled = state.enabled;
+          found.is_configured = true;
+        }
+
+        renderSideListOnly();
+
         if (r.message && r.message.status === "success" && show_toast) {
           frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
         }
@@ -129,7 +143,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
   function showSelectUserDialog() {
     let d = new frappe.ui.Dialog({
-      title: __("Select User"),
+      title: __("Add / Select User"),
       fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
       primary_action_label: __("Select User"),
       primary_action: function (values) {
@@ -141,62 +155,78 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     d.show();
   }
 
-  function renderPage() {
-    if (!state.user) {
-      let initialHtml = `
-        <style>
-          .min-initial-card {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-            border: 1.5px dashed #cbd5e1;
-            border-radius: 10px;
-            background: #ffffff;
-            padding: 40px 24px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin: 20px auto;
-            max-width: 580px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-          }
-          .min-initial-btn {
-            background: #0f172a;
-            color: #ffffff;
-            border: 1px solid #0f172a;
-            padding: 8px 24px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.15s ease;
-          }
-          .min-initial-btn:hover {
-            background: #1e293b;
-          }
-        </style>
-        <div class="min-initial-card">
-          <div style="font-size: 38px; margin-bottom: 12px;">👤</div>
-          <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">Select User to Configure Permissions</div>
-          <div style="font-size: 12.5px; color: #64748b; margin-bottom: 20px; line-height: 1.5;">
-            Permission configuration dekhne ya edit karne ke liye pehle user select karein.<br>
-            User select karte hi Geographical aur Branch-Wise controls open ho jayenge.
-          </div>
-          <button type="button" class="min-initial-btn" id="min-btn-initial-select-user">
-            <span>🔍 Select User</span>
-          </button>
-        </div>
-      `;
-      page.main.html(initialHtml);
-      page.main.find("#min-btn-initial-select-user").on("click", function () {
-        showSelectUserDialog();
-      });
-      return;
+  function getFilteredUsers() {
+    let q = (state.search_query || "").toLowerCase().trim();
+    if (!q) return state.pref_list;
+    return state.pref_list.filter(item => {
+      let name = (item.full_name || "").toLowerCase();
+      let user = (item.user || "").toLowerCase();
+      let tag = (item.tag || "").toLowerCase();
+      return name.includes(q) || user.includes(q) || tag.includes(q);
+    });
+  }
+
+  function renderSideListOnly() {
+    let filtered = getFilteredUsers();
+    let totalItems = filtered.length;
+    let totalPages = Math.max(1, Math.ceil(totalItems / state.page_size));
+
+    if (state.current_page > totalPages) {
+      state.current_page = totalPages;
     }
 
+    let startIdx = (state.current_page - 1) * state.page_size;
+    let endIdx = Math.min(startIdx + state.page_size, totalItems);
+    let pageItems = filtered.slice(startIdx, endIdx);
+
+    let itemsHtml = pageItems.map(item => {
+      let isSelected = state.user === item.user;
+      let shortName = item.full_name || item.user.split('@')[0];
+      let empId = item.user.split('@')[0];
+      let isConfigured = item.is_configured !== false;
+      let isEnabled = item.enabled !== 0;
+
+      return `
+        <div class="min-side-user-item ${isSelected ? 'active' : ''}" data-user="${item.user}">
+          <div class="min-side-user-avatar">
+            ${shortName.charAt(0).toUpperCase()}
+          </div>
+          <div class="min-side-user-meta">
+            <div class="min-side-user-name">${shortName}</div>
+            <div class="min-side-user-sub">
+              <span>${empId}</span>
+              ${item.tag ? `<span class="min-side-user-tag">${item.tag}</span>` : ''}
+            </div>
+          </div>
+          <div class="min-side-user-status">
+            ${isConfigured ? (
+              isEnabled ? '<span title="Enabled" style="color: #16a34a; font-size: 10px;">🟢</span>' : '<span title="Disabled" style="color: #94a3b8; font-size: 10px;">⚪</span>'
+            ) : '<span title="Not Configured" style="color: #f59e0b; font-size: 10px;">🟡</span>'}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (pageItems.length === 0) {
+      itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No users found</div>`;
+    }
+
+    page.main.find("#min-side-user-list").html(itemsHtml);
+    page.main.find("#min-side-page-info").text(`${startIdx + 1 > totalItems ? 0 : startIdx + 1}-${endIdx} of ${totalItems}`);
+    page.main.find("#min-side-page-num").text(`Page ${state.current_page}/${totalPages}`);
+    page.main.find("#min-side-btn-prev").prop("disabled", state.current_page <= 1);
+    page.main.find("#min-side-btn-next").prop("disabled", state.current_page >= totalPages);
+
+    // Attach click to side items
+    page.main.find(".min-side-user-item").on("click", function () {
+      let u = $(this).data("user");
+      if (u !== state.user) {
+        selectUser(u);
+      }
+    });
+  }
+
+  function renderPage() {
     let meta = state.meta_data || {};
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
     let masterZones = meta.master_zones || [];
@@ -268,11 +298,174 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     let html = `
       <style>
-        .min-perm-card {
+        .min-perm-layout {
+          display: flex;
+          gap: 12px;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
           color: #24292f;
-          max-width: 1200px;
-          margin: 0 auto;
+          min-height: calc(100vh - 160px);
+        }
+
+        /* 1. LEFT SIDE PANEL (20 Items Pagination & Search) */
+        .min-side-panel {
+          width: 290px;
+          min-width: 290px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .min-side-header {
+          padding: 8px 10px;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #f8fafc;
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+        }
+        .min-side-title {
+          font-size: 12.5px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        .min-side-btn-add {
+          background: #0f172a;
+          color: #ffffff;
+          border: none;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+
+        .min-side-search-wrap {
+          padding: 6px 8px;
+          border-bottom: 1px solid #f1f5f9;
+          background: #ffffff;
+        }
+        .min-side-search-input {
+          width: 100%;
+          border: 1px solid #cbd5e1;
+          border-radius: 5px;
+          padding: 4px 8px;
+          font-size: 11.5px;
+          outline: none;
+        }
+        .min-side-search-input:focus {
+          border-color: #0284c7;
+        }
+
+        .min-side-user-list {
+          flex: 1;
+          overflow-y: auto;
+          max-height: calc(100vh - 280px);
+        }
+
+        .min-side-user-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 10px;
+          border-bottom: 1px solid #f1f5f9;
+          cursor: pointer;
+          transition: all 0.12s ease;
+          user-select: none;
+        }
+        .min-side-user-item:hover {
+          background: #f8fafc;
+        }
+        .min-side-user-item.active {
+          background: #f0fdf4;
+          border-left: 3.5px solid #16a34a;
+        }
+        .min-side-user-avatar {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #e2e8f0;
+          color: #334155;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .min-side-user-item.active .min-side-user-avatar {
+          background: #bbf7d0;
+          color: #15803d;
+        }
+
+        .min-side-user-meta {
+          flex: 1;
+          min-width: 0;
+        }
+        .min-side-user-name {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .min-side-user-sub {
+          font-size: 10px;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        .min-side-user-tag {
+          background: #e2e8f0;
+          color: #334155;
+          padding: 0 4px;
+          border-radius: 3px;
+          font-size: 9px;
+          font-weight: 700;
+        }
+
+        .min-side-footer {
+          padding: 6px 8px;
+          border-top: 1px solid #e2e8f0;
+          background: #f8fafc;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 10.5px;
+          color: #64748b;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+        }
+        .min-side-page-btn {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          padding: 1px 6px;
+          font-size: 10.5px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #334155;
+        }
+        .min-side-page-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        /* 2. RIGHT MAIN CONTENT AREA */
+        .min-main-content {
+          flex: 1;
+          min-width: 0;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 10px 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
 
         .min-perm-header {
@@ -281,16 +474,16 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           align-items: center;
           padding-bottom: 8px;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
         .min-perm-title {
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
           color: #0f172a;
           margin-bottom: 2px;
         }
         .min-perm-subinfo {
-          font-size: 12px;
+          font-size: 11.5px;
           color: #475569;
         }
 
@@ -302,7 +495,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border: 1px solid #cbd5e1;
         }
         .min-scope-seg {
-          padding: 3px 12px;
+          padding: 3px 10px;
           border-radius: 5px;
           font-size: 11px;
           font-weight: 700;
@@ -312,7 +505,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           user-select: none;
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
         }
         .min-scope-seg:hover { color: #0f172a; }
         .min-scope-seg.active {
@@ -322,8 +515,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
 
         .min-toggle-track {
-          width: 34px;
-          height: 18px;
+          width: 32px;
+          height: 17px;
           background: #cbd5e1;
           border-radius: 9999px;
           position: relative;
@@ -332,8 +525,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         .min-toggle-track.active { background: #16a34a; }
         .min-toggle-thumb {
-          width: 14px;
-          height: 14px;
+          width: 13px;
+          height: 13px;
           background: #ffffff;
           border-radius: 50%;
           position: absolute;
@@ -342,7 +535,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           transition: transform 0.2s ease;
           box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
-        .min-toggle-track.active .min-toggle-thumb { transform: translateX(16px); }
+        .min-toggle-track.active .min-toggle-thumb { transform: translateX(15px); }
 
         .min-btn-save {
           background: #0f172a;
@@ -350,7 +543,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border: 1px solid #0f172a;
           border-radius: 5px;
           padding: 3px 12px;
-          font-size: 11.5px;
+          font-size: 11px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -360,18 +553,17 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         .min-box-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 12px;
+          gap: 10px;
           margin-bottom: 8px;
-          transition: opacity 0.2s ease;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
           .min-box-row { grid-template-columns: 1fr; }
         }
 
         .min-dashed-box {
           border: 1px dashed #cbd5e1;
           border-radius: 6px;
-          padding: 8px 12px;
+          padding: 6px 10px;
           background: #ffffff;
           display: flex;
           align-items: center;
@@ -379,7 +571,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           flex-wrap: wrap;
         }
         .min-box-label {
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 700;
           color: #1e293b;
           min-width: 40px;
@@ -388,7 +580,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         .min-chip-container {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 5px;
           flex-wrap: wrap;
           flex: 1;
         }
@@ -396,11 +588,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 24px;
-          height: 22px;
-          padding: 0 8px;
+          min-width: 22px;
+          height: 21px;
+          padding: 0 7px;
           border-radius: 11px;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 600;
           background: #f1f5f9;
           color: #475569;
@@ -417,23 +609,22 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           font-weight: 700;
         }
 
-        /* Mode Switcher Divider Row */
         .min-mode-divider-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 8px 0;
-          margin-top: 6px;
-          margin-bottom: 8px;
+          padding: 6px 0;
+          margin-top: 4px;
+          margin-bottom: 6px;
           border-top: 1px solid #e2e8f0;
         }
 
         .min-sol-box {
           border: 1px dashed #cbd5e1;
           border-radius: 6px;
-          padding: 10px 14px;
+          padding: 8px 10px;
           background: #ffffff;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
@@ -442,15 +633,15 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border: 1px solid #e2e8f0;
           border-radius: 6px;
           overflow: hidden;
-          margin-top: 8px;
+          margin-top: 6px;
           max-height: 380px;
           overflow-y: auto;
           scrollbar-width: thin;
         }
-        .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+        .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .min-branch-table th {
           background: #f8fafc;
-          padding: 6px 10px;
+          padding: 5px 8px;
           text-align: left;
           font-weight: 600;
           color: #475569;
@@ -460,7 +651,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           z-index: 1;
         }
         .min-branch-table td {
-          padding: 6px 10px;
+          padding: 5px 8px;
           border-bottom: 1px solid #f1f5f9;
           color: #334155;
         }
@@ -470,19 +661,14 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           background: #fef2f2;
           color: #dc2626;
           border: 1px solid #fca5a5;
-          padding: 2px 8px;
-          border-radius: 5px;
-          font-size: 11px;
+          padding: 2px 7px;
+          border-radius: 4px;
+          font-size: 10.5px;
           font-weight: 600;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           gap: 4px;
-          transition: all 0.15s ease;
-        }
-        .min-bulk-delete-btn:hover {
-          background: #fee2e2;
-          border-color: #ef4444;
         }
 
         .min-box-disabled {
@@ -493,160 +679,196 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
       </style>
 
-      <div class="min-perm-card">
-        <!-- TOP HEADER (Info, Status, Tag, Save) -->
-        <div class="min-perm-header">
-          <div>
-            <div class="min-perm-title">Permission Details</div>
-            <div class="min-perm-subinfo">
-              <span><b>Employee Name:</b> ${userName.toUpperCase()}</span>
-              <span style="color: #cbd5e1; margin: 0 6px;">|</span>
-              <span><b>Employee ID:</b> ${userEmpId}</span>
-              <span style="margin-left: 8px;">
-                <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Change User</button>
-              </span>
-            </div>
+      <div class="min-perm-layout">
+        <!-- 1. LEFT SIDEBAR PANEL (20-Item Pagination) -->
+        <div class="min-side-panel">
+          <div class="min-side-header">
+            <span class="min-side-title">👥 Users (${state.pref_list.length})</span>
+            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add User</button>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div class="min-toggle-track ${state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
-              <div class="min-toggle-thumb"></div>
-            </div>
-
-            <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 26px; font-size: 11px; font-weight: 600; border-radius: 5px; border-color: #cbd5e1; padding: 2px 6px;">
-              <option value="">No Tag</option>
-              ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
-            </select>
-
-            <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
-          </div>
-        </div>
-
-        <!-- 1. GEO CONTROLS SECTION (Zone & Region Chips) -->
-        <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
-          <div class="min-dashed-box">
-            <span class="min-box-label">Zone</span>
-            <div class="min-chip-container">
-              <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
-              ${zoneOptions.map(z => `
-                <div class="min-chip min-chip-zone ${state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
-              `).join('')}
-            </div>
+          <div class="min-side-search-wrap">
+            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / tag..." value="${state.search_query || ''}" />
           </div>
 
-          <div class="min-dashed-box">
-            <span class="min-box-label">Region</span>
-            <div class="min-chip-container">
-              ${regionOptions.length > 0 ? `
-                <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
-                ${regionOptions.map(r => `
-                  <div class="min-chip min-chip-region ${state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
-                `).join('')}
-              ` : `
-                <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No regions available</span>
-              `}
+          <div class="min-side-user-list" id="min-side-user-list">
+            <!-- Rendered by renderSideListOnly() -->
+          </div>
+
+          <div class="min-side-footer">
+            <span id="min-side-page-info">0-0 of 0</span>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <button type="button" class="min-side-page-btn" id="min-side-btn-prev">◀</button>
+              <span id="min-side-page-num" style="font-weight: 600;">Page 1/1</span>
+              <button type="button" class="min-side-page-btn" id="min-side-btn-next">▶</button>
             </div>
           </div>
         </div>
 
-        <!-- 2. MODE TOGGLE (NICHE RKHO GEO CONTROLS K) -->
-        <div class="min-mode-divider-row">
-          <div class="min-scope-control">
-            <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
-              <span>🌍 Geo Wise</span>
-            </div>
-            <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
-              <span>🏢 Branch Wise</span>
-            </div>
-          </div>
+        <!-- 2. RIGHT MAIN CONTENT -->
+        <div class="min-main-content">
+          ${state.user ? `
+            <!-- TOP HEADER -->
+            <div class="min-perm-header">
+              <div>
+                <div class="min-perm-title">Permission Details</div>
+                <div class="min-perm-subinfo">
+                  <span><b>Employee Name:</b> ${userName.toUpperCase()}</span>
+                  <span style="color: #cbd5e1; margin: 0 6px;">|</span>
+                  <span><b>Employee ID:</b> ${userEmpId}</span>
+                </div>
+              </div>
 
-          <div style="font-size: 11px; font-weight: 600;">
-            ${isGeo ? `
-              <span style="color: #16a34a;">● Geographical Mode Active</span>
-              <span style="color: #94a3b8; margin: 0 4px;">•</span>
-              <span style="color: #64748b;">${displayBranches.length} Branches Accessible</span>
-            ` : `
-              <span style="color: #0284c7;">● Branch Wise Mode Active</span>
-              <span style="color: #94a3b8; margin: 0 4px;">•</span>
-              <span style="color: #64748b;">${solList.length} SOLs Configured</span>
-            `}
-          </div>
-        </div>
-
-        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS SCROLLABLE, NON-EDITABLE IN GEO MODE) -->
-        <div class="min-sol-box">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
-              ${!isGeo ? `
-                <span style="cursor: pointer; color: #0284c7; font-size: 11.5px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
-              ` : `
-                <span style="color: #64748b; font-size: 11px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Branches) • Scroll to inspect</span>
-              `}
-            </div>
-
-            ${!isGeo ? `
               <div style="display: flex; align-items: center; gap: 8px;">
-                <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
-                  <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
-                </button>
-                ${solList.length > 0 ? `
-                  <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
+                <div class="min-toggle-track ${state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
+                  <div class="min-toggle-thumb"></div>
+                </div>
+
+                <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 24px; font-size: 10.5px; font-weight: 600; border-radius: 4px; border-color: #cbd5e1; padding: 1px 5px;">
+                  <option value="">No Tag</option>
+                  ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
+                </select>
+
+                <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
+              </div>
+            </div>
+
+            <!-- 1. GEO CONTROLS SECTION -->
+            <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
+              <div class="min-dashed-box">
+                <span class="min-box-label">Zone</span>
+                <div class="min-chip-container">
+                  <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
+                  ${zoneOptions.map(z => `
+                    <div class="min-chip min-chip-zone ${state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
+                  `).join('')}
+                </div>
+              </div>
+
+              <div class="min-dashed-box">
+                <span class="min-box-label">Region</span>
+                <div class="min-chip-container">
+                  ${regionOptions.length > 0 ? `
+                    <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
+                    ${regionOptions.map(r => `
+                      <div class="min-chip min-chip-region ${state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
+                    `).join('')}
+                  ` : `
+                    <span style="font-size: 10.5px; color: #94a3b8; font-style: italic;">No regions available</span>
+                  `}
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. MODE TOGGLE -->
+            <div class="min-mode-divider-row">
+              <div class="min-scope-control">
+                <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
+                  <span>🌍 Geo Wise</span>
+                </div>
+                <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
+                  <span>🏢 Branch Wise</span>
+                </div>
+              </div>
+
+              <div style="font-size: 10.5px; font-weight: 600;">
+                ${isGeo ? `
+                  <span style="color: #16a34a;">● Geographical Mode Active</span>
+                  <span style="color: #94a3b8; margin: 0 4px;">•</span>
+                  <span style="color: #64748b;">${displayBranches.length} Branches Accessible</span>
+                ` : `
+                  <span style="color: #0284c7;">● Branch Wise Mode Active</span>
+                  <span style="color: #94a3b8; margin: 0 4px;">•</span>
+                  <span style="color: #64748b;">${solList.length} SOLs Configured</span>
+                `}
+              </div>
+            </div>
+
+            <!-- 3. BRANCH / SOL TABLE SECTION -->
+            <div class="min-sol-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
+                  ${!isGeo ? `
+                    <span style="cursor: pointer; color: #0284c7; font-size: 11px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
+                  ` : `
+                    <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Branches) • Scroll to inspect</span>
+                  `}
+                </div>
+
+                ${!isGeo ? `
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
+                      <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
+                    </button>
+                    ${solList.length > 0 ? `
+                      <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 10.5px; padding: 0;">Clear All</button>
+                    ` : ''}
+                  </div>
                 ` : ''}
               </div>
-            ` : ''}
-          </div>
 
-          ${displayBranches.length > 0 ? `
-            <div class="min-branch-table-wrap">
-              <table class="min-branch-table" id="min-sol-grid-table">
-                <thead>
-                  <tr>
-                    <th style="width: 42px; text-align: center;">Sr.</th>
-                    ${!isGeo ? `
-                      <th style="width: 32px; text-align: center;">
-                        <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
-                      </th>
-                    ` : ''}
-                    <th style="width: 85px;">SOL ID</th>
-                    <th>Branch Name</th>
-                    <th>District</th>
-                    <th>Region</th>
-                    <th>Zone</th>
-                    ${!isGeo ? `<th style="width: 44px; text-align: center;">Action</th>` : ''}
-                  </tr>
-                </thead>
-                <tbody>
-                  ${displayBranches.map((b, idx) => `
-                    <tr>
-                      <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
-                      ${!isGeo ? `
-                        <td style="text-align: center;">
-                          <input type="checkbox" class="min-sol-row-chk" data-sol="${b.sol_id}" style="cursor: pointer;" />
-                        </td>
-                      ` : ''}
-                      <td><b style="color: #16a34a;">${b.sol_id}</b></td>
-                      <td><b>${b.branch || '-'}</b></td>
-                      <td>${b.district || '-'}</td>
-                      <td>${b.region || '-'}</td>
-                      <td>${b.zone || '-'}</td>
-                      ${!isGeo ? `
-                        <td style="text-align: center;">
-                          <span class="min-sol-remove" data-sol="${b.sol_id}" title="Delete" style="color: #dc2626; font-size: 14px;">×</span>
-                        </td>
-                      ` : ''}
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+              ${displayBranches.length > 0 ? `
+                <div class="min-branch-table-wrap">
+                  <table class="min-branch-table" id="min-sol-grid-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 40px; text-align: center;">Sr.</th>
+                        ${!isGeo ? `
+                          <th style="width: 28px; text-align: center;">
+                            <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
+                          </th>
+                        ` : ''}
+                        <th style="width: 80px;">SOL ID</th>
+                        <th>Branch Name</th>
+                        <th>District</th>
+                        <th>Region</th>
+                        <th>Zone</th>
+                        ${!isGeo ? `<th style="width: 38px; text-align: center;">Action</th>` : ''}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${displayBranches.map((b, idx) => `
+                        <tr>
+                          <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                          ${!isGeo ? `
+                            <td style="text-align: center;">
+                              <input type="checkbox" class="min-sol-row-chk" data-sol="${b.sol_id}" style="cursor: pointer;" />
+                            </td>
+                          ` : ''}
+                          <td><b style="color: #16a34a;">${b.sol_id}</b></td>
+                          <td><b>${b.branch || '-'}</b></td>
+                          <td>${b.district || '-'}</td>
+                          <td>${b.region || '-'}</td>
+                          <td>${b.zone || '-'}</td>
+                          ${!isGeo ? `
+                            <td style="text-align: center;">
+                              <span class="min-sol-remove" data-sol="${b.sol_id}" title="Delete" style="color: #dc2626; font-size: 13px;">×</span>
+                            </td>
+                          ` : ''}
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              ` : `
+                <div style="padding: 14px; text-align: center; color: #94a3b8; font-size: 11px;">
+                  ${isGeo ? (
+                    state.zones.size === 0 ? '👈 Select a <b>Zone</b> above to view accessible branches.' : 'No branches match the selected Zone/Region criteria.'
+                  ) : (
+                    'No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.'
+                  )}
+                </div>
+              `}
             </div>
           ` : `
-            <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 11.5px;">
-              ${isGeo ? (
-                state.zones.size === 0 ? '👈 Select a <b>Zone</b> above to view accessible branches.' : 'No branches match the selected Zone/Region criteria.'
-              ) : (
-                'No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.'
-              )}
+            <!-- EMPTY STATE: NO USER SELECTED -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 350px; text-align: center; color: #64748b;">
+              <div style="font-size: 38px; margin-bottom: 8px;">👈</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Select a User from the Side Panel</div>
+              <div style="font-size: 11.5px; max-width: 320px; line-height: 1.4;">
+                Click on any user from the left side panel to view or edit their permissions, or click <b>+ Add User</b> to configure a new user.
+              </div>
             </div>
           `}
         </div>
@@ -654,6 +876,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     `;
 
     page.main.html(html);
+    renderSideListOnly();
     attachEvents();
   }
 
@@ -675,6 +898,35 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       });
     }
 
+    // Side Search Input
+    $m.find("#min-side-search-input").on("input", function () {
+      state.search_query = $(this).val();
+      state.current_page = 1;
+      renderSideListOnly();
+    });
+
+    // Side Add User Button
+    $m.find("#min-side-btn-add-user").on("click", function () {
+      showSelectUserDialog();
+    });
+
+    // Side Pagination Buttons (20 items per page)
+    $m.find("#min-side-btn-prev").on("click", function () {
+      if (state.current_page > 1) {
+        state.current_page--;
+        renderSideListOnly();
+      }
+    });
+
+    $m.find("#min-side-btn-next").on("click", function () {
+      let filtered = getFilteredUsers();
+      let totalPages = Math.max(1, Math.ceil(filtered.length / state.page_size));
+      if (state.current_page < totalPages) {
+        state.current_page++;
+        renderSideListOnly();
+      }
+    });
+
     // Geo / Branch Wise Mode Switcher
     $m.find(".min-scope-seg").on("click", function () {
       let targetMode = $(this).data("mode");
@@ -688,11 +940,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     // Manual Save Button
     $m.find("#min-btn-save-manual").on("click", function () {
       autoSave(true);
-    });
-
-    // Select User Dialog
-    $m.find("#min-btn-change-user").on("click", function () {
-      showSelectUserDialog();
     });
 
     // Toggle Status

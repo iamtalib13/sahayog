@@ -37,15 +37,35 @@ def get_all_preferences():
     """Return all Report Preference records with user details for list display."""
     prefs = frappe.get_all(
         "Report Preference",
-        fields=["name", "user", "modified", "tag"],
+        fields=["name", "user", "modified", "tag", "enabled", "access_type"],
         order_by="modified desc",
         limit_page_length=0,
     )
 
-    for p in prefs:
-        p["full_name"] = frappe.db.get_value("User", p["user"], "full_name")
+    all_users = frappe.get_all("User", filters={"enabled": 1, "user_type": "System User"}, fields=["name", "full_name"])
+    user_names = {u.name: (u.full_name or u.name.split("@")[0]) for u in all_users}
 
-    return prefs
+    configured_user_ids = set()
+    for p in prefs:
+        configured_user_ids.add(p["user"])
+        p["full_name"] = user_names.get(p["user"]) or frappe.db.get_value("User", p["user"], "full_name") or p["user"].split("@")[0]
+        p["is_configured"] = True
+
+    unconfigured = []
+    for u in all_users:
+        if u.name not in configured_user_ids and u.name not in ("Guest",):
+            unconfigured.append({
+                "name": None,
+                "user": u.name,
+                "full_name": u.full_name or u.name.split("@")[0],
+                "tag": "",
+                "enabled": 0,
+                "access_type": "Geographical (Zone / Region / District)",
+                "is_configured": False
+            })
+
+    unconfigured.sort(key=lambda x: (x["full_name"] or "").lower())
+    return prefs + unconfigured
 
 
 @frappe.whitelist()
