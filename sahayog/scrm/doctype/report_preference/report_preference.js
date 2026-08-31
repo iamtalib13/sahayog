@@ -187,6 +187,25 @@ frappe.ui.form.on("Report Preference", {
 
     let isAllZones = zoneOptions.length > 0 && zoneOptions.every(z => frm.state.zones.has(z.raw));
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
+
+    // Determine Table Branches: If in Geo mode, preview resolved Geo branches; if in Branch mode, show sol_ids.
+    let displayBranches = [];
+    if (isGeo) {
+      if (frm.state.zones.size > 0) {
+        displayBranches = allBranches.filter(b => {
+          let matchesZone = frm.state.zones.has(b.zone);
+          let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region);
+          return matchesZone && matchesRegion;
+        });
+      }
+    } else {
+      let solSet = frm.state.sol_ids;
+      displayBranches = Array.from(solSet).map(sol => {
+        let b = allBranches.find(x => String(x.sol_id) === String(sol));
+        return b || { sol_id: sol, branch: "-", district: "-", region: "-", zone: "-" };
+      });
+    }
+
     let solList = Array.from(frm.state.sol_ids);
 
     let html = `
@@ -203,7 +222,7 @@ frappe.ui.form.on("Report Preference", {
           align-items: center;
           padding-bottom: 8px;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         .min-perm-title {
           font-size: 14px;
@@ -224,17 +243,17 @@ frappe.ui.form.on("Report Preference", {
           border: 1px solid #cbd5e1;
         }
         .min-scope-seg {
-          padding: 3px 10px;
+          padding: 3px 12px;
           border-radius: 5px;
           font-size: 11px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
           color: #64748b;
           transition: all 0.15s ease;
           user-select: none;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
         }
         .min-scope-seg:hover { color: #0f172a; }
         .min-scope-seg.active {
@@ -283,7 +302,8 @@ frappe.ui.form.on("Report Preference", {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
+          transition: opacity 0.2s ease;
         }
         @media (max-width: 768px) {
           .min-box-row { grid-template-columns: 1fr; }
@@ -338,12 +358,24 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 700;
         }
 
+        /* Mode Switcher Divider Row */
+        .min-mode-divider-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 8px 0;
+          margin-top: 6px;
+          margin-bottom: 8px;
+          border-top: 1px solid #e2e8f0;
+        }
+
         .min-sol-box {
           border: 1px dashed #cbd5e1;
           border-radius: 6px;
           padding: 10px 14px;
           background: #ffffff;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
+          transition: opacity 0.2s ease;
         }
         .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
@@ -353,6 +385,8 @@ frappe.ui.form.on("Report Preference", {
           border-radius: 6px;
           overflow: hidden;
           margin-top: 8px;
+          max-height: 380px;
+          overflow-y: auto;
         }
         .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .min-branch-table th {
@@ -362,6 +396,9 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 600;
           color: #475569;
           border-bottom: 1px solid #e2e8f0;
+          position: sticky;
+          top: 0;
+          z-index: 1;
         }
         .min-branch-table td {
           padding: 6px 10px;
@@ -388,10 +425,18 @@ frappe.ui.form.on("Report Preference", {
           background: #fee2e2;
           border-color: #ef4444;
         }
+
+        /* Disabled section styling */
+        .min-section-disabled {
+          opacity: 0.55;
+          pointer-events: none;
+          user-select: none;
+          background: #f8fafc !important;
+        }
       </style>
 
       <div class="min-perm-card">
-        <!-- TOP HEADER -->
+        <!-- TOP HEADER (Info, Status, Tag, Save) -->
         <div class="min-perm-header">
           <div>
             <div class="min-perm-title">Permission Details</div>
@@ -408,16 +453,6 @@ frappe.ui.form.on("Report Preference", {
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
-            <!-- Geo / Branch Wise Segmented Toggle -->
-            <div class="min-scope-control">
-              <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
-                <span>🌍 Geo Wise</span>
-              </div>
-              <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
-                <span>🏢 Branch Wise</span>
-              </div>
-            </div>
-
             <!-- Active Toggle -->
             <div class="min-toggle-track ${frm.state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
               <div class="min-toggle-thumb"></div>
@@ -434,43 +469,72 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        ${isGeo ? `
-          <!-- ZONE & REGION DASHED BOXES (GEO WISE) -->
-          <div class="min-box-row">
-            <!-- Zone Box -->
-            <div class="min-dashed-box">
-              <span class="min-box-label">Zone</span>
-              <div class="min-chip-container">
-                <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
-                ${zoneOptions.map(z => `
-                  <div class="min-chip min-chip-zone ${frm.state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
-                `).join('')}
-              </div>
-            </div>
-
-            <!-- Region Box -->
-            <div class="min-dashed-box">
-              <span class="min-box-label">Region</span>
-              <div class="min-chip-container">
-                ${regionOptions.length > 0 ? `
-                  <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
-                  ${regionOptions.map(r => `
-                    <div class="min-chip min-chip-region ${frm.state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
-                  `).join('')}
-                ` : `
-                  <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No regions available</span>
-                `}
-              </div>
+        <!-- 1. GEO CONTROLS SECTION (Zone & Region Chips) -->
+        <div class="min-box-row ${!isGeo ? 'min-section-disabled' : ''}">
+          <!-- Zone Box -->
+          <div class="min-dashed-box">
+            <span class="min-box-label">Zone</span>
+            <div class="min-chip-container">
+              <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
+              ${zoneOptions.map(z => `
+                <div class="min-chip min-chip-zone ${frm.state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
+              `).join('')}
             </div>
           </div>
-        ` : `
-          <!-- SOL ID BOX (BRANCH WISE - PURE TABLE VIEW) -->
-          <div class="min-sol-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="min-box-label" style="min-width: unset;">SOL ID</span>
-                <span style="cursor: pointer; color: #0284c7; font-size: 12px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
-              </div>
+
+          <!-- Region Box -->
+          <div class="min-dashed-box">
+            <span class="min-box-label">Region</span>
+            <div class="min-chip-container">
+              ${regionOptions.length > 0 ? `
+                <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
+                ${regionOptions.map(r => `
+                  <div class="min-chip min-chip-region ${frm.state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
+                `).join('')}
+              ` : `
+                <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No regions available</span>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MODE TOGGLE (NICHE RKHO GEO CONTROLS K) -->
+        <div class="min-mode-divider-row">
+          <div class="min-scope-control">
+            <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
+              <span>🌍 Geo Wise</span>
+            </div>
+            <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
+              <span>🏢 Branch Wise</span>
+            </div>
+          </div>
+
+          <div style="font-size: 11px; font-weight: 600;">
+            ${isGeo ? `
+              <span style="color: #16a34a;">● Geographical Mode Active</span>
+              <span style="color: #94a3b8; margin: 0 4px;">•</span>
+              <span style="color: #64748b;">${displayBranches.length} Branches Accessible</span>
+            ` : `
+              <span style="color: #0284c7;">● Branch Wise Mode Active</span>
+              <span style="color: #94a3b8; margin: 0 4px;">•</span>
+              <span style="color: #64748b;">${solList.length} SOLs Configured</span>
+            `}
+          </div>
+        </div>
+
+        <!-- 3. BRANCH / SOL TABLE SECTION (ALWAYS VISIBLE, DISABLED IN GEO MODE) -->
+        <div class="min-sol-box ${isGeo ? 'min-section-disabled' : ''}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
+              ${!isGeo ? `
+                <span style="cursor: pointer; color: #0284c7; font-size: 11.5px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
+              ` : `
+                <span style="color: #94a3b8; font-size: 11px; font-style: italic;">(Auto-Resolved from Geo selection • Switch to Branch Wise to manually edit)</span>
+              `}
+            </div>
+
+            ${!isGeo ? `
               <div style="display: flex; align-items: center; gap: 8px;">
                 <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
                   <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
@@ -479,54 +543,61 @@ frappe.ui.form.on("Report Preference", {
                   <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
                 ` : ''}
               </div>
-            </div>
+            ` : ''}
+          </div>
 
-            <!-- Direct Table for SOL Branches -->
-            ${solList.length > 0 ? `
-              <div class="min-branch-table-wrap">
-                <table class="min-branch-table" id="min-sol-grid-table">
-                  <thead>
-                    <tr>
+          <!-- Direct Table for SOL Branches -->
+          ${displayBranches.length > 0 ? `
+            <div class="min-branch-table-wrap">
+              <table class="min-branch-table" id="min-sol-grid-table">
+                <thead>
+                  <tr>
+                    ${!isGeo ? `
                       <th style="width: 32px; text-align: center;">
                         <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
                       </th>
-                      <th style="width: 90px;">SOL ID</th>
-                      <th>Branch Name</th>
-                      <th>District</th>
-                      <th>Region</th>
-                      <th>Zone</th>
-                      <th style="width: 44px; text-align: center;">Action</th>
+                    ` : ''}
+                    <th style="width: 85px;">SOL ID</th>
+                    <th>Branch Name</th>
+                    <th>District</th>
+                    <th>Region</th>
+                    <th>Zone</th>
+                    ${!isGeo ? `<th style="width: 44px; text-align: center;">Action</th>` : ''}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${displayBranches.map(b => `
+                    <tr>
+                      ${!isGeo ? `
+                        <td style="text-align: center;">
+                          <input type="checkbox" class="min-sol-row-chk" data-sol="${b.sol_id}" style="cursor: pointer;" />
+                        </td>
+                      ` : ''}
+                      <td><b style="color: #16a34a;">${b.sol_id}</b></td>
+                      <td><b>${b.branch || '-'}</b></td>
+                      <td>${b.district || '-'}</td>
+                      <td>${b.region || '-'}</td>
+                      <td>${b.zone || '-'}</td>
+                      ${!isGeo ? `
+                        <td style="text-align: center;">
+                          <span class="min-sol-remove" data-sol="${b.sol_id}" title="Delete" style="color: #dc2626; font-size: 14px;">×</span>
+                        </td>
+                      ` : ''}
                     </tr>
-                  </thead>
-                  <tbody>
-                    ${solList.map(sol => {
-                      let b = allBranches.find(x => String(x.sol_id) === String(sol)) || {};
-                      return `
-                        <tr>
-                          <td style="text-align: center;">
-                            <input type="checkbox" class="min-sol-row-chk" data-sol="${sol}" style="cursor: pointer;" />
-                          </td>
-                          <td><b style="color: #16a34a;">${sol}</b></td>
-                          <td><b>${b.branch || '-'}</b></td>
-                          <td>${b.district || '-'}</td>
-                          <td>${b.region || '-'}</td>
-                          <td>${b.zone || '-'}</td>
-                          <td style="text-align: center;">
-                            <span class="min-sol-remove" data-sol="${sol}" title="Delete" style="color: #dc2626; font-size: 14px;">×</span>
-                          </td>
-                        </tr>
-                      `;
-                    }).join('')}
-                  </tbody>
-                </table>
-              </div>
-            ` : `
-              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;">
-                No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.
-              </div>
-            `}
-          </div>
-        `}
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : `
+            <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 11.5px;">
+              ${isGeo ? (
+                frm.state.zones.size === 0 ? '👈 Select a <b>Zone</b> above to view accessible branches.' : 'No branches match the selected Zone/Region criteria.'
+              ) : (
+                'No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.'
+              )}
+            </div>
+          `}
+        </div>
       </div>
     `;
 
@@ -558,14 +629,6 @@ frappe.ui.form.on("Report Preference", {
       if (frm.state.access_type === targetMode) return;
 
       frm.state.access_type = targetMode;
-      if (targetMode === "Geographical (Zone / Region / District)") {
-        frm.state.sol_ids.clear();
-      } else {
-        frm.state.zones.clear();
-        frm.state.regions.clear();
-        frm.state.districts.clear();
-      }
-
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
     });
@@ -621,7 +684,7 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Zone Chips Click: Toggle Zone without auto-selecting regions
+    // Zone Chips Click
     $w.find(".min-chip-zone").on("click", function () {
       let z = $(this).data("raw");
       if (frm.state.zones.has(z)) {
