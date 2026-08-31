@@ -158,7 +158,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => state.regions.has(r.raw));
     let solList = Array.from(state.sol_ids);
 
-    // Compute Geo Tree structure
+    // Compute Centered Flowchart Tree Data
     let selectedZonesList = Array.from(state.zones);
     let totalGeoBranches = 0;
 
@@ -177,11 +177,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
       let regionDetails = activeRegions.map(r => {
         let rBranches = zoneBranches.filter(b => b.region === r);
-        let rDistricts = Array.from(new Set(rBranches.map(b => b.district).filter(Boolean)));
         return {
           region: r,
-          branch_count: rBranches.length,
-          districts: rDistricts
+          branch_count: rBranches.length
         };
       });
 
@@ -345,77 +343,108 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           font-weight: 700;
         }
 
-        /* Tree Diagram Styles */
-        .min-geo-tree-card {
+        /* Centered Flowchart Tree */
+        .min-flowchart-card {
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border-radius: 10px;
+          background: #f8fafc;
+          padding: 20px 16px;
+          margin-top: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .min-tree-root-box {
+          background: #0f172a;
+          color: #ffffff;
+          padding: 8px 18px;
+          border-radius: 24px;
+          font-size: 12.5px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+          z-index: 2;
+        }
+
+        .min-tree-vertical-stem {
+          width: 2px;
+          height: 22px;
+          background: #94a3b8;
+        }
+
+        .min-tree-zones-row {
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          gap: 24px;
+          width: 100%;
+          flex-wrap: wrap;
+          position: relative;
+        }
+
+        .min-tree-zone-col {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 180px;
+          max-width: 240px;
+          position: relative;
+        }
+
+        .min-tree-zone-node {
           background: #ffffff;
-          overflow: hidden;
+          border: 1.5px solid #3b82f6;
+          border-radius: 10px;
+          padding: 8px 14px;
+          text-align: center;
+          box-shadow: 0 2px 5px rgba(59, 130, 246, 0.08);
+          width: 100%;
+        }
+        .min-tree-zone-heading {
+          font-weight: 800;
+          font-size: 13px;
+          color: #0f172a;
+          margin-bottom: 3px;
+        }
+        .min-tree-zone-badge-all {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #16a34a;
+          background: #dcfce7;
+          padding: 2px 7px;
+          border-radius: 6px;
+          display: inline-block;
+        }
+        .min-tree-zone-badge-partial {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #0369a1;
+          background: #e0f2fe;
+          padding: 2px 7px;
+          border-radius: 6px;
+          display: inline-block;
+        }
+
+        .min-tree-regions-container {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          width: 100%;
           margin-top: 6px;
         }
-        .min-geo-tree-header {
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-          padding: 10px 14px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .min-geo-tree-body {
-          padding: 14px 16px;
-        }
-
-        .min-tree-zone-block {
-          margin-bottom: 16px;
-          border-left: 2px solid #3b82f6;
-          padding-left: 12px;
-        }
-        .min-tree-zone-block:last-child {
-          margin-bottom: 0;
-        }
-
-        .min-tree-zone-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #0f172a;
-          margin-bottom: 6px;
-        }
-
-        .min-tree-status-badge {
-          font-size: 11px;
-          font-weight: 600;
-          padding: 2px 8px;
-          border-radius: 9999px;
-        }
-        .min-tree-status-all {
-          background: #dcfce7;
-          color: #15803d;
-          border: 1px solid #86efac;
-        }
-        .min-tree-status-partial {
-          background: #e0f2fe;
-          color: #0369a1;
-          border: 1px solid #bae6fd;
-        }
-
-        .min-tree-region-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-          gap: 8px;
-          margin-top: 8px;
-        }
-        .min-tree-region-item {
-          background: #f8fafc;
+        .min-tree-region-leaf {
+          background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 6px;
-          padding: 6px 10px;
+          padding: 5px 10px;
+          font-size: 11.5px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          font-size: 12px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
         }
 
         .min-sol-box {
@@ -539,54 +568,57 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             </div>
           </div>
 
-          <!-- GEOGRAPHICAL ACCESS HIERARCHY TREE DIAGRAM -->
-          <div class="min-geo-tree-card">
-            <div class="min-geo-tree-header">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 14px;">🌳</span>
-                <span style="font-weight: 700; font-size: 12.5px; color: #0f172a;">Geographical Access Tree Preview</span>
-              </div>
-              <span style="font-size: 11.5px; color: #16a34a; font-weight: 700;">
-                ${totalGeoBranches} Branches Accessible
-              </span>
+          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM -->
+          <div class="min-flowchart-card">
+            <!-- Level 0: Root User Node -->
+            <div class="min-tree-root-box">
+              <span>👤</span>
+              <span>${userName.toUpperCase()} (${userEmpId})</span>
+              ${state.tag ? `<span style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 4px; font-size: 10px;">${state.tag}</span>` : ''}
             </div>
 
-            <div class="min-geo-tree-body">
-              ${geoTreeData.length === 0 ? `
-                <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12.5px;">
-                  👈 Please select a <b>Zone</b> above to preview the hierarchy and allowed regions.
-                </div>
-              ` : `
+            <!-- Stem Line -->
+            <div class="min-tree-vertical-stem"></div>
+
+            ${geoTreeData.length === 0 ? `
+              <div style="padding: 16px; text-align: center; color: #94a3b8; font-size: 12.5px; background: #ffffff; border-radius: 8px; border: 1px dashed #cbd5e1; width: 100%; max-width: 420px;">
+                👈 Select a <b>Zone</b> above to attach geographical branches to this user.
+              </div>
+            ` : `
+              <!-- Level 1: Connected Zones Row -->
+              <div class="min-tree-zones-row">
                 ${geoTreeData.map(item => `
-                  <div class="min-tree-zone-block">
-                    <div class="min-tree-zone-title">
-                      <span>🟦 <b>${item.zone}</b></span>
+                  <div class="min-tree-zone-col">
+                    <!-- Zone Node -->
+                    <div class="min-tree-zone-node">
+                      <div class="min-tree-zone-heading">🟦 ${item.zone}</div>
                       ${item.is_all_regions_allowed ? `
-                        <span class="min-tree-status-badge min-tree-status-all">
-                          ✓ All ${item.all_regions_count} Regions Allowed (${item.total_zone_branches} Branches)
-                        </span>
+                        <div class="min-tree-zone-badge-all">
+                          All ${item.all_regions_count} Regions Allowed (${item.total_zone_branches} Br)
+                        </div>
                       ` : `
-                        <span class="min-tree-status-badge min-tree-status-partial">
-                          ${item.active_regions_count} of ${item.all_regions_count} Regions Selected (${item.total_zone_branches} Branches)
-                        </span>
+                        <div class="min-tree-zone-badge-partial">
+                          ${item.active_regions_count} of ${item.all_regions_count} Regions (${item.total_zone_branches} Br)
+                        </div>
                       `}
                     </div>
 
-                    <div class="min-tree-region-grid">
+                    <!-- Stem to regions -->
+                    <div class="min-tree-vertical-stem" style="height: 12px;"></div>
+
+                    <!-- Level 2: Region Leaves -->
+                    <div class="min-tree-regions-container">
                       ${item.regions.map(r => `
-                        <div class="min-tree-region-item">
-                          <div>
-                            <span style="color: #3b82f6; font-size: 11px;">├─</span>
-                            <b style="color: #1e293b;">${r.region}</b>
-                          </div>
-                          <span style="font-weight: 600; color: #64748b; font-size: 11px;">${r.branch_count} Branches</span>
+                        <div class="min-tree-region-leaf">
+                          <span style="font-weight: 600; color: #1e293b;">🔹 ${r.region}</span>
+                          <span style="color: #64748b; font-size: 11px; font-weight: 600;">${r.branch_count} Br</span>
                         </div>
                       `).join('')}
                     </div>
                   </div>
                 `).join('')}
-              `}
-            </div>
+              </div>
+            `}
           </div>
         ` : `
           <!-- SOL ID BOX (BRANCH WISE - PURE TABLE VIEW) -->
