@@ -1074,24 +1074,6 @@ frappe.ui.form.on("Report Preference", {
               <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-sols" style="margin-top: 6px; color: #dc2626;">Remove All</button>
             </div>
 
-            <!-- Selected SOL Tags -->
-            ${frm.state.sol_ids.size > 0 ? `
-              <div class="rp-capsule-row" style="margin-top: 4px;">
-                <span class="rp-capsule-label">SELECTED (${frm.state.sol_ids.size}):</span>
-                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                  ${Array.from(frm.state.sol_ids).map(s => {
-                    let b = allBranches.find(x => String(x.sol_id) === String(s));
-                    let label = b ? `${s} - ${b.branch}` : s;
-                    return `
-                      <div class="rp-tag-badge" data-sol="${s}">
-                        <span>${label}</span>
-                        <span class="rp-tag-remove rp-table-tag-remove" data-sol="${s}">&times;</span>
-                      </div>
-                    `;
-                  }).join('')}
-                </div>
-              </div>
-            ` : ''}
           `}
         </div>
 
