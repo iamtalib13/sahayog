@@ -614,6 +614,8 @@ exempt_from_csrf = [
 # }
 
 
+pdf_generator = "sahayog.utils.chrome_pdf.generate"
+
 fixtures = [
     # Workflow Fixtures - Employee Material Request
     {"dt": "Workflow", "filters": [
