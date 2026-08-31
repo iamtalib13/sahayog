@@ -287,6 +287,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let isGeo = state.access_type === "Geographical (Zone / Region / District)";
     let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
     let userEmpId = state.user ? state.user.split('@')[0] : "-";
+    let selectedBranchObj = (state.employee_meta.branches || []).find(b => b.sol_id === state.filter_branch);
+    let selectedBranchLabel = selectedBranchObj ? `${selectedBranchObj.sol_id} - ${selectedBranchObj.branch}` : 'All Branches';
 
     function sortZones(list) {
       return [...list].sort((a, b) => {
@@ -420,7 +422,79 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border-color: #0284c7;
         }
 
-        .min-side-select-filter {
+        /* Searchable Combobox (Drop Down + Search) */
+        .min-search-combobox {
+          position: relative;
+          width: 100%;
+        }
+        .min-combo-btn {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          background: #ffffff;
+          padding: 3px 6px;
+          font-size: 10.5px;
+          color: #1e293b;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          height: 25px;
+          text-align: left;
+          outline: none;
+        }
+        .min-combo-btn:hover {
+          border-color: #94a3b8;
+          background: #f8fafc;
+        }
+        .min-combo-label {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
+          font-weight: 500;
+        }
+        .min-combo-icons {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          color: #64748b;
+          font-size: 9px;
+          margin-left: 4px;
+          flex-shrink: 0;
+        }
+        .min-combo-clear {
+          color: #dc2626;
+          font-weight: bold;
+          padding: 0 2px;
+          cursor: pointer;
+        }
+        .min-combo-clear:hover {
+          color: #991b1b;
+        }
+
+        .min-combo-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+          margin-top: 2px;
+          min-width: 180px;
+        }
+        .min-combo-search-box {
+          padding: 4px 5px;
+          border-bottom: 1px solid #f1f5f9;
+          background: #f8fafc;
+          border-top-left-radius: 6px;
+          border-top-right-radius: 6px;
+        }
+        .min-combo-input {
           width: 100%;
           box-sizing: border-box;
           border: 1px solid #cbd5e1;
@@ -429,10 +503,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           font-size: 10.5px;
           outline: none;
           background: #ffffff;
-          height: 24px;
         }
-        .min-side-select-filter:focus {
+        .min-combo-input:focus {
           border-color: #0284c7;
+        }
+        .min-combo-list {
+          max-height: 180px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+        }
+        .min-combo-option {
+          padding: 4px 7px;
+          font-size: 10.5px;
+          color: #334155;
+          cursor: pointer;
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .min-combo-option:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+        .min-combo-option.selected {
+          background: #e0f2fe;
+          color: #0369a1;
+          font-weight: 700;
         }
 
         .min-side-user-list {
@@ -818,15 +915,54 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / user..." value="${state.search_query || ''}" />
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px;">
-              <select class="min-side-select-filter" id="min-side-filter-designation" title="Filter by Designation">
-                <option value="">All Designations</option>
-                ${(state.employee_meta.designations || []).map(d => `<option value="${d}" ${state.filter_designation === d ? 'selected' : ''}>${d}</option>`).join('')}
-              </select>
+              <!-- 1. Searchable Designation Dropdown -->
+              <div class="min-search-combobox" id="combo-designation">
+                <button type="button" class="min-combo-btn" id="btn-combo-designation">
+                  <span class="min-combo-label" title="${state.filter_designation || 'All Designations'}">${state.filter_designation || 'All Designations'}</span>
+                  <span class="min-combo-icons">
+                    ${state.filter_designation ? `<span class="min-combo-clear" data-target="designation" title="Clear">✕</span>` : ''}
+                    <span class="min-combo-caret">▾</span>
+                  </span>
+                </button>
+                <div class="min-combo-dropdown" id="dropdown-combo-designation" style="display: none;">
+                  <div class="min-combo-search-box">
+                    <input type="text" class="min-combo-input" id="input-combo-designation" placeholder="🔍 Search designation..." autocomplete="off" />
+                  </div>
+                  <div class="min-combo-list" id="list-combo-designation">
+                    <div class="min-combo-option ${!state.filter_designation ? 'selected' : ''}" data-target="designation" data-value="" data-label="All Designations">All Designations</div>
+                    ${(state.employee_meta.designations || []).map(d => `
+                      <div class="min-combo-option ${state.filter_designation === d ? 'selected' : ''}" data-target="designation" data-value="${d}" data-label="${d}">${d}</div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
 
-              <select class="min-side-select-filter" id="min-side-filter-branch" title="Filter by Branch">
-                <option value="">All Branches</option>
-                ${(state.employee_meta.branches || []).map(b => `<option value="${b.sol_id}" ${state.filter_branch === b.sol_id ? 'selected' : ''}>${b.sol_id} - ${b.branch}</option>`).join('')}
-              </select>
+              <!-- 2. Searchable Branch Dropdown -->
+              <div class="min-search-combobox" id="combo-branch">
+                <button type="button" class="min-combo-btn" id="btn-combo-branch">
+                  <span class="min-combo-label" title="${selectedBranchLabel}">${selectedBranchLabel}</span>
+                  <span class="min-combo-icons">
+                    ${state.filter_branch ? `<span class="min-combo-clear" data-target="branch" title="Clear">✕</span>` : ''}
+                    <span class="min-combo-caret">▾</span>
+                  </span>
+                </button>
+                <div class="min-combo-dropdown" id="dropdown-combo-branch" style="display: none;">
+                  <div class="min-combo-search-box">
+                    <input type="text" class="min-combo-input" id="input-combo-branch" placeholder="🔍 Search SOL / Branch..." autocomplete="off" />
+                  </div>
+                  <div class="min-combo-list" id="list-combo-branch">
+                    <div class="min-combo-option ${!state.filter_branch ? 'selected' : ''}" data-target="branch" data-value="" data-label="All Branches">All Branches</div>
+                    ${(state.employee_meta.branches || []).map(b => {
+                      let lbl = `${b.sol_id} - ${b.branch}`;
+                      return `
+                        <div class="min-combo-option ${state.filter_branch === b.sol_id ? 'selected' : ''}" data-target="branch" data-value="${b.sol_id}" data-label="${lbl}" data-search="${(b.sol_id + ' ' + b.branch).toLowerCase()}">
+                          <b style="color: #0284c7;">${b.sol_id}</b> - ${b.branch}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              </div>
             </div>
 
             ${(state.filter_designation || state.filter_branch || state.search_query) ? `
@@ -1088,26 +1224,89 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       }, 300);
     });
 
-    // Side Designation Filter Change
-    $m.find("#min-side-filter-designation").on("change", function () {
-      state.filter_designation = $(this).val();
+    // Toggle Designation Dropdown
+    $m.find("#btn-combo-designation").on("click", function (e) {
+      if ($(e.target).hasClass("min-combo-clear")) return;
+      $m.find("#dropdown-combo-branch").hide();
+      let $drop = $m.find("#dropdown-combo-designation");
+      $drop.toggle();
+      if ($drop.is(":visible")) {
+        setTimeout(() => $m.find("#input-combo-designation").val("").focus(), 50);
+        $m.find("#list-combo-designation .min-combo-option").show();
+      }
+    });
+
+    // Toggle Branch Dropdown
+    $m.find("#btn-combo-branch").on("click", function (e) {
+      if ($(e.target).hasClass("min-combo-clear")) return;
+      $m.find("#dropdown-combo-designation").hide();
+      let $drop = $m.find("#dropdown-combo-branch");
+      $drop.toggle();
+      if ($drop.is(":visible")) {
+        setTimeout(() => $m.find("#input-combo-branch").val("").focus(), 50);
+        $m.find("#list-combo-branch .min-combo-option").show();
+      }
+    });
+
+    // Live search inside Designation Dropdown
+    $m.find("#input-combo-designation").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find("#list-combo-designation .min-combo-option").each(function () {
+        let txt = $(this).text().toLowerCase();
+        $(this).toggle(txt.includes(q));
+      });
+    });
+
+    // Live search inside Branch Dropdown
+    $m.find("#input-combo-branch").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find("#list-combo-branch .min-combo-option").each(function () {
+        let s = ($(this).data("search") || $(this).text()).toLowerCase();
+        $(this).toggle(s.includes(q));
+      });
+    });
+
+    // Select Combobox Option
+    $m.find(".min-combo-option").on("click", function () {
+      let target = $(this).data("target");
+      let val = $(this).data("value");
+      if (target === "designation") {
+        state.filter_designation = val;
+        $m.find("#dropdown-combo-designation").hide();
+      } else if (target === "branch") {
+        state.filter_branch = val;
+        $m.find("#dropdown-combo-branch").hide();
+      }
+      renderPage();
       fetchUserPage(1);
     });
 
-    // Side Branch Filter Change
-    $m.find("#min-side-filter-branch").on("change", function () {
-      state.filter_branch = $(this).val();
+    // Clear Single Filter Click (Red Cross)
+    $m.find(".min-combo-clear").on("click", function (e) {
+      e.stopPropagation();
+      let target = $(this).data("target");
+      if (target === "designation") {
+        state.filter_designation = "";
+      } else if (target === "branch") {
+        state.filter_branch = "";
+      }
+      renderPage();
       fetchUserPage(1);
     });
 
-    // Reset Side Filters Button
+    // Close Dropdowns on Click Outside
+    $(document).off("click.min_combo").on("click.min_combo", function (e) {
+      if (!$(e.target).closest(".min-search-combobox").length) {
+        $m.find(".min-combo-dropdown").hide();
+      }
+    });
+
+    // Reset All Side Filters Button
     $m.find("#min-side-clear-filters").on("click", function () {
       state.filter_designation = "";
       state.filter_branch = "";
       state.search_query = "";
-      $m.find("#min-side-search-input").val("");
-      $m.find("#min-side-filter-designation").val("");
-      $m.find("#min-side-filter-branch").val("");
+      renderPage();
       fetchUserPage(1);
     });
 
