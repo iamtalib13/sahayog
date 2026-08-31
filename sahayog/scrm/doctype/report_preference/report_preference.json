@@ -6,16 +6,14 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "user_details_section",
+  "main_widget_section",
+  "widget_html",
+  "hidden_fields_section",
   "user",
-  "column_break_ckcs",
   "full_name",
   "enabled",
   "tag",
   "access_type",
-  "main_widget_section",
-  "widget_html",
-  "raw_fields_section",
   "zone",
   "region",
   "state",
@@ -26,12 +24,24 @@
  ],
  "fields": [
   {
-   "fieldname": "user_details_section",
+   "fieldname": "main_widget_section",
    "fieldtype": "Section Break",
-   "label": "User Configuration"
+   "hide_border": 1
   },
   {
-   "description": "Select User to configure Report & Branch Access Preferences.",
+   "fieldname": "widget_html",
+   "fieldtype": "HTML",
+   "label": "Permission Management Workspace"
+  },
+  {
+   "collapsed": 1,
+   "collapsible": 1,
+   "fieldname": "hidden_fields_section",
+   "fieldtype": "Section Break",
+   "hidden": 1,
+   "label": "Hidden System Fields"
+  },
+  {
    "fieldname": "user",
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
@@ -44,16 +54,11 @@
    "unique": 1
   },
   {
-   "description": "User Full Name",
    "fetch_from": "user.full_name",
    "fieldname": "full_name",
    "fieldtype": "Data",
    "label": "Full Name",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_ckcs",
-   "fieldtype": "Column Break"
   },
   {
    "default": "1",
@@ -74,23 +79,6 @@
    "label": "Access Type",
    "options": "Geographical (Zone / Region / District)\nSpecific Branches (SOL ID)",
    "reqd": 1
-  },
-  {
-   "fieldname": "main_widget_section",
-   "fieldtype": "Section Break",
-   "label": "Interactive Permission & Branch Access Workspace"
-  },
-  {
-   "fieldname": "widget_html",
-   "fieldtype": "HTML",
-   "label": "Permission Workspace"
-  },
-  {
-   "collapsed": 1,
-   "collapsible": 1,
-   "fieldname": "raw_fields_section",
-   "fieldtype": "Section Break",
-   "label": "Underlying Database Tables (Auto-synced from Widget)"
   },
   {
    "fieldname": "zone",
@@ -138,7 +126,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-31 17:45:00.000000",
+ "modified": "2026-08-31 17:48:00.000000",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",

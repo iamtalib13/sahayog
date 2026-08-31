@@ -1,9 +1,9 @@
 frappe.ui.form.on("Report Preference", {
   setup: function (frm) {
     frm.meta_data = null;
-    frm.coverage_view_mode = "drilldown"; // "drilldown" or "table"
     frm.state = {
       user: null,
+      full_name: "",
       enabled: 1,
       tag: "",
       access_type: "Geographical (Zone / Region / District)",
@@ -17,6 +17,8 @@ frappe.ui.form.on("Report Preference", {
   },
 
   refresh: function (frm) {
+    // Hide standard Frappe form elements if any are left
+    frm.toggle_display("hidden_fields_section", false);
     frm.trigger("init_widget");
   },
 
@@ -43,7 +45,7 @@ frappe.ui.form.on("Report Preference", {
   load_user_preference_into_widget: function (frm) {
     frappe.call({
       method: "sahayog.scrm.doctype.report_preference.report_preference.get_widget_meta",
-      args: { user: frm.doc.user },
+      args: { user: frm.state.user || frm.doc.user },
       callback: function (r) {
         frm.meta_data = r.message || {};
         frm.trigger("sync_doc_to_widget_state");
@@ -58,6 +60,7 @@ frappe.ui.form.on("Report Preference", {
     let roles = frm.meta_data.user_roles || [];
 
     frm.state.user = frm.doc.user || (pref ? pref.user : "");
+    frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
     frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
@@ -82,6 +85,8 @@ frappe.ui.form.on("Report Preference", {
   },
 
   sync_widget_state_to_doc: function (frm) {
+    frm.doc.user = frm.state.user;
+    frm.doc.full_name = frm.state.full_name;
     frm.doc.enabled = frm.state.enabled ? 1 : 0;
     frm.doc.tag = frm.state.tag || "";
     frm.doc.access_type = frm.state.access_type;
@@ -99,7 +104,6 @@ frappe.ui.form.on("Report Preference", {
       frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
     }
 
-    frm.refresh_fields(["zone", "region", "district", "sol_id", "enabled", "tag", "access_type"]);
     frm.dirty();
   },
 
@@ -124,16 +128,18 @@ frappe.ui.form.on("Report Preference", {
     let masterZones = meta.master_zones || [];
     let masterRegions = meta.master_regions || [];
     let rolesList = meta.roles_list || [];
+    let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
     let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
+    let isNewDoc = frm.is_new() || !frm.state.user;
 
     let html = `
       <style>
         .rp-workspace {
           background: #ffffff;
           border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 16px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 4px 14px rgba(0,0,0,0.04);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .rp-section-title {
@@ -150,9 +156,9 @@ frappe.ui.form.on("Report Preference", {
         .rp-card-block {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 14px;
-          margin-bottom: 14px;
+          border-radius: 10px;
+          padding: 16px;
+          margin-bottom: 16px;
         }
         .rp-flex-between {
           display: flex;
@@ -271,17 +277,112 @@ frappe.ui.form.on("Report Preference", {
         .rp-branch-search-item:hover {
           background: #f8fafc;
         }
+        .rp-top-user-bar {
+          display: grid;
+          grid-template-columns: 2fr 1.5fr 1fr 1fr;
+          gap: 12px;
+          align-items: center;
+        }
+        @media(max-width: 900px) {
+          .rp-top-user-bar {
+            grid-template-columns: 1fr;
+          }
+        }
+        .rp-toggle-switch {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          user-select: none;
+        }
+        .rp-toggle-btn {
+          width: 38px;
+          height: 22px;
+          background: #cbd5e1;
+          border-radius: 11px;
+          position: relative;
+          transition: background 0.2s ease;
+        }
+        .rp-toggle-btn.active {
+          background: #22c55e;
+        }
+        .rp-toggle-knob {
+          width: 18px;
+          height: 18px;
+          background: #ffffff;
+          border-radius: 50%;
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          transition: transform 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .rp-toggle-btn.active .rp-toggle-knob {
+          transform: translateX(16px);
+        }
         .rp-save-bar {
           display: flex;
           justify-content: flex-end;
           gap: 10px;
-          margin-top: 14px;
-          padding-top: 12px;
+          margin-top: 16px;
+          padding-top: 14px;
           border-top: 1px solid #e2e8f0;
         }
       </style>
 
       <div class="rp-workspace">
+        <!-- 0. TOP USER CONFIGURATION BAR -->
+        <div class="rp-card-block" style="background: #f1f5f9; border-color: #cbd5e1;">
+          <div class="rp-section-title">👤 User & Status Configuration</div>
+          
+          <div class="rp-top-user-bar">
+            <!-- User Selector / Search -->
+            <div style="position: relative;">
+              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">USER (Email / ID)</label>
+              ${isNewDoc ? `
+                <div class="rp-branch-search-box" style="margin-bottom: 0;">
+                  <input type="text" class="form-control input-sm" id="rp-user-search-input" placeholder="🔍 Search User Name/Email..." value="${frm.state.user || ''}" />
+                  <div class="rp-branch-search-dropdown" id="rp-user-search-dropdown"></div>
+                </div>
+              ` : `
+                <div style="font-weight: 700; font-size: 13px; color: #0f172a; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
+                  ${frm.state.user}
+                </div>
+              `}
+            </div>
+
+            <!-- Full Name Display -->
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">FULL NAME</label>
+              <div style="font-weight: 600; font-size: 13px; color: #334155; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 31px;">
+                ${frm.state.full_name || (frm.state.user ? "—" : "Select a User")}
+              </div>
+            </div>
+
+            <!-- Tag Selection -->
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">TAG</label>
+              <select class="form-control input-sm" id="rp-tag-select">
+                <option value="">No Tag</option>
+                ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join("")}
+              </select>
+            </div>
+
+            <!-- Enabled Status Toggle -->
+            <div>
+              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">STATUS</label>
+              <div class="rp-toggle-switch" id="rp-toggle-enabled">
+                <div class="rp-toggle-btn ${frm.state.enabled ? 'active' : ''}">
+                  <div class="rp-toggle-knob"></div>
+                </div>
+                <span style="font-size: 12px; font-weight: 600; color: ${frm.state.enabled ? '#166534' : '#64748b'};">
+                  ${frm.state.enabled ? 'Active' : 'Disabled'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 1. ROLES SECTION -->
         <div class="rp-card-block">
           <div class="rp-flex-between">
@@ -397,6 +498,71 @@ frappe.ui.form.on("Report Preference", {
   attach_widget_events: function (frm) {
     let $w = frm.fields_dict.widget_html.$wrapper;
     let meta = frm.meta_data || {};
+
+    // User Live Search (if new)
+    let $userInput = $w.find("#rp-user-search-input");
+    let $userDropdown = $w.find("#rp-user-search-dropdown");
+
+    $userInput.on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      if (!q) {
+        $userDropdown.hide().empty();
+        return;
+      }
+
+      frappe.call({
+        method: "sahayog.scrm.doctype.report_preference.report_preference.search_user",
+        args: { search_text: q },
+        callback: function (r) {
+          let users = r.message || [];
+          if (!users.length) {
+            $userDropdown.html('<div style="padding:8px 12px; color:#94a3b8; font-size:12px;">No user found</div>').show();
+            return;
+          }
+
+          let itemsHtml = users.map(u => `
+            <div class="rp-branch-search-item rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}">
+              <b>${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
+            </div>
+          `).join("");
+
+          $userDropdown.html(itemsHtml).show();
+        }
+      });
+    });
+
+    $userDropdown.on("click", ".rp-user-pick-item", function () {
+      let u = $(this).data("user");
+      let fn = $(this).data("fullname");
+      frm.state.user = u;
+      frm.state.full_name = fn;
+      frm.doc.user = u;
+      frm.doc.full_name = fn;
+      $userDropdown.hide().empty();
+      frm.trigger("load_user_preference_into_widget");
+    });
+
+    // Tag Change
+    $w.find("#rp-tag-select").on("change", function () {
+      frm.state.tag = $(this).val();
+      frm.trigger("sync_widget_state_to_doc");
+    });
+
+    // Toggle Enabled
+    $w.find("#rp-toggle-enabled").on("click", function () {
+      frm.state.enabled = !frm.state.enabled;
+      let $btn = $(this).find(".rp-toggle-btn");
+      let $label = $(this).find("span");
+
+      if (frm.state.enabled) {
+        $btn.addClass("active");
+        $label.text("Active").css("color", "#166534");
+      } else {
+        $btn.removeClass("active");
+        $label.text("Disabled").css("color", "#64748b");
+      }
+      frm.trigger("sync_widget_state_to_doc");
+    });
 
     // Role Toggles
     $w.find(".rp-role-chip").on("click", function () {
@@ -527,6 +693,7 @@ frappe.ui.form.on("Report Preference", {
     $(document).on("click", function (e) {
       if (!$(e.target).closest(".rp-branch-search-box").length) {
         $dropdown.hide();
+        $userDropdown.hide();
       }
     });
 
@@ -547,7 +714,7 @@ frappe.ui.form.on("Report Preference", {
 
     // Save Button
     $w.find("#rp-btn-direct-save").on("click", function () {
-      if (!frm.doc.user) {
+      if (!frm.state.user) {
         frappe.msgprint(__("Please select a User first."));
         return;
       }
@@ -556,9 +723,9 @@ frappe.ui.form.on("Report Preference", {
         method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
         args: {
           data: {
-            user: frm.doc.user,
-            enabled: frm.doc.enabled,
-            tag: frm.doc.tag,
+            user: frm.state.user,
+            enabled: frm.state.enabled,
+            tag: frm.state.tag,
             access_type: frm.state.access_type,
             roles: Array.from(frm.state.roles),
             zones: Array.from(frm.state.zones),
@@ -612,7 +779,6 @@ frappe.ui.form.on("Report Preference", {
     let branches = frm.resolved_branches || [];
     let count = branches.length;
 
-    // Group branches into Tree: Zone -> Region -> District -> Branches
     let tree = {};
     branches.forEach(b => {
       let z = b.zone || "Unassigned Zone";
@@ -680,7 +846,6 @@ frappe.ui.form.on("Report Preference", {
           overflow-y: auto;
           padding: 10px 14px;
         }
-        /* Collapsible items */
         .rp-tree-zone {
           margin-bottom: 8px;
           border: 1px solid #e2e8f0;
@@ -938,7 +1103,6 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
 
-      // Auto-expand all when searching
       $slot.find(".rp-zone-body, .rp-region-body, .rp-district-body").show();
       $slot.find(".rp-arrow-icon").removeClass("collapsed");
 
