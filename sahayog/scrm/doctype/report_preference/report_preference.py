@@ -64,21 +64,25 @@ def get_widget_meta(user=None):
     - Available tags
     - Current saved preference data for the specified user (if any)
     """
+    # Exclude Zonal branch types
+    branch_type_filter = " AND (branch_type IS NULL OR branch_type != 'Zonal')"
+
     zones = frappe.db.sql(
-        "SELECT DISTINCT zone FROM `tabSahayog Branch` WHERE zone IS NOT NULL AND zone != '' ORDER BY zone ASC",
+        f"SELECT DISTINCT zone FROM `tabSahayog Branch` WHERE zone IS NOT NULL AND zone != '' {branch_type_filter} ORDER BY zone ASC",
         pluck=True
     )
     regions = frappe.db.sql(
-        "SELECT DISTINCT region FROM `tabSahayog Branch` WHERE region IS NOT NULL AND region != '' ORDER BY region ASC",
+        f"SELECT DISTINCT region FROM `tabSahayog Branch` WHERE region IS NOT NULL AND region != '' {branch_type_filter} ORDER BY region ASC",
         pluck=True
     )
     districts = frappe.db.sql(
-        "SELECT DISTINCT district FROM `tabSahayog Branch` WHERE district IS NOT NULL AND district != '' ORDER BY district ASC",
+        f"SELECT DISTINCT district FROM `tabSahayog Branch` WHERE district IS NOT NULL AND district != '' {branch_type_filter} ORDER BY district ASC",
         pluck=True
     )
     all_branches = frappe.get_all(
         "Sahayog Branch",
-        fields=["sol_id", "branch", "zone", "region", "district"],
+        filters=[["branch_type", "!=", "Zonal"]],
+        fields=["sol_id", "branch", "zone", "region", "district", "branch_type"],
         order_by="sol_id asc",
         limit_page_length=2000
     )
@@ -205,7 +209,7 @@ def get_preview_branches(zones=None, regions=None, states=None, districts=None, 
             return []
         return frappe.get_all(
             "Sahayog Branch",
-            filters={"sol_id": ["in", sol_ids]},
+            filters={"sol_id": ["in", sol_ids], "branch_type": ["!=", "Zonal"]},
             fields=["sol_id", "branch", "zone", "region", "district", "state"],
             order_by="sol_id asc",
             limit_page_length=500
@@ -214,7 +218,7 @@ def get_preview_branches(zones=None, regions=None, states=None, districts=None, 
     if not (zones or regions or states or districts):
         return []
 
-    conditions = []
+    conditions = ["(branch_type IS NULL OR branch_type != 'Zonal')"]
     values = {}
 
     if zones:
