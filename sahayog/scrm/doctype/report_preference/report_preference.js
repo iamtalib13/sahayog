@@ -1106,7 +1106,7 @@ frappe.ui.form.on("Report Preference", {
                       return `
                         <!-- Level: Region Row -->
                         <tr class="rp-row-region-header rp-tree-header-row rp-child-of-${zKey}" data-parent-zone="${zKey}" data-tree-key="${rKey}" data-search="${z} ${r}">
-                          <td style="padding-left: 20px;">
+                          <td>
                             <span class="rp-tree-toggle-icon">▼</span>
                             <span class="rp-level-badge rp-level-badge-region">Region</span>
                           </td>
@@ -1124,7 +1124,7 @@ frappe.ui.form.on("Report Preference", {
                           return `
                             <!-- Level: District Row -->
                             <tr class="rp-row-district-header rp-tree-header-row rp-child-of-${zKey} rp-child-of-${rKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-tree-key="${dKey}" data-search="${z} ${r} ${d}">
-                              <td style="padding-left: 36px;">
+                              <td>
                                 <span class="rp-tree-toggle-icon">▼</span>
                                 <span class="rp-level-badge rp-level-badge-district">District</span>
                               </td>
@@ -1138,7 +1138,7 @@ frappe.ui.form.on("Report Preference", {
                             <!-- Level: Branch Rows -->
                             ${distBranches.map(b => `
                               <tr class="rp-row-branch-leaf rp-child-of-${zKey} rp-child-of-${rKey} rp-child-of-${dKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-parent-dist="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}">
-                                <td style="padding-left: 52px;">
+                                <td>
                                   <span class="rp-level-badge rp-level-badge-branch">Branch</span>
                                 </td>
                                 <td><span class="rp-tag-micro">${z}</span></td>
