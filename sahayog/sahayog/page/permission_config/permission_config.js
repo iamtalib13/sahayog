@@ -293,14 +293,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         });
       }
     } else {
-      let solSet = state.sol_ids;
-      displayBranches = Array.from(solSet).map(sol => {
-        let b = allBranches.find(x => String(x.sol_id) === String(sol));
-        return b || { sol_id: sol, branch: "-", district: "-", region: "-", zone: "-" };
-      });
+      displayBranches = allBranches;
     }
 
-    let solList = Array.from(state.sol_ids);
+    let selectedSolCount = allBranches.filter(b => state.sol_ids.has(String(b.sol_id))).length;
 
     let html = `
       <style>
@@ -312,7 +308,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           min-height: calc(100vh - 160px);
         }
 
-        /* 1. LEFT SIDE PANEL (Strong 20 Items Server-Side Pagination & Debounce Search) */
+        /* 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination) */
         .min-side-panel {
           width: 290px;
           min-width: 290px;
@@ -651,15 +647,13 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           background: #ffffff;
           margin-bottom: 6px;
         }
-        .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
-        .min-sol-remove:hover { color: #dc2626; }
 
         .min-branch-table-wrap {
           border: 1px solid #e2e8f0;
           border-radius: 6px;
           overflow: hidden;
           margin-top: 6px;
-          max-height: 380px;
+          max-height: 400px;
           overflow-y: auto;
           scrollbar-width: thin;
         }
@@ -681,26 +675,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           color: #334155;
         }
         .min-branch-table tr:hover { background: #f8fafc; }
-
-        .min-bulk-delete-btn {
-          background: #fef2f2;
-          color: #dc2626;
-          border: 1px solid #fca5a5;
-          padding: 2px 7px;
-          border-radius: 4px;
-          font-size: 10.5px;
-          font-weight: 600;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
+        .min-branch-table tr.row-selected { background: #f0fdf4; }
 
         .min-box-disabled {
           opacity: 0.45;
           pointer-events: none;
           user-select: none;
           background: #f8fafc !important;
+        }
+
+        .min-search-input-branch {
+          border: 1px solid #cbd5e1;
+          border-radius: 5px;
+          padding: 4px 8px;
+          font-size: 11px;
+          outline: none;
+          flex: 1;
+        }
+        .min-search-input-branch:focus {
+          border-color: #0284c7;
         }
       </style>
 
@@ -809,33 +802,23 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                 ` : `
                   <span style="color: #0284c7;">● Branch Wise Mode Active</span>
                   <span style="color: #94a3b8; margin: 0 4px;">•</span>
-                  <span style="color: #64748b;">${solList.length} SOLs Configured</span>
+                  <span style="color: #16a34a;"><b>${selectedSolCount}</b> / ${allBranches.length} Branches Allowed</span>
                 `}
               </div>
             </div>
 
-            <!-- 3. BRANCH / SOL TABLE SECTION -->
+            <!-- 3. BRANCH TABLE SECTION (WITH SEARCH & DIRECT CHECKBOXES) -->
             <div class="min-sol-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="min-box-label" style="min-width: unset;">SOL ID / Branch Table</span>
-                  ${!isGeo ? `
-                    <span style="cursor: pointer; color: #0284c7; font-size: 11px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
-                  ` : `
-                    <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 1px 6px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Branches) • Scroll to inspect</span>
-                  `}
-                </div>
-
+              <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                <input type="text" class="min-search-input-branch" id="min-branch-filter-input" placeholder="🔍 Search branch name, SOL ID, district, region, zone..." />
                 ${!isGeo ? `
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
-                      <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
-                    </button>
-                    ${solList.length > 0 ? `
-                      <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 10.5px; padding: 0;">Clear All</button>
-                    ` : ''}
+                  <div style="display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700;">
+                    <button type="button" class="btn btn-xs btn-default" id="min-btn-select-all-filtered">Select All</button>
+                    <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All</button>
                   </div>
-                ` : ''}
+                ` : `
+                  <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">👁️ Read-Only Preview (${displayBranches.length} Br)</span>
+                `}
               </div>
 
               ${displayBranches.length > 0 ? `
@@ -845,8 +828,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                       <tr>
                         <th style="width: 40px; text-align: center;">Sr.</th>
                         ${!isGeo ? `
-                          <th style="width: 28px; text-align: center;">
-                            <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
+                          <th style="width: 32px; text-align: center;">
+                            <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" title="Toggle All" />
                           </th>
                         ` : ''}
                         <th style="width: 80px;">SOL ID</th>
@@ -854,45 +837,48 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                         <th>District</th>
                         <th>Region</th>
                         <th>Zone</th>
-                        ${!isGeo ? `<th style="width: 38px; text-align: center;">Action</th>` : ''}
+                        ${!isGeo ? `<th style="width: 70px; text-align: center;">Status</th>` : ''}
                       </tr>
                     </thead>
-                    <tbody>
-                      ${displayBranches.map((b, idx) => `
-                        <tr>
-                          <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
-                          ${!isGeo ? `
-                            <td style="text-align: center;">
-                              <input type="checkbox" class="min-sol-row-chk" data-sol="${b.sol_id}" style="cursor: pointer;" />
-                            </td>
-                          ` : ''}
-                          <td><b style="color: #16a34a;">${b.sol_id}</b></td>
-                          <td><b>${b.branch || '-'}</b></td>
-                          <td>${b.district || '-'}</td>
-                          <td>${b.region || '-'}</td>
-                          <td>${b.zone || '-'}</td>
-                          ${!isGeo ? `
-                            <td style="text-align: center;">
-                              <span class="min-sol-remove" data-sol="${b.sol_id}" title="Delete" style="color: #dc2626; font-size: 13px;">×</span>
-                            </td>
-                          ` : ''}
-                        </tr>
-                      `).join('')}
+                    <tbody id="min-branch-table-tbody">
+                      ${displayBranches.map((b, idx) => {
+                        let isChecked = state.sol_ids.has(String(b.sol_id));
+                        return `
+                          <tr class="min-branch-data-row ${isChecked ? 'row-selected' : ''}" data-search="${(b.sol_id + ' ' + (b.branch || '') + ' ' + (b.district || '') + ' ' + (b.region || '') + ' ' + (b.zone || '')).toLowerCase()}">
+                            <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                            ${!isGeo ? `
+                              <td style="text-align: center;">
+                                <input type="checkbox" class="min-sol-toggle-chk" data-sol="${b.sol_id}" ${isChecked ? 'checked' : ''} style="cursor: pointer;" />
+                              </td>
+                            ` : ''}
+                            <td><b style="color: ${isChecked ? '#16a34a' : '#475569'};">${b.sol_id}</b></td>
+                            <td><b>${b.branch || '-'}</b></td>
+                            <td>${b.district || '-'}</td>
+                            <td>${b.region || '-'}</td>
+                            <td>${b.zone || '-'}</td>
+                            ${!isGeo ? `
+                              <td style="text-align: center;">
+                                ${isChecked ? `
+                                  <span style="background: #dcfce7; color: #15803d; font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 4px;">Allowed</span>
+                                ` : `
+                                  <span style="color: #94a3b8; font-size: 9.5px; font-weight: 600;">Off</span>
+                                `}
+                              </td>
+                            ` : ''}
+                          </tr>
+                        `;
+                      }).join('')}
                     </tbody>
                   </table>
                 </div>
               ` : `
                 <div style="padding: 14px; text-align: center; color: #94a3b8; font-size: 11px;">
-                  ${isGeo ? (
-                    state.zones.size === 0 ? '👈 Select a <b>Zone</b> above to view accessible branches.' : 'No branches match the selected Zone/Region criteria.'
-                  ) : (
-                    'No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.'
-                  )}
+                  No branches found.
                 </div>
               `}
             </div>
           ` : `
-            <!-- EMPTY STATE: NO USER SELECTED -->
+            <!-- EMPTY STATE -->
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 350px; text-align: center; color: #64748b;">
               <div style="font-size: 38px; margin-bottom: 8px;">👈</div>
               <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Select a User from the Side Panel</div>
@@ -928,7 +914,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       });
     }
 
-    // Debounced Search Input (300ms delay to eliminate server load)
+    // Debounced Search Input for Users Side Panel
     $m.find("#min-side-search-input").on("input", function () {
       let query = $(this).val();
       clearTimeout(state.search_timer);
@@ -942,7 +928,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       showSelectUserDialog();
     });
 
-    // Side Pagination Buttons (Server-side fetch for target page only)
+    // Side Pagination Buttons
     $m.find("#min-side-btn-prev").on("click", function () {
       if (state.current_page > 1) {
         fetchUserPage(state.current_page - 1);
@@ -1047,86 +1033,63 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // SOL ID Dialog / Add
-    $m.find("#min-btn-edit-sol, #min-btn-edit-sol-link").on("click", function () {
-      let d = new frappe.ui.Dialog({
-        title: __("Add / Edit Branch SOL IDs"),
-        fields: [
-          {
-            fieldname: "sol_input",
-            fieldtype: "Small Text",
-            label: "SOL IDs (Comma, Space, or Newline separated)",
-            default: Array.from(state.sol_ids).join(", ")
-          }
-        ],
-        primary_action_label: __("Apply & Save"),
-        primary_action: function (values) {
-          d.hide();
-          let tokens = (values.sol_input || "").split(/[,;\s\n\r]+/).map(x => x.trim()).filter(Boolean);
-          state.sol_ids = new Set(tokens);
-          renderPage();
-          autoSave();
+    // Live Branch Search Filter (Client-Side Instant Row Filtering)
+    $m.find("#min-branch-filter-input").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find(".min-branch-data-row").each(function () {
+        let text = $(this).data("search") || "";
+        if (!q || text.includes(q)) {
+          $(this).show();
+        } else {
+          $(this).hide();
         }
       });
-      d.show();
     });
 
-    // Remove single SOL ID
-    $m.find(".min-sol-remove").on("click", function () {
+    // Direct Row Checkbox Toggle: Enable / Disable Branch
+    $m.find(".min-sol-toggle-chk").on("change", function () {
       let sol = String($(this).data("sol"));
-      state.sol_ids.delete(sol);
-      renderPage();
-      autoSave();
-    });
-
-    $m.find("#min-btn-clear-sol").on("click", function () {
-      state.sol_ids.clear();
-      renderPage();
-      autoSave();
-    });
-
-    // Table Bulk Selection & Delete Handlers
-    function updateBulkDeleteState() {
-      let checkedBoxes = $m.find(".min-sol-row-chk:checked");
-      let count = checkedBoxes.length;
-      let $bulkBtn = $m.find("#min-btn-bulk-delete-sol");
-      let $bulkCount = $m.find("#min-bulk-sol-count");
-
-      if (count > 0) {
-        $bulkCount.text(count);
-        $bulkBtn.show();
+      let isChecked = $(this).is(":checked");
+      if (isChecked) {
+        state.sol_ids.add(sol);
       } else {
-        $bulkBtn.hide();
+        state.sol_ids.delete(sol);
       }
+      renderPage();
+      autoSave();
+    });
 
-      let totalBoxes = $m.find(".min-sol-row-chk").length;
-      $m.find("#min-sol-chk-all").prop("checked", totalBoxes > 0 && count === totalBoxes);
-    }
-
+    // Header Checkbox Toggle All Visible Rows
     $m.find("#min-sol-chk-all").on("change", function () {
       let isChecked = $(this).is(":checked");
-      $m.find(".min-sol-row-chk").prop("checked", isChecked);
-      updateBulkDeleteState();
+      $m.find(".min-branch-data-row:visible .min-sol-toggle-chk").each(function () {
+        let sol = String($(this).data("sol"));
+        if (isChecked) {
+          state.sol_ids.add(sol);
+        } else {
+          state.sol_ids.delete(sol);
+        }
+      });
+      renderPage();
+      autoSave();
     });
 
-    $m.find(".min-sol-row-chk").on("change", function () {
-      updateBulkDeleteState();
+    // Quick Select All Filtered
+    $m.find("#min-btn-select-all-filtered").on("click", function () {
+      $m.find(".min-branch-data-row:visible .min-sol-toggle-chk").each(function () {
+        state.sol_ids.add(String($(this).data("sol")));
+      });
+      renderPage();
+      autoSave();
     });
 
-    $m.find("#min-btn-bulk-delete-sol").on("click", function () {
-      let toDelete = [];
-      $m.find(".min-sol-row-chk:checked").each(function () {
-        toDelete.push(String($(this).data("sol")));
+    // Quick Deselect All Filtered
+    $m.find("#min-btn-deselect-all-filtered").on("click", function () {
+      $m.find(".min-branch-data-row:visible .min-sol-toggle-chk").each(function () {
+        state.sol_ids.delete(String($(this).data("sol")));
       });
-
-      if (!toDelete.length) return;
-
-      frappe.confirm(__(`Remove <b>${toDelete.length}</b> selected branches from permission?`), () => {
-        toDelete.forEach(sol => state.sol_ids.delete(sol));
-        renderPage();
-        autoSave();
-        frappe.show_alert({ message: __(`${toDelete.length} branches removed ✓`), indicator: "green" });
-      });
+      renderPage();
+      autoSave();
     });
   }
 
