@@ -538,8 +538,12 @@ frappe.ui.form.on("Report Preference", {
         .rp-row-district-header:hover {
           background: #f1f5f9;
         }
+        .rp-row-branch-leaf {
+          background-color: #f0fdf4;
+          transition: background-color 0.15s ease;
+        }
         .rp-row-branch-leaf:hover {
-          background-color: #f8fafc;
+          background-color: #dcfce7;
         }
 
         .rp-tree-toggle-icon {
@@ -560,11 +564,11 @@ frappe.ui.form.on("Report Preference", {
           font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
           font-weight: 700;
           font-size: 11.5px;
-          color: var(--rp-accent);
-          background: #eff6ff;
+          color: #15803d;
+          background: #dcfce7;
           padding: 2px 7px;
           border-radius: 4px;
-          border: 1px solid #dbeafe;
+          border: 1px solid #86efac;
           display: inline-block;
         }
         .rp-tag-micro {
@@ -585,9 +589,9 @@ frappe.ui.form.on("Report Preference", {
           letter-spacing: 0.02em;
         }
         .rp-level-badge-zone { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-        .rp-level-badge-region { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .rp-level-badge-region { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
         .rp-level-badge-district { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-        .rp-level-badge-branch { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .rp-level-badge-branch { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
       </style>
 
       <div class="rp-root">
