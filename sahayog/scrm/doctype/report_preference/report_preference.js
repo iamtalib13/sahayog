@@ -60,7 +60,7 @@ frappe.ui.form.on("Report Preference", {
     frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
-    frm.state.access_type = "Geographical (Zone / Region / District)";
+    frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones) zones = pref.zones;
@@ -84,16 +84,20 @@ frappe.ui.form.on("Report Preference", {
     frm.doc.full_name = frm.state.full_name;
     frm.doc.enabled = frm.state.enabled ? 1 : 0;
     frm.doc.tag = frm.state.tag || "";
-    frm.doc.access_type = "Geographical (Zone / Region / District)";
+    frm.doc.access_type = frm.state.access_type || "Geographical (Zone / Region / District)";
 
     frm.clear_table("zone");
     frm.clear_table("region");
     frm.clear_table("district");
     frm.clear_table("sol_id");
 
-    frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
-    frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
-    frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
+    if (frm.state.access_type === "Geographical (Zone / Region / District)") {
+      frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
+      frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
+      frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
+    } else {
+      frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
+    }
 
     frm.dirty();
   },
@@ -107,6 +111,7 @@ frappe.ui.form.on("Report Preference", {
 
     let meta = frm.meta_data || {};
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
+    let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let isNewDoc = frm.is_new() || !frm.state.user;
 
     let html = `
@@ -146,6 +151,37 @@ frappe.ui.form.on("Report Preference", {
           gap: 12px;
           flex-wrap: wrap;
         }
+
+        /* Mode Switcher Segmented Control */
+        .rp-mode-segmented-control {
+          display: inline-flex;
+          background: #f1f5f9;
+          padding: 3px;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+        }
+        .rp-mode-segment {
+          padding: 5px 14px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          color: #64748b;
+          transition: all 0.15s ease;
+          user-select: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .rp-mode-segment:hover {
+          color: #0f172a;
+        }
+        .rp-mode-segment.active {
+          background: #ffffff;
+          color: #0f172a;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
         .rp-btn-ghost {
           background: transparent;
           border: 1px solid var(--rp-border);
@@ -172,6 +208,9 @@ frappe.ui.form.on("Report Preference", {
           color: #dc2626;
           cursor: pointer;
           transition: all 0.15s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
         }
         .rp-btn-danger-ghost:hover {
           background: #fef2f2;
@@ -327,7 +366,7 @@ frappe.ui.form.on("Report Preference", {
           background: var(--rp-surface-subtle);
         }
 
-        /* Table Section Card with Integrated Capsules */
+        /* Table Section Card */
         .rp-table-section-card {
           background: #ffffff;
           border: 1px solid var(--rp-border);
@@ -366,7 +405,7 @@ frappe.ui.form.on("Report Preference", {
           border-color: var(--rp-accent);
         }
 
-        /* Interactive Permission Capsules Bar */
+        /* Permission Controls Bar inside Table */
         .rp-permission-capsules-bar {
           padding: 12px 16px;
           background: #ffffff;
@@ -437,6 +476,30 @@ frappe.ui.form.on("Report Preference", {
           color: var(--rp-primary);
         }
 
+        /* Dismissible Tag for SOL Mode */
+        .rp-tag-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #dbeafe;
+          padding: 3px 10px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          font-weight: 500;
+        }
+        .rp-tag-remove {
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          line-height: 1;
+          color: #93c5fd;
+        }
+        .rp-tag-remove:hover {
+          color: #ef4444;
+        }
+
         /* Table Structure */
         .rp-table-scroll-wrap {
           max-height: 440px;
@@ -496,15 +559,20 @@ frappe.ui.form.on("Report Preference", {
         <div class="rp-workspace-card">
           <!-- Top Bar Header -->
           <div class="rp-top-bar">
-            <div>
-              <span style="font-size: 14px; font-weight: 700; color: #0f172a;">
-                Report & Branch Preferences
-              </span>
+            <!-- Mode Toggle Segmented Control -->
+            <div class="rp-mode-segmented-control">
+              <div class="rp-mode-segment ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
+                <span>🌍 Geographical Scope</span>
+              </div>
+              <div class="rp-mode-segment ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
+                <span>🏢 Specific Branches (SOL ID)</span>
+              </div>
             </div>
 
             <div style="display: flex; align-items: center; gap: 8px;">
-              <button type="button" class="rp-btn-danger-ghost" id="rp-btn-reset-all" title="Clear all zones, regions & save empty state">
-                🔄 Reset & Clear All
+              <button type="button" class="rp-btn-danger-ghost" id="rp-btn-reset-all" title="Clear all selections & save empty state">
+                <span>🔄</span>
+                <span>Reset & Clear All</span>
               </button>
               <button type="button" class="rp-btn-ghost" id="rp-btn-discard">Discard</button>
               <button type="button" class="rp-btn-primary" id="rp-btn-direct-save">
@@ -563,7 +631,7 @@ frappe.ui.form.on("Report Preference", {
               </div>
             </div>
 
-            <!-- Table Section Card with Integrated Zone & Region Capsules -->
+            <!-- Table Section Card with Integrated Permission Mode Controls -->
             <div id="rp-branch-coverage-slot"></div>
           </div>
         </div>
@@ -576,6 +644,30 @@ frappe.ui.form.on("Report Preference", {
 
   attach_widget_events: function (frm) {
     let $w = frm.fields_dict.widget_html.$wrapper;
+    let meta = frm.meta_data || {};
+
+    // Mode Switcher Toggle at Top Bar
+    $w.find(".rp-mode-segment").on("click", function () {
+      let targetMode = $(this).data("mode");
+      if (frm.state.access_type === targetMode) return;
+
+      frm.state.access_type = targetMode;
+      $w.find(".rp-mode-segment").removeClass("active");
+      $(this).addClass("active");
+
+      // Clear opposing filter selections for consistency
+      if (targetMode === "Geographical (Zone / Region / District)") {
+        frm.state.sol_ids.clear();
+      } else {
+        frm.state.zones.clear();
+        frm.state.regions.clear();
+        frm.state.districts.clear();
+      }
+
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("render_full_crud_widget");
+      frm.trigger("calculate_and_render_branches");
+    });
 
     // User Live Search
     let $userInput = $w.find("#rp-user-search-input");
@@ -684,8 +776,14 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
 
-      if (!frm.state.zones.size) {
+      let isGeoMode = frm.state.access_type === "Geographical (Zone / Region / District)";
+      if (isGeoMode && !frm.state.zones.size) {
         frappe.msgprint(__("Please select at least one Zone before saving."));
+        return;
+      }
+
+      if (!isGeoMode && !frm.state.sol_ids.size) {
+        frappe.msgprint(__("Please add at least one Branch / SOL ID before saving."));
         return;
       }
 
@@ -696,11 +794,11 @@ frappe.ui.form.on("Report Preference", {
             user: frm.state.user,
             enabled: frm.state.enabled,
             tag: frm.state.tag,
-            access_type: "Geographical (Zone / Region / District)",
+            access_type: frm.state.access_type,
             zones: Array.from(frm.state.zones),
             regions: Array.from(frm.state.regions),
             districts: Array.from(frm.state.districts),
-            sol_ids: []
+            sol_ids: Array.from(frm.state.sol_ids)
           }
         },
         freeze: true,
@@ -724,12 +822,12 @@ frappe.ui.form.on("Report Preference", {
         frm.state.tag = "";
         frm.trigger("render_full_crud_widget");
         frm.trigger("calculate_and_render_branches");
-        frappe.show_alert({ message: __("Filters cleared."), indicator: "blue" });
+        frappe.show_alert({ message: __("Filters cleared. Select Geographical or SOL ID mode to configure."), indicator: "blue" });
         return;
       }
 
       frappe.confirm(
-        __(`Are you sure you want to <b>Reset and Clear all branch permissions</b> for <b>${frm.state.user}</b>?<br><br><small class="text-muted">This will revoke all assigned Zones/Regions and save the cleared state.</small>`),
+        __(`Are you sure you want to <b>Reset and Clear all branch permissions</b> for <b>${frm.state.user}</b>?<br><br><small class="text-muted">This will revoke all assigned branch access and save the cleared state.</small>`),
         () => {
           frm.state.zones.clear();
           frm.state.regions.clear();
@@ -744,7 +842,7 @@ frappe.ui.form.on("Report Preference", {
                 user: frm.state.user,
                 enabled: frm.state.enabled,
                 tag: "",
-                access_type: "Geographical (Zone / Region / District)",
+                access_type: frm.state.access_type,
                 zones: [],
                 regions: [],
                 districts: [],
@@ -755,7 +853,7 @@ frappe.ui.form.on("Report Preference", {
             freeze_message: __("Resetting Preferences & Permissions..."),
             callback: function (r) {
               if (r.message && r.message.status === "success") {
-                frappe.show_alert({ message: __("Preferences reset and saved successfully!"), indicator: "blue" });
+                frappe.show_alert({ message: __("Preferences reset and saved! Choose Geographical or SOL ID mode to reconfigure."), indicator: "blue" });
                 frm.reload_doc();
               }
             }
@@ -770,12 +868,19 @@ frappe.ui.form.on("Report Preference", {
   },
 
   calculate_and_render_branches: function (frm) {
+    let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let zones = Array.from(frm.state.zones);
     let regions = Array.from(frm.state.regions);
     let districts = Array.from(frm.state.districts);
+    let sol_ids = Array.from(frm.state.sol_ids);
 
-    // If no Zone is selected, do not resolve branches
-    if (!zones.length) {
+    if (isGeo && !zones.length) {
+      frm.resolved_branches = [];
+      frm.trigger("render_table_with_capsules");
+      return;
+    }
+
+    if (!isGeo && !sol_ids.length) {
       frm.resolved_branches = [];
       frm.trigger("render_table_with_capsules");
       return;
@@ -787,8 +892,8 @@ frappe.ui.form.on("Report Preference", {
         zones: zones,
         regions: regions,
         districts: districts,
-        sol_ids: [],
-        access_type: "Geographical (Zone / Region / District)"
+        sol_ids: sol_ids,
+        access_type: frm.state.access_type
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
@@ -806,11 +911,12 @@ frappe.ui.form.on("Report Preference", {
     let allBranches = meta.all_branches || [];
     let branches = frm.resolved_branches || [];
     let totalCount = branches.length;
+    let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let hasZoneSelected = frm.state.zones.size > 0;
 
     // Filter regions based on selected zones
     let availableRegions = [];
-    if (hasZoneSelected) {
+    if (isGeo && hasZoneSelected) {
       availableRegions = Array.from(
         new Set(
           allBranches
@@ -827,7 +933,7 @@ frappe.ui.form.on("Report Preference", {
           frm.state.regions.delete(r);
         }
       });
-    } else {
+    } else if (isGeo) {
       frm.state.regions.clear();
     }
 
@@ -837,7 +943,7 @@ frappe.ui.form.on("Report Preference", {
         <div class="rp-table-top-bar">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569;">
-              🏢 Branch Permission & Coverage
+              🏢 Branch Permission & Coverage (${isGeo ? 'Geographical' : 'SOL Specific'})
             </span>
             <span class="rp-table-badge" id="rp-table-live-count">${totalCount} Branches Allowed</span>
           </div>
@@ -845,52 +951,87 @@ frappe.ui.form.on("Report Preference", {
           <input type="text" class="rp-table-search-box" id="rp-table-filter-search" placeholder="🔍 Search branch, SOL, zone..." />
         </div>
 
-        <!-- Integrated Permission Capsules (Zone & Region) -->
+        <!-- Mode Specific Control Bar -->
         <div class="rp-permission-capsules-bar">
-          <!-- Zone Capsules -->
-          <div class="rp-capsule-row">
-            <span class="rp-capsule-label">ZONES:</span>
-            ${masterZones.map(z => `
-              <div class="rp-perm-capsule rp-zone-capsule ${frm.state.zones.has(z) ? 'active' : ''}" data-zone="${z}">
-                <span class="rp-capsule-dot"></span>
-                <span>${z}</span>
-              </div>
-            `).join('')}
-            <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-zones">Clear</button>
-          </div>
-
-          <!-- Region Capsules -->
-          <div class="rp-capsule-row">
-            <span class="rp-capsule-label">REGIONS:</span>
-            ${!hasZoneSelected ? `
-              <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
-                ⚠️ Select at least one Zone first to enable and choose Regions
-              </span>
-            ` : (availableRegions.length > 0 ? `
-              ${availableRegions.map(r => `
-                <div class="rp-perm-capsule rp-region-capsule ${frm.state.regions.has(r) ? 'active' : ''}" data-region="${r}">
+          ${isGeo ? `
+            <!-- Zone Capsules -->
+            <div class="rp-capsule-row">
+              <span class="rp-capsule-label">ZONES:</span>
+              ${masterZones.map(z => `
+                <div class="rp-perm-capsule rp-zone-capsule ${frm.state.zones.has(z) ? 'active' : ''}" data-zone="${z}">
                   <span class="rp-capsule-dot"></span>
-                  <span>${r}</span>
+                  <span>${z}</span>
                 </div>
               `).join('')}
-              <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
-            ` : `
-              <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
-                No regions available in selected zones
-              </span>
-            `)}
-          </div>
+              <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-zones">Clear</button>
+            </div>
+
+            <!-- Region Capsules -->
+            <div class="rp-capsule-row">
+              <span class="rp-capsule-label">REGIONS:</span>
+              ${!hasZoneSelected ? `
+                <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
+                  ⚠️ Select at least one Zone first to enable and choose Regions
+                </span>
+              ` : (availableRegions.length > 0 ? `
+                ${availableRegions.map(r => `
+                  <div class="rp-perm-capsule rp-region-capsule ${frm.state.regions.has(r) ? 'active' : ''}" data-region="${r}">
+                    <span class="rp-capsule-dot"></span>
+                    <span>${r}</span>
+                  </div>
+                `).join('')}
+                <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+              ` : `
+                <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
+                  No regions available in selected zones
+                </span>
+              `)}
+            </div>
+          ` : `
+            <!-- SOL ID Autocomplete & Tag Selection -->
+            <div class="rp-capsule-row" style="align-items: flex-start;">
+              <span class="rp-capsule-label" style="margin-top: 6px;">ADD SOL:</span>
+              <div style="flex: 1; max-width: 420px; position: relative;">
+                <input type="text" class="form-control input-sm" id="rp-table-sol-search-input" placeholder="Type Branch Name or SOL ID to add..." />
+                <div class="rp-dropdown-popover" id="rp-table-sol-dropdown"></div>
+              </div>
+              <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-sols" style="margin-top: 6px; color: #dc2626;">Remove All</button>
+            </div>
+
+            <!-- Selected SOL Tags -->
+            ${frm.state.sol_ids.size > 0 ? `
+              <div class="rp-capsule-row" style="margin-top: 4px;">
+                <span class="rp-capsule-label">SELECTED:</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  ${Array.from(frm.state.sol_ids).map(s => {
+                    let b = allBranches.find(x => String(x.sol_id) === String(s));
+                    let label = b ? `${s} - ${b.branch}` : s;
+                    return `
+                      <div class="rp-tag-badge" data-sol="${s}">
+                        <span>${label}</span>
+                        <span class="rp-tag-remove rp-table-tag-remove" data-sol="${s}">&times;</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            ` : ''}
+          `}
         </div>
 
         <!-- Direct Clean Table -->
         <div class="rp-table-scroll-wrap">
-          ${!hasZoneSelected ? `
+          ${isGeo && !hasZoneSelected ? `
             <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
               👈 Please select a <b>Zone</b> capsule above to grant branch access.
             </div>
+          ` : (!isGeo && !frm.state.sol_ids.size ? `
+            <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
+              🔍 Type in the <b>ADD SOL</b> box above to search & attach branches.
+            </div>
           ` : (totalCount === 0 ? `
             <div style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12.5px;">
-              No branches found matching the selected Zone / Region filters.
+              No branches found matching the current selections.
             </div>
           ` : `
             <table class="rp-minimal-grid-table" id="rp-branch-grid-table">
@@ -915,7 +1056,7 @@ frappe.ui.form.on("Report Preference", {
                 `).join('')}
               </tbody>
             </table>
-          `)}
+          `))}
         </div>
       </div>
     `;
@@ -961,6 +1102,61 @@ frappe.ui.form.on("Report Preference", {
     $slot.find("#rp-btn-clear-all-regions").on("click", function () {
       frm.state.regions.clear();
       frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    // SOL Mode Search & Add Input
+    let $solInput = $slot.find("#rp-table-sol-search-input");
+    let $solDropdown = $slot.find("#rp-table-sol-dropdown");
+
+    $solInput.on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      if (!q) {
+        $solDropdown.hide().empty();
+        return;
+      }
+
+      let matches = allBranches.filter(b => 
+        String(b.sol_id).toLowerCase().includes(q) || (b.branch && b.branch.toLowerCase().includes(q))
+      ).slice(0, 15);
+
+      if (!matches.length) {
+        $solDropdown.html('<div style="padding:8px 12px; color:#94a3b8; font-size:12px;">No branches found</div>').show();
+        return;
+      }
+
+      let itemsHtml = matches.map(b => `
+        <div class="rp-dropdown-row rp-table-sol-item" data-sol="${b.sol_id}">
+          <div><b>${b.sol_id}</b> - ${b.branch || ""}</div>
+          <span class="text-muted" style="font-size:10.5px;">${b.zone || ""}, ${b.region || ""}</span>
+        </div>
+      `).join("");
+
+      $solDropdown.html(itemsHtml).show();
+    });
+
+    $solDropdown.on("click", ".rp-table-sol-item", function () {
+      let sol = String($(this).data("sol"));
+      frm.state.sol_ids.add(sol);
+      $solInput.val("");
+      $solDropdown.hide().empty();
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("render_table_with_capsules");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    $slot.find(".rp-table-tag-remove").on("click", function () {
+      let sol = String($(this).data("sol"));
+      frm.state.sol_ids.delete(sol);
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("render_table_with_capsules");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    $slot.find("#rp-btn-clear-all-sols").on("click", function () {
+      frm.state.sol_ids.clear();
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("render_table_with_capsules");
       frm.trigger("calculate_and_render_branches");
     });
 
