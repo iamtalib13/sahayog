@@ -44,12 +44,18 @@ def get_paginated_users(search=None, page=1, page_size=20):
     offset = (page - 1) * page_size
     search_term = f"%{search.strip()}%" if search and search.strip() else None
 
-    query_conditions = ["u.enabled = 1", "u.user_type = 'System User'", "u.name NOT IN ('Guest')"]
+    # Query active employees with linked user_id
+    query_conditions = [
+        "e.status = 'Active'",
+        "e.user_id IS NOT NULL",
+        "e.user_id != ''",
+        "e.user_id NOT IN ('Guest')"
+    ]
     params = {"page_size": page_size, "offset": offset}
 
     if search_term:
         query_conditions.append(
-            "(u.name LIKE %(search)s OR u.full_name LIKE %(search)s OR rp.tag LIKE %(search)s)"
+            "(e.name LIKE %(search)s OR e.employee_name LIKE %(search)s OR e.user_id LIKE %(search)s OR rp.tag LIKE %(search)s OR e.designation LIKE %(search)s)"
         )
         params["search"] = search_term
 
@@ -57,9 +63,9 @@ def get_paginated_users(search=None, page=1, page_size=20):
 
     # 1. Fast Total Count
     count_sql = f"""
-        SELECT COUNT(u.name)
-        FROM `tabUser` u
-        LEFT JOIN `tabReport Preference` rp ON rp.user = u.name
+        SELECT COUNT(e.name)
+        FROM `tabEmployee` e
+        LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
     """
     total_count = frappe.db.sql(count_sql, params)[0][0] or 0
@@ -67,21 +73,23 @@ def get_paginated_users(search=None, page=1, page_size=20):
     # 2. Paginated Data with Limit & Offset (Strict 20 rows)
     data_sql = f"""
         SELECT
-            u.name as user,
-            COALESCE(NULLIF(u.full_name, ''), SUBSTRING_INDEX(u.name, '@', 1)) as full_name,
+            e.user_id as user,
+            e.employee_name as full_name,
+            e.name as employee_id,
+            e.designation,
             rp.name as pref_name,
             rp.tag,
             rp.enabled as pref_enabled,
             rp.access_type,
             rp.modified,
             IF(rp.name IS NOT NULL, 1, 0) as is_configured
-        FROM `tabUser` u
-        LEFT JOIN `tabReport Preference` rp ON rp.user = u.name
+        FROM `tabEmployee` e
+        LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
         ORDER BY
             is_configured DESC,
             rp.modified DESC,
-            full_name ASC
+            e.employee_name ASC
         LIMIT %(page_size)s OFFSET %(offset)s
     """
     rows = frappe.db.sql(data_sql, params, as_dict=True)

@@ -166,14 +166,36 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
   function showSelectUserDialog() {
     let d = new frappe.ui.Dialog({
-      title: __("Add / Select User"),
-      fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-      primary_action_label: __("Select User"),
+      title: __("Add / Select Employee"),
+      fields: [
+        {
+          fieldname: "employee",
+          fieldtype: "Link",
+          options: "Employee",
+          label: "Active Employee",
+          get_query: () => {
+            return {
+              filters: {
+                status: "Active",
+                user_id: ["is", "set"]
+              }
+            };
+          },
+          reqd: 1
+        }
+      ],
+      primary_action_label: __("Select Employee"),
       primary_action: function (values) {
-        if (!values.user) return;
-        d.hide();
-        selectUser(values.user);
-        fetchUserPage(1, values.user);
+        if (!values.employee) return;
+        frappe.db.get_value("Employee", values.employee, ["user_id", "employee_name"], function (r) {
+          if (r && r.user_id) {
+            d.hide();
+            selectUser(r.user_id);
+            fetchUserPage(1, values.employee);
+          } else {
+            frappe.msgprint(__("Selected employee does not have a linked User ID."));
+          }
+        });
       }
     });
     d.show();
@@ -187,7 +209,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let itemsHtml = items.map(item => {
       let isSelected = state.user === item.user;
       let shortName = item.full_name || item.user.split('@')[0];
-      let empId = item.user.split('@')[0];
+      let empId = item.employee_id || item.user.split('@')[0];
+      let designation = item.designation || "";
       let isConfigured = item.is_configured == 1;
       let isEnabled = item.enabled == 1;
 
@@ -197,9 +220,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             ${shortName.charAt(0).toUpperCase()}
           </div>
           <div class="min-side-user-meta">
-            <div class="min-side-user-name">${shortName}</div>
+            <div class="min-side-user-name" title="${shortName}">${shortName}</div>
             <div class="min-side-user-sub">
-              <span>${empId}</span>
+              <span><b>ID:</b> ${empId}</span>
+              ${designation ? `<span style="color: #94a3b8; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;" title="${designation}">• ${designation}</span>` : ''}
               ${item.tag ? `<span class="min-side-user-tag">${item.tag}</span>` : ''}
             </div>
           </div>
@@ -213,7 +237,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     }).join('');
 
     if (items.length === 0) {
-      itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No users found</div>`;
+      itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No active employees found</div>`;
     }
 
     page.main.find("#min-side-user-list").html(itemsHtml);
@@ -733,12 +757,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         <!-- 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination) -->
         <div class="min-side-panel">
           <div class="min-side-header">
-            <span class="min-side-title">👥 Users (<b id="min-side-header-count">${state.total_count}</b>)</span>
-            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add User</button>
+            <span class="min-side-title">👥 Employees (<b id="min-side-header-count">${state.total_count}</b>)</span>
+            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add Employee</button>
           </div>
 
           <div class="min-side-search-wrap">
-            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / tag..." value="${state.search_query || ''}" />
+            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search employee name / ID / designation..." value="${state.search_query || ''}" />
           </div>
 
           <div class="min-side-user-list" id="min-side-user-list">
