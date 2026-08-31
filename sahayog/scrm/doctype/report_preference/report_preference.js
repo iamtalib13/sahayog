@@ -1,8 +1,6 @@
 frappe.ui.form.on("Report Preference", {
   setup: function (frm) {
     frm.meta_data = null;
-    frm.active_zone_filter = "ALL";
-    frm.active_region_filter = "ALL";
     frm.state = {
       user: null,
       full_name: "",
@@ -497,7 +495,7 @@ frappe.ui.form.on("Report Preference", {
           color: #ef4444;
         }
 
-        /* Modern Table Card with Capsules */
+        /* Direct Clean Table Card */
         .rp-table-section-card {
           background: #ffffff;
           border: 1px solid var(--rp-border);
@@ -524,7 +522,7 @@ frappe.ui.form.on("Report Preference", {
           border-radius: 9999px;
         }
         .rp-table-search-box {
-          max-width: 220px;
+          max-width: 240px;
           padding: 5px 12px;
           font-size: 12px;
           border: 1px solid var(--rp-border);
@@ -536,67 +534,9 @@ frappe.ui.form.on("Report Preference", {
           border-color: var(--rp-accent);
         }
 
-        /* Filter Capsules Bar */
-        .rp-capsules-bar {
-          padding: 10px 16px;
-          background: #ffffff;
-          border-bottom: 1px solid var(--rp-border);
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .rp-capsule-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .rp-capsule-label {
-          font-size: 10.5px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--rp-text-muted);
-          min-width: 60px;
-        }
-        .rp-filter-capsule {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          padding: 3px 10px;
-          border-radius: 9999px;
-          font-size: 11px;
-          font-weight: 600;
-          cursor: pointer;
-          background: #f1f5f9;
-          color: #475569;
-          border: 1px solid transparent;
-          transition: all 0.15s ease;
-          user-select: none;
-        }
-        .rp-filter-capsule:hover {
-          background: #e2e8f0;
-          color: #0f172a;
-        }
-        .rp-filter-capsule.active {
-          background: #0f172a;
-          color: #ffffff;
-          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
-        }
-        .rp-filter-capsule .cap-count {
-          font-size: 10px;
-          padding: 0 5px;
-          border-radius: 8px;
-          background: rgba(0,0,0,0.06);
-        }
-        .rp-filter-capsule.active .cap-count {
-          background: rgba(255,255,255,0.25);
-          color: #ffffff;
-        }
-
         /* Table Structure */
         .rp-table-scroll-wrap {
-          max-height: 360px;
+          max-height: 380px;
           overflow-y: auto;
         }
         .rp-minimal-grid-table {
@@ -614,12 +554,12 @@ frappe.ui.form.on("Report Preference", {
           text-transform: uppercase;
           letter-spacing: 0.04em;
           text-align: left;
-          padding: 8px 14px;
+          padding: 9px 14px;
           border-bottom: 1px solid var(--rp-border);
           z-index: 2;
         }
         .rp-minimal-grid-table td {
-          padding: 7px 14px;
+          padding: 8px 14px;
           border-bottom: 1px solid var(--rp-border-light);
           color: #334155;
           vertical-align: middle;
@@ -821,7 +761,7 @@ frappe.ui.form.on("Report Preference", {
                 `}
               </div>
 
-              <!-- Sub-Card 3: Active Branch Coverage Table with Capsules -->
+              <!-- Direct Clean Table View -->
               <div id="rp-branch-coverage-slot"></div>
             </div>
           </div>
@@ -861,8 +801,6 @@ frappe.ui.form.on("Report Preference", {
           frm.state.regions.clear();
           frm.state.districts.clear();
           frm.state.sol_ids.clear();
-          frm.active_zone_filter = "ALL";
-          frm.active_region_filter = "ALL";
           frm.trigger("sync_widget_state_to_doc");
           frm.trigger("render_full_crud_widget");
           frm.trigger("calculate_and_render_branches");
@@ -974,8 +912,6 @@ frappe.ui.form.on("Report Preference", {
         frm.state.zones.add(z);
         $(this).addClass("selected");
       }
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
@@ -983,8 +919,6 @@ frappe.ui.form.on("Report Preference", {
     $w.find("#rp-clear-zones").on("click", function () {
       frm.state.zones.clear();
       $w.find(".rp-zone-chip").removeClass("selected");
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
@@ -999,8 +933,6 @@ frappe.ui.form.on("Report Preference", {
         frm.state.regions.add(r);
         $(this).addClass("selected");
       }
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
@@ -1008,8 +940,6 @@ frappe.ui.form.on("Report Preference", {
     $w.find("#rp-clear-regions").on("click", function () {
       frm.state.regions.clear();
       $w.find(".rp-region-chip").removeClass("selected");
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
@@ -1050,8 +980,6 @@ frappe.ui.form.on("Report Preference", {
       frm.state.sol_ids.add(sol);
       $solInput.val("");
       $solDropdown.hide().empty();
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_full_crud_widget");
       frm.trigger("calculate_and_render_branches");
@@ -1067,8 +995,6 @@ frappe.ui.form.on("Report Preference", {
     $w.find(".rp-tag-remove").on("click", function () {
       let sol = String($(this).data("sol"));
       frm.state.sol_ids.delete(sol);
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_full_crud_widget");
       frm.trigger("calculate_and_render_branches");
@@ -1076,8 +1002,6 @@ frappe.ui.form.on("Report Preference", {
 
     $w.find("#rp-clear-all-sols").on("click", function () {
       frm.state.sol_ids.clear();
-      frm.active_zone_filter = "ALL";
-      frm.active_region_filter = "ALL";
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_full_crud_widget");
       frm.trigger("calculate_and_render_branches");
@@ -1137,31 +1061,17 @@ frappe.ui.form.on("Report Preference", {
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
-        frm.trigger("render_coverage_table_with_capsules");
+        frm.trigger("render_direct_table_view");
       }
     });
   },
 
-  render_coverage_table_with_capsules: function (frm) {
+  render_direct_table_view: function (frm) {
     let $slot = frm.fields_dict.widget_html.$wrapper.find("#rp-branch-coverage-slot");
     if (!$slot.length) return;
 
     let branches = frm.resolved_branches || [];
     let totalCount = branches.length;
-
-    // Calculate unique zones and regions present in the resolved branches
-    let zoneCounts = {};
-    let regionCounts = {};
-
-    branches.forEach(b => {
-      let z = b.zone || "No Zone";
-      let r = b.region || "No Region";
-      zoneCounts[z] = (zoneCounts[z] || 0) + 1;
-      regionCounts[r] = (regionCounts[r] || 0) + 1;
-    });
-
-    let availableZones = Object.keys(zoneCounts).sort();
-    let availableRegions = Object.keys(regionCounts).sort();
 
     let tableHtml = `
       <div class="rp-table-section-card">
@@ -1174,48 +1084,13 @@ frappe.ui.form.on("Report Preference", {
             <span class="rp-table-badge" id="rp-table-live-count">${totalCount} Branches</span>
           </div>
 
-          <input type="text" class="rp-table-search-box" id="rp-table-filter-search" placeholder="🔍 Search branch, SOL..." />
+          <input type="text" class="rp-table-search-box" id="rp-table-filter-search" placeholder="🔍 Search branch, SOL, zone..." />
         </div>
 
-        <!-- Filter Capsules (Zone & Region) -->
-        ${totalCount > 0 ? `
-          <div class="rp-capsules-bar">
-            <!-- Zone Capsules -->
-            <div class="rp-capsule-row">
-              <span class="rp-capsule-label">ZONES:</span>
-              <div class="rp-filter-capsule ${frm.active_zone_filter === 'ALL' ? 'active' : ''}" data-filter-type="zone" data-val="ALL">
-                <span>All Zones</span>
-                <span class="cap-count">${totalCount}</span>
-              </div>
-              ${availableZones.map(z => `
-                <div class="rp-filter-capsule ${frm.active_zone_filter === z ? 'active' : ''}" data-filter-type="zone" data-val="${z}">
-                  <span>${z}</span>
-                  <span class="cap-count">${zoneCounts[z]}</span>
-                </div>
-              `).join('')}
-            </div>
-
-            <!-- Region Capsules -->
-            <div class="rp-capsule-row">
-              <span class="rp-capsule-label">REGIONS:</span>
-              <div class="rp-filter-capsule ${frm.active_region_filter === 'ALL' ? 'active' : ''}" data-filter-type="region" data-val="ALL">
-                <span>All Regions</span>
-                <span class="cap-count">${totalCount}</span>
-              </div>
-              ${availableRegions.map(r => `
-                <div class="rp-filter-capsule ${frm.active_region_filter === r ? 'active' : ''}" data-filter-type="region" data-val="${r}">
-                  <span>${r}</span>
-                  <span class="cap-count">${regionCounts[r]}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Minimal Table -->
+        <!-- Direct Clean Table -->
         <div class="rp-table-scroll-wrap">
           ${totalCount === 0 ? `
-            <div style="padding: 30px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+            <div style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12.5px;">
               No branches matching current filters. Select Zones/Regions or SOL IDs above.
             </div>
           ` : `
@@ -1224,14 +1099,14 @@ frappe.ui.form.on("Report Preference", {
                 <tr>
                   <th style="width: 100px;">SOL ID</th>
                   <th>Branch Name</th>
-                  <th style="width: 130px;">Zone</th>
-                  <th style="width: 130px;">Region</th>
-                  <th style="width: 150px;">District</th>
+                  <th style="width: 140px;">Zone</th>
+                  <th style="width: 140px;">Region</th>
+                  <th style="width: 160px;">District</th>
                 </tr>
               </thead>
               <tbody>
                 ${branches.map(b => `
-                  <tr class="rp-table-branch-row" data-zone="${b.zone || ''}" data-region="${b.region || ''}" data-search="${String(b.sol_id)} ${b.branch || ''} ${b.district || ''} ${b.region || ''} ${b.zone || ''}">
+                  <tr class="rp-table-branch-row" data-search="${String(b.sol_id)} ${b.branch || ''} ${b.district || ''} ${b.region || ''} ${b.zone || ''}">
                     <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
                     <td><b>${b.branch || '-'}</b></td>
                     <td><span class="rp-tag-micro">${b.zone || '-'}</span></td>
@@ -1248,54 +1123,21 @@ frappe.ui.form.on("Report Preference", {
 
     $slot.html(tableHtml);
 
-    // Apply active filters on row visibility
-    function applyTableFilters() {
-      let q = ($slot.find("#rp-table-filter-search").val() || "").toLowerCase().trim();
-      let activeZone = frm.active_zone_filter;
-      let activeRegion = frm.active_region_filter;
+    // Instant Search
+    $slot.find("#rp-table-filter-search").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
       let visibleCount = 0;
 
       $slot.find(".rp-table-branch-row").each(function () {
-        let rowZone = $(this).data("zone");
-        let rowRegion = $(this).data("region");
         let rowSearch = ($(this).data("search") || "").toLowerCase();
-
-        let zoneMatch = (activeZone === "ALL" || rowZone === activeZone);
-        let regionMatch = (activeRegion === "ALL" || rowRegion === activeRegion);
-        let textMatch = (!q || rowSearch.includes(q));
-
-        let isVisible = zoneMatch && regionMatch && textMatch;
+        let isVisible = (!q || rowSearch.includes(q));
         $(this).toggle(isVisible);
         if (isVisible) visibleCount++;
       });
 
       $slot.find("#rp-table-live-count").text(
-        (activeZone !== "ALL" || activeRegion !== "ALL" || q) 
-          ? `${visibleCount} / ${totalCount} Branches` 
-          : `${totalCount} Branches`
+        q ? `${visibleCount} / ${totalCount} Branches` : `${totalCount} Branches`
       );
-    }
-
-    // Capsule Clicks
-    $slot.find(".rp-filter-capsule").on("click", function () {
-      let type = $(this).data("filter-type");
-      let val = $(this).data("val");
-
-      if (type === "zone") {
-        frm.active_zone_filter = val;
-        $slot.find(".rp-filter-capsule[data-filter-type='zone']").removeClass("active");
-      } else if (type === "region") {
-        frm.active_region_filter = val;
-        $slot.find(".rp-filter-capsule[data-filter-type='region']").removeClass("active");
-      }
-
-      $(this).addClass("active");
-      applyTableFilters();
-    });
-
-    // Search Input
-    $slot.find("#rp-table-filter-search").on("input", function () {
-      applyTableFilters();
     });
   }
 });
