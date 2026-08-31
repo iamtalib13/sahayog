@@ -34,7 +34,6 @@
    "label": "Permission Management Workspace"
   },
   {
-   "collapsed": 1,
    "collapsible": 1,
    "fieldname": "hidden_fields_section",
    "fieldtype": "Section Break",
@@ -124,9 +123,10 @@
   }
  ],
  "grid_page_length": 50,
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-31 17:48:00.000000",
+ "modified": "2026-08-31 19:21:16.250396",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
