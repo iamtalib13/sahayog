@@ -242,10 +242,10 @@ frappe.ui.form.on("Report Preference", {
           gap: 18px;
         }
 
-        /* Minimal User Sub-Card */
+        /* Minimal User Sub-Card with Highlighted Contrast */
         .rp-subcard {
-          background: var(--rp-surface-subtle);
-          border: 1px solid var(--rp-border);
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
           border-radius: 10px;
           padding: 16px 18px;
         }
@@ -254,13 +254,15 @@ frappe.ui.form.on("Report Preference", {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #e2e8f0;
         }
         .rp-subcard-label {
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.05em;
           text-transform: uppercase;
-          color: var(--rp-text-muted);
+          color: #475569;
         }
 
         /* User Bar Layout */
@@ -283,13 +285,13 @@ frappe.ui.form.on("Report Preference", {
         .rp-input-label {
           font-size: 11px;
           font-weight: 600;
-          color: var(--rp-text-muted);
+          color: #475569;
           margin-bottom: 4px;
           display: block;
         }
         .rp-box-display {
           background: #ffffff;
-          border: 1px solid var(--rp-border);
+          border: 1px solid #cbd5e1;
           border-radius: 6px;
           padding: 6px 10px;
           font-size: 12px;
@@ -344,7 +346,7 @@ frappe.ui.form.on("Report Preference", {
           left: 0;
           right: 0;
           background: #ffffff;
-          border: 1px solid var(--rp-border);
+          border: 1px solid #cbd5e1;
           border-radius: 8px;
           max-height: 220px;
           overflow-y: auto;
@@ -363,24 +365,24 @@ frappe.ui.form.on("Report Preference", {
           align-items: center;
         }
         .rp-dropdown-row:hover {
-          background: var(--rp-surface-subtle);
+          background: #f1f5f9;
         }
 
         /* Table Section Card */
         .rp-table-section-card {
           background: #ffffff;
-          border: 1px solid var(--rp-border);
+          border: 1px solid #cbd5e1;
           border-radius: 10px;
           overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
         .rp-table-top-bar {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 12px 16px;
-          background: var(--rp-surface-subtle);
-          border-bottom: 1px solid var(--rp-border);
+          background: #e2e8f0;
+          border-bottom: 1px solid #cbd5e1;
           gap: 12px;
           flex-wrap: wrap;
         }
@@ -396,7 +398,7 @@ frappe.ui.form.on("Report Preference", {
           max-width: 220px;
           padding: 5px 12px;
           font-size: 12px;
-          border: 1px solid var(--rp-border);
+          border: 1px solid #cbd5e1;
           border-radius: 6px;
           outline: none;
           background: #ffffff;
@@ -408,8 +410,8 @@ frappe.ui.form.on("Report Preference", {
         /* Permission Controls Bar inside Table */
         .rp-permission-capsules-bar {
           padding: 12px 16px;
-          background: #ffffff;
-          border-bottom: 1px solid var(--rp-border);
+          background: #f8fafc;
+          border-bottom: 1px solid #cbd5e1;
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -425,7 +427,7 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          color: var(--rp-text-muted);
+          color: #475569;
           min-width: 65px;
         }
         .rp-perm-capsule {
@@ -438,8 +440,8 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 500;
           cursor: pointer;
           background: #ffffff;
-          color: #475569;
-          border: 1px solid var(--rp-border);
+          color: #334155;
+          border: 1px solid #cbd5e1;
           transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
           user-select: none;
         }
@@ -489,57 +491,62 @@ frappe.ui.form.on("Report Preference", {
         .rp-pure-grid-table th {
           position: sticky;
           top: 0;
-          background: #f8fafc;
-          color: #475569;
-          font-weight: 600;
+          background: #e2e8f0;
+          color: #1e293b;
+          font-weight: 700;
           font-size: 11px;
           text-transform: uppercase;
           letter-spacing: 0.04em;
           text-align: left;
           padding: 9px 12px;
-          border-bottom: 1px solid var(--rp-border);
+          border-bottom: 2px solid #cbd5e1;
           z-index: 2;
         }
         .rp-pure-grid-table td {
           padding: 7px 12px;
-          border-bottom: 1px solid var(--rp-border-light);
+          border-bottom: 1px solid #e2e8f0;
           color: #334155;
           vertical-align: middle;
         }
 
         /* Row Levels */
         .rp-row-zone-header {
-          background: #f1f5f9;
+          background: #e2e8f0;
           font-weight: 700;
           color: #0f172a;
           cursor: pointer;
           user-select: none;
+          border-top: 1px solid #cbd5e1;
+          border-bottom: 1px solid #cbd5e1;
         }
         .rp-row-zone-header:hover {
-          background: #e2e8f0;
+          background: #cbd5e1;
         }
         .rp-row-region-header {
-          background: #f8fafc;
+          background: #edf2f7;
           font-weight: 600;
           color: #1e293b;
           cursor: pointer;
           user-select: none;
+          border-bottom: 1px solid #e2e8f0;
         }
         .rp-row-region-header:hover {
-          background: #f1f5f9;
+          background: #e2e8f0;
         }
         .rp-row-district-header {
-          background: #fafafa;
+          background: #f8fafc;
           font-weight: 600;
-          color: #475569;
+          color: #334155;
           cursor: pointer;
           user-select: none;
+          border-bottom: 1px solid #e2e8f0;
         }
         .rp-row-district-header:hover {
-          background: #f1f5f9;
+          background: #edf2f7;
         }
         .rp-row-branch-leaf {
           background-color: #f0fdf4;
+          border-bottom: 1px solid #dcfce7;
           transition: background-color 0.15s ease;
         }
         .rp-row-branch-leaf:hover {
