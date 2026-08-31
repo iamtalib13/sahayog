@@ -22,6 +22,8 @@
   "branch_opening_date",
   "cluster_operations_manager",
   "ch_dh_adh",
+  "section_break_sscj",
+  "month_selector_html",
   "branch_score_section",
   "branch_score_widget",
   "score_table_tab",
@@ -68,8 +70,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Month",
-   "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_etsk",
@@ -81,7 +83,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Year",
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_nykn",
@@ -150,13 +153,22 @@
    "fieldtype": "Data",
    "hidden": 1,
    "label": "CH/DH/ADH"
+  },
+  {
+   "fieldname": "month_selector_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "section_break_sscj",
+   "fieldtype": "Section Break",
+   "label": "Select Month for Scorecard"
   }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-27 12:08:41.514337",
+ "modified": "2026-08-31 12:06:57.562741",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Branch Score Card",

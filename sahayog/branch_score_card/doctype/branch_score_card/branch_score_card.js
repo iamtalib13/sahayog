@@ -16,8 +16,44 @@ frappe.ui.form.on("Branch Score Card", {
     },
 
     refresh(frm) {
+
+        // Save button remove/hide karne ke liye
+        frm.disable_save();
+
+        // Print icon/button hide karne ke liye
+        if (frm.page && frm.page.btn_print) {
+            frm.page.btn_print.hide();
+        } else {
+            // CSS Fallback to hide print icon button
+            $(".page-actions .icon-btn[data-original-title='Print'], .page-actions button:has(.icon-printer)").hide();
+        }
+
+        // Three-dot Menu ko DISABLE (unclickable) karne ke liye
+        let $menu_btn = frm.page.wrapper.find('.page-actions .menu-btn-group button, .page-actions [data-toggle="dropdown"]:has(.icon-dots-vertical), .page-actions .menu-btn-group');
+        $menu_btn.css({
+            "pointer-events": "none",
+            "opacity": "0.5",
+            "cursor": "not-allowed"
+        }).off("click");
+        
+
         frm.trigger("ensure_empty_grids_visible");
         frm.trigger("apply_grid_column_styles");
+        frm.trigger("render_month_selector");
+
+        // Disable Link Navigation on Read-Only Branch Field
+        if (frm.fields_dict['branch'] && frm.fields_dict['branch'].$wrapper) {
+            frm.fields_dict['branch'].$wrapper.find('a').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }).css({
+                "pointer-events": "none",
+                "cursor": "default",
+                "text-decoration": "none",
+                "color": "inherit"
+            });
+        }
 
         // Jab document already saved ho (New nahi ho), toh widget render karo bina form dirty kiye
         if (!frm.is_new()) {
@@ -91,6 +127,152 @@ frappe.ui.form.on("Branch Score Card", {
                 "transform": "translateY(0px)",
                 "box-shadow": "0 3px 5px rgba(0,0,0,0.2)",
                 "border-bottom": "3px solid #004647"
+            });
+        });
+    },
+
+
+    render_month_selector(frm) {
+        let field = frm.get_field('month_selector_html');
+        if (!field || !field.$wrapper) return;
+
+        // Calendar Order: January to December
+        let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let current_month = frm.doc.month || "Select Month";
+
+        let html = `
+            <style>
+                .custom-month-dropdown-btn {
+                    min-width: 150px;
+                    height: 34px;
+                    font-weight: 600;
+                    font-size: 13px;
+                    border-radius: 20px;
+                    background-color: #e6f2f2;
+                    color: #004d4d;
+                    border: 1.5px solid #b2d8d8;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+                    padding: 0 16px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    cursor: pointer;
+                    transition: all 0.2s ease-in-out;
+                    user-select: none;
+                }
+                .custom-month-dropdown-btn:hover {
+                    background-color: #d9ecec;
+                    border-color: #80b2b2;
+                }
+                .custom-month-menu {
+                    display: none;
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    margin-top: 6px;
+                    min-width: 160px;
+                    background: #ffffff;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                    z-index: 1000;
+                    padding: 6px;
+                    max-height: none !important;
+                    overflow: visible !important;
+                }
+                .custom-month-item {
+                    padding: 6px 14px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: #334155;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: background-color 0.15s ease, color 0.15s ease;
+                }
+                .custom-month-item:hover {
+                    background-color: #e6f2f2 !important;
+                    color: #004d4d !important;
+                    font-weight: 600;
+                }
+                .custom-month-item.selected {
+                    background-color: #006768;
+                    color: #ffffff;
+                    font-weight: 600;
+                }
+                .custom-month-item.selected:hover {
+                    background-color: #005253 !important;
+                    color: #ffffff !important;
+                }
+            </style>
+
+            <div style="margin-bottom: 12px; margin-top: 5px; display: flex; align-items: center; width: fit-content; position: relative;" id="custom_month_container">
+                <div class="custom-month-dropdown-btn" id="custom_month_btn">
+                    <span id="selected_month_label">${current_month}</span>
+                    <i class="fa fa-chevron-down" style="font-size: 11px; margin-left: 10px; color: #004d4d;"></i>
+                </div>
+                <div class="custom-month-menu" id="custom_month_menu">
+                    ${months.map(m => `
+                        <div class="custom-month-item ${m === frm.doc.month ? 'selected' : ''}" data-value="${m}">
+                            ${m}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        field.$wrapper.html(html);
+
+        let $btn = field.$wrapper.find('#custom_month_btn');
+        let $menu = field.$wrapper.find('#custom_month_menu');
+
+        // Toggle Menu
+        $btn.on('click', function(e) {
+            e.stopPropagation();
+            $menu.toggle();
+        });
+
+        // Close menu on click outside
+        $(document).off('click.month_dropdown').on('click.month_dropdown', function() {
+            $menu.hide();
+        });
+
+        // Option Click Event
+        field.$wrapper.find('.custom-month-item').on('click', function() {
+            let selected_month = $(this).data('value');
+            $menu.hide();
+
+            if (!selected_month || selected_month === frm.doc.month) return;
+
+            let branch = frm.doc.branch;
+            let form_year = parseInt(frm.doc.year);
+
+            if (!branch || !form_year) {
+                frappe.msgprint(__('Please select Branch and Year first.'));
+                return;
+            }
+
+            let jan_mar = ["January", "February", "March"];
+
+            // Dynamic Financial Year Logic
+            let base_fy_year = jan_mar.includes(frm.doc.month) ? (form_year - 1) : form_year;
+            let target_year = jan_mar.includes(selected_month) ? (base_fy_year + 1) : base_fy_year;
+
+            frappe.db.get_value('Branch Score Card', {
+                'branch': branch,
+                'month': selected_month,
+                'year': target_year
+            }, 'name', function(r) {
+                if (r && r.name) {
+                    if (r.name !== frm.doc.name) {
+                        frappe.set_route('Form', 'Branch Score Card', r.name);
+                    }
+                } else {
+                    frappe.msgprint({
+                        title: __('Record Not Found'),
+                        indicator: 'orange',
+                        message: __('Scorecard record is not available for <b>{0}</b> branch for <b>{1} {2}</b>.', [frm.doc.branch_name || branch, selected_month, target_year])
+                    });
+                }
             });
         });
     },
@@ -283,6 +465,7 @@ frappe.ui.form.on("Branch Score Card", {
             }
         });
     },
+
 
     apply_grid_column_styles(frm) {
         if (!document.getElementById("score-table-custom-style")) {
