@@ -43,7 +43,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     sol_ids: new Set(),
     meta_data: {},
 
-    // Strong Server-Side Pagination State
+    // Strong Server-Side Pagination & Employee Filter State
     users: [],
     total_count: 0,
     total_pages: 1,
@@ -51,23 +51,39 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     page_size: 20,
     search_query: "",
     search_timer: null,
-    is_loading_list: false
+    is_loading_list: false,
+
+    filter_designation: "",
+    filter_branch: "",
+    employee_meta: {
+      designations: [],
+      branches: []
+    }
   };
 
   function initPage() {
-    fetchUserPage(1, "", () => {
-      const route = frappe.get_route();
-      if (route[2]) {
-        selectUser(route[2]);
-      } else if (state.users.length > 0) {
-        selectUser(state.users[0].user);
-      } else {
-        renderPage();
+    // 1. Fetch metadata for designation & branch filter dropdowns
+    frappe.call({
+      method: "sahayog.sahayog.page.permission_config.permission_config.get_employee_filters_meta",
+      callback: (res) => {
+        state.employee_meta = res.message || { designations: [], branches: [] };
+        
+        // 2. Fetch paginated employees
+        fetchUserPage(1, "", () => {
+          const route = frappe.get_route();
+          if (route[2]) {
+            selectUser(route[2]);
+          } else if (state.users.length > 0) {
+            selectUser(state.users[0].user);
+          } else {
+            renderPage();
+          }
+        });
       }
     });
   }
 
-  // Pure Server-Side Pagination API Caller with SQL Limit & Offset
+  // Pure Server-Side Pagination API Caller with SQL Limit & Offset + Designation + Branch Filters
   function fetchUserPage(pageNo, searchQuery, callback) {
     state.is_loading_list = true;
     state.current_page = pageNo || 1;
@@ -78,7 +94,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       args: {
         page: state.current_page,
         page_size: state.page_size,
-        search: state.search_query || ""
+        search: state.search_query || "",
+        designation: state.filter_designation || "",
+        branch: state.filter_branch || ""
       },
       callback: (r) => {
         state.is_loading_list = false;
@@ -106,11 +124,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         state.full_name = pref ? pref.full_name : "";
         state.enabled = pref && pref.enabled !== undefined ? pref.enabled : 1;
         state.tag = pref ? pref.tag : "";
-        state.access_type = pref && pref.access_type ? pref.access_type : "Geographical (Zone / Region / District)";
         state.zones = new Set(pref && pref.zones ? pref.zones : []);
         state.regions = new Set(pref && pref.regions ? pref.regions : []);
         state.districts = new Set(pref && pref.districts ? pref.districts : []);
         state.sol_ids = new Set(pref && pref.sol_ids ? pref.sol_ids : []);
+
+        // Smart access_type resolution:
+        let savedAccessType = pref ? pref.access_type : null;
+        if (!savedAccessType) {
+          if (state.sol_ids.size > 0 && state.zones.size === 0 && state.regions.size === 0) {
+            state.access_type = "Specific Branches (SOL ID)";
+          } else {
+            state.access_type = "Geographical (Zone / Region / District)";
+          }
+        } else if (savedAccessType === "Geographical (Zone / Region / District)" && state.sol_ids.size > 0 && state.zones.size === 0 && state.regions.size === 0) {
+          // If in DB it was set as Geographical, but only sol_ids exist (like 6880, 8751)
+          state.access_type = "Specific Branches (SOL ID)";
+        } else {
+          state.access_type = savedAccessType;
+        }
 
         renderPage();
       }
@@ -166,14 +198,36 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
   function showSelectUserDialog() {
     let d = new frappe.ui.Dialog({
-      title: __("Add / Select User"),
-      fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
-      primary_action_label: __("Select User"),
+      title: __("Add / Select Employee"),
+      fields: [
+        {
+          fieldname: "employee",
+          fieldtype: "Link",
+          options: "Employee",
+          label: "Active Employee",
+          get_query: () => {
+            return {
+              filters: {
+                status: "Active",
+                user_id: ["is", "set"]
+              }
+            };
+          },
+          reqd: 1
+        }
+      ],
+      primary_action_label: __("Select Employee"),
       primary_action: function (values) {
-        if (!values.user) return;
-        d.hide();
-        selectUser(values.user);
-        fetchUserPage(1, values.user);
+        if (!values.employee) return;
+        frappe.db.get_value("Employee", values.employee, ["user_id", "employee_name"], function (r) {
+          if (r && r.user_id) {
+            d.hide();
+            selectUser(r.user_id);
+            fetchUserPage(1, values.employee);
+          } else {
+            frappe.msgprint(__("Selected employee does not have a linked User ID."));
+          }
+        });
       }
     });
     d.show();
@@ -187,7 +241,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let itemsHtml = items.map(item => {
       let isSelected = state.user === item.user;
       let shortName = item.full_name || item.user.split('@')[0];
-      let empId = item.user.split('@')[0];
+      let empId = item.employee_id || item.user.split('@')[0];
+      let designation = item.designation || "";
+      let branchName = item.branch_name || "";
       let isConfigured = item.is_configured == 1;
       let isEnabled = item.enabled == 1;
 
@@ -197,9 +253,14 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             ${shortName.charAt(0).toUpperCase()}
           </div>
           <div class="min-side-user-meta">
-            <div class="min-side-user-name">${shortName}</div>
+            <div class="min-side-user-name" title="${shortName}">${shortName}</div>
             <div class="min-side-user-sub">
-              <span>${empId}</span>
+              <span><b>ID:</b> ${empId}</span>
+              ${designation ? `<span style="color: #475569;" title="${designation}">• ${designation}</span>` : ''}
+            </div>
+            <div class="min-side-user-branch">
+              <span style="color: #0284c7; font-weight: 700;">📍 SOL: ${item.sol_id || '-'}</span>
+              <span style="color: #64748b;" title="${branchName}">• ${branchName || 'Unassigned'}</span>
               ${item.tag ? `<span class="min-side-user-tag">${item.tag}</span>` : ''}
             </div>
           </div>
@@ -213,7 +274,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     }).join('');
 
     if (items.length === 0) {
-      itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No users found</div>`;
+      itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No active employees found matching criteria</div>`;
     }
 
     page.main.find("#min-side-user-list").html(itemsHtml);
@@ -240,6 +301,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let isGeo = state.access_type === "Geographical (Zone / Region / District)";
     let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
     let userEmpId = state.user ? state.user.split('@')[0] : "-";
+    let selectedBranchObj = (state.employee_meta.branches || []).find(b => b.sol_id === state.filter_branch);
+    let selectedBranchLabel = selectedBranchObj ? `${selectedBranchObj.sol_id} - ${selectedBranchObj.branch}` : 'All Branches';
 
     function sortZones(list) {
       return [...list].sort((a, b) => {
@@ -285,11 +348,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     let displayBranches = [];
     if (isGeo) {
-      if (state.zones.size > 0) {
+      let hasGeo = state.zones.size > 0 || state.regions.size > 0 || state.districts.size > 0;
+      let hasSol = state.sol_ids.size > 0;
+
+      if (hasGeo || hasSol) {
         displayBranches = allBranches.filter(b => {
-          let matchesZone = state.zones.has(b.zone);
+          let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
           let matchesRegion = state.regions.size === 0 || state.regions.has(b.region);
-          return matchesZone && matchesRegion;
+          let matchesDistrict = state.districts.size === 0 || state.districts.has(b.district);
+          let matchesGeo = hasGeo && (matchesZone && matchesRegion && matchesDistrict);
+          let matchesSol = hasSol && state.sol_ids.has(String(b.sol_id));
+
+          return matchesGeo || matchesSol;
         });
       }
     } else {
@@ -317,10 +387,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           min-height: calc(100vh - 160px);
         }
 
-        /* 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination) */
+        /* 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination & Filters) */
         .min-side-panel {
-          width: 290px;
-          min-width: 290px;
+          width: 320px;
+          min-width: 320px;
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 8px;
@@ -355,27 +425,138 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           cursor: pointer;
         }
 
-        .min-side-search-wrap {
+        .min-side-filter-wrap {
           padding: 6px 8px;
           border-bottom: 1px solid #f1f5f9;
           background: #ffffff;
         }
         .min-side-search-input {
           width: 100%;
+          box-sizing: border-box;
           border: 1px solid #cbd5e1;
-          border-radius: 5px;
+          border-radius: 4px;
           padding: 4px 8px;
-          font-size: 11.5px;
+          font-size: 11px;
           outline: none;
         }
         .min-side-search-input:focus {
           border-color: #0284c7;
         }
 
+        /* Searchable Combobox (Drop Down + Search) */
+        .min-search-combobox {
+          position: relative;
+          width: 100%;
+        }
+        .min-combo-btn {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          background: #ffffff;
+          padding: 3px 6px;
+          font-size: 10.5px;
+          color: #1e293b;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          cursor: pointer;
+          height: 25px;
+          text-align: left;
+          outline: none;
+        }
+        .min-combo-btn:hover {
+          border-color: #94a3b8;
+          background: #f8fafc;
+        }
+        .min-combo-label {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1;
+          font-weight: 500;
+        }
+        .min-combo-icons {
+          display: flex;
+          align-items: center;
+          gap: 3px;
+          color: #64748b;
+          font-size: 9px;
+          margin-left: 4px;
+          flex-shrink: 0;
+        }
+        .min-combo-clear {
+          color: #dc2626;
+          font-weight: bold;
+          padding: 0 2px;
+          cursor: pointer;
+        }
+        .min-combo-clear:hover {
+          color: #991b1b;
+        }
+
+        .min-combo-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          z-index: 1000;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+          margin-top: 2px;
+          min-width: 180px;
+        }
+        .min-combo-search-box {
+          padding: 4px 5px;
+          border-bottom: 1px solid #f1f5f9;
+          background: #f8fafc;
+          border-top-left-radius: 6px;
+          border-top-right-radius: 6px;
+        }
+        .min-combo-input {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          padding: 3px 6px;
+          font-size: 10.5px;
+          outline: none;
+          background: #ffffff;
+        }
+        .min-combo-input:focus {
+          border-color: #0284c7;
+        }
+        .min-combo-list {
+          max-height: 180px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+        }
+        .min-combo-option {
+          padding: 4px 7px;
+          font-size: 10.5px;
+          color: #334155;
+          cursor: pointer;
+          user-select: none;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .min-combo-option:hover {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
+        .min-combo-option.selected {
+          background: #e0f2fe;
+          color: #0369a1;
+          font-weight: 700;
+        }
+
         .min-side-user-list {
           flex: 1;
           overflow-y: auto;
-          max-height: calc(100vh - 280px);
+          max-height: calc(100vh - 310px);
         }
 
         .min-side-user-item {
@@ -396,8 +577,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           border-left: 3.5px solid #16a34a;
         }
         .min-side-user-avatar {
-          width: 24px;
-          height: 24px;
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
           background: #e2e8f0;
           color: #334155;
@@ -419,7 +600,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
         .min-side-user-name {
           font-size: 11.5px;
-          font-weight: 600;
+          font-weight: 700;
           color: #0f172a;
           white-space: nowrap;
           overflow: hidden;
@@ -431,6 +612,20 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           display: flex;
           align-items: center;
           gap: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .min-side-user-branch {
+          font-size: 10px;
+          color: #475569;
+          margin-top: 1px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .min-side-user-tag {
           background: #e2e8f0;
@@ -730,15 +925,73 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       </style>
 
       <div class="min-perm-layout">
-        <!-- 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination) -->
+        <!-- 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination & Designation/Branch Filters) -->
         <div class="min-side-panel">
           <div class="min-side-header">
-            <span class="min-side-title">👥 Users (<b id="min-side-header-count">${state.total_count}</b>)</span>
-            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add User</button>
+            <span class="min-side-title">👥 Employees (<b id="min-side-header-count">${state.total_count}</b>)</span>
+            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add</button>
           </div>
 
-          <div class="min-side-search-wrap">
-            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / tag..." value="${state.search_query || ''}" />
+          <div class="min-side-filter-wrap">
+            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / user..." value="${state.search_query || ''}" />
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px;">
+              <!-- 1. Searchable Designation Dropdown -->
+              <div class="min-search-combobox" id="combo-designation">
+                <button type="button" class="min-combo-btn" id="btn-combo-designation">
+                  <span class="min-combo-label" title="${state.filter_designation || 'All Designations'}">${state.filter_designation || 'All Designations'}</span>
+                  <span class="min-combo-icons">
+                    ${state.filter_designation ? `<span class="min-combo-clear" data-target="designation" title="Clear">✕</span>` : ''}
+                    <span class="min-combo-caret">▾</span>
+                  </span>
+                </button>
+                <div class="min-combo-dropdown" id="dropdown-combo-designation" style="display: none;">
+                  <div class="min-combo-search-box">
+                    <input type="text" class="min-combo-input" id="input-combo-designation" placeholder="🔍 Search designation..." autocomplete="off" />
+                  </div>
+                  <div class="min-combo-list" id="list-combo-designation">
+                    <div class="min-combo-option ${!state.filter_designation ? 'selected' : ''}" data-target="designation" data-value="" data-label="All Designations">All Designations</div>
+                    ${(state.employee_meta.designations || []).map(d => `
+                      <div class="min-combo-option ${state.filter_designation === d ? 'selected' : ''}" data-target="designation" data-value="${d}" data-label="${d}">${d}</div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Searchable Branch Dropdown -->
+              <div class="min-search-combobox" id="combo-branch">
+                <button type="button" class="min-combo-btn" id="btn-combo-branch">
+                  <span class="min-combo-label" title="${selectedBranchLabel}">${selectedBranchLabel}</span>
+                  <span class="min-combo-icons">
+                    ${state.filter_branch ? `<span class="min-combo-clear" data-target="branch" title="Clear">✕</span>` : ''}
+                    <span class="min-combo-caret">▾</span>
+                  </span>
+                </button>
+                <div class="min-combo-dropdown" id="dropdown-combo-branch" style="display: none;">
+                  <div class="min-combo-search-box">
+                    <input type="text" class="min-combo-input" id="input-combo-branch" placeholder="🔍 Search SOL / Branch..." autocomplete="off" />
+                  </div>
+                  <div class="min-combo-list" id="list-combo-branch">
+                    <div class="min-combo-option ${!state.filter_branch ? 'selected' : ''}" data-target="branch" data-value="" data-label="All Branches">All Branches</div>
+                    ${(state.employee_meta.branches || []).map(b => {
+                      let lbl = `${b.sol_id} - ${b.branch}`;
+                      return `
+                        <div class="min-combo-option ${state.filter_branch === b.sol_id ? 'selected' : ''}" data-target="branch" data-value="${b.sol_id}" data-label="${lbl}" data-search="${(b.sol_id + ' ' + b.branch).toLowerCase()}">
+                          <b style="color: #0284c7;">${b.sol_id}</b> - ${b.branch}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            ${(state.filter_designation || state.filter_branch || state.search_query) ? `
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 9.5px; color: #64748b; font-style: italic;">Filters Active</span>
+                <span id="min-side-clear-filters" style="font-size: 10px; color: #dc2626; cursor: pointer; font-weight: 700;">✕ Reset Filters</span>
+              </div>
+            ` : ''}
           </div>
 
           <div class="min-side-user-list" id="min-side-user-list">
@@ -950,9 +1203,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             <!-- EMPTY STATE -->
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 350px; text-align: center; color: #64748b;">
               <div style="font-size: 38px; margin-bottom: 8px;">👈</div>
-              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Select a User from the Side Panel</div>
+              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Select an Employee from the Side Panel</div>
               <div style="font-size: 11.5px; max-width: 320px; line-height: 1.4;">
-                Click on any user from the left side panel to view or edit their permissions, or click <b>+ Add User</b> to configure a new user.
+                Click on any employee from the left side panel to view or edit their permissions, or use Designation / Branch filters above.
               </div>
             </div>
           `}
@@ -983,13 +1236,99 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       });
     }
 
-    // Debounced Search Input for Users Side Panel
+    // Debounced Search Input for Employees Side Panel
     $m.find("#min-side-search-input").on("input", function () {
       let query = $(this).val();
       clearTimeout(state.search_timer);
       state.search_timer = setTimeout(() => {
         fetchUserPage(1, query);
       }, 300);
+    });
+
+    // Toggle Designation Dropdown
+    $m.find("#btn-combo-designation").on("click", function (e) {
+      if ($(e.target).hasClass("min-combo-clear")) return;
+      $m.find("#dropdown-combo-branch").hide();
+      let $drop = $m.find("#dropdown-combo-designation");
+      $drop.toggle();
+      if ($drop.is(":visible")) {
+        setTimeout(() => $m.find("#input-combo-designation").val("").focus(), 50);
+        $m.find("#list-combo-designation .min-combo-option").show();
+      }
+    });
+
+    // Toggle Branch Dropdown
+    $m.find("#btn-combo-branch").on("click", function (e) {
+      if ($(e.target).hasClass("min-combo-clear")) return;
+      $m.find("#dropdown-combo-designation").hide();
+      let $drop = $m.find("#dropdown-combo-branch");
+      $drop.toggle();
+      if ($drop.is(":visible")) {
+        setTimeout(() => $m.find("#input-combo-branch").val("").focus(), 50);
+        $m.find("#list-combo-branch .min-combo-option").show();
+      }
+    });
+
+    // Live search inside Designation Dropdown
+    $m.find("#input-combo-designation").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find("#list-combo-designation .min-combo-option").each(function () {
+        let txt = $(this).text().toLowerCase();
+        $(this).toggle(txt.includes(q));
+      });
+    });
+
+    // Live search inside Branch Dropdown
+    $m.find("#input-combo-branch").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find("#list-combo-branch .min-combo-option").each(function () {
+        let s = ($(this).data("search") || $(this).text()).toLowerCase();
+        $(this).toggle(s.includes(q));
+      });
+    });
+
+    // Select Combobox Option
+    $m.find(".min-combo-option").on("click", function () {
+      let target = $(this).data("target");
+      let val = $(this).data("value");
+      if (target === "designation") {
+        state.filter_designation = val;
+        $m.find("#dropdown-combo-designation").hide();
+      } else if (target === "branch") {
+        state.filter_branch = val;
+        $m.find("#dropdown-combo-branch").hide();
+      }
+      renderPage();
+      fetchUserPage(1);
+    });
+
+    // Clear Single Filter Click (Red Cross)
+    $m.find(".min-combo-clear").on("click", function (e) {
+      e.stopPropagation();
+      let target = $(this).data("target");
+      if (target === "designation") {
+        state.filter_designation = "";
+      } else if (target === "branch") {
+        state.filter_branch = "";
+      }
+      renderPage();
+      fetchUserPage(1);
+    });
+
+    // Close Dropdowns on Click Outside
+    $(document).off("click.min_combo").on("click.min_combo", function (e) {
+      if (!$(e.target).closest(".min-search-combobox").length) {
+        $m.find(".min-combo-dropdown").hide();
+      }
+    });
+
+    // Reset All Side Filters Button
+    $m.find("#min-side-clear-filters").on("click", function () {
+      state.filter_designation = "";
+      state.filter_branch = "";
+      state.search_query = "";
+      renderPage();
+      fetchUserPage(1);
     });
 
     // Side Add User Button
