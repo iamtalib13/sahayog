@@ -1023,7 +1023,11 @@ frappe.ui.form.on("Report Preference", {
                   <span>${z}</span>
                 </div>
               `).join('')}
-              <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-zones">Clear</button>
+              <div style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
+                <button type="button" class="rp-capsule-action-btn" id="rp-btn-select-all-zones" style="color: var(--rp-accent); font-weight: 600;">Select All</button>
+                <span style="color: #cbd5e1; font-size: 11px;">•</span>
+                <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-zones">Clear</button>
+              </div>
             </div>
 
             <!-- Region Capsules -->
@@ -1040,7 +1044,11 @@ frappe.ui.form.on("Report Preference", {
                     <span>${r}</span>
                   </div>
                 `).join('')}
-                <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+                <div style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
+                  <button type="button" class="rp-capsule-action-btn" id="rp-btn-select-all-regions" style="color: var(--rp-accent); font-weight: 600;">Select All</button>
+                  <span style="color: #cbd5e1; font-size: 11px;">•</span>
+                  <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+                </div>
               ` : `
                 <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
                   No regions available in selected zones
@@ -1186,6 +1194,12 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("calculate_and_render_branches");
     });
 
+    $slot.find("#rp-btn-select-all-zones").on("click", function () {
+      masterZones.forEach(z => frm.state.zones.add(z));
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
     $slot.find("#rp-btn-clear-all-zones").on("click", function () {
       frm.state.zones.clear();
       frm.state.regions.clear();
@@ -1206,6 +1220,16 @@ frappe.ui.form.on("Report Preference", {
       } else {
         frm.state.regions.add(r);
       }
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    $slot.find("#rp-btn-select-all-regions").on("click", function () {
+      if (!frm.state.zones.size) {
+        frappe.show_alert({ message: __("Please select a Zone first!"), indicator: "orange" });
+        return;
+      }
+      availableRegions.forEach(r => frm.state.regions.add(r));
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
