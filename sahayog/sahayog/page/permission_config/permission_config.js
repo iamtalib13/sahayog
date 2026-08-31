@@ -179,41 +179,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => state.regions.has(r.raw));
     let solList = Array.from(state.sol_ids);
 
-    let totalGeoBranches = 0;
-
-    let fullTreeData = sortedMasterZones.map(z => {
-      let isSelected = state.zones.has(z);
-      let zoneBranches = allBranches.filter(b => b.zone === z);
-      let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
-
-      let activeRegions = zoneRegions.filter(r => state.regions.has(r));
-      let isAllRegionsAllowed = activeRegions.length === zoneRegions.length;
-
-      let activeZoneBranches = zoneBranches.filter(b => activeRegions.includes(b.region));
-      if (isSelected) {
-        totalGeoBranches += activeZoneBranches.length;
-      }
-
-      let regionDetails = activeRegions.map(r => {
-        let rBranches = zoneBranches.filter(b => b.region === r);
-        return {
-          region: r,
-          branch_count: rBranches.length
-        };
-      });
-
-      return {
-        zone: z,
-        is_selected: isSelected,
-        all_regions_count: zoneRegions.length,
-        active_regions_count: activeRegions.length,
-        is_all_regions_allowed: isAllRegionsAllowed,
-        total_zone_branches: activeZoneBranches.length,
-        all_zone_branches_count: zoneBranches.length,
-        regions: regionDetails
-      };
-    });
-
     let html = `
       <style>
         .min-perm-card {
@@ -229,7 +194,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           align-items: center;
           padding-bottom: 8px;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
         .min-perm-title {
           font-size: 14px;
@@ -309,7 +274,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 12px;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
         @media (max-width: 768px) {
           .min-box-row { grid-template-columns: 1fr; }
@@ -318,7 +283,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         .min-dashed-box {
           border: 1px dashed #cbd5e1;
           border-radius: 6px;
-          padding: 6px 12px;
+          padding: 8px 12px;
           background: #ffffff;
           display: flex;
           align-items: center;
@@ -345,7 +310,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           justify-content: center;
           min-width: 24px;
           height: 22px;
-          padding: 0 7px;
+          padding: 0 8px;
           border-radius: 11px;
           font-size: 11px;
           font-weight: 600;
@@ -362,172 +327,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           color: #16a34a;
           border: 1.5px solid #16a34a;
           font-weight: 700;
-        }
-
-        /* Ultra-Compact Centered Flowchart Tree */
-        .min-flowchart-card {
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          background: #f8fafc;
-          padding: 12px 10px;
-          margin-top: 6px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .min-tree-root-box {
-          background: #0f172a;
-          color: #ffffff;
-          padding: 4px 14px;
-          border-radius: 14px;
-          font-size: 11.5px;
-          font-weight: 700;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
-          z-index: 2;
-        }
-
-        .min-tree-vertical-stem {
-          width: 1.5px;
-          height: 12px;
-          background: #cbd5e1;
-        }
-
-        .min-tree-zones-row {
-          display: flex;
-          justify-content: center;
-          align-items: flex-start;
-          gap: 10px;
-          width: 100%;
-          flex-wrap: wrap;
-          position: relative;
-        }
-
-        .min-tree-zone-col {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          flex: 1;
-          min-width: 120px;
-          max-width: 155px;
-          position: relative;
-        }
-
-        /* Compact Zone Node */
-        .min-tree-zone-node {
-          border-radius: 6px;
-          padding: 4px 8px;
-          text-align: center;
-          width: 100%;
-          cursor: pointer;
-          transition: all 0.15s ease;
-          user-select: none;
-        }
-
-        .min-tree-zone-node.disabled {
-          background: #f1f5f9;
-          border: 1px dashed #cbd5e1;
-          color: #94a3b8;
-          opacity: 0.7;
-        }
-        .min-tree-zone-node.disabled:hover {
-          opacity: 1;
-          border-color: #94a3b8;
-          background: #e2e8f0;
-          color: #475569;
-        }
-        .min-tree-zone-node.disabled .min-tree-zone-heading {
-          color: #64748b;
-        }
-
-        .min-tree-zone-node.enabled {
-          background: #ffffff;
-          border: 1.5px solid #16a34a;
-          color: #16a34a;
-          box-shadow: 0 2px 6px rgba(22, 163, 74, 0.1);
-        }
-        .min-tree-zone-node.enabled .min-tree-zone-heading {
-          color: #0f172a;
-          font-weight: 800;
-        }
-
-        .min-tree-zone-heading {
-          font-size: 11.5px;
-          margin-bottom: 2px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 4px;
-        }
-
-        .min-tree-zone-badge-all {
-          font-size: 9px;
-          font-weight: 700;
-          color: #16a34a;
-          background: #dcfce7;
-          padding: 1px 5px;
-          border-radius: 4px;
-          display: inline-block;
-          line-height: 1.2;
-        }
-        .min-tree-zone-badge-partial {
-          font-size: 9px;
-          font-weight: 700;
-          color: #0369a1;
-          background: #e0f2fe;
-          padding: 1px 5px;
-          border-radius: 4px;
-          display: inline-block;
-          line-height: 1.2;
-        }
-        .min-tree-zone-badge-off {
-          font-size: 9px;
-          font-weight: 600;
-          color: #94a3b8;
-          display: inline-block;
-          line-height: 1.2;
-        }
-
-        .min-tree-regions-container {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          width: 100%;
-          margin-top: 4px;
-        }
-        .min-tree-region-leaf {
-          background: #ffffff;
-          border: 1px solid #bbf7d0;
-          border-radius: 4px;
-          padding: 2px 6px;
-          font-size: 10px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-          transition: all 0.15s ease;
-        }
-        .min-tree-region-leaf:hover {
-          border-color: #86efac;
-          background: #f0fdf4;
-        }
-
-        .min-tree-remove-region {
-          cursor: pointer;
-          color: #94a3b8;
-          font-weight: bold;
-          font-size: 11px;
-          line-height: 1;
-          padding: 0 2px;
-          border-radius: 2px;
-          transition: all 0.15s ease;
-        }
-        .min-tree-remove-region:hover {
-          color: #dc2626;
-          background: #fee2e2;
         }
 
         .min-sol-box {
@@ -622,7 +421,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
 
         ${isGeo ? `
-          <!-- ZONE & REGION DASHED BOXES (GEO WISE - ULTRA COMPACT) -->
+          <!-- ZONE & REGION DASHED BOXES (GEO WISE) -->
           <div class="min-box-row">
             <!-- Zone Box -->
             <div class="min-dashed-box">
@@ -648,69 +447,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                   <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No regions available</span>
                 `}
               </div>
-            </div>
-          </div>
-
-          <!-- ULTRA COMPACT CENTERED FLOWCHART TREE DIAGRAM -->
-          <div class="min-flowchart-card">
-            <!-- Level 0: Root User Node -->
-            <div class="min-tree-root-box">
-              <span>👤</span>
-              <span>${userName.toUpperCase()} (${userEmpId})</span>
-              ${state.tag ? `<span style="background: rgba(255,255,255,0.2); padding: 1px 5px; border-radius: 3px; font-size: 9.5px;">${state.tag}</span>` : ''}
-            </div>
-
-            <!-- Stem Line -->
-            <div class="min-tree-vertical-stem"></div>
-
-            <!-- Level 1: Connected Zones Row (Compact capsules) -->
-            <div class="min-tree-zones-row">
-              ${fullTreeData.map(item => `
-                <div class="min-tree-zone-col">
-                  <!-- Zone Node (Clickable) -->
-                  <div class="min-tree-zone-node min-tree-click-zone ${item.is_selected ? 'enabled' : 'disabled'}" data-raw="${item.zone}" title="${item.is_selected ? 'Click to Disable Zone' : 'Click to Enable Zone'}">
-                    <div class="min-tree-zone-heading">
-                      <span style="font-size: 9px;">${item.is_selected ? '🟢' : '⚪'}</span>
-                      <b>${item.zone}</b>
-                    </div>
-                    ${item.is_selected ? (
-                      item.is_all_regions_allowed ? `
-                        <div class="min-tree-zone-badge-all">
-                          All ${item.all_regions_count} Reg (${item.total_zone_branches} Br)
-                        </div>
-                      ` : `
-                        <div class="min-tree-zone-badge-partial">
-                          ${item.active_regions_count}/${item.all_regions_count} Reg (${item.total_zone_branches} Br)
-                        </div>
-                      `
-                    ) : `
-                      <div class="min-tree-zone-badge-off">
-                        Off (${item.all_zone_branches_count} Br)
-                      </div>
-                    `}
-                  </div>
-
-                  ${item.is_selected ? `
-                    <!-- Stem to regions -->
-                    <div class="min-tree-vertical-stem" style="height: 6px; background: #86efac;"></div>
-
-                    <!-- Level 2: Region Leaves -->
-                    <div class="min-tree-regions-container">
-                      ${item.regions.length > 0 ? item.regions.map(r => `
-                        <div class="min-tree-region-leaf">
-                          <div style="display: flex; align-items: center; gap: 3px;">
-                            <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
-                            <span style="color: #64748b; font-size: 9px; font-weight: 600;">(${r.branch_count})</span>
-                          </div>
-                          <span class="min-tree-remove-region" data-raw="${r.region}" title="Remove ${r.region}">×</span>
-                        </div>
-                      `).join('') : `
-                        <div style="font-size: 9.5px; color: #94a3b8; font-style: italic; text-align: center; padding: 2px;">No regions</div>
-                      `}
-                    </div>
-                  ` : ''}
-                </div>
-              `).join('')}
             </div>
           </div>
         ` : `
@@ -853,8 +589,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // Zone Chips & Tree Zone Nodes Click: When Zone selected -> Auto-add all its regions by default!
-    $m.find(".min-chip-zone, .min-tree-click-zone").on("click", function () {
+    // Zone Chips Click: Auto-add all regions of newly selected zone!
+    $m.find(".min-chip-zone").on("click", function () {
       let z = $(this).data("raw");
       let zoneBranches = allBranches.filter(b => b.zone === z);
       let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean)));
@@ -899,15 +635,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // Delete Region from Tree Leaf (× button)
-    $m.find(".min-tree-remove-region").on("click", function (e) {
-      e.stopPropagation();
-      let r = $(this).data("raw");
-      state.regions.delete(r);
-      renderPage();
-      autoSave();
-    });
-
     $m.find("#min-chip-region-all").on("click", function () {
       let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
       if (state.zones.size > 0) {
@@ -917,7 +644,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       }
 
       if (availableRegionNames.every(r => state.regions.has(r))) {
-        availableRegionNames.forEach(r => state.regions.delete(r));
+        state.regions.clear();
       } else {
         availableRegionNames.forEach(r => state.regions.add(r));
       }
