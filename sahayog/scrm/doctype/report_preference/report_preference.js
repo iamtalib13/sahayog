@@ -666,6 +666,11 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
 
+      if (!frm.state.zones.size) {
+        frappe.msgprint(__("Please select at least one Zone before saving."));
+        return;
+      }
+
       frappe.call({
         method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
         args: {
@@ -701,9 +706,9 @@ frappe.ui.form.on("Report Preference", {
     let regions = Array.from(frm.state.regions);
     let districts = Array.from(frm.state.districts);
 
-    // If nothing selected yet, show all branches by default
-    if (!zones.length && !regions.length && !districts.length && frm.meta_data && frm.meta_data.all_branches) {
-      frm.resolved_branches = frm.meta_data.all_branches;
+    // If no Zone is selected, do not resolve branches
+    if (!zones.length) {
+      frm.resolved_branches = [];
       frm.trigger("render_table_with_capsules");
       return;
     }
@@ -730,9 +735,33 @@ frappe.ui.form.on("Report Preference", {
 
     let meta = frm.meta_data || {};
     let masterZones = meta.master_zones || [];
-    let masterRegions = meta.master_regions || [];
+    let allBranches = meta.all_branches || [];
     let branches = frm.resolved_branches || [];
     let totalCount = branches.length;
+    let hasZoneSelected = frm.state.zones.size > 0;
+
+    // Filter regions based on selected zones
+    let availableRegions = [];
+    if (hasZoneSelected) {
+      availableRegions = Array.from(
+        new Set(
+          allBranches
+            .filter(b => frm.state.zones.has(b.zone))
+            .map(b => b.region)
+            .filter(Boolean)
+        )
+      ).sort();
+
+      // Clean up regions that no longer belong to selected zones
+      let currentSelectedRegions = Array.from(frm.state.regions);
+      currentSelectedRegions.forEach(r => {
+        if (!availableRegions.includes(r)) {
+          frm.state.regions.delete(r);
+        }
+      });
+    } else {
+      frm.state.regions.clear();
+    }
 
     let tableHtml = `
       <div class="rp-table-section-card">
@@ -765,21 +794,35 @@ frappe.ui.form.on("Report Preference", {
           <!-- Region Capsules -->
           <div class="rp-capsule-row">
             <span class="rp-capsule-label">REGIONS:</span>
-            ${masterRegions.map(r => `
-              <div class="rp-perm-capsule rp-region-capsule ${frm.state.regions.has(r) ? 'active' : ''}" data-region="${r}">
-                <span class="rp-capsule-dot"></span>
-                <span>${r}</span>
-              </div>
-            `).join('')}
-            <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+            ${!hasZoneSelected ? `
+              <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
+                ⚠️ Select at least one Zone first to enable and choose Regions
+              </span>
+            ` : (availableRegions.length > 0 ? `
+              ${availableRegions.map(r => `
+                <div class="rp-perm-capsule rp-region-capsule ${frm.state.regions.has(r) ? 'active' : ''}" data-region="${r}">
+                  <span class="rp-capsule-dot"></span>
+                  <span>${r}</span>
+                </div>
+              `).join('')}
+              <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-regions">Clear</button>
+            ` : `
+              <span style="font-size: 11.5px; color: #94a3b8; font-style: italic;">
+                No regions available in selected zones
+              </span>
+            `)}
           </div>
         </div>
 
         <!-- Direct Clean Table -->
         <div class="rp-table-scroll-wrap">
-          ${totalCount === 0 ? `
+          ${!hasZoneSelected ? `
+            <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
+              👈 Please select a <b>Zone</b> capsule above to grant branch access.
+            </div>
+          ` : (totalCount === 0 ? `
             <div style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12.5px;">
-              No branches selected. Click on Zone or Region capsules above to grant branch access.
+              No branches found matching the selected Zone / Region filters.
             </div>
           ` : `
             <table class="rp-minimal-grid-table" id="rp-branch-grid-table">
@@ -804,7 +847,7 @@ frappe.ui.form.on("Report Preference", {
                 `).join('')}
               </tbody>
             </table>
-          `}
+          `)}
         </div>
       </div>
     `;
@@ -816,10 +859,8 @@ frappe.ui.form.on("Report Preference", {
       let z = $(this).data("zone");
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
-        $(this).removeClass("active");
       } else {
         frm.state.zones.add(z);
-        $(this).addClass("active");
       }
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
@@ -827,20 +868,23 @@ frappe.ui.form.on("Report Preference", {
 
     $slot.find("#rp-btn-clear-all-zones").on("click", function () {
       frm.state.zones.clear();
-      $slot.find(".rp-zone-capsule").removeClass("active");
+      frm.state.regions.clear();
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
 
     // Region Capsule Click: Toggle permission in state
     $slot.find(".rp-region-capsule").on("click", function () {
+      if (!frm.state.zones.size) {
+        frappe.show_alert({ message: __("Please select a Zone first!"), indicator: "orange" });
+        return;
+      }
+
       let r = $(this).data("region");
       if (frm.state.regions.has(r)) {
         frm.state.regions.delete(r);
-        $(this).removeClass("active");
       } else {
         frm.state.regions.add(r);
-        $(this).addClass("active");
       }
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
@@ -848,7 +892,6 @@ frappe.ui.form.on("Report Preference", {
 
     $slot.find("#rp-btn-clear-all-regions").on("click", function () {
       frm.state.regions.clear();
-      $slot.find(".rp-region-capsule").removeClass("active");
       frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
     });
