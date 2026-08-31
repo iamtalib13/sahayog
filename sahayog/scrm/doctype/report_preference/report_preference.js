@@ -203,7 +203,6 @@ frappe.ui.form.on("Report Preference", {
       let zoneBranches = allBranches.filter(b => b.zone === z);
       let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
 
-      // Only regions that are in frm.state.regions for this zone
       let activeRegions = zoneRegions.filter(r => frm.state.regions.has(r));
       let isAllRegionsAllowed = activeRegions.length === zoneRegions.length;
 
@@ -237,39 +236,39 @@ frappe.ui.form.on("Report Preference", {
         .min-perm-card {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
           color: #24292f;
-          padding: 8px 0;
+          padding: 4px 0;
         }
 
         .min-perm-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding-bottom: 12px;
+          padding-bottom: 8px;
           border-bottom: 1px solid #e2e8f0;
-          margin-bottom: 14px;
+          margin-bottom: 10px;
         }
         .min-perm-title {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 700;
           color: #0f172a;
-          margin-bottom: 3px;
+          margin-bottom: 2px;
         }
         .min-perm-subinfo {
-          font-size: 13px;
+          font-size: 12px;
           color: #475569;
         }
 
         .min-scope-control {
           display: inline-flex;
           background: #f1f5f9;
-          padding: 3px;
-          border-radius: 8px;
+          padding: 2px;
+          border-radius: 6px;
           border: 1px solid #cbd5e1;
         }
         .min-scope-seg {
-          padding: 4px 14px;
-          border-radius: 6px;
-          font-size: 11.5px;
+          padding: 3px 10px;
+          border-radius: 5px;
+          font-size: 11px;
           font-weight: 600;
           cursor: pointer;
           color: #64748b;
@@ -277,18 +276,18 @@ frappe.ui.form.on("Report Preference", {
           user-select: none;
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 4px;
         }
         .min-scope-seg:hover { color: #0f172a; }
         .min-scope-seg.active {
           background: #ffffff;
           color: #0f172a;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
         }
 
         .min-toggle-track {
-          width: 40px;
-          height: 22px;
+          width: 34px;
+          height: 18px;
           background: #cbd5e1;
           border-radius: 9999px;
           position: relative;
@@ -297,25 +296,25 @@ frappe.ui.form.on("Report Preference", {
         }
         .min-toggle-track.active { background: #16a34a; }
         .min-toggle-thumb {
-          width: 16px;
-          height: 16px;
+          width: 14px;
+          height: 14px;
           background: #ffffff;
           border-radius: 50%;
           position: absolute;
-          top: 3px;
-          left: 3px;
+          top: 2px;
+          left: 2px;
           transition: transform 0.2s ease;
           box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
-        .min-toggle-track.active .min-toggle-thumb { transform: translateX(18px); }
+        .min-toggle-track.active .min-toggle-thumb { transform: translateX(16px); }
 
         .min-btn-save {
           background: #0f172a;
           color: #ffffff;
           border: 1px solid #0f172a;
-          border-radius: 6px;
-          padding: 4px 14px;
-          font-size: 12px;
+          border-radius: 5px;
+          padding: 3px 12px;
+          font-size: 11.5px;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -325,8 +324,8 @@ frappe.ui.form.on("Report Preference", {
         .min-box-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 16px;
+          gap: 12px;
+          margin-bottom: 10px;
         }
         @media (max-width: 768px) {
           .min-box-row { grid-template-columns: 1fr; }
@@ -334,25 +333,25 @@ frappe.ui.form.on("Report Preference", {
 
         .min-dashed-box {
           border: 1px dashed #cbd5e1;
-          border-radius: 8px;
-          padding: 12px 16px;
+          border-radius: 6px;
+          padding: 6px 12px;
           background: #ffffff;
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
           flex-wrap: wrap;
         }
         .min-box-label {
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           color: #1e293b;
-          min-width: 48px;
+          min-width: 40px;
         }
 
         .min-chip-container {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           flex-wrap: wrap;
           flex: 1;
         }
@@ -360,11 +359,11 @@ frappe.ui.form.on("Report Preference", {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-width: 32px;
-          height: 26px;
-          padding: 0 10px;
-          border-radius: 13px;
-          font-size: 12px;
+          min-width: 24px;
+          height: 22px;
+          padding: 0 7px;
+          border-radius: 11px;
+          font-size: 11px;
           font-weight: 600;
           background: #f1f5f9;
           color: #475569;
@@ -381,13 +380,13 @@ frappe.ui.form.on("Report Preference", {
           font-weight: 700;
         }
 
-        /* Centered Flowchart Tree */
+        /* Ultra-Compact Centered Flowchart Tree */
         .min-flowchart-card {
           border: 1px solid #e2e8f0;
-          border-radius: 10px;
+          border-radius: 8px;
           background: #f8fafc;
-          padding: 20px 16px;
-          margin-top: 10px;
+          padding: 12px 10px;
+          margin-top: 6px;
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -396,20 +395,20 @@ frappe.ui.form.on("Report Preference", {
         .min-tree-root-box {
           background: #0f172a;
           color: #ffffff;
-          padding: 8px 20px;
-          border-radius: 24px;
-          font-size: 12.5px;
+          padding: 4px 14px;
+          border-radius: 14px;
+          font-size: 11.5px;
           font-weight: 700;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+          gap: 6px;
+          box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
           z-index: 2;
         }
 
         .min-tree-vertical-stem {
-          width: 2px;
-          height: 20px;
+          width: 1.5px;
+          height: 12px;
           background: #cbd5e1;
         }
 
@@ -417,7 +416,7 @@ frappe.ui.form.on("Report Preference", {
           display: flex;
           justify-content: center;
           align-items: flex-start;
-          gap: 16px;
+          gap: 10px;
           width: 100%;
           flex-wrap: wrap;
           position: relative;
@@ -428,25 +427,25 @@ frappe.ui.form.on("Report Preference", {
           flex-direction: column;
           align-items: center;
           flex: 1;
-          min-width: 160px;
-          max-width: 200px;
+          min-width: 120px;
+          max-width: 155px;
           position: relative;
         }
 
-        /* Zone Node - Disabled / Enabled Styles */
+        /* Compact Zone Node */
         .min-tree-zone-node {
-          border-radius: 10px;
-          padding: 8px 12px;
+          border-radius: 6px;
+          padding: 4px 8px;
           text-align: center;
           width: 100%;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.15s ease;
           user-select: none;
         }
 
         .min-tree-zone-node.disabled {
           background: #f1f5f9;
-          border: 1.5px dashed #cbd5e1;
+          border: 1px dashed #cbd5e1;
           color: #94a3b8;
           opacity: 0.7;
         }
@@ -462,9 +461,9 @@ frappe.ui.form.on("Report Preference", {
 
         .min-tree-zone-node.enabled {
           background: #ffffff;
-          border: 2px solid #16a34a;
+          border: 1.5px solid #16a34a;
           color: #16a34a;
-          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.12);
+          box-shadow: 0 2px 6px rgba(22, 163, 74, 0.1);
         }
         .min-tree-zone-node.enabled .min-tree-zone-heading {
           color: #0f172a;
@@ -472,52 +471,55 @@ frappe.ui.form.on("Report Preference", {
         }
 
         .min-tree-zone-heading {
-          font-size: 13px;
-          margin-bottom: 3px;
+          font-size: 11.5px;
+          margin-bottom: 2px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 6px;
+          gap: 4px;
         }
 
         .min-tree-zone-badge-all {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
           color: #16a34a;
           background: #dcfce7;
-          padding: 2px 6px;
-          border-radius: 6px;
+          padding: 1px 5px;
+          border-radius: 4px;
           display: inline-block;
+          line-height: 1.2;
         }
         .min-tree-zone-badge-partial {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 700;
           color: #0369a1;
           background: #e0f2fe;
-          padding: 2px 6px;
-          border-radius: 6px;
+          padding: 1px 5px;
+          border-radius: 4px;
           display: inline-block;
+          line-height: 1.2;
         }
         .min-tree-zone-badge-off {
-          font-size: 10px;
+          font-size: 9px;
           font-weight: 600;
           color: #94a3b8;
           display: inline-block;
+          line-height: 1.2;
         }
 
         .min-tree-regions-container {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 3px;
           width: 100%;
-          margin-top: 6px;
+          margin-top: 4px;
         }
         .min-tree-region-leaf {
           background: #ffffff;
           border: 1px solid #bbf7d0;
-          border-radius: 6px;
-          padding: 4px 8px;
-          font-size: 11px;
+          border-radius: 4px;
+          padding: 2px 6px;
+          font-size: 10px;
           display: flex;
           justify-content: space-between;
           align-items: center;
@@ -533,10 +535,10 @@ frappe.ui.form.on("Report Preference", {
           cursor: pointer;
           color: #94a3b8;
           font-weight: bold;
-          font-size: 13px;
+          font-size: 11px;
           line-height: 1;
-          padding: 0 4px;
-          border-radius: 3px;
+          padding: 0 2px;
+          border-radius: 2px;
           transition: all 0.15s ease;
         }
         .min-tree-remove-region:hover {
@@ -546,31 +548,31 @@ frappe.ui.form.on("Report Preference", {
 
         .min-sol-box {
           border: 1px dashed #cbd5e1;
-          border-radius: 8px;
-          padding: 14px 16px;
+          border-radius: 6px;
+          padding: 10px 14px;
           background: #ffffff;
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
-        .min-sol-remove { cursor: pointer; font-size: 14px; font-weight: bold; line-height: 1; }
+        .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
 
         .min-branch-table-wrap {
           border: 1px solid #e2e8f0;
-          border-radius: 8px;
+          border-radius: 6px;
           overflow: hidden;
-          margin-top: 10px;
+          margin-top: 8px;
         }
-        .min-branch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .min-branch-table th {
           background: #f8fafc;
-          padding: 8px 12px;
+          padding: 6px 10px;
           text-align: left;
           font-weight: 600;
           color: #475569;
           border-bottom: 1px solid #e2e8f0;
         }
         .min-branch-table td {
-          padding: 8px 12px;
+          padding: 6px 10px;
           border-bottom: 1px solid #f1f5f9;
           color: #334155;
         }
@@ -580,14 +582,14 @@ frappe.ui.form.on("Report Preference", {
           background: #fef2f2;
           color: #dc2626;
           border: 1px solid #fca5a5;
-          padding: 3px 10px;
-          border-radius: 6px;
-          font-size: 11.5px;
+          padding: 2px 8px;
+          border-radius: 5px;
+          font-size: 11px;
           font-weight: 600;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 4px;
           transition: all 0.15s ease;
         }
         .min-bulk-delete-btn:hover {
@@ -603,17 +605,17 @@ frappe.ui.form.on("Report Preference", {
             <div class="min-perm-title">Permission Details</div>
             <div class="min-perm-subinfo">
               <span><b>Employee Name:</b> ${userName.toUpperCase()}</span>
-              <span style="color: #cbd5e1; margin: 0 8px;">|</span>
+              <span style="color: #cbd5e1; margin: 0 6px;">|</span>
               <span><b>Employee ID:</b> ${userEmpId}</span>
               ${isNewDoc ? `
-                <span style="margin-left: 10px;">
+                <span style="margin-left: 8px;">
                   <button type="button" class="btn btn-xs btn-default" id="min-btn-change-user">🔍 Select User</button>
                 </span>
               ` : ''}
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
             <!-- Geo / Branch Wise Segmented Toggle -->
             <div class="min-scope-control">
               <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
@@ -630,7 +632,7 @@ frappe.ui.form.on("Report Preference", {
             </div>
 
             <!-- Tag Dropdown -->
-            <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 30px; font-size: 12px; font-weight: 600; border-radius: 6px; border-color: #cbd5e1;">
+            <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 26px; font-size: 11px; font-weight: 600; border-radius: 5px; border-color: #cbd5e1; padding: 2px 6px;">
               <option value="">No Tag</option>
               ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
             </select>
@@ -641,7 +643,7 @@ frappe.ui.form.on("Report Preference", {
         </div>
 
         ${isGeo ? `
-          <!-- ZONE & REGION DASHED BOXES (GEO WISE - SORTED Z1 TO Z6) -->
+          <!-- ZONE & REGION DASHED BOXES (GEO WISE - ULTRA COMPACT) -->
           <div class="min-box-row">
             <!-- Zone Box -->
             <div class="min-dashed-box">
@@ -664,67 +666,67 @@ frappe.ui.form.on("Report Preference", {
                     <div class="min-chip min-chip-region ${frm.state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
                   `).join('')}
                 ` : `
-                  <span style="font-size: 12px; color: #94a3b8; font-style: italic;">No regions available</span>
+                  <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No regions available</span>
                 `}
               </div>
             </div>
           </div>
 
-          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM (ALL ZONES CONNECTED, ENABLED GREEN) -->
+          <!-- ULTRA COMPACT CENTERED FLOWCHART TREE DIAGRAM -->
           <div class="min-flowchart-card">
             <!-- Level 0: Root User Node -->
             <div class="min-tree-root-box">
               <span>👤</span>
               <span>${userName.toUpperCase()} (${userEmpId})</span>
-              ${frm.state.tag ? `<span style="background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 4px; font-size: 10px;">${frm.state.tag}</span>` : ''}
+              ${frm.state.tag ? `<span style="background: rgba(255,255,255,0.2); padding: 1px 5px; border-radius: 3px; font-size: 9.5px;">${frm.state.tag}</span>` : ''}
             </div>
 
             <!-- Stem Line -->
             <div class="min-tree-vertical-stem"></div>
 
-            <!-- Level 1: Connected Zones Row (Z1 to Z6, default disabled, selected enabled green) -->
+            <!-- Level 1: Connected Zones Row (Compact capsules) -->
             <div class="min-tree-zones-row">
               ${fullTreeData.map(item => `
                 <div class="min-tree-zone-col">
                   <!-- Zone Node (Clickable) -->
                   <div class="min-tree-zone-node min-tree-click-zone ${item.is_selected ? 'enabled' : 'disabled'}" data-raw="${item.zone}" title="${item.is_selected ? 'Click to Disable Zone' : 'Click to Enable Zone'}">
                     <div class="min-tree-zone-heading">
-                      <span>${item.is_selected ? '🟢' : '⚪'}</span>
+                      <span style="font-size: 9px;">${item.is_selected ? '🟢' : '⚪'}</span>
                       <b>${item.zone}</b>
                     </div>
                     ${item.is_selected ? (
                       item.is_all_regions_allowed ? `
                         <div class="min-tree-zone-badge-all">
-                          All ${item.all_regions_count} Regions (${item.total_zone_branches} Br)
+                          All ${item.all_regions_count} Reg (${item.total_zone_branches} Br)
                         </div>
                       ` : `
                         <div class="min-tree-zone-badge-partial">
-                          ${item.active_regions_count} of ${item.all_regions_count} Regions (${item.total_zone_branches} Br)
+                          ${item.active_regions_count}/${item.all_regions_count} Reg (${item.total_zone_branches} Br)
                         </div>
                       `
                     ) : `
                       <div class="min-tree-zone-badge-off">
-                        Disabled (${item.all_zone_branches_count} Br)
+                        Off (${item.all_zone_branches_count} Br)
                       </div>
                     `}
                   </div>
 
                   ${item.is_selected ? `
                     <!-- Stem to regions -->
-                    <div class="min-tree-vertical-stem" style="height: 10px; background: #86efac;"></div>
+                    <div class="min-tree-vertical-stem" style="height: 6px; background: #86efac;"></div>
 
                     <!-- Level 2: Region Leaves -->
                     <div class="min-tree-regions-container">
                       ${item.regions.length > 0 ? item.regions.map(r => `
                         <div class="min-tree-region-leaf">
-                          <div style="display: flex; align-items: center; gap: 4px;">
+                          <div style="display: flex; align-items: center; gap: 3px;">
                             <span style="font-weight: 600; color: #15803d;">🔹 ${r.region}</span>
-                            <span style="color: #64748b; font-size: 10px; font-weight: 600;">(${r.branch_count} Br)</span>
+                            <span style="color: #64748b; font-size: 9px; font-weight: 600;">(${r.branch_count})</span>
                           </div>
                           <span class="min-tree-remove-region" data-raw="${r.region}" title="Remove ${r.region}">×</span>
                         </div>
                       `).join('') : `
-                        <div style="font-size: 10px; color: #94a3b8; font-style: italic; text-align: center; padding: 4px;">No regions selected</div>
+                        <div style="font-size: 9.5px; color: #94a3b8; font-style: italic; text-align: center; padding: 2px;">No regions</div>
                       `}
                     </div>
                   ` : ''}
@@ -738,9 +740,9 @@ frappe.ui.form.on("Report Preference", {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="min-box-label" style="min-width: unset;">SOL ID</span>
-                <span style="cursor: pointer; color: #0284c7; font-size: 13px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
+                <span style="cursor: pointer; color: #0284c7; font-size: 12px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
                 <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
                   <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
                 </button>
@@ -756,15 +758,15 @@ frappe.ui.form.on("Report Preference", {
                 <table class="min-branch-table" id="min-sol-grid-table">
                   <thead>
                     <tr>
-                      <th style="width: 36px; text-align: center;">
+                      <th style="width: 32px; text-align: center;">
                         <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
                       </th>
-                      <th style="width: 100px;">SOL ID</th>
+                      <th style="width: 90px;">SOL ID</th>
                       <th>Branch Name</th>
                       <th>District</th>
                       <th>Region</th>
                       <th>Zone</th>
-                      <th style="width: 50px; text-align: center;">Action</th>
+                      <th style="width: 44px; text-align: center;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -781,7 +783,7 @@ frappe.ui.form.on("Report Preference", {
                           <td>${b.region || '-'}</td>
                           <td>${b.zone || '-'}</td>
                           <td style="text-align: center;">
-                            <span class="min-sol-remove" data-sol="${sol}" title="Delete" style="color: #dc2626; font-size: 15px;">×</span>
+                            <span class="min-sol-remove" data-sol="${sol}" title="Delete" style="color: #dc2626; font-size: 14px;">×</span>
                           </td>
                         </tr>
                       `;
@@ -790,7 +792,7 @@ frappe.ui.form.on("Report Preference", {
                 </table>
               </div>
             ` : `
-              <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+              <div style="padding: 20px; text-align: center; color: #94a3b8; font-size: 12px;">
                 No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.
               </div>
             `}
@@ -898,7 +900,6 @@ frappe.ui.form.on("Report Preference", {
 
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
-        // Remove regions that only belonged to this zone
         let remainingZoneRegions = new Set(allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
         zoneRegions.forEach(r => {
           if (!remainingZoneRegions.has(r)) {
@@ -907,7 +908,6 @@ frappe.ui.form.on("Report Preference", {
         });
       } else {
         frm.state.zones.add(z);
-        // Default: Auto-select all regions of this newly added zone!
         zoneRegions.forEach(r => frm.state.regions.add(r));
       }
       frm.trigger("render_minimal_widget");
