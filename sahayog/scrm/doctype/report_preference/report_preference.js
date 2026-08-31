@@ -476,41 +476,17 @@ frappe.ui.form.on("Report Preference", {
           color: var(--rp-primary);
         }
 
-        /* Dismissible Tag for SOL Mode */
-        .rp-tag-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #eff6ff;
-          color: #1e40af;
-          border: 1px solid #dbeafe;
-          padding: 3px 10px;
-          border-radius: 6px;
-          font-size: 11.5px;
-          font-weight: 500;
-        }
-        .rp-tag-remove {
-          cursor: pointer;
-          font-weight: 700;
-          font-size: 13px;
-          line-height: 1;
-          color: #93c5fd;
-        }
-        .rp-tag-remove:hover {
-          color: #ef4444;
-        }
-
-        /* Collapsible Hierarchical TreeGrid Table */
+        /* Pure Tabular Grid Table */
         .rp-table-scroll-wrap {
           max-height: 480px;
           overflow-y: auto;
         }
-        .rp-treegrid-table {
+        .rp-pure-grid-table {
           width: 100%;
           border-collapse: collapse;
           font-size: 12px;
         }
-        .rp-treegrid-table th {
+        .rp-pure-grid-table th {
           position: sticky;
           top: 0;
           background: #f8fafc;
@@ -520,18 +496,18 @@ frappe.ui.form.on("Report Preference", {
           text-transform: uppercase;
           letter-spacing: 0.04em;
           text-align: left;
-          padding: 9px 14px;
+          padding: 9px 12px;
           border-bottom: 1px solid var(--rp-border);
           z-index: 2;
         }
-        .rp-treegrid-table td {
-          padding: 7px 14px;
+        .rp-pure-grid-table td {
+          padding: 7px 12px;
           border-bottom: 1px solid var(--rp-border-light);
           color: #334155;
           vertical-align: middle;
         }
 
-        /* Tree Row Levels */
+        /* Row Levels */
         .rp-row-zone-header {
           background: #f1f5f9;
           font-weight: 700;
@@ -570,7 +546,7 @@ frappe.ui.form.on("Report Preference", {
           display: inline-block;
           transition: transform 0.15s ease;
           font-size: 9px;
-          margin-right: 6px;
+          margin-right: 5px;
           color: #64748b;
         }
         .rp-tree-toggle-icon.collapsed {
@@ -599,17 +575,16 @@ frappe.ui.form.on("Report Preference", {
         }
         .rp-level-badge {
           display: inline-block;
-          font-size: 9.5px;
+          font-size: 10px;
           font-weight: 700;
-          padding: 1px 5px;
-          border-radius: 3px;
-          text-transform: uppercase;
-          letter-spacing: 0.04em;
-          margin-right: 6px;
+          padding: 2px 6px;
+          border-radius: 4px;
+          letter-spacing: 0.02em;
         }
-        .rp-level-badge-zone { background: #e0f2fe; color: #0369a1; }
-        .rp-level-badge-region { background: #dcfce7; color: #15803d; }
-        .rp-level-badge-district { background: #fef3c7; color: #b45309; }
+        .rp-level-badge-zone { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .rp-level-badge-region { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .rp-level-badge-district { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+        .rp-level-badge-branch { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
       </style>
 
       <div class="rp-root">
@@ -688,7 +663,7 @@ frappe.ui.form.on("Report Preference", {
               </div>
             </div>
 
-            <!-- Table Section Card with Integrated Drilldown TreeGrid -->
+            <!-- Table Section Card with Pure Grid View -->
             <div id="rp-branch-coverage-slot"></div>
           </div>
         </div>
@@ -933,13 +908,13 @@ frappe.ui.form.on("Report Preference", {
 
     if (isGeo && !zones.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_drilldown_table");
+      frm.trigger("render_pure_grid_table");
       return;
     }
 
     if (!isGeo && !sol_ids.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_drilldown_table");
+      frm.trigger("render_pure_grid_table");
       return;
     }
 
@@ -954,12 +929,12 @@ frappe.ui.form.on("Report Preference", {
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
-        frm.trigger("render_drilldown_table");
+        frm.trigger("render_pure_grid_table");
       }
     });
   },
 
-  render_drilldown_table: function (frm) {
+  render_pure_grid_table: function (frm) {
     let $slot = frm.fields_dict.widget_html.$wrapper.find("#rp-branch-coverage-slot");
     if (!$slot.length) return;
 
@@ -994,7 +969,7 @@ frappe.ui.form.on("Report Preference", {
       frm.state.regions.clear();
     }
 
-    // Build Nested Tree Structure (Zone -> Region -> District -> Branches)
+    // Build Nested Structure for Pure Table View
     let tree = {};
     branches.forEach(b => {
       let z = b.zone || "Unassigned Zone";
@@ -1073,11 +1048,10 @@ frappe.ui.form.on("Report Preference", {
               </div>
               <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-sols" style="margin-top: 6px; color: #dc2626;">Remove All</button>
             </div>
-
           `}
         </div>
 
-        <!-- Hierarchical TreeGrid Table View -->
+        <!-- Pure Tabular Grid Table -->
         <div class="rp-table-scroll-wrap">
           ${isGeo && !hasZoneSelected ? `
             <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
@@ -1092,15 +1066,15 @@ frappe.ui.form.on("Report Preference", {
               No branches found matching the current selections.
             </div>
           ` : `
-            <table class="rp-treegrid-table" id="rp-branch-treegrid-table">
+            <table class="rp-pure-grid-table" id="rp-pure-grid-table">
               <thead>
                 <tr>
-                  <th style="width: 280px;">Level / Hierarchy</th>
+                  <th style="width: 140px;">Level</th>
+                  <th style="width: 130px;">Zone</th>
+                  <th style="width: 130px;">Region</th>
+                  <th style="width: 140px;">District</th>
                   <th>Branch Name</th>
-                  <th style="width: 120px;">Zone</th>
-                  <th style="width: 120px;">Region</th>
-                  <th style="width: 130px;">District</th>
-                  <th style="width: 90px;">SOL ID</th>
+                  <th style="width: 100px;">SOL ID</th>
                 </tr>
               </thead>
               <tbody>
@@ -1111,16 +1085,17 @@ frappe.ui.form.on("Report Preference", {
                   let zKey = `zone-${z.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                   return `
-                    <!-- Level 1: ZONE ROW -->
+                    <!-- Level: Zone Row -->
                     <tr class="rp-row-zone-header rp-tree-header-row" data-tree-key="${zKey}" data-search="${z}">
-                      <td colspan="6" style="padding: 8px 14px;">
+                      <td>
                         <span class="rp-tree-toggle-icon">▼</span>
-                        <span class="rp-level-badge rp-level-badge-zone">ZONE</span>
-                        <b>${z}</b>
-                        <span style="font-size: 10.5px; color: #64748b; margin-left: 10px; font-weight: normal;">
-                          (${zRegCount} Regions • ${zBranchesCount} Branches)
-                        </span>
+                        <span class="rp-level-badge rp-level-badge-zone">Zone</span>
                       </td>
+                      <td><b>${z}</b></td>
+                      <td><span class="text-muted" style="font-size:11px;">(${zRegCount} Regions)</span></td>
+                      <td><span class="text-muted" style="font-size:11px;">—</span></td>
+                      <td><span class="text-muted" style="font-size:11px; font-weight:600;">${zBranchesCount} Branches</span></td>
+                      <td>—</td>
                     </tr>
 
                     ${Object.keys(tree[z]).map(r => {
@@ -1129,16 +1104,17 @@ frappe.ui.form.on("Report Preference", {
                       let rKey = `${zKey}-reg-${r.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                       return `
-                        <!-- Level 2: REGION ROW -->
+                        <!-- Level: Region Row -->
                         <tr class="rp-row-region-header rp-tree-header-row rp-child-of-${zKey}" data-parent-zone="${zKey}" data-tree-key="${rKey}" data-search="${z} ${r}">
-                          <td colspan="6" style="padding-left: 28px;">
+                          <td style="padding-left: 20px;">
                             <span class="rp-tree-toggle-icon">▼</span>
-                            <span class="rp-level-badge rp-level-badge-region">REGION</span>
-                            <b>${r}</b>
-                            <span style="font-size: 10.5px; color: #64748b; margin-left: 8px; font-weight: normal;">
-                              (${rDistCount} Districts • ${rBranchesCount} Branches)
-                            </span>
+                            <span class="rp-level-badge rp-level-badge-region">Region</span>
                           </td>
+                          <td><span class="rp-tag-micro">${z}</span></td>
+                          <td><b>${r}</b></td>
+                          <td><span class="text-muted" style="font-size:11px;">(${rDistCount} Districts)</span></td>
+                          <td><span class="text-muted" style="font-size:11px; font-weight:600;">${rBranchesCount} Branches</span></td>
+                          <td>—</td>
                         </tr>
 
                         ${Object.keys(tree[z][r]).map(d => {
@@ -1146,29 +1122,29 @@ frappe.ui.form.on("Report Preference", {
                           let dKey = `${rKey}-dist-${d.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                           return `
-                            <!-- Level 3: DISTRICT ROW -->
+                            <!-- Level: District Row -->
                             <tr class="rp-row-district-header rp-tree-header-row rp-child-of-${zKey} rp-child-of-${rKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-tree-key="${dKey}" data-search="${z} ${r} ${d}">
-                              <td colspan="6" style="padding-left: 48px;">
+                              <td style="padding-left: 36px;">
                                 <span class="rp-tree-toggle-icon">▼</span>
-                                <span class="rp-level-badge rp-level-badge-district">DISTRICT</span>
-                                <b>${d}</b>
-                                <span style="font-size: 10.5px; color: #64748b; margin-left: 8px; font-weight: normal;">
-                                  (${distBranches.length} Branches)
-                                </span>
+                                <span class="rp-level-badge rp-level-badge-district">District</span>
                               </td>
+                              <td><span class="rp-tag-micro">${z}</span></td>
+                              <td><span class="rp-tag-micro">${r}</span></td>
+                              <td><b>${d}</b></td>
+                              <td><span class="text-muted" style="font-size:11px; font-weight:600;">${distBranches.length} Branches</span></td>
+                              <td>—</td>
                             </tr>
 
-                            <!-- Level 4: BRANCH LEAF ROWS -->
+                            <!-- Level: Branch Rows -->
                             ${distBranches.map(b => `
                               <tr class="rp-row-branch-leaf rp-child-of-${zKey} rp-child-of-${rKey} rp-child-of-${dKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-parent-dist="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}">
-                                <td style="padding-left: 70px;">
-                                  <span style="color: #94a3b8; margin-right: 4px;">🏢</span>
-                                  <span class="rp-sol-pill">${b.sol_id}</span>
+                                <td style="padding-left: 52px;">
+                                  <span class="rp-level-badge rp-level-badge-branch">Branch</span>
                                 </td>
-                                <td><b>${b.branch || '-'}</b></td>
                                 <td><span class="rp-tag-micro">${z}</span></td>
                                 <td><span class="rp-tag-micro">${r}</span></td>
                                 <td><span class="rp-tag-micro">${d}</span></td>
+                                <td><b>${b.branch || '-'}</b></td>
                                 <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
                               </tr>
                             `).join('')}
@@ -1251,7 +1227,7 @@ frappe.ui.form.on("Report Preference", {
           indicator: "green"
         });
         frm.trigger("sync_widget_state_to_doc");
-        frm.trigger("render_drilldown_table");
+        frm.trigger("render_pure_grid_table");
         frm.trigger("calculate_and_render_branches");
       }
     }
@@ -1311,26 +1287,18 @@ frappe.ui.form.on("Report Preference", {
       $solInput.val("");
       $solDropdown.hide().empty();
       frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("render_drilldown_table");
-      frm.trigger("calculate_and_render_branches");
-    });
-
-    $slot.find(".rp-table-tag-remove").on("click", function () {
-      let sol = String($(this).data("sol"));
-      frm.state.sol_ids.delete(sol);
-      frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("render_drilldown_table");
+      frm.trigger("render_pure_grid_table");
       frm.trigger("calculate_and_render_branches");
     });
 
     $slot.find("#rp-btn-clear-all-sols").on("click", function () {
       frm.state.sol_ids.clear();
       frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("render_drilldown_table");
+      frm.trigger("render_pure_grid_table");
       frm.trigger("calculate_and_render_branches");
     });
 
-    // Collapsible Handlers for TreeGrid Table Rows
+    // Collapsible Handlers for Pure Grid Table Rows
     $slot.find(".rp-row-zone-header").on("click", function () {
       let zKey = $(this).data("tree-key");
       let $icon = $(this).find(".rp-tree-toggle-icon");
@@ -1389,7 +1357,7 @@ frappe.ui.form.on("Report Preference", {
       $slot.find(".rp-tree-toggle-icon").addClass("collapsed");
     });
 
-    // Instant Search in TreeGrid Table
+    // Instant Search in Pure Grid Table
     $slot.find("#rp-table-filter-search").on("input", function () {
       let q = $(this).val().toLowerCase().trim();
       let visibleBranchCount = 0;
