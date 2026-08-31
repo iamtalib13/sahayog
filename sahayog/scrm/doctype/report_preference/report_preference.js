@@ -98,8 +98,42 @@ frappe.ui.form.on("Report Preference", {
     } else {
       frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
     }
+  },
 
-    frm.dirty();
+  auto_save_preference: function (frm, show_toast = true) {
+    if (!frm.state.user) return;
+
+    frm.trigger("sync_widget_state_to_doc");
+
+    frappe.call({
+      method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
+      args: {
+        data: {
+          user: frm.state.user,
+          enabled: frm.state.enabled,
+          tag: frm.state.tag,
+          access_type: frm.state.access_type,
+          zones: Array.from(frm.state.zones),
+          regions: Array.from(frm.state.regions),
+          districts: Array.from(frm.state.districts),
+          sol_ids: Array.from(frm.state.sol_ids)
+        }
+      },
+      callback: function (r) {
+        if (r.message && r.message.status === "success") {
+          let $saveBtn = frm.fields_dict.widget_html.$wrapper.find("#rp-btn-direct-save");
+          if ($saveBtn.length) {
+            $saveBtn.html("<span>✓</span> <span>Auto-Saved</span>").css("background", "#059669").css("border-color", "#059669");
+            setTimeout(() => {
+              $saveBtn.html("<span>💾</span> <span>Save Preferences</span>").css("background", "#0f172a").css("border-color", "#0f172a");
+            }, 1200);
+          }
+          if (show_toast) {
+            frappe.show_alert({ message: __("Changes saved ✓"), indicator: "green" });
+          }
+        }
+      }
+    });
   },
 
   before_save: function (frm) {
@@ -155,10 +189,10 @@ frappe.ui.form.on("Report Preference", {
         /* Mode Switcher Segmented Control */
         .rp-mode-segmented-control {
           display: inline-flex;
-          background: #f1f5f9;
+          background: #e2e8f0;
           padding: 3px;
           border-radius: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #cbd5e1;
         }
         .rp-mode-segment {
           padding: 5px 14px;
@@ -166,7 +200,7 @@ frappe.ui.form.on("Report Preference", {
           font-size: 11.5px;
           font-weight: 600;
           cursor: pointer;
-          color: #64748b;
+          color: #475569;
           transition: all 0.15s ease;
           user-select: none;
           display: inline-flex;
@@ -184,7 +218,7 @@ frappe.ui.form.on("Report Preference", {
 
         .rp-btn-ghost {
           background: transparent;
-          border: 1px solid var(--rp-border);
+          border: 1px solid #cbd5e1;
           border-radius: 6px;
           padding: 5px 12px;
           font-size: 12px;
@@ -196,7 +230,7 @@ frappe.ui.form.on("Report Preference", {
         .rp-btn-ghost:hover {
           background: var(--rp-surface-subtle);
           color: var(--rp-primary);
-          border-color: #cbd5e1;
+          border-color: #94a3b8;
         }
         .rp-btn-danger-ghost {
           background: transparent;
@@ -706,9 +740,9 @@ frappe.ui.form.on("Report Preference", {
         frm.state.districts.clear();
       }
 
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_full_crud_widget");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     // User Live Search
@@ -792,7 +826,7 @@ frappe.ui.form.on("Report Preference", {
     // Tag Selector
     $w.find("#rp-tag-select").on("change", function () {
       frm.state.tag = $(this).val();
-      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("auto_save_preference");
     });
 
     // Status Toggle
@@ -808,10 +842,10 @@ frappe.ui.form.on("Report Preference", {
         $track.removeClass("active");
         $label.text("Disabled").css("color", "#64748b");
       }
-      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("auto_save_preference");
     });
 
-    // Save Button
+    // Manual Save Button (Also supported)
     $w.find("#rp-btn-direct-save").on("click", function () {
       if (!frm.state.user) {
         frappe.msgprint(__("Please select a User first."));
@@ -829,29 +863,7 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
 
-      frappe.call({
-        method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
-        args: {
-          data: {
-            user: frm.state.user,
-            enabled: frm.state.enabled,
-            tag: frm.state.tag,
-            access_type: frm.state.access_type,
-            zones: Array.from(frm.state.zones),
-            regions: Array.from(frm.state.regions),
-            districts: Array.from(frm.state.districts),
-            sol_ids: Array.from(frm.state.sol_ids)
-          }
-        },
-        freeze: true,
-        freeze_message: __("Saving Report Preferences..."),
-        callback: function (r) {
-          if (r.message && r.message.status === "success") {
-            frappe.show_alert({ message: __("Preferences saved successfully!"), indicator: "green" });
-            frm.reload_doc();
-          }
-        }
-      });
+      frm.trigger("auto_save_preference", true);
     });
 
     // Reset & Clear All Button
@@ -1182,7 +1194,7 @@ frappe.ui.form.on("Report Preference", {
 
     $slot.html(tableHtml);
 
-    // Zone Capsule Click: Toggle permission in state
+    // Zone Capsule Click: Toggle permission in state + AUTO-SAVE
     $slot.find(".rp-zone-capsule").on("click", function () {
       let z = $(this).data("zone");
       if (frm.state.zones.has(z)) {
@@ -1190,24 +1202,24 @@ frappe.ui.form.on("Report Preference", {
       } else {
         frm.state.zones.add(z);
       }
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     $slot.find("#rp-btn-select-all-zones").on("click", function () {
       masterZones.forEach(z => frm.state.zones.add(z));
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     $slot.find("#rp-btn-clear-all-zones").on("click", function () {
       frm.state.zones.clear();
       frm.state.regions.clear();
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
-    // Region Capsule Click: Toggle permission in state
+    // Region Capsule Click: Toggle permission in state + AUTO-SAVE
     $slot.find(".rp-region-capsule").on("click", function () {
       if (!frm.state.zones.size) {
         frappe.show_alert({ message: __("Please select a Zone first!"), indicator: "orange" });
@@ -1220,8 +1232,8 @@ frappe.ui.form.on("Report Preference", {
       } else {
         frm.state.regions.add(r);
       }
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     $slot.find("#rp-btn-select-all-regions").on("click", function () {
@@ -1230,17 +1242,17 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
       availableRegions.forEach(r => frm.state.regions.add(r));
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     $slot.find("#rp-btn-clear-all-regions").on("click", function () {
       frm.state.regions.clear();
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
-    // Helper: Add tokens from SOL input (comma/space/newline separated)
+    // Helper: Add tokens from SOL input (comma/space/newline separated) + AUTO-SAVE
     function processSolTokens(val) {
       if (!val) return;
       let tokens = val.split(/[,;\s\n\r]+/).map(x => x.trim()).filter(Boolean);
@@ -1257,13 +1269,9 @@ frappe.ui.form.on("Report Preference", {
       if (addedCount > 0) {
         $solInput.val("");
         $solDropdown.hide().empty();
-        frappe.show_alert({
-          message: __(`Added ${addedCount} SOL ID(s).`),
-          indicator: "green"
-        });
-        frm.trigger("sync_widget_state_to_doc");
         frm.trigger("render_progressive_drilldown_table");
         frm.trigger("calculate_and_render_branches");
+        frm.trigger("auto_save_preference");
       }
     }
 
@@ -1321,16 +1329,16 @@ frappe.ui.form.on("Report Preference", {
       frm.state.sol_ids.add(sol);
       $solInput.val("");
       $solDropdown.hide().empty();
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_progressive_drilldown_table");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     $slot.find("#rp-btn-clear-all-sols").on("click", function () {
       frm.state.sol_ids.clear();
-      frm.trigger("sync_widget_state_to_doc");
       frm.trigger("render_progressive_drilldown_table");
       frm.trigger("calculate_and_render_branches");
+      frm.trigger("auto_save_preference");
     });
 
     // 1. Zone Click: Toggles ONLY its child Region rows
@@ -1341,13 +1349,10 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        // Show only direct child Region rows (their children stay collapsed)
         $slot.find(`.rp-row-region-header[data-zone-parent="${zKey}"]`).show();
       } else {
         $icon.text("▸");
-        // Collapse all descendants under this Zone
         $slot.find(`.rp-under-zone-${zKey}`).hide();
-        // Reset sub-icons to collapsed state
         $slot.find(`.rp-row-region-header[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
         $slot.find(`.rp-row-district-header[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
       }
@@ -1362,11 +1367,9 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        // Show only direct child District rows
         $slot.find(`.rp-row-district-header[data-reg-parent="${rKey}"]`).show();
       } else {
         $icon.text("▸");
-        // Collapse all descendants under this Region
         $slot.find(`.rp-under-reg-${rKey}`).hide();
         $slot.find(`.rp-row-district-header[data-reg-parent="${rKey}"] .rp-tree-toggle-icon`).text("▸");
       }
@@ -1381,11 +1384,9 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        // Show direct child Branch rows
         $slot.find(`.rp-row-branch-leaf[data-dist-parent="${dKey}"]`).show();
       } else {
         $icon.text("▸");
-        // Collapse child Branch rows
         $slot.find(`.rp-row-branch-leaf[data-dist-parent="${dKey}"]`).hide();
       }
     });
@@ -1412,7 +1413,6 @@ frappe.ui.form.on("Report Preference", {
       let visibleBranchCount = 0;
 
       if (!q) {
-        // Reset to initial collapsed zone view
         $slot.find(".rp-row-zone-header").show();
         $slot.find(".rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").hide();
         $slot.find(".rp-tree-toggle-icon").each(function () {
@@ -1422,7 +1422,6 @@ frappe.ui.form.on("Report Preference", {
         return;
       }
 
-      // When searching, expand all matching branches and their parents
       $slot.find(".rp-row-zone-header, .rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").hide();
 
       $slot.find(".rp-row-branch-leaf").each(function () {
