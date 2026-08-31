@@ -338,6 +338,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           color: #334155;
         }
         .min-branch-table tr:hover { background: #f8fafc; }
+
+        .min-bulk-delete-btn {
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+          padding: 3px 10px;
+          border-radius: 6px;
+          font-size: 11.5px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          transition: all 0.15s ease;
+        }
+        .min-bulk-delete-btn:hover {
+          background: #fee2e2;
+          border-color: #ef4444;
+        }
       </style>
 
       <div class="min-perm-card">
@@ -413,9 +432,14 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                 <span class="min-box-label" style="min-width: unset;">SOL ID</span>
                 <span style="cursor: pointer; color: #64748b; font-size: 13px;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️</span>
               </div>
-              ${solList.length > 0 ? `
-                <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
-              ` : ''}
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
+                  <span>🗑️ Delete Selected (<b id="min-bulk-sol-count">0</b>)</span>
+                </button>
+                ${solList.length > 0 ? `
+                  <button type="button" class="btn btn-xs btn-link" id="min-btn-clear-sol" style="color: #dc2626; font-size: 11px; padding: 0;">Clear All</button>
+                ` : ''}
+              </div>
             </div>
 
             <div class="min-sol-input-wrap">
@@ -431,17 +455,21 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
               `}
             </div>
 
-            <!-- Branch Table (Only in SOL mode with selected branches) -->
+            <!-- Branch Table with Checkboxes and Bulk Selection -->
             ${solList.length > 0 ? `
               <div class="min-branch-table-wrap">
-                <table class="min-branch-table">
+                <table class="min-branch-table" id="min-sol-grid-table">
                   <thead>
                     <tr>
+                      <th style="width: 36px; text-align: center;">
+                        <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" />
+                      </th>
                       <th style="width: 100px;">SOL ID</th>
                       <th>Branch Name</th>
                       <th>District</th>
                       <th>Region</th>
                       <th>Zone</th>
+                      <th style="width: 50px; text-align: center;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -449,11 +477,17 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                       let b = allBranches.find(x => String(x.sol_id) === String(sol)) || {};
                       return `
                         <tr>
+                          <td style="text-align: center;">
+                            <input type="checkbox" class="min-sol-row-chk" data-sol="${sol}" style="cursor: pointer;" />
+                          </td>
                           <td><b style="color: #16a34a;">${sol}</b></td>
                           <td><b>${b.branch || '-'}</b></td>
                           <td>${b.district || '-'}</td>
                           <td>${b.region || '-'}</td>
                           <td>${b.zone || '-'}</td>
+                          <td style="text-align: center;">
+                            <span class="min-sol-remove" data-sol="${sol}" title="Delete" style="color: #dc2626; font-size: 15px;">×</span>
+                          </td>
                         </tr>
                       `;
                     }).join('')}
@@ -494,7 +528,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       autoSave();
     });
 
-    // Select User Dialog with Duplicate Validation
+    // Select User Dialog
     $m.find("#min-btn-change-user").on("click", function () {
       let d = new frappe.ui.Dialog({
         title: __("Select User"),
@@ -609,6 +643,50 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       state.sol_ids.clear();
       renderPage();
       autoSave();
+    });
+
+    // Table Bulk Selection & Delete Handlers
+    function updateBulkDeleteState() {
+      let checkedBoxes = $m.find(".min-sol-row-chk:checked");
+      let count = checkedBoxes.length;
+      let $bulkBtn = $m.find("#min-btn-bulk-delete-sol");
+      let $bulkCount = $m.find("#min-bulk-sol-count");
+
+      if (count > 0) {
+        $bulkCount.text(count);
+        $bulkBtn.show();
+      } else {
+        $bulkBtn.hide();
+      }
+
+      let totalBoxes = $m.find(".min-sol-row-chk").length;
+      $m.find("#min-sol-chk-all").prop("checked", totalBoxes > 0 && count === totalBoxes);
+    }
+
+    $m.find("#min-sol-chk-all").on("change", function () {
+      let isChecked = $(this).is(":checked");
+      $m.find(".min-sol-row-chk").prop("checked", isChecked);
+      updateBulkDeleteState();
+    });
+
+    $m.find(".min-sol-row-chk").on("change", function () {
+      updateBulkDeleteState();
+    });
+
+    $m.find("#min-btn-bulk-delete-sol").on("click", function () {
+      let toDelete = [];
+      $m.find(".min-sol-row-chk:checked").each(function () {
+        toDelete.push(String($(this).data("sol")));
+      });
+
+      if (!toDelete.length) return;
+
+      frappe.confirm(__(`Remove <b>${toDelete.length}</b> selected branches from permission?`), () => {
+        toDelete.forEach(sol => state.sol_ids.delete(sol));
+        renderPage();
+        autoSave();
+        frappe.show_alert({ message: __(`${toDelete.length} branches removed ✓`), indicator: "green" });
+      });
     });
   }
 
