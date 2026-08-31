@@ -169,6 +169,8 @@ def save_widget_preference(data):
     doc.save(ignore_permissions=True)
     frappe.flags.mute_messages = False
 
+    frappe.db.commit()
+
     frappe.cache().delete_value(f"user_allowed_sols:{user_id}")
     frappe.cache().delete_value(f"user_report_pref:{user_id}")
 

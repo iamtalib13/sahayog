@@ -91,8 +91,13 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     });
   }
 
-  function autoSave() {
+  function autoSave(show_toast = true) {
     if (!state.user) return;
+
+    let $saveBtn = page.main.find("#min-btn-save-manual");
+    if ($saveBtn.length) {
+      $saveBtn.text("Saving...").prop("disabled", true);
+    }
 
     frappe.call({
       method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
@@ -109,8 +114,14 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         }
       },
       callback: function (r) {
-        if (r.message && r.message.status === "success") {
-          frappe.show_alert({ message: __("Changes saved ✓"), indicator: "green" });
+        if ($saveBtn.length) {
+          $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("color", "#fff");
+          setTimeout(() => {
+            $saveBtn.text("Save").css("background", "").css("color", "");
+          }, 1200);
+        }
+        if (r.message && r.message.status === "success" && show_toast) {
+          frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
         }
       }
     });
@@ -224,6 +235,19 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
         .min-toggle-track.active .min-toggle-thumb { transform: translateX(18px); }
+
+        .min-btn-save {
+          background: #0f172a;
+          color: #ffffff;
+          border: 1px solid #0f172a;
+          border-radius: 6px;
+          padding: 4px 14px;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .min-btn-save:hover { background: #1e293b; }
 
         .min-box-row {
           display: grid;
@@ -351,7 +375,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- Geo / Branch Wise Segmented Toggle -->
             <div class="min-scope-control">
               <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
                 <span>🌍 Geo Wise</span>
@@ -369,6 +394,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
               <option value="">No Tag</option>
               ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
             </select>
+
+            <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
           </div>
         </div>
 
@@ -494,6 +521,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
       renderPage();
       autoSave();
+    });
+
+    // Manual Save Button
+    $m.find("#min-btn-save-manual").on("click", function () {
+      autoSave(true);
     });
 
     // Select User Dialog
