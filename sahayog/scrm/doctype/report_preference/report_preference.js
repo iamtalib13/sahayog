@@ -988,12 +988,13 @@ frappe.ui.form.on("Report Preference", {
               `)}
             </div>
           ` : `
-            <!-- SOL ID Autocomplete & Tag Selection -->
+            <!-- SOL ID Autocomplete & Comma-Separated Fast Paste -->
             <div class="rp-capsule-row" style="align-items: flex-start;">
               <span class="rp-capsule-label" style="margin-top: 6px;">ADD SOL:</span>
-              <div style="flex: 1; max-width: 420px; position: relative;">
-                <input type="text" class="form-control input-sm" id="rp-table-sol-search-input" placeholder="Type Branch Name or SOL ID to add..." />
-                <div class="rp-dropdown-popover" id="rp-table-sol-dropdown"></div>
+              <div style="flex: 1; max-width: 500px; display: flex; gap: 6px; position: relative;">
+                <input type="text" class="form-control input-sm" id="rp-table-sol-search-input" placeholder="Type SOL ID or paste comma separated (e.g. 1001, 1002, 1003)..." />
+                <button type="button" class="btn btn-xs btn-primary" id="rp-btn-add-sol-tokens" style="padding: 4px 12px; font-size: 11.5px; white-space: nowrap;">+ Add</button>
+                <div class="rp-dropdown-popover" id="rp-table-sol-dropdown" style="top: 34px;"></div>
               </div>
               <button type="button" class="rp-capsule-action-btn" id="rp-btn-clear-all-sols" style="margin-top: 6px; color: #dc2626;">Remove All</button>
             </div>
@@ -1001,7 +1002,7 @@ frappe.ui.form.on("Report Preference", {
             <!-- Selected SOL Tags -->
             ${frm.state.sol_ids.size > 0 ? `
               <div class="rp-capsule-row" style="margin-top: 4px;">
-                <span class="rp-capsule-label">SELECTED:</span>
+                <span class="rp-capsule-label">SELECTED (${frm.state.sol_ids.size}):</span>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                   ${Array.from(frm.state.sol_ids).map(s => {
                     let b = allBranches.find(x => String(x.sol_id) === String(s));
@@ -1027,7 +1028,7 @@ frappe.ui.form.on("Report Preference", {
             </div>
           ` : (!isGeo && !frm.state.sol_ids.size ? `
             <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
-              🔍 Type in the <b>ADD SOL</b> box above to search & attach branches.
+              🔍 Type single SOL ID or paste comma separated list in the <b>ADD SOL</b> box above.
             </div>
           ` : (totalCount === 0 ? `
             <div style="padding: 32px; text-align: center; color: #94a3b8; font-size: 12.5px;">
@@ -1105,13 +1106,59 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("calculate_and_render_branches");
     });
 
+    // Helper: Add tokens from SOL input (comma/space/newline separated)
+    function processSolTokens(val) {
+      if (!val) return;
+      let tokens = val.split(/[,;\s\n\r]+/).map(x => x.trim()).filter(Boolean);
+      if (!tokens.length) return;
+
+      let addedCount = 0;
+      tokens.forEach(tok => {
+        if (tok) {
+          frm.state.sol_ids.add(String(tok));
+          addedCount++;
+        }
+      });
+
+      if (addedCount > 0) {
+        $solInput.val("");
+        $solDropdown.hide().empty();
+        frappe.show_alert({
+          message: __(`Added ${addedCount} SOL ID(s).`),
+          indicator: "green"
+        });
+        frm.trigger("sync_widget_state_to_doc");
+        frm.trigger("render_table_with_capsules");
+        frm.trigger("calculate_and_render_branches");
+      }
+    }
+
     // SOL Mode Search & Add Input
     let $solInput = $slot.find("#rp-table-sol-search-input");
     let $solDropdown = $slot.find("#rp-table-sol-dropdown");
 
+    $solInput.on("keydown", function (e) {
+      if (e.which === 13) { // Enter key
+        e.preventDefault();
+        processSolTokens($(this).val());
+      }
+    });
+
+    $slot.find("#rp-btn-add-sol-tokens").on("click", function () {
+      processSolTokens($solInput.val());
+    });
+
+    $solInput.on("paste", function (e) {
+      let pastedData = (e.originalEvent || e).clipboardData.getData("text");
+      if (pastedData && (pastedData.includes(",") || pastedData.includes("\n") || pastedData.includes(";"))) {
+        e.preventDefault();
+        processSolTokens(pastedData);
+      }
+    });
+
     $solInput.on("input", function () {
       let q = $(this).val().toLowerCase().trim();
-      if (!q) {
+      if (!q || q.includes(",")) {
         $solDropdown.hide().empty();
         return;
       }
