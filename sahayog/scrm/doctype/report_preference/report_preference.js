@@ -6,7 +6,7 @@ frappe.ui.form.on("Report Preference", {
       full_name: "",
       enabled: 1,
       tag: "",
-      access_type: "", // empty initially for fresh selection
+      access_type: "", // Empty for new records so user must select first
       zones: new Set(),
       regions: new Set(),
       districts: new Set(),
@@ -65,9 +65,12 @@ frappe.ui.form.on("Report Preference", {
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
     
-    // If existing doc has access_type or pref has it, load it
-    let existingAccessType = frm.doc.access_type || (pref ? pref.access_type : "");
-    frm.state.access_type = existingAccessType;
+    // Only prefill access_type if editing an existing doc
+    if (!frm.is_new() || frm.doc.user) {
+      frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "");
+    } else {
+      frm.state.access_type = "";
+    }
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones) zones = pref.zones;
@@ -133,7 +136,7 @@ frappe.ui.form.on("Report Preference", {
           border: 1px solid #e2e8f0;
           border-radius: 12px;
           padding: 22px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.03);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .rp-section-title {
@@ -160,52 +163,51 @@ frappe.ui.form.on("Report Preference", {
           align-items: center;
           margin-bottom: 8px;
         }
-        .rp-mode-choice-container {
+        .rp-mode-toggle-group {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-top: 10px;
+          gap: 18px;
+          max-width: 780px;
+          margin: 16px auto 8px auto;
         }
-        @media (max-width: 768px) {
-          .rp-mode-choice-container {
+        @media (max-width: 680px) {
+          .rp-mode-toggle-group {
             grid-template-columns: 1fr;
           }
         }
-        .rp-mode-card {
+        .rp-mode-toggle-card {
           background: #ffffff;
-          border: 2px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 18px;
+          border: 2px solid #cbd5e1;
+          border-radius: 12px;
+          padding: 24px 20px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          align-items: center;
+          text-align: center;
           user-select: none;
         }
-        .rp-mode-card:hover {
+        .rp-mode-toggle-card:hover {
           border-color: #3b82f6;
           background: #f0f9ff;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+          transform: translateY(-3px);
+          box-shadow: 0 8px 20px rgba(59, 130, 246, 0.15);
         }
-        .rp-mode-card.selected {
-          border-color: #2563eb;
-          background: #eff6ff;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        .rp-mode-icon {
+          font-size: 32px;
+          margin-bottom: 12px;
         }
-        .rp-mode-card-title {
-          font-size: 14px;
+        .rp-mode-title {
+          font-size: 15px;
           font-weight: 700;
           color: #0f172a;
-          display: flex;
-          align-items: center;
-          gap: 8px;
+          margin-bottom: 6px;
         }
-        .rp-mode-card-desc {
+        .rp-mode-desc {
           font-size: 12px;
           color: #64748b;
-          line-height: 1.4;
+          line-height: 1.45;
         }
         .rp-mode-active-banner {
           display: flex;
@@ -359,55 +361,53 @@ frappe.ui.form.on("Report Preference", {
       </style>
 
       <div class="rp-workspace">
-        <!-- STEP 1: CHOOSE ACCESS MODE FIRST -->
+        <!-- IF NO MODE SELECTED YET: ONLY SHOW THE TWO BIG AREA TOGGLES -->
         ${!hasModeChosen ? `
-          <div class="rp-card-block" style="background: #ffffff; border: 2px dashed #93c5fd; text-align: center; padding: 24px;">
-            <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
-              🛠️ Step 1: Select Access Configuration Scope
+          <div style="padding: 30px 15px; text-align: center;">
+            <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">
+              🌍 Select Branch Access Scope
             </div>
-            <div style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
-              Please choose how you would like to assign report and branch access for this user:
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 24px;">
+              Please select the area configuration mode to begin:
             </div>
 
-            <div class="rp-mode-choice-container">
-              <!-- Card 1: Geographical Scope -->
-              <div class="rp-mode-card" data-mode="Geographical (Zone / Region / District)">
-                <div class="rp-mode-card-title">
-                  <span>🌍 Geographical Scope</span>
-                </div>
-                <div class="rp-mode-card-desc">
-                  Assign entire <b>Zones</b>, <b>Regions</b>, or <b>Districts</b>. All current and future branches in selected zones/regions will be <b>automatically accessible</b>.
+            <div class="rp-mode-toggle-group">
+              <!-- Option 1: Geographical Scope -->
+              <div class="rp-mode-toggle-card" data-mode="Geographical (Zone / Region / District)">
+                <div class="rp-mode-icon">🌍</div>
+                <div class="rp-mode-title">Geographical Scope</div>
+                <div class="rp-mode-desc">
+                  Select <b>Zones</b> and <b>Regions</b>. All current & future branches in these areas will be <b>automatically accessible</b>.
                 </div>
               </div>
 
-              <!-- Card 2: Specific Branches -->
-              <div class="rp-mode-card" data-mode="Specific Branches (SOL ID)">
-                <div class="rp-mode-card-title">
-                  <span>🏢 Specific Branches (SOL ID)</span>
-                </div>
-                <div class="rp-mode-card-desc">
-                  Select <b>specific standalone branches / SOL IDs</b> individually for strict customized branch access.
+              <!-- Option 2: Specific Branches (SOL ID) -->
+              <div class="rp-mode-toggle-card" data-mode="Specific Branches (SOL ID)">
+                <div class="rp-mode-icon">🏢</div>
+                <div class="rp-mode-title">Specific Branches (SOL ID)</div>
+                <div class="rp-mode-desc">
+                  Select <b>exact standalone branches / SOL IDs</b> individually for strict custom branch access.
                 </div>
               </div>
             </div>
           </div>
         ` : `
-          <!-- ACTIVE MODE BANNER WITH SWITCHER BUTTON -->
+          <!-- ACTIVE SCOPE BANNER WITH SWITCHER -->
           <div class="rp-mode-active-banner">
             <div>
-              <span style="font-size: 11px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">Active Scope:</span>
+              <span style="font-size: 11px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">Selected Area Scope:</span>
               <span style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-left: 6px;">
                 ${isGeo ? '🌍 Geographical Scope (Zone / Region / District)' : '🏢 Specific Branches (SOL ID)'}
               </span>
             </div>
             <button type="button" class="btn btn-xs btn-default" id="rp-btn-change-mode" style="font-weight: 600;">
-              ⇄ Change Scope Mode
+              ⇄ Change Area Scope
             </button>
           </div>
 
-          <!-- STEP 2: USER CONFIGURATION & STATUS -->
+          <!-- USER CONFIGURATION & STATUS -->
           <div class="rp-card-block" style="background: #f1f5f9; border-color: #cbd5e1;">
-            <div class="rp-section-title">👤 Step 2: User Configuration & Status</div>
+            <div class="rp-section-title">👤 User Configuration & Status</div>
             
             <div class="rp-top-user-bar">
               <!-- User Selector / Search -->
@@ -457,9 +457,9 @@ frappe.ui.form.on("Report Preference", {
             </div>
           </div>
 
-          <!-- STEP 3: CONTROLS DEPENDING ON ACCESS MODE -->
+          <!-- AREA FILTER CONTROLS DEPENDING ON SCOPE -->
           <div class="rp-card-block">
-            <div class="rp-section-title">📍 Step 3: Configure ${isGeo ? 'Geographical Filters' : 'Specific Branches'}</div>
+            <div class="rp-section-title">📍 Configure ${isGeo ? 'Geographical Filters' : 'Specific Branches'}</div>
 
             <!-- GEOGRAPHICAL MODE VIEW -->
             ${isGeo ? `
@@ -528,10 +528,10 @@ frappe.ui.form.on("Report Preference", {
             `}
           </div>
 
-          <!-- STEP 4: ACTIVE BRANCH COVERAGE DRILLDOWN -->
+          <!-- ACTIVE BRANCH COVERAGE DRILLDOWN -->
           <div id="rp-branch-coverage-slot"></div>
 
-          <!-- STEP 5: SAVE & ACTIONS BAR -->
+          <!-- SAVE & ACTIONS BAR -->
           <div class="rp-save-bar">
             <button type="button" class="btn btn-sm btn-default" id="rp-btn-discard">Discard Changes</button>
             <button type="button" class="btn btn-sm btn-primary" id="rp-btn-direct-save">💾 Save Preferences</button>
@@ -548,8 +548,8 @@ frappe.ui.form.on("Report Preference", {
     let $w = frm.fields_dict.widget_html.$wrapper;
     let meta = frm.meta_data || {};
 
-    // Initial Mode Selection Card Click
-    $w.find(".rp-mode-card").on("click", function () {
+    // Initial Area Toggle Card Click
+    $w.find(".rp-mode-toggle-card").on("click", function () {
       let mode = $(this).data("mode");
       frm.state.access_type = mode;
       frm.trigger("sync_widget_state_to_doc");
@@ -557,7 +557,7 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("calculate_and_render_branches");
     });
 
-    // Change Mode Switcher Button
+    // Change Area Scope Button
     $w.find("#rp-btn-change-mode").on("click", function () {
       let current = frm.state.access_type;
       let target = current === "Geographical (Zone / Region / District)" 
@@ -565,7 +565,7 @@ frappe.ui.form.on("Report Preference", {
         : "Geographical (Zone / Region / District)";
 
       frappe.confirm(
-        __(`Switch Access Mode to <b>${target}</b>?<br><small class="text-muted">Previous filter selections will be cleared for consistency.</small>`),
+        __(`Switch Area Scope to <b>${target}</b>?<br><small class="text-muted">Previous filter selections will be cleared for consistency.</small>`),
         () => {
           frm.state.access_type = target;
           frm.state.zones.clear();
