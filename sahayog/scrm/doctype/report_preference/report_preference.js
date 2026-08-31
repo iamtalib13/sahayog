@@ -11,9 +11,9 @@ frappe.ui.form.on("Report Preference", {
       regions: new Set(),
       districts: new Set(),
       sol_ids: new Set(),
-      selected_sidebar_zone: null,
-      selected_sidebar_region: null,
-      items_per_page: 50,
+      filter_zone: "ALL",
+      filter_search: "",
+      page_size: 50,
       active_menu_key: null
     };
     frm.resolved_branches = [];
@@ -38,7 +38,7 @@ frappe.ui.form.on("Report Preference", {
       callback: function (r) {
         frm.meta_data = r.message || {};
         frm.trigger("sync_doc_to_widget_state");
-        frm.trigger("render_full_crud_widget");
+        frm.trigger("render_full_dashboard");
         frm.trigger("calculate_and_render_branches");
       }
     });
@@ -51,7 +51,7 @@ frappe.ui.form.on("Report Preference", {
       callback: function (r) {
         frm.meta_data = r.message || {};
         frm.trigger("sync_doc_to_widget_state");
-        frm.trigger("render_full_crud_widget");
+        frm.trigger("render_full_dashboard");
         frm.trigger("calculate_and_render_branches");
       }
     });
@@ -125,15 +125,15 @@ frappe.ui.form.on("Report Preference", {
       },
       callback: function (r) {
         if (r.message && r.message.status === "success") {
-          let $saveBtn = frm.fields_dict.widget_html.$wrapper.find("#rp-btn-save-all");
+          let $saveBtn = frm.fields_dict.widget_html.$wrapper.find("#f16-btn-save-all");
           if ($saveBtn.length) {
-            $saveBtn.html("<span>✓</span> <span>SAVED</span>").css("background", "#059669");
+            $saveBtn.text("SAVED ✓").css("background", "#16a34a");
             setTimeout(() => {
-              $saveBtn.html("<span>SAVE ALL CHANGES</span>").css("background", "#0f2942");
+              $saveBtn.text("SAVE ALL CHANGES").css("background", "#0f2942");
             }, 1200);
           }
           if (show_toast) {
-            frappe.show_alert({ message: __("Preferences auto-saved ✓"), indicator: "green" });
+            frappe.show_alert({ message: __("Changes saved ✓"), indicator: "green" });
           }
         }
       }
@@ -144,7 +144,7 @@ frappe.ui.form.on("Report Preference", {
     frm.trigger("sync_widget_state_to_doc");
   },
 
-  render_full_crud_widget: function (frm) {
+  render_full_dashboard: function (frm) {
     if (!frm.fields_dict.widget_html) return;
 
     let meta = frm.meta_data || {};
@@ -152,210 +152,201 @@ frappe.ui.form.on("Report Preference", {
     let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let isNewDoc = frm.is_new() || !frm.state.user;
     let userName = frm.state.full_name || (frm.state.user ? frm.state.user.split('@')[0] : "Select User");
-    let userEmail = frm.state.user || "No user selected";
+    let userEmail = frm.state.user || "no-user@sahayog.com";
 
     let html = `
       <style>
-        .f16-dashboard {
-          --f16-bg: #f8fafc;
-          --f16-surface: #ffffff;
-          --f16-surface-subtle: #f1f5f9;
-          --f16-border: #e2e8f0;
-          --f16-border-strong: #cbd5e1;
-          --f16-text-main: #0f172a;
-          --f16-text-muted: #64748b;
-          --f16-primary: #0f2942;
-          --f16-primary-hover: #1e3a5f;
-          --f16-accent-blue: #0284c7;
-          --f16-accent-blue-bg: #e0f2fe;
-          --f16-success: #16a34a;
-          --f16-success-bg: #dcfce7;
+        .f16-root {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
-          color: var(--f16-text-main);
-          margin-top: 4px;
+          color: #0f172a;
+          margin-top: 2px;
+          margin-bottom: 20px;
         }
 
-        /* Top Section Title */
-        .f16-section-title {
-          font-size: 13px;
+        /* Top Header Title */
+        .f16-dashboard-title {
+          font-size: 13.5px;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #0f172a;
+          margin-bottom: 12px;
+        }
+
+        /* Section Headings */
+        .f16-sec-heading {
+          font-size: 11.5px;
           font-weight: 800;
           letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: #0f172a;
+          color: #1e293b;
+          margin-top: 18px;
           margin-bottom: 10px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
         }
 
-        /* Row 1: Top Dual Cards - Compact Slim Design */
-        .f16-top-grid {
+        /* ROW 1: Top Dual Cards */
+        .f16-top-row {
           display: grid;
-          grid-template-columns: 1.15fr 1fr;
-          gap: 10px;
-          margin-bottom: 14px;
+          grid-template-columns: 1fr 1.15fr;
+          gap: 16px;
+          align-items: stretch;
         }
-        @media (max-width: 900px) {
-          .f16-top-grid {
+        @media (max-width: 960px) {
+          .f16-top-row {
             grid-template-columns: 1fr;
           }
         }
 
-        /* Scope Banner Card (Left) - Slim */
-        .f16-scope-card {
+        /* Card 1: Admin & Scope Banner */
+        .f16-scope-banner {
+          background: #dbeafe;
           background: linear-gradient(135deg, #cbeafe 0%, #e0f2fe 100%);
           border: 1px solid #93c5fd;
-          border-radius: 10px;
-          padding: 7px 12px;
+          border-radius: 12px;
+          padding: 14px 18px;
           display: flex;
           align-items: center;
-          gap: 10px;
-          box-shadow: 0 1px 3px rgba(186, 230, 253, 0.35);
+          gap: 16px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
-        .f16-scope-icon-wrap {
-          width: 32px;
-          height: 32px;
+        .f16-scope-icon-box {
+          width: 48px;
+          height: 48px;
           background: #ffffff;
           border: 1px solid #bfdbfe;
-          border-radius: 8px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 16px;
+          font-size: 24px;
           color: #0284c7;
+          box-shadow: 0 2px 5px rgba(2, 132, 199, 0.08);
           flex-shrink: 0;
         }
-        .f16-scope-title {
-          font-size: 10.5px;
+        .f16-scope-details {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .f16-scope-text-title {
+          font-size: 13px;
           font-weight: 800;
           letter-spacing: 0.04em;
           text-transform: uppercase;
           color: #0369a1;
-          margin-bottom: 2px;
         }
-        .f16-scope-toggle-wrap {
+        .f16-scope-pill-switch {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           background: #ffffff;
-          padding: 2px 8px;
+          padding: 3px 12px;
           border-radius: 9999px;
-          border: 1px solid #bfdbfe;
+          border: 1px solid #93c5fd;
           font-size: 11px;
           font-weight: 700;
         }
 
-        /* Action Console Card (Right) - Slim */
-        .f16-action-console {
+        /* Card 2: Action Console */
+        .f16-console-card {
           background: #f1f5f9;
-          border: 1px solid var(--f16-border-strong);
-          border-radius: 10px;
-          padding: 7px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
+          padding: 14px 18px;
           display: flex;
-          align-items: center;
+          flex-direction: column;
           justify-content: space-between;
-          gap: 8px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+          gap: 10px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
-        .f16-console-header {
-          font-size: 11.5px;
+        .f16-console-header-label {
+          font-size: 13px;
           font-weight: 700;
           color: #0f172a;
-          white-space: nowrap;
         }
-        .f16-console-btn-group {
+        .f16-console-actions-row {
           display: flex;
           align-items: center;
-          gap: 5px;
+          gap: 8px;
           flex-wrap: wrap;
-          justify-content: flex-end;
         }
-        .f16-btn-outline {
+        .f16-btn-console-white {
           background: #ffffff;
-          border: 1px solid var(--f16-border-strong);
+          border: 1px solid #cbd5e1;
           border-radius: 6px;
-          padding: 4px 9px;
-          font-size: 11px;
+          padding: 6px 12px;
+          font-size: 11.5px;
           font-weight: 600;
           color: #334155;
           cursor: pointer;
           transition: all 0.15s ease;
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
         }
-        .f16-btn-outline:hover {
+        .f16-btn-console-white:hover {
           background: #f8fafc;
           border-color: #94a3b8;
           color: #0f172a;
         }
-        .f16-btn-save-primary {
+        .f16-btn-save-all {
           background: #0f2942;
           color: #ffffff;
           border: 1px solid #0f2942;
           border-radius: 6px;
-          padding: 4px 12px;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
+          padding: 6px 16px;
+          font-size: 11.5px;
+          font-weight: 800;
+          letter-spacing: 0.04em;
           text-transform: uppercase;
           cursor: pointer;
           transition: all 0.15s ease;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          box-shadow: 0 1px 3px rgba(15, 41, 66, 0.2);
+          box-shadow: 0 2px 6px rgba(15, 41, 66, 0.25);
         }
-        .f16-btn-save-primary:hover {
+        .f16-btn-save-all:hover {
           background: #1e3a5f;
         }
 
-        /* Row 2: User Profile Configuration (4 Cards Grid) - Compact */
-        .f16-user-profile-grid {
+        /* ROW 2: 4-Column User Configuration Grid */
+        .f16-user-grid {
           display: grid;
-          grid-template-columns: 1.4fr 1.2fr 1.2fr 1fr;
-          gap: 10px;
-          margin-bottom: 14px;
+          grid-template-columns: 1.4fr 1.3fr 1.3fr 1.1fr;
+          gap: 14px;
         }
-        @media (max-width: 990px) {
-          .f16-user-profile-grid {
+        @media (max-width: 960px) {
+          .f16-user-grid {
             grid-template-columns: 1fr 1fr;
           }
         }
-        @media (max-width: 600px) {
-          .f16-user-profile-grid {
+        @media (max-width: 580px) {
+          .f16-user-grid {
             grid-template-columns: 1fr;
           }
         }
 
-        .f16-subcard {
+        .f16-card-box {
           background: #ffffff;
-          border: 1px solid var(--f16-border-strong);
+          border: 1px solid #cbd5e1;
           border-radius: 10px;
-          padding: 8px 12px;
+          padding: 10px 14px;
+          min-height: 64px;
           display: flex;
           flex-direction: column;
           justify-content: center;
-          min-height: 56px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
           position: relative;
         }
-        .f16-subcard-label {
+        .f16-card-box-label {
           font-size: 11px;
           font-weight: 600;
-          color: var(--f16-text-muted);
+          color: #64748b;
           margin-bottom: 4px;
         }
 
-        /* User Card with Avatar */
-        .f16-user-card-content {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .f16-user-avatar {
-          width: 38px;
-          height: 38px;
+        /* Avatar Circle */
+        .f16-avatar {
+          width: 36px;
+          height: 36px;
           background: #e2e8f0;
           border-radius: 50%;
           display: flex;
@@ -366,85 +357,67 @@ frappe.ui.form.on("Report Preference", {
           flex-shrink: 0;
         }
 
-        /* Status Pill */
-        .f16-status-active {
-          color: #15803d;
-          font-weight: 800;
-          font-size: 13px;
-          letter-spacing: 0.04em;
-        }
-        .f16-status-disabled {
-          color: #64748b;
-          font-weight: 800;
-          font-size: 13px;
-          letter-spacing: 0.04em;
-        }
-
-        /* Switch Toggle */
-        .f16-switch {
-          position: relative;
-          display: inline-block;
+        /* Switch Toggle Component */
+        .f16-pill-toggle {
           width: 38px;
-          height: 22px;
-          cursor: pointer;
-        }
-        .f16-switch-track {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
+          height: 20px;
           background: #cbd5e1;
-          border-radius: 9999px;
+          border-radius: 10px;
+          position: relative;
+          cursor: pointer;
           transition: background 0.2s ease;
+          flex-shrink: 0;
         }
-        .f16-switch-track.active {
-          background: #22c55e;
+        .f16-pill-toggle.active {
+          background: #16a34a;
         }
-        .f16-switch-thumb {
-          position: absolute;
-          top: 3px;
-          left: 3px;
+        .f16-pill-toggle-thumb {
           width: 16px;
           height: 16px;
           background: #ffffff;
           border-radius: 50%;
+          position: absolute;
+          top: 2px;
+          left: 2px;
           transition: transform 0.2s ease;
           box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
-        .f16-switch-track.active .f16-switch-thumb {
-          transform: translateX(16px);
+        .f16-pill-toggle.active .f16-pill-toggle-thumb {
+          transform: translateX(18px);
         }
 
-        /* Row 3: Split View (Coverage Summary Sidebar + Master Table) */
-        .f16-main-panel {
+        /* ROW 3: Master Geographical Permission Split Panel */
+        .f16-panel-card {
           background: #ffffff;
-          border: 1px solid var(--f16-border-strong);
-          border-radius: 14px;
+          border: 1px solid #cbd5e1;
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
           display: flex;
         }
         @media (max-width: 900px) {
-          .f16-main-panel {
+          .f16-panel-card {
             flex-direction: column;
           }
         }
 
-        /* Left Sidebar: Coverage Summary */
-        .f16-sidebar {
+        /* Left Sidebar */
+        .f16-left-sidebar {
           width: 250px;
           background: #f8fafc;
-          border-right: 1px solid var(--f16-border-strong);
+          border-right: 1px solid #cbd5e1;
           flex-shrink: 0;
           display: flex;
           flex-direction: column;
         }
         @media (max-width: 900px) {
-          .f16-sidebar {
+          .f16-left-sidebar {
             width: 100%;
             border-right: none;
-            border-bottom: 1px solid var(--f16-border-strong);
+            border-bottom: 1px solid #cbd5e1;
           }
         }
-        .f16-sidebar-header-row {
+        .f16-sidebar-dark-header {
           background: #0f172a;
           color: #ffffff;
           padding: 10px 14px;
@@ -456,77 +429,77 @@ frappe.ui.form.on("Report Preference", {
           justify-content: space-between;
           align-items: center;
         }
-        .f16-sidebar-list {
-          padding: 10px 12px;
+        .f16-sidebar-tree-list {
+          padding: 8px 10px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
           max-height: 480px;
           overflow-y: auto;
         }
-        .f16-sidebar-item {
-          padding: 6px 10px;
+        .f16-sidebar-tree-item {
+          padding: 6px 8px;
           border-radius: 6px;
           font-size: 11.5px;
           display: flex;
           align-items: center;
           justify-content: space-between;
           cursor: pointer;
-          transition: background 0.15s ease;
+          transition: all 0.15s ease;
           color: #334155;
         }
-        .f16-sidebar-item:hover {
+        .f16-sidebar-tree-item:hover {
           background: #e2e8f0;
           color: #0f172a;
         }
-        .f16-sidebar-item.active {
+        .f16-sidebar-tree-item.active {
           background: #e0f2fe;
           color: #0369a1;
           font-weight: 700;
         }
 
-        /* Right Area: Table Container */
-        .f16-table-area {
+        /* Right Table Main Area */
+        .f16-right-table-area {
           flex: 1;
           display: flex;
           flex-direction: column;
           min-width: 0;
         }
-        .f16-table-toolbar {
+        .f16-table-top-bar {
           padding: 10px 16px;
           background: #ffffff;
-          border-bottom: 1px solid var(--f16-border);
+          border-bottom: 1px solid #e2e8f0;
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 12px;
           flex-wrap: wrap;
         }
-        .f16-search-input {
-          max-width: 240px;
-          padding: 6px 12px;
+        .f16-table-search-input {
+          max-width: 220px;
+          padding: 5px 12px;
           font-size: 12px;
-          border: 1px solid var(--f16-border-strong);
-          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
           outline: none;
           background: #f8fafc;
         }
-        .f16-search-input:focus {
+        .f16-table-search-input:focus {
           border-color: #0284c7;
           background: #ffffff;
         }
 
-        /* Table Design */
-        .f16-table-wrap {
-          max-height: 440px;
+        /* Grid Table Structure */
+        .f16-table-container {
+          max-height: 460px;
           overflow-y: auto;
         }
-        .f16-grid-table {
+        .f16-dashboard-table {
           width: 100%;
           border-collapse: collapse;
           font-size: 12px;
         }
-        .f16-grid-table th {
+        .f16-dashboard-table th {
           position: sticky;
           top: 0;
           background: #0f172a;
@@ -539,54 +512,55 @@ frappe.ui.form.on("Report Preference", {
           padding: 10px 12px;
           z-index: 2;
         }
-        .f16-grid-table td {
+        .f16-dashboard-table td {
           padding: 8px 12px;
           border-bottom: 1px solid #f1f5f9;
           color: #334155;
           vertical-align: middle;
         }
 
-        /* Tree Level Rows */
-        .f16-row-zone {
+        /* Level Specific Row Styles */
+        .f16-row-zone-lvl {
           background: #f8fafc;
           font-weight: 700;
+          color: #0f172a;
           border-top: 1px solid #e2e8f0;
           border-bottom: 1px solid #e2e8f0;
         }
-        .f16-row-region {
+        .f16-row-region-lvl {
           background: #ffffff;
           font-weight: 600;
+          color: #1e293b;
           border-bottom: 1px solid #f1f5f9;
         }
-        .f16-row-district {
+        .f16-row-district-lvl {
           background: #ffffff;
           color: #475569;
           border-bottom: 1px solid #f1f5f9;
         }
-        .f16-row-branch {
-          background: #f0fdf4;
+        .f16-row-branch-lvl {
+          background-color: #f0fdf4;
           border-bottom: 1px solid #dcfce7;
         }
-        .f16-row-branch:hover {
-          background: #dcfce7;
+        .f16-row-branch-lvl:hover {
+          background-color: #dcfce7;
         }
 
         /* Badges */
-        .f16-level-badge {
+        .f16-badge {
           display: inline-block;
           font-size: 10px;
           font-weight: 700;
           padding: 2px 7px;
           border-radius: 4px;
-          text-transform: capitalize;
         }
-        .f16-level-zone { background: #e0f2fe; color: #0369a1; }
-        .f16-level-region { background: #f3e8ff; color: #7e22ce; }
-        .f16-level-district { background: #fef3c7; color: #b45309; }
-        .f16-level-branch { background: #dcfce7; color: #15803d; }
+        .f16-badge-zone { background: #e0f2fe; color: #0369a1; }
+        .f16-badge-region { background: #f3e8ff; color: #7e22ce; }
+        .f16-badge-district { background: #fef3c7; color: #b45309; }
+        .f16-badge-branch { background: #dcfce7; color: #15803d; }
 
-        /* Action Menu Button (•••) */
-        .f16-action-dots-btn {
+        /* Action 3-Dots Button */
+        .f16-dots-btn {
           background: #f1f5f9;
           border: 1px solid #cbd5e1;
           border-radius: 6px;
@@ -596,25 +570,25 @@ frappe.ui.form.on("Report Preference", {
           color: #475569;
           line-height: 1;
         }
-        .f16-action-dots-btn:hover {
+        .f16-dots-btn:hover {
           background: #e2e8f0;
           color: #0f172a;
         }
 
-        /* Dropdown Popover Menu */
-        .f16-menu-popover {
+        /* Context Popover Menu */
+        .f16-context-popover {
           position: absolute;
           right: 20px;
           background: #ffffff;
           border: 1px solid #cbd5e1;
           border-radius: 8px;
           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-          z-index: 50;
+          z-index: 100;
           min-width: 170px;
           display: none;
           padding: 4px 0;
         }
-        .f16-menu-item {
+        .f16-context-item {
           padding: 7px 14px;
           font-size: 11.5px;
           color: #334155;
@@ -623,93 +597,85 @@ frappe.ui.form.on("Report Preference", {
           align-items: center;
           gap: 6px;
         }
-        .f16-menu-item:hover {
+        .f16-context-item:hover {
           background: #f1f5f9;
           color: #0f172a;
         }
 
         /* Table Footer */
-        .f16-table-footer {
+        .f16-footer-row {
           padding: 10px 16px;
           background: #f8fafc;
-          border-top: 1px solid var(--f16-border);
+          border-top: 1px solid #e2e8f0;
           display: flex;
           justify-content: space-between;
           align-items: center;
           font-size: 11.5px;
-          color: var(--f16-text-muted);
+          color: #64748b;
         }
       </style>
 
-      <div class="f16-dashboard">
-        <!-- Section Title: USER MANAGEMENT DASHBOARD -->
-        <div class="f16-section-title">
-          <span>USER MANAGEMENT DASHBOARD</span>
-        </div>
+      <div class="f16-root">
+        <!-- Dashboard Main Title -->
+        <div class="f16-dashboard-title">USER MANAGEMENT DASHBOARD</div>
 
-        <!-- ROW 1: TOP DUAL CARDS (COMPACT & SLIM) -->
-        <div class="f16-top-grid">
-          <!-- Left Card: Admin & Permission Scope -->
-          <div class="f16-scope-card">
-            <div class="f16-scope-icon-wrap">
-              <span>🛡️</span>
-            </div>
-            <div style="flex: 1; min-width: 0;">
-              <div class="f16-scope-title">ADMIN & PERMISSION SCOPE</div>
-              <div class="f16-scope-toggle-wrap">
-                <div class="f16-switch" id="f16-toggle-scope-mode" style="width:28px; height:16px;">
-                  <div class="f16-switch-track ${isGeo ? 'active' : ''}">
-                    <div class="f16-switch-thumb" style="width:12px; height:12px; top:2px; left:2px; ${isGeo ? 'transform:translateX(12px);' : ''}"></div>
-                  </div>
+        <!-- ROW 1: TOP DUAL CARDS -->
+        <div class="f16-top-row">
+          <!-- Card 1: Admin & Scope Banner -->
+          <div class="f16-scope-banner">
+            <div class="f16-scope-icon-box">🛡️</div>
+            <div class="f16-scope-details">
+              <div class="f16-scope-text-title">ADMIN & PERMISSION SCOPE</div>
+              <div class="f16-scope-pill-switch">
+                <div class="f16-pill-toggle ${isGeo ? 'active' : ''}" id="f16-switch-scope-mode">
+                  <div class="f16-pill-toggle-thumb"></div>
                 </div>
-                <span style="color: ${isGeo ? '#0369a1' : '#64748b'}; font-weight: 700; white-space: nowrap;">
-                  ${isGeo ? 'Geographical Scope' : 'SOL-Wise Scope'}
+                <span style="color: ${isGeo ? '#0369a1' : '#64748b'}; font-weight: 700;">
+                  ${isGeo ? 'GEOGRAPHICAL SCOPE' : 'Branch-Level View'}
                 </span>
                 <span style="color: #cbd5e1;">|</span>
-                <span style="color: #0284c7; font-weight: 600; cursor: pointer; text-decoration: underline; white-space: nowrap;" id="f16-btn-switch-branch-view">
-                  ${isGeo ? 'Switch to SOL View' : 'Switch to Geo View'}
+                <span style="color: #0284c7; font-weight: 500; cursor: pointer; text-decoration: underline;" id="f16-btn-toggle-scope-text">
+                  ${isGeo ? 'Branch-Level View' : 'Geographical Scope'}
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Right Card: Action Console -->
-          <div class="f16-action-console">
-            <div class="f16-console-header">Action Console</div>
-            <div class="f16-console-btn-group">
-              <button type="button" class="f16-btn-outline" id="f16-btn-reset-permissions" title="Reset all permissions">
-                <span>✕</span> <span>Reset</span>
+          <!-- Card 2: Action Console -->
+          <div class="f16-console-card">
+            <div class="f16-console-header-label">Action Console</div>
+            <div class="f16-console-actions-row">
+              <button type="button" class="f16-btn-console-white" id="f16-btn-reset-perm" title="Reset all selections">
+                <span>✕</span> <span>Reset Permissions</span>
               </button>
-              <button type="button" class="f16-btn-outline" id="f16-btn-discard-changes">
-                <span>Discard</span>
+              <button type="button" class="f16-btn-console-white" id="f16-btn-discard-perm">
+                <span>Discard Changes</span>
               </button>
-              <button type="button" class="f16-btn-outline" id="f16-btn-bulk-update">
-                <span>🔄</span> <span>Bulk</span>
+              <button type="button" class="f16-btn-console-white" id="f16-btn-bulk-perm">
+                <span>🔄</span> <span>Bulk Update</span>
               </button>
-              <button type="button" class="f16-btn-save-primary" id="rp-btn-save-all">
-                <span>SAVE</span>
+              <button type="button" class="f16-btn-save-all" id="f16-btn-save-all">
+                <span>SAVE ALL CHANGES</span>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Section Title: USER PROFILE CONFIGURATION -->
-        <div class="f16-section-title">
-          <span>USER PROFILE CONFIGURATION</span>
-        </div>
+        <!-- Section 2: User Profile Configuration Title -->
+        <div class="f16-sec-heading">USER PROFILE CONFIGURATION</div>
 
-        <!-- ROW 2: USER PROFILE CONFIGURATION (4 CARDS) -->
-        <div class="f16-user-profile-grid">
-          <!-- Card 1: User Search & Identity -->
-          <div class="f16-subcard" style="position: relative;">
-            <div class="f16-user-card-content">
-              <div class="f16-user-avatar">👤</div>
+        <!-- ROW 2: 4 CARDS GRID -->
+        <div class="f16-user-grid">
+          <!-- Card 1: User Identity -->
+          <div class="f16-card-box">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="f16-avatar">👤</div>
               <div style="flex: 1; min-width: 0;">
                 ${isNewDoc ? `
                   <input type="text" class="form-control input-sm" id="rp-user-search-input" placeholder="🔍 Search User..." value="${frm.state.user || ''}" style="font-size:12px; height:28px;" />
-                  <div class="rp-dropdown-popover" id="rp-user-search-dropdown" style="left:0; right:0; top:42px;"></div>
+                  <div class="rp-dropdown-popover" id="rp-user-search-dropdown" style="left:0; right:0; top:38px;"></div>
                 ` : `
-                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <div style="font-weight: 700; font-size: 12.5px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                     ${userName}
                   </div>
                   <div style="font-size: 11px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
@@ -717,72 +683,67 @@ frappe.ui.form.on("Report Preference", {
                   </div>
                 `}
               </div>
-              <span style="color: #94a3b8; font-size: 13px; cursor: pointer;" title="Edit / Search User" id="f16-btn-user-edit">✏️</span>
+              <span style="color: #94a3b8; font-size: 13px; cursor: pointer;" title="Search User" id="f16-btn-open-user-picker">✏️</span>
             </div>
           </div>
 
           <!-- Card 2: Permissions Tag -->
-          <div class="f16-subcard">
-            <div class="f16-subcard-label">Permissions Tag:</div>
-            <select class="form-control input-sm" id="rp-tag-select" style="background:#fff; font-size:12px; height:28px; border-color:#cbd5e1;">
+          <div class="f16-card-box">
+            <div class="f16-card-box-label">Permissions Tag:</div>
+            <select class="form-control input-sm" id="rp-tag-select" style="background:#fff; font-size:11.5px; height:26px; border-color:#cbd5e1;">
               <option value="">No Tag</option>
               ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
             </select>
           </div>
 
           <!-- Card 3: Account Status -->
-          <div class="f16-subcard" style="flex-direction: row; align-items: center; justify-content: space-between;">
+          <div class="f16-card-box" style="flex-direction: row; align-items: center; justify-content: space-between;">
             <div>
-              <div class="f16-subcard-label">Account Status:</div>
-              <div class="${frm.state.enabled ? 'f16-status-active' : 'f16-status-disabled'}">
+              <div class="f16-card-box-label">Account Status:</div>
+              <div style="font-size: 12.5px; font-weight: 800; color: ${frm.state.enabled ? '#16a34a' : '#64748b'}; letter-spacing: 0.03em;">
                 ${frm.state.enabled ? 'ACTIVE' : 'DISABLED'}
               </div>
-              <div style="font-size: 9.5px; color: #94a3b8;">Auto-sync permissions</div>
+              <div style="font-size: 9px; color: #94a3b8;">Auto-save enabled</div>
             </div>
-            <div class="f16-switch" id="f16-toggle-status">
-              <div class="f16-switch-track ${frm.state.enabled ? 'active' : ''}">
-                <div class="f16-switch-thumb"></div>
-              </div>
+            <div class="f16-pill-toggle ${frm.state.enabled ? 'active' : ''}" id="f16-toggle-user-status">
+              <div class="f16-pill-toggle-thumb"></div>
             </div>
           </div>
 
-          <!-- Card 4: User Role / Access Summary -->
-          <div class="f16-subcard" style="flex-direction: row; align-items: center; justify-content: space-between;">
+          <!-- Card 4: User Role Summary -->
+          <div class="f16-card-box" style="flex-direction: row; align-items: center; justify-content: space-between;">
             <div>
-              <div class="f16-subcard-label">User Role:</div>
-              <div style="font-weight: 700; font-size: 12.5px; color: #0f172a;">
+              <div class="f16-card-box-label">User Role:</div>
+              <div style="font-weight: 700; font-size: 12px; color: #0f172a;">
                 ${frm.state.tag || 'Standard User'}
               </div>
             </div>
-            <button type="button" class="f16-btn-outline" id="f16-btn-change-role" style="padding: 3px 8px; font-size: 10.5px;">
+            <button type="button" class="f16-btn-console-white" id="f16-btn-role-change" style="padding: 2px 8px; font-size: 10.5px;">
               Change Role
             </button>
           </div>
         </div>
 
-        <!-- Section Title: GEOGRAPHICAL PERMISSION & COVERAGE -->
-        <div class="f16-section-title">
-          <span>GEOGRAPHICAL PERMISSION & COVERAGE</span>
-        </div>
+        <!-- Section 3: Geographical Permission & Coverage Title -->
+        <div class="f16-sec-heading">GEOGRAPHICAL PERMISSION & COVERAGE</div>
 
         <!-- ROW 3: SPLIT PANEL (COVERAGE SUMMARY + MASTER TABLE) -->
-        <div id="rp-main-coverage-panel-slot"></div>
+        <div id="f16-main-split-slot"></div>
       </div>
     `;
 
     frm.fields_dict.widget_html.$wrapper.html(html);
-    frm.trigger("attach_widget_events");
+    frm.trigger("attach_dashboard_events");
   },
 
-  attach_widget_events: function (frm) {
+  attach_dashboard_events: function (frm) {
     let $w = frm.fields_dict.widget_html.$wrapper;
-    let meta = frm.meta_data || {};
 
-    // Mode Switcher Toggle
-    $w.find("#f16-toggle-scope-mode, #f16-btn-switch-branch-view").on("click", function () {
+    // Scope Mode Switcher Toggle
+    $w.find("#f16-switch-scope-mode, #f16-btn-toggle-scope-text").on("click", function () {
       let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
       frm.state.access_type = isGeo ? "Specific Branches (SOL ID)" : "Geographical (Zone / Region / District)";
-      
+
       if (frm.state.access_type === "Geographical (Zone / Region / District)") {
         frm.state.sol_ids.clear();
       } else {
@@ -791,7 +752,7 @@ frappe.ui.form.on("Report Preference", {
         frm.state.districts.clear();
       }
 
-      frm.trigger("render_full_crud_widget");
+      frm.trigger("render_full_dashboard");
       frm.trigger("calculate_and_render_branches");
       frm.trigger("auto_save_preference");
     });
@@ -809,10 +770,7 @@ frappe.ui.form.on("Report Preference", {
 
       frappe.call({
         method: "sahayog.scrm.doctype.report_preference.report_preference.search_user",
-        args: {
-          search_text: q,
-          current_docname: frm.doc.name || ""
-        },
+        args: { search_text: q, current_docname: frm.doc.name || "" },
         callback: function (r) {
           let users = r.message || [];
           if (!users.length) {
@@ -820,23 +778,14 @@ frappe.ui.form.on("Report Preference", {
             return;
           }
 
-          let itemsHtml = users.map(u => {
-            if (u.is_already_added) {
-              return `
-                <div class="rp-dropdown-row rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}" data-already="1" data-pref="${u.pref_docname || ''}" style="background:#fff7ed; cursor:not-allowed;">
-                  <div>
-                    <b style="color:#c2410c;">${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
-                  </div>
-                  <span class="badge" style="background:#ffedd5; color:#9a3412; font-size:10px;">Already Added</span>
-                </div>
-              `;
-            }
-            return `
-              <div class="rp-dropdown-row rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}" data-already="0">
+          let itemsHtml = users.map(u => `
+            <div class="rp-dropdown-row rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}" data-already="${u.is_already_added ? '1' : '0'}" data-pref="${u.pref_docname || ''}">
+              <div>
                 <b>${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
               </div>
-            `;
-          }).join("");
+              ${u.is_already_added ? '<span class="badge" style="background:#ffedd5; color:#9a3412; font-size:10px;">Already Added</span>' : ''}
+            </div>
+          `).join("");
 
           $userDropdown.html(itemsHtml).show();
         }
@@ -868,7 +817,7 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("load_user_preference_into_widget");
     });
 
-    $w.find("#f16-btn-user-edit").on("click", function () {
+    $w.find("#f16-btn-open-user-picker").on("click", function () {
       let d = new frappe.ui.Dialog({
         title: __("Select User"),
         fields: [{ fieldname: "user", fieldtype: "Link", options: "User", label: "User", reqd: 1 }],
@@ -883,27 +832,27 @@ frappe.ui.form.on("Report Preference", {
       d.show();
     });
 
-    // Tag Selector
+    // Tag Select
     $w.find("#rp-tag-select").on("change", function () {
       frm.state.tag = $(this).val();
       frm.trigger("auto_save_preference");
     });
 
     // Status Toggle
-    $w.find("#f16-toggle-status").on("click", function () {
+    $w.find("#f16-toggle-user-status").on("click", function () {
       frm.state.enabled = !frm.state.enabled;
-      frm.trigger("render_full_crud_widget");
+      frm.trigger("render_full_dashboard");
       frm.trigger("calculate_and_render_branches");
       frm.trigger("auto_save_preference");
     });
 
-    // Change Role Button
-    $w.find("#f16-btn-change-role").on("click", function () {
+    // Change Role
+    $w.find("#f16-btn-role-change").on("click", function () {
       $w.find("#rp-tag-select").focus();
     });
 
-    // Action Console Buttons
-    $w.find("#rp-btn-save-all").on("click", function () {
+    // Action Console Save
+    $w.find("#f16-btn-save-all").on("click", function () {
       if (!frm.state.user) {
         frappe.msgprint(__("Please select a User first."));
         return;
@@ -911,23 +860,23 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference", true);
     });
 
-    $w.find("#f16-btn-discard-changes").on("click", function () {
+    $w.find("#f16-btn-discard-perm").on("click", function () {
       frm.reload_doc();
     });
 
-    $w.find("#f16-btn-bulk-update").on("click", function () {
-      frappe.show_alert({ message: __("Select capsules or tick checkboxes to apply bulk updates."), indicator: "blue" });
+    $w.find("#f16-btn-bulk-perm").on("click", function () {
+      frappe.show_alert({ message: __("Click capsules or checkboxes to apply bulk updates."), indicator: "blue" });
     });
 
-    $w.find("#f16-btn-reset-permissions").on("click", function () {
+    $w.find("#f16-btn-reset-perm").on("click", function () {
       if (!frm.state.user) {
         frm.state.zones.clear();
         frm.state.regions.clear();
         frm.state.districts.clear();
         frm.state.sol_ids.clear();
-        frm.trigger("render_main_split_panel");
+        frm.trigger("render_split_panel");
         frm.trigger("calculate_and_render_branches");
-        frappe.show_alert({ message: __("Permissions reset."), indicator: "blue" });
+        frappe.show_alert({ message: __("Permissions cleared."), indicator: "blue" });
         return;
       }
 
@@ -939,7 +888,7 @@ frappe.ui.form.on("Report Preference", {
           frm.state.districts.clear();
           frm.state.sol_ids.clear();
           frm.trigger("auto_save_preference");
-          frm.trigger("render_main_split_panel");
+          frm.trigger("render_split_panel");
           frm.trigger("calculate_and_render_branches");
         }
       );
@@ -955,13 +904,13 @@ frappe.ui.form.on("Report Preference", {
 
     if (isGeo && !zones.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_main_split_panel");
+      frm.trigger("render_split_panel");
       return;
     }
 
     if (!isGeo && !sol_ids.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_main_split_panel");
+      frm.trigger("render_split_panel");
       return;
     }
 
@@ -976,13 +925,13 @@ frappe.ui.form.on("Report Preference", {
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
-        frm.trigger("render_main_split_panel");
+        frm.trigger("render_split_panel");
       }
     });
   },
 
-  render_main_split_panel: function (frm) {
-    let $slot = frm.fields_dict.widget_html.$wrapper.find("#rp-main-coverage-panel-slot");
+  render_split_panel: function (frm) {
+    let $slot = frm.fields_dict.widget_html.$wrapper.find("#f16-main-split-slot");
     if (!$slot.length) return;
 
     let meta = frm.meta_data || {};
@@ -994,7 +943,7 @@ frappe.ui.form.on("Report Preference", {
     let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
     let hasZoneSelected = frm.state.zones.size > 0;
 
-    // Filter regions based on selected zones
+    // Filter available regions
     let availableRegions = [];
     if (isGeo && hasZoneSelected) {
       availableRegions = Array.from(
@@ -1016,7 +965,7 @@ frappe.ui.form.on("Report Preference", {
       frm.state.regions.clear();
     }
 
-    // Build Nested Hierarchy Structure for Sidebar Summary and Table
+    // Build Nested Tree structures
     let masterTree = {};
     allBranches.forEach(b => {
       let z = b.zone || "Unassigned Zone";
@@ -1044,15 +993,15 @@ frappe.ui.form.on("Report Preference", {
     });
 
     let panelHtml = `
-      <div class="f16-main-panel">
+      <div class="f16-panel-card">
         <!-- LEFT SIDEBAR: COVERAGE SUMMARY -->
-        <div class="f16-sidebar">
-          <div class="f16-sidebar-header-row">
+        <div class="f16-left-sidebar">
+          <div class="f16-sidebar-dark-header">
             <span>Coverage Summary</span>
             <span>% Branches</span>
           </div>
 
-          <div class="f16-sidebar-list">
+          <div class="f16-sidebar-tree-list">
             ${Object.keys(masterTree).map(z => {
               let zTotal = Object.values(masterTree[z]).reduce((acc, reg) => 
                 acc + Object.values(reg).reduce((a, dist) => a + dist.length, 0), 0);
@@ -1062,9 +1011,9 @@ frappe.ui.form.on("Report Preference", {
               let isZoneActive = frm.state.zones.has(z);
 
               return `
-                <div class="f16-sidebar-item ${isZoneActive ? 'active' : ''} f16-sidebar-zone-item" data-zone="${z}">
+                <div class="f16-sidebar-tree-item ${isZoneActive ? 'active' : ''} f16-tree-item-zone" data-zone="${z}">
                   <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 10px;">${isZoneActive ? '🟦' : '◻️'}</span>
+                    <span style="font-size: 11px;">${isZoneActive ? '🟦' : '◻️'}</span>
                     <b>${z}</b>
                   </div>
                   <span style="font-weight: 700; font-size: 11px; color: ${isZoneActive ? '#0369a1' : '#64748b'};">
@@ -1073,12 +1022,11 @@ frappe.ui.form.on("Report Preference", {
                 </div>
 
                 ${isZoneActive ? Object.keys(masterTree[z]).map(r => {
-                  let rTotal = Object.values(masterTree[z][r]).reduce((a, dist) => a + dist.length, 0);
                   let rAllowed = (activeTree[z] && activeTree[z][r]) ? Object.values(activeTree[z][r]).reduce((a, dist) => a + dist.length, 0) : 0;
                   let isRegionActive = !frm.state.regions.size || frm.state.regions.has(r);
 
                   return `
-                    <div class="f16-sidebar-item ${isRegionActive ? 'active' : ''} f16-sidebar-region-item" data-zone="${z}" data-region="${r}" style="padding-left: 20px; font-size: 11px;">
+                    <div class="f16-sidebar-tree-item ${isRegionActive ? 'active' : ''} f16-tree-item-region" data-zone="${z}" data-region="${r}" style="padding-left: 18px; font-size: 11px;">
                       <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="color: #94a3b8; font-size: 9px;">▪</span>
                         <span>${r}</span>
@@ -1092,11 +1040,11 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
-        <!-- RIGHT MAIN TABLE AREA -->
-        <div class="f16-table-area">
+        <!-- RIGHT MAIN TABLE -->
+        <div class="f16-right-table-area">
           <!-- Top Table Toolbar -->
-          <div class="f16-table-toolbar">
-            <!-- Global Permission Filter Selector -->
+          <div class="f16-table-top-bar">
+            <!-- Filter Dropdown / Capsules -->
             <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
               ${isGeo ? `
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -1120,16 +1068,16 @@ frappe.ui.form.on("Report Preference", {
               `}
             </div>
 
-            <!-- Search Filter -->
+            <!-- Controls: Expand, Collapse, Search -->
             <div style="display: flex; align-items: center; gap: 8px;">
-              <button type="button" class="f16-btn-outline" id="f16-btn-expand-all" style="padding: 3px 8px; font-size: 10.5px;">▾ Expand All</button>
-              <button type="button" class="f16-btn-outline" id="f16-btn-collapse-all" style="padding: 3px 8px; font-size: 10.5px;">▸ Collapse All</button>
-              <input type="text" class="f16-search-input" id="f16-table-search-input" placeholder="🔍 Search branch, SOL..." />
+              <button type="button" class="f16-btn-console-white" id="f16-btn-expand-all" style="padding: 3px 8px; font-size: 10.5px;">▾ Expand All</button>
+              <button type="button" class="f16-btn-console-white" id="f16-btn-collapse-all" style="padding: 3px 8px; font-size: 10.5px;">▸ Collapse All</button>
+              <input type="text" class="f16-table-search-input" id="f16-table-search-box" placeholder="🔍 Search branch, SOL..." />
             </div>
           </div>
 
-          <!-- Master Drilldown Table -->
-          <div class="f16-table-wrap">
+          <!-- Table Container -->
+          <div class="f16-table-container">
             ${isGeo && !hasZoneSelected ? `
               <div style="padding: 44px; text-align: center; color: #94a3b8; font-size: 13px;">
                 👈 Please select a <b>Zone</b> from above or sidebar to view & grant branch access.
@@ -1143,13 +1091,13 @@ frappe.ui.form.on("Report Preference", {
                 No branches found matching current criteria.
               </div>
             ` : `
-              <table class="f16-grid-table" id="f16-main-grid-table">
+              <table class="f16-dashboard-table" id="f16-grid-table">
                 <thead>
                   <tr>
                     <th style="width: 32px; text-align: center;">
-                      <input type="checkbox" id="f16-chk-select-all" checked style="cursor: pointer;" />
+                      <input type="checkbox" id="f16-select-all-chk" checked style="cursor: pointer;" />
                     </th>
-                    <th style="width: 110px;">LEVEL</th>
+                    <th style="width: 105px;">LEVEL</th>
                     <th style="width: 110px;">ZONE</th>
                     <th style="width: 130px;">REGION</th>
                     <th style="width: 130px;">DISTRICT</th>
@@ -1167,13 +1115,13 @@ frappe.ui.form.on("Report Preference", {
 
                     return `
                       <!-- Level 1: ZONE ROW -->
-                      <tr class="f16-row-zone rp-tree-header-row" data-tree-key="${zKey}" data-zone-key="${zKey}" data-search="${z}">
+                      <tr class="f16-row-zone-lvl rp-tree-header-row" data-tree-key="${zKey}" data-zone-key="${zKey}" data-search="${z}">
                         <td style="text-align: center;">
-                          <input type="checkbox" class="f16-row-checkbox f16-zone-chk" data-zone="${z}" checked />
+                          <input type="checkbox" class="f16-row-chk f16-zone-chk" data-zone="${z}" checked />
                         </td>
                         <td>
                           <span class="rp-tree-toggle-icon" id="icon-${zKey}">▸</span>
-                          <span class="f16-level-badge f16-level-zone">Zone</span>
+                          <span class="f16-badge f16-badge-zone">Zone</span>
                         </td>
                         <td><b>${z}</b></td>
                         <td><span class="text-muted">(${zRegCount} Regions)</span></td>
@@ -1181,7 +1129,7 @@ frappe.ui.form.on("Report Preference", {
                         <td><span class="text-muted" style="font-weight: 600;">${zBranchesCount} Branches</span></td>
                         <td>—</td>
                         <td style="text-align: center; position: relative;">
-                          <button type="button" class="f16-action-dots-btn f16-menu-trigger" data-key="${zKey}">•••</button>
+                          <button type="button" class="f16-dots-btn f16-trigger-dots" data-key="${zKey}">•••</button>
                         </td>
                       </tr>
 
@@ -1192,13 +1140,13 @@ frappe.ui.form.on("Report Preference", {
 
                         return `
                           <!-- Level 2: REGION ROW -->
-                          <tr class="f16-row-region rp-tree-header-row rp-under-zone-${zKey}" data-zone-parent="${zKey}" data-tree-key="${rKey}" data-reg-key="${rKey}" data-search="${z} ${r}" style="display: none;">
+                          <tr class="f16-row-region-lvl rp-tree-header-row rp-under-zone-${zKey}" data-zone-parent="${zKey}" data-tree-key="${rKey}" data-reg-key="${rKey}" data-search="${z} ${r}" style="display: none;">
                             <td style="text-align: center;">
-                              <input type="checkbox" class="f16-row-checkbox f16-region-chk" data-zone="${z}" data-region="${r}" checked />
+                              <input type="checkbox" class="f16-row-chk f16-region-chk" data-zone="${z}" data-region="${r}" checked />
                             </td>
                             <td>
                               <span class="rp-tree-toggle-icon" id="icon-${rKey}">▸</span>
-                              <span class="f16-level-badge f16-level-region">Region</span>
+                              <span class="f16-badge f16-badge-region">Region</span>
                             </td>
                             <td><span class="rp-tag-micro">${z}</span></td>
                             <td><b>${r}</b></td>
@@ -1206,7 +1154,7 @@ frappe.ui.form.on("Report Preference", {
                             <td><span class="text-muted" style="font-weight: 600;">${rBranchesCount} Branches</span></td>
                             <td>—</td>
                             <td style="text-align: center; position: relative;">
-                              <button type="button" class="f16-action-dots-btn f16-menu-trigger" data-key="${rKey}">•••</button>
+                              <button type="button" class="f16-dots-btn f16-trigger-dots" data-key="${rKey}">•••</button>
                             </td>
                           </tr>
 
@@ -1216,13 +1164,13 @@ frappe.ui.form.on("Report Preference", {
 
                             return `
                               <!-- Level 3: DISTRICT ROW -->
-                              <tr class="f16-row-district rp-tree-header-row rp-under-zone-${zKey} rp-under-reg-${rKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-tree-key="${dKey}" data-dist-key="${dKey}" data-search="${z} ${r} ${d}" style="display: none;">
+                              <tr class="f16-row-district-lvl rp-tree-header-row rp-under-zone-${zKey} rp-under-reg-${rKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-tree-key="${dKey}" data-dist-key="${dKey}" data-search="${z} ${r} ${d}" style="display: none;">
                                 <td style="text-align: center;">
-                                  <input type="checkbox" class="f16-row-checkbox f16-district-chk" data-district="${d}" checked />
+                                  <input type="checkbox" class="f16-row-chk f16-district-chk" data-district="${d}" checked />
                                 </td>
                                 <td>
                                   <span class="rp-tree-toggle-icon" id="icon-${dKey}">▸</span>
-                                  <span class="f16-level-badge f16-level-district">District</span>
+                                  <span class="f16-badge f16-badge-district">District</span>
                                 </td>
                                 <td><span class="rp-tag-micro">${z}</span></td>
                                 <td><span class="rp-tag-micro">${r}</span></td>
@@ -1230,19 +1178,19 @@ frappe.ui.form.on("Report Preference", {
                                 <td><span class="text-muted" style="font-weight: 600;">${distBranches.length} Branches</span></td>
                                 <td>—</td>
                                 <td style="text-align: center; position: relative;">
-                                  <button type="button" class="f16-action-dots-btn f16-menu-trigger" data-key="${dKey}">•••</button>
+                                  <button type="button" class="f16-dots-btn f16-trigger-dots" data-key="${dKey}">•••</button>
                                 </td>
                               </tr>
 
-                              <!-- Level 4: BRANCH LEAF ROWS -->
+                              <!-- Level 4: BRANCH ROWS -->
                               ${distBranches.map(b => `
-                                <tr class="f16-row-branch rp-under-zone-${zKey} rp-under-reg-${rKey} rp-under-dist-${dKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-dist-parent="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}" style="display: none;">
+                                <tr class="f16-row-branch-lvl rp-under-zone-${zKey} rp-under-reg-${rKey} rp-under-dist-${dKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-dist-parent="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}" style="display: none;">
                                   <td style="text-align: center;">
-                                    <input type="checkbox" class="f16-row-checkbox f16-branch-chk" data-sol="${b.sol_id}" checked />
+                                    <input type="checkbox" class="f16-row-chk f16-branch-chk" data-sol="${b.sol_id}" checked />
                                   </td>
                                   <td>
                                     <span class="rp-tree-toggle-icon" style="color: #94a3b8; font-size: 8px;">•</span>
-                                    <span class="f16-level-badge f16-level-branch">Branch</span>
+                                    <span class="f16-badge f16-badge-branch">Branch</span>
                                   </td>
                                   <td><span class="rp-tag-micro">${z}</span></td>
                                   <td><span class="rp-tag-micro">${r}</span></td>
@@ -1250,7 +1198,7 @@ frappe.ui.form.on("Report Preference", {
                                   <td><b>${b.branch || '-'}</b></td>
                                   <td><span class="rp-sol-pill">${b.sol_id || '-'}</span></td>
                                   <td style="text-align: center; position: relative;">
-                                    <button type="button" class="f16-action-dots-btn f16-menu-trigger" data-key="${b.sol_id}">•••</button>
+                                    <button type="button" class="f16-dots-btn f16-trigger-dots" data-key="${b.sol_id}">•••</button>
                                   </td>
                                 </tr>
                               `).join('')}
@@ -1266,10 +1214,10 @@ frappe.ui.form.on("Report Preference", {
           </div>
 
           <!-- Table Footer -->
-          <div class="f16-table-footer">
+          <div class="f16-footer-row">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span>Items per page</span>
-              <select class="form-control input-sm" id="f16-select-page-size" style="width: auto; height: 26px; padding: 2px 6px; font-size: 11px;">
+              <select class="form-control input-sm" id="f16-page-size" style="width: auto; height: 26px; padding: 2px 6px; font-size: 11px;">
                 <option value="50" selected>50</option>
                 <option value="100">100</option>
                 <option value="500">All</option>
@@ -1282,18 +1230,18 @@ frappe.ui.form.on("Report Preference", {
         </div>
       </div>
 
-      <!-- Context Popover Menu -->
-      <div class="f16-menu-popover" id="f16-context-menu">
-        <div class="f16-menu-item" id="f16-menu-set-primary">⭐ Set as primary branch</div>
-        <div class="f16-menu-item" id="f16-menu-toggle-units">☑ Select / Deselect units</div>
-        <div class="f16-menu-item" id="f16-menu-revoke" style="color: #dc2626;">🗑️ Revoke level access</div>
+      <!-- Popover Menu -->
+      <div class="f16-context-popover" id="f16-context-popover">
+        <div class="f16-context-item" id="f16-act-primary">⭐ Set as primary branch</div>
+        <div class="f16-context-item" id="f16-act-toggle-units">☑ Select / Deselect child units</div>
+        <div class="f16-context-item" id="f16-act-revoke" style="color: #dc2626;">🗑️ Revoke level access</div>
       </div>
     `;
 
     $slot.html(panelHtml);
 
-    // Sidebar Zone Item Click
-    $slot.find(".f16-sidebar-zone-item").on("click", function () {
+    // Sidebar items click
+    $slot.find(".f16-tree-item-zone").on("click", function () {
       let z = $(this).data("zone");
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
@@ -1304,8 +1252,7 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Sidebar Region Item Click
-    $slot.find(".f16-sidebar-region-item").on("click", function (e) {
+    $slot.find(".f16-tree-item-region").on("click", function (e) {
       e.stopPropagation();
       let r = $(this).data("region");
       if (frm.state.regions.has(r)) {
@@ -1357,7 +1304,7 @@ frappe.ui.form.on("Report Preference", {
 
       $solInput.val("");
       $solDropdown.hide().empty();
-      frm.trigger("render_main_split_panel");
+      frm.trigger("render_split_panel");
       frm.trigger("calculate_and_render_branches");
       frm.trigger("auto_save_preference");
     }
@@ -1412,13 +1359,13 @@ frappe.ui.form.on("Report Preference", {
       frm.state.sol_ids.add(sol);
       $solInput.val("");
       $solDropdown.hide().empty();
-      frm.trigger("render_main_split_panel");
+      frm.trigger("render_split_panel");
       frm.trigger("calculate_and_render_branches");
       frm.trigger("auto_save_preference");
     });
 
-    // Tree Collapse / Expand
-    $slot.find(".f16-row-zone").on("click", function (e) {
+    // Progressive Drilldown Table Handlers
+    $slot.find(".f16-row-zone-lvl").on("click", function (e) {
       if ($(e.target).is("input, button")) return;
       let zKey = $(this).data("zone-key");
       let $icon = $(this).find(`#icon-${zKey}`);
@@ -1426,16 +1373,16 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        $slot.find(`.f16-row-region[data-zone-parent="${zKey}"]`).show();
+        $slot.find(`.f16-row-region-lvl[data-zone-parent="${zKey}"]`).show();
       } else {
         $icon.text("▸");
         $slot.find(`.rp-under-zone-${zKey}`).hide();
-        $slot.find(`.f16-row-region[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
-        $slot.find(`.f16-row-district[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
+        $slot.find(`.f16-row-region-lvl[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
+        $slot.find(`.f16-row-district-lvl[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
       }
     });
 
-    $slot.find(".f16-row-region").on("click", function (e) {
+    $slot.find(".f16-row-region-lvl").on("click", function (e) {
       if ($(e.target).is("input, button")) return;
       e.stopPropagation();
       let rKey = $(this).data("reg-key");
@@ -1444,15 +1391,15 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        $slot.find(`.f16-row-district[data-reg-parent="${rKey}"]`).show();
+        $slot.find(`.f16-row-district-lvl[data-reg-parent="${rKey}"]`).show();
       } else {
         $icon.text("▸");
         $slot.find(`.rp-under-reg-${rKey}`).hide();
-        $slot.find(`.f16-row-district[data-reg-parent="${rKey}"] .rp-tree-toggle-icon`).text("▸");
+        $slot.find(`.f16-row-district-lvl[data-reg-parent="${rKey}"] .rp-tree-toggle-icon`).text("▸");
       }
     });
 
-    $slot.find(".f16-row-district").on("click", function (e) {
+    $slot.find(".f16-row-district-lvl").on("click", function (e) {
       if ($(e.target).is("input, button")) return;
       e.stopPropagation();
       let dKey = $(this).data("dist-key");
@@ -1461,33 +1408,33 @@ frappe.ui.form.on("Report Preference", {
 
       if (isExpanding) {
         $icon.text("▼");
-        $slot.find(`.f16-row-branch[data-dist-parent="${dKey}"]`).show();
+        $slot.find(`.f16-row-branch-lvl[data-dist-parent="${dKey}"]`).show();
       } else {
         $icon.text("▸");
-        $slot.find(`.f16-row-branch[data-dist-parent="${dKey}"]`).hide();
+        $slot.find(`.f16-row-branch-lvl[data-dist-parent="${dKey}"]`).hide();
       }
     });
 
-    // Expand All / Collapse All
+    // Expand / Collapse All
     $slot.find("#f16-btn-expand-all").on("click", function () {
-      $slot.find(".f16-row-region, .f16-row-district, .f16-row-branch").show();
+      $slot.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").show();
       $slot.find(".rp-tree-toggle-icon").each(function () {
         if ($(this).text().trim() === "▸") $(this).text("▼");
       });
     });
 
     $slot.find("#f16-btn-collapse-all").on("click", function () {
-      $slot.find(".f16-row-region, .f16-row-district, .f16-row-branch").hide();
+      $slot.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
       $slot.find(".rp-tree-toggle-icon").each(function () {
         if ($(this).text().trim() === "▼") $(this).text("▸");
       });
     });
 
-    // Context Popover Menu (•••)
-    let $menu = $slot.find("#f16-context-menu");
+    // 3-Dots Context Menu
+    let $menu = $slot.find("#f16-context-popover");
     let currentKey = null;
 
-    $slot.find(".f16-menu-trigger").on("click", function (e) {
+    $slot.find(".f16-trigger-dots").on("click", function (e) {
       e.stopPropagation();
       currentKey = $(this).data("key");
       let offset = $(this).offset();
@@ -1501,7 +1448,7 @@ frappe.ui.form.on("Report Preference", {
       $menu.hide();
     });
 
-    $slot.find("#f16-menu-revoke").on("click", function () {
+    $slot.find("#f16-act-revoke").on("click", function () {
       if (currentKey && currentKey.startsWith("zone-")) {
         let zName = currentKey.replace("zone-", "").replace(/_/g, " ");
         frm.state.zones.delete(zName);
@@ -1513,21 +1460,21 @@ frappe.ui.form.on("Report Preference", {
       $menu.hide();
     });
 
-    // Search Box
-    $slot.find("#f16-table-search-input").on("input", function () {
+    // Search Filter in Table
+    $slot.find("#f16-table-search-box").on("input", function () {
       let q = $(this).val().toLowerCase().trim();
       if (!q) {
-        $slot.find(".f16-row-zone").show();
-        $slot.find(".f16-row-region, .f16-row-district, .f16-row-branch").hide();
+        $slot.find(".f16-row-zone-lvl").show();
+        $slot.find(".f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
         $slot.find(".rp-tree-toggle-icon").each(function () {
           if ($(this).text().trim() === "▼") $(this).text("▸");
         });
         return;
       }
 
-      $slot.find(".f16-row-zone, .f16-row-region, .f16-row-district, .f16-row-branch").hide();
+      $slot.find(".f16-row-zone-lvl, .f16-row-region-lvl, .f16-row-district-lvl, .f16-row-branch-lvl").hide();
 
-      $slot.find(".f16-row-branch").each(function () {
+      $slot.find(".f16-row-branch-lvl").each(function () {
         let sText = ($(this).data("search") || "").toLowerCase();
         if (sText.includes(q)) {
           $(this).show();
@@ -1535,9 +1482,9 @@ frappe.ui.form.on("Report Preference", {
           let pReg = $(this).data("reg-parent");
           let pDist = $(this).data("dist-parent");
 
-          $slot.find(`.f16-row-zone[data-zone-key="${pZone}"]`).show();
-          $slot.find(`.f16-row-region[data-reg-key="${pReg}"]`).show();
-          $slot.find(`.f16-row-district[data-dist-key="${pDist}"]`).show();
+          $slot.find(`.f16-row-zone-lvl[data-zone-key="${pZone}"]`).show();
+          $slot.find(`.f16-row-region-lvl[data-reg-key="${pReg}"]`).show();
+          $slot.find(`.f16-row-district-lvl[data-dist-key="${pDist}"]`).show();
 
           $slot.find(`#icon-${pZone}`).text("▼");
           $slot.find(`#icon-${pReg}`).text("▼");
