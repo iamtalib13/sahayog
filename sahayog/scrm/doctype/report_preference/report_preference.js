@@ -496,47 +496,70 @@ frappe.ui.form.on("Report Preference", {
           border-radius: 6px;
           overflow: hidden;
           margin-top: 8px;
-          max-height: 400px;
+          max-height: 420px;
           overflow-y: auto;
           scrollbar-width: thin;
         }
         .min-branch-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
         .min-branch-table th {
           background: #f8fafc;
-          padding: 6px 10px;
+          padding: 6px 8px;
           text-align: left;
           font-weight: 600;
           color: #475569;
           border-bottom: 1px solid #e2e8f0;
           position: sticky;
           top: 0;
-          z-index: 1;
+          z-index: 2;
         }
         .min-branch-table td {
-          padding: 6px 10px;
+          padding: 5px 8px;
           border-bottom: 1px solid #f1f5f9;
           color: #334155;
         }
         .min-branch-table tr:hover { background: #f8fafc; }
         .min-branch-table tr.row-selected { background: #f0fdf4; }
 
+        /* Column Specific Filter Row */
+        .min-filter-header-row th {
+          background: #f1f5f9 !important;
+          padding: 3px 6px !important;
+          border-bottom: 1.5px solid #cbd5e1 !important;
+          top: 31px !important;
+          z-index: 2;
+        }
+        .min-col-filter {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          padding: 2px 6px;
+          font-size: 10.5px;
+          outline: none;
+          background: #ffffff;
+          font-weight: normal;
+        }
+        .min-col-filter:focus {
+          border-color: #0284c7;
+        }
+        .min-col-filter-select {
+          width: 100%;
+          box-sizing: border-box;
+          border: 1px solid #cbd5e1;
+          border-radius: 4px;
+          padding: 1px 4px;
+          font-size: 10px;
+          font-weight: normal;
+          outline: none;
+          background: #ffffff;
+          height: 22px;
+        }
+
         .min-box-disabled {
           opacity: 0.45;
           pointer-events: none;
           user-select: none;
           background: #f8fafc !important;
-        }
-
-        .min-search-input-branch {
-          border: 1px solid #cbd5e1;
-          border-radius: 5px;
-          padding: 4px 10px;
-          font-size: 11.5px;
-          outline: none;
-          flex: 1;
-        }
-        .min-search-input-branch:focus {
-          border-color: #0284c7;
         }
       </style>
 
@@ -627,23 +650,22 @@ frappe.ui.form.on("Report Preference", {
             ` : `
               <span style="color: #0284c7;">● Branch Wise Mode Active</span>
               <span style="color: #94a3b8; margin: 0 4px;">•</span>
-              <span style="color: #16a34a;"><b>${selectedSolCount}</b> / ${allBranches.length} Branches Allowed</span>
+              <span style="color: #16a34a;"><b id="min-branch-selected-badge">${selectedSolCount}</b> / ${allBranches.length} Branches Allowed</span>
             `}
           </div>
         </div>
 
-        <!-- 3. BRANCH TABLE SECTION (WITH LIVE SEARCH & DIRECT CHECKBOX ENABLE) -->
+        <!-- 3. BRANCH TABLE SECTION (WITH COLUMN-WISE SEARCH HEADERS & DIRECT CHECKBOXES) -->
         <div class="min-sol-box">
-          <!-- Top Search and Counter Bar -->
-          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
-            <input type="text" class="min-search-input-branch" id="min-branch-filter-input" placeholder="🔍 Search branch name, SOL ID, district, region, zone..." />
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="min-box-label" style="min-width: unset;">Branches Table (Filter by column below)</span>
             ${!isGeo ? `
               <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;">
-                <button type="button" class="btn btn-xs btn-default" id="min-btn-select-all-filtered">Select All</button>
-                <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All</button>
+                <button type="button" class="btn btn-xs btn-default" id="min-btn-select-all-filtered">Select All Visible</button>
+                <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All Visible</button>
               </div>
             ` : `
-              <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; white-space: nowrap;">👁️ Read-Only Preview (${displayBranches.length} Br)</span>
+              <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Br)</span>
             `}
           </div>
 
@@ -652,6 +674,7 @@ frappe.ui.form.on("Report Preference", {
             <div class="min-branch-table-wrap">
               <table class="min-branch-table" id="min-sol-grid-table">
                 <thead>
+                  <!-- Column Title Row -->
                   <tr>
                     <th style="width: 42px; text-align: center;">Sr.</th>
                     ${!isGeo ? `
@@ -664,14 +687,50 @@ frappe.ui.form.on("Report Preference", {
                     <th>District</th>
                     <th>Region</th>
                     <th>Zone</th>
-                    ${!isGeo ? `<th style="width: 75px; text-align: center;">Status</th>` : ''}
+                    ${!isGeo ? `<th style="width: 78px; text-align: center;">Status</th>` : ''}
+                  </tr>
+
+                  <!-- Column Search Row (Directly Below Column Header) -->
+                  <tr class="min-filter-header-row">
+                    <th></th>
+                    ${!isGeo ? `<th></th>` : ''}
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="sol_id" placeholder="🔍 SOL..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="branch" placeholder="🔍 Branch..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="district" placeholder="🔍 District..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="region" placeholder="🔍 Region..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="zone" placeholder="🔍 Zone..." />
+                    </th>
+                    ${!isGeo ? `
+                      <th style="text-align: center;">
+                        <select class="min-col-filter-select" data-col="status">
+                          <option value="">All</option>
+                          <option value="allowed">Allowed</option>
+                          <option value="off">Off</option>
+                        </select>
+                      </th>
+                    ` : ''}
                   </tr>
                 </thead>
                 <tbody id="min-branch-table-tbody">
                   ${displayBranches.map((b, idx) => {
                     let isChecked = frm.state.sol_ids.has(String(b.sol_id));
                     return `
-                      <tr class="min-branch-data-row ${isChecked ? 'row-selected' : ''}" data-search="${(b.sol_id + ' ' + (b.branch || '') + ' ' + (b.district || '') + ' ' + (b.region || '') + ' ' + (b.zone || '')).toLowerCase()}">
+                      <tr class="min-branch-data-row ${isChecked ? 'row-selected' : ''}"
+                          data-sol_id="${String(b.sol_id || '').toLowerCase()}"
+                          data-branch="${String(b.branch || '').toLowerCase()}"
+                          data-district="${String(b.district || '').toLowerCase()}"
+                          data-region="${String(b.region || '').toLowerCase()}"
+                          data-zone="${String(b.zone || '').toLowerCase()}"
+                          data-status="${isChecked ? 'allowed' : 'off'}">
                         <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
                         ${!isGeo ? `
                           <td style="text-align: center;">
@@ -788,7 +847,7 @@ frappe.ui.form.on("Report Preference", {
     });
 
     $w.find("#min-chip-zone-all").on("click", function () {
-      if (masterZones.every(z => frm.state.zones.has(z))) {
+      if (masterZones.every(z => state.zones.has(z))) {
         frm.state.zones.clear();
       } else {
         masterZones.forEach(z => frm.state.zones.add(z));
@@ -818,7 +877,7 @@ frappe.ui.form.on("Report Preference", {
       }
 
       if (availableRegionNames.every(r => frm.state.regions.has(r))) {
-        availableRegionNames.forEach(r => frm.state.regions.delete(r));
+        frm.state.regions.clear();
       } else {
         availableRegionNames.forEach(r => frm.state.regions.add(r));
       }
@@ -826,18 +885,47 @@ frappe.ui.form.on("Report Preference", {
       frm.trigger("auto_save_preference");
     });
 
-    // Live Branch Search Filter (Client-Side Instant Row Filtering)
-    $w.find("#min-branch-filter-input").on("input", function () {
-      let q = $(this).val().toLowerCase().trim();
+    // Multi-Column Search Filter Logic
+    function filterTableRows() {
+      let filters = {};
+      $w.find(".min-col-filter").each(function () {
+        let col = $(this).data("col");
+        let val = ($(this).val() || "").toLowerCase().trim();
+        if (val) filters[col] = val;
+      });
+
+      let statusFilter = $w.find(".min-col-filter-select").val();
+      if (statusFilter) filters["status"] = statusFilter;
+
       $w.find(".min-branch-data-row").each(function () {
-        let text = $(this).data("search") || "";
-        if (!q || text.includes(q)) {
-          $(this).show();
+        let $row = $(this);
+        let match = true;
+
+        for (let col in filters) {
+          let rowVal = String($row.data(col) || "");
+          if (col === "status") {
+            if (rowVal !== filters[col]) {
+              match = false;
+              break;
+            }
+          } else {
+            if (!rowVal.includes(filters[col])) {
+              match = false;
+              break;
+            }
+          }
+        }
+
+        if (match) {
+          $row.show();
         } else {
-          $(this).hide();
+          $row.hide();
         }
       });
-    });
+    }
+
+    $w.find(".min-col-filter").on("input", filterTableRows);
+    $w.find(".min-col-filter-select").on("change", filterTableRows);
 
     // Direct Row Checkbox Toggle: Enable / Disable Branch
     $w.find(".min-sol-toggle-chk").on("change", function () {
