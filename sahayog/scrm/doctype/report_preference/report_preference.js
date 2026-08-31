@@ -550,14 +550,10 @@ frappe.ui.form.on("Report Preference", {
           display: inline-block;
           width: 14px;
           text-align: center;
-          transition: transform 0.15s ease;
           font-size: 9px;
           margin-right: 6px;
           color: #64748b;
           user-select: none;
-        }
-        .rp-tree-toggle-icon.collapsed {
-          transform: rotate(-90deg);
         }
 
         .rp-sol-pill {
@@ -670,7 +666,7 @@ frappe.ui.form.on("Report Preference", {
               </div>
             </div>
 
-            <!-- Table Section Card with Pure Grid View -->
+            <!-- Table Section Card with Progressive Hierarchical Drilldown -->
             <div id="rp-branch-coverage-slot"></div>
           </div>
         </div>
@@ -915,13 +911,13 @@ frappe.ui.form.on("Report Preference", {
 
     if (isGeo && !zones.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_pure_grid_table");
+      frm.trigger("render_progressive_drilldown_table");
       return;
     }
 
     if (!isGeo && !sol_ids.length) {
       frm.resolved_branches = [];
-      frm.trigger("render_pure_grid_table");
+      frm.trigger("render_progressive_drilldown_table");
       return;
     }
 
@@ -936,12 +932,12 @@ frappe.ui.form.on("Report Preference", {
       },
       callback: function (r) {
         frm.resolved_branches = r.message || [];
-        frm.trigger("render_pure_grid_table");
+        frm.trigger("render_progressive_drilldown_table");
       }
     });
   },
 
-  render_pure_grid_table: function (frm) {
+  render_progressive_drilldown_table: function (frm) {
     let $slot = frm.fields_dict.widget_html.$wrapper.find("#rp-branch-coverage-slot");
     if (!$slot.length) return;
 
@@ -976,7 +972,7 @@ frappe.ui.form.on("Report Preference", {
       frm.state.regions.clear();
     }
 
-    // Build Nested Structure for Pure Table View
+    // Build Nested Structure for Progressive Drilldown Table
     let tree = {};
     branches.forEach(b => {
       let z = b.zone || "Unassigned Zone";
@@ -1058,7 +1054,7 @@ frappe.ui.form.on("Report Preference", {
           `}
         </div>
 
-        <!-- Pure Tabular Grid Table -->
+        <!-- Pure Progressive Drilldown Grid Table -->
         <div class="rp-table-scroll-wrap">
           ${isGeo && !hasZoneSelected ? `
             <div style="padding: 36px; text-align: center; color: #94a3b8; font-size: 13px;">
@@ -1092,10 +1088,10 @@ frappe.ui.form.on("Report Preference", {
                   let zKey = `zone-${z.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                   return `
-                    <!-- Level: Zone Row -->
-                    <tr class="rp-row-zone-header rp-tree-header-row" data-tree-key="${zKey}" data-search="${z}">
+                    <!-- Level 1: Zone Row (Click opens Regions) -->
+                    <tr class="rp-row-zone-header rp-tree-header-row" data-tree-key="${zKey}" data-zone-key="${zKey}" data-search="${z}">
                       <td>
-                        <span class="rp-tree-toggle-icon">▼</span>
+                        <span class="rp-tree-toggle-icon" id="icon-${zKey}">▸</span>
                         <span class="rp-level-badge rp-level-badge-zone">Zone</span>
                       </td>
                       <td><b>${z}</b></td>
@@ -1111,10 +1107,10 @@ frappe.ui.form.on("Report Preference", {
                       let rKey = `${zKey}-reg-${r.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                       return `
-                        <!-- Level: Region Row -->
-                        <tr class="rp-row-region-header rp-tree-header-row rp-child-of-${zKey}" data-parent-zone="${zKey}" data-tree-key="${rKey}" data-search="${z} ${r}">
+                        <!-- Level 2: Region Row (Initially hidden, click opens Districts) -->
+                        <tr class="rp-row-region-header rp-tree-header-row rp-under-zone-${zKey}" data-zone-parent="${zKey}" data-tree-key="${rKey}" data-reg-key="${rKey}" data-search="${z} ${r}" style="display: none;">
                           <td>
-                            <span class="rp-tree-toggle-icon">▼</span>
+                            <span class="rp-tree-toggle-icon" id="icon-${rKey}">▸</span>
                             <span class="rp-level-badge rp-level-badge-region">Region</span>
                           </td>
                           <td><span class="rp-tag-micro">${z}</span></td>
@@ -1129,10 +1125,10 @@ frappe.ui.form.on("Report Preference", {
                           let dKey = `${rKey}-dist-${d.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
                           return `
-                            <!-- Level: District Row -->
-                            <tr class="rp-row-district-header rp-tree-header-row rp-child-of-${zKey} rp-child-of-${rKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-tree-key="${dKey}" data-search="${z} ${r} ${d}">
+                            <!-- Level 3: District Row (Initially hidden, click opens Branches) -->
+                            <tr class="rp-row-district-header rp-tree-header-row rp-under-zone-${zKey} rp-under-reg-${rKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-tree-key="${dKey}" data-dist-key="${dKey}" data-search="${z} ${r} ${d}" style="display: none;">
                               <td>
-                                <span class="rp-tree-toggle-icon">▼</span>
+                                <span class="rp-tree-toggle-icon" id="icon-${dKey}">▸</span>
                                 <span class="rp-level-badge rp-level-badge-district">District</span>
                               </td>
                               <td><span class="rp-tag-micro">${z}</span></td>
@@ -1142,11 +1138,11 @@ frappe.ui.form.on("Report Preference", {
                               <td>—</td>
                             </tr>
 
-                            <!-- Level: Branch Rows -->
+                            <!-- Level 4: Branch Rows (Initially hidden) -->
                             ${distBranches.map(b => `
-                              <tr class="rp-row-branch-leaf rp-child-of-${zKey} rp-child-of-${rKey} rp-child-of-${dKey}" data-parent-zone="${zKey}" data-parent-reg="${rKey}" data-parent-dist="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}">
+                              <tr class="rp-row-branch-leaf rp-under-zone-${zKey} rp-under-reg-${rKey} rp-under-dist-${dKey}" data-zone-parent="${zKey}" data-reg-parent="${rKey}" data-dist-parent="${dKey}" data-search="${String(b.sol_id)} ${b.branch || ''} ${d} ${r} ${z}" style="display: none;">
                                 <td>
-                                  <span class="rp-tree-toggle-icon" style="color: #94a3b8; font-size: 8px;">▸</span>
+                                  <span class="rp-tree-toggle-icon" style="color: #94a3b8; font-size: 8px;">•</span>
                                   <span class="rp-level-badge rp-level-badge-branch">Branch</span>
                                 </td>
                                 <td><span class="rp-tag-micro">${z}</span></td>
@@ -1235,7 +1231,7 @@ frappe.ui.form.on("Report Preference", {
           indicator: "green"
         });
         frm.trigger("sync_widget_state_to_doc");
-        frm.trigger("render_pure_grid_table");
+        frm.trigger("render_progressive_drilldown_table");
         frm.trigger("calculate_and_render_branches");
       }
     }
@@ -1295,91 +1291,107 @@ frappe.ui.form.on("Report Preference", {
       $solInput.val("");
       $solDropdown.hide().empty();
       frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("render_pure_grid_table");
+      frm.trigger("render_progressive_drilldown_table");
       frm.trigger("calculate_and_render_branches");
     });
 
     $slot.find("#rp-btn-clear-all-sols").on("click", function () {
       frm.state.sol_ids.clear();
       frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("render_pure_grid_table");
+      frm.trigger("render_progressive_drilldown_table");
       frm.trigger("calculate_and_render_branches");
     });
 
-    // Collapsible Handlers for Pure Grid Table Rows
+    // 1. Zone Click: Toggles ONLY its child Region rows
     $slot.find(".rp-row-zone-header").on("click", function () {
-      let zKey = $(this).data("tree-key");
-      let $icon = $(this).find(".rp-tree-toggle-icon");
-      let isCollapsed = $icon.hasClass("collapsed");
+      let zKey = $(this).data("zone-key");
+      let $icon = $(this).find(`#icon-${zKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
 
-      if (isCollapsed) {
-        $icon.removeClass("collapsed");
-        $slot.find(`.rp-child-of-${zKey}`).show();
-        $slot.find(`.rp-child-of-${zKey} .rp-tree-toggle-icon`).removeClass("collapsed");
+      if (isExpanding) {
+        $icon.text("▼");
+        // Show only direct child Region rows (their children stay collapsed)
+        $slot.find(`.rp-row-region-header[data-zone-parent="${zKey}"]`).show();
       } else {
-        $icon.addClass("collapsed");
-        $slot.find(`.rp-child-of-${zKey}`).hide();
+        $icon.text("▸");
+        // Collapse all descendants under this Zone
+        $slot.find(`.rp-under-zone-${zKey}`).hide();
+        // Reset sub-icons to collapsed state
+        $slot.find(`.rp-row-region-header[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
+        $slot.find(`.rp-row-district-header[data-zone-parent="${zKey}"] .rp-tree-toggle-icon`).text("▸");
       }
     });
 
+    // 2. Region Click: Toggles ONLY its child District rows
     $slot.find(".rp-row-region-header").on("click", function (e) {
       e.stopPropagation();
-      let rKey = $(this).data("tree-key");
-      let $icon = $(this).find(".rp-tree-toggle-icon");
-      let isCollapsed = $icon.hasClass("collapsed");
+      let rKey = $(this).data("reg-key");
+      let $icon = $(this).find(`#icon-${rKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
 
-      if (isCollapsed) {
-        $icon.removeClass("collapsed");
-        $slot.find(`.rp-child-of-${rKey}`).show();
-        $slot.find(`.rp-child-of-${rKey} .rp-tree-toggle-icon`).removeClass("collapsed");
+      if (isExpanding) {
+        $icon.text("▼");
+        // Show only direct child District rows
+        $slot.find(`.rp-row-district-header[data-reg-parent="${rKey}"]`).show();
       } else {
-        $icon.addClass("collapsed");
-        $slot.find(`.rp-child-of-${rKey}`).hide();
+        $icon.text("▸");
+        // Collapse all descendants under this Region
+        $slot.find(`.rp-under-reg-${rKey}`).hide();
+        $slot.find(`.rp-row-district-header[data-reg-parent="${rKey}"] .rp-tree-toggle-icon`).text("▸");
       }
     });
 
+    // 3. District Click: Toggles ONLY its child Branch rows
     $slot.find(".rp-row-district-header").on("click", function (e) {
       e.stopPropagation();
-      let dKey = $(this).data("tree-key");
-      let $icon = $(this).find(".rp-tree-toggle-icon");
-      let isCollapsed = $icon.hasClass("collapsed");
+      let dKey = $(this).data("dist-key");
+      let $icon = $(this).find(`#icon-${dKey}`);
+      let isExpanding = $icon.text().trim() === "▸";
 
-      if (isCollapsed) {
-        $icon.removeClass("collapsed");
-        $slot.find(`.rp-child-of-${dKey}`).show();
+      if (isExpanding) {
+        $icon.text("▼");
+        // Show direct child Branch rows
+        $slot.find(`.rp-row-branch-leaf[data-dist-parent="${dKey}"]`).show();
       } else {
-        $icon.addClass("collapsed");
-        $slot.find(`.rp-child-of-${dKey}`).hide();
+        $icon.text("▸");
+        // Collapse child Branch rows
+        $slot.find(`.rp-row-branch-leaf[data-dist-parent="${dKey}"]`).hide();
       }
     });
 
     // Expand All Button
     $slot.find("#rp-btn-table-expand-all").on("click", function () {
       $slot.find(".rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").show();
-      $slot.find(".rp-tree-toggle-icon").removeClass("collapsed");
+      $slot.find(".rp-tree-toggle-icon").each(function () {
+        if ($(this).text().trim() === "▸") $(this).text("▼");
+      });
     });
 
     // Collapse All Button
     $slot.find("#rp-btn-table-collapse-all").on("click", function () {
       $slot.find(".rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").hide();
-      $slot.find(".rp-tree-toggle-icon").addClass("collapsed");
+      $slot.find(".rp-tree-toggle-icon").each(function () {
+        if ($(this).text().trim() === "▼") $(this).text("▸");
+      });
     });
 
-    // Instant Search in Pure Grid Table
+    // Instant Search in Progressive Drilldown Table
     $slot.find("#rp-table-filter-search").on("input", function () {
       let q = $(this).val().toLowerCase().trim();
       let visibleBranchCount = 0;
 
       if (!q) {
-        $slot.find(".rp-row-zone-header, .rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").show();
-        $slot.find(".rp-tree-toggle-icon").removeClass("collapsed");
+        // Reset to initial collapsed zone view
+        $slot.find(".rp-row-zone-header").show();
+        $slot.find(".rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").hide();
+        $slot.find(".rp-tree-toggle-icon").each(function () {
+          if ($(this).text().trim() === "▼") $(this).text("▸");
+        });
         $slot.find("#rp-table-live-count").text(`${totalCount} Branches Allowed`);
         return;
       }
 
-      $slot.find(".rp-tree-toggle-icon").removeClass("collapsed");
-
-      // Hide everything initially
+      // When searching, expand all matching branches and their parents
       $slot.find(".rp-row-zone-header, .rp-row-region-header, .rp-row-district-header, .rp-row-branch-leaf").hide();
 
       $slot.find(".rp-row-branch-leaf").each(function () {
@@ -1387,13 +1399,17 @@ frappe.ui.form.on("Report Preference", {
         if (sText.includes(q)) {
           $(this).show();
           visibleBranchCount++;
-          let pZone = $(this).data("parent-zone");
-          let pReg = $(this).data("parent-reg");
-          let pDist = $(this).data("parent-dist");
+          let pZone = $(this).data("zone-parent");
+          let pReg = $(this).data("reg-parent");
+          let pDist = $(this).data("dist-parent");
 
-          $slot.find(`.rp-row-zone-header[data-tree-key="${pZone}"]`).show();
-          $slot.find(`.rp-row-region-header[data-tree-key="${pReg}"]`).show();
-          $slot.find(`.rp-row-district-header[data-tree-key="${pDist}"]`).show();
+          $slot.find(`.rp-row-zone-header[data-zone-key="${pZone}"]`).show();
+          $slot.find(`.rp-row-region-header[data-reg-key="${pReg}"]`).show();
+          $slot.find(`.rp-row-district-header[data-dist-key="${pDist}"]`).show();
+
+          $slot.find(`#icon-${pZone}`).text("▼");
+          $slot.find(`#icon-${pReg}`).text("▼");
+          $slot.find(`#icon-${pDist}`).text("▼");
         }
       });
 
