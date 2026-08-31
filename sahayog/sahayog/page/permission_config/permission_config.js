@@ -136,17 +136,38 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
     let userEmpId = state.user ? state.user.split('@')[0] : "-";
 
-    let zoneOptions = masterZones.map(z => {
+    function sortZones(list) {
+      return [...list].sort((a, b) => {
+        let numA = parseInt((String(a).match(/\d+/) || [9999])[0], 10);
+        let numB = parseInt((String(b).match(/\d+/) || [9999])[0], 10);
+        return numA - numB;
+      });
+    }
+
+    function sortRegions(list) {
+      return [...list].sort((a, b) => {
+        let isHoA = String(a).toLowerCase().includes("head office") || String(a).toUpperCase() === "HO";
+        let isHoB = String(b).toLowerCase().includes("head office") || String(b).toUpperCase() === "HO";
+        if (isHoA && !isHoB) return -1;
+        if (!isHoA && isHoB) return 1;
+        let numA = parseInt((String(a).match(/\d+/) || [9999])[0], 10);
+        let numB = parseInt((String(b).match(/\d+/) || [9999])[0], 10);
+        return numA - numB;
+      });
+    }
+
+    let sortedMasterZones = sortZones(masterZones);
+    let zoneOptions = sortedMasterZones.map(z => {
       let num = (z.match(/\d+/) || [z])[0];
       return { raw: z, label: num };
     });
 
-    let allRegionNames = Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))).sort();
+    let allRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
     let availableRegionNames = allRegionNames;
     if (state.zones.size > 0) {
-      availableRegionNames = Array.from(new Set(
+      availableRegionNames = sortRegions(Array.from(new Set(
         allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
-      )).sort();
+      )));
     }
 
     let regionOptions = availableRegionNames.map(r => {
@@ -158,13 +179,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => state.regions.has(r.raw));
     let solList = Array.from(state.sol_ids);
 
-    // Compute Centered Flowchart Tree Data
-    let selectedZonesList = Array.from(state.zones);
+    let selectedZonesList = sortZones(Array.from(state.zones));
     let totalGeoBranches = 0;
 
     let geoTreeData = selectedZonesList.map(z => {
       let zoneBranches = allBranches.filter(b => b.zone === z);
-      let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))).sort();
+      let zoneRegions = sortRegions(Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))));
       let hasSpecificRegions = state.regions.size > 0;
 
       let activeRegions = zoneRegions;
@@ -539,7 +559,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         </div>
 
         ${isGeo ? `
-          <!-- ZONE & REGION DASHED BOXES (GEO WISE) -->
+          <!-- ZONE & REGION DASHED BOXES (GEO WISE - SORTED Z1 TO Z6) -->
           <div class="min-box-row">
             <!-- Zone Box -->
             <div class="min-dashed-box">
@@ -568,7 +588,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             </div>
           </div>
 
-          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM -->
+          <!-- MINIMAL CENTERED FLOWCHART TREE DIAGRAM (SORTED Z1 TO Z6) -->
           <div class="min-flowchart-card">
             <!-- Level 0: Root User Node -->
             <div class="min-tree-root-box">
@@ -585,7 +605,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
                 👈 Select a <b>Zone</b> above to attach geographical branches to this user.
               </div>
             ` : `
-              <!-- Level 1: Connected Zones Row -->
+              <!-- Level 1: Connected Zones Row (Z1 to Z6) -->
               <div class="min-tree-zones-row">
                 ${geoTreeData.map(item => `
                   <div class="min-tree-zone-col">
@@ -697,6 +717,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let masterZones = meta.master_zones || [];
     let allBranches = meta.all_branches || [];
 
+    function sortRegions(list) {
+      return [...list].sort((a, b) => {
+        let isHoA = String(a).toLowerCase().includes("head office") || String(a).toUpperCase() === "HO";
+        let isHoB = String(b).toLowerCase().includes("head office") || String(b).toUpperCase() === "HO";
+        if (isHoA && !isHoB) return -1;
+        if (!isHoA && isHoB) return 1;
+        let numA = parseInt((String(a).match(/\d+/) || [9999])[0], 10);
+        let numB = parseInt((String(b).match(/\d+/) || [9999])[0], 10);
+        return numA - numB;
+      });
+    }
+
     // Geo / Branch Wise Mode Switcher
     $m.find(".min-scope-seg").on("click", function () {
       let targetMode = $(this).data("mode");
@@ -783,11 +815,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     });
 
     $m.find("#min-chip-region-all").on("click", function () {
-      let availableRegionNames = Array.from(new Set(allBranches.map(b => b.region).filter(Boolean)));
+      let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
       if (state.zones.size > 0) {
-        availableRegionNames = Array.from(new Set(
+        availableRegionNames = sortRegions(Array.from(new Set(
           allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
-        ));
+        )));
       }
 
       if (availableRegionNames.every(r => state.regions.has(r))) {

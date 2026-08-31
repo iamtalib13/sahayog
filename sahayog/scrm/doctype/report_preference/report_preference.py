@@ -104,9 +104,18 @@ def get_widget_meta(user=None):
                 "sol_ids": [str(d.sol_id) for d in doc.get("sol_id", []) if d.sol_id],
             }
 
+    def sort_natural(lst, is_region=False):
+        def key_fn(val):
+            s = str(val).strip()
+            if is_region and s.lower() in ["ho", "head office"]:
+                return -1
+            match = re.findall(r'\d+', s)
+            return int(match[0]) if match else 9999
+        return sorted([x for x in lst if x], key=key_fn)
+
     return {
-        "master_zones": [z for z in zones if z],
-        "master_regions": [r for r in regions if r],
+        "master_zones": sort_natural(zones),
+        "master_regions": sort_natural(regions, is_region=True),
         "master_districts": [d for d in districts if d],
         "all_branches": all_branches,
         "tags": tags,
