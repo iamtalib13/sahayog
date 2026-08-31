@@ -6,7 +6,7 @@ frappe.ui.form.on("Report Preference", {
       full_name: "",
       enabled: 1,
       tag: "",
-      access_type: "Geographical (Zone / Region / District)",
+      access_type: "", // empty initially for fresh selection
       zones: new Set(),
       regions: new Set(),
       districts: new Set(),
@@ -35,7 +35,9 @@ frappe.ui.form.on("Report Preference", {
         frm.meta_data = r.message || {};
         frm.trigger("sync_doc_to_widget_state");
         frm.trigger("render_full_crud_widget");
-        frm.trigger("calculate_and_render_branches");
+        if (frm.state.access_type) {
+          frm.trigger("calculate_and_render_branches");
+        }
       }
     });
   },
@@ -48,7 +50,9 @@ frappe.ui.form.on("Report Preference", {
         frm.meta_data = r.message || {};
         frm.trigger("sync_doc_to_widget_state");
         frm.trigger("render_full_crud_widget");
-        frm.trigger("calculate_and_render_branches");
+        if (frm.state.access_type) {
+          frm.trigger("calculate_and_render_branches");
+        }
       }
     });
   },
@@ -60,7 +64,10 @@ frappe.ui.form.on("Report Preference", {
     frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
-    frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
+    
+    // If existing doc has access_type or pref has it, load it
+    let existingAccessType = frm.doc.access_type || (pref ? pref.access_type : "");
+    frm.state.access_type = existingAccessType;
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones) zones = pref.zones;
@@ -84,7 +91,7 @@ frappe.ui.form.on("Report Preference", {
     frm.doc.full_name = frm.state.full_name;
     frm.doc.enabled = frm.state.enabled ? 1 : 0;
     frm.doc.tag = frm.state.tag || "";
-    frm.doc.access_type = frm.state.access_type;
+    frm.doc.access_type = frm.state.access_type || "Geographical (Zone / Region / District)";
 
     frm.clear_table("zone");
     frm.clear_table("region");
@@ -95,7 +102,7 @@ frappe.ui.form.on("Report Preference", {
       frm.state.zones.forEach(z => frm.add_child("zone", { zone: z }));
       frm.state.regions.forEach(r => frm.add_child("region", { region: r }));
       frm.state.districts.forEach(d => frm.add_child("district", { district: d }));
-    } else {
+    } else if (frm.state.access_type === "Specific Branches (SOL ID)") {
       frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
     }
 
@@ -113,7 +120,10 @@ frappe.ui.form.on("Report Preference", {
     let masterZones = meta.master_zones || [];
     let masterRegions = meta.master_regions || [];
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
-    let isGeo = frm.state.access_type === "Geographical (Zone / Region / District)";
+    let accessType = frm.state.access_type;
+    let isGeo = accessType === "Geographical (Zone / Region / District)";
+    let isSol = accessType === "Specific Branches (SOL ID)";
+    let hasModeChosen = Boolean(accessType);
     let isNewDoc = frm.is_new() || !frm.state.user;
 
     let html = `
@@ -122,8 +132,8 @@ frappe.ui.form.on("Report Preference", {
           background: #ffffff;
           border: 1px solid #e2e8f0;
           border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+          padding: 22px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.04);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .rp-section-title {
@@ -149,6 +159,63 @@ frappe.ui.form.on("Report Preference", {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 8px;
+        }
+        .rp-mode-choice-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+          .rp-mode-choice-container {
+            grid-template-columns: 1fr;
+          }
+        }
+        .rp-mode-card {
+          background: #ffffff;
+          border: 2px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 18px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          user-select: none;
+        }
+        .rp-mode-card:hover {
+          border-color: #3b82f6;
+          background: #f0f9ff;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+        }
+        .rp-mode-card.selected {
+          border-color: #2563eb;
+          background: #eff6ff;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+        .rp-mode-card-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .rp-mode-card-desc {
+          font-size: 12px;
+          color: #64748b;
+          line-height: 1.4;
+        }
+        .rp-mode-active-banner {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #eff6ff;
+          border: 1px solid #bfdbfe;
+          border-radius: 8px;
+          padding: 10px 14px;
+          margin-bottom: 16px;
         }
         .rp-pill-grid {
           display: flex;
@@ -189,29 +256,6 @@ frappe.ui.form.on("Report Preference", {
         }
         .rp-chip.selected .rp-chip-dot {
           background: #34a853;
-        }
-        .rp-mode-tabs {
-          display: flex;
-          gap: 4px;
-          background: #e2e8f0;
-          padding: 3px;
-          border-radius: 8px;
-          width: fit-content;
-          margin-bottom: 12px;
-        }
-        .rp-mode-tab {
-          padding: 6px 16px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 600;
-          cursor: pointer;
-          color: #64748b;
-          transition: all 0.15s ease;
-        }
-        .rp-mode-tab.active {
-          background: #ffffff;
-          color: #0f172a;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .rp-sol-tag {
           display: inline-flex;
@@ -315,144 +359,184 @@ frappe.ui.form.on("Report Preference", {
       </style>
 
       <div class="rp-workspace">
-        <!-- 0. TOP USER CONFIGURATION BAR -->
-        <div class="rp-card-block" style="background: #f1f5f9; border-color: #cbd5e1;">
-          <div class="rp-section-title">👤 User Configuration & Status</div>
-          
-          <div class="rp-top-user-bar">
-            <!-- User Selector / Search -->
-            <div style="position: relative;">
-              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">USER (Email / ID)</label>
-              ${isNewDoc ? `
-                <div class="rp-branch-search-box" style="margin-bottom: 0;">
-                  <input type="text" class="form-control input-sm" id="rp-user-search-input" placeholder="🔍 Search User Name/Email..." value="${frm.state.user || ''}" />
-                  <div class="rp-branch-search-dropdown" id="rp-user-search-dropdown"></div>
-                </div>
-              ` : `
-                <div style="font-weight: 700; font-size: 13px; color: #0f172a; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
-                  ${frm.state.user}
-                </div>
-              `}
+        <!-- STEP 1: CHOOSE ACCESS MODE FIRST -->
+        ${!hasModeChosen ? `
+          <div class="rp-card-block" style="background: #ffffff; border: 2px dashed #93c5fd; text-align: center; padding: 24px;">
+            <div style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+              🛠️ Step 1: Select Access Configuration Scope
+            </div>
+            <div style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+              Please choose how you would like to assign report and branch access for this user:
             </div>
 
-            <!-- Full Name Display -->
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">FULL NAME</label>
-              <div style="font-weight: 600; font-size: 13px; color: #334155; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 31px;">
-                ${frm.state.full_name || (frm.state.user ? "—" : "Select a User")}
+            <div class="rp-mode-choice-container">
+              <!-- Card 1: Geographical Scope -->
+              <div class="rp-mode-card" data-mode="Geographical (Zone / Region / District)">
+                <div class="rp-mode-card-title">
+                  <span>🌍 Geographical Scope</span>
+                </div>
+                <div class="rp-mode-card-desc">
+                  Assign entire <b>Zones</b>, <b>Regions</b>, or <b>Districts</b>. All current and future branches in selected zones/regions will be <b>automatically accessible</b>.
+                </div>
               </div>
-            </div>
 
-            <!-- Tag Selection -->
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">TAG</label>
-              <select class="form-control input-sm" id="rp-tag-select">
-                <option value="">No Tag</option>
-                ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join("")}
-              </select>
-            </div>
-
-            <!-- Enabled Status Toggle -->
-            <div>
-              <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">STATUS</label>
-              <div class="rp-toggle-switch" id="rp-toggle-enabled">
-                <div class="rp-toggle-btn ${frm.state.enabled ? 'active' : ''}">
-                  <div class="rp-toggle-knob"></div>
+              <!-- Card 2: Specific Branches -->
+              <div class="rp-mode-card" data-mode="Specific Branches (SOL ID)">
+                <div class="rp-mode-card-title">
+                  <span>🏢 Specific Branches (SOL ID)</span>
                 </div>
-                <span style="font-size: 12px; font-weight: 600; color: ${frm.state.enabled ? '#166534' : '#64748b'};">
-                  ${frm.state.enabled ? 'Active' : 'Disabled'}
-                </span>
+                <div class="rp-mode-card-desc">
+                  Select <b>specific standalone branches / SOL IDs</b> individually for strict customized branch access.
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- 1. ACCESS SCOPE CRUD SECTION -->
-        <div class="rp-card-block">
-          <div class="rp-section-title">📍 Branch Access Scope & Filters</div>
-          
-          <div class="rp-mode-tabs">
-            <div class="rp-mode-tab ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
-              🌍 Geographical Scope (Zone / Region / District)
+        ` : `
+          <!-- ACTIVE MODE BANNER WITH SWITCHER BUTTON -->
+          <div class="rp-mode-active-banner">
+            <div>
+              <span style="font-size: 11px; font-weight: 600; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px;">Active Scope:</span>
+              <span style="font-size: 13px; font-weight: 700; color: #1e3a8a; margin-left: 6px;">
+                ${isGeo ? '🌍 Geographical Scope (Zone / Region / District)' : '🏢 Specific Branches (SOL ID)'}
+              </span>
             </div>
-            <div class="rp-mode-tab ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
-              🏢 Specific Branches (SOL ID)
-            </div>
+            <button type="button" class="btn btn-xs btn-default" id="rp-btn-change-mode" style="font-weight: 600;">
+              ⇄ Change Scope Mode
+            </button>
           </div>
 
-          <!-- GEOGRAPHICAL MODE VIEW -->
-          <div id="rp-geo-mode-view" style="${isGeo ? '' : 'display:none;'}">
-            <!-- Zones -->
-            <div style="margin-bottom: 12px;">
-              <div class="rp-flex-between">
-                <span style="font-size: 12px; font-weight: 600; color: #475569;">Select Zones (Auto-includes current & future branches):</span>
-                <button type="button" class="btn btn-xs btn-link text-muted" id="rp-clear-zones">Clear Zones</button>
-              </div>
-              <div class="rp-pill-grid">
-                ${masterZones.map(z => `
-                  <div class="rp-chip rp-zone-chip ${frm.state.zones.has(z) ? 'selected' : ''}" data-zone="${z}">
-                    <span class="rp-chip-dot"></span>
-                    <span>${z}</span>
+          <!-- STEP 2: USER CONFIGURATION & STATUS -->
+          <div class="rp-card-block" style="background: #f1f5f9; border-color: #cbd5e1;">
+            <div class="rp-section-title">👤 Step 2: User Configuration & Status</div>
+            
+            <div class="rp-top-user-bar">
+              <!-- User Selector / Search -->
+              <div style="position: relative;">
+                <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">USER (Email / ID)</label>
+                ${isNewDoc ? `
+                  <div class="rp-branch-search-box" style="margin-bottom: 0;">
+                    <input type="text" class="form-control input-sm" id="rp-user-search-input" placeholder="🔍 Search User Name/Email..." value="${frm.state.user || ''}" />
+                    <div class="rp-branch-search-dropdown" id="rp-user-search-dropdown"></div>
                   </div>
-                `).join("")}
-              </div>
-            </div>
-
-            <!-- Regions -->
-            <div style="margin-bottom: 12px;">
-              <div class="rp-flex-between">
-                <span style="font-size: 12px; font-weight: 600; color: #475569;">Select Regions:</span>
-                <button type="button" class="btn btn-xs btn-link text-muted" id="rp-clear-regions">Clear Regions</button>
-              </div>
-              <div class="rp-pill-grid">
-                ${masterRegions.map(r => `
-                  <div class="rp-chip rp-region-chip ${frm.state.regions.has(r) ? 'selected' : ''}" data-region="${r}">
-                    <span class="rp-chip-dot"></span>
-                    <span>${r}</span>
+                ` : `
+                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    ${frm.state.user}
                   </div>
-                `).join("")}
+                `}
+              </div>
+
+              <!-- Full Name Display -->
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">FULL NAME</label>
+                <div style="font-weight: 600; font-size: 13px; color: #334155; padding: 6px 10px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 31px;">
+                  ${frm.state.full_name || (frm.state.user ? "—" : "Select a User")}
+                </div>
+              </div>
+
+              <!-- Tag Selection -->
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">TAG</label>
+                <select class="form-control input-sm" id="rp-tag-select">
+                  <option value="">No Tag</option>
+                  ${tagsList.map(t => `<option value="${t}" ${frm.state.tag === t ? 'selected' : ''}>${t}</option>`).join("")}
+                </select>
+              </div>
+
+              <!-- Enabled Status Toggle -->
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 3px; display: block;">STATUS</label>
+                <div class="rp-toggle-switch" id="rp-toggle-enabled">
+                  <div class="rp-toggle-btn ${frm.state.enabled ? 'active' : ''}">
+                    <div class="rp-toggle-knob"></div>
+                  </div>
+                  <span style="font-size: 12px; font-weight: 600; color: ${frm.state.enabled ? '#166534' : '#64748b'};">
+                    ${frm.state.enabled ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- SOL ID SPECIFIC MODE VIEW -->
-          <div id="rp-sol-mode-view" style="${!isGeo ? '' : 'display:none;'}">
-            <div style="margin-bottom: 10px;">
-              <span style="font-size: 12px; font-weight: 600; color: #475569;">Search & Add Specific Branches:</span>
-            </div>
-            <div class="rp-branch-search-box">
-              <input type="text" class="form-control input-sm" id="rp-sol-search-input" placeholder="Type Branch Name or SOL ID to add..." />
-              <div class="rp-branch-search-dropdown" id="rp-sol-search-dropdown"></div>
-            </div>
-            <div style="margin-top: 10px;">
-              <div class="rp-flex-between" style="margin-bottom: 6px;">
-                <span style="font-size: 11px; font-weight: 600; color: #64748b;">Selected Branches (${frm.state.sol_ids.size}):</span>
-                <button type="button" class="btn btn-xs btn-link text-danger" id="rp-clear-all-sols">Remove All</button>
+          <!-- STEP 3: CONTROLS DEPENDING ON ACCESS MODE -->
+          <div class="rp-card-block">
+            <div class="rp-section-title">📍 Step 3: Configure ${isGeo ? 'Geographical Filters' : 'Specific Branches'}</div>
+
+            <!-- GEOGRAPHICAL MODE VIEW -->
+            ${isGeo ? `
+              <div id="rp-geo-mode-view">
+                <!-- Zones -->
+                <div style="margin-bottom: 12px;">
+                  <div class="rp-flex-between">
+                    <span style="font-size: 12px; font-weight: 600; color: #475569;">Select Zones (Auto-includes current & future branches):</span>
+                    <button type="button" class="btn btn-xs btn-link text-muted" id="rp-clear-zones">Clear Zones</button>
+                  </div>
+                  <div class="rp-pill-grid">
+                    ${masterZones.map(z => `
+                      <div class="rp-chip rp-zone-chip ${frm.state.zones.has(z) ? 'selected' : ''}" data-zone="${z}">
+                        <span class="rp-chip-dot"></span>
+                        <span>${z}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>
+
+                <!-- Regions -->
+                <div style="margin-bottom: 12px;">
+                  <div class="rp-flex-between">
+                    <span style="font-size: 12px; font-weight: 600; color: #475569;">Select Regions:</span>
+                    <button type="button" class="btn btn-xs btn-link text-muted" id="rp-clear-regions">Clear Regions</button>
+                  </div>
+                  <div class="rp-pill-grid">
+                    ${masterRegions.map(r => `
+                      <div class="rp-chip rp-region-chip ${frm.state.regions.has(r) ? 'selected' : ''}" data-region="${r}">
+                        <span class="rp-chip-dot"></span>
+                        <span>${r}</span>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>
               </div>
-              <div class="rp-pill-grid" id="rp-selected-sols-tags">
-                ${Array.from(frm.state.sol_ids).map(s => {
-                  let b = (meta.all_branches || []).find(x => String(x.sol_id) === String(s));
-                  let label = b ? `${s} - ${b.branch}` : s;
-                  return `
-                    <div class="rp-sol-tag" data-sol="${s}">
-                      <span>${label}</span>
-                      <span class="rp-sol-tag-remove" data-sol="${s}">&times;</span>
-                    </div>
-                  `;
-                }).join("")}
+            ` : `
+              <!-- SOL ID SPECIFIC MODE VIEW -->
+              <div id="rp-sol-mode-view">
+                <div style="margin-bottom: 10px;">
+                  <span style="font-size: 12px; font-weight: 600; color: #475569;">Search & Add Specific Branches:</span>
+                </div>
+                <div class="rp-branch-search-box">
+                  <input type="text" class="form-control input-sm" id="rp-sol-search-input" placeholder="Type Branch Name or SOL ID to add..." />
+                  <div class="rp-branch-search-dropdown" id="rp-sol-search-dropdown"></div>
+                </div>
+                <div style="margin-top: 10px;">
+                  <div class="rp-flex-between" style="margin-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 600; color: #64748b;">Selected Branches (${frm.state.sol_ids.size}):</span>
+                    <button type="button" class="btn btn-xs btn-link text-danger" id="rp-clear-all-sols">Remove All</button>
+                  </div>
+                  <div class="rp-pill-grid" id="rp-selected-sols-tags">
+                    ${Array.from(frm.state.sol_ids).map(s => {
+                      let b = (meta.all_branches || []).find(x => String(x.sol_id) === String(s));
+                      let label = b ? `${s} - ${b.branch}` : s;
+                      return `
+                        <div class="rp-sol-tag" data-sol="${s}">
+                          <span>${label}</span>
+                          <span class="rp-sol-tag-remove" data-sol="${s}">&times;</span>
+                        </div>
+                      `;
+                    }).join("")}
+                  </div>
+                </div>
               </div>
-            </div>
+            `}
           </div>
-        </div>
 
-        <!-- 2. LIVE RESOLVED BRANCHES DRILLDOWN SLOT -->
-        <div id="rp-branch-coverage-slot"></div>
+          <!-- STEP 4: ACTIVE BRANCH COVERAGE DRILLDOWN -->
+          <div id="rp-branch-coverage-slot"></div>
 
-        <!-- 3. SAVE & ACTIONS BAR -->
-        <div class="rp-save-bar">
-          <button type="button" class="btn btn-sm btn-default" id="rp-btn-discard">Discard Changes</button>
-          <button type="button" class="btn btn-sm btn-primary" id="rp-btn-direct-save">💾 Save Preferences</button>
-        </div>
+          <!-- STEP 5: SAVE & ACTIONS BAR -->
+          <div class="rp-save-bar">
+            <button type="button" class="btn btn-sm btn-default" id="rp-btn-discard">Discard Changes</button>
+            <button type="button" class="btn btn-sm btn-primary" id="rp-btn-direct-save">💾 Save Preferences</button>
+          </div>
+        `}
       </div>
     `;
 
@@ -464,7 +548,38 @@ frappe.ui.form.on("Report Preference", {
     let $w = frm.fields_dict.widget_html.$wrapper;
     let meta = frm.meta_data || {};
 
-    // User Live Search (if new)
+    // Initial Mode Selection Card Click
+    $w.find(".rp-mode-card").on("click", function () {
+      let mode = $(this).data("mode");
+      frm.state.access_type = mode;
+      frm.trigger("sync_widget_state_to_doc");
+      frm.trigger("render_full_crud_widget");
+      frm.trigger("calculate_and_render_branches");
+    });
+
+    // Change Mode Switcher Button
+    $w.find("#rp-btn-change-mode").on("click", function () {
+      let current = frm.state.access_type;
+      let target = current === "Geographical (Zone / Region / District)" 
+        ? "Specific Branches (SOL ID)" 
+        : "Geographical (Zone / Region / District)";
+
+      frappe.confirm(
+        __(`Switch Access Mode to <b>${target}</b>?<br><small class="text-muted">Previous filter selections will be cleared for consistency.</small>`),
+        () => {
+          frm.state.access_type = target;
+          frm.state.zones.clear();
+          frm.state.regions.clear();
+          frm.state.districts.clear();
+          frm.state.sol_ids.clear();
+          frm.trigger("sync_widget_state_to_doc");
+          frm.trigger("render_full_crud_widget");
+          frm.trigger("calculate_and_render_branches");
+        }
+      );
+    });
+
+    // User Live Search
     let $userInput = $w.find("#rp-user-search-input");
     let $userDropdown = $w.find("#rp-user-search-dropdown");
 
@@ -556,25 +671,6 @@ frappe.ui.form.on("Report Preference", {
         $label.text("Disabled").css("color", "#64748b");
       }
       frm.trigger("sync_widget_state_to_doc");
-    });
-
-    // Mode Switcher Tabs
-    $w.find(".rp-mode-tab").on("click", function () {
-      let mode = $(this).data("mode");
-      frm.state.access_type = mode;
-      $w.find(".rp-mode-tab").removeClass("active");
-      $(this).addClass("active");
-
-      if (mode === "Geographical (Zone / Region / District)") {
-        $w.find("#rp-geo-mode-view").show();
-        $w.find("#rp-sol-mode-view").hide();
-      } else {
-        $w.find("#rp-geo-mode-view").hide();
-        $w.find("#rp-sol-mode-view").show();
-      }
-
-      frm.trigger("sync_widget_state_to_doc");
-      frm.trigger("calculate_and_render_branches");
     });
 
     // Zone Toggles
