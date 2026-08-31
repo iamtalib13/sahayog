@@ -512,7 +512,10 @@ frappe.ui.form.on("Report Preference", {
 
       frappe.call({
         method: "sahayog.scrm.doctype.report_preference.report_preference.search_user",
-        args: { search_text: q },
+        args: {
+          search_text: q,
+          current_docname: frm.doc.name || ""
+        },
         callback: function (r) {
           let users = r.message || [];
           if (!users.length) {
@@ -520,11 +523,23 @@ frappe.ui.form.on("Report Preference", {
             return;
           }
 
-          let itemsHtml = users.map(u => `
-            <div class="rp-branch-search-item rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}">
-              <b>${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
-            </div>
-          `).join("");
+          let itemsHtml = users.map(u => {
+            if (u.is_already_added) {
+              return `
+                <div class="rp-branch-search-item rp-user-pick-item disabled-user" data-user="${u.name}" data-fullname="${u.full_name || ''}" data-already="1" data-pref="${u.pref_docname || ''}" style="display:flex; justify-content:space-between; align-items:center; background:#fff7ed; cursor:not-allowed; opacity:0.85;">
+                  <div>
+                    <b style="color:#c2410c;">${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
+                  </div>
+                  <span class="badge" style="background:#ffedd5; color:#9a3412; font-size:10px; padding:2px 6px; border:1px solid #fed7aa; border-radius:4px;">Already Added</span>
+                </div>
+              `;
+            }
+            return `
+              <div class="rp-branch-search-item rp-user-pick-item" data-user="${u.name}" data-fullname="${u.full_name || ''}" data-already="0">
+                <b>${u.name}</b> <span class="text-muted">(${u.full_name || ''})</span>
+              </div>
+            `;
+          }).join("");
 
           $userDropdown.html(itemsHtml).show();
         }
@@ -532,7 +547,21 @@ frappe.ui.form.on("Report Preference", {
     });
 
     $userDropdown.on("click", ".rp-user-pick-item", function () {
+      let isAlready = $(this).data("already");
       let u = $(this).data("user");
+      let prefDoc = $(this).data("pref");
+
+      if (isAlready == 1 || isAlready == "1") {
+        frappe.msgprint({
+          title: __("User Already Added"),
+          indicator: "orange",
+          message: __(
+            `Report Preference is already configured for user <b>${u}</b>.<br><br>You cannot create a duplicate record.<br><br><a class="btn btn-xs btn-primary" href="/app/report-preference/${prefDoc}">Click Here to Open Existing Record</a>`
+          )
+        });
+        return;
+      }
+
       let fn = $(this).data("fullname");
       frm.state.user = u;
       frm.state.full_name = fn;

@@ -311,11 +311,11 @@ def _parse_input_list(val):
 
 
 @frappe.whitelist()
-def search_user(search_text=None):
+def search_user(search_text=None, current_docname=None):
     if not search_text:
         return []
     search_query = f"{search_text}%"
-    return frappe.db.sql("""
+    users = frappe.db.sql("""
         SELECT name, full_name
         FROM `tabUser`
         WHERE (name LIKE %(starts)s OR full_name LIKE %(starts)s)
@@ -324,5 +324,26 @@ def search_user(search_text=None):
             CASE WHEN name LIKE %(starts)s THEN 0 ELSE 1 END,
             LENGTH(name) ASC,
             name ASC
-        LIMIT 8
+        LIMIT 10
     """, {"starts": search_query}, as_dict=True)
+
+    # Check which users already have a Report Preference
+    existing_map = {}
+    existing_records = frappe.get_all(
+        "Report Preference",
+        fields=["name", "user"]
+    )
+    for r in existing_records:
+        if r.user:
+            existing_map[r.user] = r.name
+
+    for u in users:
+        u_name = u["name"]
+        if u_name in existing_map and existing_map[u_name] != current_docname:
+            u["is_already_added"] = True
+            u["pref_docname"] = existing_map[u_name]
+        else:
+            u["is_already_added"] = False
+            u["pref_docname"] = None
+
+    return users
