@@ -302,41 +302,18 @@ frappe.ui.form.on("Report Preference", {
         .min-sol-box {
           border: 1px dashed #cbd5e1;
           border-radius: 8px;
-          padding: 12px 16px;
+          padding: 14px 16px;
           background: #ffffff;
           margin-bottom: 16px;
         }
-        .min-sol-input-wrap {
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          padding: 10px 14px;
-          background: #fafbfc;
-          min-height: 48px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-        .min-sol-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          padding: 3px 10px;
-          background: #e8fdf0;
-          color: #16a34a;
-          border: 1px solid #16a34a;
-          border-radius: 14px;
-          font-size: 11.5px;
-          font-weight: 600;
-        }
-        .min-sol-remove { cursor: pointer; font-size: 13px; font-weight: bold; line-height: 1; }
+        .min-sol-remove { cursor: pointer; font-size: 14px; font-weight: bold; line-height: 1; }
         .min-sol-remove:hover { color: #dc2626; }
 
         .min-branch-table-wrap {
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           overflow: hidden;
-          margin-top: 14px;
+          margin-top: 10px;
         }
         .min-branch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
         .min-branch-table th {
@@ -445,12 +422,12 @@ frappe.ui.form.on("Report Preference", {
             </div>
           </div>
         ` : `
-          <!-- SOL ID BOX (BRANCH WISE) -->
+          <!-- SOL ID BOX (BRANCH WISE - PURE TABLE VIEW) -->
           <div class="min-sol-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="min-box-label" style="min-width: unset;">SOL ID</span>
-                <span style="cursor: pointer; color: #64748b; font-size: 13px;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️</span>
+                <span style="cursor: pointer; color: #0284c7; font-size: 13px; font-weight: 600; text-decoration: underline;" title="Add / Edit SOL IDs" id="min-btn-edit-sol">✏️ Add / Edit SOLs</span>
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
                 <button type="button" class="min-bulk-delete-btn" id="min-btn-bulk-delete-sol" style="display: none;">
@@ -462,20 +439,7 @@ frappe.ui.form.on("Report Preference", {
               </div>
             </div>
 
-            <div class="min-sol-input-wrap">
-              ${solList.length === 0 ? `
-                <span style="color: #94a3b8; font-style: italic; font-size: 12px;">No SOL IDs selected yet. Click ✏️ to add branch SOLs.</span>
-              ` : `
-                ${solList.map(sol => `
-                  <span class="min-sol-pill">
-                    <span>${sol}</span>
-                    <span class="min-sol-remove" data-sol="${sol}">×</span>
-                  </span>
-                `).join('')}
-              `}
-            </div>
-
-            <!-- Branch Table with Checkboxes and Bulk Selection -->
+            <!-- Direct Table for SOL Branches -->
             ${solList.length > 0 ? `
               <div class="min-branch-table-wrap">
                 <table class="min-branch-table" id="min-sol-grid-table">
@@ -514,7 +478,11 @@ frappe.ui.form.on("Report Preference", {
                   </tbody>
                 </table>
               </div>
-            ` : ''}
+            ` : `
+              <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                No branch SOL IDs added yet. Click <b><a id="min-btn-edit-sol-link" style="color: #0284c7; cursor: pointer;">✏️ Add / Edit SOLs</a></b> above to attach branches.
+              </div>
+            `}
           </div>
         `}
       </div>
@@ -646,7 +614,7 @@ frappe.ui.form.on("Report Preference", {
     });
 
     // SOL ID Dialog / Add
-    $w.find("#min-btn-edit-sol").on("click", function () {
+    $w.find("#min-btn-edit-sol, #min-btn-edit-sol-link").on("click", function () {
       let d = new frappe.ui.Dialog({
         title: __("Add / Edit Branch SOL IDs"),
         fields: [
@@ -669,7 +637,7 @@ frappe.ui.form.on("Report Preference", {
       d.show();
     });
 
-    // Remove single SOL ID
+    // Remove single SOL ID from table row
     $w.find(".min-sol-remove").on("click", function () {
       let sol = String($(this).data("sol"));
       frm.state.sol_ids.delete(sol);
