@@ -174,6 +174,44 @@ frappe.ui.form.on("Report Preference", {
     let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
     let solList = Array.from(frm.state.sol_ids);
 
+    // Compute Geo Tree structure for selected Zones
+    let selectedZonesList = Array.from(frm.state.zones);
+    let totalGeoBranches = 0;
+
+    let geoTreeData = selectedZonesList.map(z => {
+      let zoneBranches = allBranches.filter(b => b.zone === z);
+      let zoneRegions = Array.from(new Set(zoneBranches.map(b => b.region).filter(Boolean))).sort();
+      let hasSpecificRegions = frm.state.regions.size > 0;
+
+      // Filter regions allowed for this zone
+      let activeRegions = zoneRegions;
+      if (hasSpecificRegions) {
+        activeRegions = zoneRegions.filter(r => frm.state.regions.has(r));
+      }
+
+      let activeZoneBranches = zoneBranches.filter(b => activeRegions.includes(b.region));
+      totalGeoBranches += activeZoneBranches.length;
+
+      let regionDetails = activeRegions.map(r => {
+        let rBranches = zoneBranches.filter(b => b.region === r);
+        let rDistricts = Array.from(new Set(rBranches.map(b => b.district).filter(Boolean)));
+        return {
+          region: r,
+          branch_count: rBranches.length,
+          districts: rDistricts
+        };
+      });
+
+      return {
+        zone: z,
+        all_regions_count: zoneRegions.length,
+        active_regions_count: activeRegions.length,
+        is_all_regions_allowed: !hasSpecificRegions,
+        total_zone_branches: activeZoneBranches.length,
+        regions: regionDetails
+      };
+    });
+
     let html = `
       <style>
         .min-perm-card {
@@ -262,9 +300,7 @@ frappe.ui.form.on("Report Preference", {
           cursor: pointer;
           transition: all 0.15s ease;
         }
-        .min-btn-save:hover {
-          background: #1e293b;
-        }
+        .min-btn-save:hover { background: #1e293b; }
 
         .min-box-row {
           display: grid;
@@ -323,6 +359,79 @@ frappe.ui.form.on("Report Preference", {
           color: #16a34a;
           border: 1.5px solid #16a34a;
           font-weight: 700;
+        }
+
+        /* Tree Diagram Styles */
+        .min-geo-tree-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #ffffff;
+          overflow: hidden;
+          margin-top: 6px;
+        }
+        .min-geo-tree-header {
+          background: #f8fafc;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 10px 14px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .min-geo-tree-body {
+          padding: 14px 16px;
+        }
+
+        .min-tree-zone-block {
+          margin-bottom: 16px;
+          border-left: 2px solid #3b82f6;
+          padding-left: 12px;
+        }
+        .min-tree-zone-block:last-child {
+          margin-bottom: 0;
+        }
+
+        .min-tree-zone-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 6px;
+        }
+
+        .min-tree-status-badge {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 9999px;
+        }
+        .min-tree-status-all {
+          background: #dcfce7;
+          color: #15803d;
+          border: 1px solid #86efac;
+        }
+        .min-tree-status-partial {
+          background: #e0f2fe;
+          color: #0369a1;
+          border: 1px solid #bae6fd;
+        }
+
+        .min-tree-region-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 8px;
+          margin-top: 8px;
+        }
+        .min-tree-region-item {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 6px 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 12px;
         }
 
         .min-sol-box {
@@ -448,6 +557,56 @@ frappe.ui.form.on("Report Preference", {
                   <span style="font-size: 12px; color: #94a3b8; font-style: italic;">No regions available</span>
                 `}
               </div>
+            </div>
+          </div>
+
+          <!-- GEOGRAPHICAL ACCESS HIERARCHY TREE DIAGRAM -->
+          <div class="min-geo-tree-card">
+            <div class="min-geo-tree-header">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 14px;">🌳</span>
+                <span style="font-weight: 700; font-size: 12.5px; color: #0f172a;">Geographical Access Tree Preview</span>
+              </div>
+              <span style="font-size: 11.5px; color: #16a34a; font-weight: 700;">
+                ${totalGeoBranches} Branches Accessible
+              </span>
+            </div>
+
+            <div class="min-geo-tree-body">
+              ${geoTreeData.length === 0 ? `
+                <div style="padding: 24px; text-align: center; color: #94a3b8; font-size: 12.5px;">
+                  👈 Please select a <b>Zone</b> above to preview the hierarchy and allowed regions.
+                </div>
+              ` : `
+                ${geoTreeData.map(item => `
+                  <div class="min-tree-zone-block">
+                    <div class="min-tree-zone-title">
+                      <span>🟦 <b>${item.zone}</b></span>
+                      ${item.is_all_regions_allowed ? `
+                        <span class="min-tree-status-badge min-tree-status-all">
+                          ✓ All ${item.all_regions_count} Regions Allowed (${item.total_zone_branches} Branches)
+                        </span>
+                      ` : `
+                        <span class="min-tree-status-badge min-tree-status-partial">
+                          ${item.active_regions_count} of ${item.all_regions_count} Regions Selected (${item.total_zone_branches} Branches)
+                        </span>
+                      `}
+                    </div>
+
+                    <div class="min-tree-region-grid">
+                      ${item.regions.map(r => `
+                        <div class="min-tree-region-item">
+                          <div>
+                            <span style="color: #3b82f6; font-size: 11px;">├─</span>
+                            <b style="color: #1e293b;">${r.region}</b>
+                          </div>
+                          <span style="font-weight: 600; color: #64748b; font-size: 11px;">${r.branch_count} Branches</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                `).join('')}
+              `}
             </div>
           </div>
         ` : `
