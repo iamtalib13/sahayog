@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-25 13:53:57.760214",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sol_id",
+  "month",
+  "column_break_yumf",
+  "branch_name",
+  "year",
+  "section_break_uuji",
+  "account_opening_error_count",
+  "column_break_bgsg",
+  "reconciliation_discrepancy_count",
+  "section_break_xcsu",
+  "account_opening_error",
+  "section_break_bcws",
+  "bank_reconciliation_discrepancy"
+ ],
+ "fields": [
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Link",
+   "label": "Sol ID",
+   "options": "Sahayog Branch",
+   "read_only": 1,
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "label": "Month",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sol_id.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_yumf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_xcsu",
+   "fieldtype": "Section Break",
+   "label": "Account Opening Error"
+  },
+  {
+   "fieldname": "account_opening_error",
+   "fieldtype": "Table",
+   "options": "Account Opening Error"
+  },
+  {
+   "fieldname": "section_break_bcws",
+   "fieldtype": "Section Break",
+   "label": "Bank Reconciliation Discrepancy"
+  },
+  {
+   "fieldname": "section_break_uuji",
+   "fieldtype": "Section Break",
+   "label": "Instances"
+  },
+  {
+   "fieldname": "account_opening_error_count",
+   "fieldtype": "Int",
+   "label": "Account Opening Error Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_bgsg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reconciliation_discrepancy_count",
+   "fieldtype": "Int",
+   "label": "Reconciliation Discrepancy Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bank_reconciliation_discrepancy",
+   "fieldtype": "Table",
+   "options": "Bank Reconciliation Discrepancy"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-01 16:33:44.608423",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "Miscellaneous",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -555,7 +555,25 @@ frappe.ui.form.on("Branch Score Card", {
                     grouped[fn].push(row);
                 });
 
-                for (let fn in grouped) {
+                // EXACT STRING MATCHES (Includes dynamic key matching)
+                const target_order = [
+                    "CRL Monitoring",
+                    "Account Opening Operations",
+                    "Miscellaneous",
+                    "Audit and Compliance"
+                ];
+
+                // Helper to match string prefixes cleanly
+                const get_order_index = (fn_name) => {
+                    let idx = target_order.findIndex(target => fn_name.toLowerCase().startsWith(target.toLowerCase()));
+                    return idx !== -1 ? idx : 99;
+                };
+
+                let sorted_keys = Object.keys(grouped).sort((a, b) => get_order_index(a) - get_order_index(b));
+
+                sorted_keys.forEach(fn => {
+                    if (!grouped[fn] || grouped[fn].length === 0) return;
+
                     let group_rows = grouped[fn];
                     let rowspan = group_rows.length;
 
@@ -584,7 +602,7 @@ frappe.ui.form.on("Branch Score Card", {
                             <td class="${bg_class} bsc-score-cell">${score_display}</td>
                         </tr>`;
                     });
-                }
+                });
             }
 
             let html = `
