@@ -5,6 +5,17 @@ frappe.ui.form.on("CRL Monitoring and Branch Opening and Closing", {
         check_and_show_sync_warning(frm);
         handle_score_fields_visibility(frm);
         highlight_delay_rows(frm);
+
+        setTimeout(() => {
+            let field_wrapper = frm.get_field('sol_id').$wrapper;
+            field_wrapper.find('a').css({
+                'pointer-events': 'none',
+                'cursor': 'default',
+                'text-decoration': 'none',
+                'color': 'inherit'
+            });
+            field_wrapper.find('a').attr('href', 'javascript:void(0);');
+        }, 300);
     },
 
     // Child table form render hone ya grid render hone par dynamic highlighting trigger
@@ -136,36 +147,46 @@ function handle_score_fields_visibility(frm) {
     }
 }
 
-// Dynamic Sync Warning Checker
+// Dynamic Sync Warning Checker (Purely Informational Alert Banner)
 function check_and_show_sync_warning(frm) {
     if (frm.is_new()) return;
 
-    // Remove existing alert if any
+    // Remove existing alert banner if any
     $('#doc-sync-alert-banner').remove();
 
     let sync_issues = [];
 
-    // Dynamically find child table field
+    // Get child table rows dynamically
     let grid_field = Object.values(frm.fields_dict).find(f => f.df && f.df.fieldtype === 'Table');
     let child_rows = grid_field && frm.doc[grid_field.df.fieldname] ? frm.doc[grid_field.df.fieldname] : [];
 
-    // Client-side child table inspection
     child_rows.forEach(row => {
         let status = (row.sync_status || "").trim().toLowerCase();
-        
-        // Filter out records that are NOT Success or Manually Success
-        if (!status || (status !== "success" && status !== "manually success")) {
+        let date_obj = moment(row.date);
+
+        // Sunday Skip Condition (0 = Sunday)
+        if (date_obj.day() === 0) return;
+
+        // ALERT LOGIC: Trigger ONLY IF status is blank (Cron did not run) OR explicitly Failed
+        let is_cron_missing = !status;
+        let is_failed = (status === "fail" || status === "failed");
+
+        if (is_cron_missing || is_failed) {
             let formatted_date = row.date ? frappe.datetime.str_to_user(row.date) : "N/A";
-            let log_str = row.sync_log || `Status: ${row.sync_status || "Missing Entry"}`;
+            let log_msg = is_cron_missing 
+                ? "Cron Job did not run / Entry Missing" 
+                : (row.sync_log || "Status: Fail");
             
             sync_issues.push({
+                idx: row.idx,
+                name: row.name,
                 date: formatted_date,
-                log: log_str
+                log: log_msg
             });
         }
     });
 
-    // Render Banner if issues exist
+    // Render Clean Alert Banner
     if (sync_issues.length > 0) {
         let details_html = `<ul style="margin-top: 8px; margin-bottom: 0; padding-left: 18px; font-size: 12px; line-height: 1.6;">`;
         
@@ -180,14 +201,13 @@ function check_and_show_sync_warning(frm) {
                     <i class="fa fa-exclamation-triangle" style="font-size: 18px; margin-top: 2px; color: #dc2626;"></i>
                     <div style="flex-grow: 1;">
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; color: #7f1d1d;">
-                            Attention: Data Integrity & Sync Issues Detected for SOL ${frm.doc.sol_id || ''}!
+                            Attention: Sync Issues Detected for SOL ${frm.doc.sol_id || ''}!
                         </div>
                         <div style="line-height: 1.6;">
-                            This document has a total of <b>${sync_issues.length}</b> working day entry missing/failed:
+                            Total <b>${sync_issues.length}</b> entry(ies) found with missing cron execution or failure:
                         </div>
                         ${details_html}
                     </div>
-                    <span class="badge badge-danger" style="background-color: #dc2626; padding: 6px 10px; font-weight: 500;">Action Required</span>
                 </div>
             </div>
         `;

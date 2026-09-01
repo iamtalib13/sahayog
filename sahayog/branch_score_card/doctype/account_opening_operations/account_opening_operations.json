@@ -6,9 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "sol_id",
-  "column_break_besy",
+  "branch",
+  "column_break_toqz",
   "month",
-  "column_break_rxcg",
   "year",
   "section_break_yozp",
   "total_ftr",
@@ -33,7 +33,8 @@
    "fieldtype": "Link",
    "label": "Sol ID",
    "options": "Sahayog Branch",
-   "read_only": 1
+   "read_only": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "section_break_iwri",
@@ -92,18 +93,10 @@
    "label": "FTNR Percentage"
   },
   {
-   "fieldname": "column_break_besy",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "month",
    "fieldtype": "Data",
    "label": "Month",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_rxcg",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "year",
@@ -130,12 +123,22 @@
    "fieldname": "zero_ip_funding_count",
    "fieldtype": "Int",
    "label": "Zero IP Funding Count"
+  },
+  {
+   "fieldname": "column_break_toqz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sol_id.branch",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-24 11:36:28.251958",
+ "modified": "2026-09-01 13:07:16.250990",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Account Opening Operations",

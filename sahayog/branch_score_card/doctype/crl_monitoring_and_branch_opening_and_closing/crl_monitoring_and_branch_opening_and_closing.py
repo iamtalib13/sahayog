@@ -53,6 +53,8 @@ class CRLMonitoringandBranchOpeningandClosing(Document):
         self.sort_child_table_by_date()
         self.calculate_actual_values()
         self.validate_backend_date_range()
+        self.update_doc_status()
+        
     def sort_child_table_by_date(self):
         if hasattr(self, "table_nzzy") and self.table_nzzy:
             self.table_nzzy = sorted(
@@ -73,6 +75,42 @@ class CRLMonitoringandBranchOpeningandClosing(Document):
 
             if date_diff(t_date, f_date) + 1 > 31:
                 frappe.throw(_("Date range cannot exceed 31 days."))
+                
+                
+    def update_doc_status(self):
+        """
+        Dynamically updates parent document status.
+        Flags document as 'Failed' ONLY when sync_status is blank (Cron not run)
+        or explicitly 'fail' / 'failed'.
+        """
+        if not hasattr(self, "table_nzzy") or not self.table_nzzy:
+            return
+
+        has_sync_issue = False
+
+        for row in self.table_nzzy:
+            # Sunday skip condition (Sunday = 6 in Python)
+            if row.date:
+                row_date = getdate(row.date)
+                if row_date.weekday() == 6:
+                    continue
+
+            status = (row.sync_status or "").strip().lower()
+
+            # Direct requirement check: Cron missed OR status is Fail
+            is_cron_missing = not status
+            is_failed = status in ["fail", "failed"]
+
+            if is_cron_missing or is_failed:
+                has_sync_issue = True
+                break
+
+        if has_sync_issue:
+            self.status = "Failed"
+            self.has_sync_issue = 1
+        else:
+            self.status = "Success"
+            self.has_sync_issue = 0   
 
     # =========================================================
     # CALCULATE ACTUAL VALUES
@@ -276,10 +314,10 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         sync_date = getdate(target_date)
     else:
         sync_date = date.today() - timedelta(days=1)
-
+        
     month_name = sync_date.strftime("%B")
     year = sync_date.year
-
+    
     try:
         conn = db_connection()
         try:
@@ -292,18 +330,19 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         return 0
 
     finacle_active_sols = set(oc_map.keys()).union(set(eod_map.keys()))
-
-    # Is Date par Finacle me bilkul data nahi hai AUR Sunday/Holiday hai, tabhi skip karo
     is_off_day = (sync_date.weekday() == 6) or is_holiday_date(sync_date, sol_id=filter_sol_id)
-    if is_off_day and not finacle_active_sols:
-        return 0
 
-    # Original SOL Selection Logic
+    # UPDATED SOL SELECTION LOGIC:
     if filter_sol_id:
         filter_sol_str = str(filter_sol_id).strip()
         target_sols = [filter_sol_str]
     else:
-        target_sols = list(finacle_active_sols)
+        # DB se saare branches ki SOL IDs fetch karein (Sirf Finacle active waale nahi)
+        db_sols = frappe.get_all("Sahayog Branch", fields=["sol_id"])
+        target_sols = list(set([str(b.sol_id).strip() for b in db_sols if b.sol_id]))
+        # Guard Clause: Agar DB blank ho to fallback to finacle active SOLs
+        if not target_sols:
+            target_sols = list(finacle_active_sols)
 
     processed_count = 0
     timestamp = now_datetime().strftime("%d-%m-%Y %H:%M:%S")
@@ -313,16 +352,14 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         sol_id = str(sol_id).strip()
         parent_docname = f"{sol_id}-{month_name}-{year}"
         doc_exists = frappe.db.exists("CRL Monitoring and Branch Opening and Closing", parent_docname)
-
         has_record = (sol_id in oc_map) or (sol_id in eod_map)
-
-        # Agar Holiday/Sunday hai aur is particular SOL ka Finacle me koi data nahi mila -> Skip
+        
+        # 1. Holiday/Sunday Condition: Agar Sunday/Holiday hai aur Finacle me data NAHI hai -> Skip Record Creation
         if (is_off_day or is_holiday_date(sync_date, sol_id=sol_id)) and not has_record:
             continue
 
-        if not doc_exists and not has_record:
-            continue
-
+        # 2. Working Day Condition (UPDATED):
+        # Working day hai par doc exist nahi karta -> New Doc create hone ki permission dein (Pehle 'if not doc_exists and not has_record: continue' tha, isliye skip hota tha)
         crl_limit = flt(frappe.db.get_value("Sahayog Branch", {"sol_id": sol_id}, "br_cash_retention_limit_crl") or 0)
         
         if doc_exists:
@@ -336,7 +373,7 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
 
         doc.br_cash_retention_limit_crl = crl_limit
 
-        # OPTIMIZATION (Point 3): Memory mein fast row matching (next() iterator)
+        # Row matching
         existing_row = next((row for row in doc.table_nzzy if row.date and getdate(row.date) == getdate(sync_date)), None)
 
         if not has_record:
@@ -360,9 +397,9 @@ def sync_daily_crl(target_date=None, force_resync=False, filter_sol_id=None):
         if not close_time_str: missing.append("Closing time missing")
         if not eod_exists: missing.append("EOD balance missing")
 
-        # AUDIT TRAIL LOGGING (Point 2): Manual vs Automatic Trigger Tracking
         trigger_prefix = f"Synced manually by {user_stamp} at {timestamp}" if force_resync else f"Automated Cron at {timestamp}"
 
+        # Working Day pe data na milne par "No Record in Finacle" status apply hoga
         if not has_record or len(missing) == 3:
             status = "No Record in Finacle"
             log = f"[NO DATA] No transaction record found in Finacle DB ({trigger_prefix})."
@@ -846,8 +883,9 @@ def check_document_sync_issues(docname):
 @frappe.whitelist()
 def get_list_view_sync_warnings():
     """
-    Dynamically identifies documents with data integrity or sync issues
-    from child table entries and returns detailed messages for List View Alert.
+    Dynamically identifies documents where Cron job didn't run (blank sync_status) 
+    or status is explicitly 'fail'/'failed'.
+    Ignores valid/handled statuses like 'No Record in Finacle', 'Holiday', 'Other', and 'Success'.
     """
     try:
         issue_docs = set()
@@ -865,9 +903,10 @@ def get_list_view_sync_warnings():
         except Exception:
             pass
 
-        # 2. Query Child Table directly using verified logic
+        # 2. Query Child Table directly using updated targeting logic
         child_table_name = "tabCRL Monitoring Operation Tracker"
 
+        # SQL Filter: Explicitly targets ONLY missing entries (Cron not run) AND Failed status
         failed_child_rows = frappe.db.sql(f"""
             SELECT 
                 parent,
@@ -878,8 +917,8 @@ def get_list_view_sync_warnings():
             WHERE parenttype = 'CRL Monitoring and Branch Opening and Closing'
               AND (
                   sync_status IS NULL
-                  OR sync_status = ''
-                  OR LOWER(TRIM(sync_status)) NOT IN ('success', 'manually success')
+                  OR TRIM(sync_status) = ''
+                  OR LOWER(TRIM(sync_status)) IN ('fail', 'failed')
               )
             ORDER BY date DESC
         """, as_dict=True)
@@ -901,13 +940,14 @@ def get_list_view_sync_warnings():
             else:
                 formatted_date = "N/A"
 
-            log_reason = row.get("sync_log") or "No transaction record found in Finacle DB for this date."
+            status_val = (row.get("sync_status") or "").strip()
+            log_reason = row.get("sync_log") or ("Cron Not Executed" if not status_val else "Sync Failed")
 
             details.append({
                 "docname": p,
                 "sol_id": p.split("-")[0] if "-" in p else p,
-                "date": formatted_date,  # <-- Ye hardcode nahi hona chahiye
-                "status": row.get("sync_status") or "Missing Entry",
+                "date": formatted_date,
+                "status": status_val if status_val else "Missing Entry",
                 "log": log_reason
             })
 

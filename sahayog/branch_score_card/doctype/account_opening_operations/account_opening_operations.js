@@ -1,6 +1,26 @@
 frappe.ui.form.on('Account Opening Operations', {
     refresh(frm) {
 
+        setTimeout(() => {
+            let sol_field = frm.get_field('sol_id');
+            if (sol_field && sol_field.$wrapper) {
+                // Link tag ke click behavior aur redirection href ko disable karein
+                sol_field.$wrapper.find('a').removeAttr('href').css({
+                    'pointer-events': 'none',
+                    'cursor': 'default',
+                    'text-decoration': 'none',
+                    'color': 'inherit'
+                });
+
+                // Extra safety: Click event kill karne ke liye
+                sol_field.$wrapper.off('click', 'a').on('click', 'a', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            }
+        }, 300);
+
         // 1. CLEAN & RIGID CSS INJECTION FOR FIXED ALIGNMENT
         if (!$('#force-table-show-style').length) {
             $('head').append(`

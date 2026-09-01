@@ -119,27 +119,89 @@ frappe.ui.form.on("Branch Score Card", {
     let field = frm.get_field('month_selector_html');
     if (!field?.$wrapper) return;
 
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    field.$wrapper.removeClass('hide hidden').css({
+        "display": "block",
+        "visibility": "visible",
+        "min-height": "60px"
+    }).show();
+
+    // Financial Year order (April to March)
+    const fy_months = [
+        "April", "May", "June", "July", "August", "September", 
+        "October", "November", "December", "January", "February", "March"
+    ];
+
     const jan_mar = ["January", "February", "March"];
-    const current_month = frm.doc.month || "Select Month";
+    const current_selected = frm.doc.month || "";
 
-    const items = months.map(m => `
-        <a class="dropdown-item ${m === frm.doc.month ? 'active' : ''}" href="#" data-value="${m}">${m}</a>
-    `).join('');
+    const capsule_items = fy_months.map(m => {
+        const isActive = (m.toLowerCase() === current_selected.toLowerCase());
+        const style = isActive 
+            ? `background-color: #006768 !important; color: #ffffff !important; border-color: #004647 !important; box-shadow: 0 4px 8px rgba(0, 103, 104, 0.35) !important; font-weight: 700 !important;`
+            : `background-color: #f1f5f9 !important; color: #475569 !important; border-color: #cbd5e1 !important;`;
 
-    field.$wrapper.html(`
-        <div class="dropdown margin-bottom">
-            <button class="btn btn-default btn-sm dropdown-toggle font-weight-bold" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <span>${current_month}</span>
+        return `
+            <button type="button" 
+                    class="btn month-capsule-btn ${isActive ? 'active-capsule' : ''}" 
+                    style="${style}"
+                    data-value="${m}">
+                ${m}
             </button>
-            <div class="dropdown-menu">
-                ${items}
-            </div>
-        </div>
-    `);
+        `;
+    }).join('');
 
-    // Handle Month Selection
-    field.$wrapper.find('.dropdown-item').on('click', function (e) {
+    const html_content = `
+        <style>
+            .month-capsule-container {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                background-color: #ffffff !important;
+                border-radius: 12px !important;
+                border: 1px solid #e2e8f0 !important;
+                margin-bottom: 15px !important;
+                align-items: center !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                scrollbar-width: thin;
+            }
+            .month-capsule-container::-webkit-scrollbar {
+                height: 5px;
+            }
+            .month-capsule-container::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .month-capsule-btn {
+                border-radius: 24px !important;
+                padding: 8px 18px !important;
+                font-size: 13.5px !important;
+                font-weight: 600 !important;
+                white-space: nowrap !important;
+                cursor: pointer !important;
+                outline: none !important;
+                transition: all 0.2s ease-in-out !important;
+                border: 1.5px solid !important;
+                flex-shrink: 0 !important;
+                min-height: 40px !important;
+            }
+            .month-capsule-btn:hover {
+                transform: translateY(-2px) !important;
+                filter: brightness(0.95) !important;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+            }
+        </style>
+        <div class="month-capsule-container">
+            ${capsule_items}
+        </div>
+    `;
+
+    field.$wrapper.html(html_content);
+
+    // Event Handler
+    field.$wrapper.find('.month-capsule-btn').on('click', function (e) {
         e.preventDefault();
         const selected_month = $(this).data('value');
 
@@ -153,7 +215,6 @@ frappe.ui.form.on("Branch Score Card", {
             return;
         }
 
-        // Dynamic Financial Year Logic
         const base_fy_year = jan_mar.includes(doc_month) ? (form_year - 1) : form_year;
         const target_year = jan_mar.includes(selected_month) ? (base_fy_year + 1) : base_fy_year;
 
