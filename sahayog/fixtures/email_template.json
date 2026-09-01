@@ -1,50 +1,102 @@
 [
-  {
-    "doctype": "Email Template",
-    "name": "Disciplinary - SCN",
-    "subject": "Show Cause Notice Issued for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
-    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>This is to inform you that a disciplinary case of type <strong>\"{{ doc.case_type }}\"</strong> has been initiated by HR Department for the employee <strong>{{ doc.employee_name }}</strong> (Employee ID: {{ doc.employee_id }}).</p>\n<p><br></p>\n<p>Case Details:<br>Case ID: {{ doc.case_id }}<br>Branch: {{ doc.branch_name }}<br>Issue Date: {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}<br>Initiated By: HR Department</p>\n<p><br></p>\n<p>The Show Cause Notice has been generated and forwarded to the respective branch for further action.</p>\n{% if doc.document_upload %}\n<p><br></p>\n<p>Please find the relevant document(s) attached:<br><strong>{{ doc.document_upload }}</strong></p>\n{% endif %}\n<p><br></p>\n<p>Remarks:<br>{{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
-    "use_html": 1,
-    "docstatus": 0
-  },
-  {
-    "doctype": "Email Template",
-    "name": "Suspension Process",
-    "subject": "Suspension Notice for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
-    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>This is to inform you that a <strong>suspension process</strong> has been initiated under the case type <strong>{{ doc.case_type }}</strong>.</p>\n<p><br></p>\n<p>Details:</p>\n<p>Case ID: {{ doc.case_id }}<br>\nSuspension From: {{ doc.suspension_from_date.strftime('%d-%m-%Y') if doc.suspension_from_date else '' }}<br>\nSuspension To: {{ doc.suspension_to_date.strftime('%d-%m-%Y') if doc.suspension_to_date else '' }}<br>\nNumber of Days: {{ doc.days_of_suspension }}</p>\n<p><br></p>\n<p>The suspension notice has been forwarded to the respective branch for further action.</p>\n<p><br></p>\n<p>Remarks: {{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
-    "use_html": 1,
-    "docstatus": 0
-  },
-  {
-    "doctype": "Email Template",
-    "name": "Domestic Enquiry Notice",
-    "subject": "Domestic Enquiry Notice for {{ doc.employee_name }} \u2013 Case Type: {{ doc.case_type }}",
-    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>\nNotice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_enquiry.strftime('%d-%m-%Y') if doc.date_of_enquiry else '' }}</strong> at \n<strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n<p><br></p>\n<p><strong>Details:</strong></p>\n\n<p><strong>Case ID:</strong> {{ doc.case_id }}<br>\n<strong>Case Type:</strong> {{ doc.case_type }}<br>\n<strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</p>\n<p><br></p>\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n<p><br></p>\n<p><strong>Remarks:</strong> {{ doc.remarks }}</p>\n<p><br></p>\n<p>\nRegards,<br>HR Department\n</p>",
-    "use_html": 1,
-    "docstatus": 0
-  },
-  {
-    "doctype": "Email Template",
-    "name": "Reminder Notice of Enquiry",
-    "subject": "Revised Notice of Enquiry for {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
-    "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_2nd_enquiry.strftime('%d-%m-%Y') if doc.date_of_2nd_enquiry else '' }}</strong> at <strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n<p><br></p>\n<p>Details:</p>\n<p>Case ID: {{ doc.case_id }}<br>\nCase Type: {{ doc.case_type }}<br>\n<strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</p>\n<p><br></p>\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n<p><br></p>\n<p>Remarks: {{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
-    "use_html": 1,
-    "docstatus": 0
-  },
-  {
-    "doctype": "Email Template",
-    "name": "Unauthorized Absence",
-    "subject": "Unauthorized Absence Notice \u2013 {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
-    "response_html": "<p>Dear Team,</p>\n<p><br></p>\n<p>\n    This is to inform you that <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    from <strong>{{ doc.branch_name }}</strong> has been marked as \n    <strong>Unauthorized Absent</strong> on \n    <strong>{{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</strong>.\n</p>\n<p><br></p>\n<p>\n    <strong>Case Details:</strong><br>Case ID: {{ doc.case_id }}<br>Level: {{ doc.level }}<br>Issue Reported to HR On: {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}<br>Issue In Details: {{ doc.issue_in_details or \"No remarks provided.\" }}\n</p>\n<p><br></p>\n<p>Kindly take the required action as per the Unauthorized Absence process.</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
-    "use_html": 1,
-    "docstatus": 0
-  },
-  {
-    "doctype": "Email Template",
-    "name": "Reminder Of Unauthorized Absence",
-    "subject": "Reminder of Unauthorized Absence \u2013 {{ doc.employee_name }} \u2013 Case ID: {{ doc.case_id }}",
-    "response_html": "<p>Dear Team,</p>\n<p><br></p>\n<p>\n    A <strong>Reminder of Unauthorized Absence letter</strong> has been initiated \n    for <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    by the HR department and sent to the respective branch.\n</p>\n<p><br></p>\n<p><strong>Case Details:</strong></p>\n<p><strong>Case ID:</strong> {{ doc.case_id }}<br>\n<strong>Level:</strong> {{ doc.level }}<br>\n<strong>Branch:</strong> {{ doc.branch_name }}<br>\n<strong>Issue Occurred On:</strong> {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}<br>\n<strong>Issue Reported to HR:</strong> {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}<br>\n<strong>Issue In details:</strong> {{ doc.issue_in_details or \"No remarks provided.\" }}</p>\n<p><br></p>\n<p>Kindly take the necessary action as per the Unauthorized Absence policy.</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
-    "use_html": 1,
-    "docstatus": 0
-  }
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 12:37:00.805124",
+  "name": "Disciplinary Case Update",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n\n<p>A new case review request has been initiated.</p>\n<p><br></p>\n<h3>Case Details</h3>\n\n<table width=\"100%\" border=\"1\" cellspacing=\"0\" cellpadding=\"6\">\n    <tr>\n        <td><b>Case ID</b></td>\n        <td>{{ doc.case_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee Name</b></td>\n        <td>{{ doc.employee_name }}</td>\n    </tr>\n    <tr>\n        <td><b>Employee ID</b></td>\n        <td>{{ doc.employee_id }}</td>\n    </tr>\n    <tr>\n        <td><b>Region</b></td>\n        <td>{{ doc.region }}</td>\n    </tr>\n    <tr>\n        <td><b>Zone</b></td>\n        <td>{{ doc.zone }}</td>\n    </tr>\n    <tr>\n        <td><b>Case Type</b></td>\n        <td>{{ doc.case_type }}</td>\n    </tr>\n    <tr>\n        <td><b>Stage</b></td>\n        <td>{{ doc.stage }}</td>\n    </tr>\n    <tr>\n        <td><b>Remarks</b></td>\n        <td>{{ doc.remarks }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Name (Triggered By)</b></td>\n        <td>{{ doc.hr_name }}</td>\n    </tr>\n    <tr>\n        <td><b>HR Employee ID</b></td>\n        <td>{{ doc.hr_employee_id }}</td>\n    </tr>\n</table>\n<p><br></p>\n<br><p>\n    To view the complete Case History, click below:<br><a href=\"{{ doc.case_history_link }}\" target=\"_blank\">\n        <b>View Case History Report</b>\n    </a>\n</p>\n<p><br></p>\n<p>Regards,<br>HR Team</p>\n",
+  "subject": "“Disciplinary Case Update – {{ doc.case_id }}”",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 12:37:00.780437",
+  "name": "Response to SCN",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n<p><br></p>\n<p>\n    {% if doc.response_to_scn == \"Yes\" %}\n        The alleged staff has <strong>responded</strong> to the Show Cause Notice,\n    {% else %}\n        The alleged staff has <strong>not responded</strong> to the Show Cause Notice,\n    {% endif %}\n    and the status of the response is\n    <strong>{{ doc.status_of_response | lower }}</strong>.\n</p>\n<p><br></p>\n<p>Kindly proceed with the necessary action as per the disciplinary process.</p>\n<p><br></p>\n{% if doc.remarks %}\n<p>Remarks: {{ doc.remarks }}</p>\n<p><br></p>\n{% endif %}\n<p>Regards,<br>HR Department</p>",
+  "subject": "Response to Show Cause Notice for {{ doc.employee_name }} – Case Type: {{ doc.case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 12:48:44.889544",
+  "name": "Case Closure Update",
+  "response": null,
+  "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>\nThis is to inform you that the {% if doc.case_id and doc.case_id.startswith(\"UA\") %}unauthorized absence case{% else %}disciplinary case{% endif %} initiated against you has been\nreviewed by the concerned authority. Based on the closure remarks and the final\nreview, the case has been closed with the appropriate action:\n<strong> {{ doc.remarks }} </strong>.\n</p>\n<p><br></p>\n<p><strong>Closure Details:</strong></p>\n<p><strong>Case ID:</strong> {{ doc.case_id }}<br>\n<strong>Case Type:</strong> {{ doc.case_type or (\"Unauthorized Absence\" if doc.case_id and doc.case_id.startswith(\"UA\") else \"N/A\") }}<br>\n<strong>Employee Name:</strong> {{ doc.employee_name }}<br>\n<strong>Employee ID:</strong> {{ doc.employee_id }}</p>\n<p><br></p>\n<p>\nYou may contact the HR Department for further clarification if required.\n</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Case Closure Update for {{ doc.employee_name }} - Case ID: {{ doc.case_id }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-04-27 12:10:00.820540",
+  "name": "new_group_approval_request",
+  "response": null,
+  "response_html": "<h3>New Approval Request</h3>\n\n<p>\n    {% if is_group %}\n        Hello Team,\n    {% else %}\n        Hello {{ recipient_name }},\n    {% endif %}\n</p>\n\n<p>A new approval request has been submitted on the My Sahayog Portal.</p>\n\n<p>\n    <strong>Request:</strong> {{ doc.name }}<br>\n    <strong>Title:</strong> {{ doc.title }}<br>\n    <strong>Requester:</strong> {{ doc.employee_name }} ({{ doc.employee }})\n</p>\n\n<p>Please click below link to review: <br>\n<a href=\"http://mysahayog.com/app/approval-request/{{ doc.name }}\">http://mysahayog.com/app/approval-request/{{ doc.name }}</a></p>\n\n<p>Thanks,</p>",
+  "subject": "New Approval Request: {{ doc.title }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.897123",
+  "name": "Disciplinary - SCN",
+  "response": null,
+  "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>This is to inform you that a disciplinary case of type <strong>\"{{ doc.case_type }}\"</strong> has been initiated by HR Department for the employee <strong>{{ doc.employee_name }}</strong> (Employee ID: {{ doc.employee_id }}).</p>\n<p><br></p>\n<p>Case Details:<br>Case ID: {{ doc.case_id }}<br>Branch: {{ doc.branch_name }}<br>Issue Date: {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}<br>Initiated By: HR Department</p>\n<p><br></p>\n<p>The Show Cause Notice has been generated and forwarded to the respective branch for further action.</p>\n{% if doc.document_upload %}\n<p><br></p>\n<p>Please find the relevant document(s) attached:<br><strong>{{ doc.document_upload }}</strong></p>\n{% endif %}\n<p><br></p>\n<p>Remarks:<br>{{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Show Cause Notice Issued for {{ doc.employee_name }} – Case Type: {{ doc.case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.909785",
+  "name": "Suspension Process",
+  "response": null,
+  "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>This is to inform you that a <strong>suspension process</strong> has been initiated under the case type <strong>{{ doc.case_type }}</strong>.</p>\n<p><br></p>\n<p>Details:</p>\n<p>Case ID: {{ doc.case_id }}<br>\nSuspension From: {{ doc.suspension_from_date.strftime('%d-%m-%Y') if doc.suspension_from_date else '' }}<br>\nSuspension To: {{ doc.suspension_to_date.strftime('%d-%m-%Y') if doc.suspension_to_date else '' }}<br>\nNumber of Days: {{ doc.days_of_suspension }}</p>\n<p><br></p>\n<p>The suspension notice has been forwarded to the respective branch for further action.</p>\n<p><br></p>\n<p>Remarks: {{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Suspension Notice for {{ doc.employee_name }} – Case Type: {{ doc.case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.917799",
+  "name": "Domestic Enquiry Notice",
+  "response": null,
+  "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>\nNotice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_enquiry.strftime('%d-%m-%Y') if doc.date_of_enquiry else '' }}</strong> at \n<strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n<p><br></p>\n<p><strong>Details:</strong></p>\n\n<p><strong>Case ID:</strong> {{ doc.case_id }}<br>\n<strong>Case Type:</strong> {{ doc.case_type }}<br>\n<strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</p>\n<p><br></p>\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n<p><br></p>\n<p><strong>Remarks:</strong> {{ doc.remarks }}</p>\n<p><br></p>\n<p>\nRegards,<br>HR Department\n</p>",
+  "subject": "Domestic Enquiry Notice for {{ doc.employee_name }} – Case Type: {{ doc.case_type }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.926897",
+  "name": "Reminder Notice of Enquiry",
+  "response": null,
+  "response_html": "<p>Dear {{ doc.employee_name }},</p>\n<p><br></p>\n<p>\nRevised Notice of Enquiry has been generated and issued to the employee \n<strong>{{ doc.employee_name }}</strong> to attend the domestic enquiry on \n<strong>{{ doc.date_of_2nd_enquiry.strftime('%d-%m-%Y') if doc.date_of_2nd_enquiry else '' }}</strong> at <strong>{{ doc.place_of_enquiry }}</strong>.\n</p>\n<p><br></p>\n<p>Details:</p>\n<p>Case ID: {{ doc.case_id }}<br>\nCase Type: {{ doc.case_type }}<br>\n<strong>Enquiry Officer Name:</strong> {{ doc.enquiry_officer_name }}</p>\n<p><br></p>\n<p>You are requested to attend the domestic enquiry as per the above schedule.</p>\n<p><br></p>\n<p>Remarks: {{ doc.remarks }}</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Revised Notice of Enquiry for {{ doc.employee_name }} – Case ID: {{ doc.case_id }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.932948",
+  "name": "Unauthorized Absence",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n<p><br></p>\n<p>\n    This is to inform you that <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    from <strong>{{ doc.branch_name }}</strong> has been marked as \n    <strong>Unauthorized Absent</strong> on \n    <strong>{{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}</strong>.\n</p>\n<p><br></p>\n<p>\n    <strong>Case Details:</strong><br>Case ID: {{ doc.case_id }}<br>Level: {{ doc.level }}<br>Issue Reported to HR On: {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}<br>Issue In Details: {{ doc.issue_in_details or \"No remarks provided.\" }}\n</p>\n<p><br></p>\n<p>Kindly take the required action as per the Unauthorized Absence process.</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Unauthorized Absence Notice – {{ doc.employee_name }} – Case ID: {{ doc.case_id }}",
+  "use_html": 1
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Email Template",
+  "modified": "2026-09-01 16:31:46.938853",
+  "name": "Reminder Of Unauthorized Absence",
+  "response": null,
+  "response_html": "<p>Dear Team,</p>\n<p><br></p>\n<p>\n    A <strong>Reminder of Unauthorized Absence letter</strong> has been initiated \n    for <strong>{{ doc.employee_name }}</strong> \n    (Employee ID: <strong>{{ doc.employee_id }}</strong>) \n    by the HR department and sent to the respective branch.\n</p>\n<p><br></p>\n<p><strong>Case Details:</strong></p>\n<p><strong>Case ID:</strong> {{ doc.case_id }}<br>\n<strong>Level:</strong> {{ doc.level }}<br>\n<strong>Branch:</strong> {{ doc.branch_name }}<br>\n<strong>Issue Occurred On:</strong> {{ doc.issue_occurrence_date.strftime('%d-%m-%Y') if doc.issue_occurrence_date else '' }}<br>\n<strong>Issue Reported to HR:</strong> {{ doc.issue_reported_to_hr.strftime('%d-%m-%Y') if doc.issue_reported_to_hr else '' }}<br>\n<strong>Issue In details:</strong> {{ doc.issue_in_details or \"No remarks provided.\" }}</p>\n<p><br></p>\n<p>Kindly take the necessary action as per the Unauthorized Absence policy.</p>\n<p><br></p>\n<p>Regards,<br>HR Department</p>",
+  "subject": "Reminder of Unauthorized Absence – {{ doc.employee_name }} – Case ID: {{ doc.case_id }}",
+  "use_html": 1
+ }
 ]
