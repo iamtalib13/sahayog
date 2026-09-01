@@ -115,10 +115,10 @@ frappe.ui.form.on("Enquiry Reminder", {
     if (frm.page && frm.page.set_title) {
       frm.page.set_title(__("Reminder Notice of Enquiry"));
     }
-    // Send Email Button
+    // Send Email Button - show after submit (or when saved)
     frm.remove_custom_button("Send Email");
 
-    if (!frm.is_new() && frm.doc.status === "Under Process") {
+    if (!frm.is_new()) {
       sahayog.dams.add_send_email_button(frm);
     }
     /*
