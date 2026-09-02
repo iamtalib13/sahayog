@@ -1,6 +1,10 @@
 frappe.ui.form.on('Account Opening Operations', {
     refresh(frm) {
 
+        // Save button ko completely hide/disable karne ke liye
+        frm.disable_save();
+        frm.set_read_only();
+
         setTimeout(() => {
             let sol_field = frm.get_field('sol_id');
             if (sol_field && sol_field.$wrapper) {

@@ -1,6 +1,10 @@
 frappe.ui.form.on('Miscellaneous', {
     refresh(frm) {
 
+        // Save button disable aur form read-only karne ke liye
+        frm.disable_save();
+        frm.set_read_only();
+        
     setTimeout(() => {
     frm.get_field('sol_id')?.$wrapper.find('a')
         .removeAttr('href')
@@ -90,6 +94,98 @@ frappe.ui.form.on('Miscellaneous', {
                         }
 
                         process_account_error_file(values.excel_file, false);
+                    }
+                });
+
+                d.show();
+
+                // Download Template Handler
+                d.$wrapper.find('.btn-download-template').on('click', function() {
+                    window.location.href = `/api/method/sahayog.branch_score_card.doctype.miscellaneous.miscellaneous.download_miscellaneous_template?type_name=${encodeURIComponent(type_name)}`;
+                });
+            }, __('Actions'));
+
+            // BUTTON B: Bank Reconciliation Excel
+            frm.add_custom_button(__('Upload Bank Reconciliation Excel'), function () {
+                let type_name = 'Bank Reconciliation Discrepancy';
+                let d = new frappe.ui.Dialog({
+                    title: __('Upload Bank Reconciliation Excel'),
+                    fields: [
+                        {
+                            label: __('Select Excel File'),
+                            fieldname: 'excel_file',
+                            fieldtype: 'Attach',
+                            reqd: 1,
+                            description: __('Note: Only .xlsx or .xls files are allowed.')
+                        },
+                        {
+                            fieldtype: 'HTML',
+                            fieldname: 'format_info',
+                            options: `
+                                <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #006768; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <b>Required Excel Columns for Bank Reconciliation:</b><br>
+                                        <span style="color: #555;">BRANCH CODE ( SOL ID ), Discrepancy Date</span>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #006768; font-weight: 600; text-decoration: none;">
+                                            <i class="fa fa-download"></i> Download Template
+                                        </button>
+                                    </div>
+                                </div>
+                            `
+                        }
+                    ],
+                    primary_action_label: __('Process File'),
+                    primary_action(values) {
+                        d.hide();
+
+                        function process_reco_file(file_url, is_confirmed) {
+                            frappe.call({
+                                method: 'sahayog.branch_score_card.doctype.miscellaneous.miscellaneous.process_miscellaneous_excel',
+                                args: {
+                                    file_url: file_url,
+                                    type_name: type_name,
+                                    confirm: is_confirmed,
+                                    docname: frm.doc.name
+                                },
+                                freeze: true,
+                                freeze_message: is_confirmed ? __('Applying Bank Reconciliation changes...') : __('Analyzing Excel File...'),
+                                callback: function (r) {
+                                    if (r.message) {
+                                        if (r.message.status === "no_change") {
+                                            frappe.msgprint({
+                                                title: __('No Updates Required'),
+                                                indicator: 'orange',
+                                                message: __(r.message.message)
+                                            });
+                                        } else if (r.message.status === "requires_confirmation") {
+                                            frappe.confirm(
+                                                `<b>The following Bank Reconciliation changes will be applied:</b><br><br>
+                                                 <div style="max-height: 250px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #e2e8f0;">
+                                                    ${r.message.summary_html}
+                                                 </div><br>
+                                                 <b>Are you sure you want to apply these changes?</b>`,
+                                                function () {
+                                                    process_reco_file(file_url, true);
+                                                },
+                                                function () {
+                                                    frappe.show_alert({ message: __('Upload cancelled by user.'), indicator: 'info' });
+                                                }
+                                            );
+                                        } else if (r.message.status === "success") {
+                                            frappe.show_alert({ 
+                                                message: __('Bank Reconciliation excel processed successfully!'), 
+                                                indicator: 'green' 
+                                            });
+                                            frm.reload_doc();
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        process_reco_file(values.excel_file, false);
                     }
                 });
 

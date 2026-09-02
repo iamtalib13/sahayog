@@ -213,19 +213,6 @@ class BranchScoreCard(Document):
                 ):
                     zero_ip_count_value = cint(raw_zero_ip)
 
-        # Stop execution only if NEITHER source document exists in the system
-        if not crl_doc and account_opening_doc is None:
-            frappe.throw(
-                _(
-                    "No data is available for Branch <b>{0}</b> ({1}) for <b>{2} {3}</b>."
-                ).format(
-                    self.branch_name or self.branch,
-                    self.branch,
-                    self.month,
-                    self.year,
-                ),
-                title=_("Data Not Found"),
-            )
             
         # -----------------------------------------------------
         # 7.5. READ MISCELLANEOUS DATA
