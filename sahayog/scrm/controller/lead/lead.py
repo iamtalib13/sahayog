@@ -40,8 +40,13 @@ def update_employee_details(doc, method):
             frappe.throw("An error occurred while updating employee details.")
 
 
-def validate_duplicate_lead(doc, method):
-    """Server-side duplicate lead check — same mobile + product (amount ignored, no time limit)."""
+def validate_duplicate_lead(doc, method=None):
+    """Server-side duplicate lead check — same mobile + product (amount ignored, no time limit).
+    Runs in before_naming to prevent tabSeries locking when rejected, and guards against double-execution in validate.
+    """
+    if getattr(doc.flags, "duplicate_lead_checked", False):
+        return
+
     if not doc.mobile_no or not doc.get("custom_product_table"):
         return
 
@@ -79,6 +84,8 @@ def validate_duplicate_lead(doc, method):
             title="Duplicate Lead",
             msg=f"A lead for Product <b>{d.product}</b> already exists for this mobile number. (Lead: {d.name})"
         )
+
+    doc.flags.duplicate_lead_checked = True
 
 
 def validate_duplicate_appointment(doc, method):

@@ -301,13 +301,25 @@ class MyCRM {
   // Confirmation helper
   async confirmSave(message) {
     return new Promise(resolve => {
+      let resolved = false;
       const dlg = new frappe.ui.Dialog({
         title: __('Confirm Action'),
         fields: [{ fieldtype: 'HTML', options: `<p>${message}</p>` }],
         primary_action_label: __('Yes'),
         secondary_action_label: __('No'),
-        primary_action: () => { dlg.hide(); resolve(true); },
-        secondary_action: () => { dlg.hide(); resolve(false); },
+        primary_action: () => {
+          if (resolved) return;
+          resolved = true;
+          dlg.get_primary_btn().prop('disabled', true);
+          dlg.hide();
+          resolve(true);
+        },
+        secondary_action: () => {
+          if (resolved) return;
+          resolved = true;
+          dlg.hide();
+          resolve(false);
+        },
       });
       dlg.show();
     });
@@ -2209,6 +2221,9 @@ createLead() {
       primary_action_label: "Create Lead",
       primary_action: async (values) => {
         const btn = dialog.get_primary_btn();
+        if (btn.data('submitting') || btn.prop('disabled')) {
+          return;
+        }
 
         // Direct DOM re-sync before validation (prevents mobile keyboard / network lag data loss)
         dialog.$wrapper.find("#lead-product-rows tr").each(function(index) {
@@ -2238,13 +2253,17 @@ createLead() {
           return;
         }
 
-        // Backend validate hook (validate_duplicate_lead) duplicate check karega
+        btn.data('submitting', true);
+        btn.prop('disabled', true);
 
-        // Save
-        if (!(await this.confirmSave(__('Are you sure you want to create this Lead?')))) {
+        // Save confirmation
+        const confirmed = await this.confirmSave(__('Are you sure you want to create this Lead?'));
+        if (!confirmed) {
+          btn.data('submitting', false);
+          btn.prop('disabled', false);
           return;
         }
-        btn.prop('disabled', true);
+
         freezeScreen("Creating Lead...");
 
         try {
@@ -2274,6 +2293,7 @@ createLead() {
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
         } finally {
           unfreezeScreen();
+          btn.data('submitting', false);
           btn.prop('disabled', false);
         }
       },
@@ -2444,6 +2464,10 @@ dialog.$wrapper.find(".modal-title").css({
       primary_action_label: "Create Appointment",
       primary_action: async (values) => {
         const btn = d.get_primary_btn();
+        if (btn.data('submitting') || btn.prop('disabled')) {
+          return;
+        }
+
         const party = d.$wrapper.find("#create_appt_lead").val();
         const time = d.$wrapper.find("#create_appt_time").val();
         const remarks = d.$wrapper.find("#create_appt_remarks").val().trim();
@@ -2461,13 +2485,17 @@ dialog.$wrapper.find(".modal-title").css({
             return;
         }
 
-        // Backend validate hook (validate_duplicate_appointment) duplicate check karega
+        btn.data('submitting', true);
+        btn.prop('disabled', true);
 
         // Save
-        if (!(await me.confirmSave(__('Are you sure you want to create this Appointment?')))) {
+        const confirmed = await me.confirmSave(__('Are you sure you want to create this Appointment?'));
+        if (!confirmed) {
+            btn.data('submitting', false);
+            btn.prop('disabled', false);
             return;
         }
-        btn.prop('disabled', true);
+
         freezeScreen("Creating Appointment...");
 
         try {
@@ -2501,6 +2529,7 @@ dialog.$wrapper.find(".modal-title").css({
           frappe.msgprint({ title: "Error", indicator: "red", message: error.message || "Something went wrong" });
         } finally {
           unfreezeScreen();
+          btn.data('submitting', false);
           btn.prop('disabled', false);
         }
       },

@@ -364,6 +364,13 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.update_employee_details",
             "sahayog.scrm.controller.lead.lead.set_is_operation_lead",
         ],
+        "before_naming": [
+            "sahayog.scrm.controller.lead.lead.validate_lead_mobile",
+            "sahayog.scrm.controller.lead.lead.validate_lead_products",
+            "sahayog.scrm.controller.lead.lead.validate_lead_source",
+            "sahayog.scrm.controller.lead.lead.validate_required_employee_fields",
+            "sahayog.scrm.controller.lead.lead.validate_duplicate_lead",
+        ],
         "validate": [
             "sahayog.scrm.controller.lead.lead.validate_lead_mobile",
             "sahayog.scrm.controller.lead.lead.validate_lead_products",
