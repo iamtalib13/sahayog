@@ -226,6 +226,31 @@ class BranchScoreCard(Document):
                 ),
                 title=_("Data Not Found"),
             )
+            
+        # -----------------------------------------------------
+        # 7.5. READ MISCELLANEOUS DATA
+        # -----------------------------------------------------
+        account_opening_error_count = 0
+        reconciliation_discrepancy_count = 0
+
+        if clean_month and year_val and sol_id:
+            misc_doc_name = f"{sol_id}-{clean_month}-{year_val}"
+
+            if frappe.db.exists("Miscellaneous", misc_doc_name):
+                misc_doc = frappe.get_doc("Miscellaneous", misc_doc_name)
+                account_opening_error_count = cint(getattr(misc_doc, "account_opening_error_count", 0))
+                reconciliation_discrepancy_count = cint(getattr(misc_doc, "reconciliation_discrepancy_count", 0))
+            else:
+                misc_data = frappe.get_all(
+                    "Miscellaneous",
+                    filters={"sol_id": sol_id, "month": clean_month, "year": year_val},
+                    fields=["account_opening_error_count", "reconciliation_discrepancy_count"],
+                    limit=1
+                )
+                if misc_data:
+                    account_opening_error_count = cint(misc_data[0].account_opening_error_count)
+                    reconciliation_discrepancy_count = cint(misc_data[0].reconciliation_discrepancy_count)
+                    
 
         # -----------------------------------------------------
         # 8. UNIVERSAL DYNAMIC SCORING (Evaluates 0 Values directly)
@@ -251,6 +276,8 @@ class BranchScoreCard(Document):
                     "zero_ip": zero_ip_count_value,
                     "zero_ip_count": zero_ip_count_value,
                     "zero_ip_funding_count": zero_ip_count_value,
+                    "account_opening_error_count": account_opening_error_count,
+                    "reconciliation_discrepancy_count": reconciliation_discrepancy_count,
                 }
                 try:
                     rendered = frappe.render_template(

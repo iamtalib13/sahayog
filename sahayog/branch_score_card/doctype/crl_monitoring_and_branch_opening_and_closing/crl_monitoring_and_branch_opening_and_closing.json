@@ -7,6 +7,8 @@
  "field_order": [
   "crl_monitoring_tab",
   "sol_id",
+  "column_break_yfwh",
+  "branch",
   "column_break_fwgg",
   "br_cash_retention_limit_crl",
   "section_break_pofc",
@@ -36,7 +38,8 @@
    "fieldtype": "Link",
    "label": "SOL ID",
    "options": "Sahayog Branch",
-   "read_only": 1
+   "read_only": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "month",
@@ -150,12 +153,22 @@
    "hidden": 1,
    "label": "Holiday List",
    "options": "Holiday List"
+  },
+  {
+   "fieldname": "column_break_yfwh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sol_id.branch",
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-28 14:03:03.501182",
+ "modified": "2026-09-01 13:02:00.457604",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "CRL Monitoring and Branch Opening and Closing",

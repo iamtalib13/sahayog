@@ -16,8 +16,27 @@ frappe.ui.form.on("Branch Score Card", {
     },
 
     refresh(frm) {
+
+        // Save button remove/hide karne ke liye
+        frm.disable_save();      
+
         frm.trigger("ensure_empty_grids_visible");
         frm.trigger("apply_grid_column_styles");
+        frm.trigger("render_month_selector");
+
+        // Disable Link Navigation on Read-Only Branch Field
+        if (frm.fields_dict['branch'] && frm.fields_dict['branch'].$wrapper) {
+            frm.fields_dict['branch'].$wrapper.find('a').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }).css({
+                "pointer-events": "none",
+                "cursor": "default",
+                "text-decoration": "none",
+                "color": "inherit"
+            });
+        }
 
         // Jab document already saved ho (New nahi ho), toh widget render karo bina form dirty kiye
         if (!frm.is_new()) {
@@ -94,6 +113,130 @@ frappe.ui.form.on("Branch Score Card", {
             });
         });
     },
+
+
+    render_month_selector(frm) {
+    let field = frm.get_field('month_selector_html');
+    if (!field?.$wrapper) return;
+
+    field.$wrapper.removeClass('hide hidden').css({
+        "display": "block",
+        "visibility": "visible",
+        "min-height": "60px"
+    }).show();
+
+    // Financial Year order (April to March)
+    const fy_months = [
+        "April", "May", "June", "July", "August", "September", 
+        "October", "November", "December", "January", "February", "March"
+    ];
+
+    const jan_mar = ["January", "February", "March"];
+    const current_selected = frm.doc.month || "";
+
+    const capsule_items = fy_months.map(m => {
+        const isActive = (m.toLowerCase() === current_selected.toLowerCase());
+        const style = isActive 
+            ? `background-color: #006768 !important; color: #ffffff !important; border-color: #004647 !important; box-shadow: 0 4px 8px rgba(0, 103, 104, 0.35) !important; font-weight: 700 !important;`
+            : `background-color: #f1f5f9 !important; color: #475569 !important; border-color: #cbd5e1 !important;`;
+
+        return `
+            <button type="button" 
+                    class="btn month-capsule-btn ${isActive ? 'active-capsule' : ''}" 
+                    style="${style}"
+                    data-value="${m}">
+                ${m}
+            </button>
+        `;
+    }).join('');
+
+    const html_content = `
+        <style>
+            .month-capsule-container {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                gap: 10px !important;
+                padding: 12px 14px !important;
+                background-color: #ffffff !important;
+                border-radius: 12px !important;
+                border: 1px solid #e2e8f0 !important;
+                margin-bottom: 15px !important;
+                align-items: center !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                scrollbar-width: thin;
+            }
+            .month-capsule-container::-webkit-scrollbar {
+                height: 5px;
+            }
+            .month-capsule-container::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+            .month-capsule-btn {
+                border-radius: 24px !important;
+                padding: 8px 18px !important;
+                font-size: 13.5px !important;
+                font-weight: 600 !important;
+                white-space: nowrap !important;
+                cursor: pointer !important;
+                outline: none !important;
+                transition: all 0.2s ease-in-out !important;
+                border: 1.5px solid !important;
+                flex-shrink: 0 !important;
+                min-height: 40px !important;
+            }
+            .month-capsule-btn:hover {
+                transform: translateY(-2px) !important;
+                filter: brightness(0.95) !important;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+            }
+        </style>
+        <div class="month-capsule-container">
+            ${capsule_items}
+        </div>
+    `;
+
+    field.$wrapper.html(html_content);
+
+    // Event Handler
+    field.$wrapper.find('.month-capsule-btn').on('click', function (e) {
+        e.preventDefault();
+        const selected_month = $(this).data('value');
+
+        if (!selected_month || selected_month === frm.doc.month) return;
+
+        const { branch, year, month: doc_month, name: doc_name, branch_name } = frm.doc;
+        const form_year = parseInt(year);
+
+        if (!branch || !form_year) {
+            frappe.msgprint(__('Please select Branch and Year first.'));
+            return;
+        }
+
+        const base_fy_year = jan_mar.includes(doc_month) ? (form_year - 1) : form_year;
+        const target_year = jan_mar.includes(selected_month) ? (base_fy_year + 1) : base_fy_year;
+
+        frappe.db.get_value('Branch Score Card', {
+            branch: branch,
+            month: selected_month,
+            year: target_year
+        }, 'name', (r) => {
+            if (r?.name) {
+                if (r.name !== doc_name) {
+                    frappe.set_route('Form', 'Branch Score Card', r.name);
+                }
+            } else {
+                frappe.msgprint({
+                    title: __('Record Not Found'),
+                    indicator: 'orange',
+                    message: __('Scorecard record is not available for <b>{0}</b> branch for <b>{1} {2}</b>.', [branch_name || branch, selected_month, target_year])
+                });
+            }
+        });
+    });
+},
 
     async branch(frm) {
         if (frm.doc.branch) {
@@ -284,6 +427,7 @@ frappe.ui.form.on("Branch Score Card", {
         });
     },
 
+
     apply_grid_column_styles(frm) {
         if (!document.getElementById("score-table-custom-style")) {
             const style = document.createElement("style");
@@ -411,7 +555,25 @@ frappe.ui.form.on("Branch Score Card", {
                     grouped[fn].push(row);
                 });
 
-                for (let fn in grouped) {
+                // EXACT STRING MATCHES (Includes dynamic key matching)
+                const target_order = [
+                    "CRL Monitoring",
+                    "Account Opening Operations",
+                    "Miscellaneous",
+                    "Audit and Compliance"
+                ];
+
+                // Helper to match string prefixes cleanly
+                const get_order_index = (fn_name) => {
+                    let idx = target_order.findIndex(target => fn_name.toLowerCase().startsWith(target.toLowerCase()));
+                    return idx !== -1 ? idx : 99;
+                };
+
+                let sorted_keys = Object.keys(grouped).sort((a, b) => get_order_index(a) - get_order_index(b));
+
+                sorted_keys.forEach(fn => {
+                    if (!grouped[fn] || grouped[fn].length === 0) return;
+
                     let group_rows = grouped[fn];
                     let rowspan = group_rows.length;
 
@@ -440,7 +602,7 @@ frappe.ui.form.on("Branch Score Card", {
                             <td class="${bg_class} bsc-score-cell">${score_display}</td>
                         </tr>`;
                     });
-                }
+                });
             }
 
             let html = `
