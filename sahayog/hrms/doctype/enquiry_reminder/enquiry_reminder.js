@@ -286,41 +286,21 @@ frappe.ui.form.on("Enquiry Reminder", {
         document.body.appendChild(iframe);
 
         iframe.onload = () => {
-          const doc = iframe.contentWindow.document;
-
-          const style = doc.createElement("style");
-          style.innerHTML = `
-          @page { size: A4; margin: 0 !important; }
-
-          html, body {
-            margin:0 !important;
-            padding:0 !important;
-            width:210mm !important;
-            height:297mm !important;
-            overflow:hidden !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-
-          .print-body {
-            padding: 145px 30px 40px 30px;
-            box-sizing:border-box;
-          }
-        `;
-          doc.head.appendChild(style);
-
           setTimeout(() => {
             iframe.contentWindow.focus();
             iframe.contentWindow.print();
-          }, 500);
+          }, 2000);
 
+          let done = false;
           const cleanup = () => {
+            if (done) return;
+            done = true;
             overlay.remove();
             iframe.remove();
           };
 
           iframe.contentWindow.addEventListener("afterprint", cleanup);
-          setTimeout(cleanup, 5000);
+          setTimeout(cleanup, 6000);
         };
 
         iframe.onerror = () => {
