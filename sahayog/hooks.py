@@ -28,14 +28,12 @@ website_route_rules = [
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/sahayog/css/disciplinary_case.css"
+# app_include_css = "/assets/sahayog/css/sahayog.css"
 # app_include_js = "/assets/sahayog/js/sahayog.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/sahayog/css/sahayog.css"
-web_include_js = [
-    "/assets/sahayog/js/login_password_reset.js"
-]
+# web_include_js = "/assets/sahayog/js/sahayog.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "sahayog/public/scss/website"
@@ -78,7 +76,6 @@ doctype_list_js = {
     "Branch Petty Cash Account": "doctype/branch_petty_cash_account/branch_petty_cash_account_list.js",
     "Lead": "public/js/lead_list.js",
     "Asset": "public/js/asset_list.js",
-    "Employee": "public/js/employee_list.js",
 }
 app_include_js = [
     "/assets/sahayog/js/assignmate.js",
@@ -448,10 +445,9 @@ scheduler_events = {
         ],
         "*/5 * * * *": ["sahayog.tasks.reset_auto_prepared_reports"],
 
-        # Run daily at 2:00 AM — Sync Sahayog Branches from Finacle & Process Relieved Employees
+        # Run daily at 2:00 AM — Sync Sahayog Branches from Finacle
         "0 2 * * *": [
-            "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
-            "sahayog.tasks.auto_process_relieved_employees"
+            "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle"
         ],
 
         # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
