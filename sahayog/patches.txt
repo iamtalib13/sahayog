@@ -64,3 +64,4 @@ sahayog.patches.assign_support_staff_holiday_lists
 sahayog.patches.add_resignation_type_to_employee
 sahayog.patches.custom_fields.add_last_password_reset_on_to_user
 sahayog.patches.set_common_hr_stamp
+sahayog.patches.set_domestic_enquiry_stamp

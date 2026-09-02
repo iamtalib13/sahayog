@@ -201,58 +201,10 @@ frappe.ui.form.on("Domestic Enquiry", {
             document.body.appendChild(iframe);
 
             iframe.onload = () => {
-              const doc = iframe.contentWindow.document;
-
-              // Inject CSS with background image for print
-              const style = doc.createElement("style");
-              style.innerHTML = `
-                @page {
-                    size: A4;
-                    margin: 0 !important;
-                }
-
-                html, body {
-                    margin:0 !important;
-                    padding:0 !important;
-                    width:210mm !important;
-                    height:297mm !important;
-                    overflow:hidden !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                }
-
-                .print-page {
-                    position:relative;
-                    width:210mm; height:297mm;
-                    overflow:hidden;
-                }
-
-                .print-body {
-                    padding: 145px 30px 40px 30px;
-                    height:100%;
-                    box-sizing:border-box;
-                    page-break-inside: avoid;
-                }
-          `;
-              doc.head.appendChild(style);
-
-              // Wrap body content
-              const bodyHTML = doc.body.innerHTML;
-              doc.body.innerHTML = `<div class="print-content">${bodyHTML}</div>`;
-
-              // Preload background image
-              const bgImg = new Image();
-              bgImg.src = "/assets/sahayog/images/letter_head_and_footer_.png";
-              bgImg.onload = function () {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-              };
-
-              // Fallback
               setTimeout(() => {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
-              }, 3000);
+              }, 2000);
 
               let done = false;
               const cleanup = () => {
