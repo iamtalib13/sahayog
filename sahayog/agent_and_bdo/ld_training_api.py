@@ -1074,13 +1074,18 @@ def get_trainer_options(enabled_only=True):
 
 @frappe.whitelist()
 def get_agent_options(enabled_only=True):
-    """Active agents to pick as participants in the Add Training form."""
-    filters = {}
+    """Agents to pick as participants in the Add Training form.
+    Filters by agent_status = 'live' (case-insensitive) when enabled_only is truthy.
+    """
     if enabled_only:
-        filters["agent_status"] = "Active"
+        rows = frappe.db.sql(
+            "SELECT name, agent_name, branch_name FROM `tabAgent` "
+            "WHERE LOWER(agent_status) = 'live' ORDER BY agent_name ASC",
+            as_dict=True,
+        )
+        return rows
     return frappe.db.get_all(
         "Agent",
-        filters=filters,
         fields=["name", "agent_name", "branch_name"],
         order_by="agent_name asc",
         limit_page_length=0,
