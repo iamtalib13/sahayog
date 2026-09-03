@@ -1559,6 +1559,40 @@
         width: 100%;
       }
 
+      /* Multi-geography rows — 2 per row grid */
+      #geo-rows { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+      @media (max-width: 560px) { #geo-rows { grid-template-columns:1fr; } }
+      .geo-row {
+        display:flex; align-items:center; gap:8px;
+        border:1px solid var(--border); border-radius:8px; padding:8px 10px;
+        background:var(--surface);
+      }
+      .geo-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+      .geo-branch-wrap { position:relative; display:flex; align-items:center; }
+      .geo-branch-wrap .nt-input { width:100%; }
+      .geo-branch-pop {
+        position:absolute; z-index:300; left:0; right:0;
+        top:calc(100% + 4px);
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:10px; box-shadow:0 16px 40px rgba(16,24,40,0.18);
+        max-height:212px; overflow-y:auto;
+      }
+      .geo-branch-pop .branch-opt { padding:6px 12px; font-size:13px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+      .geo-branch-pop .branch-opt:hover { background:var(--surface-2); }
+      .geo-row-meta {
+        display:flex; gap:6px; flex-wrap:wrap;
+        font-size:10.5px; color:var(--ink-3);
+      }
+      .geo-row-meta span {
+        background:var(--surface-2); border-radius:999px; padding:2px 7px; white-space:nowrap;
+      }
+      .geo-remove {
+        width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+        color:var(--ink-3); border:1px solid var(--border); background:var(--surface);
+        cursor:pointer; flex-shrink:0;
+      }
+      .geo-remove:hover { background:var(--surface-2); color:#b91c1c; border-color:#fecaca; }
+
       /* Ad-hoc + agenda */
       .nt-check {
         display: flex;
@@ -3202,51 +3236,24 @@
               </label>
             </div>
 
-            <!-- Branch (editable) -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
-              </svg>
-              <div class="nt-branch-block">
-                <span class="nt-kicker">Branch</span>
-                <div class="nt-branch-wrap">
-                  <input
-                    class="nt-input"
-                    id="new-branch"
-                    placeholder="Select or type branch…"
-                    autocomplete="off"
-                  />
-                  <div
-                    id="branch-dropdown"
-                    class="nt-pop nt-branch-pop"
-                    style="display: none"
-                  ></div>
-                </div>
+            <!-- Geographies: Multiple branches (Code - Branch Name) -->
+            <div class="nt-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;color:var(--ink-3);flex-shrink:0;">
+                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                </svg>
+                <span class="nt-kicker" style="flex:1;">Geographies — Branches</span>
+                <button type="button" class="btn" id="btn-add-geo" style="height:26px;padding:0 10px;font-size:12px;">+ Add Branch</button>
               </div>
+              <div id="geo-rows" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+              <div class="nt-geo-hint" id="geo-hint" style="font-size:11px;color:var(--ink-3);"></div>
             </div>
-          </div>
-
-          <!-- Zone / Region / District (read-only, auto-filled from Branch) -->
-          <div class="nt-geo">
-            <div>
-              <label for="new-zone">Zone</label>
-              <input id="new-zone" readonly placeholder="—" />
-            </div>
-            <div>
-              <label for="new-region">Region</label>
-              <input id="new-region" readonly placeholder="—" />
-            </div>
-            <div>
-              <label for="new-district">District</label>
-              <input id="new-district" readonly placeholder="—" />
-            </div>
+            <!-- Hidden legacy fields kept for backward compat (not visible) -->
+            <input type="hidden" id="new-branch" />
+            <input type="hidden" id="new-zone" />
+            <input type="hidden" id="new-region" />
+            <input type="hidden" id="new-district" />
+            <div id="branch-dropdown" style="display:none"></div>
           </div>
 
           <div class="nt-body nt-body-foot">
@@ -3401,7 +3408,7 @@
           branchOptions: [],
           allEmployees: [],
           branchPick: [],
-          selectedBranch: "",
+          selectedGeographies: [],
           selectedParticipants: [],
         };
 
@@ -3538,16 +3545,20 @@
           var f = state.calFilters;
           var q = (state.search || "").trim().toLowerCase();
           return state.calEvents.filter(function (ev) {
-            if (f.zone && ev.zone !== f.zone) return false;
-            if (f.region && ev.region !== f.region) return false;
-            if (f.district && ev.district !== f.district) return false;
-            if (
-              f.branch &&
-              !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())
-            )
-              return false;
+            var geos = ev.geographies || [];
+            if (geos.length) {
+              if (f.zone && !geos.some(function(g){ return g.zone === f.zone; })) return false;
+              if (f.region && !geos.some(function(g){ return g.region === f.region; })) return false;
+              if (f.district && !geos.some(function(g){ return g.district === f.district; })) return false;
+              if (f.branch && !geos.some(function(g){ return g.branch === f.branch; })) return false;
+            } else {
+              if (f.zone && ev.zone !== f.zone) return false;
+              if (f.region && ev.region !== f.region) return false;
+              if (f.district && ev.district !== f.district) return false;
+              if (f.branch && !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())) return false;
+            }
             if (q) {
-              var hay = [
+              var hayParts = [
                 ev.training_program,
                 ev.topic,
                 ev.trainer_name,
@@ -3556,9 +3567,13 @@
                 ev.region,
                 ev.district,
                 ev.branch,
-              ]
-                .join(" ")
-                .toLowerCase();
+              ];
+              if (geos.length) {
+                geos.forEach(function(g){
+                  hayParts.push(g.branch); hayParts.push(g.zone); hayParts.push(g.region); hayParts.push(g.district);
+                });
+              }
+              var hay = hayParts.join(" ").toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
@@ -4268,20 +4283,36 @@
               : esc(ev.time)
             : "—";
 
+          var geos = ev.geographies || [];
+          var geoSummary = "";
+          if (geos.length) {
+            geoSummary = geos.map(function(g){
+              var codeName = g.branch || "";
+              var binfo = (state.branchPick || []).find(function(b){ return b.name === g.branch; });
+              var disp = binfo && binfo.branch ? codeName + " - " + binfo.branch : codeName;
+              return esc(disp) + " (" + esc(g.zone||"—") + "/" + esc(g.district||"—") + ")";
+            }).join("<br>");
+          } else {
+            geoSummary = (ev.zone||"—") + " / " + (ev.district||"—") + " — " + esc(ev.branch||"—");
+          }
           var body =
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
             '<div class="meta-grid">' +
             metaRow("Date", dateLabel) +
             metaRow("Time", timeLabel) +
-            metaRow("Zone", esc(ev.zone || "—")) +
-            metaRow("Region", esc(ev.region || "—")) +
-            metaRow("District", esc(ev.district || "—")) +
-            metaRow("Branch", esc(ev.branch || "—")) +
+            metaRow("Zone", esc(ev.zone || (geos[0]&&geos[0].zone) || "—")) +
+            metaRow("Region", esc(ev.region || (geos[0]&&geos[0].region) || "—")) +
+            metaRow("District", esc(ev.district || (geos[0]&&geos[0].district) || "—")) +
+            metaRow("Branch", esc(ev.branch || (geos[0]&&geos[0].branch) || "—")) +
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
-            "</div></div>";
+            "</div>";
+          if (geos.length > 1) {
+            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>All Branches:</strong><br>' + geoSummary + '</div>';
+          }
+          body += "</div>";
 
           body +=
             '<div class="drawer-section">' +
@@ -4577,9 +4608,9 @@
           document.getElementById("new-end-time").readOnly = false;
           document.getElementById("new-location").value = "";
           document.getElementById("new-location").readOnly = false;
+          state.selectedGeographies = [];
+          if (typeof renderGeoRows === "function") renderGeoRows();
           document.getElementById("new-branch").value = "";
-          state.selectedBranch = "";
-          document.getElementById("new-branch").readOnly = false;
           document.getElementById("new-zone").value = "";
           document.getElementById("new-region").value = "";
           document.getElementById("new-district").value = "";
@@ -4667,11 +4698,14 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-location", ev.training_location || "");
-          f("new-branch", ev.branch || "");
-          if (ev.branch) dialogFn.branchSelect(ev.branch);
-          f("new-zone", ev.zone || "");
-          f("new-region", ev.region || "");
-          f("new-district", ev.district || "");
+          if (ev.geographies && ev.geographies.length) {
+            state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
+          } else if (ev.branch) {
+            state.selectedGeographies = [{branch: ev.branch, zone: ev.zone||"", region: ev.region||"", district: ev.district||""}];
+          } else {
+            state.selectedGeographies = [];
+          }
+          if (typeof renderGeoRows === "function") renderGeoRows();
           f("new-trainer", ev.trainer || ev.trainer_name || "");
           var adhoc = document.getElementById("new-adhoc");
           adhoc.checked = !!ev.is_adhoc;
@@ -4915,6 +4949,10 @@
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
           var agenda =
             (document.getElementById("new-agenda") || {}).value || "";
+          if (!state.selectedGeographies || !state.selectedGeographies.length) {
+            showToast("Select at least one branch");
+            return;
+          }
           var args = {
             training_program: program,
             from_date: date,
@@ -4925,10 +4963,11 @@
               .getElementById("new-location")
               .value.trim(),
             trainer: trainerSel.value.trim() || null,
-            zone: document.getElementById("new-zone").value,
-            region: document.getElementById("new-region").value,
-            district: document.getElementById("new-district").value,
-            branch: state.selectedBranch || null,
+            zone: (state.selectedGeographies[0] && state.selectedGeographies[0].zone) || "",
+            region: (state.selectedGeographies[0] && state.selectedGeographies[0].region) || "",
+            district: (state.selectedGeographies[0] && state.selectedGeographies[0].district) || "",
+            branch: (state.selectedGeographies[0] && state.selectedGeographies[0].branch) || null,
+            geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
@@ -5507,24 +5546,20 @@
 
         document.getElementById("btn-save-training").onclick = saveTraining;
 
-        /* ---------- Branch custom dropdown (Add Training modal) ---------- */
+        /* ---------- Multi-Geography Branch picker (Add Training modal) — 2 per row ---------- */
         var dialogFn = {
           renderPChips: function () {},
           openPop: function () {},
           closePop: function () {},
         };
+        var renderGeoRows = null;
         (function () {
-          var branchInput = document.getElementById("new-branch");
-          var branchDd = document.getElementById("branch-dropdown");
-
-          function setGeo(geo) {
-            document.getElementById("new-zone").value = geo.zone || "";
-            document.getElementById("new-region").value = geo.region || "";
-            document.getElementById("new-district").value = geo.district || "";
-          }
+          var geoContainer = document.getElementById("geo-rows");
+          var addBtn = document.getElementById("btn-add-geo");
+          var hintEl = document.getElementById("geo-hint");
 
           function branchLabel(b) {
-            return b && b.branch ? b.name + " - " + b.branch : b.name;
+            return b && b.branch ? b.name + " - " + b.branch : (b ? b.name : "");
           }
 
           function findBranch(code) {
@@ -5536,90 +5571,172 @@
             return found;
           }
 
-          function renderDropdown(filter) {
+          function updateHint() {
+            if (!hintEl) return;
+            var n = (state.selectedGeographies || []).length;
+            var filled = (state.selectedGeographies || []).filter(function(g){ return g.branch; }).length;
+            if (filled === 0) hintEl.textContent = "Select at least one branch (Code - Branch Name). Zone/Region/District auto-filled.";
+            else if (filled === 1) hintEl.textContent = "1 branch selected";
+            else hintEl.textContent = filled + " branches selected";
+          }
+
+          renderGeoRows = function() {
+            if (!geoContainer) return;
+            var isEdit = state.dialogMode === "edit";
+            geoContainer.innerHTML = "";
+            if (!state.selectedGeographies || !state.selectedGeographies.length) {
+              state.selectedGeographies = [{}];
+            }
+            state.selectedGeographies.forEach(function(geo, idx){
+              var row = document.createElement("div");
+              row.className = "geo-row";
+              var binfo = findBranch(geo.branch);
+              var displayVal = binfo ? branchLabel(binfo) : (geo.branch || "");
+              var metaHtml = "";
+              if (geo.branch) {
+                metaHtml = '<span>Zone: ' + esc(geo.zone||"—") + '</span><span>Region: ' + esc(geo.region||"—") + '</span><span>District: ' + esc(geo.district||"—") + '</span>';
+              } else {
+                metaHtml = '<span style="color:var(--ink-3);background:transparent;padding:0;">Type to search branch</span>';
+              }
+              row.innerHTML =
+                '<div class="geo-row-main">' +
+                '  <div class="geo-branch-wrap">' +
+                '    <input class="nt-input geo-branch-input" data-idx="' + idx + '" placeholder="Select branch — Code - Branch Name" autocomplete="off" value="' + esc(displayVal) + '" ' + (isEdit ? 'readonly' : '') + ' />' +
+                '    <div class="geo-branch-pop" data-idx="' + idx + '" style="display:none"></div>' +
+                '  </div>' +
+                '  <div class="geo-row-meta">' + metaHtml + '</div>' +
+                '</div>' +
+                (isEdit ? '' : '<button type="button" class="geo-remove" data-remove="' + idx + '" title="Remove">&times;</button>');
+              geoContainer.appendChild(row);
+            });
+            updateHint();
+            bindRowEvents();
+          };
+
+          function bindRowEvents(){
+            var isEdit = state.dialogMode === "edit";
+            if (isEdit) return;
+            geoContainer.querySelectorAll(".geo-branch-input").forEach(function(inp){
+              var idx = parseInt(inp.dataset.idx,10);
+              inp.addEventListener("focus", function(){ renderDropdown(idx, this.value); });
+              inp.addEventListener("input", function(){ renderDropdown(idx, this.value); });
+            });
+            geoContainer.querySelectorAll(".geo-remove").forEach(function(btn){
+              btn.addEventListener("click", function(){
+                var idx = parseInt(btn.dataset.remove,10);
+                state.selectedGeographies.splice(idx,1);
+                if (!state.selectedGeographies.length) state.selectedGeographies = [{}];
+                renderGeoRows();
+              });
+            });
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(pop){
+              pop.addEventListener("mousedown", function(e){
+                var opt = e.target.closest(".branch-opt");
+                if (opt) {
+                  e.preventDefault();
+                  var idx = parseInt(pop.dataset.idx,10);
+                  selectBranch(idx, opt.dataset.val);
+                }
+              });
+            });
+          }
+
+          function renderDropdown(idx, filter) {
+            var pop = geoContainer.querySelector('.geo-branch-pop[data-idx="' + idx + '"]');
+            if (!pop) return;
             var q = (filter || "").trim().toLowerCase();
+            var selectedBranches = (state.selectedGeographies || []).map(function(g){ return g.branch; }).filter(Boolean);
             var opts = (state.branchPick || []).filter(function (b) {
+              if (selectedBranches.indexOf(b.name) !== -1 && b.name !== (state.selectedGeographies[idx]||{}).branch) return false;
               if (!q) return true;
               return (
                 (b.name || "").toLowerCase().indexOf(q) !== -1 ||
                 (b.branch || "").toLowerCase().indexOf(q) !== -1
               );
             });
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(p){ if (p!==pop) p.style.display="none"; });
             if (!opts.length) {
-              branchDd.innerHTML =
+              pop.innerHTML =
                 '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No branches found</div>';
             } else {
-              branchDd.innerHTML = opts
+              pop.innerHTML = opts
                 .map(function (b) {
                   return (
                     '<div class="branch-opt" data-val="' +
                     esc(b.name) +
                     '" style="' +
                     "padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);" +
-                    (b.name === state.selectedBranch
+                    (b.name === (state.selectedGeographies[idx]||{}).branch
                       ? "background:var(--accent-soft);color:var(--accent-ink);font-weight:600;"
                       : "") +
                     '">' +
                     '<span style="flex:1">' +
-                    esc(b.name) +
-                    (b.branch ? " &middot; " + esc(b.branch) : "") +
+                    esc(b.name) + ' - ' + esc(b.branch||"") +
                     "</span>" +
                     "</div>"
                   );
                 })
                 .join("");
             }
-            branchDd.style.display = "block";
+            pop.style.display = "block";
           }
 
-          function closeDd() {
-            branchDd.style.display = "none";
+          function closeAllPops(){
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(p){ p.style.display="none"; });
           }
 
-          function selectBranch(val) {
+          function selectBranch(idx, val) {
             var found = findBranch(val);
-            state.selectedBranch = val || "";
-            branchInput.value = found ? branchLabel(found) : val || "";
-            closeDd();
-            if (!val) {
-              setGeo({});
-              return;
-            }
-            // Auto-fill geo
+            var dup = (state.selectedGeographies || []).some(function(g,i){ return i!==idx && g.branch===val; });
+            if (dup) { showToast("Branch already selected"); return; }
             api("get_branch_geo", { branch: val })
               .then(function (geo) {
-                setGeo(geo || {});
+                state.selectedGeographies[idx] = {
+                  branch: val,
+                  zone: (geo && geo.zone) || "",
+                  region: (geo && geo.region) || "",
+                  district: (geo && geo.district) || ""
+                };
+                if (idx===0 && state.selectedGeographies[0]) {
+                  document.getElementById("new-branch").value = val;
+                  document.getElementById("new-zone").value = state.selectedGeographies[0].zone || "";
+                  document.getElementById("new-region").value = state.selectedGeographies[0].region || "";
+                  document.getElementById("new-district").value = state.selectedGeographies[0].district || "";
+                }
+                renderGeoRows();
               })
-              .catch(function () {});
+              .catch(function () {
+                state.selectedGeographies[idx] = { branch: val, zone:"", region:"", district:"" };
+                renderGeoRows();
+              });
           }
 
-          branchInput.addEventListener("focus", function () {
-            if (state.dialogMode === "edit") return;
-            renderDropdown(this.value);
-          });
+          if (addBtn) {
+            addBtn.addEventListener("click", function(){
+              if (state.dialogMode === "edit") return;
+              var last = state.selectedGeographies[state.selectedGeographies.length-1];
+              if (last && !last.branch) { showToast("Select branch for current row first"); return; }
+              state.selectedGeographies.push({});
+              renderGeoRows();
+              setTimeout(function(){
+                var inp = geoContainer.querySelector('.geo-branch-input[data-idx="' + (state.selectedGeographies.length-1) + '"]');
+                if (inp) inp.focus();
+              }, 50);
+            });
+          }
 
-          branchInput.addEventListener("input", function () {
-            state.selectedBranch = "";
-            setGeo({});
-            renderDropdown(this.value);
-          });
-
-          branchDd.addEventListener("mousedown", function (e) {
-            var opt = e.target.closest(".branch-opt");
-            if (opt) {
-              e.preventDefault();
-              selectBranch(opt.dataset.val);
+          document.addEventListener("click", function(e){
+            if (!geoContainer) return;
+            if (!geoContainer.contains(e.target) && e.target.id !== "btn-add-geo") {
+              closeAllPops();
             }
           });
 
-          document.addEventListener("click", function (e) {
-            if (!branchInput.contains(e.target) && !branchDd.contains(e.target))
-              closeDd();
-          });
-
-          dialogFn.branchSelect = function (code) {
-            selectBranch(code);
+          dialogFn.branchSelect = function(code){
+            if (!state.selectedGeographies || !state.selectedGeographies.length) state.selectedGeographies = [{}];
+            selectBranch(0, code);
           };
+
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
@@ -5649,11 +5766,11 @@
           }
 
           function pEmployees() {
-            var branch = state.selectedBranch;
-            var bq = (branch || "").toLowerCase();
+            var geos = state.selectedGeographies || [];
+            var branches = geos.map(function(g){ return (g.branch||"").toLowerCase(); }).filter(Boolean);
             return (state.allEmployees || []).filter(function (emp) {
-              if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq)
-                return false;
+              var empBr = (emp.sahayog_branch || "").toLowerCase();
+              if (branches.length && empBr && branches.indexOf(empBr) === -1) return false;
               if (state.selectedParticipants.indexOf(emp.name) !== -1)
                 return false;
               return true;
@@ -6075,10 +6192,18 @@
               if (f.status !== "inprogress" && statusOf(ev) !== f.status)
                 return false;
             }
-            if (f.zone && ev.zone !== f.zone) return false;
-            if (f.region && ev.region !== f.region) return false;
-            if (f.district && ev.district !== f.district) return false;
-            if (f.branch && ev.branch !== f.branch) return false;
+            var geos = ev.geographies || [];
+            if (geos.length) {
+              if (f.zone && !geos.some(function(g){ return g.zone === f.zone; })) return false;
+              if (f.region && !geos.some(function(g){ return g.region === f.region; })) return false;
+              if (f.district && !geos.some(function(g){ return g.district === f.district; })) return false;
+              if (f.branch && !geos.some(function(g){ return g.branch === f.branch; })) return false;
+            } else {
+              if (f.zone && ev.zone !== f.zone) return false;
+              if (f.region && ev.region !== f.region) return false;
+              if (f.district && ev.district !== f.district) return false;
+              if (f.branch && ev.branch !== f.branch) return false;
+            }
             if (f.range === "month") {
               var evKey = (ev.from_date || ev.date || "").slice(0, 7);
               if (evKey !== monthKey) return false;
@@ -6089,7 +6214,7 @@
                 return false;
             }
             if (q) {
-              var hay = [
+              var hayParts = [
                 ev.training_program,
                 ev.trainer,
                 ev.training_location,
@@ -6097,9 +6222,10 @@
                 ev.region,
                 ev.district,
                 ev.branch,
-              ]
-                .join(" ")
-                .toLowerCase();
+              ];
+              var geos = ev.geographies || [];
+              geos.forEach(function(g){ hayParts.push(g.branch); hayParts.push(g.zone); hayParts.push(g.region); hayParts.push(g.district); });
+              var hay = hayParts.join(" ").toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
@@ -6237,7 +6363,14 @@
                 esc(ev.trainer || "—") +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.branch || "—") +
+                (function(){
+                  var geos = ev.geographies || [];
+                  if (geos.length > 1) {
+                    var first = geos[0].branch || ev.branch || "—";
+                    return esc(first) + ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:1px 5px;margin-left:3px">+' + (geos.length-1) + '</span>';
+                  }
+                  return esc(ev.branch || (geos[0]&&geos[0].branch) || "—");
+                })() +
                 "</td>" +
                 '<td class="td-meta" style="text-align:center">' +
                 (ev.participants || 0) +
