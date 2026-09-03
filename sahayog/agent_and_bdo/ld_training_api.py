@@ -374,14 +374,14 @@ def get_training_details(name):
         })
     r["geographies"] = geos
     r["branches"] = [g["branch"] for g in geos if g["branch"]]
-    employees = frappe.db.get_all(
+    participants_list = frappe.db.get_all(
         "Training Participant",
         filters={"parent": name},
-        fields=["employee", "employee_name", "attendance_status"],
+        fields=["reference_doctype", "agent_employee", "full_name", "attendance_status"],
         order_by="idx asc",
     )
-    r["participant_list"] = employees
-    r["participants"] = len(employees)
+    r["participant_list"] = participants_list
+    r["participants"] = len(participants_list)
     if not _is_admin():
         r["budget_amount"] = None
         r["actual_expense"] = None
@@ -525,11 +525,23 @@ def create_training(**kwargs):
         doc.region = first.region
         doc.district = first.district
 
-    for emp in participants:
-        if isinstance(emp, dict):
-            emp = emp.get("employee") or emp.get("name")
-        if emp:
-            doc.append("participants", {"employee": emp})
+    for p in participants:
+        if isinstance(p, str):
+            # Legacy: plain employee id string
+            doc.append("participants", {
+                "reference_doctype": "Employee",
+                "agent_employee": p,
+            })
+        elif isinstance(p, dict):
+            ref_type = p.get("reference_doctype") or "Employee"
+            ref_id = p.get("agent_employee") or p.get("employee") or p.get("name")
+            full_name = p.get("full_name") or p.get("employee_name") or ""
+            if ref_id:
+                doc.append("participants", {
+                    "reference_doctype": ref_type,
+                    "agent_employee": ref_id,
+                    "full_name": full_name,
+                })
 
     doc.insert()
     if submit:
@@ -787,7 +799,7 @@ def get_mis_report(
         page_params = dict(params, page_size=page_size, offset=offset)
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, p.idx, p.employee, p.employee_name "
+            "t.trainer, p.idx, p.reference_doctype, p.agent_employee, p.full_name "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
             "LIMIT %(page_size)s OFFSET %(offset)s",
@@ -797,7 +809,7 @@ def get_mis_report(
     else:
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, p.idx, p.employee, p.employee_name "
+            "t.trainer, p.idx, p.reference_doctype, p.agent_employee, p.full_name "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
             params,
@@ -807,7 +819,8 @@ def get_mis_report(
     if not rows:
         return {"columns": MIS_REPORT_COLUMNS, "rows": [], "total": 0}
 
-    emp_ids = {r.employee for r in rows if r.employee}
+    # Only Employee-type participants can be enriched from Employee master
+    emp_ids = {r.agent_employee for r in rows if r.agent_employee and r.reference_doctype == "Employee"}
     emp_data = _employee_master(emp_ids)
     mgr_names = _manager_names(emp_data)
     branch_ids = {
@@ -821,16 +834,18 @@ def get_mis_report(
     seq = offset
     for r in rows:
         seq += 1
-        e = emp_data.get(r.employee) if r.employee else None
+        is_emp = (r.reference_doctype or "Employee") == "Employee"
+        e = emp_data.get(r.agent_employee) if is_emp and r.agent_employee else None
         emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
         date_label = str(r.from_date or "")[:10]
         if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
             date_label += " to " + str(r.to_date)[:10]
+        display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         out.append({
             "s_no": seq,
-            "emp_id": (r.employee or "") or ((e.name or "") if e else ""),
-            "name": (getattr(r, "employee_name", "") or "") or ((e.employee_name or "") if e else ""),
+            "emp_id": (r.agent_employee or "") if is_emp else "",
+            "name": display_name,
             "department": (e.department or "") if e else "",
             "division": (getattr(e, "custom_division", "") or "") if e else "",
             "designation": (e.designation or "") if e else "",
@@ -948,7 +963,7 @@ def get_employee_training_report(
     q = (employee or "").strip().lower()
     if q:
         conds.append(
-            "(LOWER(p.employee) LIKE %(q)s OR LOWER(p.employee_name) LIKE %(q)s)"
+            "(LOWER(p.agent_employee) LIKE %(q)s OR LOWER(p.full_name) LIKE %(q)s)"
         )
         params["q"] = f"%{q}%"
 
@@ -970,7 +985,7 @@ def get_employee_training_report(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
             "t.trainer, t.zone, t.training_delivered, t.attendance_marked, "
             "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
-            "p.idx, p.employee, p.employee_name "
+            "p.idx, p.reference_doctype, p.agent_employee, p.full_name "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
             "LIMIT %(page_size)s OFFSET %(offset)s",
@@ -982,7 +997,7 @@ def get_employee_training_report(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
             "t.trainer, t.zone, t.training_delivered, t.attendance_marked, "
             "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
-            "p.idx, p.employee, p.employee_name "
+            "p.idx, p.reference_doctype, p.agent_employee, p.full_name "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
             params,
@@ -992,7 +1007,7 @@ def get_employee_training_report(
     if not rows:
         return {"columns": EMPLOYEE_REPORT_COLUMNS, "rows": [], "total": 0}
 
-    emp_ids = {r.employee for r in rows if r.employee}
+    emp_ids = {r.agent_employee for r in rows if r.agent_employee and r.reference_doctype == "Employee"}
     emp_data = _employee_master(emp_ids)
     branch_ids = {
         (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
@@ -1007,17 +1022,19 @@ def get_employee_training_report(
     seq = offset
     for r in rows:
         seq += 1
-        e = emp_data.get(r.employee) if r.employee else None
+        is_emp = (r.reference_doctype or "Employee") == "Employee"
+        e = emp_data.get(r.agent_employee) if is_emp and r.agent_employee else None
         emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
         date_label = str(r.from_date or "")[:10]
         if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
             date_label += " to " + str(r.to_date)[:10]
+        display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         status = r.status or get_training_status(_row_tag(r))
         out.append({
             "s_no": seq,
-            "emp_id": (r.employee or "") or ((e.name or "") if e else ""),
-            "employee_name": (r.employee_name or "") or ((e.employee_name or "") if e else ""),
+            "emp_id": (r.agent_employee or "") if is_emp else "",
+            "employee_name": display_name,
             "department": (e.department or "") if e else "",
             "division": (getattr(e, "custom_division", "") or "") if e else "",
             "designation": (e.designation or "") if e else "",
@@ -1051,6 +1068,21 @@ def get_trainer_options(enabled_only=True):
         filters=filters,
         fields=["name", "employee_name", "sahayog_branch"],
         order_by="employee_name asc",
+        limit_page_length=0,
+    )
+
+
+@frappe.whitelist()
+def get_agent_options(enabled_only=True):
+    """Active agents to pick as participants in the Add Training form."""
+    filters = {}
+    if enabled_only:
+        filters["status"] = "Active"
+    return frappe.db.get_all(
+        "Agent",
+        filters=filters,
+        fields=["name", "agent_name", "branch_name"],
+        order_by="agent_name asc",
         limit_page_length=0,
     )
 
