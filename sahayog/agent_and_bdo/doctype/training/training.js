@@ -17,6 +17,23 @@ frappe.ui.form.on("Training", {
   },
 });
 
+frappe.ui.form.on("Training Geography", {
+  branch(frm, cdt, cdn) {
+    let row = locals[cdt][cdn];
+    if (!row.branch) return;
+    frappe.call({
+      method: "sahayog.agent_and_bdo.doctype.training.training.get_branch_geo",
+      args: { branch: row.branch },
+      callback(r) {
+        if (!r.message) return;
+        frappe.model.set_value(cdt, cdn, "zone", r.message.zone || "");
+        frappe.model.set_value(cdt, cdn, "region", r.message.region || "");
+        frappe.model.set_value(cdt, cdn, "district", r.message.district || "");
+      },
+    });
+  },
+});
+
 frappe.ui.form.on("Training Participant", {
   employee(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
