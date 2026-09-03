@@ -751,6 +751,15 @@ def generate_fast_lead_report(force_rebuild=False, triggered_by=None):
     if not triggered_by:
         triggered_by = get_user_triggered_by_string(frappe.session.user)
 
+    # Check if CRM Lead Report Cron is enabled in Sahayog Settings when run by scheduler
+    enable_cron = frappe.db.get_single_value("Sahayog Settings", "enable_crm_lead_report_cron")
+    if enable_cron is not None and not int(enable_cron):
+        if frappe.flags.in_scheduler or "Cron Scheduler" in str(triggered_by):
+            return {
+                "status": "disabled",
+                "message": "CRM Lead Report Cron execution skipped because it is disabled in Sahayog Settings."
+            }
+
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
 
     try:
