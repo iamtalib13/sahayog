@@ -1077,7 +1077,7 @@ def get_agent_options(enabled_only=True):
     """Active agents to pick as participants in the Add Training form."""
     filters = {}
     if enabled_only:
-        filters["status"] = "Active"
+        filters["agent_status"] = "Active"
     return frappe.db.get_all(
         "Agent",
         filters=filters,
