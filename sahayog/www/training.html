@@ -5826,7 +5826,7 @@
               ? (item.agent_name || item.name)
               : (item.employee_name || item.name);
             var sub = type === "Agent"
-              ? (item.branch_name || item.name)
+              ? (item.name + (item.branch_name ? " \u00b7 " + item.branch_name : ""))
               : (item.sahayog_branch || item.name);
             return (
               '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
@@ -5895,9 +5895,10 @@
                 }
               }
               var key = pKey(p);
+              var idSuffix = isAgent ? ' <span style="font-size:10px;opacity:0.7">(' + esc(p.agent_employee) + ')</span>' : "";
               return '<span class="participant-chip">' +
                 (isAgent ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">Agent</span>' : "") +
-                esc(displayName) +
+                esc(displayName) + idSuffix +
                 (removable ? '<button type="button" data-remove="' + esc(key) + '" title="Remove">&times;</button>' : "") +
                 "</span>";
             }).join("");
