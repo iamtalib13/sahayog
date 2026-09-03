@@ -1,48 +1,134 @@
 import os
+import re
+import math
 import frappe
 from frappe import _
 from frappe.utils.csvutils import read_csv_content
-from frappe.utils.xlsxutils import read_xlsx_file_from_attached_file
 from frappe.utils import flt, get_datetime_str, now_datetime, getdate, today
 
 
 FIELD_MAP = {
+    # Employee Number / Code / ID
     "employee_number": "employee_number",
+    "emp_number": "employee_number",
+    "emp_code": "employee_number",
+    "emp_id": "employee_number",
+    "employee_code": "employee_number",
+    "employee_id": "employee_number",
+    "emp_no": "employee_number",
+    "employee_no": "employee_number",
+    "staff_id": "employee_number",
+    "user_id": "user_id",
+
+    # Names
     "first_name": "first_name",
     "middle_name": "middle_name",
     "last_name": "last_name",
     "employee_name": "employee_name",
+    "emp_name": "employee_name",
+    "name": "employee_name",
+    "full_name": "employee_name",
+
+    # Demographics & Dates
     "gender": "gender",
     "date_of_birth": "date_of_birth",
+    "dob": "date_of_birth",
+    "birth_date": "date_of_birth",
     "date_of_joining": "date_of_joining",
+    "doj": "date_of_joining",
+    "joining_date": "date_of_joining",
     "final_confirmation_date": "final_confirmation_date",
+    "confirmation_date": "final_confirmation_date",
+    "doc": "final_confirmation_date",
     "relieving_date": "relieving_date",
+    "date_of_relieving": "relieving_date",
+    "dor": "relieving_date",
     "resignation_letter_date": "resignation_letter_date",
+    "resignation_date": "resignation_letter_date",
+
+    # Organization / Designations
     "designation": "designation",
+    "desig": "designation",
     "department": "department",
+    "dept": "department",
     "branch": "branch",
+    "branch_name": "branch",
     "sol_id": "sol_id",
+    "sol": "sol_id",
     "sahayog_branch": "sahayog_branch",
+    "sub_branch": "sahayog_branch",
+    "sahayog_branch_name": "sahayog_branch",
+
+    # Contact & Personal
     "mobile_number": "cell_number",
+    "mobile_no": "cell_number",
+    "mobileno": "cell_number",
+    "mobile": "cell_number",
+    "phone": "cell_number",
+    "phone_number": "cell_number",
+    "cell": "cell_number",
+    "cell_number": "cell_number",
+    "contact_no": "cell_number",
+    "contact": "cell_number",
     "personal_email": "personal_email",
+    "email": "personal_email",
+    "email_id": "personal_email",
     "company": "company",
+
+    # Financial / Identity
     "bank_name": "bank_name",
     "bank_account_number": "bank_ac_no",
+    "bank_ac_no": "bank_ac_no",
+    "bank_account": "bank_ac_no",
+    "account_no": "bank_ac_no",
+    "account_number": "bank_ac_no",
     "marital_status": "marital_status",
+    "marital": "marital_status",
     "blood_group": "blood_group",
+    "blood": "blood_group",
     "permanent_address": "permanent_address",
     "current_address": "current_address",
     "shift": "default_shift",
+    "default_shift": "default_shift",
     "employment_type": "employment_type",
+    "typeofemployment": "employment_type",
     "reports_to": "reports_to",
+    "reporting_to": "reports_to",
+    "reportingmanager_code": "reports_to",
+    "manager": "reports_to",
+    "manager_code": "reports_to",
     "status": "status",
+    "employee_status": "status",
     "pan_number": "pan_number",
+    "pan": "pan_number",
+    "pan_no": "pan_number",
     "aadhaar_card_number": "aadhaar_card_number",
-    "uhid_number": "uhid_number",
+    "custom_aadhar_number": "custom_aadhar_number",
+    "adharcard_no": "custom_aadhar_number",
+    "aadhar": "aadhaar_card_number",
+    "aadhaar": "aadhaar_card_number",
+    "aadhaar_no": "aadhaar_card_number",
+    "aadhar_no": "aadhaar_card_number",
+    "uhid_number": "custom_uhid_number",
+    "custom_uhid_number": "custom_uhid_number",
+    "uhid": "custom_uhid_number",
     "monthly_gross_salary": "ctc",
+    "monthly_salary": "ctc",
+    "gross_salary": "ctc",
+    "salary": "ctc",
+    "ctc": "ctc",
+
+    # Custom Org Hierarchy
     "zone": "custom_zone",
+    "custom_zone": "custom_zone",
     "region": "custom_region",
+    "custom_region": "custom_region",
+    "statename": "custom_state",
     "district": "custom_district",
+    "districtname": "custom_district",
+    "custom_district": "custom_district",
+    "division": "custom_division",
+    "custom_division": "custom_division",
 }
 
 DEFAULT_MANDATORY = [
@@ -53,11 +139,26 @@ DEFAULT_MANDATORY = [
     "department",
 ]
 
-
-import math
-
-
 CACHE_KEY = "emp_import_session:{user}"
+
+
+def _clean_header(h):
+    if not h:
+        return ""
+    h = str(h).lstrip("\ufeff").strip().lower()
+    h = re.sub(r"[\s\-_.]+", "_", h)
+    return h.strip("_")
+
+
+def _clean_val(val):
+    if val is None:
+        return None
+    if isinstance(val, float) and val.is_integer():
+        return str(int(val))
+    val_str = str(val).strip()
+    if val_str.endswith(".0") and val_str[:-2].isdigit():
+        return val_str[:-2]
+    return val_str
 
 
 def _get_or_build_session_cache(setting, force=False):
@@ -71,7 +172,7 @@ def _get_or_build_session_cache(setting, force=False):
 
     rows = _parse_file(file_url)
     if not rows or len(rows) < 2:
-        frappe.throw(_("File has no data rows"))
+        frappe.throw(_("File has no valid data rows"))
 
     lookup_cache = _load_lookup_cache()
     existing_cols = list(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
@@ -87,7 +188,7 @@ def _get_or_build_session_cache(setting, force=False):
 
 
 @frappe.whitelist()
-def init_import_session(mode="insert", batch_size=500):
+def init_import_session(mode="insert", batch_size=250):
     setting = frappe.get_doc("Sahayog HR Setting")
     file_url = setting.get("employee_master")
     if not file_url:
@@ -108,7 +209,7 @@ def init_import_session(mode="insert", batch_size=500):
 
 
 @frappe.whitelist()
-def process_import_batch(mode="insert", batch_index=0, batch_size=500):
+def process_import_batch(mode="insert", batch_index=0, batch_size=250):
     setting = frappe.get_doc("Sahayog HR Setting")
     file_url = setting.get("employee_master")
     if not file_url:
@@ -122,7 +223,8 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
     table_mappings = _load_table_mappings(setting)
     mandatory_fields = _get_mandatory_fields(table_mappings)
 
-    headers = [h.strip().lower().replace(" ", "_") for h in rows[0]]
+    raw_headers = rows[0]
+    headers = [_clean_header(h) for h in raw_headers]
     data_rows = rows[1:]
 
     valid_field_map = _build_field_map(headers, existing_cols, table_mappings)
@@ -150,8 +252,33 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
     for offset, row in enumerate(batch_rows):
         i = start_idx + offset + 2
         row_dict = _row_to_dict(headers, row)
-        emp_number = row_dict.get(header_for.get("employee_number", "employee_number"), "").strip()
-        emp_label = row_dict.get(header_for.get("first_name", "first_name"), "") or f"Row {i}"
+
+        emp_number_key = header_for.get("employee_number", "employee_number")
+        raw_val = row_dict.get(emp_number_key)
+        emp_number = str(raw_val).strip() if raw_val is not None else ""
+
+        # Fallback search for employee_number across aliases
+        if not emp_number:
+            for alt_k in ("employee_number", "emp_code", "emp_id", "employee_code", "emp_no", "staff_id", "user_id"):
+                v = row_dict.get(alt_k)
+                if v is not None and str(v).strip():
+                    emp_number = str(v).strip()
+                    break
+
+        # Ignore footer / watermark / total rows (e.g. "Super Employee Master", "Total", "Grand Total")
+        if emp_number and emp_number.lower() in ("super employee master", "total", "grand total", "summary", "end of report"):
+            result["skipped"] += 1
+            continue
+
+        # Ignore rows with fewer than 2 non-empty fields (likely metadata or blank lines)
+        non_empty_count = sum(1 for v in row if v is not None and str(v).strip() != "")
+        if non_empty_count < 2:
+            result["skipped"] += 1
+            continue
+
+        first_name_key = header_for.get("first_name", "first_name")
+        raw_fn = row_dict.get(first_name_key) or row_dict.get("employee_name")
+        emp_label = str(raw_fn).strip() if raw_fn is not None else f"Row {i}"
 
         try:
             if not emp_number:
@@ -159,7 +286,7 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
                 result["errors"].append(f"Row {i}: {emp_label} - employee_number is missing")
                 continue
 
-            # Enforce mandatory fields only during insert OR if explicitly marked mandatory in table_mappings
+            # Mandatory field check
             if mode == "insert" or table_mappings:
                 for f in mandatory_fields:
                     csv_key = header_for.get(f, f)
@@ -170,7 +297,10 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
 
             existing_emp_name = lookup_cache["Employee"].get(emp_number)
             if not existing_emp_name:
-                existing_emp_name = frappe.db.exists("Employee", {"employee_number": emp_number})
+                existing_emp_name = (
+                    frappe.db.exists("Employee", {"employee_number": emp_number})
+                    or frappe.db.exists("Employee", emp_number)
+                )
                 if existing_emp_name:
                     lookup_cache["Employee"][emp_number] = existing_emp_name
 
@@ -197,11 +327,9 @@ def process_import_batch(mode="insert", batch_index=0, batch_size=500):
             result["failed"] += 1
             result["errors"].append(f"Row {i}: {emp_number or emp_label} - {str(e)}")
 
-    # Single commit at the end of the 50-record batch for high performance & smoothness
     frappe.db.commit()
     frappe.flags.in_import = False
 
-    # Save updated lookup_cache back into session cache
     key = CACHE_KEY.format(user=frappe.session.user)
     cached_data["lookup_cache"] = lookup_cache
     frappe.cache().set_value(key, cached_data, expires_in_sec=3600)
@@ -224,7 +352,7 @@ def finish_import_session(summary_data, mode="insert"):
 
 @frappe.whitelist()
 def import_employee_master(mode="insert"):
-    init_res = init_import_session(mode=mode, batch_size=500)
+    init_res = init_import_session(mode=mode, batch_size=250)
     total_batches = init_res["total_batches"]
 
     aggregated = {
@@ -238,7 +366,7 @@ def import_employee_master(mode="insert"):
     }
 
     for b in range(total_batches):
-        batch_res = process_import_batch(mode=mode, batch_index=b, batch_size=500)
+        batch_res = process_import_batch(mode=mode, batch_index=b, batch_size=250)
         aggregated["inserted"] += batch_res.get("inserted", 0)
         aggregated["updated"] += batch_res.get("updated", 0)
         aggregated["skipped"] += batch_res.get("skipped", 0)
@@ -258,23 +386,85 @@ def _resolve_filepath(file_url):
 
 
 def _parse_file(file_url):
-    if file_url.lower().endswith(".xlsx"):
-        try:
-            return read_xlsx_file_from_attached_file(file_url=file_url) or []
-        except Exception:
-            return read_xlsx_file_from_attached_file(filepath=_resolve_filepath(file_url)) or []
+    clean_url = file_url.split("?")[0].lower()
 
-    elif file_url.lower().endswith(".csv"):
-        try:
-            file_doc = frappe.get_doc("File", {"file_url": file_url})
-            content = file_doc.get_content()
-        except Exception:
-            with open(_resolve_filepath(file_url), "rb") as f:
-                content = f.read()
-        return read_csv_content(content) or []
+    if clean_url.endswith(".xlsx") or clean_url.endswith(".xls") or clean_url.endswith(".xlsm"):
+        return _parse_excel(_resolve_filepath(file_url))
+
+    elif clean_url.endswith(".csv"):
+        return _parse_csv(file_url)
 
     else:
-        frappe.throw(_("Unsupported file format. Please upload a CSV or XLSX file"))
+        try:
+            return _parse_excel(_resolve_filepath(file_url))
+        except Exception:
+            return _parse_csv(file_url)
+
+
+def _parse_excel(filepath):
+    import openpyxl
+
+    wb = openpyxl.load_workbook(filepath, data_only=True, read_only=True)
+    best_sheet = None
+    max_rows = 0
+
+    for sheet_name in wb.sheetnames:
+        sheet = wb[sheet_name]
+        row_count = 0
+        for r in sheet.iter_rows(values_only=True):
+            if any(cell is not None and str(cell).strip() != "" for cell in r):
+                row_count += 1
+        if row_count > max_rows:
+            max_rows = row_count
+            best_sheet = sheet
+
+    if not best_sheet:
+        wb.close()
+        return []
+
+    rows = []
+    for r in best_sheet.iter_rows(values_only=True):
+        row_vals = [cell for cell in r]
+        if any(v is not None and str(v).strip() != "" for v in row_vals):
+            rows.append(row_vals)
+
+    wb.close()
+    return rows
+
+
+def _parse_csv(file_url):
+    filepath = _resolve_filepath(file_url)
+    content = None
+
+    try:
+        file_doc = frappe.get_doc("File", {"file_url": file_url})
+        content = file_doc.get_content()
+    except Exception:
+        pass
+
+    if content is None:
+        with open(filepath, "rb") as f:
+            content = f.read()
+
+    if isinstance(content, bytes):
+        for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+            try:
+                text = content.decode(encoding)
+                break
+            except UnicodeDecodeError:
+                continue
+        else:
+            text = content.decode("utf-8", errors="ignore")
+    else:
+        text = str(content)
+
+    raw_rows = read_csv_content(text) or []
+    clean_rows = []
+    for r in raw_rows:
+        if any(cell is not None and str(cell).strip() != "" for cell in r):
+            clean_rows.append(r)
+
+    return clean_rows
 
 
 def _load_table_mappings(setting):
@@ -300,27 +490,26 @@ def _get_mandatory_fields(table_mappings):
 
 def _build_field_map(headers, existing_cols, table_mappings=None):
     mapping = {}
+    clean_headers = [_clean_header(h) for h in headers]
 
-    # If explicit enabled table_mappings exist, ONLY use those
     if table_mappings:
         for m in table_mappings:
-            src = m.get("source_column", "").strip().lower().replace(" ", "_")
+            src_clean = _clean_header(m.get("source_column", ""))
             tgt = m.get("target_field", "").strip()
-            if src and tgt and src in headers:
+            if src_clean and tgt and src_clean in clean_headers:
                 if tgt in existing_cols:
-                    mapping[src] = tgt
+                    mapping[src_clean] = tgt
                 elif f"custom_{tgt}" in existing_cols:
-                    mapping[src] = f"custom_{tgt}"
-        return mapping
+                    mapping[src_clean] = f"custom_{tgt}"
 
-    # Fallback: use default FIELD_MAP if no table_mappings configured
-    for h in headers:
-        clean = h.strip().lower().replace(" ", "_")
-        doc_field = FIELD_MAP.get(clean, clean)
-        if doc_field in existing_cols:
-            mapping[clean] = doc_field
-        elif f"custom_{doc_field}" in existing_cols:
-            mapping[clean] = f"custom_{doc_field}"
+    for h_raw in headers:
+        clean = _clean_header(h_raw)
+        if clean and clean not in mapping:
+            doc_field = FIELD_MAP.get(clean, clean)
+            if doc_field in existing_cols:
+                mapping[clean] = doc_field
+            elif f"custom_{doc_field}" in existing_cols:
+                mapping[clean] = f"custom_{doc_field}"
 
     return mapping
 
@@ -328,10 +517,10 @@ def _build_field_map(headers, existing_cols, table_mappings=None):
 def _row_to_dict(headers, row):
     d = {}
     for idx, h in enumerate(headers):
+        clean_h = _clean_header(h)
         val = row[idx] if idx < len(row) else None
-        if val is not None:
-            val = str(val).strip()
-        d[h] = val
+        cleaned_val = _clean_val(val)
+        d[clean_h] = cleaned_val
     return d
 
 
@@ -383,6 +572,7 @@ def _load_lookup_cache():
         cache["Sahayog Branch"][clean_key] = sb
 
     for emp in frappe.db.get_all("Employee", fields=["name", "employee_number"]):
+        cache["Employee"][emp.name.strip()] = emp.name
         if emp.employee_number:
             cache["Employee"][emp.employee_number.strip()] = emp.name
 
@@ -551,9 +741,11 @@ def _create_employee(row_dict, field_map, cache=None, existing_cols=None):
     doc.insert(ignore_permissions=True, ignore_mandatory=True)
     _set_sol_fields(doc, row_dict, cache=cache, existing_cols=existing_cols)
 
-    # Auto-create User without password
-    from sahayog.doc_events.create_user_from_employee import create_user
-    create_user(doc)
+    try:
+        from sahayog.doc_events.create_user_from_employee import create_user
+        create_user(doc)
+    except Exception:
+        pass
 
     return doc.name
 
@@ -598,7 +790,7 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
             try:
                 if "ctc" in existing_cols:
                     updates["ctc"] = flt(csv_val)
-            except:
+            except Exception:
                 pass
         elif doc_field in link_map:
             doctype, label, prefix = link_map[doc_field]
@@ -654,7 +846,7 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
 
     sol_id = row_dict.get("sol_id")
     if sol_id and "sahayog_branch" in existing_cols and "sahayog_branch" not in updates:
-        clean_sol = sol_id.strip().replace(" ", "")
+        clean_sol = str(sol_id).strip().replace(" ", "")
         branch_info = cache.get("Sahayog Branch", {}).get(clean_sol) if cache else None
         if not branch_info:
             branch = frappe.db.sql(
@@ -687,7 +879,7 @@ def _set_sol_fields(doc, row_dict, cache=None, existing_cols=None):
 
     sol_id = row_dict.get("sol_id")
     if sol_id:
-        clean_sol = sol_id.strip().replace(" ", "")
+        clean_sol = str(sol_id).strip().replace(" ", "")
         branch_info = None
 
         if cache and "Sahayog Branch" in cache:
@@ -709,12 +901,12 @@ def _set_sol_fields(doc, row_dict, cache=None, existing_cols=None):
             if "sahayog_branch" in existing_cols:
                 doc.sahayog_branch = b_name
 
-    monthly_sal = row_dict.get("monthly_gross_salary")
+    monthly_sal = row_dict.get("monthly_gross_salary") or row_dict.get("ctc")
     if monthly_sal:
         try:
             if "ctc" in existing_cols and not doc.get("ctc"):
                 doc.ctc = flt(monthly_sal)
-        except:
+        except Exception:
             pass
 
 
@@ -739,11 +931,11 @@ def _prepare_employee_data(row_dict, field_map):
             if parsed:
                 data[doc_field] = parsed
         elif doc_field == "cell_number":
-            data["cell_number"] = val
+            data["cell_number"] = str(val)
         elif doc_field == "ctc":
             try:
                 data["ctc"] = flt(val)
-            except:
+            except Exception:
                 pass
         else:
             data[doc_field] = val
@@ -764,12 +956,12 @@ def _parse_date(val):
         try:
             from frappe.utils import getdate
             return getdate(val)
-        except:
+        except Exception:
             continue
     try:
         from frappe.utils import getdate
         return getdate(val)
-    except:
+    except Exception:
         return None
 
 
@@ -814,18 +1006,33 @@ def _build_summary(result, mode):
 
 @frappe.whitelist()
 def get_file_headers():
-    """Read headers from the uploaded Employee Master file and return them."""
+    """Read headers from uploaded Employee Master file and return smart target field suggestions."""
     setting = frappe.get_doc("Sahayog HR Setting")
     file_url = setting.get("employee_master")
     if not file_url:
-        return {"headers": []}
+        return {"headers": [], "mappings": []}
 
     rows = _parse_file(file_url)
     if not rows or len(rows) < 1:
-        return {"headers": []}
+        return {"headers": [], "mappings": []}
 
-    headers = [h.strip() for h in rows[0]]
-    return {"headers": headers}
+    headers = [str(h).strip() for h in rows[0] if h and str(h).strip()]
+    existing_cols = set(r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`"))
+
+    mappings = []
+    for h in headers:
+        clean = _clean_header(h)
+        target = FIELD_MAP.get(clean, clean)
+        if target not in existing_cols and f"custom_{target}" in existing_cols:
+            target = f"custom_{target}"
+        elif target not in existing_cols:
+            target = ""
+        mappings.append({
+            "source_column": h,
+            "target_field": target,
+        })
+
+    return {"headers": headers, "mappings": mappings}
 
 
 class _StopRow(Exception):

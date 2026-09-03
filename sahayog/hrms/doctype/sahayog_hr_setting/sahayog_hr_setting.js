@@ -71,28 +71,26 @@ function load_file_headers(frm) {
 				return;
 			}
 
-			const headers = res.message.headers;
-			const existing = frm.doc.field_mappings || [];
-
+			const mappings = res.message.mappings || [];
 			frm.clear_table("field_mappings");
 
-			headers.forEach((header) => {
+			mappings.forEach((m) => {
 				const row = frm.add_child("field_mappings");
-				row.source_column = header;
-				row.target_field = header.toLowerCase().replace(/\s+/g, "_");
+				row.source_column = m.source_column;
+				row.target_field = m.target_field || m.source_column.toLowerCase().replace(/[\s\-_.]+/g, "_");
 				row.is_mandatory = 0;
 				row.enabled = 1;
 			});
 
 			frm.refresh_field("field_mappings");
-			frappe.msgprint(__("{0} field mappings loaded from file.", [headers.length]));
+			frappe.msgprint(__("{0} field mappings loaded from file.", [mappings.length]));
 		},
 	});
 }
 
 function run_batch_import(frm, mode) {
 	const action_label = mode === "insert" ? __("Insert") : __("Update");
-	const batch_size = 50;
+	const batch_size = 250;
 
 	frappe.call({
 		method: "sahayog.hrms.doctype.sahayog_hr_setting.sahayog_hr_setting.init_import",
@@ -101,7 +99,9 @@ function run_batch_import(frm, mode) {
 		freeze_message: __("Reading file and preparing import..."),
 		callback: async (res) => {
 			if (!res.message) return;
-			const { total_rows, total_batches } = res.message;
+			const total_rows = res.message.total_rows;
+			const eff_batch_size = res.message.batch_size || batch_size;
+			const total_batches = res.message.total_batches;
 
 			if (!total_rows || total_rows === 0) {
 				frappe.msgprint(__("No data rows found in the uploaded file."));
@@ -121,7 +121,7 @@ function run_batch_import(frm, mode) {
 			const progress_title = __("{0}ing Employees ({1} Records)", [action_label, total_rows]);
 
 			for (let b = 0; b < total_batches; b++) {
-				const current_row_count = Math.min((b + 1) * batch_size, total_rows);
+				const current_row_count = Math.min((b + 1) * eff_batch_size, total_rows);
 				const pct = Math.round(((b + 1) / total_batches) * 100);
 
 				frappe.show_progress(
@@ -132,7 +132,7 @@ function run_batch_import(frm, mode) {
 				);
 
 				try {
-					const batch_res = await call_batch_with_retry(mode, b, batch_size, 3);
+					const batch_res = await call_batch_with_retry(mode, b, eff_batch_size, 3);
 
 					if (batch_res && batch_res.message) {
 						const m = batch_res.message;
@@ -152,7 +152,7 @@ function run_batch_import(frm, mode) {
 					}
 				} catch (err) {
 					console.error("Error in batch " + (b + 1), err);
-					const rows_in_batch = Math.min(batch_size, total_rows - b * batch_size);
+					const rows_in_batch = Math.min(eff_batch_size, total_rows - b * eff_batch_size);
 					aggregated.failed += rows_in_batch;
 
 					let err_msg = "Network or server connection error";
@@ -171,7 +171,7 @@ function run_batch_import(frm, mode) {
 							err_msg = JSON.stringify(err);
 						}
 					}
-					aggregated.errors.push(`Record range ${b * batch_size + 1} to ${current_row_count} failed after retries: ${err_msg}`);
+					aggregated.errors.push(`Record range ${b * eff_batch_size + 1} to ${current_row_count} failed after retries: ${err_msg}`);
 				}
 			}
 
