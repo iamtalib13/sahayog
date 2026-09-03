@@ -4417,11 +4417,29 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
+          var canDelete = state.role === "ld_admin";
+          var deleteBtn = canDelete
+            ? '<button class="btn" id="drawerDelete" style="color:#dc2626;border-color:#fecaca;">Delete</button>'
+            : "";
           var actions = editable
-            ? '<button class="btn" id="drawerCancel">Cancel</button>' +
+            ? deleteBtn + '<button class="btn" id="drawerCancel">Cancel</button>' +
               '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
-            : '<button class="btn btn-primary" id="drawerDone">Close</button>';
+            : deleteBtn + '<button class="btn btn-primary" id="drawerDone">Close</button>';
           document.getElementById("drawerActions").innerHTML = actions;
+
+          if (canDelete && document.getElementById("drawerDelete")) {
+            document.getElementById("drawerDelete").onclick = function () {
+              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
+              api("delete_training", { name: ev.name })
+                .then(function () {
+                  closeDrawer();
+                  loadData(true);
+                  renderTrainings();
+                  showToast("Training deleted");
+                })
+                .catch(function (e) { showToast("Could not delete: " + e.message); });
+            };
+          }
 
           if (editable) {
             document.getElementById("drawerSave").onclick = saveDrawerChanges;
@@ -6372,11 +6390,18 @@
                     : st === "upcoming"
                       ? "var(--accent-ink)"
                       : "var(--ink-3)";
+              var canDelete = state.role === "ld_admin";
               var editBtn = canEdit
                 ? '<button class="tr-icon-btn" data-menu-edit="' +
                   esc(ev.name) +
                   '" title="Edit">' +
                   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+                : "";
+              var delBtn = canDelete
+                ? '<button class="tr-icon-btn" data-menu-delete="' +
+                  esc(ev.name) +
+                  '" data-program="' + esc(ev.training_program || "") + '" title="Delete" style="color:#dc2626;">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'
                 : "";
               return (
                 '<tr data-name="' +
@@ -6424,7 +6449,7 @@
                 meta.label +
                 "</span></td>" +
                 '<td class="td-actions"><div class="td-actions-wrap">' +
-                editBtn +
+                editBtn + delBtn +
                 "</div></td>" +
                 "</tr>"
               );
@@ -6452,6 +6477,22 @@
                 return x.name === btn.dataset.menuEdit;
               });
               if (ev) openDrawer(ev, "edit");
+            });
+          });
+
+          tbody.querySelectorAll("[data-menu-delete]").forEach(function (btn) {
+            btn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var name = btn.dataset.menuDelete;
+              var program = btn.dataset.program || name;
+              if (!confirm('Delete "' + program + '"? This cannot be undone.')) return;
+              api("delete_training", { name: name })
+                .then(function () {
+                  loadData(true);
+                  renderTrainings();
+                  showToast("Training deleted");
+                })
+                .catch(function (err) { showToast("Could not delete: " + err.message); });
             });
           });
         }
