@@ -730,8 +730,12 @@ def _create_employee(row_dict, field_map, cache=None, existing_cols=None):
     parsed["custom_is_support_staff"] = 1
     parsed["custom_medical_deduction"] = 100
 
-    if not parsed.get("status"):
-        parsed["status"] = "Active"
+    parsed["status"] = _normalize_status(parsed.get("status"), parsed.get("relieving_date"))
+    if parsed.get("gender"):
+        parsed["gender"] = _normalize_gender(parsed["gender"])
+    if parsed.get("marital_status"):
+        parsed["marital_status"] = _normalize_marital_status(parsed["marital_status"])
+
     if not parsed.get("company"):
         parsed["company"] = frappe.defaults.get_global_default("company")
 
@@ -827,6 +831,17 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
                     cache["Employee"][csv_val] = emp_lead
             if emp_lead and "reports_to" in existing_cols:
                 updates["reports_to"] = emp_lead
+        elif doc_field == "status":
+            relieving = updates.get("relieving_date") or row_dict.get("relieving_date")
+            updates["status"] = _normalize_status(csv_val, relieving)
+        elif doc_field == "gender":
+            norm_g = _normalize_gender(csv_val)
+            if norm_g and "gender" in existing_cols:
+                updates["gender"] = norm_g
+        elif doc_field == "marital_status":
+            norm_m = _normalize_marital_status(csv_val)
+            if norm_m and "marital_status" in existing_cols:
+                updates["marital_status"] = norm_m
         else:
             if doc_field in existing_cols:
                 updates[doc_field] = csv_val
@@ -932,6 +947,12 @@ def _prepare_employee_data(row_dict, field_map):
                 data[doc_field] = parsed
         elif doc_field == "cell_number":
             data["cell_number"] = str(val)
+        elif doc_field == "status":
+            data["status"] = _normalize_status(val, data.get("relieving_date"))
+        elif doc_field == "gender":
+            data["gender"] = _normalize_gender(val)
+        elif doc_field == "marital_status":
+            data["marital_status"] = _normalize_marital_status(val)
         elif doc_field == "ctc":
             try:
                 data["ctc"] = flt(val)
@@ -940,7 +961,64 @@ def _prepare_employee_data(row_dict, field_map):
         else:
             data[doc_field] = val
 
+    if "status" not in data:
+        data["status"] = _normalize_status(None, data.get("relieving_date"))
+
     return data
+
+
+def _normalize_status(val, relieving_date=None):
+    if relieving_date:
+        try:
+            rd = getdate(relieving_date) if isinstance(relieving_date, str) else relieving_date
+            if rd and rd <= getdate(today()):
+                return "Left"
+        except Exception:
+            pass
+
+    if not val:
+        return "Active"
+
+    s = str(val).strip().lower()
+    if s in ("active", "newjoinee", "new joinee", "new_joinee", "existing", "confirmed", "probation", "probationary", "joined", "onboarded", "regular"):
+        return "Active"
+    elif s in ("left", "resigned", "terminated", "relieved", "absconded", "retired"):
+        return "Left"
+    elif s in ("inactive", "on leave", "disabled"):
+        return "Inactive"
+    elif s in ("suspended",):
+        return "Suspended"
+    return "Active"
+
+
+def _normalize_gender(val):
+    if not val:
+        return None
+    g = str(val).strip().lower()
+    if g in ("m", "male"):
+        return "Male"
+    elif g in ("f", "female"):
+        return "Female"
+    elif g in ("transgender", "trans"):
+        return "Transgender"
+    elif g in ("other",):
+        return "Other"
+    return val.strip().title()
+
+
+def _normalize_marital_status(val):
+    if not val:
+        return None
+    m = str(val).strip().lower()
+    if m in ("single", "unmarried"):
+        return "Single"
+    elif m in ("married",):
+        return "Married"
+    elif m in ("divorced",):
+        return "Divorced"
+    elif m in ("widowed", "widow"):
+        return "Widowed"
+    return val.strip().title()
 
 
 def _parse_date(val):
