@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "ac_opening_date",
-  "scheme_code",
+  "scheme_code_options",
   "zero_ip_funding"
  ],
  "fields": [
@@ -18,24 +18,24 @@
    "label": "A/C Opening Date"
   },
   {
-   "fieldname": "scheme_code",
-   "fieldtype": "Select",
-   "hidden": 1,
-   "in_list_view": 1,
-   "label": "Scheme Code"
-  },
-  {
    "fieldname": "zero_ip_funding",
    "fieldtype": "Int",
    "in_list_view": 1,
    "label": "Zero IP Funding"
+  },
+  {
+   "fieldname": "scheme_code_options",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Scheme Code Options"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-18 16:49:04.052634",
+ "modified": "2026-09-03 11:47:18.818220",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Zero IP Funding Tracker",
