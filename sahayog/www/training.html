@@ -3111,6 +3111,11 @@
               </div>
 
               <div class="nt-pop" id="nt-participant-pop" style="display: none">
+                <!-- Type toggle: Employee / Agent -->
+                <div style="display:flex;gap:6px;padding:8px 12px 0;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                  <button type="button" id="p-type-employee" class="btn btn-primary" style="height:26px;padding:0 12px;font-size:12px;">Employee</button>
+                  <button type="button" id="p-type-agent" class="btn" style="height:26px;padding:0 12px;font-size:12px;">Agent</button>
+                </div>
                 <div class="nt-pop-search">
                   <svg
                     viewBox="0 0 24 24"
@@ -3407,6 +3412,8 @@
           loadedMonth: "",
           branchOptions: [],
           allEmployees: [],
+          allAgents: [],
+          participantPickType: "Employee",
           branchPick: [],
           selectedGeographies: [],
           selectedParticipants: [],
@@ -3653,11 +3660,13 @@
               return Promise.all([
                 api("get_trainer_options", { enabled_only: 1 }),
                 api("get_branch_options"),
+                api("get_agent_options", { enabled_only: 1 }),
               ]);
             })
             .then(function (res) {
               state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
               state.branchPick = Array.isArray(res[1]) ? res[1] : [];
+              state.allAgents = Array.isArray(res[2]) ? res[2] : [];
             });
         }
 
@@ -4625,6 +4634,7 @@
             });
           }
           state.selectedParticipants = [];
+          state.participantPickType = "Employee";
           var pc = document.getElementById("participant-chips");
           if (pc) pc.innerHTML = "";
           var ps = document.getElementById("new-participant-search");
@@ -4733,7 +4743,11 @@
           });
           state.selectedParticipants = (ev.participant_list || []).map(
             function (p) {
-              return p.employee;
+              return {
+                reference_doctype: p.reference_doctype || "Employee",
+                agent_employee: p.agent_employee || p.employee || "",
+                full_name: p.full_name || p.employee_name || "",
+              };
             },
           );
           dialogFn.renderPChips();
@@ -5746,65 +5760,91 @@
           var pChips = document.getElementById("participant-chips");
           var pPop = document.getElementById("nt-participant-pop");
           var pCount = document.getElementById("participant-count");
-          var pDropCount = document.getElementById(
-            "participant-dropdown-count",
-          );
+          var pDropCount = document.getElementById("participant-dropdown-count");
           var pDone = document.getElementById("btn-participant-done");
           var pAttendee = document.getElementById("nt-attendee");
           var pMore = document.getElementById("participant-more");
           var pRange = document.getElementById("participant-range");
           var pLoad = document.getElementById("btn-participant-load");
+          var pBtnEmp = document.getElementById("p-type-employee");
+          var pBtnAgent = document.getElementById("p-type-agent");
           var pLimit = 20;
+
+          /* selectedParticipants: [{reference_doctype, agent_employee, full_name}] */
 
           function pLabel() {
             var n = state.selectedParticipants.length;
             return n === 1 ? "1 participant" : n + " participants";
           }
 
-          function escP(v) {
-            return esc(v);
+          /* ----- Type toggle ----- */
+          function setPickType(type) {
+            state.participantPickType = type;
+            if (pBtnEmp) {
+              pBtnEmp.className = type === "Employee" ? "btn btn-primary" : "btn";
+              pBtnEmp.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+            }
+            if (pBtnAgent) {
+              pBtnAgent.className = type === "Agent" ? "btn btn-primary" : "btn";
+              pBtnAgent.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+            }
+            if (pSearch) {
+              pSearch.placeholder = type === "Agent" ? "Search agents..." : "Search employees...";
+              pSearch.value = "";
+            }
+            renderPDd("");
           }
+          if (pBtnEmp) pBtnEmp.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Employee"); });
+          if (pBtnAgent) pBtnAgent.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Agent"); });
 
-          function pEmployees() {
+          /* ----- Already-selected key for dedup ----- */
+          function pKey(p) { return p.reference_doctype + ":" + p.agent_employee; }
+
+          /* ----- Source list based on current type ----- */
+          function pSourceList() {
+            var type = state.participantPickType || "Employee";
+            var selectedKeys = (state.selectedParticipants || []).map(pKey);
+            if (type === "Agent") {
+              return (state.allAgents || []).filter(function(a) {
+                return selectedKeys.indexOf("Agent:" + a.name) === -1;
+              });
+            }
+            /* Employee — filter by selected branches if any */
             var geos = state.selectedGeographies || [];
             var branches = geos.map(function(g){ return (g.branch||"").toLowerCase(); }).filter(Boolean);
-            return (state.allEmployees || []).filter(function (emp) {
+            return (state.allEmployees || []).filter(function(emp) {
+              if (selectedKeys.indexOf("Employee:" + emp.name) !== -1) return false;
               var empBr = (emp.sahayog_branch || "").toLowerCase();
               if (branches.length && empBr && branches.indexOf(empBr) === -1) return false;
-              if (state.selectedParticipants.indexOf(emp.name) !== -1)
-                return false;
               return true;
             });
           }
 
-          function pRowHtml(emp) {
-            var code = emp.name || "";
-            var br = emp.sahayog_branch || "";
+          function pRowHtml(item) {
+            var type = state.participantPickType || "Employee";
+            var displayName = type === "Agent"
+              ? (item.agent_name || item.name)
+              : (item.employee_name || item.name);
+            var sub = type === "Agent"
+              ? (item.branch_name || item.name)
+              : (item.sahayog_branch || item.name);
             return (
-              '<div class="branch-opt" data-val="' +
-              esc(emp.name) +
-              '">' +
-              "<span>" +
-              esc(emp.employee_name || emp.name) +
-              "</span>" +
-              '<span style="color:var(--ink-3);font-size:11px">' +
-              escP(code) +
-              (br && code ? " &middot; " : "") +
-              (br ? escP(br) : "") +
-              "</span></div>"
+              '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
+              "<span>" + esc(displayName) + "</span>" +
+              '<span style="color:var(--ink-3);font-size:11px">' + esc(sub) + "</span>" +
+              "</div>"
             );
           }
 
           function pRows(q) {
-            return pEmployees().filter(function (emp) {
-              var hay = (
-                emp.employee_name +
-                " " +
-                (emp.sahayog_branch || "") +
-                " " +
-                (emp.name || "")
-              ).toLowerCase();
-              return !q || hay.indexOf(q) !== -1;
+            var list = pSourceList();
+            if (!q) return list;
+            var type = state.participantPickType || "Employee";
+            return list.filter(function(item) {
+              var hay = type === "Agent"
+                ? ((item.agent_name || "") + " " + (item.branch_name || "") + " " + (item.name || "")).toLowerCase()
+                : ((item.employee_name || "") + " " + (item.sahayog_branch || "") + " " + (item.name || "")).toLowerCase();
+              return hay.indexOf(q) !== -1;
             });
           }
 
@@ -5814,13 +5854,10 @@
 
           function pMoreFoot(total) {
             var shown = pShown();
+            var type = state.participantPickType || "Employee";
             if (pRange)
-              pRange.textContent =
-                "Showing " +
-                shown +
-                " of " +
-                total +
-                (total === 1 ? " employee" : " employees");
+              pRange.textContent = "Showing " + shown + " of " + total +
+                (total === 1 ? (" " + type.toLowerCase()) : (" " + type.toLowerCase() + "s"));
             if (pMore) pMore.style.display = shown < total ? "flex" : "none";
           }
 
@@ -5828,8 +5865,9 @@
             var q = (filter || "").trim().toLowerCase();
             var list = pRows(q);
             if (!list.length) {
-              pDd.innerHTML =
-                '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+              var type = state.participantPickType || "Employee";
+              pDd.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No ' +
+                type.toLowerCase() + 's found</div>';
               if (pMore) pMore.style.display = "none";
             } else {
               pDd.innerHTML = list.slice(0, pLimit).map(pRowHtml).join("");
@@ -5839,27 +5877,31 @@
           }
 
           function renderPChips() {
-            var byName = {};
-            state.allEmployees.forEach(function (e) {
-              byName[e.name] = e;
-            });
+            /* Build lookup maps for display names */
+            var empById = {}, agentById = {};
+            (state.allEmployees || []).forEach(function(e) { empById[e.name] = e; });
+            (state.allAgents || []).forEach(function(a) { agentById[a.name] = a; });
             var removable = state.dialogMode !== "edit";
-            pChips.innerHTML = state.selectedParticipants
-              .map(function (empName) {
-                var emp = byName[empName] || {};
-                return (
-                  '<span class="participant-chip">' +
-                  esc(emp.employee_name || empName) +
-                  (removable
-                    ? '<button type="button" data-remove="' +
-                      esc(empName) +
-                      '" title="Remove">&times;</button>'
-                    : "") +
-                  "</span>"
-                );
-              })
-              .join("");
-            var n = state.selectedParticipants.length;
+            pChips.innerHTML = (state.selectedParticipants || []).map(function(p) {
+              var isAgent = p.reference_doctype === "Agent";
+              var displayName = p.full_name || p.agent_employee;
+              if (!displayName) {
+                if (isAgent) {
+                  var a = agentById[p.agent_employee] || {};
+                  displayName = a.agent_name || p.agent_employee;
+                } else {
+                  var e = empById[p.agent_employee] || {};
+                  displayName = e.employee_name || p.agent_employee;
+                }
+              }
+              var key = pKey(p);
+              return '<span class="participant-chip">' +
+                (isAgent ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">Agent</span>' : "") +
+                esc(displayName) +
+                (removable ? '<button type="button" data-remove="' + esc(key) + '" title="Remove">&times;</button>' : "") +
+                "</span>";
+            }).join("");
+            var n = (state.selectedParticipants || []).length;
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
@@ -5870,9 +5912,10 @@
           function openPop() {
             if (state.dialogMode === "edit") return;
             if (!pPop || !pDd) return;
+            setPickType(state.participantPickType || "Employee");
             pPop.style.display = "block";
             pDd.style.display = "block";
-            renderPDd(pSearch.value);
+            renderPDd(pSearch ? pSearch.value : "");
             if (pSearch) pSearch.focus();
           }
           function closePop() {
@@ -5884,77 +5927,71 @@
           dialogFn.closePop = closePop;
 
           function addParticipant(val) {
-            if (state.selectedParticipants.indexOf(val) !== -1) return;
-            state.selectedParticipants.push(val);
-            renderPChips();
-            if (pSearch) {
-              pSearch.value = "";
-              pSearch.focus();
+            var type = state.participantPickType || "Employee";
+            var key = type + ":" + val;
+            var already = (state.selectedParticipants || []).some(function(p) { return pKey(p) === key; });
+            if (already) return;
+            /* Resolve display name */
+            var fullName = "";
+            if (type === "Agent") {
+              var a = (state.allAgents || []).find(function(x){ return x.name === val; }) || {};
+              fullName = a.agent_name || val;
+            } else {
+              var e = (state.allEmployees || []).find(function(x){ return x.name === val; }) || {};
+              fullName = e.employee_name || val;
             }
+            state.selectedParticipants.push({
+              reference_doctype: type,
+              agent_employee: val,
+              full_name: fullName,
+            });
+            renderPChips();
+            if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
           }
 
-          if (pAttendee) {
-            pAttendee.addEventListener("click", function () {
-              openPop();
-            });
-          }
+          if (pAttendee) pAttendee.addEventListener("click", function() { openPop(); });
           if (pSearch) {
-            pSearch.addEventListener("focus", function () {
-              openPop();
-            });
-            pSearch.addEventListener("input", function () {
-              renderPDd(this.value);
-            });
-            pSearch.addEventListener("keydown", function (e) {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                closePop();
-                pSearch.blur();
-              }
+            pSearch.addEventListener("focus", function() { openPop(); });
+            pSearch.addEventListener("input", function() { renderPDd(this.value); });
+            pSearch.addEventListener("keydown", function(e) {
+              if (e.key === "Escape") { e.preventDefault(); closePop(); pSearch.blur(); }
               if (e.key === "Enter") {
                 e.preventDefault();
                 var first = pDd.querySelector(".branch-opt");
-                if (first && first.dataset.val)
-                  addParticipant(first.dataset.val);
+                if (first && first.dataset.val) addParticipant(first.dataset.val);
               }
             });
           }
           if (pDd) {
-            pDd.addEventListener("mousedown", function (e) {
+            pDd.addEventListener("mousedown", function(e) {
               var opt = e.target.closest(".branch-opt");
-              if (opt) {
-                e.preventDefault();
-                addParticipant(opt.dataset.val);
-              }
+              if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
             });
           }
           if (pDone) pDone.addEventListener("click", closePop);
           if (pLoad) {
-            pLoad.addEventListener("click", function () {
+            pLoad.addEventListener("click", function() {
               var q = (pSearch ? pSearch.value : "").trim().toLowerCase();
               var list = pRows(q);
               var start = pShown();
               var chunk = list.slice(start, start + pLimit);
-              if (chunk.length) {
-                pDd.insertAdjacentHTML(
-                  "beforeend",
-                  chunk.map(pRowHtml).join(""),
-                );
-              }
+              if (chunk.length) pDd.insertAdjacentHTML("beforeend", chunk.map(pRowHtml).join(""));
               pMoreFoot(list.length);
             });
           }
-          document.addEventListener("click", function (e) {
+          document.addEventListener("click", function(e) {
             if (!pAttendee || pAttendee.contains(e.target)) return;
             if (pPop && !pPop.contains(e.target)) closePop();
           });
           if (pChips) {
-            pChips.addEventListener("click", function (e) {
+            pChips.addEventListener("click", function(e) {
               var btn = e.target.closest("[data-remove]");
               if (btn) {
-                var i = state.selectedParticipants.indexOf(btn.dataset.remove);
-                if (i !== -1) state.selectedParticipants.splice(i, 1);
+                var key = btn.dataset.remove;
+                state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
+                  return pKey(p) !== key;
+                });
                 renderPChips();
               }
             });
