@@ -30,6 +30,55 @@ CALENDAR_FIELDS = [
 BUDGET_FIELDS = ["budget_amount", "actual_expense"]
 
 
+def _get_geographies_map(training_names):
+    """Return {training_name: [ {branch, zone, region, district}, ... ] }."""
+    if not training_names:
+        return {}
+    placeholders = ", ".join(["%s"] * len(training_names))
+    rows = frappe.db.sql(
+        f"SELECT parent, branch, zone, region, district "
+        f"FROM `tabTraining Geography` WHERE parent IN ({placeholders}) ORDER BY idx ASC",
+        training_names,
+        as_dict=True,
+    )
+    out = {name: [] for name in training_names}
+    for r in rows:
+        out[r.parent].append({
+            "branch": r.branch or "",
+            "zone": r.zone or "",
+            "region": r.region or "",
+            "district": r.district or "",
+        })
+    return out
+
+
+def _geography_matches(geos, zone=None, region=None, district=None, branch=None):
+    if not zone and not region and not district and not branch:
+        return True
+    if geos:
+        for g in geos:
+            if zone and g.get("zone") != zone:
+                continue
+            if region and g.get("region") != region:
+                continue
+            if district and g.get("district") != district:
+                continue
+            if branch and g.get("branch") != branch:
+                continue
+            return True
+        return False
+    return True
+
+
+def _geo_sql(col, val, param_key, params):
+    params[param_key] = val
+    return (
+        f"(t.{col} = %({param_key})s OR EXISTS "
+        f"(SELECT 1 FROM `tabTraining Geography` tg "
+        f"WHERE tg.parent = t.name AND tg.{col} = %({param_key})s))"
+    )
+
+
 def _is_admin():
     return bool(ADMIN_ROLES & set(frappe.get_roles(frappe.session.user)))
 
@@ -125,10 +174,6 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
     filters.update(_owner_scope())
-    if zone: filters["zone"] = zone
-    if region: filters["region"] = region
-    if district: filters["district"] = district
-    if branch: filters["branch"] = branch
 
     rows = frappe.db.get_all(
         "Training",
@@ -141,6 +186,28 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
     # Missing to_date falls back to from_date (single-day).
     rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
 
+    # Enrich with geographies for post-filtering (supports multi-branch)
+    geo_map = _get_geographies_map([r.name for r in rows])
+    has_geo_filter = any([zone, region, district, branch])
+    if has_geo_filter:
+        filtered = []
+        for r in rows:
+            geos = geo_map.get(r.name, [])
+            if geos:
+                if not _geography_matches(geos, zone, region, district, branch):
+                    continue
+            else:
+                if zone and r.zone != zone:
+                    continue
+                if region and r.region != region:
+                    continue
+                if district and r.district != district:
+                    continue
+                if branch and r.branch != branch:
+                    continue
+            filtered.append(r)
+        rows = filtered
+
     participants = _participant_counts([r.name for r in rows])
     show_budget = _is_admin()
 
@@ -148,6 +215,8 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
     for r in rows:
         from_date = str(r.from_date or "")[:10]
         to_date = str(r.to_date or r.from_date or "")[:10]
+        geos = geo_map.get(r.name, [])
+        branches = [g["branch"] for g in geos if g["branch"]] if geos else ([r.branch] if r.branch else [])
         out.append({
             "name": r.name,
             "date": from_date,
@@ -164,6 +233,8 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "region": r.region or "",
             "district": r.district or "",
             "branch": r.branch or "",
+            "geographies": geos,
+            "branches": branches,
             "participants": participants.get(r.name, 0),
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
@@ -196,14 +267,6 @@ def get_training_list(
     """Flat, filterable list of training records for the Trainings tab."""
     filters = {"docstatus": ["<", 2]}
     filters.update(_owner_scope())
-    if zone:
-        filters["zone"] = zone
-    if region:
-        filters["region"] = region
-    if district:
-        filters["district"] = district
-    if branch:
-        filters["branch"] = branch
     if from_date:
         filters["from_date"] = [">=", from_date]
     if to_date:
@@ -220,6 +283,29 @@ def get_training_list(
         order_by="from_date desc, start_time desc",
         limit_page_length=limit,
     )
+    has_geo_filter = any([zone, region, district, branch])
+    if has_geo_filter:
+        geo_map = _get_geographies_map([r.name for r in rows])
+        filtered = []
+        for r in rows:
+            geos = geo_map.get(r.name, [])
+            if geos:
+                if not _geography_matches(geos, zone, region, district, branch):
+                    continue
+            else:
+                if zone and r.zone != zone:
+                    continue
+                if region and r.region != region:
+                    continue
+                if district and r.district != district:
+                    continue
+                if branch and r.branch != branch:
+                    continue
+            filtered.append(r)
+        rows = filtered
+    else:
+        geo_map = _get_geographies_map([r.name for r in rows])
+
     participants = _participant_counts([r.name for r in rows])
     show_budget = _is_admin()
     req_status = (status or "").strip().lower().replace(" ", "") or None
@@ -229,12 +315,14 @@ def get_training_list(
         st = (r.status or get_training_status(r) or "").strip().lower().replace(" ", "")
         if req_status and st != req_status:
             continue
-        from_date = str(r.from_date or "")[:10]
-        to_date = str(r.to_date or r.from_date or "")[:10]
+        from_date_v = str(r.from_date or "")[:10]
+        to_date_v = str(r.to_date or r.from_date or "")[:10]
+        geos = geo_map.get(r.name, [])
+        branches = [g["branch"] for g in geos if g["branch"]] if geos else ([r.branch] if r.branch else [])
         out.append({
             "name": r.name,
-            "from_date": from_date,
-            "to_date": to_date,
+            "from_date": from_date_v,
+            "to_date": to_date_v,
             "time": _format_time(r.start_time),
             "end_time": _format_time(r.end_time),
             "training_program": r.training_program or "",
@@ -245,6 +333,8 @@ def get_training_list(
             "region": r.region or "",
             "district": r.district or "",
             "branch": r.branch or "",
+            "geographies": geos,
+            "branches": branches,
             "participants": participants.get(r.name, 0),
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
@@ -274,6 +364,16 @@ def get_training_details(name):
     r["from_date"] = str(doc.from_date or "")[:10]
     r["to_date"] = str(doc.to_date or doc.from_date or "")[:10]
     r["time"] = _format_time(doc.start_time)
+    geos = []
+    for g in (doc.get("geographies") or []):
+        geos.append({
+            "branch": g.branch or "",
+            "zone": g.zone or "",
+            "region": g.region or "",
+            "district": g.district or "",
+        })
+    r["geographies"] = geos
+    r["branches"] = [g["branch"] for g in geos if g["branch"]]
     employees = frappe.db.get_all(
         "Training Participant",
         filters={"parent": name},
@@ -317,16 +417,33 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
     filters.update(_owner_scope())
-    if zone: filters["zone"] = zone
-    if region: filters["region"] = region
-    if district: filters["district"] = district
-    if branch: filters["branch"] = branch
 
     rows = frappe.db.get_all(
-        "Training", filters=filters, fields=["name", "from_date", "to_date", "docstatus", "status", *COMPLETION_FIELDS]
+        "Training", filters=filters, fields=["name", "from_date", "to_date", "docstatus", "status", *COMPLETION_FIELDS, "zone", "region", "district", "branch"]
     )
     month_start = f"{year}-{month:02d}-01"
     rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
+
+    has_geo_filter = any([zone, region, district, branch])
+    if has_geo_filter:
+        geo_map = _get_geographies_map([r.name for r in rows])
+        filtered = []
+        for r in rows:
+            geos = geo_map.get(r.name, [])
+            if geos:
+                if not _geography_matches(geos, zone, region, district, branch):
+                    continue
+            else:
+                if zone and r.zone != zone:
+                    continue
+                if region and r.region != region:
+                    continue
+                if district and r.district != district:
+                    continue
+                if branch and r.branch != branch:
+                    continue
+            filtered.append(r)
+        rows = filtered
 
     counts = {"draft": 0, "upcoming": 0, "inprogress": 0, "completed": 0, "pending": 0}
     for r in rows:
@@ -349,6 +466,10 @@ def create_training(**kwargs):
     """
     Schedule a training (L&D Admin / Trainer).
     Pass `submit=1` to submit it immediately so it shows on the calendar.
+
+    Geography: accepts either single legacy fields (branch/zone/region/district)
+    or new `geographies` param (JSON list of {branch} or branch codes). When
+    geographies is provided, each branch's zone/region/district is auto-filled.
     """
     _require_can_write()
 
@@ -360,6 +481,7 @@ def create_training(**kwargs):
     }
     submit = int(kwargs.get("submit") or 1) == 1
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
+    geographies = frappe.parse_json(kwargs.get("geographies") or "[]")
 
     doc = frappe.new_doc("Training")
     for field in allowed:
@@ -375,6 +497,34 @@ def create_training(**kwargs):
     # Single-day training: to_date defaults to from_date
     if not doc.to_date and doc.from_date:
         doc.to_date = doc.from_date
+
+    seen_branches = set()
+    for geo in geographies:
+        branch_val = None
+        if isinstance(geo, dict):
+            branch_val = geo.get("branch") or geo.get("name")
+        elif isinstance(geo, str):
+            branch_val = geo
+        if not branch_val or branch_val in seen_branches:
+            continue
+        seen_branches.add(branch_val)
+        geo_info = frappe.db.get_value(
+            "Sahayog Branch", branch_val, ["zone", "region", "district"], as_dict=True
+        ) or {}
+        doc.append("geographies", {
+            "branch": branch_val,
+            "zone": geo_info.get("zone") or (geo.get("zone") if isinstance(geo, dict) else "") or "",
+            "region": geo_info.get("region") or (geo.get("region") if isinstance(geo, dict) else "") or "",
+            "district": geo_info.get("district") or (geo.get("district") if isinstance(geo, dict) else "") or "",
+        })
+
+    if doc.get("geographies"):
+        first = doc.geographies[0]
+        doc.branch = first.branch
+        doc.zone = first.zone
+        doc.region = first.region
+        doc.district = first.district
+
     for emp in participants:
         if isinstance(emp, dict):
             emp = emp.get("employee") or emp.get("name")
@@ -620,8 +770,7 @@ def get_mis_report(
     for col in ("zone", "region", "district", "branch"):
         val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
         if val:
-            conds.append("t.%s = %%(val_%s)s" % (col, col))
-            params["val_" + col] = val
+            conds.append(_geo_sql(col, val, "val_" + col, params))
     where = " AND ".join(conds)
 
     base = """
@@ -794,8 +943,7 @@ def get_employee_training_report(
     for col in ("zone", "region", "district", "branch"):
         val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
         if val:
-            conds.append("t.%s = %%(val_%s)s" % (col, col))
-            params["val_" + col] = val
+            conds.append(_geo_sql(col, val, "val_" + col, params))
 
     q = (employee or "").strip().lower()
     if q:
