@@ -6,27 +6,38 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "employee",
-  "employee_name",
+  "reference_doctype",
+  "agent_employee",
+  "full_name",
   "attendance_status"
  ],
  "fields": [
   {
-   "columns": 3,
-   "fieldname": "employee",
-   "fieldtype": "Link",
+   "columns": 2,
+   "fieldname": "reference_doctype",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Employee",
-   "options": "Employee"
+   "label": "Type",
+   "options": "\nEmployee\nAgent",
+   "reqd": 1
   },
   {
-   "columns": 4,
-   "fetch_from": "employee.employee_name",
-   "fieldname": "employee_name",
+   "columns": 3,
+   "fieldname": "agent_employee",
+   "fieldtype": "Dynamic Link",
+   "ignore_user_permissions": 1,
+   "in_list_view": 1,
+   "label": "Employee / Agent",
+   "mandatory_depends_on": "eval:doc.reference_doctype",
+   "options": "reference_doctype",
+   "read_only_depends_on": "eval:!doc.reference_doctype"
+  },
+  {
+   "columns": 3,
+   "fieldname": "full_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Employee Name",
-   "read_only": 1
+   "label": "Full Name"
   },
   {
    "columns": 2,
@@ -42,7 +53,7 @@
  "index_web_pages_for_search": 0,
  "istable": 1,
  "links": [],
- "modified": "2026-08-11 12:00:00.000000",
+ "modified": "2026-09-03 16:13:00.000000",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Training Participant",
