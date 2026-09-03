@@ -1111,6 +1111,18 @@ def _ensure_can_update(doc):
 
 
 @frappe.whitelist()
+def delete_training(name):
+    """Delete a training — L&D Admin only. Cancels first if submitted."""
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can delete trainings."))
+    doc = frappe.get_doc("Training", name)
+    if doc.docstatus == 1:
+        doc.cancel()
+    frappe.delete_doc("Training", name)
+    return {"success": True}
+
+
+@frappe.whitelist()
 def get_branch_geo(branch):
     """Return zone / region / district for a Sahayog Branch (used by Add Training modal)."""
     if not branch:
