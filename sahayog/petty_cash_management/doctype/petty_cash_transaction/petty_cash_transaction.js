@@ -542,6 +542,15 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
         }
     },
 
+    payment_mode(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (row.payment_mode !== 'Transfer') {
+            frappe.model.set_value(cdt, cdn, 'beneficiary_name', '');
+            frappe.model.set_value(cdt, cdn, 'beneficiary_account_number', '');
+        }
+    },
+
     form_render: function (frm, cdt, cdn) {
         set_description_maxlength(frm);
     },
