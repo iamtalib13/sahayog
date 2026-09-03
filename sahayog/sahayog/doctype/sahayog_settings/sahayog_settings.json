@@ -23,6 +23,8 @@
   "email_tab",
   "send",
   "enable_ld_email_notifications",
+  "crm_tab",
+  "enable_crm_lead_report_cron",
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
@@ -109,6 +111,18 @@
    "fieldname": "enable_ld_email_notifications",
    "fieldtype": "Check",
    "label": "Enable L&D Email Notifications"
+  },
+  {
+   "fieldname": "crm_tab",
+   "fieldtype": "Tab Break",
+   "label": "CRM Settings"
+  },
+  {
+   "default": "1",
+   "description": "When checked, the daily 3:30 AM IST CRM Lead Report sync cron task executes. When unchecked, the scheduler skips the execution.",
+   "fieldname": "enable_crm_lead_report_cron",
+   "fieldtype": "Check",
+   "label": "Enable CRM Daily Lead Report Cron"
   },
   {
    "fieldname": "petty_cash_management_tab",
