@@ -48,6 +48,7 @@ class Training(Document):
 
     def before_save(self):
         self.status = get_training_status(self)
+        self._sync_geographies()
 
     def validate(self):
         if self.from_date and self.to_date:
@@ -56,6 +57,47 @@ class Training(Document):
         if self.start_time and self.end_time:
             if frappe.utils.get_time(self.end_time) < frappe.utils.get_time(self.start_time):
                 frappe.throw(_("End Time cannot be before Start Time."))
+        self._validate_geographies()
+
+    def _sync_geographies(self):
+        if self.get("geographies"):
+            for row in self.geographies:
+                if row.branch:
+                    geo = frappe.db.get_value(
+                        "Sahayog Branch", row.branch, ["zone", "region", "district"], as_dict=True
+                    )
+                    if geo:
+                        row.zone = geo.zone or row.zone or ""
+                        row.region = geo.region or row.region or ""
+                        row.district = geo.district or row.district or ""
+            first = self.geographies[0]
+            self.branch = first.branch or self.branch
+            self.zone = first.zone or self.zone
+            self.region = first.region or self.region
+            self.district = first.district or self.district
+        elif self.branch:
+            geo = frappe.db.get_value(
+                "Sahayog Branch", self.branch, ["zone", "region", "district"], as_dict=True
+            )
+            zone = (geo.zone if geo else None) or self.zone or ""
+            region = (geo.region if geo else None) or self.region or ""
+            district = (geo.district if geo else None) or self.district or ""
+            self.append("geographies", {
+                "branch": self.branch,
+                "zone": zone,
+                "region": region,
+                "district": district,
+            })
+
+    def _validate_geographies(self):
+        if self.get("geographies"):
+            seen = set()
+            for row in self.geographies:
+                if not row.branch:
+                    frappe.throw(_("Branch is required in Geographies table (row {0}).").format(row.idx))
+                if row.branch in seen:
+                    frappe.throw(_("Duplicate branch '{0}' in Geographies.").format(row.branch))
+                seen.add(row.branch)
 
     def on_submit(self):
         status = get_training_status(self)
