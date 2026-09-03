@@ -352,29 +352,20 @@ def trigger_score_card_creation(doc, method=None):
         return
 
     ignored_doctypes = {
-        "Branch Score Card",
-        "User",
-        "Role",
-        "File",
-        "Error Log",
-        "Activity Log",
-        "Version",
-        "Communication",
-        "Employee Checkin",
-        "Sessions",
-        "Custom Field",
-        "Property Setter",
-        "DocType",
+        "Branch Score Card", "User", "Role", "File", "Error Log", 
+        "Activity Log", "Version", "Communication", "Employee Checkin", 
+        "Sessions", "Custom Field", "Property Setter", "DocType"
     }
 
     if not doc or getattr(doc, "doctype", None) in ignored_doctypes:
         return
 
+    # Strictly fetch sol_id first instead of branch/branch_name
     branch = (
-        getattr(doc, "branch", None)
-        or getattr(doc, "sol_id", None)
-        or getattr(doc, "sahayog_branch", None)
+        getattr(doc, "sol_id", None)
         or getattr(doc, "branch_code", None)
+        or getattr(doc, "branch", None)
+        or getattr(doc, "sahayog_branch", None)
     )
     month = getattr(doc, "month", None)
     year = getattr(doc, "year", None)
@@ -394,26 +385,31 @@ def trigger_score_card_creation(doc, method=None):
     if not (branch and month and year):
         return
 
+    # Resolve Branch Name to SOL ID if Branch Name was passed instead of SOL ID
     clean_branch = str(branch).strip()
+    sol_id = frappe.db.get_value("Sahayog Branch", {"branch": clean_branch}, "sol_id") \
+             or frappe.db.get_value("Sahayog Branch", clean_branch, "sol_id") \
+             or clean_branch
+
     clean_month = str(month).strip().capitalize()
     try:
         clean_year = int(year)
     except (ValueError, TypeError):
         clean_year = str(year).strip()
 
-    if not clean_branch or not clean_month or not clean_year:
+    if not sol_id or not clean_month or not clean_year:
         return
 
     try:
         frappe.flags.in_score_card_trigger = True
 
         fetch_score_card_data(
-            branch=clean_branch, month=clean_month, year=clean_year
+            branch=sol_id, month=clean_month, year=clean_year
         )
     except Exception as e:
         frappe.log_error(
             title=f"Auto Score Card Creation Failed [{doc.doctype} : {doc.name}]",
-            message=f"Branch: {clean_branch}, Month: {clean_month}, Year: {clean_year}\nError: {str(e)}",
+            message=f"Branch SOL: {sol_id}, Month: {clean_month}, Year: {clean_year}\nError: {str(e)}",
         )
     finally:
         frappe.flags.in_score_card_trigger = False
