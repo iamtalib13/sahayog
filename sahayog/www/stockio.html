@@ -2248,14 +2248,22 @@
                         class="filter-date-input" 
                         v-model="filterForm.receipt_display" 
                         @focus="activeFilterKey = 'receipt'"
+                        @input="filterForm.receipt = filterForm.receipt_display; if(!filterForm.receipt_display) applyFilters();"
+                        @keydown.enter="applyFilters()"
                         placeholder="Search Receipt"
                       />
                       <div v-if="activeFilterKey === 'receipt'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
                         <div 
+                          class="filter-sub-option"
+                          @mousedown="filterForm.receipt = ''; filterForm.receipt_display = ''; activeFilterKey = null; applyFilters()"
+                        >
+                          All Receipts
+                        </div>
+                        <div 
                           v-for="name in filteredFilterReceipts" 
                           :key="name"
                           class="filter-sub-option"
-                          @mousedown="filterForm.receipt = name; filterForm.receipt_display = name; activeFilterKey = null"
+                          @mousedown="filterForm.receipt = name; filterForm.receipt_display = name; activeFilterKey = null; applyFilters()"
                         >
                           [[ name ]]
                         </div>
@@ -2269,14 +2277,22 @@
                         class="filter-date-input" 
                         v-model="filterForm.supplier_display" 
                         @focus="activeFilterKey = 'supplier'"
+                        @input="if(!filterForm.supplier_display) { filterForm.supplier = ''; applyFilters(); }"
+                        @keydown.enter="applyFilters()"
                         placeholder="Search Supplier"
                       />
                       <div v-if="activeFilterKey === 'supplier'" class="filter-dropdown-content" style="max-height: 200px; overflow-y: auto;">
                         <div 
+                          class="filter-sub-option"
+                          @mousedown="filterForm.supplier = ''; filterForm.supplier_display = ''; activeFilterKey = null; applyFilters()"
+                        >
+                          All Suppliers
+                        </div>
+                        <div 
                           v-for="s in filteredFilterSuppliers" 
                           :key="s.name"
                           class="filter-sub-option"
-                          @mousedown="filterForm.supplier = s.name; filterForm.supplier_display = s.supplier_name; activeFilterKey = null"
+                          @mousedown="filterForm.supplier = s.name; filterForm.supplier_display = s.supplier_name; activeFilterKey = null; applyFilters()"
                         >
                           [[ s.supplier_name ]] ([[ s.name ]])
                         </div>
@@ -2286,22 +2302,25 @@
                     <div class="filter-date-row">
                       <div class="filter-date-group">
                         <label class="filter-date-label">Start Date</label>
-                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" />
+                        <input type="date" class="filter-date-input" v-model="filterForm.start_date" @change="applyFilters()" />
                       </div>
                       <div class="filter-date-group">
                         <label class="filter-date-label">End Date</label>
-                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" />
+                        <input type="date" class="filter-date-input" v-model="filterForm.end_date" @change="applyFilters()" />
                       </div>
                     </div>
 
                     <div class="filter-dropdown-container">
                       <button class="filter-option-btn" @click="toggleFilterDropdown('inward_status')">
-                        Status <i class="fas" :class="activeFilterKey === 'inward_status' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
+                        Status [[ filterForm.status ? ': ' + filterForm.status : '' ]] <i class="fas" :class="activeFilterKey === 'inward_status' ? 'fa-chevron-up' : 'fa-chevron-down'" style="float: right; margin-top: 3px;"></i>
                       </button>
                       <div v-if="activeFilterKey === 'inward_status'" class="filter-dropdown-content">
-                        <div class="filter-sub-option">Draft</div>
-                        <div class="filter-sub-option">Submitted</div>
-                        <div class="filter-sub-option">Cancelled</div>
+                        <div class="filter-sub-option" @click="filterForm.status = ''; activeFilterKey = null; applyFilters()">All Statuses</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Draft'; activeFilterKey = null; applyFilters()">Draft</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Submitted'; activeFilterKey = null; applyFilters()">Submitted</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Completed'; activeFilterKey = null; applyFilters()">Completed</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'To Bill'; activeFilterKey = null; applyFilters()">To Bill</div>
+                        <div class="filter-sub-option" @click="filterForm.status = 'Cancelled'; activeFilterKey = null; applyFilters()">Cancelled</div>
                       </div>
                     </div>
                   </div>
@@ -13220,6 +13239,7 @@
           emptyIcon: "fa-truck-ramp-box",
           emptyTitle: "No inward records found",
           emptyMessage: "No purchase receipts match the current search.",
+          searchPlaceholder: "Search receipts, suppliers, items...",
           searchableFields: ["name", "supplier", "status"],
           columns: [
             { label: "Receipt", key: "name", width: 2, type: "avatar" },
@@ -15199,6 +15219,32 @@
               this.totalRows = res.message.total || 0;
               this.hasMore = this.loadedRows < this.totalRows;
             }
+          } else if (doctype === "Purchase Receipt") {
+            res = await frappe.call({
+              method:
+                "sahayog.procurement.api.stock_balance_ledger.get_inward_list",
+              args: {
+                limit: limit,
+                start: start,
+                search_text: this.searchText,
+                receipt: this.filterForm.receipt,
+                supplier: this.filterForm.supplier,
+                status: this.filterForm.status,
+                start_date: this.filterForm.start_date,
+                end_date: this.filterForm.end_date,
+              },
+            });
+            if (res.message) {
+              const data = res.message.data || [];
+              if (append) {
+                this.rows = this.rows.concat(data);
+              } else {
+                this.rows = data;
+              }
+              this.loadedRows = this.rows.length;
+              this.totalRows = res.message.total || 0;
+              this.hasMore = this.loadedRows < this.totalRows;
+            }
           } else {
             let filters = [];
             if (doctype === "Serial No" && this.filterForm.item_code) {
@@ -15209,18 +15255,15 @@
               fields = ["name", "item_code", "item_name", "item_group", "stock_uom", "custom_item_department", "description", "image", "disabled"];
             }
 
+            let or_filters = [];
             if (this.searchText) {
               const searchFields = this.currentView.searchableFields || [
                 "name",
                 "item_name",
                 "item_code",
               ];
-              searchFields.forEach((field, index) => {
-                if (index === 0) {
-                  filters.push([field, "like", `%${this.searchText}%`]);
-                } else {
-                  filters.push(["or", field, "like", `%${this.searchText}%`]);
-                }
+              searchFields.forEach((field) => {
+                or_filters.push([field, "like", `%${this.searchText}%`]);
               });
             }
 
@@ -15230,9 +15273,10 @@
                 doctype: doctype,
                 fields: fields,
                 filters: filters,
+                or_filters: or_filters.length ? or_filters : undefined,
                 order_by: "creation desc",
-                limit: limit,
-                start: start,
+                limit_page_length: limit,
+                limit_start: start,
               },
             });
             if (res.message) {
