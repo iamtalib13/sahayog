@@ -4953,6 +4953,18 @@
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
             if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
+            var _hols2 = state.holidays || {};
+            var _chk = function(a,b){
+              var cur = new Date(a); var end = new Date(b);
+              while (cur <= end) {
+                var iso = cur.toISOString().slice(0,10);
+                if (_hols2[iso]) { showToast("Cannot schedule on Holiday (" + _hols2[iso] + "): " + iso); return true; }
+                if (cur.getDay()===0) { showToast("Cannot schedule on Sunday: " + iso); return true; }
+                cur.setDate(cur.getDate()+1);
+              }
+              return false;
+            };
+            if (_chk(fromDate, toDate)) return;
             if ((startTime && !endTime) || (!startTime && endTime)) { showToast("Provide both Start and End Time or leave both blank"); return; }
             if (startTime && endTime) {
               var _sm = parseTime(startTime), _em = parseTime(endTime);
@@ -5126,6 +5138,21 @@
             showToast("To Date cannot be before From Date");
             return;
           }
+          // Holiday/Sunday validation (user's state)
+          var _hols = state.holidays || {};
+          var _isHoliday = function(d){ return _hols[d]; };
+          var _isSun = function(d){ var dt = new Date(d); return dt.getDay()===0; };
+          var _checkRange = function(a,b){
+            var cur = new Date(a); var end = new Date(b);
+            while (cur <= end) {
+              var iso = cur.toISOString().slice(0,10);
+              if (_hols[iso]) { showToast("Cannot schedule on Holiday (" + _hols[iso] + "): " + iso); return iso; }
+              if (cur.getDay()===0) { showToast("Cannot schedule on Sunday: " + iso); return iso; }
+              cur.setDate(cur.getDate()+1);
+            }
+            return null;
+          };
+          if (_checkRange(date, toDate)) return;
 
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
