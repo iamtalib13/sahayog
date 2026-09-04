@@ -38,6 +38,19 @@ def execute(filters=None):
     today = frappe.utils.today()
     lead_filters["creation"] = ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]
 
+    # 🔍 Apply user search filters
+    if filters.get("custom_branch"):
+        lead_filters["custom_branch"] = filters.get("custom_branch")
+
+    if filters.get("sol_id"):
+        lead_filters["sol_id"] = filters.get("sol_id")
+
+    if filters.get("custom_employee_id"):
+        lead_filters["custom_employee_id"] = filters.get("custom_employee_id")
+
+    if filters.get("custom_employee_name"):
+        lead_filters["custom_employee_name"] = ["like", f"%{filters.get('custom_employee_name')}%"]
+
 
 
     # 📦 Fetch leads with employee & branch fields directly from Lead

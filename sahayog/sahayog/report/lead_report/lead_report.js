@@ -6,6 +6,30 @@ frappe.query_reports["Lead Report"] = {
     // Nothing extra needed here; filtering is handled in Python
   },
 
-  filters: [],
+  filters: [
+    {
+      fieldname: "custom_branch",
+      label: "Branch",
+      fieldtype: "Link",
+      options: "Branch",
+    },
+    {
+      fieldname: "sol_id",
+      label: "SOL ID",
+      fieldtype: "Data",
+    },
+    {
+      fieldname: "custom_employee_id",
+      label: "Employee ID",
+      fieldtype: "Link",
+      options: "Employee",
+    },
+    {
+      fieldname: "custom_employee_name",
+      label: "Employee Name",
+      fieldtype: "Data",
+    },
+  ],
 };
+
 
