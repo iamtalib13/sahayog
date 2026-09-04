@@ -33,11 +33,19 @@ frappe.query_reports["Lead Report"] = {
           }
           .capsules-list {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             gap: 6px;
-            max-height: 120px;
-            overflow-y: auto;
-            padding-right: 4px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 4px;
+            scrollbar-width: thin;
+          }
+          .capsules-list::-webkit-scrollbar {
+            height: 4px;
+          }
+          .capsules-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
           }
           .lead-branch-capsule {
             display: inline-flex;
@@ -51,6 +59,8 @@ frappe.query_reports["Lead Report"] = {
             transition: all 0.2s ease;
             user-select: none;
             line-height: 1.2;
+            flex-shrink: 0;
+            white-space: nowrap;
           }
 
           /* 🔴 Red state for 0 leads */
