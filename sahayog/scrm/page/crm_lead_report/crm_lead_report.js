@@ -62,12 +62,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           padding: 8px 15px; 
           border-bottom: 1px solid #d1d8dd; 
           display: flex; 
-          flex-wrap: wrap; /* Mobile friendly */
+          flex-wrap: nowrap !important;
+          overflow-x: auto;
+          white-space: nowrap;
           justify-content: space-between; 
-          align-items: center; 
+          align-items: center;
+          gap: 12px;
         }
         .header-title { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; }
-        .header-controls { display: flex; align-items: center; gap: 15px; }
+        .header-controls { display: flex; align-items: center; gap: 10px; flex-shrink: 0; white-space: nowrap; }
         .select-input { height: 32px; font-size: 13px; border: 1px solid #d1d8dd; border-radius: 4px; padding: 0 8px; margin-left: 5px; cursor: pointer; }
         .btn-generate-sm { background: #1f2937; color: #fff; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; height: 32px; }
        .filter-grid { display: none; }
@@ -703,7 +706,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
             <div class="ui-section-card">
                <div class="section-header">
-                    <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 20px;">
+                    <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 12px; flex-wrap: nowrap;">
                         <div v-for="key in ['zone', 'region', 'sol_id', 'product', 'source']" 
                             class="d-flex align-items-center filter-pill-header" 
                             style="cursor: pointer; gap: 6px;" 
@@ -749,8 +752,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             </div>
                         </div>
 
-                        <div v-if="totalLeadsInReport > 0">
-                            <button class="btn-generate-sm"
+                        <div class="d-flex align-items-center" style="gap: 6px;">
+                            <button class="btn btn-xs btn-outline-success font-weight-bold"
+                                    @click="openTodaysLeadReport"
+                                    style="height: 32px; font-size: 11px; padding: 0 10px; border-radius: 4px;">
+                                <i class="fa fa-calendar-check-o mr-1"></i> Today's Leads
+                            </button>
+                            <button v-if="totalLeadsInReport > 0" class="btn-generate-sm"
                                     @click="downloadReport" 
                                     :disabled="loading">
                                 <i class="fa fa-download mr-1"></i> DOWNLOAD
@@ -1236,6 +1244,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       let filters_str = encodeURIComponent(JSON.stringify(this.selected));
       let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
       window.open(download_url, "_blank");
+    },
+
+    openTodaysLeadReport() {
+      frappe.set_route("query-report", "Lead Report");
     },
   
     getSelectedCountText(key) {

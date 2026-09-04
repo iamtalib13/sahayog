@@ -129,64 +129,30 @@ frappe.query_reports["Lead Report"] = {
       }, 150);
     });
 
-    // 🎨 Apply Hover Effects & Styling to Download button
+    // 🎨 Apply Clean Static Styling to Download button
     if (download_btn) {
-      download_btn.addClass("btn-primary btn-sm");
+      download_btn.addClass("btn-primary btn-xs");
       download_btn.css({
         "background-color": "#17a2b8",
         "color": "#ffffff",
         "border-color": "#17a2b8",
-        "transition": "all 0.3s ease",
-        "font-weight": "500",
+        "font-weight": "600",
+        "padding": "4px 10px",
+        "font-size": "11px",
       });
-      download_btn.hover(
-        function () {
-          $(this).css({
-            "background-color": "#000303",
-            "border-color": "#04171a",
-            "transform": "translateY(-1px)",
-            "box-shadow": "0 4px 6px rgba(0, 0, 0, 0.15)",
-          });
-        },
-        function () {
-          $(this).css({
-            "background-color": "#17a2b8",
-            "border-color": "#17a2b8",
-            "transform": "translateY(0)",
-            "box-shadow": "none",
-          });
-        }
-      );
     }
 
-    // 🎨 Apply Hover Effects & Styling to Clear button
+    // 🎨 Apply Clean Static Styling to Clear button
     if (clear_btn) {
-      clear_btn.addClass("btn-primary btn-sm");
+      clear_btn.addClass("btn-primary btn-xs");
       clear_btn.css({
         "background-color": "#038129",
         "color": "#ffffff",
         "border-color": "#026821",
-        "transition": "all 0.3s ease",
-        "font-weight": "500",
+        "font-weight": "600",
+        "padding": "4px 10px",
+        "font-size": "11px",
       });
-      clear_btn.hover(
-        function () {
-          $(this).css({
-            "background-color": "#000303",
-            "border-color": "#04171a",
-            "transform": "translateY(-1px)",
-            "box-shadow": "0 4px 6px rgba(0, 0, 0, 0.15)",
-          });
-        },
-        function () {
-          $(this).css({
-            "background-color": "#048a26",
-            "border-color": "#0c8808",
-            "transform": "translateY(0)",
-            "box-shadow": "none",
-          });
-        }
-      );
     }
 
     // 🖱️ Attach click event handlers for Branch Capsule Card filtering

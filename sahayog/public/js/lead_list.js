@@ -1,6 +1,10 @@
 frappe.listview_settings["Lead"] = {
   refresh(listview) {
     const is_privileged = frappe.user_roles.includes("System Manager") || frappe.session.user === "Administrator";
+    listview.page.add_inner_button(__("Today's Lead Report"), function () {
+      frappe.set_route("query-report", "Lead Report");
+    });
+
     if (is_privileged) {
       listview.page.add_inner_button(__("Generate Fast Report"), function () {
         frappe.show_alert({ message: __("Generating CSV Report..."), indicator: "orange" });
