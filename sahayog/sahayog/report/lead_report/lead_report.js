@@ -3,15 +3,92 @@
 
 frappe.query_reports["Lead Report"] = {
   onload: function (report) {
-    // 🚫 Inject CSS to permanently hide Frappe's default 'Actions' dropdown button
-    if (!$("#hide-lead-report-actions-css").length) {
-      $("<style id='hide-lead-report-actions-css'>")
+    // 🚫 Inject CSS to permanently hide Frappe's default 'Actions' dropdown button and style branch capsules
+    if (!$("#lead-report-custom-css").length) {
+      $("<style id='lead-report-custom-css'>")
         .prop("type", "text/css")
         .html(`
           .page-actions .menu-btn-group,
           .page-actions .actions-btn-group,
           .page-actions [data-label="Actions"] {
             display: none !important;
+          }
+          .lead-branch-capsules-wrapper {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+          }
+          .capsules-header {
+            margin-bottom: 8px;
+          }
+          .capsules-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .capsules-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding-right: 4px;
+          }
+          .lead-branch-capsule {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+          }
+          .lead-branch-capsule:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #1e40af;
+            transform: translateY(-1px);
+          }
+          .lead-branch-capsule.active {
+            background: #2563eb !important;
+            border-color: #1d4ed8 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+          }
+          .lead-branch-capsule .sol-tag {
+            font-weight: 700;
+            font-size: 11px;
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 1px 6px;
+            border-radius: 12px;
+          }
+          .lead-branch-capsule.active .sol-tag {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+          }
+          .lead-branch-capsule .count-pill {
+            background: #cbd5e1;
+            color: #0f172a;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 10px;
+          }
+          .lead-branch-capsule.active .count-pill {
+            background: #ffffff;
+            color: #2563eb;
           }
         `)
         .appendTo("head");
@@ -20,8 +97,7 @@ frappe.query_reports["Lead Report"] = {
     // 🔘 Add 'Clear Filters' button
 
     let clear_btn = report.page.add_inner_button(__("Clear Filters"), function () {
-      report.set_filter_value("custom_branch", "");
-      report.set_filter_value("sol_id", "");
+      report.set_filter_value("selected_branch", "");
       report.set_filter_value("custom_employee_id", "");
       report.set_filter_value("custom_employee_name", "");
       report.refresh();
@@ -98,20 +174,35 @@ frappe.query_reports["Lead Report"] = {
       );
     }
 
+    // 🖱️ Attach click event handlers for Branch Capsule Card filtering
+    $(report.page.wrapper).off("click", ".lead-branch-capsule").on("click", ".lead-branch-capsule", function () {
+      let sol = $(this).attr("data-sol");
+      let branch = $(this).attr("data-branch");
+      let target_val = sol || branch || "";
+
+      if (!target_val) {
+        // 'ALL' Capsule Card Clicked (Admin)
+        report.set_filter_value("selected_branch", "");
+      } else {
+        if ($(this).hasClass("active")) {
+          // Deselect active capsule card
+          report.set_filter_value("selected_branch", "");
+        } else {
+          // Select branch capsule card
+          report.set_filter_value("selected_branch", target_val);
+        }
+      }
+      report.refresh();
+    });
   },
 
 
   filters: [
     {
-      fieldname: "custom_branch",
-      label: "Branch",
-      fieldtype: "Link",
-      options: "Branch",
-    },
-    {
-      fieldname: "sol_id",
-      label: "SOL ID",
+      fieldname: "selected_branch",
+      label: "Selected Branch",
       fieldtype: "Data",
+      hidden: 1,
     },
     {
       fieldname: "custom_employee_id",
