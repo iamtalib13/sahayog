@@ -1,3 +1,6 @@
+from urllib3.exceptions import InsecureRequestWarning
+from decimal import Decimal, InvalidOperation
+import json
 import frappe
 import requests
 import uuid
@@ -9,6 +12,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 # HELPER: Safely get first item if it's a list, or the dict itself
+# asd
 
 
 def get_xml_dict(obj):
@@ -276,195 +280,197 @@ def get_xml_dict(obj):
 #         frappe.log_error(title="Finacle Code Error", message=frappe.get_traceback())
 #         return {"status": "ERROR", "message": str(e)}
 
-@frappe.whitelist()
-def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
-                                  disbursement_date=None, remarks="Loan Disbursement"):
 
-    # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+# disbursement api working with backdated disbursement and remarks, also returns the response from finacle in case of failure for better debugging instead of generic message
+# @frappe.whitelist()
+# def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
+#                                   disbursement_date=None, remarks="Loan Disbursement"):
 
-    try:
-        finacle_settings = frappe.get_single("Finacle Settings")
-        # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
-        # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
-        # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
+#     # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
 
-        mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+#     try:
+#         finacle_settings = frappe.get_single("Finacle Settings")
+#         # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+#         # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+#         # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
 
-        loan_sol_id = loan_account_id[:4]
-        oper_sol_id = operative_account_id[:4]
+#         mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
-        # if disbursement_date:
-        #     val_date_obj = datetime.strptime(str(disbursement_date), '%Y-%m-%d')
-        # else:
-        #     val_date_obj = datetime.now()
+#         loan_sol_id = loan_account_id[:4]
+#         oper_sol_id = operative_account_id[:4]
 
-        if disbursement_date:
-            # CLEAN THE DATE STRING: Remove time part " 00:00:00" if present
-            clean_date_str = str(disbursement_date).split(" ")[0].strip()
-            val_date_obj = datetime.strptime(clean_date_str, '%Y-%m-%d')
-        else:
-            val_date_obj = datetime.now()
+#         # if disbursement_date:
+#         #     val_date_obj = datetime.strptime(str(disbursement_date), '%Y-%m-%d')
+#         # else:
+#         #     val_date_obj = datetime.now()
 
-        formatted_val_date = val_date_obj.strftime('%Y-%m-%dT00:00:00.000')
+#         if disbursement_date:
+#             # CLEAN THE DATE STRING: Remove time part " 00:00:00" if present
+#             clean_date_str = str(disbursement_date).split(" ")[0].strip()
+#             val_date_obj = datetime.strptime(clean_date_str, '%Y-%m-%d')
+#         else:
+#             val_date_obj = datetime.now()
 
-        if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
-            txn_date_obj = datetime.strptime(
-                str(finacle_settings.transaction_date), '%Y-%m-%d')
-        else:
-            txn_date_obj = datetime.now()
+#         formatted_val_date = val_date_obj.strftime('%Y-%m-%dT00:00:00.000')
 
-        formatted_txn_date = txn_date_obj.strftime('%Y-%m-%dT00:00:00.000')
-        msg_date_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
-        request_uuid = str(uuid.uuid4())
+#         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
+#             txn_date_obj = datetime.strptime(
+#                 str(finacle_settings.transaction_date), '%Y-%m-%d')
+#         else:
+#             txn_date_obj = datetime.now()
 
-        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
-<FIXML xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.finacle.com/fixml loanDisbursement.xsd">
-  <Header>
-    <RequestHeader>
-      <MessageKey>
-        <RequestUUID>{request_uuid}</RequestUUID>
-        <ServiceRequestId>loanDisbursement</ServiceRequestId>
-        <ServiceRequestVersion>10.2</ServiceRequestVersion>
-        <ChannelId>COR</ChannelId>
-        <LanguageId></LanguageId>
-      </MessageKey>
-      <RequestMessageInfo>
-        <BankId>01</BankId>
-        <TimeZone></TimeZone>
-        <EntityId></EntityId>
-        <EntityType></EntityType>
-        <ArmCorrelationId></ArmCorrelationId>
-        <MessageDateTime>{msg_date_str}</MessageDateTime>
-      </RequestMessageInfo>
-      <Security>
-        <Token>
-          <PasswordToken>
-            <UserId></UserId>
-            <Password></Password>
-          </PasswordToken>
-        </Token>
-        <FICertToken></FICertToken>
-        <RealUserLoginSessionId></RealUserLoginSessionId>
-        <RealUser></RealUser>
-        <RealUserPwd></RealUserPwd>
-        <SSOTransferToken></SSOTransferToken>
-      </Security>
-    </RequestHeader>
-  </Header>
-  <Body>
-    <loanDisbursementRequest>
-      <LoanDisbursementStruct>
-        <acctDisburseTranLA>
-          <dealerContribution></dealerContribution>
-          <deductOvduDmds>N</deductOvduDmds>
-          <disburseAmt>
-            <amountValue>{amount}</amountValue>
-            <currencyCode>INR</currencyCode>
-          </disburseAmt>
-          <finalDisbFlg>Y</finalDisbFlg>
-          <firstDisbFlg>N</firstDisbFlg>
-          <grossNetDisbt>N</grossNetDisbt>
-          <isDetailsEntered>1</isDetailsEntered>
-          <laAcct>
-            <crncyCode>INR</crncyCode>
-            <foracid>{loan_account_id}</foracid>
-            <solId>{loan_sol_id}</solId>
-          </laAcct>
-          <oPartTranLL>
-            <crValueDate>{formatted_val_date}</crValueDate>
-            <delFlg>N</delFlg>
-            <laAmtCrncy>
-              <amountValue>{amount}</amountValue>
-              <currencyCode>INR</currencyCode>
-            </laAmtCrncy>
-            <modeOfDisb>A</modeOfDisb>
-            <crAcctForAcid>{operative_account_id}</crAcctForAcid>
-            <solId>{oper_sol_id}</solId>
-          </oPartTranLL>
-          <solId>{loan_sol_id}</solId>
-          <tranDate>{formatted_txn_date}</tranDate>
-          <tranMode>A</tranMode>
-          <tranType>T</tranType>
-          <valueDate>{formatted_val_date}</valueDate>
-          <tranRemarks>{remarks}</tranRemarks>
-        </acctDisburseTranLA>
-        <crDrInd>D</crDrInd>
-        <tranMesg>
-          <tranDetail>
-            <tranIdentifier>
-              <TrnId></TrnId>
-            </tranIdentifier>
-          </tranDetail>
-        </tranMesg>
-      </LoanDisbursementStruct>
-    </loanDisbursementRequest>
-  </Body>
-</FIXML>'''
+#         formatted_txn_date = txn_date_obj.strftime('%Y-%m-%dT00:00:00.000')
+#         msg_date_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+#         request_uuid = str(uuid.uuid4())
 
-        frappe.log_error(
-            title=f"Finacle Disbursement Req {request_uuid}", message=xml_request)
-        headers = {'Content-Type': 'application/xml'}
-        response = requests.post(
-            mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
-        frappe.log_error(
-            title=f"Finacle Disbursement Res {response.status_code}", message=response.text)
+#         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+# <FIXML xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.finacle.com/fixml loanDisbursement.xsd">
+#   <Header>
+#     <RequestHeader>
+#       <MessageKey>
+#         <RequestUUID>{request_uuid}</RequestUUID>
+#         <ServiceRequestId>loanDisbursement</ServiceRequestId>
+#         <ServiceRequestVersion>10.2</ServiceRequestVersion>
+#         <ChannelId>COR</ChannelId>
+#         <LanguageId></LanguageId>
+#       </MessageKey>
+#       <RequestMessageInfo>
+#         <BankId>01</BankId>
+#         <TimeZone></TimeZone>
+#         <EntityId></EntityId>
+#         <EntityType></EntityType>
+#         <ArmCorrelationId></ArmCorrelationId>
+#         <MessageDateTime>{msg_date_str}</MessageDateTime>
+#       </RequestMessageInfo>
+#       <Security>
+#         <Token>
+#           <PasswordToken>
+#             <UserId></UserId>
+#             <Password></Password>
+#           </PasswordToken>
+#         </Token>
+#         <FICertToken></FICertToken>
+#         <RealUserLoginSessionId></RealUserLoginSessionId>
+#         <RealUser></RealUser>
+#         <RealUserPwd></RealUserPwd>
+#         <SSOTransferToken></SSOTransferToken>
+#       </Security>
+#     </RequestHeader>
+#   </Header>
+#   <Body>
+#     <loanDisbursementRequest>
+#       <LoanDisbursementStruct>
+#         <acctDisburseTranLA>
+#           <dealerContribution></dealerContribution>
+#           <deductOvduDmds>N</deductOvduDmds>
+#           <disburseAmt>
+#             <amountValue>{amount}</amountValue>
+#             <currencyCode>INR</currencyCode>
+#           </disburseAmt>
+#           <finalDisbFlg>Y</finalDisbFlg>
+#           <firstDisbFlg>N</firstDisbFlg>
+#           <grossNetDisbt>N</grossNetDisbt>
+#           <isDetailsEntered>1</isDetailsEntered>
+#           <laAcct>
+#             <crncyCode>INR</crncyCode>
+#             <foracid>{loan_account_id}</foracid>
+#             <solId>{loan_sol_id}</solId>
+#           </laAcct>
+#           <oPartTranLL>
+#             <crValueDate>{formatted_val_date}</crValueDate>
+#             <delFlg>N</delFlg>
+#             <laAmtCrncy>
+#               <amountValue>{amount}</amountValue>
+#               <currencyCode>INR</currencyCode>
+#             </laAmtCrncy>
+#             <modeOfDisb>A</modeOfDisb>
+#             <crAcctForAcid>{operative_account_id}</crAcctForAcid>
+#             <solId>{oper_sol_id}</solId>
+#           </oPartTranLL>
+#           <solId>{loan_sol_id}</solId>
+#           <tranDate>{formatted_txn_date}</tranDate>
+#           <tranMode>A</tranMode>
+#           <tranType>T</tranType>
+#           <valueDate>{formatted_val_date}</valueDate>
+#           <tranRemarks>{remarks}</tranRemarks>
+#         </acctDisburseTranLA>
+#         <crDrInd>D</crDrInd>
+#         <tranMesg>
+#           <tranDetail>
+#             <tranIdentifier>
+#               <TrnId></TrnId>
+#             </tranIdentifier>
+#           </tranDetail>
+#         </tranMesg>
+#       </LoanDisbursementStruct>
+#     </loanDisbursementRequest>
+#   </Body>
+# </FIXML>'''
 
-        if response.status_code == 200:
-            try:
-                response_dict = xmltodict.parse(response.text)
-                fixml = get_xml_dict(response_dict.get('FIXML'))
-                body = get_xml_dict(fixml.get('Body'))
+#         frappe.log_error(
+#             title=f"Finacle Disbursement Req {request_uuid}", message=xml_request)
+#         headers = {'Content-Type': 'application/xml'}
+#         response = requests.post(
+#             mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+#         frappe.log_error(
+#             title=f"Finacle Disbursement Res {response.status_code}", message=response.text)
 
-                if 'Error' in body:
-                    error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(
-                        error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(
-                        exception_node.get('ErrorDetail'))
-                    return {
-                        "status": "FAILED",
-                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
-                        "full_response": response.text
-                    }
+#         if response.status_code == 200:
+#             try:
+#                 response_dict = xmltodict.parse(response.text)
+#                 fixml = get_xml_dict(response_dict.get('FIXML'))
+#                 body = get_xml_dict(fixml.get('Body'))
 
-                header = get_xml_dict(fixml.get('Header'))
-                response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(
-                    response_header.get('HostTransaction'))
+#                 if 'Error' in body:
+#                     error_node = get_xml_dict(body['Error'])
+#                     exception_node = get_xml_dict(
+#                         error_node.get('FIBusinessException'))
+#                     error_detail = get_xml_dict(
+#                         exception_node.get('ErrorDetail'))
+#                     return {
+#                         "status": "FAILED",
+#                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+#                         "full_response": response.text
+#                     }
 
-                if host_transaction.get('Status') == 'SUCCESS':
-                    disb_res = get_xml_dict(
-                        body.get('loanDisbursementResponse'))
-                    output_struct = get_xml_dict(
-                        disb_res.get('LoanDisbursementOutputStruct'))
-                    tran_msg = get_xml_dict(
-                        output_struct.get('tranMesgOutput'))
-                    tran_id_node = get_xml_dict(tran_msg.get('tranIdentifier'))
+#                 header = get_xml_dict(fixml.get('Header'))
+#                 response_header = get_xml_dict(header.get('ResponseHeader'))
+#                 host_transaction = get_xml_dict(
+#                     response_header.get('HostTransaction'))
 
-                    return {
-                        "status": "SUCCESS",
-                        "tran_id": tran_id_node.get('TrnId'),
-                        "tran_date": tran_id_node.get('TrnDt'),
-                        "message": "Loan Disbursed Successfully",
-                        "full_response": response.text,
-                        "request_sent": xml_request
-                    }
-                else:
-                    return {
-                        "status": "FAILED",
-                        "message": "Host Transaction Failed (Unknown Status)",
-                        "full_response": response.text
-                    }
+#                 if host_transaction.get('Status') == 'SUCCESS':
+#                     disb_res = get_xml_dict(
+#                         body.get('loanDisbursementResponse'))
+#                     output_struct = get_xml_dict(
+#                         disb_res.get('LoanDisbursementOutputStruct'))
+#                     tran_msg = get_xml_dict(
+#                         output_struct.get('tranMesgOutput'))
+#                     tran_id_node = get_xml_dict(tran_msg.get('tranIdentifier'))
 
-            except Exception as e:
-                return {"status": "ERROR", "message": f"Parsing Error: {str(e)}", "full_response": response.text}
-        else:
-            return {"status": "ERROR", "message": f"HTTP {response.status_code}", "full_response": response.text}
+#                     return {
+#                         "status": "SUCCESS",
+#                         "tran_id": tran_id_node.get('TrnId'),
+#                         "tran_date": tran_id_node.get('TrnDt'),
+#                         "message": "Loan Disbursed Successfully",
+#                         "full_response": response.text,
+#                         "request_sent": xml_request
+#                     }
+#                 else:
+#                     return {
+#                         "status": "FAILED",
+#                         "message": "Host Transaction Failed (Unknown Status)",
+#                         "full_response": response.text
+#                     }
 
-    except Exception as e:
-        frappe.log_error(title="Finacle Disbursement Error",
-                         message=frappe.get_traceback())
-        return {"status": "ERROR", "message": str(e)}
+#             except Exception as e:
+#                 return {"status": "ERROR", "message": f"Parsing Error: {str(e)}", "full_response": response.text}
+#         else:
+#             return {"status": "ERROR", "message": f"HTTP {response.status_code}", "full_response": response.text}
+
+#     except Exception as e:
+#         frappe.log_error(title="Finacle Disbursement Error",
+#                          message=frappe.get_traceback())
+#         return {"status": "ERROR", "message": str(e)}
 
 
 @frappe.whitelist()
@@ -805,10 +811,10 @@ def create_finacle_td_account(customer_id, scheme_code, branch_id, deposit_amoun
         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
             mig_url = finacle_settings.finacle_url
         else:
-            # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+            mig_url = 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
             # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
             # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
-            mig_url = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
+            # mig_url = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
             frappe.log_error(
                 "Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
@@ -1035,8 +1041,8 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
         elif hasattr(finacle_settings, 'finacle_url') and finacle_settings.finacle_url:
             mig_url = finacle_settings.finacle_url
         else:
-            # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
-            mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            mig_url = 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
             # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
             frappe.log_error(
                 "Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
@@ -1284,4 +1290,395 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
     except Exception as e:
         frappe.log_error(title="Finacle Code Error",
                          message=frappe.get_traceback())
+        return {"status": "ERROR", "message": str(e)}
+
+
+# new disbursement api
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+
+def _to_decimal(value, field_name):
+    try:
+        if value is None or str(value).strip() == "":
+            return Decimal("0.00")
+        return Decimal(str(value).strip())
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValueError(f"Invalid {field_name}: {value}")
+
+
+def _clean_date(date_value):
+    if not date_value:
+        return datetime.now()
+    try:
+        clean_date_str = str(date_value).split(" ")[0].strip()
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%m/%d/%y", "%d-%m-%Y"):
+            try:
+                return datetime.strptime(clean_date_str, fmt)
+            except ValueError:
+                continue
+        return datetime.now()
+    except Exception:
+        return datetime.now()
+
+
+def _xml_escape(value):
+    if value is None:
+        return ""
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&apos;")
+    )
+
+
+def _build_charge_xml(charges, sol_id):
+    ocap_blocks = []
+    ocharges_blocks = []
+    total_charges = Decimal("0.00")
+
+    for idx, row in enumerate(charges, start=1):
+        if not isinstance(row, dict):
+            raise ValueError(f"Charge row {idx} must be a dictionary")
+
+        chrg_type = str(row.get("chrg_type", "")).strip()
+        chrg_event_id = str(row.get("chrg_event_id", "")).strip()
+        amount = _to_decimal(row.get("amount", 0), f"charges[{idx}].amount")
+
+        if not chrg_type:
+            raise ValueError(f"Charge row {idx}: chrg_type is required")
+        if not chrg_event_id:
+            raise ValueError(f"Charge row {idx}: chrg_event_id is required")
+        if amount < 0:
+            raise ValueError(f"Charge row {idx}: amount cannot be negative")
+
+        currency_code = str(row.get("currency_code", "INR")).strip() or "INR"
+        chrg_crncy = str(row.get("chrg_crncy", currency_code)
+                         ).strip() or currency_code
+        assessment_allwd = str(row.get("assessment_allwd", "Y")).strip() or "Y"
+        charge_rate_code = str(
+            row.get("charge_rate_code", "NOR")).strip() or "NOR"
+        event_srl_num = str(row.get("event_srl_num", "1")).strip() or "1"
+        modify_allwd = str(row.get("modify_allwd", "Y")).strip() or "Y"
+        new_record_flg = str(row.get("new_record_flg", "N")).strip() or "N"
+        select_flg = str(row.get("select_flg", "Y")).strip() or "Y"
+        charge_sol_id = str(row.get("charge_sol_id", sol_id)).strip() or sol_id
+
+        pend_fee_amt = _to_decimal(
+            row.get("pend_fee_amt", 0), f"charges[{idx}].pend_fee_amt")
+        system_charge_amt = _to_decimal(
+            row.get("system_charge_amt", amount), f"charges[{idx}].system_charge_amt")
+        user_charge_amt = _to_decimal(
+            row.get("user_charge_amt", amount), f"charges[{idx}].user_charge_amt")
+
+        amount_str = f"{amount:.2f}"
+        pend_fee_amt_str = f"{pend_fee_amt:.2f}"
+        system_charge_amt_str = f"{system_charge_amt:.2f}"
+        user_charge_amt_str = f"{user_charge_amt:.2f}"
+
+        ocap_blocks.append(f"""
+                    <ocapApttLL>
+                        <chrgType>{_xml_escape(chrg_type)}</chrgType>
+                        <chrgEventId>{_xml_escape(chrg_event_id)}</chrgEventId>
+                        <collectedAmt>
+                            <amountValue>{amount_str}</amountValue>
+                            <currencyCode>{_xml_escape(currency_code)}</currencyCode>
+                        </collectedAmt>
+                        <chrgCrncy>{_xml_escape(chrg_crncy)}</chrgCrncy>
+                    </ocapApttLL>""")
+
+        ocharges_blocks.append(f"""
+                    <ochargesLL>
+                        <assessmentAllwd>{_xml_escape(assessment_allwd)}</assessmentAllwd>
+                        <chargeAcctId>
+                            <solId>{_xml_escape(charge_sol_id)}</solId>
+                        </chargeAcctId>
+                        <chargeCrncy>{_xml_escape(currency_code)}</chargeCrncy>
+                        <chargeRateCode>{_xml_escape(charge_rate_code)}</chargeRateCode>
+                        <chargeType>{_xml_escape(chrg_type)}</chargeType>
+                        <collectedAmt>
+                            <amountValue>{amount_str}</amountValue>
+                            <currencyCode>{_xml_escape(currency_code)}</currencyCode>
+                        </collectedAmt>
+                        <eventId>{_xml_escape(chrg_event_id)}</eventId>
+                        <eventSrlNum>{_xml_escape(event_srl_num)}</eventSrlNum>
+                        <modifyAllwd>{_xml_escape(modify_allwd)}</modifyAllwd>
+                        <newRecordFlg>{_xml_escape(new_record_flg)}</newRecordFlg>
+                        <pendFeeAmt>
+                            <amountValue>{pend_fee_amt_str}</amountValue>
+                            <currencyCode>{_xml_escape(currency_code)}</currencyCode>
+                        </pendFeeAmt>
+                        <selectFlg>{_xml_escape(select_flg)}</selectFlg>
+                        <systemChargeAmt>
+                            <amountValue>{system_charge_amt_str}</amountValue>
+                            <currencyCode>{_xml_escape(currency_code)}</currencyCode>
+                        </systemChargeAmt>
+                        <userChargeAmt>
+                            <amountValue>{user_charge_amt_str}</amountValue>
+                            <currencyCode>{_xml_escape(currency_code)}</currencyCode>
+                        </userChargeAmt>
+                    </ochargesLL>""")
+
+        total_charges += amount
+
+    return "\n".join(ocap_blocks + ocharges_blocks), total_charges
+
+
+@frappe.whitelist()
+def disburse_finacle_loan_account(
+    loan_account_id,
+    amount,
+    operative_account_id,
+    disbursement_date=None,
+    remarks="Loan Disbursement",
+    charges_json=None
+):
+    try:
+        finacle_settings = frappe.get_single("Finacle Settings")
+        # mig_url = getattr(finacle_settings, 'mig_url', None) or "https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp"
+        mig_url = 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+        # mig_url = "https://smcuat.sahayog.net.in:35000/FISERVLET/fihttp"
+
+        # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+
+        loan_sol_id = str(loan_account_id)[:4] if loan_account_id else ""
+        oper_sol_id = str(operative_account_id)[
+            :4] if operative_account_id else ""
+
+        if disbursement_date:
+            clean_date_str = str(disbursement_date).split(" ")[0].strip()
+            val_date_obj = datetime.strptime(clean_date_str, "%Y-%m-%d")
+        else:
+            val_date_obj = datetime.now()
+
+        formatted_val_date = val_date_obj.strftime("%Y-%m-%dT00:00:00.000")
+
+        if hasattr(finacle_settings, "transaction_date") and finacle_settings.transaction_date:
+            txn_date_obj = datetime.strptime(
+                str(finacle_settings.transaction_date), "%Y-%m-%d"
+            )
+        else:
+            txn_date_obj = datetime.now()
+
+        formatted_txn_date = txn_date_obj.strftime("%Y-%m-%dT00:00:00.000")
+        msg_date_str = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+        request_uuid = str(uuid.uuid4())
+
+        parsed_charges = []
+        if charges_json:
+            if isinstance(charges_json, str):
+                parsed_charges = json.loads(charges_json)
+            elif isinstance(charges_json, list):
+                parsed_charges = charges_json
+            else:
+                return {
+                    "status": "ERROR",
+                    "message": "charges_json must be a JSON string or list of charge dictionaries."
+                }
+
+        charges_xml = ""
+        gross_amount_str = str(amount)
+        total_charges_str = "0.00"
+        net_amount_str = str(amount)
+        net_disbursal_xml = ""
+
+        if parsed_charges:
+            charges_xml, total_charges = _build_charge_xml(
+                parsed_charges, loan_sol_id)
+            gross_amount = Decimal(str(amount))
+            net_amount = gross_amount - total_charges
+
+            gross_amount_str = format(gross_amount, ".2f")
+            total_charges_str = format(total_charges, ".2f")
+            net_amount_str = format(net_amount, ".2f")
+
+            net_disbursal_xml = f"""
+          <netDisbAmt>
+            <amountValue>{net_amount_str}</amountValue>
+            <currencyCode>INR</currencyCode>
+          </netDisbAmt>"""
+
+        xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
+<FIXML xmlns="http://www.finacle.com/fixml"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.finacle.com/fixml loanDisbursement.xsd">
+  <Header>
+    <RequestHeader>
+      <MessageKey>
+        <RequestUUID>{request_uuid}</RequestUUID>
+        <ServiceRequestId>loanDisbursement</ServiceRequestId>
+        <ServiceRequestVersion>10.2</ServiceRequestVersion>
+        <ChannelId>COR</ChannelId>
+        <LanguageId></LanguageId>
+      </MessageKey>
+      <RequestMessageInfo>
+        <BankId>01</BankId>
+        <TimeZone></TimeZone>
+        <EntityId></EntityId>
+        <EntityType></EntityType>
+        <ArmCorrelationId></ArmCorrelationId>
+        <MessageDateTime>{msg_date_str}</MessageDateTime>
+      </RequestMessageInfo>
+      <Security>
+        <Token>
+          <PasswordToken>
+            <UserId></UserId>
+            <Password></Password>
+          </PasswordToken>
+        </Token>
+        <FICertToken></FICertToken>
+        <RealUserLoginSessionId></RealUserLoginSessionId>
+        <RealUser></RealUser>
+        <RealUserPwd></RealUserPwd>
+        <SSOTransferToken></SSOTransferToken>
+      </Security>
+    </RequestHeader>
+  </Header>
+  <Body>
+    <loanDisbursementRequest>
+      <LoanDisbursementStruct>
+        <acctDisburseTranLA>
+          <dealerContribution></dealerContribution>
+          <deductOvduDmds>N</deductOvduDmds>
+          <disburseAmt>
+            <amountValue>{gross_amount_str}</amountValue>
+            <currencyCode>INR</currencyCode>
+          </disburseAmt>
+          {net_disbursal_xml}
+          <finalDisbFlg>Y</finalDisbFlg>
+          <firstDisbFlg>N</firstDisbFlg>
+          <grossNetDisbt>N</grossNetDisbt>
+          <isDetailsEntered>1</isDetailsEntered>
+          <laAcct>
+            <crncyCode>INR</crncyCode>
+            <foracid>{loan_account_id}</foracid>
+            <solId>{loan_sol_id}</solId>
+          </laAcct>
+          {charges_xml}
+          <oPartTranLL>
+            <crValueDate>{formatted_val_date}</crValueDate>
+            <delFlg>N</delFlg>
+            <laAmtCrncy>
+              <amountValue>{net_amount_str}</amountValue>
+              <currencyCode>INR</currencyCode>
+            </laAmtCrncy>
+            <modeOfDisb>A</modeOfDisb>
+            <crAcctForAcid>{operative_account_id}</crAcctForAcid>
+            <solId>{oper_sol_id}</solId>
+          </oPartTranLL>
+          <solId>{loan_sol_id}</solId>
+          <tranDate>{formatted_txn_date}</tranDate>
+          <tranMode>A</tranMode>
+          <tranType>T</tranType>
+          <valueDate>{formatted_val_date}</valueDate>
+          <tranRemarks>{remarks}</tranRemarks>
+        </acctDisburseTranLA>
+        <crDrInd>D</crDrInd>
+        <tranMesg>
+          <tranDetail>
+            <tranIdentifier>
+              <TrnId></TrnId>
+            </tranIdentifier>
+          </tranDetail>
+        </tranMesg>
+      </LoanDisbursementStruct>
+    </loanDisbursementRequest>
+  </Body>
+</FIXML>'''
+
+        frappe.log_error(
+            title=f"Finacle Disbursement Req {request_uuid}",
+            message=xml_request
+        )
+
+        headers = {"Content-Type": "application/xml"}
+        response = requests.post(
+            mig_url,
+            data=xml_request,
+            headers=headers,
+            verify=False,
+            timeout=30
+        )
+
+        frappe.log_error(
+            title=f"Finacle Disbursement Res {response.status_code}",
+            message=response.text
+        )
+
+        if response.status_code == 200:
+            try:
+                response_dict = xmltodict.parse(response.text)
+                fixml = get_xml_dict(response_dict.get("FIXML"))
+                body = get_xml_dict(fixml.get("Body"))
+
+                if "Error" in body:
+                    error_node = get_xml_dict(body["Error"])
+                    exception_node = get_xml_dict(
+                        error_node.get("FIBusinessException"))
+                    error_detail = get_xml_dict(
+                        exception_node.get("ErrorDetail"))
+
+                    return {
+                        "status": "FAILED",
+                        "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+
+                header = get_xml_dict(fixml.get("Header"))
+                response_header = get_xml_dict(header.get("ResponseHeader"))
+                host_transaction = get_xml_dict(
+                    response_header.get("HostTransaction"))
+
+                if host_transaction.get("Status") == "SUCCESS":
+                    disb_res = get_xml_dict(
+                        body.get("loanDisbursementResponse"))
+                    output_struct = get_xml_dict(
+                        disb_res.get("LoanDisbursementOutputStruct"))
+                    tran_msg = get_xml_dict(
+                        output_struct.get("tranMesgOutput"))
+                    tran_id_node = get_xml_dict(tran_msg.get("tranIdentifier"))
+
+                    return {
+                        "status": "SUCCESS",
+                        "tran_id": tran_id_node.get("TrnId"),
+                        "tran_date": tran_id_node.get("TrnDt"),
+                        "message": "Loan Disbursed Successfully",
+                        "gross_amount": gross_amount_str,
+                        "net_disbursal_amount": net_amount_str,
+                        "charges_count": len(parsed_charges),
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+                else:
+                    return {
+                        "status": "FAILED",
+                        "message": "Host Transaction Failed (Unknown Status)",
+                        "full_response": response.text,
+                        "request_sent": xml_request
+                    }
+
+            except Exception as e:
+                return {
+                    "status": "ERROR",
+                    "message": f"Parsing Error: {str(e)}",
+                    "full_response": response.text,
+                    "request_sent": xml_request
+                }
+        else:
+            return {
+                "status": "ERROR",
+                "message": f"HTTP {response.status_code}",
+                "full_response": response.text,
+                "request_sent": xml_request
+            }
+
+    except Exception as e:
+        frappe.log_error(
+            title="Finacle Disbursement Error",
+            message=frappe.get_traceback()
+        )
         return {"status": "ERROR", "message": str(e)}

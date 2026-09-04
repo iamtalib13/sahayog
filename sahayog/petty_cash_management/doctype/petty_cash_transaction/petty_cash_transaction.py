@@ -1636,7 +1636,7 @@ class PettyCashTransaction(Document):
         Transfer payments do not consume the limit.
         """
         # electricity_category = "Electricity Bill Expenses"
-        electricity_category = "Electricity Bill Expenses"
+        electricity_category = "13"
 
         return sum(
             flt(row.amount)
@@ -1651,7 +1651,7 @@ class PettyCashTransaction(Document):
         and transaction date, excluding this transaction itself.
         """
         # electricity_category = "Electricity Bill Expenses"
-        electricity_category = "Electricity Bill Expenses"
+        electricity_category = "13"
 
         result = frappe.db.sql(
             """

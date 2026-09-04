@@ -8,14 +8,18 @@ from .finOpsApi import (
     create_finacle_loan_account,
     disburse_finacle_loan_account,
     create_finacle_retail_customer,
-    create_finacle_td_account 
+    create_finacle_td_account
 )
 
 # --- SECURITY HELPER ---
+
+
 def check_finops_permission():
     """Ensures the user has System Manager or FinOps User role"""
     if not (frappe.user.has_role("System Manager") or frappe.user.has_role("FinOps User")):
-        frappe.throw("You are not authorized to access FinOps operations.", frappe.PermissionError)
+        frappe.throw(
+            "You are not authorized to access FinOps operations.", frappe.PermissionError)
+
 
 def format_date_str(date_val):
     """ Converts Excel timestamps or messy strings to YYYY-MM-DD """
@@ -25,6 +29,7 @@ def format_date_str(date_val):
     if " " in s_val:
         s_val = s_val.split(" ")[0]
     return s_val
+
 
 def get_col_val(row, potential_keys):
     """ Helper to find a value by checking multiple possible column names """
@@ -38,6 +43,7 @@ def get_col_val(row, potential_keys):
             if row_k.lower().strip() == clean_key:
                 return row[row_k]
     return ""
+
 
 @frappe.whitelist()
 def create_loan_account(file_url, operation_type):
@@ -53,20 +59,28 @@ def create_loan_account(file_url, operation_type):
             try:
                 # 1. MAP EXCEL COLUMNS TO VARIABLES
                 # We check multiple variations for each field
-                cust_id = get_col_val(row, ['customer_id', 'Customer Id', 'Cust Id'])
-                schm_code = get_col_val(row, ['scheme_code', 'scheme code', 'scheme code '])
-                branch = get_col_val(row, ['branch_id', 'branch Id', 'branch Id '])
+                cust_id = get_col_val(
+                    row, ['customer_id', 'Customer Id', 'Cust Id'])
+                schm_code = get_col_val(
+                    row, ['scheme_code', 'scheme code', 'scheme code '])
+                branch = get_col_val(
+                    row, ['branch_id', 'branch Id', 'branch Id '])
                 amt = get_col_val(row, ['loan_amount', 'Loan Amount'])
-                period = get_col_val(row, ['loan_period_months', 'Loan period', 'Loan period '])
-                
+                period = get_col_val(
+                    row, ['loan_period_months', 'Loan period', 'Loan period '])
+
                 # Dates need special handling with keys + formatting
-                raw_inst_date = get_col_val(row, ['installment_start_date', 'Installment Start date'])
+                raw_inst_date = get_col_val(
+                    row, ['installment_start_date', 'Installment Start date'])
                 inst_date = format_date_str(raw_inst_date)
-                
-                num_inst = get_col_val(row, ['num_installments', 'Number of Installment'])
-                oper_acct = get_col_val(row, ['operative_account_id', 'Operative Account Number'])
-                
-                raw_open_date = get_col_val(row, ['account_open_date', 'Account Open Date'])
+
+                num_inst = get_col_val(
+                    row, ['num_installments', 'Number of Installment'])
+                oper_acct = get_col_val(
+                    row, ['operative_account_id', 'Operative Account Number'])
+
+                raw_open_date = get_col_val(
+                    row, ['account_open_date', 'Account Open Date'])
                 open_date = format_date_str(raw_open_date)
 
                 # 2. CALL API
@@ -87,7 +101,8 @@ def create_loan_account(file_url, operation_type):
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['account_id'] = api_response.get('account_id', '')
-                row_result['request_sent'] = api_response.get('request_sent', '') 
+                row_result['request_sent'] = api_response.get(
+                    'request_sent', '')
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -109,13 +124,67 @@ def create_loan_account(file_url, operation_type):
         frappe.log_error("FinOps Loan Creation Error", frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
+
+# disbursement is a separate API call, so we keep it separate from account creation. This allows users to create accounts first, then disburse in batches later.
+# @frappe.whitelist()
+# def process_loan_disbursement(file_url, operation_type):
+#     """
+#     Reads Excel/CSV, iterates rows, and calls disburse_finacle_loan_account.
+#     Expected Columns:
+#     - loan_account_id, amount, operative_account_id, disbursement_date, remarks
+#     """
+#     try:
+#         records = read_file_data(file_url)
+#         if not records:
+#             return {"status": "ERROR", "message": "File is empty or could not be read."}
+
+#         success_count = 0
+#         results = []
+
+#         for index, row in enumerate(records):
+#             try:
+#                 api_response = disburse_finacle_loan_account(
+#                     loan_account_id=str(row.get('loan_account_id', '')),
+#                     amount=str(row.get('amount', '')),
+#                     operative_account_id=str(row.get('operative_account_id', '')),
+#                     disbursement_date=str(row.get('disbursement_date', '')),
+#                     remarks=str(row.get('remarks', 'Disbursement'))
+#                 )
+
+#                 row_result = row.copy()
+#                 row_result['status'] = api_response.get('status')
+#                 row_result['message'] = api_response.get('message')
+#                 row_result['tran_id'] = api_response.get('tran_id', '')
+#                 row_result['request_sent'] = api_response.get('request_sent', '')
+#                 results.append(row_result)
+
+#                 if api_response.get('status') == 'SUCCESS':
+#                     success_count += 1
+
+#             except Exception as e:
+#                 row_result = row.copy()
+#                 row_result['status'] = 'ERROR'
+#                 row_result['message'] = str(e)
+#                 results.append(row_result)
+
+#         return {
+#             "status": "SUCCESS",
+#             "data": results,
+#             "message": f"Processed {len(records)} records. {success_count} Successful."
+#         }
+
+#     except Exception as e:
+#         frappe.log_error("FinOps Disbursement Error", frappe.get_traceback())
+#         return {"status": "ERROR", "message": str(e)}
+
+
+#########################################################################################################
+# working may 22 2026
+# new disbursement function with support for charges_json and more detailed response fields
+# process_loan_disbursement support charges_json which is a JSON string in the Excel/CSV that contains an array of charge objects with charge_code and charge_amount. The API will process these charges and return counts and amounts in the response. This allows for more complex disbursement scenarios where multiple charges need to be applied during loan disbursement.
+
 @frappe.whitelist()
-def process_loan_disbursement(file_url, operation_type):
-    """
-    Reads Excel/CSV, iterates rows, and calls disburse_finacle_loan_account.
-    Expected Columns:
-    - loan_account_id, amount, operative_account_id, disbursement_date, remarks
-    """
+def process_loan_disbursement(file_url, operation_type=None):
     try:
         records = read_file_data(file_url)
         if not records:
@@ -124,30 +193,42 @@ def process_loan_disbursement(file_url, operation_type):
         success_count = 0
         results = []
 
-        for index, row in enumerate(records):
+        for row in records:
             try:
                 api_response = disburse_finacle_loan_account(
-                    loan_account_id=str(row.get('loan_account_id', '')),
-                    amount=str(row.get('amount', '')),
-                    operative_account_id=str(row.get('operative_account_id', '')),
-                    disbursement_date=str(row.get('disbursement_date', '')),
-                    remarks=str(row.get('remarks', 'Disbursement'))
+                    loan_account_id=str(
+                        row.get("loan_account_id", "")).strip(),
+                    amount=str(row.get("amount", "")).strip(),
+                    operative_account_id=str(
+                        row.get("operative_account_id", "")).strip(),
+                    disbursement_date=str(
+                        row.get("disbursement_date", "")).strip(),
+                    remarks=str(row.get("remarks", "Disbursement")).strip(),
+                    charges_json=row.get("charges_json")
                 )
 
                 row_result = row.copy()
-                row_result['status'] = api_response.get('status')
-                row_result['message'] = api_response.get('message')
-                row_result['tran_id'] = api_response.get('tran_id', '')
-                row_result['request_sent'] = api_response.get('request_sent', '')
+                row_result["status"] = api_response.get("status")
+                row_result["message"] = api_response.get("message")
+                row_result["tran_id"] = api_response.get("tran_id", "")
+                row_result["tran_date"] = api_response.get("tran_date", "")
+                row_result["gross_amount"] = api_response.get(
+                    "gross_amount", "")
+                row_result["net_disbursal_amount"] = api_response.get(
+                    "net_disbursal_amount", "")
+                row_result["charges_count"] = api_response.get(
+                    "charges_count", "")
+                row_result["request_sent"] = api_response.get(
+                    "request_sent", "")
                 results.append(row_result)
 
-                if api_response.get('status') == 'SUCCESS':
+                if api_response.get("status") == "SUCCESS":
                     success_count += 1
 
             except Exception as e:
                 row_result = row.copy()
-                row_result['status'] = 'ERROR'
-                row_result['message'] = str(e)
+                row_result["status"] = "ERROR"
+                row_result["message"] = str(e)
                 results.append(row_result)
 
         return {
@@ -160,6 +241,121 @@ def process_loan_disbursement(file_url, operation_type):
         frappe.log_error("FinOps Disbursement Error", frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
+
+#########################################################################################################
+
+
+# # Updated disbursement function with enhanced error handling, flexible column mapping, and support for charges_json. The function now checks for multiple possible column names for each required field, allowing for more flexible Excel/CSV formats. It also captures additional response fields from the API and includes them in the results. Errors during processing of each row are caught and included in the response without stopping the entire batch process.
+
+# @frappe.whitelist()
+# def process_loan_disbursement(file_url, operation_type=None):
+#     try:
+#         records = read_file_data(file_url)
+#         if not records:
+#             return {"status": "ERROR", "message": "File is empty or could not be read."}
+
+#         success_count = 0
+#         results = []
+
+#         for row in records:
+#             try:
+#                 loan_account_id = get_col_val(
+#                     row,
+#                     "loan_account_id",
+#                     "loanaccountid",
+#                     "Loan Account Id",
+#                     "Loan Account ID",
+#                     "loan account id",
+#                     "dis"
+#                 )
+
+#                 amount = get_col_val(
+#                     row,
+#                     "amount",
+#                     "Amount",
+#                     "disbursement amount",
+#                     "Disbursement Amount"
+#                 )
+
+#                 operative_account_id = get_col_val(
+#                     row,
+#                     "operative_account_id",
+#                     "operativeaccountid",
+#                     "Operative Account Id",
+#                     "Operative Account ID",
+#                     "operative account id",
+#                     "Operative Account Number"
+#                 )
+
+#                 disbursement_date = get_col_val(
+#                     row,
+#                     "disbursement_date",
+#                     "disbursementdate",
+#                     "Disbursement Date",
+#                     "disbursement date"
+#                 )
+
+#                 remarks = get_col_val(
+#                     row,
+#                     "remarks",
+#                     "Remarks"
+#                 ) or "Disbursement"
+
+#                 charges_json = get_col_val(
+#                     row,
+#                     "charges_json",
+#                     "chargesjson",
+#                     "Charges JSON",
+#                     "charges json"
+#                 )
+
+#                 api_response = disburse_finacle_loan_account(
+#                     loan_account_id=str(loan_account_id or "").strip(),
+#                     amount=str(amount or "").strip(),
+#                     operative_account_id=str(
+#                         operative_account_id or "").strip(),
+#                     disbursement_date=str(
+#                         disbursement_date or "").strip() or None,
+#                     remarks=str(remarks).strip(),
+#                     charges_json=charges_json
+#                 )
+
+#                 row_result = row.copy()
+#                 row_result["status"] = api_response.get("status")
+#                 row_result["message"] = api_response.get("message")
+#                 row_result["tran_id"] = api_response.get("tran_id", "")
+#                 row_result["tran_date"] = api_response.get("tran_date", "")
+#                 row_result["gross_amount"] = api_response.get(
+#                     "gross_amount", "")
+#                 row_result["net_disbursal_amount"] = api_response.get(
+#                     "net_disbursal_amount", "")
+#                 row_result["charges_count"] = api_response.get(
+#                     "charges_count", "")
+#                 row_result["request_sent"] = api_response.get(
+#                     "request_sent", "")
+#                 results.append(row_result)
+
+#                 if api_response.get("status") == "SUCCESS":
+#                     success_count += 1
+
+#             except Exception as e:
+#                 row_result = row.copy()
+#                 row_result["status"] = "ERROR"
+#                 row_result["message"] = str(e)
+#                 results.append(row_result)
+
+#         return {
+#             "status": "SUCCESS",
+#             "data": results,
+#             "message": f"Processed {len(records)} records. {success_count} Successful."
+#         }
+
+#     except Exception as e:
+#         frappe.log_error("FinOps Disbursement Error", frappe.get_traceback())
+#         return {"status": "ERROR", "message": str(e)}
+
+
+############################################################################################################
 
 @frappe.whitelist()
 def create_cif(file_url, operation_type):
@@ -186,9 +382,11 @@ def create_cif(file_url, operation_type):
                     date_of_birth=str(row.get('date_of_birth', '')),
                     gender=str(row.get('gender', '')),
                     salutation=str(row.get('salutation', '')),
-                    pref_name=str(row.get('pref_name', '')) if row.get('pref_name') else None,
+                    pref_name=str(row.get('pref_name', '')) if row.get(
+                        'pref_name') else None,
                     language=str(row.get('language', 'India (English)')),
-                    tax_deduction_table=str(row.get('tax_deduction_table', 'ZERO')),
+                    tax_deduction_table=str(
+                        row.get('tax_deduction_table', 'ZERO')),
                     addr_line1=str(row.get('addr_line1', '')),
                     addr_line2=str(row.get('addr_line2', '')),
                     city=str(row.get('city', '.')),
@@ -196,7 +394,8 @@ def create_cif(file_url, operation_type):
                     postal_code=str(row.get('postal_code', '000000')),
                     country=str(row.get('country', 'IN')),
                     mobile_number=str(row.get('mobile_number', '')),
-                    email=str(row.get('email', '')) if row.get('email') else None,
+                    email=str(row.get('email', '')) if row.get(
+                        'email') else None,
                     doc_code=str(row.get('doc_code', '2')),
                     doc_reference_num=str(row.get('doc_reference_num', '')),
                     doc_type_code=str(row.get('doc_type_code', '1')),
@@ -205,14 +404,16 @@ def create_cif(file_url, operation_type):
                     marital_status=str(row.get('marital_status', 'MARR')),
                     nationality=str(row.get('nationality', 'INDIAN')),
                     caste=str(row.get('caste', 'OTH')),
-                    employment_status=str(row.get('employment_status', 'Employed'))
+                    employment_status=str(
+                        row.get('employment_status', 'Employed'))
                 )
 
                 row_result = row.copy()
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['cif_id'] = api_response.get('cif_id', '')
-                row_result['request_sent'] = api_response.get('request_sent', '')
+                row_result['request_sent'] = api_response.get(
+                    'request_sent', '')
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -241,21 +442,19 @@ def read_file_data(file_url):
     """
     try:
         file_path = get_file_path(file_url.split('/')[-1])
-        
+
         if file_url.endswith(('.xlsx', '.xls')):
             df = pd.read_excel(file_path)
         elif file_url.endswith('.csv'):
             df = pd.read_csv(file_path)
         else:
             return None
-            
+
         # Convert NaN to None/Empty string and return list of dicts
         return df.fillna('').to_dict('records')
     except Exception as e:
         frappe.log_error("FinOps File Read Error", str(e))
         return None
-
-
 
 
 @frappe.whitelist()
@@ -272,16 +471,24 @@ def create_td_account(file_url, operation_type=None):
         for index, row in enumerate(records):
             try:
                 # 1. MAP EXCEL COLUMNS TO VARIABLES
-                cust_id = get_col_val(row, ['customer_id', 'Customer Id', 'Cust Id'])
-                schm_code = get_col_val(row, ['scheme_code', 'Scheme Code', 'scheme code'])
-                branch = get_col_val(row, ['branch_id', 'Branch Id', 'branch Id'])
-                dep_amt = get_col_val(row, ['deposit_amount', 'Deposit Amount', 'Initial Deposit'])
-                dep_months = get_col_val(row, ['deposit_months', 'Deposit Months', 'Months'])
-                oper_acct = get_col_val(row, ['operative_account_id', 'Operative Account Number', 'Debit Account'])
-                
+                cust_id = get_col_val(
+                    row, ['customer_id', 'Customer Id', 'Cust Id'])
+                schm_code = get_col_val(
+                    row, ['scheme_code', 'Scheme Code', 'scheme code'])
+                branch = get_col_val(
+                    row, ['branch_id', 'Branch Id', 'branch Id'])
+                dep_amt = get_col_val(
+                    row, ['deposit_amount', 'Deposit Amount', 'Initial Deposit'])
+                dep_months = get_col_val(
+                    row, ['deposit_months', 'Deposit Months', 'Months'])
+                oper_acct = get_col_val(
+                    row, ['operative_account_id', 'Operative Account Number', 'Debit Account'])
+
                 # Optional Nominee details (with fallbacks if empty)
-                nom_name = get_col_val(row, ['nominee_name', 'Nominee Name']) or "NOMINEE"
-                nom_rel = get_col_val(row, ['nominee_rel_type', 'Nominee Relation']) or "001"
+                nom_name = get_col_val(
+                    row, ['nominee_name', 'Nominee Name']) or "NOMINEE"
+                nom_rel = get_col_val(
+                    row, ['nominee_rel_type', 'Nominee Relation']) or "001"
 
                 # 2. CALL API
                 api_response = create_finacle_td_account(
@@ -300,7 +507,8 @@ def create_td_account(file_url, operation_type=None):
                 row_result['status'] = api_response.get('status')
                 row_result['message'] = api_response.get('message')
                 row_result['account_id'] = api_response.get('account_id', '')
-                row_result['request_sent'] = api_response.get('request_sent', '') 
+                row_result['request_sent'] = api_response.get(
+                    'request_sent', '')
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
