@@ -98,25 +98,8 @@ frappe.query_reports["Lead Report"] = {
       );
     }
 
-    // 📉 Make report summary count cards compact & small
-    setTimeout(function () {
-      $(".report-summary").css({
-        "padding": "4px 8px",
-        "margin-bottom": "8px"
-      });
-      $(".report-summary .summary-item").css({
-        "padding": "4px 10px",
-        "margin-right": "8px"
-      });
-      $(".report-summary .summary-value").css({
-        "font-size": "15px",
-        "font-weight": "600"
-      });
-      $(".report-summary .summary-label").css({
-        "font-size": "11px"
-      });
-    }, 300);
   },
+
 
   filters: [
     {
