@@ -1595,9 +1595,42 @@ class PettyCashTransaction(Document):
     #             )
     #         )
 ##########################################################################################
+    # def validate_payment_mode_details(self):
+    #     """
+    #     Beneficiary details are mandatory when an expense row is paid by Transfer.
+    #     """
+    #     if self.transaction_type != "Expense":
+    #         return
+
+    #     for row in self.items:
+    #         payment_mode = (row.payment_mode or "Cash").strip()
+
+    #         if payment_mode not in ("Cash", "Transfer"):
+    #             frappe.throw(
+    #                 _("Row #{0}: Payment Mode must be Cash or Transfer.").format(
+    #                     row.idx
+    #                 )
+    #             )
+
+    #         if payment_mode == "Transfer":
+    #             if not (row.beneficiary_name or "").strip():
+    #                 frappe.throw(
+    #                     _("Row #{0}: Beneficiary Name is mandatory for Transfer payment.").format(
+    #                         row.idx
+    #                     )
+    #                 )
+
+    #             if not (row.beneficiary_account_number or "").strip():
+    #                 frappe.throw(
+    #                     _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
+    #                         row.idx
+    #                     )
+    #                 )
+
     def validate_payment_mode_details(self):
         """
         Beneficiary details are mandatory when an expense row is paid by Transfer.
+        Beneficiary Account Number must contain only 9 to 20 numeric digits.
         """
         if self.transaction_type != "Expense":
             return
@@ -1620,12 +1653,32 @@ class PettyCashTransaction(Document):
                         )
                     )
 
-                if not (row.beneficiary_account_number or "").strip():
+                account_number = (row.beneficiary_account_number or "").strip()
+
+                if not account_number:
                     frappe.throw(
                         _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
                             row.idx
                         )
                     )
+
+                if not account_number.isdigit():
+                    frappe.throw(
+                        _(
+                            "Row #{0}: Beneficiary Account Number must contain only numeric digits. "
+                            "Alphabets, spaces, special characters, and decimal values are not allowed."
+                        ).format(row.idx)
+                    )
+
+                if not 9 <= len(account_number) <= 20:
+                    frappe.throw(
+                        _(
+                            "Row #{0}: Beneficiary Account Number must be between 9 and 20 digits. "
+                            "Entered length: {1} digits."
+                        ).format(row.idx, len(account_number))
+                    )
+
+                row.beneficiary_account_number = account_number
 
     def get_current_document_countable_cash_amount(self):
         """
