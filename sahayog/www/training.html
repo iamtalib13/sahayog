@@ -1449,8 +1449,8 @@
         margin-top: 2px;
       }
       .nt-sched-hint.has {
-        color: #b45309;
-        font-weight: 600;
+        color: var(--ink-3);
+        font-weight: 500;
       }
       .nt-sched-hint.overlap {
         color: #b91c1c;
@@ -1460,28 +1460,7 @@
         color: #dc2626;
         font-weight: 600;
       }
-      .nt-allday-row {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 13px;
-        color: var(--ink-2);
-        margin: 6px 0 4px;
-        cursor: pointer;
-        user-select: none;
-      }
-      .nt-allday-row input[type="checkbox"] {
-        width: 15px;
-        height: 15px;
-        accent-color: var(--accent);
-        cursor: pointer;
-      }
-      .nt-dt-cell.dimmed input {
-        opacity: 0.4;
-        pointer-events: none;
-      }
-
-      /* Trainer readonly + Branch */
+            /* Trainer readonly + Branch */
       .nt-readonly {
         flex: 1;
         display: flex;
@@ -3186,10 +3165,6 @@
               </label>
             </div>
             <div class="nt-sched-summary">
-              <label class="nt-allday-row">
-                <input type="checkbox" id="new-allday" />
-                <span>All day</span>
-              </label>
               <div class="nt-sched-preview" id="new-schedule-preview">
                 Select date and time
               </div>
@@ -4658,14 +4633,6 @@
           document.getElementById("new-district").value = "";
           document.getElementById("new-adhoc").checked = false;
           document.getElementById("new-adhoc").disabled = false;
-          var alldayReset = document.getElementById("new-allday");
-          if (alldayReset) {
-            alldayReset.checked = false;
-            ["new-time", "new-end-time"].forEach(function (id) {
-              var el = document.getElementById(id);
-              if (el) { el.disabled = false; el.closest && el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.remove("dimmed"); }
-            });
-          }
           state.selectedParticipants = [];
           state.participantPickType = "Employee";
           var pc = document.getElementById("participant-chips");
@@ -4704,7 +4671,6 @@
           if (mode === "edit") {
             saveBtn.textContent = "Save";
             saveBtn.onclick = saveTrainingChanges;
-            /* Show Reschedule button only for ld_admin */
             if (reschedBtn) {
               reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
               reschedBtn.textContent = "Reschedule";
@@ -4772,16 +4738,12 @@
           }
           [
             "new-program",
-            "new-from-date",
-            "new-to-date",
-            "new-time",
-            "new-end-time",
-            "new-location",
             "new-branch",
           ].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
           });
+          // Schedule fields remain editable for reschedule/modification
           state.selectedParticipants = (ev.participant_list || []).map(
             function (p) {
               return {
@@ -4899,6 +4861,32 @@
             return;
           }
           var tasks = [];
+          // Schedule changes — single Save handles reschedule
+          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
+          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          var startTime = (document.getElementById("new-time") || {}).value.trim();
+          var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
+          var location  = (document.getElementById("new-location") || {}).value.trim();
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"");
+          if (scheduleChanged) {
+            if (!fromDate) { showToast("From Date is required"); return; }
+            if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
+            if ((startTime && !endTime) || (!startTime && endTime)) { showToast("Provide both Start and End Time or leave both blank"); return; }
+            if (startTime && endTime) {
+              var _sm = parseTime(startTime), _em = parseTime(endTime);
+              if (_sm !== -1 && _em !== -1 && _em <= _sm) { showToast("End Time must be after Start Time"); return; }
+            }
+            tasks.push(api("update_training_schedule", {
+              name: ev.name,
+              from_date: fromDate,
+              to_date: toDate,
+              start_time: startTime || null,
+              end_time: endTime || null,
+              training_location: location || null
+            }).then(function(){
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location;
+            }));
+          }
           var val = (document.getElementById("new-agenda") || {}).value || "";
           if ((ev.trainer_remarks || "") !== val) {
             tasks.push(
@@ -4945,7 +4933,6 @@
         var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-location"];
 
         function enterRescheduleMode() {
-          /* Unlock schedule fields */
           SCHEDULE_FIELDS.forEach(function (id) {
             var el = document.getElementById(id);
             if (el) {
@@ -4954,19 +4941,17 @@
               el.style.color = "";
             }
           });
-          /* Swap button: Reschedule → Save Schedule */
+          // Clear time so user must enter explicitly — no auto-set
+          var sEl = document.getElementById("new-time");
+          var eEl = document.getElementById("new-end-time");
+          if (sEl) sEl.value = "";
+          if (eEl) eEl.value = "";
+          updateSchedulePreview();
           var reschedBtn = document.getElementById("btn-reschedule-training");
-          if (reschedBtn) {
-            reschedBtn.textContent = "Save Schedule";
-            reschedBtn.style.background = "var(--accent)";
-            reschedBtn.style.color = "#fff";
-            reschedBtn.style.borderColor = "var(--accent)";
-            reschedBtn.onclick = saveScheduleChanges;
-          }
-          /* Show hint in header */
+          if (reschedBtn) reschedBtn.style.display = "none";
           var h = document.querySelector("#addModal .nt-head h3");
           if (h) h.textContent = "Reschedule Training";
-          showToast("Schedule fields unlocked — edit and click Save Schedule");
+          showToast("Schedule fields unlocked — enter new time and click Save");
         }
 
         function saveScheduleChanges() {
@@ -5060,10 +5045,10 @@
             return;
           }
 
-          var isAllDay = document.getElementById("new-allday") && document.getElementById("new-allday").checked;
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
-          if (!isAllDay && startTime && endTime) {
+          if (startTime || endTime) {
+            if (!startTime || !endTime) { showToast("Provide both Start and End Time or leave both blank"); return; }
             var startMins = parseTime(startTime);
             var endMins = parseTime(endTime);
             if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
@@ -5921,13 +5906,8 @@
                 return selectedKeys.indexOf("Agent:" + a.name) === -1;
               });
             }
-            /* Employee — filter by selected branches if any */
-            var geos = state.selectedGeographies || [];
-            var branches = geos.map(function(g){ return (g.branch||"").toLowerCase(); }).filter(Boolean);
             return (state.allEmployees || []).filter(function(emp) {
               if (selectedKeys.indexOf("Employee:" + emp.name) !== -1) return false;
-              var empBr = (emp.sahayog_branch || "").toLowerCase();
-              if (branches.length && empBr && branches.indexOf(empBr) === -1) return false;
               return true;
             });
           }
@@ -5937,9 +5917,18 @@
             var displayName = type === "Agent"
               ? (item.agent_name || item.name)
               : (item.employee_name || item.name);
-            var sub = type === "Agent"
-              ? (item.name + (item.branch_name ? " \u00b7 " + item.branch_name : ""))
-              : (item.name + (item.sahayog_branch ? " \u00b7 " + item.sahayog_branch : ""));
+            var sub;
+            if (type === "Agent") {
+              sub = item.name + (item.branch_name ? " - " + item.branch_name : "");
+            } else {
+              var brCode = item.sahayog_branch || "";
+              var brName = "";
+              if (brCode) {
+                var binfo = (state.branchPick || []).find(function(b){ return b.name === brCode; });
+                brName = binfo && binfo.branch ? binfo.branch : "";
+              }
+              sub = item.name + (brName ? " - " + brName : (brCode ? " - " + brCode : ""));
+            }
             return (
               '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
               "<span>" + esc(displayName) + "</span>" +
@@ -6151,26 +6140,20 @@
           var eEl      = document.getElementById("new-end-time");
           var pvEl     = document.getElementById("new-schedule-preview");
           var hintEl   = document.getElementById("new-schedule-hint");
-          var alldayEl = document.getElementById("new-allday");
-          var isAllDay = alldayEl && alldayEl.checked;
           var f  = fEl ? fEl.value : "";
           var t  = tEl ? tEl.value : "";
-          var st = (!isAllDay && sEl) ? sEl.value.trim() : "";
-          var et = (!isAllDay && eEl) ? eEl.value.trim() : "";
+          var st = sEl ? sEl.value.trim() : "";
+          var et = eEl ? eEl.value.trim() : "";
 
           // preview
           if (pvEl) {
             var parts = [];
             if (f && t === f) parts.push(fmtSchDate(f));
             else if (f && t) parts.push(fmtSchDate(f) + " – " + fmtSchDate(t));
-            if (isAllDay) {
-              parts.push("All day");
-            } else {
-              var ts = [];
-              if (st) ts.push(fmtSchTime(st));
-              if (et) ts.push(fmtSchTime(et));
-              if (ts.length) parts.push(ts.join(" – "));
-            }
+            var ts = [];
+            if (st) ts.push(fmtSchTime(st));
+            if (et) ts.push(fmtSchTime(et));
+            if (ts.length) parts.push(ts.join(" – "));
             pvEl.textContent = parts.length ? parts.join("    ") : "Select date and time";
           }
 
@@ -6185,7 +6168,7 @@
             var stMins = parseTime(st);
             var etMins = parseTime(et);
             var hasOverlap = false;
-            if (!isAllDay && stMins !== -1 && etMins !== -1 && count > 0) {
+            if (stMins !== -1 && etMins !== -1 && count > 0) {
               hasOverlap = onDate.some(function (ev) {
                 var evSt = parseTime(ev.time || "");
                 var evEt = parseTime(ev.end_time || "");
@@ -6198,7 +6181,7 @@
               hintEl.textContent = "⚠️ Time overlaps with an existing training on this date";
               hintEl.className = "nt-sched-hint overlap";
             } else if (count > 0) {
-              hintEl.textContent = count + " existing training" + (count === 1 ? "" : "s") + " on this date";
+              hintEl.textContent = count + " other training" + (count === 1 ? "" : "s") + " scheduled on this date";
               hintEl.className = "nt-sched-hint has";
             } else {
               hintEl.textContent = "";
@@ -6207,21 +6190,7 @@
           }
         }
 
-        /* All day toggle — dim/enable time inputs */
-        (function () {
-          var alldayEl = document.getElementById("new-allday");
-          if (!alldayEl) return;
-          alldayEl.addEventListener("change", function () {
-            var isAllDay = alldayEl.checked;
-            ["new-time", "new-end-time"].forEach(function (id) {
-              var el = document.getElementById(id);
-              if (!el) return;
-              el.disabled = isAllDay;
-              el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.toggle("dimmed", isAllDay);
-            });
-            updateSchedulePreview();
-          });
-        })();
+
 
         ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
           function (id) {
