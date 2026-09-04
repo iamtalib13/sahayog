@@ -3,7 +3,17 @@
 
 frappe.query_reports["Lead Report"] = {
   onload: function (report) {
-    // Nothing extra needed here; filtering is handled in Python
+  // 🔘 Add 'Clear Filters' button on the report action bar                                                                   
+        report.page.add_inner_button(__("Clear Filters"), function () {                                                             
+          // Reset all custom filter fields to empty                                                                                
+          report.set_filter_value("custom_branch", "");                                                                             
+          report.set_filter_value("sol_id", "");                                                                                    
+          report.set_filter_value("custom_employee_id", "");                                                                        
+          report.set_filter_value("custom_employee_name", "");                                                                      
+                                                                                                                                    
+          // Refresh report data after clearing filters                                                                             
+          report.refresh();                                                                                                         
+        });     
   },
 
   filters: [
