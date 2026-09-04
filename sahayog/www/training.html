@@ -3902,6 +3902,10 @@
           var chip = document.createElement("div");
           chip.className = "event-chip";
           chip.style.borderLeftColor = meta.color;
+          chip.style.position = "relative";
+          var delX = state.role === "ld_admin"
+            ? '<button class="chip-del-btn" title="Delete" style="position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:rgba(220,38,38,0.12);color:#dc2626;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:10px;line-height:1;padding:0;">✕</button>'
+            : "";
           chip.innerHTML =
             '<span class="event-chip-top">' +
             '<span class="status-dot" style="background:' +
@@ -3913,7 +3917,29 @@
             "</span>" +
             '<span class="event-chip-time">' +
             esc(ev.time || "") +
-            "</span>";
+            "</span>" +
+            delX;
+          chip.addEventListener("mouseenter", function () {
+            var b = chip.querySelector(".chip-del-btn");
+            if (b) b.style.display = "flex";
+          });
+          chip.addEventListener("mouseleave", function () {
+            var b = chip.querySelector(".chip-del-btn");
+            if (b) b.style.display = "none";
+          });
+          var delBtn = chip.querySelector(".chip-del-btn");
+          if (delBtn) {
+            delBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
+              api("delete_training", { name: ev.name })
+                .then(function () {
+                  loadData(true);
+                  showToast("Training deleted");
+                })
+                .catch(function (err) { showToast("Could not delete: " + err.message); });
+            });
+          }
           chip.addEventListener("click", function (e) {
             e.stopPropagation();
             openTrainingDialog(ev);
@@ -4422,7 +4448,7 @@
             ? '<button class="btn" id="drawerDelete" style="color:#dc2626;border-color:#fecaca;">Delete</button>'
             : "";
           var actions = editable
-            ? deleteBtn + '<button class="btn" id="drawerCancel">Cancel</button>' +
+            ? '<button class="btn" id="drawerCancel">Cancel</button>' +
               '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
             : deleteBtn + '<button class="btn btn-primary" id="drawerDone">Close</button>';
           document.getElementById("drawerActions").innerHTML = actions;
