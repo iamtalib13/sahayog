@@ -3296,6 +3296,7 @@
 
         <div class="nt-foot">
           <button class="btn" data-close="addModal">Cancel</button>
+          <button class="btn" id="btn-reschedule-training" style="display:none;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
           <button class="btn btn-primary" id="btn-save-training">
             Save Training
           </button>
@@ -4711,12 +4712,20 @@
           if (h)
             h.textContent = mode === "edit" ? "Edit Training" : "New Training";
           var saveBtn = document.getElementById("btn-save-training");
+          var reschedBtn = document.getElementById("btn-reschedule-training");
           if (mode === "edit") {
             saveBtn.textContent = "Save Changes";
             saveBtn.onclick = saveTrainingChanges;
+            /* Show Reschedule button only for ld_admin */
+            if (reschedBtn) {
+              reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
+              reschedBtn.textContent = "Reschedule";
+              reschedBtn.onclick = enterRescheduleMode;
+            }
           } else {
             saveBtn.textContent = "Save Training";
             saveBtn.onclick = saveTraining;
+            if (reschedBtn) reschedBtn.style.display = "none";
           }
         }
         function openTrainingDialog(ev) {
@@ -4942,6 +4951,79 @@
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
+        }
+
+        /* ---- Reschedule mode: unlock schedule fields in edit dialog ---- */
+        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-location"];
+
+        function enterRescheduleMode() {
+          /* Unlock schedule fields */
+          SCHEDULE_FIELDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+              el.readOnly = false;
+              el.style.background = "";
+              el.style.color = "";
+            }
+          });
+          /* Swap button: Reschedule → Save Schedule */
+          var reschedBtn = document.getElementById("btn-reschedule-training");
+          if (reschedBtn) {
+            reschedBtn.textContent = "Save Schedule";
+            reschedBtn.style.background = "var(--accent)";
+            reschedBtn.style.color = "#fff";
+            reschedBtn.style.borderColor = "var(--accent)";
+            reschedBtn.onclick = saveScheduleChanges;
+          }
+          /* Show hint in header */
+          var h = document.querySelector("#addModal .nt-head h3");
+          if (h) h.textContent = "Reschedule Training";
+          showToast("Schedule fields unlocked — edit and click Save Schedule");
+        }
+
+        function saveScheduleChanges() {
+          var ev = state.currentEvent;
+          if (!ev) return;
+          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
+          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          var startTime = (document.getElementById("new-time") || {}).value.trim();
+          var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
+          var location  = (document.getElementById("new-location") || {}).value.trim();
+
+          if (!fromDate) { showToast("From Date is required"); return; }
+          if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
+          if (startTime && endTime) {
+            var sm = parseTime(startTime), em = parseTime(endTime);
+            if (sm !== -1 && em !== -1 && em <= sm) {
+              showToast("End Time must be after Start Time");
+              return;
+            }
+          }
+
+          api("update_training_schedule", {
+            name: ev.name,
+            from_date: fromDate,
+            to_date: toDate,
+            start_time: startTime || null,
+            end_time: endTime || null,
+            training_location: location || null,
+          })
+            .then(function () {
+              /* Update local event */
+              ev.from_date = fromDate;
+              ev.to_date = toDate;
+              ev.start_time = startTime;
+              ev.end_time = endTime;
+              ev.time = startTime;
+              ev.training_location = location;
+              closeModal("addModal");
+              loadData(true);
+              renderTrainings();
+              showToast("Training rescheduled");
+            })
+            .catch(function (e) {
+              showToast("Could not reschedule: " + e.message);
+            });
         }
         /* Parse flexible time input into minutes-since-midnight (returns -1 if invalid) */
         function parseTime(t) {
