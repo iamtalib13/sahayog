@@ -3058,20 +3058,15 @@
       <div class="modal new-training-modal">
         <div class="nt-head">
           <h3>New Training</h3>
-          <button class="modal-close" data-close="addModal" title="Close">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              width="16"
-              height="16"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <button class="btn btn-primary" id="btn-save-training" style="height:30px;padding:0 14px;font-size:13px;">Save Training</button>
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:30px;padding:0 14px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="modal-close" data-close="addModal" title="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="nt-scroll">
@@ -3294,13 +3289,6 @@
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
 
-        <div class="nt-foot">
-          <button class="btn" data-close="addModal">Cancel</button>
-          <button class="btn" id="btn-reschedule-training" style="display:none;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
-          <button class="btn btn-primary" id="btn-save-training">
-            Save Training
-          </button>
-        </div>
       </div>
     </div>
 
@@ -4714,7 +4702,7 @@
           var saveBtn = document.getElementById("btn-save-training");
           var reschedBtn = document.getElementById("btn-reschedule-training");
           if (mode === "edit") {
-            saveBtn.textContent = "Save Changes";
+            saveBtn.textContent = "Save";
             saveBtn.onclick = saveTrainingChanges;
             /* Show Reschedule button only for ld_admin */
             if (reschedBtn) {
@@ -4723,7 +4711,7 @@
               reschedBtn.onclick = enterRescheduleMode;
             }
           } else {
-            saveBtn.textContent = "Save Training";
+            saveBtn.textContent = "Save";
             saveBtn.onclick = saveTraining;
             if (reschedBtn) reschedBtn.style.display = "none";
           }
@@ -5075,9 +5063,7 @@
           var isAllDay = document.getElementById("new-allday") && document.getElementById("new-allday").checked;
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
-          if (!isAllDay) {
-            if (!startTime) { showToast("Start Time is required"); return; }
-            if (!endTime) { showToast("End Time is required"); return; }
+          if (!isAllDay && startTime && endTime) {
             var startMins = parseTime(startTime);
             var endMins = parseTime(endTime);
             if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
@@ -5953,7 +5939,7 @@
               : (item.employee_name || item.name);
             var sub = type === "Agent"
               ? (item.name + (item.branch_name ? " \u00b7 " + item.branch_name : ""))
-              : (item.sahayog_branch || item.name);
+              : (item.name + (item.sahayog_branch ? " \u00b7 " + item.sahayog_branch : ""));
             return (
               '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
               "<span>" + esc(displayName) + "</span>" +
