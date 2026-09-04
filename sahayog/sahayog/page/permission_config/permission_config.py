@@ -99,9 +99,8 @@ def get_paginated_users(search=None, designation=None, branch=None, page=1, page
         LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
         ORDER BY
-            is_configured DESC,
-            rp.modified DESC,
-            e.employee_name ASC
+            e.employee_name ASC,
+            e.name ASC
         LIMIT %(page_size)s OFFSET %(offset)s
     """
     rows = frappe.db.sql(data_sql, params, as_dict=True)

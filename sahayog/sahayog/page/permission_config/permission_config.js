@@ -73,8 +73,6 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           const route = frappe.get_route();
           if (route[2]) {
             selectUser(route[2]);
-          } else if (state.users.length > 0) {
-            selectUser(state.users[0].user);
           } else {
             renderPage();
           }
@@ -114,6 +112,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
   function selectUser(userEmail) {
     state.user = userEmail;
+    let sideUser = (state.users || []).find(x => x.user === userEmail || x.employee_id === userEmail);
+
     frappe.call({
       method: "sahayog.scrm.doctype.report_preference.report_preference.get_widget_meta",
       args: { user: userEmail || "" },
@@ -121,7 +121,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         state.meta_data = r.message || {};
         let pref = state.meta_data.user_preference;
 
-        state.full_name = pref ? pref.full_name : "";
+        state.full_name = (pref && pref.full_name) ? pref.full_name : (state.meta_data.user_full_name || (sideUser ? sideUser.full_name : ""));
+        state.user_emp_id = (sideUser && sideUser.employee_id) ? sideUser.employee_id : (state.meta_data.user_emp_id || (userEmail ? userEmail.split('@')[0] : "-"));
         state.enabled = pref && pref.enabled !== undefined ? pref.enabled : 1;
         state.tag = pref ? pref.tag : "";
         state.zones = new Set(pref && pref.zones ? pref.zones : []);
@@ -154,46 +155,69 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     let $saveBtn = page.main.find("#min-btn-save-manual");
     if ($saveBtn.length) {
-      $saveBtn.text("Saving...").prop("disabled", true);
+      $saveBtn.text("Saving...").prop("disabled", true).css("background", "#334155").css("border-color", "#334155").css("color", "#fff");
     }
 
-    frappe.call({
-      method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
-      args: {
-        data: {
-          user: state.user,
-          enabled: state.enabled,
-          tag: state.tag,
-          access_type: state.access_type,
-          zones: Array.from(state.zones),
-          regions: Array.from(state.regions),
-          districts: Array.from(state.districts),
-          sol_ids: Array.from(state.sol_ids)
-        }
-      },
-      callback: function (r) {
-        if ($saveBtn.length) {
-          $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("color", "#fff");
-          setTimeout(() => {
-            $saveBtn.text("Save").css("background", "").css("color", "");
-          }, 1200);
-        }
+    clearTimeout(state.auto_save_timer);
+    state.auto_save_timer = setTimeout(() => {
+      frappe.call({
+        method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
+        args: {
+          data: {
+            user: state.user,
+            enabled: state.enabled,
+            tag: state.tag,
+            access_type: state.access_type,
+            zones: Array.from(state.zones),
+            regions: Array.from(state.regions),
+            districts: Array.from(state.districts),
+            sol_ids: Array.from(state.sol_ids)
+          }
+        },
+        callback: function (r) {
+          if ($saveBtn.length) {
+            $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("border-color", "#16a34a").css("color", "#fff");
+            setTimeout(() => {
+              $saveBtn.text("Save").css("background", "").css("border-color", "").css("color", "");
+            }, 1000);
+          }
 
-        // Update list status in memory without re-fetching
-        let found = state.users.find(x => x.user === state.user);
-        if (found) {
-          found.tag = state.tag;
-          found.enabled = state.enabled;
-          found.is_configured = 1;
-        }
+          // Update in-memory user preference metadata
+          if (state.meta_data) {
+            if (!state.meta_data.user_preference) state.meta_data.user_preference = {};
+            state.meta_data.user_preference.zones = Array.from(state.zones);
+            state.meta_data.user_preference.regions = Array.from(state.regions);
+            state.meta_data.user_preference.districts = Array.from(state.districts);
+            state.meta_data.user_preference.sol_ids = Array.from(state.sol_ids);
+            state.meta_data.user_preference.access_type = state.access_type;
+            state.meta_data.user_preference.enabled = state.enabled;
+            state.meta_data.user_preference.tag = state.tag;
+          }
 
-        renderSideListOnly();
+          // Update list status in memory without re-fetching
+          let found = state.users.find(x => x.user === state.user || x.employee_id === state.user);
+          if (found) {
+            found.tag = state.tag;
+            found.enabled = state.enabled;
+            found.is_configured = 1;
+            found.access_type = state.access_type;
+          }
 
-        if (r.message && r.message.status === "success" && show_toast) {
-          frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
+          renderSideListOnly();
+
+          if (r.message && r.message.status === "success") {
+            if (show_toast) {
+              frappe.show_alert({ message: __("Auto-saved successfully ✓"), indicator: "green" }, 3);
+            }
+          }
+        },
+        error: function () {
+          if ($saveBtn.length) {
+            $saveBtn.text("Save").prop("disabled", false).css("background", "").css("color", "");
+          }
         }
-      }
-    });
+      });
+    }, 150);
   }
 
   function showSelectUserDialog() {
@@ -277,7 +301,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       itemsHtml = `<div style="padding: 24px 12px; text-align: center; color: #94a3b8; font-size: 11.5px;">No active employees found matching criteria</div>`;
     }
 
-    page.main.find("#min-side-user-list").html(itemsHtml);
+    let $listWrap = page.main.find("#min-side-user-list");
+    let currentScrollTop = $listWrap.length ? $listWrap.scrollTop() : 0;
+
+    $listWrap.html(itemsHtml);
+    $listWrap.scrollTop(currentScrollTop);
     page.main.find("#min-side-header-count").text(state.total_count);
     page.main.find("#min-side-page-info").text(`${state.total_count === 0 ? 0 : startIdx + 1}-${endIdx} of ${state.total_count}`);
     page.main.find("#min-side-page-num").text(`Page ${state.current_page}/${state.total_pages}`);
@@ -293,6 +321,43 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     });
   }
 
+  function updateResetFiltersVisibility() {
+    let $m = page.main;
+    let selectedBranchObj = (state.employee_meta.branches || []).find(b => b.sol_id === state.filter_branch);
+    let selectedBranchLabel = selectedBranchObj ? `${selectedBranchObj.sol_id} - ${selectedBranchObj.branch}` : '';
+
+    let hasFilters = !!(state.filter_designation || state.filter_branch || state.search_query);
+    let $wrap = $m.find("#min-side-clear-filters-wrap");
+
+    if (hasFilters) {
+      let detailsHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+          <span style="font-size: 9.5px; color: #1e40af; font-weight: 700;">Filtered By:</span>
+          <span id="min-side-clear-filters" style="font-size: 10px; color: #dc2626; cursor: pointer; font-weight: 700;">✕ Reset</span>
+        </div>
+        <div style="font-size: 9.5px; color: #1e3a8a; display: flex; flex-direction: column; gap: 1px;">
+          ${state.filter_designation ? `<div>• <b>Desig:</b> ${state.filter_designation}</div>` : ''}
+          ${state.filter_branch ? `<div>• <b>Branch:</b> ${selectedBranchLabel}</div>` : ''}
+          ${state.search_query ? `<div>• <b>Search:</b> "${state.search_query}"</div>` : ''}
+        </div>
+      `;
+      $wrap.html(detailsHtml).css("display", "flex");
+
+      $wrap.find("#min-side-clear-filters").off("click").on("click", function () {
+        state.filter_designation = "";
+        state.filter_branch = "";
+        state.search_query = "";
+        $m.find("#min-side-filter-designation").val("");
+        $m.find("#min-side-filter-branch").val("");
+        $m.find("#min-side-search-input").val("");
+        updateResetFiltersVisibility();
+        fetchUserPage(1);
+      });
+    } else {
+      $wrap.hide().empty();
+    }
+  }
+
   function renderPage() {
     let meta = state.meta_data || {};
     let tagsList = meta.tags || ["COM", "ROM", "RM", "AZM", "ZM"];
@@ -300,7 +365,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     let allBranches = meta.all_branches || [];
     let isGeo = state.access_type === "Geographical (Zone / Region / District)";
     let userName = state.full_name || (state.user ? state.user.split('@')[0] : "Select User");
-    let userEmpId = state.user ? state.user.split('@')[0] : "-";
+    let userEmpId = state.user_emp_id || (state.user ? state.user.split('@')[0] : "-");
     let selectedBranchObj = (state.employee_meta.branches || []).find(b => b.sol_id === state.filter_branch);
     let selectedBranchLabel = selectedBranchObj ? `${selectedBranchObj.sol_id} - ${selectedBranchObj.branch}` : 'All Branches';
 
@@ -330,40 +395,54 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       return { raw: z, label: num };
     });
 
-    let allRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
+    let getNormRegion = r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r;
+
+    let allRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => getNormRegion(b.region)).filter(Boolean))));
     let availableRegionNames = allRegionNames;
     if (state.zones.size > 0) {
       availableRegionNames = sortRegions(Array.from(new Set(
-        allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
+        allBranches.filter(b => state.zones.has(b.zone)).map(b => getNormRegion(b.region)).filter(Boolean)
       )));
     }
 
-    let regionOptions = availableRegionNames.map(r => {
-      let code = r.toLowerCase().includes("head office") ? "HO" : (r.match(/\d+/) || [r])[0];
-      return { raw: r, label: code };
+    let regionOptionsMap = new Map();
+    availableRegionNames.forEach(r => {
+      let isHo = r.toLowerCase().includes("head office") || r.toUpperCase() === "HO";
+      let rawVal = isHo ? "HEAD OFFICE" : r;
+      let code = isHo ? "HO" : (r.match(/\d+/) || [r])[0];
+      if (!regionOptionsMap.has(rawVal)) {
+        regionOptionsMap.set(rawVal, { raw: rawVal, label: code });
+      }
     });
+    let regionOptions = Array.from(regionOptionsMap.values());
+
+    function sortDistricts(list) {
+      return [...list].sort((a, b) => String(a).localeCompare(String(b)));
+    }
+
+    let allDistrictNames = sortDistricts(Array.from(new Set(allBranches.map(b => b.district).filter(Boolean))));
+    let availableDistrictNames = allDistrictNames;
+    if (state.zones.size > 0 || state.regions.size > 0) {
+      availableDistrictNames = sortDistricts(Array.from(new Set(
+        allBranches.filter(b => {
+          let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
+          let matchesRegion = state.regions.size === 0 || state.regions.has(b.region) ||
+            ((state.regions.has("HEAD OFFICE") || state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+          return matchesZone && matchesRegion;
+        }).map(b => b.district).filter(Boolean)
+      )));
+    }
 
     let isAllZones = zoneOptions.length > 0 && zoneOptions.every(z => state.zones.has(z.raw));
-    let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => state.regions.has(r.raw));
+    let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => state.regions.has(r.raw) || (r.raw === "HEAD OFFICE" && state.regions.has("HO")));
+    let isAllDistricts = availableDistrictNames.length > 0 && availableDistrictNames.every(d => state.districts.has(d));
 
-    let displayBranches = [];
-    if (isGeo) {
-      let hasGeo = state.zones.size > 0 || state.regions.size > 0 || state.districts.size > 0;
-      let hasSol = state.sol_ids.size > 0;
+    let hasGeo = state.zones.size > 0 || state.regions.size > 0 || state.districts.size > 0;
+    let hasSol = state.sol_ids.size > 0;
 
-      if (hasGeo || hasSol) {
-        displayBranches = allBranches.filter(b => {
-          let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
-          let matchesRegion = state.regions.size === 0 || state.regions.has(b.region);
-          let matchesDistrict = state.districts.size === 0 || state.districts.has(b.district);
-          let matchesGeo = hasGeo && (matchesZone && matchesRegion && matchesDistrict);
-          let matchesSol = hasSol && state.sol_ids.has(String(b.sol_id));
-
-          return matchesGeo || matchesSol;
-        });
-      }
-    } else {
-      displayBranches = [...allBranches].sort((a, b) => {
+    let displayBranches = [...allBranches];
+    if (!isGeo) {
+      displayBranches.sort((a, b) => {
         let isSelA = state.sol_ids.has(String(a.sol_id)) ? 1 : 0;
         let isSelB = state.sol_ids.has(String(b.sol_id)) ? 1 : 0;
         if (isSelA !== isSelB) {
@@ -375,9 +454,262 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       });
     }
 
+    let geoAllowedCount = 0;
+    if (hasGeo) {
+      geoAllowedCount = allBranches.filter(b => {
+        let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
+        let matchesRegion = state.regions.size === 0 || state.regions.has(b.region) ||
+          ((state.regions.has("HEAD OFFICE") || state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+        let matchesDistrict = state.districts.size === 0 || state.districts.has(b.district);
+        return matchesZone && matchesRegion && matchesDistrict;
+      }).length;
+    }
     let selectedSolCount = allBranches.filter(b => state.sol_ids.has(String(b.sol_id))).length;
 
-    let html = `
+
+    let mainContentHtml = `
+      ${state.user ? `
+        <!-- TOP HEADER -->
+        <div class="min-perm-header">
+          <div>
+            <div class="min-perm-title">Permission Details</div>
+            <div class="min-perm-subinfo">
+              <span><b>Employee Name:</b> ${userName.toUpperCase()}</span>
+              <span style="color: #cbd5e1; margin: 0 6px;">|</span>
+              <span><b>Employee ID:</b> ${userEmpId}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="min-toggle-track ${state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
+              <div class="min-toggle-thumb"></div>
+            </div>
+
+            <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 24px; font-size: 10.5px; font-weight: 600; border-radius: 4px; border-color: #cbd5e1; padding: 1px 5px;">
+              <option value="">No Tag</option>
+              ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
+            </select>
+
+            <!-- Clear Permissions Button -->
+            <button type="button" class="min-btn-clear-perm" id="min-btn-clear-all-perm" title="Clear all configured permissions for this user">
+              <span>🧹 Clear</span>
+            </button>
+
+            <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
+          </div>
+        </div>
+
+        <!-- 1. GEO CONTROLS SECTION -->
+        <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
+          <div class="min-dashed-box">
+            <span class="min-box-label">Zone</span>
+            <div class="min-chip-container">
+              <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
+              ${zoneOptions.map(z => `
+                <div class="min-chip min-chip-zone ${state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="min-dashed-box">
+            <span class="min-box-label">Region</span>
+            <div class="min-chip-container">
+              ${regionOptions.length > 0 ? `
+                <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
+                ${regionOptions.map(r => `
+                  <div class="min-chip min-chip-region ${state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
+                `).join('')}
+              ` : `
+                <span style="font-size: 10.5px; color: #94a3b8; font-style: italic;">No regions available</span>
+              `}
+            </div>
+          </div>
+
+          <!-- District Box -->
+          <div class="min-dashed-box">
+            <span class="min-box-label">District</span>
+            <div class="min-chip-container">
+              ${availableDistrictNames.length > 0 ? `
+                <div class="min-chip ${isAllDistricts ? 'selected' : ''}" id="min-chip-district-all">ALL</div>
+                <div class="dropdown min-district-dropdown-wrap" style="position: relative; display: inline-block;">
+                  <button type="button" class="btn btn-xs btn-default dropdown-toggle" id="min-btn-district-drop" style="font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 11px; border-color: #cbd5e1;">
+                    🔍 Select (${state.districts.size}) ▾
+                  </button>
+                  <div class="dropdown-menu min-district-drop-menu" id="min-district-drop-menu" style="width: 250px; padding: 8px; max-height: 280px; overflow-y: auto; right: 0; left: auto; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <input type="text" class="form-control input-xs" id="min-district-search" placeholder="🔍 Search district..." style="margin-bottom: 6px; font-size: 10.5px;" />
+                    <div id="min-district-checklist" style="max-height: 180px; overflow-y: auto;">
+                      ${availableDistrictNames.map(d => {
+                        let isChecked = state.districts.has(d);
+                        return `
+                          <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; margin-bottom: 4px; cursor: pointer; color: #334155;">
+                            <input type="checkbox" class="min-chk-district" data-raw="${d}" ${isChecked ? 'checked' : ''} />
+                            <span>${d}</span>
+                          </label>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                </div>
+
+                ${Array.from(state.districts).map(d => `
+                  <div class="min-chip min-chip-district selected" data-raw="${d}">
+                    ${d} <span class="min-remove-dist" data-dist="${d}" style="margin-left: 4px; font-weight: bold; cursor: pointer;">×</span>
+                  </div>
+                `).join('')}
+              ` : `
+                <span style="font-size: 10.5px; color: #94a3b8; font-style: italic;">No districts available</span>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MODE TOGGLE -->
+        <div class="min-mode-divider-row">
+          <div class="min-scope-control">
+            <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
+              <span>🌍 Geo Wise</span>
+            </div>
+            <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
+              <span>🏢 Branch Wise</span>
+            </div>
+          </div>
+
+          <div style="font-size: 10.5px; font-weight: 600;">
+            ${isGeo ? `
+              <span style="color: #16a34a;">● Geographical Mode Active</span>
+              <span style="color: #94a3b8; margin: 0 4px;">•</span>
+              <span style="color: #16a34a;"><b id="min-branch-selected-badge">${geoAllowedCount}</b> / ${allBranches.length} Branches Allowed</span>
+            ` : `
+              <span style="color: #0284c7;">● Branch Wise Mode Active</span>
+              <span style="color: #94a3b8; margin: 0 4px;">•</span>
+              <span style="color: #16a34a;"><b id="min-branch-selected-badge">${selectedSolCount}</b> / ${allBranches.length} Branches Allowed</span>
+            `}
+          </div>
+        </div>
+
+        <!-- 3. BRANCH TABLE SECTION (WITH COLUMN-WISE SEARCH HEADERS & DIRECT CHECKBOXES) -->
+        <div class="min-sol-box">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="min-box-label" style="min-width: unset;">Branches Table (Filter by column below)</span>
+            ${!isGeo ? `
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700;">
+                <button type="button" class="btn btn-xs btn-default" id="min-btn-select-all-filtered">Select All Visible</button>
+                <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All Visible</button>
+              </div>
+            ` : `
+              <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">👁️ Read-Only Preview (${geoAllowedCount} / ${allBranches.length} Allowed)</span>
+            `}
+          </div>
+
+          ${displayBranches.length > 0 ? `
+            <div class="min-branch-table-wrap">
+              <table class="min-branch-table" id="min-sol-grid-table">
+                <thead>
+                  <!-- Column Title Row -->
+                  <tr>
+                    <th style="width: 40px; text-align: center;">Sr.</th>
+                    <th style="width: 32px; text-align: center;">
+                      ${!isGeo ? `<input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" title="Toggle All" />` : ''}
+                    </th>
+                    <th style="width: 80px;">SOL ID</th>
+                    <th>Branch Name</th>
+                    <th>Zone</th>
+                    <th>Region</th>
+                    <th>District</th>
+                    <th style="width: 72px; text-align: center;">Status</th>
+                  </tr>
+
+                  <!-- Column Search Row -->
+                  <tr class="min-filter-header-row">
+                    <th></th>
+                    <th></th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="sol_id" placeholder="🔍 SOL..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="branch" placeholder="🔍 Branch..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="zone" placeholder="🔍 Zone..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="region" placeholder="🔍 Region..." />
+                    </th>
+                    <th>
+                      <input type="text" class="min-col-filter" data-col="district" placeholder="🔍 District..." />
+                    </th>
+                    <th style="text-align: center;">
+                      <select class="min-col-filter-select" data-col="status">
+                        <option value="">All</option>
+                        <option value="allowed">Allowed</option>
+                        <option value="off">Off</option>
+                      </select>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="min-branch-table-tbody">
+                  ${displayBranches.map((b, idx) => {
+                    let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
+                    let matchesRegion = state.regions.size === 0 || state.regions.has(b.region) ||
+                      ((state.regions.has("HEAD OFFICE") || state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+                    let matchesDistrict = state.districts.size === 0 || state.districts.has(b.district);
+                    let matchesGeo = (matchesZone && matchesRegion && matchesDistrict);
+                    let isSolChecked = state.sol_ids.has(String(b.sol_id));
+                    let isAllowed = isGeo ? (hasGeo ? matchesGeo : isSolChecked) : isSolChecked;
+
+                    return `
+                      <tr class="min-branch-data-row ${isAllowed ? 'row-selected' : ''}"
+                          data-sol_id="${String(b.sol_id || '').toLowerCase()}"
+                          data-branch="${String(b.branch || '').toLowerCase()}"
+                          data-district="${String(b.district || '').toLowerCase()}"
+                          data-region="${String(b.region || '').toLowerCase()}"
+                          data-zone="${String(b.zone || '').toLowerCase()}"
+                          data-status="${isAllowed ? 'allowed' : 'off'}">
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                        <td style="text-align: center;">
+                          ${!isGeo ? `
+                            <input type="checkbox" class="min-sol-toggle-chk" data-sol="${b.sol_id}" ${isAllowed ? 'checked' : ''} style="cursor: pointer;" />
+                          ` : `
+                            <input type="checkbox" ${isAllowed ? 'checked' : ''} disabled title="Allowed via Geographical filter" style="accent-color: #16a34a; cursor: default;" />
+                          `}
+                        </td>
+                        <td><b style="color: ${isAllowed ? '#16a34a' : '#475569'};">${b.sol_id}</b></td>
+                        <td><b>${b.branch || '-'}</b></td>
+                        <td>${b.zone || '-'}</td>
+                        <td>${b.region || '-'}</td>
+                        <td>${b.district || '-'}</td>
+                        <td style="text-align: center;">
+                          ${isAllowed ? `
+                            <span style="background: #dcfce7; color: #15803d; font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 4px;">Allowed</span>
+                          ` : `
+                            <span style="color: #94a3b8; font-size: 9.5px; font-weight: 600;">Off</span>
+                          `}
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : `
+            <div style="padding: 14px; text-align: center; color: #94a3b8; font-size: 11px;">
+              No branches found.
+            </div>
+          `}
+        </div>
+      ` : `
+        <!-- EMPTY STATE CARD -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 380px; text-align: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 32px 20px;">
+          <div style="font-size: 44px; margin-bottom: 12px;">👈</div>
+          <div style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Please Select an Employee</div>
+          <div style="font-size: 12px; color: #64748b; max-width: 360px; line-height: 1.5;">
+            Select an employee from the left side panel list to view or configure their Report Preference and branch permissions.
+          </div>
+        </div>
+      `}
+    `;
+
+    html = `
       <style>
         .min-perm-layout {
           display: flex;
@@ -403,182 +735,35 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           padding: 8px 10px;
           border-bottom: 1px solid #e2e8f0;
           display: flex;
-          justify-content: space-between;
-          align-items: center;
+          flex-direction: column;
+          gap: 4px;
           background: #f8fafc;
           border-top-left-radius: 8px;
           border-top-right-radius: 8px;
-        }
-        .min-side-title {
-          font-size: 12.5px;
-          font-weight: 700;
-          color: #0f172a;
-        }
-        .min-side-btn-add {
-          background: #0f172a;
-          color: #ffffff;
-          border: none;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 11px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .min-side-filter-wrap {
-          padding: 6px 8px;
-          border-bottom: 1px solid #f1f5f9;
-          background: #ffffff;
-        }
-        .min-side-search-input {
-          width: 100%;
-          box-sizing: border-box;
-          border: 1px solid #cbd5e1;
-          border-radius: 4px;
-          padding: 4px 8px;
-          font-size: 11px;
-          outline: none;
-        }
-        .min-side-search-input:focus {
-          border-color: #0284c7;
-        }
-
-        /* Searchable Combobox (Drop Down + Search) */
-        .min-search-combobox {
-          position: relative;
-          width: 100%;
-        }
-        .min-combo-btn {
-          width: 100%;
-          box-sizing: border-box;
-          border: 1px solid #cbd5e1;
-          border-radius: 4px;
-          background: #ffffff;
-          padding: 3px 6px;
-          font-size: 10.5px;
-          color: #1e293b;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          cursor: pointer;
-          height: 25px;
-          text-align: left;
-          outline: none;
-        }
-        .min-combo-btn:hover {
-          border-color: #94a3b8;
-          background: #f8fafc;
-        }
-        .min-combo-label {
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          flex: 1;
-          font-weight: 500;
-        }
-        .min-combo-icons {
-          display: flex;
-          align-items: center;
-          gap: 3px;
-          color: #64748b;
-          font-size: 9px;
-          margin-left: 4px;
-          flex-shrink: 0;
-        }
-        .min-combo-clear {
-          color: #dc2626;
-          font-weight: bold;
-          padding: 0 2px;
-          cursor: pointer;
-        }
-        .min-combo-clear:hover {
-          color: #991b1b;
-        }
-
-        .min-combo-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          z-index: 1000;
-          background: #ffffff;
-          border: 1px solid #cbd5e1;
-          border-radius: 6px;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-          margin-top: 2px;
-          min-width: 180px;
-        }
-        .min-combo-search-box {
-          padding: 4px 5px;
-          border-bottom: 1px solid #f1f5f9;
-          background: #f8fafc;
-          border-top-left-radius: 6px;
-          border-top-right-radius: 6px;
-        }
-        .min-combo-input {
-          width: 100%;
-          box-sizing: border-box;
-          border: 1px solid #cbd5e1;
-          border-radius: 4px;
-          padding: 3px 6px;
-          font-size: 10.5px;
-          outline: none;
-          background: #ffffff;
-        }
-        .min-combo-input:focus {
-          border-color: #0284c7;
-        }
-        .min-combo-list {
-          max-height: 180px;
-          overflow-y: auto;
-          scrollbar-width: thin;
-        }
-        .min-combo-option {
-          padding: 4px 7px;
-          font-size: 10.5px;
-          color: #334155;
-          cursor: pointer;
-          user-select: none;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .min-combo-option:hover {
-          background: #f1f5f9;
-          color: #0f172a;
-        }
-        .min-combo-option.selected {
-          background: #e0f2fe;
-          color: #0369a1;
-          font-weight: 700;
         }
 
         .min-side-user-list {
           flex: 1;
           overflow-y: auto;
-          max-height: calc(100vh - 310px);
+          max-height: calc(100vh - 300px);
+          scrollbar-width: thin;
         }
 
         .min-side-user-item {
+          padding: 8px 10px;
+          border-bottom: 1px solid #f1f5f9;
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 7px 10px;
-          border-bottom: 1px solid #f1f5f9;
           cursor: pointer;
-          transition: all 0.12s ease;
-          user-select: none;
+          transition: background 0.15s ease;
         }
-        .min-side-user-item:hover {
-          background: #f8fafc;
-        }
-        .min-side-user-item.active {
-          background: #f0fdf4;
-          border-left: 3.5px solid #16a34a;
-        }
+        .min-side-user-item:hover { background: #f8fafc; }
+        .min-side-user-item.active { background: #f0fdf4; border-left: 3px solid #16a34a; }
+
         .min-side-user-avatar {
-          width: 26px;
-          height: 26px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: #e2e8f0;
           color: #334155;
@@ -590,80 +775,47 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           flex-shrink: 0;
         }
         .min-side-user-item.active .min-side-user-avatar {
-          background: #bbf7d0;
+          background: #dcfce7;
           color: #15803d;
         }
 
-        .min-side-user-meta {
-          flex: 1;
-          min-width: 0;
-        }
-        .min-side-user-name {
-          font-size: 11.5px;
-          font-weight: 700;
-          color: #0f172a;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .min-side-user-sub {
-          font-size: 10px;
-          color: #64748b;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .min-side-user-branch {
-          font-size: 10px;
-          color: #475569;
-          margin-top: 1px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .min-side-user-meta { flex: 1; min-width: 0; }
+        .min-side-user-name { font-size: 11.5px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .min-side-user-sub { font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px; }
+        .min-side-user-branch { font-size: 9.5px; color: #475569; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 1px; }
+
         .min-side-user-tag {
-          background: #e2e8f0;
-          color: #334155;
+          font-size: 8.5px;
+          font-weight: 700;
+          background: #e0f2fe;
+          color: #0369a1;
           padding: 0 4px;
           border-radius: 3px;
-          font-size: 9px;
-          font-weight: 700;
         }
 
         .min-side-footer {
-          padding: 6px 8px;
+          padding: 6px 10px;
           border-top: 1px solid #e2e8f0;
           background: #f8fafc;
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           font-size: 10.5px;
           color: #64748b;
           border-bottom-left-radius: 8px;
           border-bottom-right-radius: 8px;
         }
         .min-side-page-btn {
-          background: #ffffff;
           border: 1px solid #cbd5e1;
+          background: #ffffff;
           border-radius: 4px;
           padding: 1px 6px;
-          font-size: 10.5px;
-          font-weight: 600;
+          font-size: 10px;
           cursor: pointer;
-          color: #334155;
         }
-        .min-side-page-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
+        .min-side-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* 2. RIGHT MAIN CONTENT AREA */
+        /* RIGHT MAIN CONTENT */
         .min-main-content {
           flex: 1;
           min-width: 0;
@@ -777,11 +929,11 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
         .min-box-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 10px;
           margin-bottom: 8px;
         }
-        @media (max-width: 900px) {
+        @media (max-width: 992px) {
           .min-box-row { grid-template-columns: 1fr; }
         }
 
@@ -925,73 +1077,46 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
       </style>
 
       <div class="min-perm-layout">
-        <!-- 1. LEFT SIDEBAR PANEL (Server-Side 20-Item Pagination & Designation/Branch Filters) -->
+        <!-- 1. LEFT SIDEBAR PANEL -->
         <div class="min-side-panel">
           <div class="min-side-header">
-            <span class="min-side-title">👥 Employees (<b id="min-side-header-count">${state.total_count}</b>)</span>
-            <button type="button" class="min-side-btn-add" id="min-side-btn-add-user">+ Add</button>
-          </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <div style="font-size: 13px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 4px;">
+                <span>👥 Active Employees</span>
+                <span id="min-side-header-count" style="font-size: 10px; background: #e2e8f0; color: #334155; padding: 1px 6px; border-radius: 10px; font-weight: 700;">0</span>
+              </div>
+              <button type="button" class="btn btn-xs btn-default" id="min-side-btn-add-user" style="font-size: 10px; font-weight: 700;">+ Add</button>
+            </div>
 
-          <div class="min-side-filter-wrap">
-            <input type="text" class="min-side-search-input" id="min-side-search-input" placeholder="🔍 Search name / ID / user..." value="${state.search_query || ''}" />
+            <!-- Sidebar Search Input -->
+            <input type="text" class="form-control input-xs" id="min-side-search-input" placeholder="🔍 Search Employee Name, ID, Tag..." value="${state.search_query || ''}" style="font-size: 10.5px; margin-bottom: 6px; border-color: #cbd5e1;" />
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px;">
-              <!-- 1. Searchable Designation Dropdown -->
-              <div class="min-search-combobox" id="combo-designation">
-                <button type="button" class="min-combo-btn" id="btn-combo-designation">
-                  <span class="min-combo-label" title="${state.filter_designation || 'All Designations'}">${state.filter_designation || 'All Designations'}</span>
-                  <span class="min-combo-icons">
-                    ${state.filter_designation ? `<span class="min-combo-clear" data-target="designation" title="Clear">✕</span>` : ''}
-                    <span class="min-combo-caret">▾</span>
-                  </span>
-                </button>
-                <div class="min-combo-dropdown" id="dropdown-combo-designation" style="display: none;">
-                  <div class="min-combo-search-box">
-                    <input type="text" class="min-combo-input" id="input-combo-designation" placeholder="🔍 Search designation..." autocomplete="off" />
-                  </div>
-                  <div class="min-combo-list" id="list-combo-designation">
-                    <div class="min-combo-option ${!state.filter_designation ? 'selected' : ''}" data-target="designation" data-value="" data-label="All Designations">All Designations</div>
-                    ${(state.employee_meta.designations || []).map(d => `
-                      <div class="min-combo-option ${state.filter_designation === d ? 'selected' : ''}" data-target="designation" data-value="${d}" data-label="${d}">${d}</div>
-                    `).join('')}
-                  </div>
-                </div>
+            <!-- Filter Dropdowns Grid with Explicit Labels -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px;">
+              <div>
+                <label style="font-size: 9.5px; font-weight: 700; color: #475569; margin-bottom: 2px; display: block;">Designation</label>
+                <select class="form-control input-xs" id="min-side-filter-designation" style="font-size: 10px; border-color: #cbd5e1; height: 26px; padding: 1px 4px;">
+                  <option value="">All Designations (${(state.employee_meta.designations || []).length})</option>
+                  ${(state.employee_meta.designations || []).map(d => `
+                    <option value="${d}" ${state.filter_designation === d ? 'selected' : ''}>${d}</option>
+                  `).join('')}
+                </select>
               </div>
 
-              <!-- 2. Searchable Branch Dropdown -->
-              <div class="min-search-combobox" id="combo-branch">
-                <button type="button" class="min-combo-btn" id="btn-combo-branch">
-                  <span class="min-combo-label" title="${selectedBranchLabel}">${selectedBranchLabel}</span>
-                  <span class="min-combo-icons">
-                    ${state.filter_branch ? `<span class="min-combo-clear" data-target="branch" title="Clear">✕</span>` : ''}
-                    <span class="min-combo-caret">▾</span>
-                  </span>
-                </button>
-                <div class="min-combo-dropdown" id="dropdown-combo-branch" style="display: none;">
-                  <div class="min-combo-search-box">
-                    <input type="text" class="min-combo-input" id="input-combo-branch" placeholder="🔍 Search SOL / Branch..." autocomplete="off" />
-                  </div>
-                  <div class="min-combo-list" id="list-combo-branch">
-                    <div class="min-combo-option ${!state.filter_branch ? 'selected' : ''}" data-target="branch" data-value="" data-label="All Branches">All Branches</div>
-                    ${(state.employee_meta.branches || []).map(b => {
-                      let lbl = `${b.sol_id} - ${b.branch}`;
-                      return `
-                        <div class="min-combo-option ${state.filter_branch === b.sol_id ? 'selected' : ''}" data-target="branch" data-value="${b.sol_id}" data-label="${lbl}" data-search="${(b.sol_id + ' ' + b.branch).toLowerCase()}">
-                          <b style="color: #0284c7;">${b.sol_id}</b> - ${b.branch}
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
+              <div>
+                <label style="font-size: 9.5px; font-weight: 700; color: #475569; margin-bottom: 2px; display: block;">Branch</label>
+                <select class="form-control input-xs" id="min-side-filter-branch" style="font-size: 10px; border-color: #cbd5e1; height: 26px; padding: 1px 4px;">
+                  <option value="">All Branches (${(state.employee_meta.branches || []).length})</option>
+                  ${(state.employee_meta.branches || []).map(b => `
+                    <option value="${b.sol_id}" ${state.filter_branch === b.sol_id ? 'selected' : ''}>${b.sol_id} - ${b.branch}</option>
+                  `).join('')}
+                </select>
               </div>
             </div>
 
-            ${(state.filter_designation || state.filter_branch || state.search_query) ? `
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 9.5px; color: #64748b; font-style: italic;">Filters Active</span>
-                <span id="min-side-clear-filters" style="font-size: 10px; color: #dc2626; cursor: pointer; font-weight: 700;">✕ Reset Filters</span>
-              </div>
-            ` : ''}
+            <!-- Active Filters Badge Container -->
+            <div id="min-side-clear-filters-wrap" style="display: none; flex-direction: column; gap: 2px; margin-top: 4px; padding: 4px 6px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 4px;">
+            </div>
           </div>
 
           <div class="min-side-user-list" id="min-side-user-list">
@@ -1010,212 +1135,25 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
         <!-- 2. RIGHT MAIN CONTENT -->
         <div class="min-main-content">
-          ${state.user ? `
-            <!-- TOP HEADER -->
-            <div class="min-perm-header">
-              <div>
-                <div class="min-perm-title">Permission Details</div>
-                <div class="min-perm-subinfo">
-                  <span><b>Employee Name:</b> ${userName.toUpperCase()}</span>
-                  <span style="color: #cbd5e1; margin: 0 6px;">|</span>
-                  <span><b>Employee ID:</b> ${userEmpId}</span>
-                </div>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <div class="min-toggle-track ${state.enabled ? 'active' : ''}" id="min-toggle-status" title="Toggle Status">
-                  <div class="min-toggle-thumb"></div>
-                </div>
-
-                <select class="form-control input-sm" id="min-tag-select" style="width: auto; height: 24px; font-size: 10.5px; font-weight: 600; border-radius: 4px; border-color: #cbd5e1; padding: 1px 5px;">
-                  <option value="">No Tag</option>
-                  ${tagsList.map(t => `<option value="${t}" ${state.tag === t ? 'selected' : ''}>${t}</option>`).join('')}
-                </select>
-
-                <!-- Clear Permissions Button -->
-                <button type="button" class="min-btn-clear-perm" id="min-btn-clear-all-perm" title="Clear all configured permissions for this user">
-                  <span>🧹 Clear</span>
-                </button>
-
-                <button type="button" class="min-btn-save" id="min-btn-save-manual">Save</button>
-              </div>
-            </div>
-
-            <!-- 1. GEO CONTROLS SECTION -->
-            <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
-              <div class="min-dashed-box">
-                <span class="min-box-label">Zone</span>
-                <div class="min-chip-container">
-                  <div class="min-chip ${isAllZones ? 'selected' : ''}" id="min-chip-zone-all">ALL</div>
-                  ${zoneOptions.map(z => `
-                    <div class="min-chip min-chip-zone ${state.zones.has(z.raw) ? 'selected' : ''}" data-raw="${z.raw}">${z.label}</div>
-                  `).join('')}
-                </div>
-              </div>
-
-              <div class="min-dashed-box">
-                <span class="min-box-label">Region</span>
-                <div class="min-chip-container">
-                  ${regionOptions.length > 0 ? `
-                    <div class="min-chip ${isAllRegions ? 'selected' : ''}" id="min-chip-region-all">ALL</div>
-                    ${regionOptions.map(r => `
-                      <div class="min-chip min-chip-region ${state.regions.has(r.raw) ? 'selected' : ''}" data-raw="${r.raw}">${r.label}</div>
-                    `).join('')}
-                  ` : `
-                    <span style="font-size: 10.5px; color: #94a3b8; font-style: italic;">No regions available</span>
-                  `}
-                </div>
-              </div>
-            </div>
-
-            <!-- 2. MODE TOGGLE -->
-            <div class="min-mode-divider-row">
-              <div class="min-scope-control">
-                <div class="min-scope-seg ${isGeo ? 'active' : ''}" data-mode="Geographical (Zone / Region / District)">
-                  <span>🌍 Geo Wise</span>
-                </div>
-                <div class="min-scope-seg ${!isGeo ? 'active' : ''}" data-mode="Specific Branches (SOL ID)">
-                  <span>🏢 Branch Wise</span>
-                </div>
-              </div>
-
-              <div style="font-size: 10.5px; font-weight: 600;">
-                ${isGeo ? `
-                  <span style="color: #16a34a;">● Geographical Mode Active</span>
-                  <span style="color: #94a3b8; margin: 0 4px;">•</span>
-                  <span style="color: #64748b;">${displayBranches.length} Branches Accessible</span>
-                ` : `
-                  <span style="color: #0284c7;">● Branch Wise Mode Active</span>
-                  <span style="color: #94a3b8; margin: 0 4px;">•</span>
-                  <span style="color: #16a34a;"><b id="min-branch-selected-badge">${selectedSolCount}</b> / ${allBranches.length} Branches Allowed</span>
-                `}
-              </div>
-            </div>
-
-            <!-- 3. BRANCH TABLE SECTION (WITH COLUMN-WISE SEARCH HEADERS & DIRECT CHECKBOXES) -->
-            <div class="min-sol-box">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span class="min-box-label" style="min-width: unset;">Branches Table (Filter by column below)</span>
-                ${!isGeo ? `
-                  <div style="display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700;">
-                    <button type="button" class="btn btn-xs btn-default" id="min-btn-select-all-filtered">Select All Visible</button>
-                    <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All Visible</button>
-                  </div>
-                ` : `
-                  <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">👁️ Read-Only Preview (${displayBranches.length} Br)</span>
-                `}
-              </div>
-
-              ${displayBranches.length > 0 ? `
-                <div class="min-branch-table-wrap">
-                  <table class="min-branch-table" id="min-sol-grid-table">
-                    <thead>
-                      <!-- Column Title Row -->
-                      <tr>
-                        <th style="width: 40px; text-align: center;">Sr.</th>
-                        ${!isGeo ? `
-                          <th style="width: 32px; text-align: center;">
-                            <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" title="Toggle All" />
-                          </th>
-                        ` : ''}
-                        <th style="width: 80px;">SOL ID</th>
-                        <th>Branch Name</th>
-                        <th>District</th>
-                        <th>Region</th>
-                        <th>Zone</th>
-                        ${!isGeo ? `<th style="width: 72px; text-align: center;">Status</th>` : ''}
-                      </tr>
-
-                      <!-- Column Search Row -->
-                      <tr class="min-filter-header-row">
-                        <th></th>
-                        ${!isGeo ? `<th></th>` : ''}
-                        <th>
-                          <input type="text" class="min-col-filter" data-col="sol_id" placeholder="🔍 SOL..." />
-                        </th>
-                        <th>
-                          <input type="text" class="min-col-filter" data-col="branch" placeholder="🔍 Branch..." />
-                        </th>
-                        <th>
-                          <input type="text" class="min-col-filter" data-col="district" placeholder="🔍 District..." />
-                        </th>
-                        <th>
-                          <input type="text" class="min-col-filter" data-col="region" placeholder="🔍 Region..." />
-                        </th>
-                        <th>
-                          <input type="text" class="min-col-filter" data-col="zone" placeholder="🔍 Zone..." />
-                        </th>
-                        ${!isGeo ? `
-                          <th style="text-align: center;">
-                            <select class="min-col-filter-select" data-col="status">
-                              <option value="">All</option>
-                              <option value="allowed">Allowed</option>
-                              <option value="off">Off</option>
-                            </select>
-                          </th>
-                        ` : ''}
-                      </tr>
-                    </thead>
-                    <tbody id="min-branch-table-tbody">
-                      ${displayBranches.map((b, idx) => {
-                        let isChecked = state.sol_ids.has(String(b.sol_id));
-                        return `
-                          <tr class="min-branch-data-row ${isChecked ? 'row-selected' : ''}"
-                              data-sol_id="${String(b.sol_id || '').toLowerCase()}"
-                              data-branch="${String(b.branch || '').toLowerCase()}"
-                              data-district="${String(b.district || '').toLowerCase()}"
-                              data-region="${String(b.region || '').toLowerCase()}"
-                              data-zone="${String(b.zone || '').toLowerCase()}"
-                              data-status="${isChecked ? 'allowed' : 'off'}">
-                            <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
-                            ${!isGeo ? `
-                              <td style="text-align: center;">
-                                <input type="checkbox" class="min-sol-toggle-chk" data-sol="${b.sol_id}" ${isChecked ? 'checked' : ''} style="cursor: pointer;" />
-                              </td>
-                            ` : ''}
-                            <td><b style="color: ${isChecked ? '#16a34a' : '#475569'};">${b.sol_id}</b></td>
-                            <td><b>${b.branch || '-'}</b></td>
-                            <td>${b.district || '-'}</td>
-                            <td>${b.region || '-'}</td>
-                            <td>${b.zone || '-'}</td>
-                            ${!isGeo ? `
-                              <td style="text-align: center;">
-                                ${isChecked ? `
-                                  <span style="background: #dcfce7; color: #15803d; font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 4px;">Allowed</span>
-                                ` : `
-                                  <span style="color: #94a3b8; font-size: 9.5px; font-weight: 600;">Off</span>
-                                `}
-                              </td>
-                            ` : ''}
-                          </tr>
-                        `;
-                      }).join('')}
-                    </tbody>
-                  </table>
-                </div>
-              ` : `
-                <div style="padding: 14px; text-align: center; color: #94a3b8; font-size: 11px;">
-                  No branches found.
-                </div>
-              `}
-            </div>
-          ` : `
-            <!-- EMPTY STATE -->
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 350px; text-align: center; color: #64748b;">
-              <div style="font-size: 38px; margin-bottom: 8px;">👈</div>
-              <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Select an Employee from the Side Panel</div>
-              <div style="font-size: 11.5px; max-width: 320px; line-height: 1.4;">
-                Click on any employee from the left side panel to view or edit their permissions, or use Designation / Branch filters above.
-              </div>
-            </div>
-          `}
+          ${mainContentHtml}
         </div>
       </div>
     `;
 
-    page.main.html(html);
-    renderSideListOnly();
+    if (page.main.find(".min-side-panel").length > 0) {
+      page.main.find(".min-main-content").html(mainContentHtml);
+      page.main.find(".min-side-user-item").removeClass("active");
+      if (state.user) {
+        page.main.find(`.min-side-user-item[data-user="${state.user}"]`).addClass("active");
+      }
+      page.main.find("#min-side-filter-designation").val(state.filter_designation || "");
+      page.main.find("#min-side-filter-branch").val(state.filter_branch || "");
+    } else {
+      page.main.html(html);
+      renderSideListOnly();
+    }
     attachEvents();
+    updateResetFiltersVisibility();
   }
 
   function attachEvents() {
@@ -1237,97 +1175,38 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     }
 
     // Debounced Search Input for Employees Side Panel
-    $m.find("#min-side-search-input").on("input", function () {
+    $m.find("#min-side-search-input").off("input").on("input", function () {
       let query = $(this).val();
       clearTimeout(state.search_timer);
       state.search_timer = setTimeout(() => {
         fetchUserPage(1, query);
+        updateResetFiltersVisibility();
       }, 300);
     });
 
-    // Toggle Designation Dropdown
-    $m.find("#btn-combo-designation").on("click", function (e) {
-      if ($(e.target).hasClass("min-combo-clear")) return;
-      $m.find("#dropdown-combo-branch").hide();
-      let $drop = $m.find("#dropdown-combo-designation");
-      $drop.toggle();
-      if ($drop.is(":visible")) {
-        setTimeout(() => $m.find("#input-combo-designation").val("").focus(), 50);
-        $m.find("#list-combo-designation .min-combo-option").show();
-      }
-    });
-
-    // Toggle Branch Dropdown
-    $m.find("#btn-combo-branch").on("click", function (e) {
-      if ($(e.target).hasClass("min-combo-clear")) return;
-      $m.find("#dropdown-combo-designation").hide();
-      let $drop = $m.find("#dropdown-combo-branch");
-      $drop.toggle();
-      if ($drop.is(":visible")) {
-        setTimeout(() => $m.find("#input-combo-branch").val("").focus(), 50);
-        $m.find("#list-combo-branch .min-combo-option").show();
-      }
-    });
-
-    // Live search inside Designation Dropdown
-    $m.find("#input-combo-designation").on("input", function () {
-      let q = $(this).val().toLowerCase().trim();
-      $m.find("#list-combo-designation .min-combo-option").each(function () {
-        let txt = $(this).text().toLowerCase();
-        $(this).toggle(txt.includes(q));
-      });
-    });
-
-    // Live search inside Branch Dropdown
-    $m.find("#input-combo-branch").on("input", function () {
-      let q = $(this).val().toLowerCase().trim();
-      $m.find("#list-combo-branch .min-combo-option").each(function () {
-        let s = ($(this).data("search") || $(this).text()).toLowerCase();
-        $(this).toggle(s.includes(q));
-      });
-    });
-
-    // Select Combobox Option
-    $m.find(".min-combo-option").on("click", function () {
-      let target = $(this).data("target");
-      let val = $(this).data("value");
-      if (target === "designation") {
-        state.filter_designation = val;
-        $m.find("#dropdown-combo-designation").hide();
-      } else if (target === "branch") {
-        state.filter_branch = val;
-        $m.find("#dropdown-combo-branch").hide();
-      }
-      renderPage();
+    // Designation Filter Select Change
+    $m.find("#min-side-filter-designation").off("change").on("change", function () {
+      state.filter_designation = $(this).val();
+      updateResetFiltersVisibility();
       fetchUserPage(1);
     });
 
-    // Clear Single Filter Click (Red Cross)
-    $m.find(".min-combo-clear").on("click", function (e) {
-      e.stopPropagation();
-      let target = $(this).data("target");
-      if (target === "designation") {
-        state.filter_designation = "";
-      } else if (target === "branch") {
-        state.filter_branch = "";
-      }
-      renderPage();
+    // Branch Filter Select Change
+    $m.find("#min-side-filter-branch").off("change").on("change", function () {
+      state.filter_branch = $(this).val();
+      updateResetFiltersVisibility();
       fetchUserPage(1);
-    });
-
-    // Close Dropdowns on Click Outside
-    $(document).off("click.min_combo").on("click.min_combo", function (e) {
-      if (!$(e.target).closest(".min-search-combobox").length) {
-        $m.find(".min-combo-dropdown").hide();
-      }
     });
 
     // Reset All Side Filters Button
-    $m.find("#min-side-clear-filters").on("click", function () {
+    $m.find("#min-side-clear-filters").off("click").on("click", function () {
       state.filter_designation = "";
       state.filter_branch = "";
       state.search_query = "";
-      renderPage();
+      $m.find("#min-side-filter-designation").val("");
+      $m.find("#min-side-filter-branch").val("");
+      $m.find("#min-side-search-input").val("");
+      updateResetFiltersVisibility();
       fetchUserPage(1);
     });
 
@@ -1366,15 +1245,37 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     // Clear All Permissions Button
     $m.find("#min-btn-clear-all-perm").on("click", function () {
-      frappe.confirm(__("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"), () => {
-        state.zones.clear();
-        state.regions.clear();
-        state.districts.clear();
-        state.sol_ids.clear();
-        renderPage();
-        autoSave();
-        frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" });
-      });
+      frappe.confirm(
+        __("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"),
+        () => {
+          setTimeout(() => {
+            state.zones.clear();
+            state.regions.clear();
+            state.districts.clear();
+            state.sol_ids.clear();
+            state.tag = "";
+
+            if (state.meta_data && state.meta_data.user_preference) {
+              state.meta_data.user_preference.zones = [];
+              state.meta_data.user_preference.regions = [];
+              state.meta_data.user_preference.districts = [];
+              state.meta_data.user_preference.sol_ids = [];
+              state.meta_data.user_preference.tag = "";
+            }
+
+            let found = state.users.find(x => x.user === state.user || x.employee_id === state.user);
+            if (found) {
+              found.tag = "";
+              found.is_configured = 0;
+            }
+
+            renderPage();
+            renderSideListOnly();
+            autoSave();
+            frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" }, 3);
+          }, 50);
+        }
+      );
     });
 
     // Toggle Status
@@ -1392,21 +1293,33 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     // Zone Chips Click
     $m.find(".min-chip-zone").on("click", function () {
-      let z = $(this).data("raw");
+      let z = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      state.access_type = "Geographical (Zone / Region / District)";
       if (state.zones.has(z)) {
         state.zones.delete(z);
       } else {
         state.zones.add(z);
+      }
+      if (state.zones.size > 0) {
+        let validRegions = new Set(allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
+        state.regions.forEach(r => {
+          if (!validRegions.has(r)) state.regions.delete(r);
+        });
       }
       renderPage();
       autoSave();
     });
 
     $m.find("#min-chip-zone-all").on("click", function () {
-      if (masterZones.every(z => state.zones.has(z))) {
+      state.access_type = "Geographical (Zone / Region / District)";
+      if (masterZones.length > 0 && masterZones.every(z => state.zones.has(z))) {
         state.zones.clear();
+        state.regions.clear();
+        state.districts.clear();
       } else {
         masterZones.forEach(z => state.zones.add(z));
+        state.regions.clear();
+        state.districts.clear();
       }
       renderPage();
       autoSave();
@@ -1414,7 +1327,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
 
     // Region Chips Click
     $m.find(".min-chip-region").on("click", function () {
-      let r = $(this).data("raw");
+      let r = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      state.access_type = "Geographical (Zone / Region / District)";
       if (state.regions.has(r)) {
         state.regions.delete(r);
       } else {
@@ -1425,17 +1339,107 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     });
 
     $m.find("#min-chip-region-all").on("click", function () {
-      let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
+      state.access_type = "Geographical (Zone / Region / District)";
+      let getNormRegion = r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r;
+      let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => getNormRegion(b.region)).filter(Boolean))));
       if (state.zones.size > 0) {
         availableRegionNames = sortRegions(Array.from(new Set(
-          allBranches.filter(b => state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
+          allBranches.filter(b => state.zones.has(b.zone)).map(b => getNormRegion(b.region)).filter(Boolean)
         )));
       }
 
-      if (availableRegionNames.every(r => state.regions.has(r))) {
-        state.regions.clear();
+      if (availableRegionNames.length > 0 && availableRegionNames.every(r => state.regions.has(r))) {
+        availableRegionNames.forEach(r => state.regions.delete(r));
       } else {
+        if (state.zones.size > 0) {
+          let validRegions = new Set(availableRegionNames);
+          state.regions.forEach(r => {
+            if (!validRegions.has(r)) state.regions.delete(r);
+          });
+        }
         availableRegionNames.forEach(r => state.regions.add(r));
+      }
+      renderPage();
+      autoSave();
+    });
+
+    // District Dropdown & Search Handlers
+    $m.find("#min-btn-district-drop").on("click", function (e) {
+      e.stopPropagation();
+      let $menu = $m.find("#min-district-drop-menu");
+      $menu.toggle();
+      if ($menu.is(":visible")) {
+        setTimeout(() => $m.find("#min-district-search").focus(), 50);
+      }
+    });
+
+    $m.find("#min-district-drop-menu").on("click", function (e) {
+      e.stopPropagation();
+    });
+
+    $(document).off("click.min_dist_drop_page").on("click.min_dist_drop_page", function () {
+      $m.find("#min-district-drop-menu").hide();
+    });
+
+    $m.find("#min-district-search").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $m.find("#min-district-checklist label").each(function () {
+        let txt = $(this).text().toLowerCase();
+        $(this).toggle(txt.includes(q));
+      });
+    });
+
+    $m.find(".min-chk-district").on("change", function () {
+      let d = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      state.access_type = "Geographical (Zone / Region / District)";
+      if ($(this).is(":checked")) {
+        state.districts.add(d);
+      } else {
+        state.districts.delete(d);
+      }
+      renderPage();
+      autoSave();
+    });
+
+    $m.find(".min-chip-district").on("click", function (e) {
+      if ($(e.target).hasClass("min-remove-dist")) return;
+      let d = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      state.access_type = "Geographical (Zone / Region / District)";
+      if (state.districts.has(d)) {
+        state.districts.delete(d);
+      } else {
+        state.districts.add(d);
+      }
+      renderPage();
+      autoSave();
+    });
+
+    $m.find(".min-remove-dist").on("click", function (e) {
+      e.stopPropagation();
+      let d = String($(this).attr("data-dist") || $(this).data("dist") || "");
+      state.access_type = "Geographical (Zone / Region / District)";
+      state.districts.delete(d);
+      renderPage();
+      autoSave();
+    });
+
+    $m.find("#min-chip-district-all").on("click", function () {
+      state.access_type = "Geographical (Zone / Region / District)";
+      let availableDistrictNames = sortDistricts(Array.from(new Set(allBranches.map(b => b.district).filter(Boolean))));
+      if (state.zones.size > 0 || state.regions.size > 0) {
+        availableDistrictNames = sortDistricts(Array.from(new Set(
+          allBranches.filter(b => {
+            let matchesZone = state.zones.size === 0 || state.zones.has(b.zone);
+            let matchesRegion = state.regions.size === 0 || state.regions.has(b.region);
+            return matchesZone && matchesRegion;
+          }).map(b => b.district).filter(Boolean)
+        )));
+      }
+
+      if (availableDistrictNames.length > 0 && availableDistrictNames.every(d => state.districts.has(d))) {
+        availableDistrictNames.forEach(d => state.districts.delete(d));
+      } else {
+        availableDistrictNames.forEach(d => state.districts.add(d));
       }
       renderPage();
       autoSave();

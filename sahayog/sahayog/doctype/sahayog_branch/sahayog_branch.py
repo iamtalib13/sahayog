@@ -82,6 +82,22 @@ class SahayogBranch(Document):
         if self.state_code:
             self.state_code = self.state_code.upper()
             self.state = STATE_MAP.get(self.state_code, self.state)
+        self.ensure_district_exists()
+
+    def on_update(self):
+        self.ensure_district_exists()
+
+    def after_insert(self):
+        self.ensure_district_exists()
+
+    def ensure_district_exists(self):
+        if self.district:
+            d_name = self.district.strip().upper()
+            if d_name and frappe.db.exists("DocType", "District") and not frappe.db.exists("District", d_name):
+                try:
+                    frappe.get_doc({"doctype": "District", "district": d_name}).insert(ignore_permissions=True)
+                except Exception:
+                    pass
 
     def is_complete(self):
         required_fields = [
@@ -226,6 +242,21 @@ def auto_create_sahayog_branches_from_finacle():
             except Exception:
                 skipped += 1
                 frappe.log_error(frappe.get_traceback(), f"Warehouse creation failed for {sol_id}")
+
+        # -------------------------
+        #   DISTRICT CREATION
+        # -------------------------
+        if district:
+            d_name = district.strip().upper()
+            if d_name and frappe.db.exists("DocType", "District") and not frappe.db.exists("District", d_name):
+                try:
+                    frappe.get_doc({
+                        "doctype": "District",
+                        "district": d_name
+                    }).insert(ignore_permissions=True)
+                    frappe.db.commit()
+                except Exception:
+                    frappe.log_error(frappe.get_traceback(), f"District creation failed for {d_name}")
 
         # -------------------------
         #   LOCATION CREATION

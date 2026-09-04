@@ -90,7 +90,22 @@ def get_widget_meta(user=None):
     tags = ["COM", "ROM", "RM", "AZM", "ZM"]
 
     pref_data = None
+    user_full_name = ""
+    user_emp_id = ""
+
     if user:
+        # Lookup Employee or User for full_name and employee_id
+        emp = frappe.db.get_value("Employee", {"user_id": user}, ["employee_name", "name"], as_dict=True)
+        if not emp and frappe.db.exists("Employee", user):
+            emp = frappe.db.get_value("Employee", user, ["employee_name", "name"], as_dict=True)
+
+        if emp:
+            user_full_name = emp.get("employee_name") or ""
+            user_emp_id = emp.get("name") or ""
+        else:
+            user_full_name = frappe.db.get_value("User", user, "full_name") or user.split("@")[0]
+            user_emp_id = user.split("@")[0]
+
         pref_name = frappe.db.get_value("Report Preference", {"user": user}, "name")
         if not pref_name and frappe.db.exists("Report Preference", user):
             pref_name = user
@@ -112,7 +127,7 @@ def get_widget_meta(user=None):
             pref_data = {
                 "name": doc.name,
                 "user": doc.user,
-                "full_name": doc.full_name,
+                "full_name": doc.full_name or user_full_name,
                 "enabled": bool(doc.enabled),
                 "tag": doc.tag or "",
                 "access_type": access_type,
@@ -121,6 +136,20 @@ def get_widget_meta(user=None):
                 "districts": raw_districts,
                 "states": raw_states,
                 "sol_ids": raw_sols,
+            }
+        else:
+            pref_data = {
+                "name": None,
+                "user": user,
+                "full_name": user_full_name,
+                "enabled": True,
+                "tag": "",
+                "access_type": "Geographical (Zone / Region / District)",
+                "zones": [],
+                "regions": [],
+                "districts": [],
+                "states": [],
+                "sol_ids": [],
             }
 
     def sort_natural(lst, is_region=False):
@@ -170,6 +199,14 @@ def save_widget_preference(data):
         doc = frappe.new_doc("Report Preference")
         doc.user = user_id
 
+    if not doc.full_name:
+        emp_name = frappe.db.get_value("Employee", {"user_id": user_id}, "employee_name")
+        if not emp_name and frappe.db.exists("Employee", user_id):
+            emp_name = frappe.db.get_value("Employee", user_id, "employee_name")
+        if not emp_name:
+            emp_name = frappe.db.get_value("User", user_id, "full_name")
+        doc.full_name = emp_name or user_id.split("@")[0]
+
     doc.enabled = 1 if data.get("enabled", True) else 0
     doc.tag = data.get("tag") or ""
     access_type = data.get("access_type") or "Geographical (Zone / Region / District)"
@@ -190,6 +227,11 @@ def save_widget_preference(data):
             doc.append("region", {"region": r})
     for d in data.get("districts", []):
         if d:
+            if frappe.db.exists("DocType", "District") and not frappe.db.exists("District", d):
+                try:
+                    frappe.get_doc({"doctype": "District", "district": d}).insert(ignore_permissions=True)
+                except Exception:
+                    pass
             doc.append("district", {"district": d})
 
     # Save sol_ids

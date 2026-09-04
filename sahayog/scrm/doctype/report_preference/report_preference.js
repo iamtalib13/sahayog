@@ -16,7 +16,6 @@ frappe.ui.form.on("Report Preference", {
   },
 
   refresh: function (frm) {
-    frm.toggle_display("hidden_fields_section", false);
     frm.trigger("init_widget");
   },
 
@@ -55,25 +54,26 @@ frappe.ui.form.on("Report Preference", {
     let pref = frm.meta_data.user_preference;
 
     frm.state.user = frm.doc.user || (pref ? pref.user : "");
-    frm.state.full_name = frm.doc.full_name || (pref ? pref.full_name : "");
+    frm.state.full_name = frm.doc.full_name || (pref && pref.full_name ? pref.full_name : (frm.meta_data ? frm.meta_data.user_full_name : ""));
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
     frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
-    if (!zones.length && pref && pref.zones) zones = pref.zones;
+    if (!zones.length && pref && pref.zones && frm.is_new() && (!frm.state || !frm.state.user)) zones = pref.zones;
     frm.state.zones = new Set(zones);
 
     let regions = (frm.doc.region || []).map(d => d.region).filter(Boolean);
-    if (!regions.length && pref && pref.regions) regions = pref.regions;
+    if (!regions.length && pref && pref.regions && frm.is_new() && (!frm.state || !frm.state.user)) regions = pref.regions;
+    regions = regions.map(r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r);
     frm.state.regions = new Set(regions);
 
     let districts = (frm.doc.district || []).map(d => d.district).filter(Boolean);
-    if (!districts.length && pref && pref.districts) districts = pref.districts;
+    if (!districts.length && pref && pref.districts && frm.is_new() && (!frm.state || !frm.state.user)) districts = pref.districts;
     frm.state.districts = new Set(districts);
 
     let sol_ids = (frm.doc.sol_id || []).map(d => String(d.sol_id)).filter(Boolean);
-    if (!sol_ids.length && pref && pref.sol_ids) sol_ids = pref.sol_ids;
+    if (!sol_ids.length && pref && pref.sol_ids && frm.is_new() && (!frm.state || !frm.state.user)) sol_ids = pref.sol_ids;
     frm.state.sol_ids = new Set(sol_ids);
 
     let savedAccessType = frm.doc.access_type || (pref ? pref.access_type : null);
@@ -111,31 +111,86 @@ frappe.ui.form.on("Report Preference", {
     frm.state.sol_ids.forEach(s => frm.add_child("sol_id", { sol_id: String(s) }));
   },
 
-  auto_save_preference: function (frm, show_toast = true) {
-    if (!frm.state.user) return;
+  auto_save_preference: function (frm) {
+    let user_id = frm.state.user || frm.doc.user;
+    if (!user_id && frm.doc.name && frm.doc.name !== "new-report-preference-1") {
+      user_id = frm.doc.name;
+    }
+    if (!user_id) return;
 
+    // 1. Instantly sync widget state into frm.doc and refresh only setting fields
     frm.trigger("sync_widget_state_to_doc");
+    ["user", "full_name", "enabled", "tag", "access_type", "zone", "region", "district", "sol_id"].forEach(f => {
+      if (frm.fields_dict && frm.fields_dict[f]) frm.refresh_field(f);
+    });
 
     let $saveBtn = frm.fields_dict.widget_html ? frm.fields_dict.widget_html.$wrapper.find("#min-btn-save-manual") : null;
     if ($saveBtn && $saveBtn.length) {
-      $saveBtn.text("Saving...").prop("disabled", true);
+      $saveBtn.text("Saving...").prop("disabled", true).css("background", "#334155").css("border-color", "#334155").css("color", "#fff");
     }
 
-    frm.save("Save", function () {
-      if ($saveBtn && $saveBtn.length) {
-        $saveBtn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("color", "#fff");
-        setTimeout(() => {
-          $saveBtn.text("Save").css("background", "").css("color", "");
-        }, 1200);
-      }
-      if (show_toast) {
-        frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" });
-      }
-    }, null, function () {
-      if ($saveBtn && $saveBtn.length) {
-        $saveBtn.text("Save").prop("disabled", false).css("background", "").css("color", "");
-      }
-    });
+    clearTimeout(frm._auto_save_timer);
+    frm._auto_save_timer = setTimeout(() => {
+      frappe.call({
+        method: "sahayog.scrm.doctype.report_preference.report_preference.save_widget_preference",
+        args: {
+          data: {
+            user: user_id,
+            enabled: frm.state.enabled,
+            tag: frm.state.tag,
+            access_type: frm.state.access_type,
+            zones: Array.from(frm.state.zones),
+            regions: Array.from(frm.state.regions),
+            districts: Array.from(frm.state.districts),
+            sol_ids: Array.from(frm.state.sol_ids)
+          }
+        },
+        callback: function (r) {
+          if (r.message && r.message.status === "success") {
+            // Keep status clean so Frappe does not flag "Not Saved" or prompt on unload
+            frm.doc.__unsaved = 0;
+            if (frm.doc.zone) frm.doc.zone.forEach(d => { d.__unsaved = 0; });
+            if (frm.doc.region) frm.doc.region.forEach(d => { d.__unsaved = 0; });
+            if (frm.doc.district) frm.doc.district.forEach(d => { d.__unsaved = 0; });
+            if (frm.doc.sol_id) frm.doc.sol_id.forEach(d => { d.__unsaved = 0; });
+
+            if (r.message.modified) {
+              frm.doc.modified = r.message.modified;
+            }
+
+            $(frm.wrapper).attr("data-state", "clean");
+            if (frm.page) {
+              frm.page.clear_indicator();
+            }
+            if (frm.toolbar) {
+              frm.toolbar.show_title_as_dirty();
+              frm.toolbar.set_primary_action();
+            }
+
+            let $btn = frm.fields_dict.widget_html ? frm.fields_dict.widget_html.$wrapper.find("#min-btn-save-manual") : null;
+            if ($btn && $btn.length) {
+              $btn.text("Saved ✓").prop("disabled", false).css("background", "#16a34a").css("border-color", "#16a34a").css("color", "#fff");
+              setTimeout(() => {
+                $btn.text("Save").css("background", "").css("border-color", "").css("color", "");
+              }, 1000);
+            }
+
+            frappe.show_alert({ message: __("Auto-saved successfully ✓"), indicator: "green" }, 3);
+
+            if (frm.is_new() && r.message.name) {
+              frappe.set_route("report-preference", r.message.name);
+              return;
+            }
+          }
+        },
+        error: function () {
+          let $btn = frm.fields_dict.widget_html ? frm.fields_dict.widget_html.$wrapper.find("#min-btn-save-manual") : null;
+          if ($btn && $btn.length) {
+            $btn.text("Save").prop("disabled", false).css("background", "").css("color", "");
+          }
+        }
+      });
+    }, 150);
   },
 
   before_save: function (frm) {
@@ -145,6 +200,7 @@ frappe.ui.form.on("Report Preference", {
   after_save: function (frm) {
     frm.trigger("sync_doc_to_widget_state");
     frm.trigger("render_minimal_widget");
+    frappe.show_alert({ message: __("Changes saved successfully ✓"), indicator: "green" }, 3);
   },
 
   show_select_user_dialog: function (frm) {
@@ -273,43 +329,57 @@ frappe.ui.form.on("Report Preference", {
       return { raw: z, label: num };
     });
 
-    let allRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
+    let getNormRegion = r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r;
+
+    let allRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => getNormRegion(b.region)).filter(Boolean))));
     let availableRegionNames = allRegionNames;
     if (frm.state.zones.size > 0) {
       availableRegionNames = sortRegions(Array.from(new Set(
-        allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
+        allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => getNormRegion(b.region)).filter(Boolean)
       )));
     }
 
-    let regionOptions = availableRegionNames.map(r => {
-      let code = r.toLowerCase().includes("head office") ? "HO" : (r.match(/\d+/) || [r])[0];
-      return { raw: r, label: code };
+    let regionOptionsMap = new Map();
+    availableRegionNames.forEach(r => {
+      let isHo = r.toLowerCase().includes("head office") || r.toUpperCase() === "HO";
+      let rawVal = isHo ? "HEAD OFFICE" : r;
+      let code = isHo ? "HO" : (r.match(/\d+/) || [r])[0];
+      if (!regionOptionsMap.has(rawVal)) {
+        regionOptionsMap.set(rawVal, { raw: rawVal, label: code });
+      }
     });
+    let regionOptions = Array.from(regionOptionsMap.values());
+
+    function sortDistricts(list) {
+      return [...list].sort((a, b) => String(a).localeCompare(String(b)));
+    }
+
+    let allDistrictNames = sortDistricts(Array.from(new Set(allBranches.map(b => b.district).filter(Boolean))));
+    let availableDistrictNames = allDistrictNames;
+    if (frm.state.zones.size > 0 || frm.state.regions.size > 0) {
+      availableDistrictNames = sortDistricts(Array.from(new Set(
+        allBranches.filter(b => {
+          let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
+          let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region) ||
+            ((frm.state.regions.has("HEAD OFFICE") || frm.state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+          return matchesZone && matchesRegion;
+        }).map(b => b.district).filter(Boolean)
+      )));
+    }
 
     let isAllZones = zoneOptions.length > 0 && zoneOptions.every(z => frm.state.zones.has(z.raw));
-    let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw));
+    let isAllRegions = regionOptions.length > 0 && regionOptions.every(r => frm.state.regions.has(r.raw) || (r.raw === "HEAD OFFICE" && frm.state.regions.has("HO")));
+    let isAllDistricts = availableDistrictNames.length > 0 && availableDistrictNames.every(d => frm.state.districts.has(d));
 
     // Branch list to display:
     // In Geo mode -> Resolved branches from selected zones/regions.
     // In Branch mode -> ALL master branches, with allowed/selected branches at the top!
-    let displayBranches = [];
-    if (isGeo) {
-      let hasGeo = frm.state.zones.size > 0 || frm.state.regions.size > 0 || frm.state.districts.size > 0;
-      let hasSol = frm.state.sol_ids.size > 0;
+    let hasGeo = frm.state.zones.size > 0 || frm.state.regions.size > 0 || frm.state.districts.size > 0;
+    let hasSol = frm.state.sol_ids.size > 0;
 
-      if (hasGeo || hasSol) {
-        displayBranches = allBranches.filter(b => {
-          let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
-          let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region);
-          let matchesDistrict = frm.state.districts.size === 0 || frm.state.districts.has(b.district);
-          let matchesGeo = hasGeo && (matchesZone && matchesRegion && matchesDistrict);
-          let matchesSol = hasSol && frm.state.sol_ids.has(String(b.sol_id));
-
-          return matchesGeo || matchesSol;
-        });
-      }
-    } else {
-      displayBranches = [...allBranches].sort((a, b) => {
+    let displayBranches = [...allBranches];
+    if (!isGeo) {
+      displayBranches.sort((a, b) => {
         let isSelA = frm.state.sol_ids.has(String(a.sol_id)) ? 1 : 0;
         let isSelB = frm.state.sol_ids.has(String(b.sol_id)) ? 1 : 0;
         if (isSelA !== isSelB) {
@@ -321,6 +391,16 @@ frappe.ui.form.on("Report Preference", {
       });
     }
 
+    let geoAllowedCount = 0;
+    if (hasGeo) {
+      geoAllowedCount = allBranches.filter(b => {
+        let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
+        let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region) ||
+          ((frm.state.regions.has("HEAD OFFICE") || frm.state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+        let matchesDistrict = frm.state.districts.size === 0 || frm.state.districts.has(b.district);
+        return matchesZone && matchesRegion && matchesDistrict;
+      }).length;
+    }
     let selectedSolCount = allBranches.filter(b => frm.state.sol_ids.has(String(b.sol_id))).length;
 
     let html = `
@@ -434,12 +514,12 @@ frappe.ui.form.on("Report Preference", {
 
         .min-box-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 12px;
           margin-bottom: 8px;
           transition: opacity 0.2s ease;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 992px) {
           .min-box-row { grid-template-columns: 1fr; }
         }
 
@@ -649,6 +729,43 @@ frappe.ui.form.on("Report Preference", {
               `}
             </div>
           </div>
+
+          <!-- District Box -->
+          <div class="min-dashed-box">
+            <span class="min-box-label">District</span>
+            <div class="min-chip-container">
+              ${availableDistrictNames.length > 0 ? `
+                <div class="min-chip ${isAllDistricts ? 'selected' : ''}" id="min-chip-district-all">ALL</div>
+                <div class="dropdown min-district-dropdown-wrap" style="position: relative; display: inline-block;">
+                  <button type="button" class="btn btn-xs btn-default dropdown-toggle" id="min-btn-district-drop" style="font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 11px; border-color: #cbd5e1;">
+                    🔍 Select (${frm.state.districts.size}) ▾
+                  </button>
+                  <div class="dropdown-menu min-district-drop-menu" id="min-district-drop-menu" style="width: 250px; padding: 8px; max-height: 280px; overflow-y: auto; right: 0; left: auto; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <input type="text" class="form-control input-xs" id="min-district-search" placeholder="🔍 Search district..." style="margin-bottom: 6px; font-size: 10.5px;" />
+                    <div id="min-district-checklist" style="max-height: 180px; overflow-y: auto;">
+                      ${availableDistrictNames.map(d => {
+                        let isChecked = frm.state.districts.has(d);
+                        return `
+                          <label style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; margin-bottom: 4px; cursor: pointer; color: #334155;">
+                            <input type="checkbox" class="min-chk-district" data-raw="${d}" ${isChecked ? 'checked' : ''} />
+                            <span>${d}</span>
+                          </label>
+                        `;
+                      }).join('')}
+                    </div>
+                  </div>
+                </div>
+
+                ${Array.from(frm.state.districts).map(d => `
+                  <div class="min-chip min-chip-district selected" data-raw="${d}">
+                    ${d} <span class="min-remove-dist" data-dist="${d}" style="margin-left: 4px; font-weight: bold; cursor: pointer;">×</span>
+                  </div>
+                `).join('')}
+              ` : `
+                <span style="font-size: 11px; color: #94a3b8; font-style: italic;">No districts available</span>
+              `}
+            </div>
+          </div>
         </div>
 
         <!-- 2. MODE TOGGLE (NICHE RKHO GEO CONTROLS K) -->
@@ -666,7 +783,7 @@ frappe.ui.form.on("Report Preference", {
             ${isGeo ? `
               <span style="color: #16a34a;">● Geographical Mode Active</span>
               <span style="color: #94a3b8; margin: 0 4px;">•</span>
-              <span style="color: #64748b;">${displayBranches.length} Branches Accessible</span>
+              <span style="color: #16a34a;"><b id="min-branch-selected-badge">${geoAllowedCount}</b> / ${allBranches.length} Branches Allowed</span>
             ` : `
               <span style="color: #0284c7;">● Branch Wise Mode Active</span>
               <span style="color: #94a3b8; margin: 0 4px;">•</span>
@@ -685,7 +802,7 @@ frappe.ui.form.on("Report Preference", {
                 <button type="button" class="btn btn-xs btn-default" id="min-btn-deselect-all-filtered">Deselect All Visible</button>
               </div>
             ` : `
-              <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${displayBranches.length} Br)</span>
+              <span style="color: #64748b; font-size: 10.5px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">👁️ Read-Only Preview (${geoAllowedCount} / ${allBranches.length} Allowed)</span>
             `}
           </div>
 
@@ -697,23 +814,21 @@ frappe.ui.form.on("Report Preference", {
                   <!-- Column Title Row -->
                   <tr>
                     <th style="width: 42px; text-align: center;">Sr.</th>
-                    ${!isGeo ? `
-                      <th style="width: 34px; text-align: center;">
-                        <input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" title="Toggle All" />
-                      </th>
-                    ` : ''}
+                    <th style="width: 34px; text-align: center;">
+                      ${!isGeo ? `<input type="checkbox" id="min-sol-chk-all" style="cursor: pointer;" title="Toggle All" />` : ''}
+                    </th>
                     <th style="width: 85px;">SOL ID</th>
                     <th>Branch Name</th>
-                    <th>District</th>
-                    <th>Region</th>
                     <th>Zone</th>
-                    ${!isGeo ? `<th style="width: 78px; text-align: center;">Status</th>` : ''}
+                    <th>Region</th>
+                    <th>District</th>
+                    <th style="width: 78px; text-align: center;">Status</th>
                   </tr>
 
                   <!-- Column Search Row (Directly Below Column Header) -->
                   <tr class="min-filter-header-row">
                     <th></th>
-                    ${!isGeo ? `<th></th>` : ''}
+                    <th></th>
                     <th>
                       <input type="text" class="min-col-filter" data-col="sol_id" placeholder="🔍 SOL..." />
                     </th>
@@ -721,56 +836,61 @@ frappe.ui.form.on("Report Preference", {
                       <input type="text" class="min-col-filter" data-col="branch" placeholder="🔍 Branch..." />
                     </th>
                     <th>
-                      <input type="text" class="min-col-filter" data-col="district" placeholder="🔍 District..." />
+                      <input type="text" class="min-col-filter" data-col="zone" placeholder="🔍 Zone..." />
                     </th>
                     <th>
                       <input type="text" class="min-col-filter" data-col="region" placeholder="🔍 Region..." />
                     </th>
                     <th>
-                      <input type="text" class="min-col-filter" data-col="zone" placeholder="🔍 Zone..." />
+                      <input type="text" class="min-col-filter" data-col="district" placeholder="🔍 District..." />
                     </th>
-                    ${!isGeo ? `
-                      <th style="text-align: center;">
-                        <select class="min-col-filter-select" data-col="status">
-                          <option value="">All</option>
-                          <option value="allowed">Allowed</option>
-                          <option value="off">Off</option>
-                        </select>
-                      </th>
-                    ` : ''}
+                    <th style="text-align: center;">
+                      <select class="min-col-filter-select" data-col="status">
+                        <option value="">All</option>
+                        <option value="allowed">Allowed</option>
+                        <option value="off">Off</option>
+                      </select>
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="min-branch-table-tbody">
                   ${displayBranches.map((b, idx) => {
-                    let isChecked = frm.state.sol_ids.has(String(b.sol_id));
+                    let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
+                    let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region) ||
+                      ((frm.state.regions.has("HEAD OFFICE") || frm.state.regions.has("HO")) && (b.region === "HEAD OFFICE" || b.region === "HO"));
+                    let matchesDistrict = frm.state.districts.size === 0 || frm.state.districts.has(b.district);
+                    let matchesGeo = (matchesZone && matchesRegion && matchesDistrict);
+                    let isSolChecked = frm.state.sol_ids.has(String(b.sol_id));
+                    let isAllowed = isGeo ? (hasGeo ? matchesGeo : isSolChecked) : isSolChecked;
+
                     return `
-                      <tr class="min-branch-data-row ${isChecked ? 'row-selected' : ''}"
+                      <tr class="min-branch-data-row ${isAllowed ? 'row-selected' : ''}"
                           data-sol_id="${String(b.sol_id || '').toLowerCase()}"
                           data-branch="${String(b.branch || '').toLowerCase()}"
                           data-district="${String(b.district || '').toLowerCase()}"
                           data-region="${String(b.region || '').toLowerCase()}"
                           data-zone="${String(b.zone || '').toLowerCase()}"
-                          data-status="${isChecked ? 'allowed' : 'off'}">
+                          data-status="${isAllowed ? 'allowed' : 'off'}">
                         <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
-                        ${!isGeo ? `
-                          <td style="text-align: center;">
-                            <input type="checkbox" class="min-sol-toggle-chk" data-sol="${b.sol_id}" ${isChecked ? 'checked' : ''} style="cursor: pointer;" />
-                          </td>
-                        ` : ''}
-                        <td><b style="color: ${isChecked ? '#16a34a' : '#475569'};">${b.sol_id}</b></td>
+                        <td style="text-align: center;">
+                          ${!isGeo ? `
+                            <input type="checkbox" class="min-sol-toggle-chk" data-sol="${b.sol_id}" ${isAllowed ? 'checked' : ''} style="cursor: pointer;" />
+                          ` : `
+                            <input type="checkbox" ${isAllowed ? 'checked' : ''} disabled title="Allowed via Geographical filter" style="accent-color: #16a34a; cursor: default;" />
+                          `}
+                        </td>
+                        <td><b style="color: ${isAllowed ? '#16a34a' : '#475569'};">${b.sol_id}</b></td>
                         <td><b>${b.branch || '-'}</b></td>
-                        <td>${b.district || '-'}</td>
-                        <td>${b.region || '-'}</td>
                         <td>${b.zone || '-'}</td>
-                        ${!isGeo ? `
-                          <td style="text-align: center;">
-                            ${isChecked ? `
-                              <span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;">Allowed</span>
-                            ` : `
-                              <span style="color: #94a3b8; font-size: 10px; font-weight: 600;">Off</span>
-                            `}
-                          </td>
-                        ` : ''}
+                        <td>${b.region || '-'}</td>
+                        <td>${b.district || '-'}</td>
+                        <td style="text-align: center;">
+                          ${isAllowed ? `
+                            <span style="background: #dcfce7; color: #15803d; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;">Allowed</span>
+                          ` : `
+                            <span style="color: #94a3b8; font-size: 10px; font-weight: 600;">Off</span>
+                          `}
+                        </td>
                       </tr>
                     `;
                   }).join('')}
@@ -786,7 +906,12 @@ frappe.ui.form.on("Report Preference", {
       </div>
     `;
 
+    let currentScroll = (frm.fields_dict.widget_html && frm.fields_dict.widget_html.$wrapper) ?
+      frm.fields_dict.widget_html.$wrapper.find(".min-branch-table-wrap").scrollTop() : 0;
     frm.fields_dict.widget_html.$wrapper.html(html);
+    if (currentScroll) {
+      frm.fields_dict.widget_html.$wrapper.find(".min-branch-table-wrap").scrollTop(currentScroll);
+    }
     frm.trigger("attach_minimal_events");
   },
 
@@ -825,15 +950,31 @@ frappe.ui.form.on("Report Preference", {
 
     // Clear All Permissions Button
     $w.find("#min-btn-clear-all-perm").on("click", function () {
-      frappe.confirm(__("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"), () => {
-        frm.state.zones.clear();
-        frm.state.regions.clear();
-        frm.state.districts.clear();
-        frm.state.sol_ids.clear();
-        frm.trigger("render_minimal_widget");
-        frm.trigger("auto_save_preference");
-        frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" });
-      });
+      frappe.confirm(
+        __("Are you sure you want to clear all configured permissions (Zones, Regions, and Branches) for this user?"),
+        () => {
+          setTimeout(() => {
+            frm.state.zones.clear();
+            frm.state.regions.clear();
+            frm.state.districts.clear();
+            frm.state.sol_ids.clear();
+            frm.state.tag = "";
+
+            if (frm.meta_data && frm.meta_data.user_preference) {
+              frm.meta_data.user_preference.zones = [];
+              frm.meta_data.user_preference.regions = [];
+              frm.meta_data.user_preference.districts = [];
+              frm.meta_data.user_preference.sol_ids = [];
+              frm.meta_data.user_preference.tag = "";
+            }
+
+            frm.trigger("sync_widget_state_to_doc");
+            frm.trigger("render_minimal_widget");
+            frm.trigger("auto_save_preference");
+            frappe.show_alert({ message: __("All permissions cleared successfully ✓"), indicator: "green" }, 3);
+          }, 50);
+        }
+      );
     });
 
     // Select User Dialog with Duplicate Validation
@@ -856,21 +997,33 @@ frappe.ui.form.on("Report Preference", {
 
     // Zone Chips Click
     $w.find(".min-chip-zone").on("click", function () {
-      let z = $(this).data("raw");
+      let z = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      frm.state.access_type = "Geographical (Zone / Region / District)";
       if (frm.state.zones.has(z)) {
         frm.state.zones.delete(z);
       } else {
         frm.state.zones.add(z);
+      }
+      if (frm.state.zones.size > 0) {
+        let validRegions = new Set(allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean));
+        frm.state.regions.forEach(r => {
+          if (!validRegions.has(r)) frm.state.regions.delete(r);
+        });
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
     });
 
     $w.find("#min-chip-zone-all").on("click", function () {
-      if (masterZones.every(z => state.zones.has(z))) {
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      if (masterZones.length > 0 && masterZones.every(z => frm.state.zones.has(z))) {
         frm.state.zones.clear();
+        frm.state.regions.clear();
+        frm.state.districts.clear();
       } else {
         masterZones.forEach(z => frm.state.zones.add(z));
+        frm.state.regions.clear();
+        frm.state.districts.clear();
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");
@@ -878,7 +1031,8 @@ frappe.ui.form.on("Report Preference", {
 
     // Region Chips Click
     $w.find(".min-chip-region").on("click", function () {
-      let r = $(this).data("raw");
+      let r = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      frm.state.access_type = "Geographical (Zone / Region / District)";
       if (frm.state.regions.has(r)) {
         frm.state.regions.delete(r);
       } else {
@@ -889,17 +1043,107 @@ frappe.ui.form.on("Report Preference", {
     });
 
     $w.find("#min-chip-region-all").on("click", function () {
-      let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => b.region).filter(Boolean))));
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      let getNormRegion = r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r;
+      let availableRegionNames = sortRegions(Array.from(new Set(allBranches.map(b => getNormRegion(b.region)).filter(Boolean))));
       if (frm.state.zones.size > 0) {
         availableRegionNames = sortRegions(Array.from(new Set(
-          allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => b.region).filter(Boolean)
+          allBranches.filter(b => frm.state.zones.has(b.zone)).map(b => getNormRegion(b.region)).filter(Boolean)
         )));
       }
 
-      if (availableRegionNames.every(r => frm.state.regions.has(r))) {
-        frm.state.regions.clear();
+      if (availableRegionNames.length > 0 && availableRegionNames.every(r => frm.state.regions.has(r))) {
+        availableRegionNames.forEach(r => frm.state.regions.delete(r));
       } else {
+        if (frm.state.zones.size > 0) {
+          let validRegions = new Set(availableRegionNames);
+          frm.state.regions.forEach(r => {
+            if (!validRegions.has(r)) frm.state.regions.delete(r);
+          });
+        }
         availableRegionNames.forEach(r => frm.state.regions.add(r));
+      }
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    // District Dropdown & Search Handlers
+    $w.find("#min-btn-district-drop").on("click", function (e) {
+      e.stopPropagation();
+      let $menu = $w.find("#min-district-drop-menu");
+      $menu.toggle();
+      if ($menu.is(":visible")) {
+        setTimeout(() => $w.find("#min-district-search").focus(), 50);
+      }
+    });
+
+    $w.find("#min-district-drop-menu").on("click", function (e) {
+      e.stopPropagation();
+    });
+
+    $(document).off("click.min_dist_drop").on("click.min_dist_drop", function () {
+      $w.find("#min-district-drop-menu").hide();
+    });
+
+    $w.find("#min-district-search").on("input", function () {
+      let q = $(this).val().toLowerCase().trim();
+      $w.find("#min-district-checklist label").each(function () {
+        let txt = $(this).text().toLowerCase();
+        $(this).toggle(txt.includes(q));
+      });
+    });
+
+    $w.find(".min-chk-district").on("change", function () {
+      let d = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      if ($(this).is(":checked")) {
+        frm.state.districts.add(d);
+      } else {
+        frm.state.districts.delete(d);
+      }
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    $w.find(".min-chip-district").on("click", function (e) {
+      if ($(e.target).hasClass("min-remove-dist")) return;
+      let d = String($(this).attr("data-raw") || $(this).data("raw") || "");
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      if (frm.state.districts.has(d)) {
+        frm.state.districts.delete(d);
+      } else {
+        frm.state.districts.add(d);
+      }
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    $w.find(".min-remove-dist").on("click", function (e) {
+      e.stopPropagation();
+      let d = String($(this).attr("data-dist") || $(this).data("dist") || "");
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      frm.state.districts.delete(d);
+      frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    $w.find("#min-chip-district-all").on("click", function () {
+      frm.state.access_type = "Geographical (Zone / Region / District)";
+      let availableDistrictNames = sortDistricts(Array.from(new Set(allBranches.map(b => b.district).filter(Boolean))));
+      if (frm.state.zones.size > 0 || frm.state.regions.size > 0) {
+        availableDistrictNames = sortDistricts(Array.from(new Set(
+          allBranches.filter(b => {
+            let matchesZone = frm.state.zones.size === 0 || frm.state.zones.has(b.zone);
+            let matchesRegion = frm.state.regions.size === 0 || frm.state.regions.has(b.region);
+            return matchesZone && matchesRegion;
+          }).map(b => b.district).filter(Boolean)
+        )));
+      }
+
+      if (availableDistrictNames.length > 0 && availableDistrictNames.every(d => frm.state.districts.has(d))) {
+        availableDistrictNames.forEach(d => frm.state.districts.delete(d));
+      } else {
+        availableDistrictNames.forEach(d => frm.state.districts.add(d));
       }
       frm.trigger("render_minimal_widget");
       frm.trigger("auto_save_preference");

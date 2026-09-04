@@ -8,6 +8,7 @@
  "field_order": [
   "main_widget_section",
   "widget_html",
+  "settings_tab",
   "hidden_fields_section",
   "user",
   "full_name",
@@ -37,8 +38,7 @@
    "collapsible": 1,
    "fieldname": "hidden_fields_section",
    "fieldtype": "Section Break",
-   "hidden": 1,
-   "label": "Hidden System Fields"
+   "label": "System Fields"
   },
   {
    "fieldname": "user",
@@ -120,13 +120,18 @@
    "fieldtype": "Table MultiSelect",
    "label": "Sources",
    "options": "Source Items"
+  },
+  {
+   "fieldname": "settings_tab",
+   "fieldtype": "Tab Break",
+   "label": "Settings"
   }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-31 19:21:16.250396",
+ "modified": "2026-09-04 17:15:07.920963",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",

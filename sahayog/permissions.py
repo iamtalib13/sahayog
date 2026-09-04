@@ -60,8 +60,15 @@ def get_user_sol_ids(user):
         geo_conditions.append("zone IN %(zones)s")
         values["zones"] = tuple(zones)
     if regions:
+        expanded_regions = []
+        for r in regions:
+            expanded_regions.append(r)
+            if str(r).upper() in ["HO", "HEAD OFFICE"]:
+                for ho_variant in ["HO", "Head Office", "HEAD OFFICE"]:
+                    if ho_variant not in expanded_regions:
+                        expanded_regions.append(ho_variant)
         geo_conditions.append("region IN %(regions)s")
-        values["regions"] = tuple(regions)
+        values["regions"] = tuple(expanded_regions)
     if states:
         geo_conditions.append("state IN %(states)s")
         values["states"] = tuple(states)
