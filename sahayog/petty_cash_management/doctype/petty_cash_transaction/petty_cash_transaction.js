@@ -567,7 +567,7 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
                 cdt,
                 cdn,
                 'beneficiary_account_number',
-                digits_only
+                ""
             );
 
             frappe.show_alert({
