@@ -158,6 +158,47 @@ def get_user_role_info():
     }
 
 
+@frappe.whitelist()
+def get_holidays(year, month):
+    # Holidays for current user's state (Sundays + state Holiday List) for a month.
+    # Uses Employee.sahayog_branch -> Sahayog Branch.state -> Holiday List "{State} - {YYYY}".
+    year, month = _safe_year_month(year, month)
+    last_day = calendar.monthrange(year, month)[1]
+    state = None
+    try:
+        emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
+        if emp_branch:
+            state = frappe.db.get_value("Sahayog Branch", emp_branch, "state")
+    except Exception:
+        state = None
+    holidays = {}
+    for day in range(1, last_day + 1):
+        d = frappe.utils.getdate(f"{year}-{month:02d}-{day:02d}")
+        if d.weekday() == 6:
+            holidays[str(d)] = "Sunday"
+    if state:
+        holiday_list_name = f"{state} - {year}"
+        if not frappe.db.exists("Holiday List", holiday_list_name):
+            holiday_list_name = frappe.db.get_value("Holiday List", {"holiday_list_name": ["like", f"{state} - %"]}, "name")
+        if holiday_list_name and frappe.db.exists("Holiday List", holiday_list_name):
+            rows = frappe.db.get_all(
+                "Holiday",
+                filters={"parent": holiday_list_name},
+                fields=["holiday_date", "description"],
+            )
+            for r in rows:
+                d_str = str(r.holiday_date)[:10]
+                if d_str.startswith(f"{year}-{month:02d}-"):
+                    if d_str not in holidays or holidays[d_str] == "Sunday":
+                        if d_str in holidays and holidays[d_str] == "Sunday":
+                            holidays[d_str] = r.description or "Holiday"
+                        else:
+                            holidays[d_str] = r.description or "Holiday"
+                    else:
+                        holidays[d_str] = r.description or "Holiday"
+    return holidays
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Calendar data
 # ─────────────────────────────────────────────────────────────────────────────

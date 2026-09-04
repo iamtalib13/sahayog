@@ -742,6 +742,39 @@
       .day-cell.dimmed {
         opacity: 0.45;
       }
+      .day-cell.is-holiday {
+        background: #fffbeb;
+      }
+      .day-cell.is-sunday {
+        background: #fef2f2;
+      }
+      .day-cell.is-holiday .day-num,
+      .day-cell.is-sunday .day-num {
+        color: #b91c1c;
+        font-weight: 700;
+      }
+      .holiday-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #b45309;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 999px;
+        padding: 1px 5px;
+        margin-left: 4px;
+        white-space: nowrap;
+      }
+      .sunday-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #b91c1c;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 999px;
+        padding: 1px 5px;
+        margin-left: 4px;
+        white-space: nowrap;
+      }
 
       .event-chip {
         display: flex;
@@ -2696,6 +2729,8 @@
               ><span class="status-dot" style="background: var(--ink-3)"></span>
               Pending</span
             >
+            <span class="legend-item"><span class="status-dot" style="background:#fee2e2;border:1px solid #fecaca"></span> Sunday</span>
+            <span class="legend-item"><span class="status-dot" style="background:#fffbeb;border:1px solid #fde68a"></span> Holiday</span>
           </div>
         </div>
 
@@ -3381,6 +3416,7 @@
           branchPick: [],
           selectedGeographies: [],
           selectedParticipants: [],
+          holidays: {},
         };
 
         var MONTHS = [
@@ -3647,17 +3683,22 @@
           }
           state.loadedMonth = key;
           var f = state.calFilters;
-          api("get_calendar_data", {
-            year: y,
-            month: m,
-            zone: f.zone || null,
-            region: f.region || null,
-            district: f.district || null,
-            branch: f.branch || null,
-          })
-            .then(function (evs) {
-              state.calEvents = Array.isArray(evs) ? evs : [];
+          Promise.all([
+            api("get_calendar_data", {
+              year: y,
+              month: m,
+              zone: f.zone || null,
+              region: f.region || null,
+              district: f.district || null,
+              branch: f.branch || null,
+            }),
+            api("get_holidays", { year: y, month: m }).catch(function(){ return {}; })
+          ])
+            .then(function (res) {
+              state.calEvents = Array.isArray(res[0]) ? res[0] : [];
+              state.holidays = res[1] && typeof res[1]==="object" ? res[1] : {};
               render();
+              updateSchedulePreview();
             })
             .catch(function (err) {
               state.calEvents = [];
@@ -3820,10 +3861,30 @@
             if (isFiltered && evs.length === 0 && !other)
               cell.classList.add("dimmed");
 
+            var isSunday = cellDate.getDay() === 0;
+            var holidayDesc = state.holidays && state.holidays[dateIso];
+            var isHoliday = !!holidayDesc;
+            if (isSunday) cell.classList.add("is-sunday");
+            if (isHoliday) cell.classList.add("is-holiday");
+            if (isHoliday && holidayDesc !== "Sunday") cell.title = holidayDesc;
+            else if (isSunday) cell.title = "Sunday";
+
             var num = document.createElement("div");
             num.className = "day-num";
             num.textContent = cellDate.getDate();
             cell.appendChild(num);
+            if (isHoliday && holidayDesc !== "Sunday") {
+              var hol = document.createElement("span");
+              hol.className = "holiday-label";
+              hol.textContent = holidayDesc.length > 14 ? holidayDesc.slice(0,14) + "…" : holidayDesc;
+              hol.title = holidayDesc;
+              cell.appendChild(hol);
+            } else if (isSunday) {
+              var sun = document.createElement("span");
+              sun.className = "sunday-label";
+              sun.textContent = "Sunday";
+              cell.appendChild(sun);
+            }
 
             evs.slice(0, 2).forEach(function (ev) {
               cell.appendChild(eventChip(ev));
@@ -4013,14 +4074,20 @@
           for (var i = 0; i < 7; i++) {
             var d = new Date(weekStart);
             d.setDate(d.getDate() + i);
+            var iso = isoOf(d);
+            var isSun = d.getDay() === 0;
+            var hol = state.holidays && state.holidays[iso];
             var dCell = document.createElement("div");
+            if (isSun) dCell.style.background = "#fef2f2";
+            if (hol) dCell.style.background = "#fffbeb";
             dCell.innerHTML =
               WEEKDAYS[i] +
               '<span class="wk-num' +
               (sameDay(d, today) ? " is-today" : "") +
               '">' +
               d.getDate() +
-              "</span>";
+              "</span>" +
+              (hol && hol !== "Sunday" ? '<span style="display:block;font-size:9px;color:#b45309;font-weight:600">' + hol.slice(0,12) + '</span>' : isSun ? '<span style="display:block;font-size:9px;color:#b91c1c;font-weight:600">Sunday</span>' : "");
             row.appendChild(dCell);
           }
           content.appendChild(row);
@@ -4040,6 +4107,21 @@
             if (sameDay(day, today)) col.classList.add("is-today");
             if (sameDay(day, state.selectedDate)) col.classList.add("selected");
             if (isFiltered && evs.length === 0) col.classList.add("dimmed");
+            var _isSun = day.getDay() === 0;
+            var _holDesc = state.holidays && state.holidays[dateIso];
+            if (_isSun) col.classList.add("is-sunday");
+            if (_holDesc) col.classList.add("is-holiday");
+            if (_holDesc && _holDesc !== "Sunday") {
+              var _hl = document.createElement("div");
+              _hl.style.cssText = "font-size:10px;font-weight:600;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:999px;padding:1px 6px;margin-bottom:4px;display:inline-block;";
+              _hl.textContent = _holDesc;
+              col.appendChild(_hl);
+            } else if (_isSun) {
+              var _sl = document.createElement("div");
+              _sl.style.cssText = "font-size:10px;font-weight:600;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:999px;padding:1px 6px;margin-bottom:4px;display:inline-block;";
+              _sl.textContent = "Sunday";
+              col.appendChild(_sl);
+            }
 
             if (evs.length === 0) {
               var empty = document.createElement("div");
@@ -6177,7 +6259,11 @@
               });
             }
 
-            if (hasOverlap) {
+            var holDesc = f && state.holidays && state.holidays[f];
+            if (holDesc) {
+              hintEl.textContent = "⚠️ " + holDesc + (holDesc === "Sunday" ? " — avoid scheduling" : " — Holiday, avoid scheduling");
+              hintEl.className = "nt-sched-hint overlap";
+            } else if (hasOverlap) {
               hintEl.textContent = "⚠️ Time overlaps with an existing training on this date";
               hintEl.className = "nt-sched-hint overlap";
             } else if (count > 0) {
