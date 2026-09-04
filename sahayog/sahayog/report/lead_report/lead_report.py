@@ -34,9 +34,15 @@ def execute(filters=None):
         else:
             frappe.throw("Your Employee record is missing branch, region, or zone info.")
 
-    # 📅 Strictly filter leads created TODAY only
+    # 📅 Filter leads created OR modified TODAY
     today = frappe.utils.today()
-    lead_filters["creation"] = ["between", [f"{today} 00:00:00", f"{today} 23:59:59"]]
+    today_start = f"{today} 00:00:00"
+    today_end = f"{today} 23:59:59"
+
+    or_filters = [
+        ["creation", "between", [today_start, today_end]],
+        ["modified", "between", [today_start, today_end]]
+    ]
 
     # 🔍 Apply user search filters
     if filters.get("custom_branch"):
@@ -51,12 +57,11 @@ def execute(filters=None):
     if filters.get("custom_employee_name"):
         lead_filters["custom_employee_name"] = ["like", f"%{filters.get('custom_employee_name')}%"]
 
-
-
-    # 📦 Fetch leads with employee & branch fields directly from Lead
+    # 📦 Fetch leads with employee & branch fields directly from Lead (Created OR Modified Today)
     leads = frappe.db.get_all(
         "Lead",
         filters=lead_filters,
+        or_filters=or_filters,
         fields=[
             "name", "lead_name", "status", "source", "custom_branch", 
             "custom_zone", "custom_region", "creation", "lead_owner",
@@ -64,6 +69,7 @@ def execute(filters=None):
             "custom_designation", "custom_district", "sol_id"
         ]
     )
+
 
     # 📦 Bulk fetch child table products in a single query to eliminate N+1 overhead
     lead_names = [lead.name for lead in leads]
