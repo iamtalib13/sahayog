@@ -179,4 +179,17 @@ def execute(filters=None):
         {"label": "Created On", "fieldname": "creation", "fieldtype": "Data", "width": 160},
     ]
 
-    return columns, report_data
+    # 📊 Calculate Summary Count Cards (Distinct Leads)
+    unique_leads = {l.name: l for l in leads}
+    total_today_leads = len(unique_leads)
+    created_count = sum(1 for l in unique_leads.values() if str(l.creation)[:10] == today)
+    modified_count = total_today_leads - created_count
+
+    report_summary = [
+        {"value": total_today_leads, "label": "Total Today's Leads", "datatype": "Int", "indicator": "Blue"},
+        {"value": created_count, "label": "Created Today", "datatype": "Int", "indicator": "Green"},
+        {"value": modified_count, "label": "Modified Today", "datatype": "Int", "indicator": "Orange"},
+    ]
+
+    return columns, report_data, None, None, report_summary
+

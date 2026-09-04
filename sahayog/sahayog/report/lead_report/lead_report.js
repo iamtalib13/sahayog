@@ -23,8 +23,7 @@ frappe.query_reports["Lead Report"] = {
       }, 150);
     });
 
-
-    // 🎨 Apply Hover Effects & Styling to buttons
+    // 🎨 Apply Hover Effects & Styling to Download button
     if (download_btn) {
       download_btn.addClass("btn-primary btn-sm");
       download_btn.css({
@@ -54,7 +53,8 @@ frappe.query_reports["Lead Report"] = {
       );
     }
 
-   if (clear_btn) {
+    // 🎨 Apply Hover Effects & Styling to Clear button
+    if (clear_btn) {
       clear_btn.addClass("btn-primary btn-sm");
       clear_btn.css({
         "background-color": "#038129",
@@ -82,6 +82,25 @@ frappe.query_reports["Lead Report"] = {
         }
       );
     }
+
+    // 📉 Make report summary count cards compact & small
+    setTimeout(function () {
+      $(".report-summary").css({
+        "padding": "4px 8px",
+        "margin-bottom": "8px"
+      });
+      $(".report-summary .summary-item").css({
+        "padding": "4px 10px",
+        "margin-right": "8px"
+      });
+      $(".report-summary .summary-value").css({
+        "font-size": "15px",
+        "font-weight": "600"
+      });
+      $(".report-summary .summary-label").css({
+        "font-size": "11px"
+      });
+    }, 300);
   },
 
   filters: [
