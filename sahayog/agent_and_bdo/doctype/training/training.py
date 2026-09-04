@@ -58,6 +58,7 @@ class Training(Document):
             if frappe.utils.get_time(self.end_time) < frappe.utils.get_time(self.start_time):
                 frappe.throw(_("End Time cannot be before Start Time."))
         self._validate_geographies()
+        self._validate_no_holiday_sunday()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -98,6 +99,54 @@ class Training(Document):
                 if row.branch in seen:
                     frappe.throw(_("Duplicate branch '{0}' in Geographies.").format(row.branch))
                 seen.add(row.branch)
+
+    def _validate_no_holiday_sunday(self):
+        if not self.from_date:
+            return
+        from_d = frappe.utils.getdate(self.from_date)
+        to_d = frappe.utils.getdate(self.to_date or self.from_date)
+        # Collect states from geographies (or legacy branch)
+        states = set()
+        geos = self.get("geographies") or []
+        branches = [g.branch for g in geos if g.branch] if geos else ([self.branch] if self.branch else [])
+        for br in branches:
+            state = frappe.db.get_value("Sahayog Branch", br, "state")
+            if state:
+                states.add(state)
+        # Also include current user's state via Employee.holiday_list fallback if no branch state
+        if not states:
+            try:
+                emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
+                if emp_branch:
+                    s = frappe.db.get_value("Sahayog Branch", emp_branch, "state")
+                    if s:
+                        states.add(s)
+            except Exception:
+                pass
+        # Build holiday set for the date range
+        holiday_map = {}
+        for state in states:
+            # Try Employee.holiday_list style: Holiday List name is "{State} - YYYY"
+            for yr in range(from_d.year, to_d.year + 1):
+                hl = f"{state} - {yr}"
+                if not frappe.db.exists("Holiday List", hl):
+                    hl = frappe.db.get_value("Holiday List", {"holiday_list_name": ["like", f"{state} - %"]}, "name")
+                    if not hl:
+                        continue
+                rows = frappe.db.get_all("Holiday", filters={"parent": hl}, fields=["holiday_date", "description"])
+                for r in rows:
+                    d = frappe.utils.getdate(r.holiday_date)
+                    if from_d <= d <= to_d:
+                        holiday_map[str(d)] = r.description or "Holiday"
+        # Check each date in range
+        curr = from_d
+        while curr <= to_d:
+            d_str = str(curr)
+            if curr.weekday() == 6:
+                frappe.throw(_("Training cannot be scheduled on Sunday: {0}").format(d_str))
+            if d_str in holiday_map:
+                frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_str))
+            curr = frappe.utils.add_days(curr, 1)
 
     def on_submit(self):
         status = get_training_status(self)
