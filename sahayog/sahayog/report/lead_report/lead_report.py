@@ -140,7 +140,6 @@ def execute(filters=None):
         capsules_html.append(f'''
             <div class="lead-branch-capsule {all_active_cls}" data-sol="" data-branch="" title="Show All Permitted Branches">
                 <span class="sol-tag">ALL</span>
-                <span>All Branches</span>
                 <span class="count-pill">{total_leads_count}</span>
             </div>
         ''')
@@ -153,15 +152,13 @@ def execute(filters=None):
         if not count and br_name:
             count = branch_counts.get(br_name, 0)
 
-        display_name = br_name or sol
-        display_label = f"{sol} - {br_name}" if (sol and br_name and sol != br_name) else (sol or br_name)
+        display_label = f"Branch: {br_name} (SOL ID: {sol})" if (sol and br_name and sol != br_name) else (br_name or sol)
 
         is_active = "active" if (selected_branch and selected_branch in (sol, br_name)) else ""
 
         capsules_html.append(f'''
             <div class="lead-branch-capsule {is_active}" data-sol="{sol}" data-branch="{br_name}" title="{display_label}">
                 <span class="sol-tag">{sol or 'N/A'}</span>
-                <span>{display_name}</span>
                 <span class="count-pill">{count}</span>
             </div>
         ''')

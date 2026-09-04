@@ -16,16 +16,16 @@ frappe.query_reports["Lead Report"] = {
           .lead-branch-capsules-wrapper {
             background: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 10px 14px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
           }
           .capsules-header {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
           }
           .capsules-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: #475569;
             text-transform: uppercase;
@@ -34,21 +34,21 @@ frappe.query_reports["Lead Report"] = {
           .capsules-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            max-height: 140px;
+            gap: 6px;
+            max-height: 120px;
             overflow-y: auto;
             padding-right: 4px;
           }
           .lead-branch-capsule {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
+            gap: 4px;
+            padding: 3px 8px;
             background: #f8fafc;
             border: 1px solid #cbd5e1;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
+            border-radius: 16px;
+            font-size: 10.5px;
+            font-weight: 600;
             color: #334155;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -68,23 +68,19 @@ frappe.query_reports["Lead Report"] = {
           }
           .lead-branch-capsule .sol-tag {
             font-weight: 700;
-            font-size: 11px;
-            background: #e2e8f0;
-            color: #1e293b;
-            padding: 1px 6px;
-            border-radius: 12px;
+            font-size: 10.5px;
+            letter-spacing: 0.3px;
           }
           .lead-branch-capsule.active .sol-tag {
-            background: rgba(255, 255, 255, 0.25);
             color: #ffffff;
           }
           .lead-branch-capsule .count-pill {
-            background: #cbd5e1;
+            background: #e2e8f0;
             color: #0f172a;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 1px 7px;
-            border-radius: 10px;
+            padding: 1px 6px;
+            border-radius: 9px;
           }
           .lead-branch-capsule.active .count-pill {
             background: #ffffff;
