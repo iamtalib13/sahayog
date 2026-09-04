@@ -1222,3 +1222,42 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     frappe.response['filename'] = f"filtered_lead_report_{from_date}_to_{to_date}.csv"
     frappe.response['filecontent'] = filedata
     frappe.response['type'] = "download"
+
+
+@frappe.whitelist()
+def view_download_todays_lead_record(redirect=0):
+    """
+    Whitelisted API to view / render Today's Lead Record in Lead Report.
+    If redirect=1 is passed, directly redirects browser to Lead Report page.
+    Otherwise returns route dictionary for UI navigation.
+    """
+    route = "/app/query-report/Lead Report"
+    if str(redirect).lower() in ["1", "true", "yes"]:
+        frappe.local.response["type"] = "redirect"
+        frappe.local.response["location"] = route
+        return
+
+    return {
+        "status": "success",
+        "route": route,
+        "url": route,
+        "message": frappe._("Redirecting to Lead Report...")
+    }
+
+
+@frappe.whitelist()
+def view_todays_lead_record(filters=None):
+    """
+    Whitelisted API to render Today's Lead Record for Lead Report.
+    """
+    from sahayog.sahayog.report.lead_report.lead_report import execute as execute_lead_report
+    return execute_lead_report(filters)
+
+
+@frappe.whitelist()
+def download_todays_lead_record(filters=None):
+    """
+    Whitelisted API to stream/download Today's Lead Record CSV for today.
+    """
+    today = str(frappe.utils.today())
+    return download_fast_lead_report(from_date=today, to_date=today, filters=filters)

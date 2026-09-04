@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import format_datetime
+from sahayog.permissions import get_user_sol_ids
 
 def execute(filters=None):
     user = frappe.session.user
@@ -8,9 +9,31 @@ def execute(filters=None):
     lead_filters = {}
 
     unrestricted_roles = {"Administrator", "System Manager", "Admin", "Sales Manager"}
+    is_unrestricted = any(role in roles for role in unrestricted_roles)
 
-    # 🔐 Apply role-based filtering
-    if not any(role in roles for role in unrestricted_roles):
+    # 🔐 1. Fetch allowed SOL IDs from 'Report Preference' Doctype
+    report_pref_sol_ids = get_user_sol_ids(user)
+
+    # 🔐 2. Fetch User Permissions for 'Sahayog Branch' and 'Branch' from Frappe Permission Manager
+    user_permissions = frappe.permissions.get_user_permissions(user)
+    permitted_sahayog_branches = [
+        d.get("doc") for d in user_permissions.get("Sahayog Branch", []) if d.get("doc")
+    ]
+    permitted_branches = [
+        d.get("doc") for d in user_permissions.get("Branch", []) if d.get("doc")
+    ]
+
+    sb_filters = {}
+
+    if report_pref_sol_ids:
+        sb_filters["sol_id"] = ["in", report_pref_sol_ids]
+    elif permitted_sahayog_branches:
+        sb_filters["name"] = ["in", permitted_sahayog_branches]
+    elif permitted_branches:
+        sb_filters["branch"] = ["in", permitted_branches]
+
+    # 🔐 3. Apply role-based employee restriction if user is not unrestricted and no Report Preference set
+    if not is_unrestricted and not report_pref_sol_ids:
         employee = frappe.db.get_value(
             "Employee",
             {"user_id": user},
@@ -18,111 +41,192 @@ def execute(filters=None):
             as_dict=True
         )
 
-        if not employee:
+        if not employee and not (permitted_sahayog_branches or permitted_branches):
             frappe.throw(f"Employee record not found for user: {user}")
 
-        if "Branch Manager" in roles and employee.branch:
-            lead_filters["custom_branch"] = employee.branch
+        if employee:
+            if "Branch Manager" in roles and employee.branch:
+                if frappe.db.exists("Sahayog Branch", employee.branch):
+                    sb_filters["name"] = employee.branch
+                else:
+                    sb_filters["branch"] = employee.branch
 
-        elif "Regional Manager" in roles and employee.custom_region and employee.custom_zone:
-            lead_filters["custom_region"] = employee.custom_region
-            lead_filters["custom_zone"] = employee.custom_zone
+            elif "Regional Manager" in roles and employee.custom_region and employee.custom_zone:
+                sb_filters["region"] = employee.custom_region
+                sb_filters["zone"] = employee.custom_zone
 
-        elif "Zonal Manager" in roles and employee.custom_zone:
-            lead_filters["custom_zone"] = employee.custom_zone
+            elif "Zonal Manager" in roles and employee.custom_zone:
+                sb_filters["zone"] = employee.custom_zone
 
-        else:
-            frappe.throw("Your Employee record is missing branch, region, or zone info.")
+    # 🏢 4. Fetch branches from Sahayog Branch (frappe.get_list applies Permission Manager rules)
+    sahayog_branches = frappe.get_list(
+        "Sahayog Branch",
+        filters=sb_filters,
+        fields=["name", "sol_id", "branch", "zone", "region"],
+        ignore_permissions=False,
+        order_by="sol_id asc",
+        limit_page_length=0
+    )
 
-    # 📅 Required date filter
-    from_date = filters.get("from_date")
-    to_date = filters.get("to_date")
-    if from_date and to_date:
-        lead_filters["creation"] = ["between", [from_date, to_date]]
-    else:
-        frappe.throw("Both From Date and To Date are required.")
+    allowed_sol_ids = list(set([str(b.sol_id or b.name).strip() for b in sahayog_branches if b.get("sol_id") or b.get("name")]))
+    allowed_branch_names = list(set([str(b.branch).strip() for b in sahayog_branches if b.get("branch")]))
+    all_allowed_identifiers = list(set(allowed_sol_ids + allowed_branch_names))
 
-    # 📦 Fetch leads with standard fields only
-    leads = frappe.db.get_all(
+    # 📅 Filter leads created OR modified TODAY
+    today = frappe.utils.today()
+    today_start = f"{today} 00:00:00"
+    today_end = f"{today} 23:59:59"
+
+    or_filters = [
+        ["creation", "between", [today_start, today_end]],
+        ["modified", "between", [today_start, today_end]]
+    ]
+
+    # 🔍 Base lead filters from UI (Employee filters)
+    base_lead_filters = {}
+
+    if filters.get("custom_employee_id"):
+        base_lead_filters["custom_employee_id"] = filters.get("custom_employee_id")
+
+    if filters.get("custom_employee_name"):
+        base_lead_filters["custom_employee_name"] = ["like", f"%{filters.get('custom_employee_name')}%"]
+
+    # 📦 Fetch ALL permitted today's leads from Lead table
+    all_today_leads = frappe.db.get_all(
         "Lead",
-        filters=lead_filters,
+        filters=base_lead_filters,
+        or_filters=or_filters,
         fields=[
             "name", "lead_name", "status", "source", "custom_branch", 
             "custom_zone", "custom_region", "creation", "lead_owner",
-            "phone", "email_id"
+            "phone", "email_id", "custom_employee_id", "custom_employee_name",
+            "custom_designation", "custom_district", "sol_id"
         ]
     )
 
-    # 👤 Get employee mapping - FIXED: Include employee_number
-    lead_owners = list(set(lead.get("lead_owner") for lead in leads if lead.get("lead_owner")))
-    employees = []
-    if lead_owners:
-        try:
-            employees = frappe.db.get_all(
-                "Employee", 
-                filters={"user_id": ["in", lead_owners]},
-                fields=["name", "employee_name", "employee_number", "user_id", "designation", "branch"]
-            )
-        except:
-            employees = []
-    
-    employee_map = {emp.user_id: emp for emp in employees}
+    # 🔒 Strict permission filter: keep ONLY leads belonging to user's permitted branches
+    is_restricted_user = not is_unrestricted or bool(report_pref_sol_ids or permitted_sahayog_branches or permitted_branches or (not is_unrestricted and sahayog_branches))
 
-    # 🏢 Get branch SOL mapping safely
-    branch_sol_map = {}
-    try:
-        branches = frappe.db.get_all("Branch", fields=["name", "sol_id"])
-        branch_sol_map = {b.name: b.sol_id for b in branches}
-    except:
-        pass
+    if is_restricted_user and sahayog_branches:
+        permitted_leads = []
+        for lead in all_today_leads:
+            lead_sol = str(lead.get("sol_id") or "").strip()
+            lead_br = str(lead.get("custom_branch") or "").strip()
+            if lead_sol in allowed_sol_ids or lead_br in all_allowed_identifiers:
+                permitted_leads.append(lead)
+        all_today_leads = permitted_leads
+
+    # 📊 Calculate Today's Leads count per Sahayog Branch BEFORE capsule filtering
+    branch_counts = {}
+    total_leads_count = len(all_today_leads)
+
+    for lead in all_today_leads:
+        sol = str(lead.get("sol_id") or "").strip()
+        br = str(lead.get("custom_branch") or "").strip()
+        
+        if sol:
+            branch_counts[sol] = branch_counts.get(sol, 0) + 1
+        if br and br != sol:
+            branch_counts[br] = branch_counts.get(br, 0) + 1
+
+    # 🏷️ Build HTML Capsule Cards for Sahayog Branches
+    selected_branch = str(filters.get("selected_branch") or filters.get("custom_branch") or filters.get("sol_id") or "").strip()
+
+    capsules_html = []
+    
+    # 'ALL' Capsule Card only shown for unrestricted/admin users
+    if not is_restricted_user:
+        all_active_cls = "active" if not selected_branch else ""
+        capsules_html.append(f'''
+            <div class="lead-branch-capsule {all_active_cls}" data-sol="" data-branch="" title="Show All Permitted Branches">
+                <span class="sol-tag">ALL</span>
+                <span class="count-pill">{total_leads_count}</span>
+            </div>
+        ''')
+
+    for b in sahayog_branches:
+        sol = str(b.get("sol_id") or b.get("name") or "").strip()
+        br_name = str(b.get("branch") or "").strip()
+
+        count = branch_counts.get(sol, 0)
+        if not count and br_name:
+            count = branch_counts.get(br_name, 0)
+
+        display_label = f"Branch: {br_name} (SOL ID: {sol}) | Today's Leads: {count}" if (sol and br_name and sol != br_name) else f"{br_name or sol} | Leads: {count}"
+
+        is_active = "active" if (selected_branch and selected_branch in (sol, br_name)) else ""
+        lead_status_cls = "has-leads" if count > 0 else "no-leads"
+
+        capsules_html.append(f'''
+            <div class="lead-branch-capsule {lead_status_cls} {is_active}" data-sol="{sol}" data-branch="{br_name}" title="{display_label}">
+                <span class="sol-tag">{sol or 'N/A'}</span>
+            </div>
+        ''')
+
+    html_message = f'''
+        <div class="lead-branch-capsules-wrapper">
+            <div class="capsules-header">
+                <span class="capsules-title">🏢 Today's Branch Leads</span>
+            </div>
+            <div class="capsules-list">
+                {"".join(capsules_html)}
+            </div>
+        </div>
+    '''
+
+    # 🎯 Filter leads for the report table if a branch capsule card is selected
+    leads = []
+    if selected_branch:
+        for lead in all_today_leads:
+            lead_sol = str(lead.get("sol_id") or "").strip()
+            lead_br = str(lead.get("custom_branch") or "").strip()
+            
+            if selected_branch == lead_sol or selected_branch == lead_br:
+                leads.append(lead)
+            else:
+                matching_branch = [b for b in sahayog_branches if str(b.get("sol_id") or b.get("name")).strip() == selected_branch or str(b.get("branch")).strip() == selected_branch]
+                if matching_branch:
+                    target_sols = [str(mb.get("sol_id") or mb.get("name")).strip() for mb in matching_branch]
+                    target_names = [str(mb.get("branch")).strip() for mb in matching_branch]
+                    if lead_sol in target_sols or lead_br in target_names or lead_br in target_sols:
+                        leads.append(lead)
+    else:
+        leads = all_today_leads
+
+    # 📦 Bulk fetch child table products in a single query to eliminate N+1 overhead
+    lead_names = [lead.name for lead in leads]
+    products_map = {}
+
+    if lead_names:
+        try:
+            all_products = frappe.db.get_all(
+                "Lead Product",
+                filters={"parent": ["in", lead_names]},
+                fields=["parent", "product", "product_name", "product_amount"]
+            )
+            for prod in all_products:
+                products_map.setdefault(prod.parent, []).append(prod)
+        except Exception:
+            products_map = {}
 
     # 📊 Process leads with product expansion
     report_data = []
     row_idx = 1
     
     for lead in leads:
-        lead_owner = lead.get("lead_owner")
-        emp = employee_map.get(lead_owner)
-        
-        # ✅ FIXED: Employee Name = Full Name, Employee ID = employee_number
-        emp_name = emp.employee_name if emp else lead_owner or "Unknown"
-        emp_id = getattr(emp, 'employee_number', '-') if emp else "-"
-        designation = getattr(emp, 'designation', '-') if emp else "-"
-        emp_branch = getattr(emp, 'branch', lead.custom_branch or '-') if emp else lead.custom_branch or "-"
-        
-        # ✅ District from employee doc safely
-        emp_district = "-"
-        try:
-            if emp:
-                emp_doc = frappe.get_doc("Employee", emp.name)
-                emp_district = (emp_doc.get('custom_district') or "-")
-        except:
-            pass
-        sol_id = branch_sol_map.get(emp_branch, "-")
+        emp_name = lead.get("custom_employee_name") or lead.get("lead_owner") or "Unknown"
+        emp_id = lead.get("custom_employee_id") or "-"
+        designation = lead.get("custom_designation") or "-"
+        emp_branch = lead.get("custom_branch") or "-"
+        emp_district = lead.get("custom_district") or "-"
+        sol_id = lead.get("sol_id") or "-"
         
         # Format contact info from standard fields
-        contact = ""
-        if lead.phone:
-            contact = lead.phone
-        elif lead.email_id:
-            contact = lead.email_id
-        else:
-            contact = "-"
+        contact = lead.phone or lead.email_id or "-"
     
-        # ✅ PERFECT MATCH: Your exact "Lead Product" child table structure
-        products = []
-        try:
-            products = frappe.db.get_all(
-                "Lead Product",
-                filters={"parent": lead.name},
-                fields=["product", "product_name", "product_amount"],
-                limit=20
-            )
-        except:
-            products = []
+        products = products_map.get(lead.name, [])
         
         if products:
-            # ✅ Multiple rows for products - EXACT field mapping
             for product in products:
                 product_code = product.get("product") or "-"
                 product_name = product.get("product_name") or "-"
@@ -138,8 +242,8 @@ def execute(filters=None):
                     "product_code": product_code,
                     "product_name": product_name,
                     "amount": frappe.utils.fmt_money(amount, currency=None),
-                    "employee_name": emp_name,      # ✅ Full Name (emp.name)
-                    "employee_id": emp_id,          # ✅ Employee Number (employee_number)
+                    "employee_name": emp_name,
+                    "employee_id": emp_id,
                     "designation": designation,
                     "sol_id": sol_id,
                     "branch": emp_branch,
@@ -150,7 +254,6 @@ def execute(filters=None):
                 })
                 row_idx += 1
         else:
-            # Single row without products
             report_data.append({
                 "row_idx": row_idx,
                 "status": lead.status,
@@ -161,8 +264,8 @@ def execute(filters=None):
                 "product_code": "-",
                 "product_name": "-",
                 "amount": "-",
-                "employee_name": emp_name,      # ✅ Full Name (emp.name)
-                "employee_id": emp_id,          # ✅ Employee Number (employee_number)
+                "employee_name": emp_name,
+                "employee_id": emp_id,
                 "designation": designation,
                 "sol_id": sol_id,
                 "branch": emp_branch,
@@ -194,4 +297,8 @@ def execute(filters=None):
         {"label": "Created On", "fieldname": "creation", "fieldtype": "Data", "width": 160},
     ]
 
-    return columns, report_data
+    return columns, report_data, html_message, None, None
+
+
+
+
