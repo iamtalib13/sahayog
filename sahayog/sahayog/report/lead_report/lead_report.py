@@ -34,13 +34,12 @@ def execute(filters=None):
         else:
             frappe.throw("Your Employee record is missing branch, region, or zone info.")
 
-    # 📅 Required date filter
-    from_date = filters.get("from_date")
-    to_date = filters.get("to_date")
-    if from_date and to_date:
-        lead_filters["creation"] = ["between", [from_date, to_date]]
-    else:
-        frappe.throw("Both From Date and To Date are required.")
+    # 📅 Default today's date filter
+    today = frappe.utils.today()
+    from_date = filters.get("from_date") or today
+    to_date = filters.get("to_date") or today
+    lead_filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
+
 
     # 📦 Fetch leads with standard fields only
     leads = frappe.db.get_all(

@@ -6,20 +6,6 @@ frappe.query_reports["Lead Report"] = {
     // Nothing extra needed here; filtering is handled in Python
   },
 
-  filters: [
-    {
-      fieldname: "from_date",
-      label: "From Date",
-      fieldtype: "Date",
-      default: frappe.datetime.get_today(), // ✅ Today
-      reqd: 1,
-    },
-    {
-      fieldname: "to_date",
-      label: "To Date",
-      fieldtype: "Date",
-      default: frappe.datetime.get_today(),
-      reqd: 1,
-    },
-  ],
+  filters: [],
 };
+
