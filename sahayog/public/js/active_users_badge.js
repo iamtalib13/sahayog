@@ -1,8 +1,17 @@
 // sahayog/public/js/active_users_badge.js
 
 (function () {
-  // Prevent running for Guests
-  if (typeof frappe === "undefined" || frappe.session.user === "Guest") return;
+  // Prevent running for Guests or Non-Admin users
+  if (typeof frappe === "undefined" || !frappe.session || frappe.session.user === "Guest") return;
+
+  const isAdminUser = () => {
+    if (frappe.session.user === "Administrator") return true;
+    if (frappe.user_roles && (frappe.user_roles.includes("System Manager") || frappe.user_roles.includes("Administrator"))) return true;
+    if (frappe.user && typeof frappe.user.has_role === "function" && (frappe.user.has_role("System Manager") || frappe.user.has_role("Administrator"))) return true;
+    return false;
+  };
+
+  if (!isAdminUser()) return;
 
   // Inject Isolated Styles with 'sahayog-au-' prefix
   const style = document.createElement("style");

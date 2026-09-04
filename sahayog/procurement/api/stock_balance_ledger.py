@@ -1199,3 +1199,86 @@ def get_stock_history(item_code, warehouse):
     }, as_dict=True)
     
     return stock_entries
+
+
+@frappe.whitelist()
+def get_inward_list(limit=20, start=0, search_text=None, receipt=None, supplier=None, status=None, start_date=None, end_date=None):
+    """
+    Fetch Purchase Receipts (Inward) with search and filter capabilities.
+    """
+    conditions = []
+    values = {}
+
+    if search_text:
+        search_text = search_text.strip()
+        conditions.append("""(
+            pr.name LIKE %(search)s 
+            OR pr.supplier LIKE %(search)s 
+            OR pr.supplier_name LIKE %(search)s 
+            OR pr.status LIKE %(search)s
+            OR pr.custom_invoice_number LIKE %(search)s
+            OR EXISTS (
+                SELECT 1 FROM `tabPurchase Receipt Item` pri 
+                WHERE pri.parent = pr.name 
+                AND (pri.item_code LIKE %(search)s OR pri.item_name LIKE %(search)s)
+            )
+        )""")
+        values["search"] = f"%{search_text}%"
+
+    if receipt:
+        receipt = receipt.strip()
+        conditions.append("pr.name LIKE %(receipt)s")
+        values["receipt"] = f"%{receipt}%"
+
+    if supplier:
+        supplier = supplier.strip()
+        conditions.append("(pr.supplier = %(supplier)s OR pr.supplier_name = %(supplier)s)")
+        values["supplier"] = supplier
+
+    if status:
+        status_val = status.strip().lower()
+        if status_val == "draft":
+            conditions.append("(pr.docstatus = 0 OR pr.status = 'Draft')")
+        elif status_val == "submitted":
+            conditions.append("pr.docstatus = 1")
+        elif status_val == "cancelled":
+            conditions.append("(pr.docstatus = 2 OR pr.status = 'Cancelled')")
+        elif status_val == "completed":
+            conditions.append("pr.status = 'Completed'")
+        elif status_val in ["to bill", "tobill"]:
+            conditions.append("pr.status = 'To Bill'")
+        else:
+            conditions.append("pr.status = %(status)s")
+            values["status"] = status.strip()
+
+    if start_date:
+        conditions.append("pr.posting_date >= %(start_date)s")
+        values["start_date"] = start_date
+
+    if end_date:
+        conditions.append("pr.posting_date <= %(end_date)s")
+        values["end_date"] = end_date
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+
+    # Total count
+    total_count = frappe.db.sql(f"""
+        SELECT COUNT(*) 
+        FROM `tabPurchase Receipt` pr
+        {where_clause}
+    """, values)[0][0]
+
+    # Data
+    data = frappe.db.sql(f"""
+        SELECT pr.*
+        FROM `tabPurchase Receipt` pr
+        {where_clause}
+        ORDER BY pr.creation DESC
+        LIMIT %(limit)s OFFSET %(offset)s
+    """, {**values, "limit": int(limit), "offset": int(start)}, as_dict=True)
+
+    return {
+        "data": data,
+        "total": total_count
+    }
+
