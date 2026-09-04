@@ -40,87 +40,53 @@ def execute(filters=None):
 
 
 
-    # 📦 Fetch leads with standard fields only
+    # 📦 Fetch leads with employee & branch fields directly from Lead
     leads = frappe.db.get_all(
         "Lead",
         filters=lead_filters,
         fields=[
             "name", "lead_name", "status", "source", "custom_branch", 
             "custom_zone", "custom_region", "creation", "lead_owner",
-            "phone", "email_id"
+            "phone", "email_id", "custom_employee_id", "custom_employee_name",
+            "custom_designation", "custom_district", "sol_id"
         ]
     )
 
-    # 👤 Get employee mapping - FIXED: Include employee_number
-    lead_owners = list(set(lead.get("lead_owner") for lead in leads if lead.get("lead_owner")))
-    employees = []
-    if lead_owners:
-        try:
-            employees = frappe.db.get_all(
-                "Employee", 
-                filters={"user_id": ["in", lead_owners]},
-                fields=["name", "employee_name", "employee_number", "user_id", "designation", "branch"]
-            )
-        except:
-            employees = []
-    
-    employee_map = {emp.user_id: emp for emp in employees}
+    # 📦 Bulk fetch child table products in a single query to eliminate N+1 overhead
+    lead_names = [lead.name for lead in leads]
+    products_map = {}
 
-    # 🏢 Get branch SOL mapping safely
-    branch_sol_map = {}
-    try:
-        branches = frappe.db.get_all("Branch", fields=["name", "sol_id"])
-        branch_sol_map = {b.name: b.sol_id for b in branches}
-    except:
-        pass
+    if lead_names:
+        try:
+            all_products = frappe.db.get_all(
+                "Lead Product",
+                filters={"parent": ["in", lead_names]},
+                fields=["parent", "product", "product_name", "product_amount"]
+            )
+            for prod in all_products:
+                products_map.setdefault(prod.parent, []).append(prod)
+        except Exception:
+            products_map = {}
 
     # 📊 Process leads with product expansion
     report_data = []
     row_idx = 1
     
     for lead in leads:
-        lead_owner = lead.get("lead_owner")
-        emp = employee_map.get(lead_owner)
-        
-        # ✅ FIXED: Employee Name = Full Name, Employee ID = employee_number
-        emp_name = emp.employee_name if emp else lead_owner or "Unknown"
-        emp_id = getattr(emp, 'employee_number', '-') if emp else "-"
-        designation = getattr(emp, 'designation', '-') if emp else "-"
-        emp_branch = getattr(emp, 'branch', lead.custom_branch or '-') if emp else lead.custom_branch or "-"
-        
-        # ✅ District from employee doc safely
-        emp_district = "-"
-        try:
-            if emp:
-                emp_doc = frappe.get_doc("Employee", emp.name)
-                emp_district = (emp_doc.get('custom_district') or "-")
-        except:
-            pass
-        sol_id = branch_sol_map.get(emp_branch, "-")
+        emp_name = lead.get("custom_employee_name") or lead.get("lead_owner") or "Unknown"
+        emp_id = lead.get("custom_employee_id") or "-"
+        designation = lead.get("custom_designation") or "-"
+        emp_branch = lead.get("custom_branch") or "-"
+        emp_district = lead.get("custom_district") or "-"
+        sol_id = lead.get("sol_id") or "-"
         
         # Format contact info from standard fields
-        contact = ""
-        if lead.phone:
-            contact = lead.phone
-        elif lead.email_id:
-            contact = lead.email_id
-        else:
-            contact = "-"
+        contact = lead.phone or lead.email_id or "-"
     
-        # ✅ PERFECT MATCH: Your exact "Lead Product" child table structure
-        products = []
-        try:
-            products = frappe.db.get_all(
-                "Lead Product",
-                filters={"parent": lead.name},
-                fields=["product", "product_name", "product_amount"],
-                limit=20
-            )
-        except:
-            products = []
+        products = products_map.get(lead.name, [])
         
         if products:
-            # ✅ Multiple rows for products - EXACT field mapping
+            # ✅ Multiple rows for products
             for product in products:
                 product_code = product.get("product") or "-"
                 product_name = product.get("product_name") or "-"
@@ -136,8 +102,8 @@ def execute(filters=None):
                     "product_code": product_code,
                     "product_name": product_name,
                     "amount": frappe.utils.fmt_money(amount, currency=None),
-                    "employee_name": emp_name,      # ✅ Full Name (emp.name)
-                    "employee_id": emp_id,          # ✅ Employee Number (employee_number)
+                    "employee_name": emp_name,
+                    "employee_id": emp_id,
                     "designation": designation,
                     "sol_id": sol_id,
                     "branch": emp_branch,
@@ -159,8 +125,8 @@ def execute(filters=None):
                 "product_code": "-",
                 "product_name": "-",
                 "amount": "-",
-                "employee_name": emp_name,      # ✅ Full Name (emp.name)
-                "employee_id": emp_id,          # ✅ Employee Number (employee_number)
+                "employee_name": emp_name,
+                "employee_id": emp_id,
                 "designation": designation,
                 "sol_id": sol_id,
                 "branch": emp_branch,
@@ -170,6 +136,8 @@ def execute(filters=None):
                 "creation": format_datetime(lead.creation, "MMM dd, yyyy hh:mm a")
             })
             row_idx += 1
+
+
 
     # 📊 Complete column definition matching UI
     columns = [
