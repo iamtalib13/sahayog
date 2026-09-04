@@ -3302,6 +3302,30 @@
       </div>
     </div>
 
+    <!-- Bulk Upload Modal -->
+    <div class="modal-wrap" id="bulkUploadModal">
+      <div class="modal" style="width:min(640px,96vw);max-height:90vh;overflow:auto;">
+        <div class="modal-head">
+          <h3>Bulk Upload Trainings</h3>
+          <button class="modal-close" data-close="bulkUploadModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
+        </div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX with minimal columns: <b>Emp ID, Branch Code, Training Date, Program Name, Trainer ID</b>. Grouped by <b>Training Date + Program + Trainer ID</b> into one Training (multiple Branch Codes → multiple geographies, zone/region auto-fetched).</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
+          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Emp ID, Employee Name, Branch Code, Training Date, Training Days, Program Name, Trainer ID, Trainer Name</span>
+        </div>
+        <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
+          <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
+          <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">CSV or XLSX — max 2000 rows</div>
+        </div>
+        <div id="bulkResult" style="font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:none;"></div>
+        <div class="form-actions" style="margin-top:12px;">
+          <button class="btn" data-close="bulkUploadModal">Cancel</button>
+          <button class="btn btn-primary" id="btn-do-bulk-upload" type="button">Upload</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script>
@@ -3614,6 +3638,8 @@
           document.getElementById("sidebarFooter").textContent = r.label;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
+          var bulkBtnEl = document.getElementById("btn-bulk-upload");
+          if (bulkBtnEl) bulkBtnEl.style.display = r.showMis ? "inline-flex" : "none";
           var navRep = document.getElementById("nav-reports");
           if (navRep) navRep.style.display = r.showMis ? "" : "none";
         }
@@ -4214,7 +4240,7 @@
               item.className = "day-view-item";
               item.innerHTML =
                 '<div class="day-view-time">' +
-                esc(ev.time || "All day") +
+                esc(ev.time || "—") +
                 "</div>" +
                 '<div class="day-view-bar" style="background:' +
                 STATUS_META[st].color +
@@ -5764,7 +5790,54 @@
         addTrainingBtn.onclick = openAddModal;
         document.querySelector(".header-right").appendChild(addTrainingBtn);
 
+        var bulkBtn = document.createElement("button");
+        bulkBtn.className = "btn";
+        bulkBtn.id = "btn-bulk-upload";
+        bulkBtn.style.display = "none";
+        bulkBtn.title = "Bulk upload trainings from CSV/XLSX";
+        bulkBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Bulk Upload';
+        bulkBtn.onclick = function(){ document.getElementById("bulkUploadModal").classList.add("open"); document.getElementById("bulkResult").innerHTML=""; document.getElementById("bulkFile").value=""; };
+        document.querySelector(".header-right").appendChild(bulkBtn);
+
         document.getElementById("btn-save-training").onclick = saveTraining;
+
+        /* ---------- Bulk Upload ---------- */
+        (function(){
+          var dlBtn = document.getElementById("btn-download-template");
+          if (dlBtn) dlBtn.addEventListener("click", function(){
+            api("get_bulk_upload_template", {}).then(function(csv){
+              var blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+              var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="Training_Bulk_Upload_Template.csv";
+              document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
+            }).catch(function(e){ showToast(e.message||"Could not download template"); });
+          });
+          var upBtn = document.getElementById("btn-do-bulk-upload");
+          if (upBtn) upBtn.addEventListener("click", function(){
+            var fileInput = document.getElementById("bulkFile");
+            var file = fileInput && fileInput.files[0];
+            if (!file) { showToast("Select a CSV/XLSX file first"); return; }
+            upBtn.disabled=true; upBtn.textContent="Uploading...";
+            var fd=new FormData(); fd.append("file", file);
+            fetch("/api/method/sahayog.agent_and_bdo.ld_training_api.bulk_upload_training", {
+              method:"POST",
+              headers: {"X-Frappe-CSRF-Token": csrf},
+              body: fd
+            }).then(function(r){return r.json();}).then(function(d){
+              if (d.exc_type) throw new Error(d.exception || d.exc_type);
+              var res=d.message;
+              var el=document.getElementById("bulkResult");
+              el.style.display="block";
+              var errs = res.errors && res.errors.length ? "\nErrors:\n" + res.errors.slice(0,20).join("\n") + (res.errors.length>20 ? "\n... and " + (res.errors.length-20) + " more" : "") : "";
+              el.textContent = (res.message||"Done") + "\nCreated: " + (res.created||0) + "  Skipped: " + (res.skipped||0) + errs;
+              el.style.color = res.success ? "var(--ink-1)" : "#b91c1c";
+              if (res.success && res.created>0) { loadData(true); renderTrainings(); showToast("Bulk upload: " + res.created + " trainings created"); }
+              else if (!res.success) showToast(res.message||"Upload failed");
+            }).catch(function(e){
+              var el=document.getElementById("bulkResult"); el.style.display="block"; el.textContent="Upload failed: "+(e.message||e); el.style.color="#b91c1c";
+              showToast("Upload failed: "+e.message);
+            }).finally(function(){ upBtn.disabled=false; upBtn.textContent="Upload"; });
+          });
+        })();
 
         /* ---------- Multi-Geography Branch picker (Add Training modal) — 2 per row ---------- */
         var dialogFn = {
