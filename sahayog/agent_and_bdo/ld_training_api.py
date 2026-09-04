@@ -1111,6 +1111,47 @@ def _ensure_can_update(doc):
 
 
 @frappe.whitelist()
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None):
+    """
+    Reschedule a training — L&D Admin only.
+    Updates date/time/location directly via db.set_value (no cancel/amend needed).
+    """
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can reschedule trainings."))
+
+    if not from_date:
+        frappe.throw(_("From Date is required."))
+
+    to_date = to_date or from_date
+    if frappe.utils.getdate(to_date) < frappe.utils.getdate(from_date):
+        frappe.throw(_("To Date cannot be before From Date."))
+
+    start_norm = _normalize_time(start_time) if start_time else None
+    end_norm   = _normalize_time(end_time)   if end_time   else None
+
+    if start_norm and end_norm:
+        if frappe.utils.get_time(end_norm) <= frappe.utils.get_time(start_norm):
+            frappe.throw(_("End Time must be after Start Time."))
+
+    updates = {
+        "from_date": from_date,
+        "to_date":   to_date,
+    }
+    if start_norm is not None:
+        updates["start_time"] = start_norm
+    if end_norm is not None:
+        updates["end_time"] = end_norm
+    if training_location is not None:
+        updates["training_location"] = training_location
+
+    for field, value in updates.items():
+        frappe.db.set_value("Training", name, field, value)
+
+    frappe.db.commit()
+    return {"success": True}
+
+
+@frappe.whitelist()
 def delete_training(name):
     """Delete a training — L&D Admin only. Cancels first if submitted."""
     if not _is_admin():
