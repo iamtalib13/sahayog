@@ -42,49 +42,58 @@ frappe.query_reports["Lead Report"] = {
           .lead-branch-capsule {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            justify-content: center;
             padding: 3px 8px;
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            border-radius: 16px;
-            font-size: 10.5px;
-            font-weight: 600;
-            color: #334155;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s ease;
             user-select: none;
+            line-height: 1.2;
           }
-          .lead-branch-capsule:hover {
-            border-color: #2563eb;
-            background: #eff6ff;
-            color: #1e40af;
+
+          /* 🔴 Red state for 0 leads */
+          .lead-branch-capsule.no-leads {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+          }
+          .lead-branch-capsule.no-leads:hover {
+            border-color: #ef4444;
+            background: #fee2e2;
+            color: #7f1d1d;
             transform: translateY(-1px);
           }
-          .lead-branch-capsule.active {
-            background: #2563eb !important;
-            border-color: #1d4ed8 !important;
-            color: #ffffff !important;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+
+          /* 🟢 Green state for > 0 leads */
+          .lead-branch-capsule.has-leads {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            color: #166534;
           }
-          .lead-branch-capsule .sol-tag {
-            font-weight: 700;
-            font-size: 10.5px;
-            letter-spacing: 0.3px;
+          .lead-branch-capsule.has-leads:hover {
+            border-color: #22c55e;
+            background: #dcfce7;
+            color: #15803d;
+            transform: translateY(-1px);
+          }
+
+          /* 🌟 Active Selected State */
+          .lead-branch-capsule.active {
+            background: #15803d !important;
+            border-color: #166534 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 5px rgba(21, 128, 61, 0.35);
           }
           .lead-branch-capsule.active .sol-tag {
-            color: #ffffff;
+            color: #ffffff !important;
           }
-          .lead-branch-capsule .count-pill {
-            background: #e2e8f0;
-            color: #0f172a;
-            font-size: 10px;
+
+          .lead-branch-capsule .sol-tag {
             font-weight: 700;
-            padding: 1px 6px;
-            border-radius: 9px;
-          }
-          .lead-branch-capsule.active .count-pill {
-            background: #ffffff;
-            color: #2563eb;
+            font-size: 10px;
+            letter-spacing: 0.3px;
           }
         `)
         .appendTo("head");

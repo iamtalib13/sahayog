@@ -152,14 +152,14 @@ def execute(filters=None):
         if not count and br_name:
             count = branch_counts.get(br_name, 0)
 
-        display_label = f"Branch: {br_name} (SOL ID: {sol})" if (sol and br_name and sol != br_name) else (br_name or sol)
+        display_label = f"Branch: {br_name} (SOL ID: {sol}) | Today's Leads: {count}" if (sol and br_name and sol != br_name) else f"{br_name or sol} | Leads: {count}"
 
         is_active = "active" if (selected_branch and selected_branch in (sol, br_name)) else ""
+        lead_status_cls = "has-leads" if count > 0 else "no-leads"
 
         capsules_html.append(f'''
-            <div class="lead-branch-capsule {is_active}" data-sol="{sol}" data-branch="{br_name}" title="{display_label}">
+            <div class="lead-branch-capsule {lead_status_cls} {is_active}" data-sol="{sol}" data-branch="{br_name}" title="{display_label}">
                 <span class="sol-tag">{sol or 'N/A'}</span>
-                <span class="count-pill">{count}</span>
             </div>
         ''')
 
