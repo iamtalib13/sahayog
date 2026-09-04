@@ -3904,7 +3904,7 @@
           chip.style.borderLeftColor = meta.color;
           chip.style.position = "relative";
           var delX = state.role === "ld_admin"
-            ? '<button class="chip-del-btn" title="Delete" style="position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:rgba(220,38,38,0.12);color:#dc2626;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:10px;line-height:1;padding:0;">✕</button>'
+            ? '<button class="chip-del-btn" title="Delete" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:3px;background:rgba(220,38,38,0.12);color:#dc2626;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;pointer-events:none"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'
             : "";
           chip.innerHTML =
             '<span class="event-chip-top">' +
