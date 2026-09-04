@@ -3,7 +3,22 @@
 
 frappe.query_reports["Lead Report"] = {
   onload: function (report) {
+    // 🚫 Inject CSS to permanently hide Frappe's default 'Actions' dropdown button
+    if (!$("#hide-lead-report-actions-css").length) {
+      $("<style id='hide-lead-report-actions-css'>")
+        .prop("type", "text/css")
+        .html(`
+          .page-actions .menu-btn-group,
+          .page-actions .actions-btn-group,
+          .page-actions [data-label="Actions"] {
+            display: none !important;
+          }
+        `)
+        .appendTo("head");
+    }
+
     // 🔘 Add 'Clear Filters' button
+
     let clear_btn = report.page.add_inner_button(__("Clear Filters"), function () {
       report.set_filter_value("custom_branch", "");
       report.set_filter_value("sol_id", "");
