@@ -145,15 +145,15 @@
    "options": "Employee",
    "reqd": 1
   },
-  {
-   "fetch_from": "employee_id.employee_name",
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Employee Name",
-   "read_only": 1,
-   "width": "0"
-  },
+   {
+    "fetch_from": "employee_id.employee_name",
+    "fieldname": "employee_name",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Employee Name",
+    "read_only": 1,
+    "width": "220"
+   },
   {
    "fetch_from": "employee_id.designation",
    "fieldname": "designation",
