@@ -15,6 +15,7 @@
   "zone",
   "description",
   "issue_occurrence_date",
+  "show_cause_date",
   "suspension_required",
   "document_upload",
   "remarks",
@@ -150,7 +151,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Employee Name",
-   "read_only": 1
+   "read_only": 1,
+   "width": "0"
   },
   {
    "fetch_from": "employee_id.designation",
@@ -224,13 +226,19 @@
    "fieldname": "personal_email",
    "fieldtype": "Data",
    "label": "Personal Email"
+  },
+  {
+   "fieldname": "show_cause_date",
+   "fieldtype": "Date",
+   "label": "Show Cause Date",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-01 10:37:51.358783",
+ "modified": "2026-09-05 10:30:51.446122",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

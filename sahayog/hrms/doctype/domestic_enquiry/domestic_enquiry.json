@@ -8,6 +8,7 @@
   "section_break_ddef",
   "domestic_enquiry",
   "place_of_enquiry",
+  "enquiry_conduct",
   "remarks",
   "enquiry_report",
   "column_break_wdmq",
@@ -205,13 +206,18 @@
    "hidden": 1,
    "label": "Previous Record",
    "options": "Response to SCN"
+  },
+  {
+   "fieldname": "enquiry_conduct",
+   "fieldtype": "Data",
+   "label": "Enquiry Conduct"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-28 12:50:22.598616",
+ "modified": "2026-09-04 14:10:03.378643",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Domestic Enquiry",
