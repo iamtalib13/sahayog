@@ -8,6 +8,7 @@
    "section_break_clxr",
    "domestic_enquiry",
    "place_of_enquiry",
+   "enquiry_conduct",
    "remarks",
    "enquiry_report",
    "previous_record",
@@ -157,14 +158,21 @@
    "label": "Domestic Enquiry",
    "read_only": 1
   },
-  {
-   "fieldname": "place_of_enquiry",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Place of Enquiry"
-  },
-  {
-   "fieldname": "remarks",
+   {
+    "fieldname": "place_of_enquiry",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Place of Enquiry"
+   },
+   {
+    "fetch_from": "previous_record.enquiry_conduct",
+    "fieldname": "enquiry_conduct",
+    "fieldtype": "Data",
+    "label": "Enquiry Conduct",
+    "read_only": 1
+   },
+   {
+    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
   },
