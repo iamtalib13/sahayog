@@ -168,8 +168,7 @@
     "fetch_from": "previous_record.enquiry_conduct",
     "fieldname": "enquiry_conduct",
     "fieldtype": "Data",
-    "label": "Enquiry Conduct",
-    "read_only": 1
+    "label": "Enquiry Conduct"
    },
    {
     "fieldname": "remarks",
