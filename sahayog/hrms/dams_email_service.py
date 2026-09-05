@@ -184,6 +184,16 @@ def _send_email(docname, doctype, recipients, cc, subject, message, print_format
         now=True
     )
 
+    # Auto-fill Show Cause Date on first mail for Disciplinary Case
+    try:
+        if doctype == "Disciplinary Case" and print_format in ["Disciplinary Case Notice", "Disciplinary-SCN", "Show Cause Notice"]:
+            doc = frappe.get_doc(doctype, docname)
+            if not doc.get("show_cause_date"):
+                frappe.db.set_value(doctype, docname, "show_cause_date", frappe.utils.nowdate())
+                frappe.db.commit()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Auto-fill Show Cause Date failed")
+
     return "OK"
 
 
