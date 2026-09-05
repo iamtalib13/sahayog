@@ -727,7 +727,7 @@ def _create_employee(row_dict, field_map, cache=None, existing_cols=None):
         else:
             del parsed["reports_to"]
 
-    parsed["custom_is_support_staff"] = 1
+    parsed["custom_is_support_staff"] = 0
     parsed["custom_medical_deduction"] = 100
 
     parsed["status"] = _normalize_status(parsed.get("status"), parsed.get("relieving_date"))
