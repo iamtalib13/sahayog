@@ -718,10 +718,10 @@
       }
       .day-cell {
         background: var(--surface);
-        padding: 6px;
+        padding: 8px;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
         min-height: 72px;
         min-width: 0;
         overflow: hidden;
@@ -2254,20 +2254,26 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         border-radius: var(--radius-sm);
         color: var(--ink-3);
         background: none;
         border: none;
         cursor: pointer;
+        padding: 4px;
         transition:
-          background 0.1s,
-          color 0.1s;
+          background 0.12s,
+          color 0.12s,
+          transform 0.12s;
       }
       .tr-icon-btn:hover {
-        background: var(--surface-3);
+        background: #f1f5f9;
         color: var(--ink-1);
+        transform: scale(1.05);
+      }
+      .tr-icon-btn:active {
+        transform: scale(0.95);
       }
       .tr-icon-btn svg {
         width: 14px;
@@ -2768,32 +2774,7 @@
             <div class="cal-content" id="calContent"></div>
           </div>
 
-          <div class="legend">
-            <span class="legend-item"
-              ><span class="status-dot" style="background: var(--green)"></span>
-              Completed</span
-            >
-            <span class="legend-item"
-              ><span
-                class="status-dot"
-                style="background: var(--orange)"
-              ></span>
-              In Progress</span
-            >
-            <span class="legend-item"
-              ><span
-                class="status-dot"
-                style="background: var(--accent)"
-              ></span>
-              Upcoming</span
-            >
-            <span class="legend-item"
-              ><span class="status-dot" style="background: var(--ink-3)"></span>
-              Pending</span
-            >
-            <span class="legend-item"><span class="status-dot" style="background:#fee2e2;border:1px solid #fecaca"></span> Sunday</span>
-            <span class="legend-item"><span class="status-dot" style="background:#fffbeb;border:1px solid #fde68a"></span> Holiday</span>
-          </div>
+
         </div>
 
         <!-- ===== Trainings (management list) ===== -->
@@ -6771,10 +6752,10 @@
                 timeStr +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.training_location || "—") +
+                (ev.training_location ? esc(ev.training_location) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.trainer || "—") +
+                (ev.trainer ? esc(ev.trainer) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
                 "</td>" +
                 '<td class="td-meta">' +
                 (function(){
