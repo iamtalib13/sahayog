@@ -4,27 +4,29 @@
  "creation": "2025-10-15 10:21:32.893976",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
-  "section_break_clxr",
-  "domestic_enquiry",
-  "place_of_enquiry",
-  "remarks",
-  "enquiry_report",
-  "previous_record",
-  "column_break_yybn",
-  "status_of_response",
-  "date_of_enquiry",
-  "enquiry_officer_name",
-  "enquiry_status",
-  "date_of_2nd_enquiry",
-  "section_break_yxjs",
-  "case_id",
-  "employee_id",
-  "employee_name",
-  "branch_id",
-  "zone_name",
-  "issue_in_details",
-  "issue_occurrence_date",
+  "field_order": [
+   "section_break_clxr",
+   "domestic_enquiry",
+   "place_of_enquiry",
+   "enquiry_conduct",
+   "remarks",
+   "enquiry_report",
+   "previous_record",
+   "column_break_yybn",
+   "status_of_response",
+   "date_of_enquiry",
+   "enquiry_officer_name",
+   "enquiry_status",
+   "date_of_2nd_enquiry",
+   "section_break_yxjs",
+   "case_id",
+   "employee_id",
+   "employee_name",
+   "branch_id",
+   "zone_name",
+   "issue_in_details",
+   "issue_occurrence_date",
+   "show_cause_date",
   "column_break_etui",
   "designation",
   "branch_name",
@@ -116,16 +118,23 @@
    "label": "Date of issue Reported to hr",
    "read_only": 1
   },
-  {
-   "fetch_from": "case_id.issue_occurrence_date",
-   "fieldname": "issue_occurrence_date",
-   "fieldtype": "Date",
-   "label": "Issue Occurrence Date",
-   "read_only": 1
-  },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "status_of_response",
+   {
+    "fetch_from": "case_id.issue_occurrence_date",
+    "fieldname": "issue_occurrence_date",
+    "fieldtype": "Date",
+    "label": "Issue Occurrence Date",
+    "read_only": 1
+   },
+   {
+    "fetch_from": "case_id.show_cause_date",
+    "fieldname": "show_cause_date",
+    "fieldtype": "Date",
+    "label": "Show Cause Date",
+    "read_only": 1
+   },
+   {
+    "allow_on_submit": 1,
+    "fieldname": "status_of_response",
    "fieldtype": "Data",
    "label": "Status of Response"
   },
@@ -149,14 +158,20 @@
    "label": "Domestic Enquiry",
    "read_only": 1
   },
-  {
-   "fieldname": "place_of_enquiry",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Place of Enquiry"
-  },
-  {
-   "fieldname": "remarks",
+   {
+    "fieldname": "place_of_enquiry",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Place of Enquiry"
+   },
+   {
+    "fetch_from": "previous_record.enquiry_conduct",
+    "fieldname": "enquiry_conduct",
+    "fieldtype": "Data",
+    "label": "Enquiry Conduct"
+   },
+   {
+    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
   },

@@ -16,6 +16,7 @@ frappe.ui.form.on("Enquiry Reminder", {
             "status_of_response",
             "date_of_enquiry",
             "place_of_enquiry",
+            "enquiry_conduct",
             "enquiry_officer_name",
           ],
         })
@@ -31,6 +32,7 @@ frappe.ui.form.on("Enquiry Reminder", {
             frm.set_value("status_of_response", de.status_of_response);
             frm.set_value("date_of_enquiry", de.date_of_enquiry);
             frm.set_value("place_of_enquiry", de.place_of_enquiry);
+            frm.set_value("enquiry_conduct", de.enquiry_conduct);
             frm.set_value("enquiry_officer_name", de.enquiry_officer_name);
 
             // 💡 Force UI refresh so the value reflects immediately
