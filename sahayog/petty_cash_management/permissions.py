@@ -23,19 +23,23 @@ def get_branch_permission_query(user):
 
     # 2. Find the logged-in User's Employee record
     # FIX: Fetch 'sahayog_branch' instead of 'branch'
+    # FIX: Fetch 'petty_cash_branch' instead of 'branch'
     employee_details = frappe.db.get_value("Employee",
                                            {"user_id": user, "status": "Active"},
-                                           ["name", "sahayog_branch"],
+                                           #    ["name", "sahayog_branch"],
+                                           ["name", "petty_cash_branch"],
                                            as_dict=True
                                            )
 
     # 3. If no linked employee found, or employee has no branch, block everything
-    if not employee_details or not employee_details.sahayog_branch:
+    # if not employee_details or not employee_details.sahayog_branch:
+    if not employee_details or not employee_details.petty_cash_branch:
         return "1=0"
 
     # 4. Return the SQL condition using the SOL ID
     # This ensures the filter is: branch = '1108'
-    return f"branch = '{employee_details.sahayog_branch}'"
+    # return f"branch = '{employee_details.sahayog_branch}'"
+    return f"branch = '{employee_details.petty_cash_branch}'"
 
 
 def get_user_allowed_branches(user=None):
@@ -43,7 +47,8 @@ def get_user_allowed_branches(user=None):
     Returns a list of Branch IDs that the user is allowed to access.
     Logic:
     1. Administrator / System Manager / HO Manager -> ALL Branches.
-    2. Branch User -> Only their assigned 'sahayog_branch' in Employee Master.
+    # 2. Branch User -> Only their assigned 'sahayog_branch' in Employee Master.
+    2. Branch User -> Only their assigned 'petty_cash_branch' in Employee Master.
     """
     if not user:
         user = frappe.session.user
@@ -68,7 +73,8 @@ def get_user_allowed_branches(user=None):
 
     # 2. Restrict Branch Users
     employee = frappe.db.get_value(
-        "Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+        # "Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+        "Employee", {"user_id": user, "status": "Active"}, "petty_cash_branch")
 
     if employee:
         return [employee]  # Return as a list
@@ -88,7 +94,8 @@ def get_user_allowed_branches(user=None):
 
      # 2. Restrict Branch Users
     employee = frappe.db.get_value(
-        "Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+        # "Employee", {"user_id": user, "status": "Active"}, "sahayog_branch")
+        "Employee", {"user_id": user, "status": "Active"}, "petty_cash_branch")
 
     if employee:
         return [employee]  # Return as a list

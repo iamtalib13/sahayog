@@ -459,10 +459,13 @@ frappe.ui.form.on('Petty Cash Transaction', {
             frappe.db.get_value(
                 'Employee',
                 { user_id: frappe.session.user, status: 'Active' },
-                'sahayog_branch'
+                // 'sahayog_branch'
+                'petty_cash_branch'
             ).then(r => {
-                if (r && r.message && r.message.sahayog_branch) {
-                    frm.set_value('branch', r.message.sahayog_branch);
+                // if (r && r.message && r.message.sahayog_branch) {
+                //     frm.set_value('branch', r.message.sahayog_branch);
+                if (r && r.message && r.message.petty_cash_branch) {
+                    frm.set_value('branch', r.message.petty_cash_branch);
                     frm.trigger('fetch_balance');
                     check_branch_wallet_status(frm);
                 }

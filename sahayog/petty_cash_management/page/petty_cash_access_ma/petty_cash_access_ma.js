@@ -1,8 +1,8 @@
-frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) { 
+frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
     // 1. Role-Based Access Control
     const authorized_roles = ["Administrator", "HO Petty Cash Manager", "HO Petty Cash Verifier"];
     const user_roles = frappe.user_roles;
-    
+
     const is_authorized = authorized_roles.some(role => user_roles.includes(role));
 
     if (!is_authorized) {
@@ -26,16 +26,16 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
     }
 
     // 2. Initialize Page
-    let page = frappe.ui.make_app_page({ 
-        parent: wrapper, 
-        title: 'Petty Cash Access Management', 
-        single_column: true 
-    }); 
+    let page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'Petty Cash Access Management',
+        single_column: true
+    });
 
     $(wrapper).find(".page-content").css({ padding: "0", maxWidth: "none" });
     $(wrapper).find(".layout-main-section").css({ maxWidth: "none" });
- 
-    frappe.require('/assets/sahayog/js/petite-vue.iife.js', () => { 
+
+    frappe.require('/assets/sahayog/js/petite-vue.iife.js', () => {
         page.main.html(` 
             <style>
                 * { box-sizing: border-box; }
@@ -208,7 +208,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                                             </div>
                                             <div class="meta-item">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                                [[ selectedEmp.sahayog_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
+                                                [[ selectedEmp.petty_cash_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
                                             </div>
                                         </div>
                                     </div>
@@ -245,10 +245,10 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                     </div> 
                 </div> 
             </div> 
-        `); 
- 
-        PetiteVue.createApp({ 
-            $delimiters: ['[[', ']]'], 
+        `);
+
+        PetiteVue.createApp({
+            $delimiters: ['[[', ']]'],
             empList: [],
             filteredList: [],
             searchQuery: "",
@@ -256,10 +256,10 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
             hasBranchUserRole: false,
             isUpdating: false,
             isLoading: true,
- 
-            init() { 
+
+            init() {
                 this.loadEmployees();
-            }, 
+            },
 
             getInitials(name) {
                 if (!name) return "?";
@@ -334,11 +334,11 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
 
             toggleRole() {
                 if (!this.selectedEmp || !this.selectedEmp.user_id) return;
-                
+
                 this.isUpdating = true;
                 frappe.call({
                     method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.toggle_branch_user_role",
-                    args: { 
+                    args: {
                         user_id: this.selectedEmp.user_id,
                         enable: this.hasBranchUserRole
                     },
@@ -382,6 +382,6 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function(wrapper) {
                     }
                 });
             }
-        }).mount('#perm-root'); 
-    }); 
+        }).mount('#perm-root');
+    });
 }; 

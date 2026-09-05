@@ -46,7 +46,8 @@ class PettyCashTransaction(Document):
         if "HO Petty Cash Manager" not in frappe.get_roles():
             self.transaction_type = "Expense"
             emp_branch = frappe.db.get_value(
-                "Employee", {"user_id": frappe.session.user, "status": "Active"}, "sahayog_branch")
+                # "Employee", {"user_id": frappe.session.user, "status": "Active"}, "sahayog_branch")
+                "Employee", {"user_id": frappe.session.user, "status": "Active"}, "petty_cash_branch")
             if emp_branch:
                 self.branch = emp_branch
 
@@ -2756,7 +2757,8 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
         user_branch = frappe.db.get_value(
             "Employee",
             {"user_id": frappe.session.user, "status": "Active"},
-            "sahayog_branch"
+            # "sahayog_branch"
+            "petty_cash_branch"
         )
 
         if not user_branch:
