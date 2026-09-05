@@ -2163,7 +2163,7 @@
         flex-direction: column;
         padding: 20px 24px;
         gap: 16px;
-        overflow-y: auto;
+        overflow: hidden;
         flex: 1;
         min-height: 0;
       }
@@ -2426,7 +2426,18 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        overflow: hidden;
+        overflow: auto;
+        flex: 1;
+        min-height: 200px;
+        max-height: 55vh;
+      }
+      .tr-table-wrap::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+      }
+      .tr-table-wrap::-webkit-scrollbar-thumb {
+        background: var(--surface-3);
+        border-radius: 8px;
       }
       .tr-table {
         width: 100%;
@@ -2839,6 +2850,7 @@
               <option value="upcoming">Upcoming dates</option>
               <option value="past">Past dates</option>
             </select>
+            <input type="month" class="field-select" id="tr-month" title="Filter by month" style="min-width:140px;" />
             <button class="btn btn-reset" id="tr-reset" title="Reset filters">
               <svg
                 viewBox="0 0 24 24"
@@ -5892,7 +5904,7 @@
               var errs = res.errors && res.errors.length ? "\nErrors:\n" + res.errors.slice(0,20).join("\n") + (res.errors.length>20 ? "\n... and " + (res.errors.length-20) + " more" : "") : "";
               el.textContent = (res.message||"Done") + "\nCreated: " + (res.created||0) + "  Skipped: " + (res.skipped||0) + errs;
               el.style.color = res.success ? "var(--ink-1)" : "#b91c1c";
-              if (res.success && res.created>0) { loadData(true); renderTrainings(); showToast("Bulk upload: " + res.created + " trainings created"); }
+              if (res.success && res.created>0) { loadData(true); loadTrainingsList(); showToast("Bulk upload: " + res.created + " trainings created"); }
               else if (!res.success) showToast(res.message||"Upload failed");
             }).catch(function(e){
               var el=document.getElementById("bulkResult"); el.style.display="block"; el.textContent="Upload failed: "+(e.message||e); el.style.color="#b91c1c";
@@ -6481,9 +6493,12 @@
           district: "",
           branch: "",
           range: "all",
+          month: "",
         };
         var trPage = { current: 1, size: 10 };
         var rpPage = { current: 1, size: 10 };
+        state.trainingsList = [];
+        state.trainingsLoaded = false;
 
         /* --- nav switch: Calendar ↔ Trainings --- */
         var activeTab = "calendar"; // "calendar" | "trainings"
@@ -6504,7 +6519,7 @@
           if (navTr) navTr.classList.toggle("active", tab === "trainings");
           if (navRep) navRep.classList.toggle("active", tab === "reports");
 
-          if (tab === "trainings") renderTrainings();
+          if (tab === "trainings") { loadTrainingsList(); }
           if (tab === "reports") showReportsHome();
         }
 
@@ -6546,13 +6561,35 @@
           );
         }
 
+        function loadTrainingsList(){
+          var tbody = document.getElementById("trBody");
+          if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--ink-3)">Loading...</td></tr>';
+          api("get_training_list", {limit: 500}).then(function(rows){
+            state.trainingsList = Array.isArray(rows) ? rows : [];
+            state.trainingsLoaded = true;
+            // Default month filter to current month if not set, for month-wise view
+            var monEl = document.getElementById("tr-month");
+            if (monEl && !monEl.value && !trFilters.month) {
+              var nowMon = new Date().toISOString().slice(0,7);
+              monEl.value = nowMon;
+              trFilters.month = nowMon;
+            }
+            renderTrainings();
+          }).catch(function(err){
+            state.trainingsList = [];
+            renderTrainings();
+            showToast("Could not load trainings: " + err.message);
+          });
+        }
+
         function trFilteredEvents() {
           var f = trFilters;
           var q = f.search.trim().toLowerCase();
           var todayIso2 = isoOf(today);
           var monthKey = todayIso2.slice(0, 7);
+          var source = (state.trainingsLoaded && state.trainingsList && state.trainingsList.length) ? state.trainingsList : state.calEvents;
 
-          return state.calEvents.filter(function (ev) {
+          return source.filter(function (ev) {
             if (f.status) {
               if (f.status === "inprogress" && statusOf(ev) !== "inprogress")
                 return false;
@@ -6571,7 +6608,10 @@
               if (f.district && ev.district !== f.district) return false;
               if (f.branch && ev.branch !== f.branch) return false;
             }
-            if (f.range === "month") {
+            if (f.month) {
+              var evKey = (ev.from_date || ev.date || "").slice(0, 7);
+              if (evKey !== f.month) return false;
+            } else if (f.range === "month") {
               var evKey = (ev.from_date || ev.date || "").slice(0, 7);
               if (evKey !== monthKey) return false;
             } else if (f.range === "upcoming") {
@@ -6800,7 +6840,7 @@
               api("delete_training", { name: name })
                 .then(function () {
                   loadData(true);
-                  renderTrainings();
+                  loadTrainingsList();
                   showToast("Training deleted");
                 })
                 .catch(function (err) { showToast("Could not delete: " + err.message); });
@@ -6891,6 +6931,7 @@
           onChange("district", "tr-district");
           onChange("branch", "tr-branch");
           onChange("range", "tr-range");
+          onChange("month", "tr-month");
 
           var resetBtn = document.getElementById("tr-reset");
           if (resetBtn) {
@@ -6903,6 +6944,7 @@
                 district: "",
                 branch: "",
                 range: "all",
+                month: "",
               };
               trPage.current = 1;
               [
@@ -6918,6 +6960,8 @@
               });
               var rng = document.getElementById("tr-range");
               if (rng) rng.value = "all";
+              var mon = document.getElementById("tr-month");
+              if (mon) mon.value = "";
               renderTrainings();
             });
           }
@@ -6940,12 +6984,13 @@
 
           // rows per page
           var sizeEl = document.getElementById("tr-page-size");
-          if (sizeEl)
+          if (sizeEl) {
             sizeEl.addEventListener("change", function () {
-              trPage.size = parseInt(sizeEl.value, 10);
+              trPage.size = parseInt(this.value, 10) || 10;
               trPage.current = 1;
               renderTrainings();
             });
+          }
         }
         setupTrFilters();
 
