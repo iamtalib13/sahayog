@@ -235,16 +235,20 @@
         gap: 7px;
         height: 32px;
         padding: 0 10px;
-        background: var(--surface-2);
-        border-radius: var(--radius-sm);
+        background: #f8fafc;
+        border-radius: 999px;
         color: var(--ink-3);
         width: 240px;
         max-width: 26vw;
         margin-left: 10px;
-        border: 1px solid transparent;
+        border: 1px solid var(--border);
         transition:
           border-color 0.12s,
-          background 0.12s;
+          background 0.12s,
+          box-shadow 0.12s;
+      }
+      .search:focus-within {
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
       .search:focus-within {
         background: var(--surface);
@@ -419,6 +423,16 @@
         background: #fff;
         color: var(--accent-ink);
       }
+      /* Colored count badges per status (soft) */
+      .nav-item[data-status="draft"] .item-count { background: #f3f4f6; color: #6b7280; }
+      .nav-item[data-status="upcoming"] .item-count { background: #eef1fe; color: #4f6bed; }
+      .nav-item[data-status="inprogress"] .item-count { background: #fdf0e7; color: #e07030; }
+      .nav-item[data-status="completed"] .item-count { background: #e6f6ee; color: #1f9d61; }
+      .nav-item[data-status="pending"] .item-count { background: #f0f1f3; color: #8a8f98; }
+      .nav-item.active[data-status="draft"] .item-count { background: #f3f4f6; color: #4d5562; }
+      .nav-item.active[data-status="upcoming"] .item-count { background: #eef1fe; color: #3f57c4; }
+      .nav-item.active[data-status="inprogress"] .item-count { background: #fdf0e7; color: #b45309; }
+      .nav-item.active[data-status="completed"] .item-count { background: #e6f6ee; color: #15803d; }
       .status-dot {
         width: 8px;
         height: 8px;
@@ -485,7 +499,7 @@
         align-items: center;
         gap: 4px;
         padding: 8px 20px;
-        background: var(--surface);
+        background: #f8fafc;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
         flex-wrap: wrap;
@@ -704,10 +718,10 @@
       }
       .day-cell {
         background: var(--surface);
-        padding: 6px;
+        padding: 8px;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
         min-height: 72px;
         min-width: 0;
         overflow: hidden;
@@ -742,6 +756,41 @@
       .day-cell.dimmed {
         opacity: 0.45;
       }
+      .day-cell.is-holiday {
+        background: #fefce8;
+        border-top: 1px solid #fde68a;
+      }
+      .day-cell.is-sunday {
+        background: #fff8f8;
+        border-top: 1px solid #fecaca;
+      }
+      .day-cell.is-holiday .day-num,
+      .day-cell.is-sunday .day-num {
+        color: #b91c1c;
+        font-weight: 700;
+      }
+      .holiday-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #b45309;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 999px;
+        padding: 1px 5px;
+        margin-left: 4px;
+        white-space: nowrap;
+      }
+      .sunday-label {
+        font-size: 9px;
+        font-weight: 600;
+        color: #b91c1c;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 999px;
+        padding: 1px 5px;
+        margin-left: 4px;
+        white-space: nowrap;
+      }
 
       .event-chip {
         display: flex;
@@ -758,8 +807,13 @@
         cursor: pointer;
         border-left: 2px solid transparent;
       }
+      .event-chip {
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      }
       .event-chip:hover {
         background: var(--surface-3);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(16,24,40,0.08);
       }
       .event-chip .status-dot {
         width: 6px;
@@ -821,6 +875,12 @@
       .week-day-col.is-today {
         background: #fafbff;
       }
+      .week-day-col.is-holiday {
+        background: #fefce8;
+      }
+      .week-day-col.is-sunday {
+        background: #fff8f8;
+      }
       .week-day-col.selected {
         box-shadow: inset 0 0 0 1.5px var(--accent);
       }
@@ -839,8 +899,13 @@
         min-width: 0;
         cursor: pointer;
       }
+      .week-event {
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      }
       .week-event:hover {
         background: var(--surface-3);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(16,24,40,0.08);
       }
       .week-event .status-dot {
         margin-top: 4px;
@@ -1449,8 +1514,8 @@
         margin-top: 2px;
       }
       .nt-sched-hint.has {
-        color: #b45309;
-        font-weight: 600;
+        color: var(--ink-3);
+        font-weight: 500;
       }
       .nt-sched-hint.overlap {
         color: #b91c1c;
@@ -1460,28 +1525,7 @@
         color: #dc2626;
         font-weight: 600;
       }
-      .nt-allday-row {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        font-size: 13px;
-        color: var(--ink-2);
-        margin: 6px 0 4px;
-        cursor: pointer;
-        user-select: none;
-      }
-      .nt-allday-row input[type="checkbox"] {
-        width: 15px;
-        height: 15px;
-        accent-color: var(--accent);
-        cursor: pointer;
-      }
-      .nt-dt-cell.dimmed input {
-        opacity: 0.4;
-        pointer-events: none;
-      }
-
-      /* Trainer readonly + Branch */
+            /* Trainer readonly + Branch */
       .nt-readonly {
         flex: 1;
         display: flex;
@@ -1558,6 +1602,40 @@
         cursor: default;
         width: 100%;
       }
+
+      /* Multi-geography rows — 2 per row grid */
+      #geo-rows { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+      @media (max-width: 560px) { #geo-rows { grid-template-columns:1fr; } }
+      .geo-row {
+        display:flex; align-items:center; gap:8px;
+        border:1px solid var(--border); border-radius:8px; padding:8px 10px;
+        background:var(--surface);
+      }
+      .geo-row-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+      .geo-branch-wrap { position:relative; display:flex; align-items:center; }
+      .geo-branch-wrap .nt-input { width:100%; }
+      .geo-branch-pop {
+        position:absolute; z-index:300; left:0; right:0;
+        top:calc(100% + 4px);
+        background:var(--surface); border:1px solid var(--border);
+        border-radius:10px; box-shadow:0 16px 40px rgba(16,24,40,0.18);
+        max-height:212px; overflow-y:auto;
+      }
+      .geo-branch-pop .branch-opt { padding:6px 12px; font-size:13px; cursor:pointer; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+      .geo-branch-pop .branch-opt:hover { background:var(--surface-2); }
+      .geo-row-meta {
+        display:flex; gap:6px; flex-wrap:wrap;
+        font-size:10.5px; color:var(--ink-3);
+      }
+      .geo-row-meta span {
+        background:var(--surface-2); border-radius:999px; padding:2px 7px; white-space:nowrap;
+      }
+      .geo-remove {
+        width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+        color:var(--ink-3); border:1px solid var(--border); background:var(--surface);
+        cursor:pointer; flex-shrink:0;
+      }
+      .geo-remove:hover { background:var(--surface-2); color:#b91c1c; border-color:#fecaca; }
 
       /* Ad-hoc + agenda */
       .nt-check {
@@ -2085,7 +2163,7 @@
         flex-direction: column;
         padding: 20px 24px;
         gap: 16px;
-        overflow-y: auto;
+        overflow: hidden;
         flex: 1;
         min-height: 0;
       }
@@ -2146,6 +2224,13 @@
         padding: 0 7px;
         min-width: 100px;
         max-width: 130px;
+        background: #f8fafc;
+        border-radius: 999px;
+      }
+      .tr-toolbar .field-select:focus {
+        background: #fff;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
       .tr-toolbar .btn-reset {
         height: 30px;
@@ -2169,20 +2254,26 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         border-radius: var(--radius-sm);
         color: var(--ink-3);
         background: none;
         border: none;
         cursor: pointer;
+        padding: 4px;
         transition:
-          background 0.1s,
-          color 0.1s;
+          background 0.12s,
+          color 0.12s,
+          transform 0.12s;
       }
       .tr-icon-btn:hover {
-        background: var(--surface-3);
+        background: #f1f5f9;
         color: var(--ink-1);
+        transform: scale(1.05);
+      }
+      .tr-icon-btn:active {
+        transform: scale(0.95);
       }
       .tr-icon-btn svg {
         width: 14px;
@@ -2311,6 +2402,11 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+      .tr-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16,24,40,0.08);
       }
       .tr-stat-card .sc-num {
         font-size: 26px;
@@ -2323,23 +2419,31 @@
         color: var(--ink-3);
         font-weight: 500;
       }
-      .tr-stat-card.sc-upcoming .sc-num {
-        color: var(--accent);
-      }
-      .tr-stat-card.sc-inprogress .sc-num {
-        color: var(--orange);
-      }
-      .tr-stat-card.sc-completed .sc-num {
-        color: var(--green);
-      }
-      .tr-stat-card.sc-pending .sc-num {
-        color: var(--ink-3);
-      }
+      .tr-stat-card.sc-upcoming { background: #eef1fe; border-color: #c7d2fe; }
+      .tr-stat-card.sc-upcoming .sc-num { color: var(--accent); }
+      .tr-stat-card.sc-inprogress { background: #fdf0e7; border-color: #fed7aa; }
+      .tr-stat-card.sc-inprogress .sc-num { color: var(--orange); }
+      .tr-stat-card.sc-completed { background: #e6f6ee; border-color: #86efac; }
+      .tr-stat-card.sc-completed .sc-num { color: var(--green); }
+      .tr-stat-card.sc-pending { background: #f0f1f3; border-color: #e5e7eb; }
+      .tr-stat-card.sc-pending .sc-num { color: var(--ink-3); }
+      .tr-stat-card:not(.sc-upcoming):not(.sc-inprogress):not(.sc-completed):not(.sc-pending) { background: #f8fafc; border-color: var(--border); }
       .tr-table-wrap {
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-md);
-        overflow: hidden;
+        overflow: auto;
+        flex: 1;
+        min-height: 200px;
+        max-height: 55vh;
+      }
+      .tr-table-wrap::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+      }
+      .tr-table-wrap::-webkit-scrollbar-thumb {
+        background: var(--surface-3);
+        border-radius: 8px;
       }
       .tr-table {
         width: 100%;
@@ -2347,8 +2451,18 @@
         font-size: 13px;
       }
       .tr-table thead tr {
-        background: var(--surface-2);
+        background: #f8fafc;
         border-bottom: 1px solid var(--border);
+      }
+      .tr-table tbody tr:hover {
+        background: #f8fafc;
+      }
+      .tr-table tbody tr {
+        transition: background 0.12s ease;
+        border-left: 3px solid transparent;
+      }
+      .tr-table tbody tr:hover {
+        border-left-color: var(--border);
       }
       .tr-table th {
         padding: 10px 14px;
@@ -2660,30 +2774,7 @@
             <div class="cal-content" id="calContent"></div>
           </div>
 
-          <div class="legend">
-            <span class="legend-item"
-              ><span class="status-dot" style="background: var(--green)"></span>
-              Completed</span
-            >
-            <span class="legend-item"
-              ><span
-                class="status-dot"
-                style="background: var(--orange)"
-              ></span>
-              In Progress</span
-            >
-            <span class="legend-item"
-              ><span
-                class="status-dot"
-                style="background: var(--accent)"
-              ></span>
-              Upcoming</span
-            >
-            <span class="legend-item"
-              ><span class="status-dot" style="background: var(--ink-3)"></span>
-              Pending</span
-            >
-          </div>
+
         </div>
 
         <!-- ===== Trainings (management list) ===== -->
@@ -2740,6 +2831,7 @@
               <option value="upcoming">Upcoming dates</option>
               <option value="past">Past dates</option>
             </select>
+            <input type="month" class="field-select" id="tr-month" title="Filter by month" style="min-width:140px;" />
             <button class="btn btn-reset" id="tr-reset" title="Reset filters">
               <svg
                 viewBox="0 0 24 24"
@@ -3024,20 +3116,15 @@
       <div class="modal new-training-modal">
         <div class="nt-head">
           <h3>New Training</h3>
-          <button class="modal-close" data-close="addModal" title="Close">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              width="16"
-              height="16"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <button class="btn btn-primary" id="btn-save-training" style="height:30px;padding:0 14px;font-size:13px;">Save Training</button>
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:30px;padding:0 14px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="modal-close" data-close="addModal" title="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div class="nt-scroll">
@@ -3077,6 +3164,11 @@
               </div>
 
               <div class="nt-pop" id="nt-participant-pop" style="display: none">
+                <!-- Type toggle: Employee / Agent -->
+                <div style="display:flex;gap:6px;padding:8px 12px 0;border-bottom:1px solid var(--border);padding-bottom:8px;">
+                  <button type="button" id="p-type-employee" class="btn btn-primary" style="height:26px;padding:0 12px;font-size:12px;">Employee</button>
+                  <button type="button" id="p-type-agent" class="btn" style="height:26px;padding:0 12px;font-size:12px;">Agent</button>
+                </div>
                 <div class="nt-pop-search">
                   <svg
                     viewBox="0 0 24 24"
@@ -3152,10 +3244,6 @@
               </label>
             </div>
             <div class="nt-sched-summary">
-              <label class="nt-allday-row">
-                <input type="checkbox" id="new-allday" />
-                <span>All day</span>
-              </label>
               <div class="nt-sched-preview" id="new-schedule-preview">
                 Select date and time
               </div>
@@ -3202,51 +3290,24 @@
               </label>
             </div>
 
-            <!-- Branch (editable) -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
-              </svg>
-              <div class="nt-branch-block">
-                <span class="nt-kicker">Branch</span>
-                <div class="nt-branch-wrap">
-                  <input
-                    class="nt-input"
-                    id="new-branch"
-                    placeholder="Select or type branch…"
-                    autocomplete="off"
-                  />
-                  <div
-                    id="branch-dropdown"
-                    class="nt-pop nt-branch-pop"
-                    style="display: none"
-                  ></div>
-                </div>
+            <!-- Geographies: Multiple branches (Code - Branch Name) -->
+            <div class="nt-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;color:var(--ink-3);flex-shrink:0;">
+                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
+                </svg>
+                <span class="nt-kicker" style="flex:1;">Geographies — Branches</span>
+                <button type="button" class="btn" id="btn-add-geo" style="height:26px;padding:0 10px;font-size:12px;">+ Add Branch</button>
               </div>
+              <div id="geo-rows" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
+              <div class="nt-geo-hint" id="geo-hint" style="font-size:11px;color:var(--ink-3);"></div>
             </div>
-          </div>
-
-          <!-- Zone / Region / District (read-only, auto-filled from Branch) -->
-          <div class="nt-geo">
-            <div>
-              <label for="new-zone">Zone</label>
-              <input id="new-zone" readonly placeholder="—" />
-            </div>
-            <div>
-              <label for="new-region">Region</label>
-              <input id="new-region" readonly placeholder="—" />
-            </div>
-            <div>
-              <label for="new-district">District</label>
-              <input id="new-district" readonly placeholder="—" />
-            </div>
+            <!-- Hidden legacy fields kept for backward compat (not visible) -->
+            <input type="hidden" id="new-branch" />
+            <input type="hidden" id="new-zone" />
+            <input type="hidden" id="new-region" />
+            <input type="hidden" id="new-district" />
+            <div id="branch-dropdown" style="display:none"></div>
           </div>
 
           <div class="nt-body nt-body-foot">
@@ -3282,11 +3343,29 @@
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
 
-        <div class="nt-foot">
-          <button class="btn" data-close="addModal">Cancel</button>
-          <button class="btn btn-primary" id="btn-save-training">
-            Save Training
-          </button>
+      </div>
+    </div>
+
+    <!-- Bulk Upload Modal -->
+    <div class="modal-wrap" id="bulkUploadModal">
+      <div class="modal" style="width:min(640px,96vw);max-height:90vh;overflow:auto;">
+        <div class="modal-head">
+          <h3>Bulk Upload Trainings</h3>
+          <button class="modal-close" data-close="bulkUploadModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
+        </div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX with minimal columns: <b>Emp ID, Branch Code, Training Date, Program Name, Trainer ID</b>. Grouped by <b>Training Date + Program + Trainer ID</b> into one Training (multiple Branch Codes → multiple geographies, zone/region auto-fetched).</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
+          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Emp ID, Employee Name, Branch Code, Training Date, Training Days, Program Name, Trainer ID, Trainer Name</span>
+        </div>
+        <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
+          <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
+          <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">CSV or XLSX — max 2000 rows</div>
+        </div>
+        <div id="bulkResult" style="font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:none;"></div>
+        <div class="form-actions" style="margin-top:12px;">
+          <button class="btn" data-close="bulkUploadModal">Cancel</button>
+          <button class="btn btn-primary" id="btn-do-bulk-upload" type="button">Upload</button>
         </div>
       </div>
     </div>
@@ -3332,11 +3411,11 @@
           "pending",
         ];
         var STATUS_META = {
-          draft: { color: "#8a8f98", label: "Draft" },
-          upcoming: { color: "#4f6bed", label: "Upcoming" },
-          inprogress: { color: "#e07030", label: "In Progress" },
-          completed: { color: "#1f9d61", label: "Completed" },
-          pending: { color: "#a0a5b0", label: "Pending" },
+          draft: { color: "#8a8f98", soft: "#f3f4f6", label: "Draft" },
+          upcoming: { color: "#4f6bed", soft: "#eef1fe", label: "Upcoming" },
+          inprogress: { color: "#e07030", soft: "#fdf0e7", label: "In Progress" },
+          completed: { color: "#1f9d61", soft: "#e6f6ee", label: "Completed" },
+          pending: { color: "#a0a5b0", soft: "#f0f1f3", label: "Pending" },
         };
         var CHECK_FIELDS = [
           { key: "training_delivered", label: "Training Delivered" },
@@ -3400,9 +3479,12 @@
           loadedMonth: "",
           branchOptions: [],
           allEmployees: [],
+          allAgents: [],
+          participantPickType: "Employee",
           branchPick: [],
-          selectedBranch: "",
+          selectedGeographies: [],
           selectedParticipants: [],
+          holidays: {},
         };
 
         var MONTHS = [
@@ -3538,16 +3620,20 @@
           var f = state.calFilters;
           var q = (state.search || "").trim().toLowerCase();
           return state.calEvents.filter(function (ev) {
-            if (f.zone && ev.zone !== f.zone) return false;
-            if (f.region && ev.region !== f.region) return false;
-            if (f.district && ev.district !== f.district) return false;
-            if (
-              f.branch &&
-              !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())
-            )
-              return false;
+            var geos = ev.geographies || [];
+            if (geos.length) {
+              if (f.zone && !geos.some(function(g){ return g.zone === f.zone; })) return false;
+              if (f.region && !geos.some(function(g){ return g.region === f.region; })) return false;
+              if (f.district && !geos.some(function(g){ return g.district === f.district; })) return false;
+              if (f.branch && !geos.some(function(g){ return g.branch === f.branch; })) return false;
+            } else {
+              if (f.zone && ev.zone !== f.zone) return false;
+              if (f.region && ev.region !== f.region) return false;
+              if (f.district && ev.district !== f.district) return false;
+              if (f.branch && !(ev.branch || "").toLowerCase().includes(f.branch.toLowerCase())) return false;
+            }
             if (q) {
-              var hay = [
+              var hayParts = [
                 ev.training_program,
                 ev.topic,
                 ev.trainer_name,
@@ -3556,9 +3642,13 @@
                 ev.region,
                 ev.district,
                 ev.branch,
-              ]
-                .join(" ")
-                .toLowerCase();
+              ];
+              if (geos.length) {
+                geos.forEach(function(g){
+                  hayParts.push(g.branch); hayParts.push(g.zone); hayParts.push(g.region); hayParts.push(g.district);
+                });
+              }
+              var hay = hayParts.join(" ").toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
@@ -3592,6 +3682,8 @@
           document.getElementById("sidebarFooter").textContent = r.label;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
+          var bulkBtnEl = document.getElementById("btn-bulk-upload");
+          if (bulkBtnEl) bulkBtnEl.style.display = r.showMis ? "inline-flex" : "none";
           var navRep = document.getElementById("nav-reports");
           if (navRep) navRep.style.display = r.showMis ? "" : "none";
         }
@@ -3638,11 +3730,13 @@
               return Promise.all([
                 api("get_trainer_options", { enabled_only: 1 }),
                 api("get_branch_options"),
+                api("get_agent_options", { enabled_only: 1 }),
               ]);
             })
             .then(function (res) {
               state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
               state.branchPick = Array.isArray(res[1]) ? res[1] : [];
+              state.allAgents = Array.isArray(res[2]) ? res[2] : [];
             });
         }
 
@@ -3659,17 +3753,22 @@
           }
           state.loadedMonth = key;
           var f = state.calFilters;
-          api("get_calendar_data", {
-            year: y,
-            month: m,
-            zone: f.zone || null,
-            region: f.region || null,
-            district: f.district || null,
-            branch: f.branch || null,
-          })
-            .then(function (evs) {
-              state.calEvents = Array.isArray(evs) ? evs : [];
+          Promise.all([
+            api("get_calendar_data", {
+              year: y,
+              month: m,
+              zone: f.zone || null,
+              region: f.region || null,
+              district: f.district || null,
+              branch: f.branch || null,
+            }),
+            api("get_holidays", { year: y, month: m }).catch(function(){ return {}; })
+          ])
+            .then(function (res) {
+              state.calEvents = Array.isArray(res[0]) ? res[0] : [];
+              state.holidays = res[1] && typeof res[1]==="object" ? res[1] : {};
               render();
+              updateSchedulePreview();
             })
             .catch(function (err) {
               state.calEvents = [];
@@ -3832,10 +3931,30 @@
             if (isFiltered && evs.length === 0 && !other)
               cell.classList.add("dimmed");
 
+            var isSunday = cellDate.getDay() === 0;
+            var holidayDesc = state.holidays && state.holidays[dateIso];
+            var isHoliday = !!holidayDesc;
+            if (isSunday) cell.classList.add("is-sunday");
+            if (isHoliday) cell.classList.add("is-holiday");
+            if (isHoliday && holidayDesc !== "Sunday") cell.title = holidayDesc;
+            else if (isSunday) cell.title = "Sunday";
+
             var num = document.createElement("div");
             num.className = "day-num";
             num.textContent = cellDate.getDate();
             cell.appendChild(num);
+            if (isHoliday && holidayDesc !== "Sunday") {
+              var hol = document.createElement("span");
+              hol.className = "holiday-label";
+              hol.textContent = holidayDesc.length > 14 ? holidayDesc.slice(0,14) + "…" : holidayDesc;
+              hol.title = holidayDesc;
+              cell.appendChild(hol);
+            } else if (isSunday) {
+              var sun = document.createElement("span");
+              sun.className = "sunday-label";
+              sun.textContent = "Sunday";
+              cell.appendChild(sun);
+            }
 
             evs.slice(0, 2).forEach(function (ev) {
               cell.appendChild(eventChip(ev));
@@ -3877,7 +3996,12 @@
           var meta = STATUS_META[st];
           var chip = document.createElement("div");
           chip.className = "event-chip";
+          chip.style.background = meta.soft;
           chip.style.borderLeftColor = meta.color;
+          chip.style.position = "relative";
+          var delX = state.role === "ld_admin"
+            ? '<button class="chip-del-btn" title="Delete" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:3px;background:rgba(220,38,38,0.12);color:#dc2626;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px;pointer-events:none"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'
+            : "";
           chip.innerHTML =
             '<span class="event-chip-top">' +
             '<span class="status-dot" style="background:' +
@@ -3889,7 +4013,29 @@
             "</span>" +
             '<span class="event-chip-time">' +
             esc(ev.time || "") +
-            "</span>";
+            "</span>" +
+            delX;
+          chip.addEventListener("mouseenter", function () {
+            var b = chip.querySelector(".chip-del-btn");
+            if (b) b.style.display = "flex";
+          });
+          chip.addEventListener("mouseleave", function () {
+            var b = chip.querySelector(".chip-del-btn");
+            if (b) b.style.display = "none";
+          });
+          var delBtn = chip.querySelector(".chip-del-btn");
+          if (delBtn) {
+            delBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
+              api("delete_training", { name: ev.name })
+                .then(function () {
+                  loadData(true);
+                  showToast("Training deleted");
+                })
+                .catch(function (err) { showToast("Could not delete: " + err.message); });
+            });
+          }
           chip.addEventListener("click", function (e) {
             e.stopPropagation();
             openTrainingDialog(ev);
@@ -3999,14 +4145,20 @@
           for (var i = 0; i < 7; i++) {
             var d = new Date(weekStart);
             d.setDate(d.getDate() + i);
+            var iso = isoOf(d);
+            var isSun = d.getDay() === 0;
+            var hol = state.holidays && state.holidays[iso];
             var dCell = document.createElement("div");
+            if (isSun) dCell.style.background = "#fef2f2";
+            if (hol) dCell.style.background = "#fffbeb";
             dCell.innerHTML =
               WEEKDAYS[i] +
               '<span class="wk-num' +
               (sameDay(d, today) ? " is-today" : "") +
               '">' +
               d.getDate() +
-              "</span>";
+              "</span>" +
+              (hol && hol !== "Sunday" ? '<span style="display:block;font-size:9px;color:#b45309;font-weight:600">' + hol.slice(0,12) + '</span>' : isSun ? '<span style="display:block;font-size:9px;color:#b91c1c;font-weight:600">Sunday</span>' : "");
             row.appendChild(dCell);
           }
           content.appendChild(row);
@@ -4026,6 +4178,21 @@
             if (sameDay(day, today)) col.classList.add("is-today");
             if (sameDay(day, state.selectedDate)) col.classList.add("selected");
             if (isFiltered && evs.length === 0) col.classList.add("dimmed");
+            var _isSun = day.getDay() === 0;
+            var _holDesc = state.holidays && state.holidays[dateIso];
+            if (_isSun) col.classList.add("is-sunday");
+            if (_holDesc) col.classList.add("is-holiday");
+            if (_holDesc && _holDesc !== "Sunday") {
+              var _hl = document.createElement("div");
+              _hl.style.cssText = "font-size:10px;font-weight:600;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:999px;padding:1px 6px;margin-bottom:4px;display:inline-block;";
+              _hl.textContent = _holDesc;
+              col.appendChild(_hl);
+            } else if (_isSun) {
+              var _sl = document.createElement("div");
+              _sl.style.cssText = "font-size:10px;font-weight:600;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:999px;padding:1px 6px;margin-bottom:4px;display:inline-block;";
+              _sl.textContent = "Sunday";
+              col.appendChild(_sl);
+            }
 
             if (evs.length === 0) {
               var empty = document.createElement("div");
@@ -4035,11 +4202,14 @@
             } else {
               evs.forEach(function (ev) {
                 var st = statusOf(ev);
+                var meta = STATUS_META[st];
                 var item = document.createElement("div");
                 item.className = "week-event";
+                item.style.background = meta.soft;
+                item.style.borderLeft = "2px solid " + meta.color;
                 item.innerHTML =
                   '<span class="status-dot" style="background:' +
-                  STATUS_META[st].color +
+                  meta.color +
                   '"></span>' +
                   '<span><span class="week-event-title">' +
                   esc(ev.training_program || ev.topic || "Training") +
@@ -4118,7 +4288,7 @@
               item.className = "day-view-item";
               item.innerHTML =
                 '<div class="day-view-time">' +
-                esc(ev.time || "All day") +
+                esc(ev.time || "—") +
                 "</div>" +
                 '<div class="day-view-bar" style="background:' +
                 STATUS_META[st].color +
@@ -4182,6 +4352,9 @@
             var m = STATUS_META[k];
             var b = document.createElement("button");
             b.className = state.statusFilter === k ? "active" : "";
+            b.style.background = m.soft;
+            b.style.border = "1px solid " + (state.statusFilter === k ? m.color : m.soft);
+            b.style.color = m.color;
             b.innerHTML =
               '<span class="sum-dot" style="background:' +
               m.color +
@@ -4189,7 +4362,7 @@
               "<span>" +
               m.label +
               "</span>" +
-              '<span class="sum-count">' +
+              '<span class="sum-count" style="color:' + m.color + ';">' +
               counts[k] +
               "</span>";
             b.addEventListener("click", function () {
@@ -4268,20 +4441,36 @@
               : esc(ev.time)
             : "—";
 
+          var geos = ev.geographies || [];
+          var geoSummary = "";
+          if (geos.length) {
+            geoSummary = geos.map(function(g){
+              var codeName = g.branch || "";
+              var binfo = (state.branchPick || []).find(function(b){ return b.name === g.branch; });
+              var disp = binfo && binfo.branch ? codeName + " - " + binfo.branch : codeName;
+              return esc(disp) + " (" + esc(g.zone||"—") + "/" + esc(g.district||"—") + ")";
+            }).join("<br>");
+          } else {
+            geoSummary = (ev.zone||"—") + " / " + (ev.district||"—") + " — " + esc(ev.branch||"—");
+          }
           var body =
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
             '<div class="meta-grid">' +
             metaRow("Date", dateLabel) +
             metaRow("Time", timeLabel) +
-            metaRow("Zone", esc(ev.zone || "—")) +
-            metaRow("Region", esc(ev.region || "—")) +
-            metaRow("District", esc(ev.district || "—")) +
-            metaRow("Branch", esc(ev.branch || "—")) +
+            metaRow("Zone", esc(ev.zone || (geos[0]&&geos[0].zone) || "—")) +
+            metaRow("Region", esc(ev.region || (geos[0]&&geos[0].region) || "—")) +
+            metaRow("District", esc(ev.district || (geos[0]&&geos[0].district) || "—")) +
+            metaRow("Branch", esc(ev.branch || (geos[0]&&geos[0].branch) || "—")) +
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
-            "</div></div>";
+            "</div>";
+          if (geos.length > 1) {
+            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>All Branches:</strong><br>' + geoSummary + '</div>';
+          }
+          body += "</div>";
 
           body +=
             '<div class="drawer-section">' +
@@ -4377,11 +4566,29 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
+          var canDelete = state.role === "ld_admin";
+          var deleteBtn = canDelete
+            ? '<button class="btn" id="drawerDelete" style="color:#dc2626;border-color:#fecaca;">Delete</button>'
+            : "";
           var actions = editable
             ? '<button class="btn" id="drawerCancel">Cancel</button>' +
               '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
-            : '<button class="btn btn-primary" id="drawerDone">Close</button>';
+            : deleteBtn + '<button class="btn btn-primary" id="drawerDone">Close</button>';
           document.getElementById("drawerActions").innerHTML = actions;
+
+          if (canDelete && document.getElementById("drawerDelete")) {
+            document.getElementById("drawerDelete").onclick = function () {
+              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
+              api("delete_training", { name: ev.name })
+                .then(function () {
+                  closeDrawer();
+                  loadData(true);
+                  renderTrainings();
+                  showToast("Training deleted");
+                })
+                .catch(function (e) { showToast("Could not delete: " + e.message); });
+            };
+          }
 
           if (editable) {
             document.getElementById("drawerSave").onclick = saveDrawerChanges;
@@ -4577,23 +4784,16 @@
           document.getElementById("new-end-time").readOnly = false;
           document.getElementById("new-location").value = "";
           document.getElementById("new-location").readOnly = false;
+          state.selectedGeographies = [];
+          if (typeof renderGeoRows === "function") renderGeoRows();
           document.getElementById("new-branch").value = "";
-          state.selectedBranch = "";
-          document.getElementById("new-branch").readOnly = false;
           document.getElementById("new-zone").value = "";
           document.getElementById("new-region").value = "";
           document.getElementById("new-district").value = "";
           document.getElementById("new-adhoc").checked = false;
           document.getElementById("new-adhoc").disabled = false;
-          var alldayReset = document.getElementById("new-allday");
-          if (alldayReset) {
-            alldayReset.checked = false;
-            ["new-time", "new-end-time"].forEach(function (id) {
-              var el = document.getElementById(id);
-              if (el) { el.disabled = false; el.closest && el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.remove("dimmed"); }
-            });
-          }
           state.selectedParticipants = [];
+          state.participantPickType = "Employee";
           var pc = document.getElementById("participant-chips");
           if (pc) pc.innerHTML = "";
           var ps = document.getElementById("new-participant-search");
@@ -4626,12 +4826,19 @@
           if (h)
             h.textContent = mode === "edit" ? "Edit Training" : "New Training";
           var saveBtn = document.getElementById("btn-save-training");
+          var reschedBtn = document.getElementById("btn-reschedule-training");
           if (mode === "edit") {
-            saveBtn.textContent = "Save Changes";
+            saveBtn.textContent = "Save";
             saveBtn.onclick = saveTrainingChanges;
+            if (reschedBtn) {
+              reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
+              reschedBtn.textContent = "Reschedule";
+              reschedBtn.onclick = enterRescheduleMode;
+            }
           } else {
-            saveBtn.textContent = "Save Training";
+            saveBtn.textContent = "Save";
             saveBtn.onclick = saveTraining;
+            if (reschedBtn) reschedBtn.style.display = "none";
           }
         }
         function openTrainingDialog(ev) {
@@ -4667,11 +4874,14 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-location", ev.training_location || "");
-          f("new-branch", ev.branch || "");
-          if (ev.branch) dialogFn.branchSelect(ev.branch);
-          f("new-zone", ev.zone || "");
-          f("new-region", ev.region || "");
-          f("new-district", ev.district || "");
+          if (ev.geographies && ev.geographies.length) {
+            state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
+          } else if (ev.branch) {
+            state.selectedGeographies = [{branch: ev.branch, zone: ev.zone||"", region: ev.region||"", district: ev.district||""}];
+          } else {
+            state.selectedGeographies = [];
+          }
+          if (typeof renderGeoRows === "function") renderGeoRows();
           f("new-trainer", ev.trainer || ev.trainer_name || "");
           var adhoc = document.getElementById("new-adhoc");
           adhoc.checked = !!ev.is_adhoc;
@@ -4687,19 +4897,19 @@
           }
           [
             "new-program",
-            "new-from-date",
-            "new-to-date",
-            "new-time",
-            "new-end-time",
-            "new-location",
             "new-branch",
           ].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
           });
+          // Schedule fields remain editable for reschedule/modification
           state.selectedParticipants = (ev.participant_list || []).map(
             function (p) {
-              return p.employee;
+              return {
+                reference_doctype: p.reference_doctype || "Employee",
+                agent_employee: p.agent_employee || p.employee || "",
+                full_name: p.full_name || p.employee_name || "",
+              };
             },
           );
           dialogFn.renderPChips();
@@ -4810,6 +5020,44 @@
             return;
           }
           var tasks = [];
+          // Schedule changes — single Save handles reschedule
+          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
+          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          var startTime = (document.getElementById("new-time") || {}).value.trim();
+          var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
+          var location  = (document.getElementById("new-location") || {}).value.trim();
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"");
+          if (scheduleChanged) {
+            if (!fromDate) { showToast("From Date is required"); return; }
+            if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
+            var _hols2 = state.holidays || {};
+            var _chk = function(a,b){
+              var cur = new Date(a); var end = new Date(b);
+              while (cur <= end) {
+                var iso = cur.toISOString().slice(0,10);
+                if (_hols2[iso]) { showToast("Cannot schedule on Holiday (" + _hols2[iso] + "): " + iso); return true; }
+                if (cur.getDay()===0) { showToast("Cannot schedule on Sunday: " + iso); return true; }
+                cur.setDate(cur.getDate()+1);
+              }
+              return false;
+            };
+            if (_chk(fromDate, toDate)) return;
+            if ((startTime && !endTime) || (!startTime && endTime)) { showToast("Provide both Start and End Time or leave both blank"); return; }
+            if (startTime && endTime) {
+              var _sm = parseTime(startTime), _em = parseTime(endTime);
+              if (_sm !== -1 && _em !== -1 && _em <= _sm) { showToast("End Time must be after Start Time"); return; }
+            }
+            tasks.push(api("update_training_schedule", {
+              name: ev.name,
+              from_date: fromDate,
+              to_date: toDate,
+              start_time: startTime || null,
+              end_time: endTime || null,
+              training_location: location || null
+            }).then(function(){
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location;
+            }));
+          }
           var val = (document.getElementById("new-agenda") || {}).value || "";
           if ((ev.trainer_remarks || "") !== val) {
             tasks.push(
@@ -4850,6 +5098,76 @@
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
+        }
+
+        /* ---- Reschedule mode: unlock schedule fields in edit dialog ---- */
+        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-location"];
+
+        function enterRescheduleMode() {
+          SCHEDULE_FIELDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+              el.readOnly = false;
+              el.style.background = "";
+              el.style.color = "";
+            }
+          });
+          // Clear time so user must enter explicitly — no auto-set
+          var sEl = document.getElementById("new-time");
+          var eEl = document.getElementById("new-end-time");
+          if (sEl) sEl.value = "";
+          if (eEl) eEl.value = "";
+          updateSchedulePreview();
+          var reschedBtn = document.getElementById("btn-reschedule-training");
+          if (reschedBtn) reschedBtn.style.display = "none";
+          var h = document.querySelector("#addModal .nt-head h3");
+          if (h) h.textContent = "Reschedule Training";
+          showToast("Schedule fields unlocked — enter new time and click Save");
+        }
+
+        function saveScheduleChanges() {
+          var ev = state.currentEvent;
+          if (!ev) return;
+          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
+          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          var startTime = (document.getElementById("new-time") || {}).value.trim();
+          var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
+          var location  = (document.getElementById("new-location") || {}).value.trim();
+
+          if (!fromDate) { showToast("From Date is required"); return; }
+          if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
+          if (startTime && endTime) {
+            var sm = parseTime(startTime), em = parseTime(endTime);
+            if (sm !== -1 && em !== -1 && em <= sm) {
+              showToast("End Time must be after Start Time");
+              return;
+            }
+          }
+
+          api("update_training_schedule", {
+            name: ev.name,
+            from_date: fromDate,
+            to_date: toDate,
+            start_time: startTime || null,
+            end_time: endTime || null,
+            training_location: location || null,
+          })
+            .then(function () {
+              /* Update local event */
+              ev.from_date = fromDate;
+              ev.to_date = toDate;
+              ev.start_time = startTime;
+              ev.end_time = endTime;
+              ev.time = startTime;
+              ev.training_location = location;
+              closeModal("addModal");
+              loadData(true);
+              renderTrainings();
+              showToast("Training rescheduled");
+            })
+            .catch(function (e) {
+              showToast("Could not reschedule: " + e.message);
+            });
         }
         /* Parse flexible time input into minutes-since-midnight (returns -1 if invalid) */
         function parseTime(t) {
@@ -4897,13 +5215,26 @@
             showToast("To Date cannot be before From Date");
             return;
           }
+          // Holiday/Sunday validation (user's state)
+          var _hols = state.holidays || {};
+          var _isHoliday = function(d){ return _hols[d]; };
+          var _isSun = function(d){ var dt = new Date(d); return dt.getDay()===0; };
+          var _checkRange = function(a,b){
+            var cur = new Date(a); var end = new Date(b);
+            while (cur <= end) {
+              var iso = cur.toISOString().slice(0,10);
+              if (_hols[iso]) { showToast("Cannot schedule on Holiday (" + _hols[iso] + "): " + iso); return iso; }
+              if (cur.getDay()===0) { showToast("Cannot schedule on Sunday: " + iso); return iso; }
+              cur.setDate(cur.getDate()+1);
+            }
+            return null;
+          };
+          if (_checkRange(date, toDate)) return;
 
-          var isAllDay = document.getElementById("new-allday") && document.getElementById("new-allday").checked;
           var startTime = document.getElementById("new-time").value.trim();
           var endTime = document.getElementById("new-end-time").value.trim();
-          if (!isAllDay) {
-            if (!startTime) { showToast("Start Time is required"); return; }
-            if (!endTime) { showToast("End Time is required"); return; }
+          if (startTime || endTime) {
+            if (!startTime || !endTime) { showToast("Provide both Start and End Time or leave both blank"); return; }
             var startMins = parseTime(startTime);
             var endMins = parseTime(endTime);
             if (startMins === -1) { showToast("Start Time format invalid — e.g. 9:00 or 9:00 AM"); return; }
@@ -4915,6 +5246,10 @@
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
           var agenda =
             (document.getElementById("new-agenda") || {}).value || "";
+          if (!state.selectedGeographies || !state.selectedGeographies.length) {
+            showToast("Select at least one branch");
+            return;
+          }
           var args = {
             training_program: program,
             from_date: date,
@@ -4925,10 +5260,11 @@
               .getElementById("new-location")
               .value.trim(),
             trainer: trainerSel.value.trim() || null,
-            zone: document.getElementById("new-zone").value,
-            region: document.getElementById("new-region").value,
-            district: document.getElementById("new-district").value,
-            branch: state.selectedBranch || null,
+            zone: (state.selectedGeographies[0] && state.selectedGeographies[0].zone) || "",
+            region: (state.selectedGeographies[0] && state.selectedGeographies[0].region) || "",
+            district: (state.selectedGeographies[0] && state.selectedGeographies[0].district) || "",
+            branch: (state.selectedGeographies[0] && state.selectedGeographies[0].branch) || null,
+            geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
@@ -5505,26 +5841,73 @@
         addTrainingBtn.onclick = openAddModal;
         document.querySelector(".header-right").appendChild(addTrainingBtn);
 
+        var bulkBtn = document.createElement("button");
+        bulkBtn.className = "btn";
+        bulkBtn.id = "btn-bulk-upload";
+        bulkBtn.style.display = "none";
+        bulkBtn.style.background = "var(--green-soft)";
+        bulkBtn.style.color = "#15803d";
+        bulkBtn.style.borderColor = "#86efac";
+        bulkBtn.style.fontWeight = "600";
+        bulkBtn.title = "Bulk upload trainings from CSV/XLSX";
+        bulkBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Bulk Upload';
+        bulkBtn.onclick = function(){ document.getElementById("bulkUploadModal").classList.add("open"); document.getElementById("bulkResult").innerHTML=""; document.getElementById("bulkFile").value=""; };
+        document.querySelector(".header-right").appendChild(bulkBtn);
+
         document.getElementById("btn-save-training").onclick = saveTraining;
 
-        /* ---------- Branch custom dropdown (Add Training modal) ---------- */
+        /* ---------- Bulk Upload ---------- */
+        (function(){
+          var dlBtn = document.getElementById("btn-download-template");
+          if (dlBtn) dlBtn.addEventListener("click", function(){
+            api("get_bulk_upload_template", {}).then(function(csv){
+              var blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+              var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="Training_Bulk_Upload_Template.csv";
+              document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);
+            }).catch(function(e){ showToast(e.message||"Could not download template"); });
+          });
+          var upBtn = document.getElementById("btn-do-bulk-upload");
+          if (upBtn) upBtn.addEventListener("click", function(){
+            var fileInput = document.getElementById("bulkFile");
+            var file = fileInput && fileInput.files[0];
+            if (!file) { showToast("Select a CSV/XLSX file first"); return; }
+            upBtn.disabled=true; upBtn.textContent="Uploading...";
+            var fd=new FormData(); fd.append("file", file);
+            fetch("/api/method/sahayog.agent_and_bdo.ld_training_api.bulk_upload_training", {
+              method:"POST",
+              headers: {"X-Frappe-CSRF-Token": csrf},
+              body: fd
+            }).then(function(r){return r.json();}).then(function(d){
+              if (d.exc_type) throw new Error(d.exception || d.exc_type);
+              var res=d.message;
+              var el=document.getElementById("bulkResult");
+              el.style.display="block";
+              var errs = res.errors && res.errors.length ? "\nErrors:\n" + res.errors.slice(0,20).join("\n") + (res.errors.length>20 ? "\n... and " + (res.errors.length-20) + " more" : "") : "";
+              el.textContent = (res.message||"Done") + "\nCreated: " + (res.created||0) + "  Skipped: " + (res.skipped||0) + errs;
+              el.style.color = res.success ? "var(--ink-1)" : "#b91c1c";
+              if (res.success && res.created>0) { loadData(true); loadTrainingsList(); showToast("Bulk upload: " + res.created + " trainings created"); }
+              else if (!res.success) showToast(res.message||"Upload failed");
+            }).catch(function(e){
+              var el=document.getElementById("bulkResult"); el.style.display="block"; el.textContent="Upload failed: "+(e.message||e); el.style.color="#b91c1c";
+              showToast("Upload failed: "+e.message);
+            }).finally(function(){ upBtn.disabled=false; upBtn.textContent="Upload"; });
+          });
+        })();
+
+        /* ---------- Multi-Geography Branch picker (Add Training modal) — 2 per row ---------- */
         var dialogFn = {
           renderPChips: function () {},
           openPop: function () {},
           closePop: function () {},
         };
+        var renderGeoRows = null;
         (function () {
-          var branchInput = document.getElementById("new-branch");
-          var branchDd = document.getElementById("branch-dropdown");
-
-          function setGeo(geo) {
-            document.getElementById("new-zone").value = geo.zone || "";
-            document.getElementById("new-region").value = geo.region || "";
-            document.getElementById("new-district").value = geo.district || "";
-          }
+          var geoContainer = document.getElementById("geo-rows");
+          var addBtn = document.getElementById("btn-add-geo");
+          var hintEl = document.getElementById("geo-hint");
 
           function branchLabel(b) {
-            return b && b.branch ? b.name + " - " + b.branch : b.name;
+            return b && b.branch ? b.name + " - " + b.branch : (b ? b.name : "");
           }
 
           function findBranch(code) {
@@ -5536,90 +5919,172 @@
             return found;
           }
 
-          function renderDropdown(filter) {
+          function updateHint() {
+            if (!hintEl) return;
+            var n = (state.selectedGeographies || []).length;
+            var filled = (state.selectedGeographies || []).filter(function(g){ return g.branch; }).length;
+            if (filled === 0) hintEl.textContent = "Select at least one branch (Code - Branch Name). Zone/Region/District auto-filled.";
+            else if (filled === 1) hintEl.textContent = "1 branch selected";
+            else hintEl.textContent = filled + " branches selected";
+          }
+
+          renderGeoRows = function() {
+            if (!geoContainer) return;
+            var isEdit = state.dialogMode === "edit";
+            geoContainer.innerHTML = "";
+            if (!state.selectedGeographies || !state.selectedGeographies.length) {
+              state.selectedGeographies = [{}];
+            }
+            state.selectedGeographies.forEach(function(geo, idx){
+              var row = document.createElement("div");
+              row.className = "geo-row";
+              var binfo = findBranch(geo.branch);
+              var displayVal = binfo ? branchLabel(binfo) : (geo.branch || "");
+              var metaHtml = "";
+              if (geo.branch) {
+                metaHtml = '<span>Zone: ' + esc(geo.zone||"—") + '</span><span>Region: ' + esc(geo.region||"—") + '</span><span>District: ' + esc(geo.district||"—") + '</span>';
+              } else {
+                metaHtml = '<span style="color:var(--ink-3);background:transparent;padding:0;">Type to search branch</span>';
+              }
+              row.innerHTML =
+                '<div class="geo-row-main">' +
+                '  <div class="geo-branch-wrap">' +
+                '    <input class="nt-input geo-branch-input" data-idx="' + idx + '" placeholder="Select branch — Code - Branch Name" autocomplete="off" value="' + esc(displayVal) + '" ' + (isEdit ? 'readonly' : '') + ' />' +
+                '    <div class="geo-branch-pop" data-idx="' + idx + '" style="display:none"></div>' +
+                '  </div>' +
+                '  <div class="geo-row-meta">' + metaHtml + '</div>' +
+                '</div>' +
+                (isEdit ? '' : '<button type="button" class="geo-remove" data-remove="' + idx + '" title="Remove">&times;</button>');
+              geoContainer.appendChild(row);
+            });
+            updateHint();
+            bindRowEvents();
+          };
+
+          function bindRowEvents(){
+            var isEdit = state.dialogMode === "edit";
+            if (isEdit) return;
+            geoContainer.querySelectorAll(".geo-branch-input").forEach(function(inp){
+              var idx = parseInt(inp.dataset.idx,10);
+              inp.addEventListener("focus", function(){ renderDropdown(idx, this.value); });
+              inp.addEventListener("input", function(){ renderDropdown(idx, this.value); });
+            });
+            geoContainer.querySelectorAll(".geo-remove").forEach(function(btn){
+              btn.addEventListener("click", function(){
+                var idx = parseInt(btn.dataset.remove,10);
+                state.selectedGeographies.splice(idx,1);
+                if (!state.selectedGeographies.length) state.selectedGeographies = [{}];
+                renderGeoRows();
+              });
+            });
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(pop){
+              pop.addEventListener("mousedown", function(e){
+                var opt = e.target.closest(".branch-opt");
+                if (opt) {
+                  e.preventDefault();
+                  var idx = parseInt(pop.dataset.idx,10);
+                  selectBranch(idx, opt.dataset.val);
+                }
+              });
+            });
+          }
+
+          function renderDropdown(idx, filter) {
+            var pop = geoContainer.querySelector('.geo-branch-pop[data-idx="' + idx + '"]');
+            if (!pop) return;
             var q = (filter || "").trim().toLowerCase();
+            var selectedBranches = (state.selectedGeographies || []).map(function(g){ return g.branch; }).filter(Boolean);
             var opts = (state.branchPick || []).filter(function (b) {
+              if (selectedBranches.indexOf(b.name) !== -1 && b.name !== (state.selectedGeographies[idx]||{}).branch) return false;
               if (!q) return true;
               return (
                 (b.name || "").toLowerCase().indexOf(q) !== -1 ||
                 (b.branch || "").toLowerCase().indexOf(q) !== -1
               );
             });
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(p){ if (p!==pop) p.style.display="none"; });
             if (!opts.length) {
-              branchDd.innerHTML =
+              pop.innerHTML =
                 '<div style="padding:8px 12px;font-size:13px;color:var(--ink-3)">No branches found</div>';
             } else {
-              branchDd.innerHTML = opts
+              pop.innerHTML = opts
                 .map(function (b) {
                   return (
                     '<div class="branch-opt" data-val="' +
                     esc(b.name) +
                     '" style="' +
                     "padding:6px 12px;font-size:13px;cursor:pointer;color:var(--ink-1);" +
-                    (b.name === state.selectedBranch
+                    (b.name === (state.selectedGeographies[idx]||{}).branch
                       ? "background:var(--accent-soft);color:var(--accent-ink);font-weight:600;"
                       : "") +
                     '">' +
                     '<span style="flex:1">' +
-                    esc(b.name) +
-                    (b.branch ? " &middot; " + esc(b.branch) : "") +
+                    esc(b.name) + ' - ' + esc(b.branch||"") +
                     "</span>" +
                     "</div>"
                   );
                 })
                 .join("");
             }
-            branchDd.style.display = "block";
+            pop.style.display = "block";
           }
 
-          function closeDd() {
-            branchDd.style.display = "none";
+          function closeAllPops(){
+            geoContainer.querySelectorAll(".geo-branch-pop").forEach(function(p){ p.style.display="none"; });
           }
 
-          function selectBranch(val) {
+          function selectBranch(idx, val) {
             var found = findBranch(val);
-            state.selectedBranch = val || "";
-            branchInput.value = found ? branchLabel(found) : val || "";
-            closeDd();
-            if (!val) {
-              setGeo({});
-              return;
-            }
-            // Auto-fill geo
+            var dup = (state.selectedGeographies || []).some(function(g,i){ return i!==idx && g.branch===val; });
+            if (dup) { showToast("Branch already selected"); return; }
             api("get_branch_geo", { branch: val })
               .then(function (geo) {
-                setGeo(geo || {});
+                state.selectedGeographies[idx] = {
+                  branch: val,
+                  zone: (geo && geo.zone) || "",
+                  region: (geo && geo.region) || "",
+                  district: (geo && geo.district) || ""
+                };
+                if (idx===0 && state.selectedGeographies[0]) {
+                  document.getElementById("new-branch").value = val;
+                  document.getElementById("new-zone").value = state.selectedGeographies[0].zone || "";
+                  document.getElementById("new-region").value = state.selectedGeographies[0].region || "";
+                  document.getElementById("new-district").value = state.selectedGeographies[0].district || "";
+                }
+                renderGeoRows();
               })
-              .catch(function () {});
+              .catch(function () {
+                state.selectedGeographies[idx] = { branch: val, zone:"", region:"", district:"" };
+                renderGeoRows();
+              });
           }
 
-          branchInput.addEventListener("focus", function () {
-            if (state.dialogMode === "edit") return;
-            renderDropdown(this.value);
-          });
+          if (addBtn) {
+            addBtn.addEventListener("click", function(){
+              if (state.dialogMode === "edit") return;
+              var last = state.selectedGeographies[state.selectedGeographies.length-1];
+              if (last && !last.branch) { showToast("Select branch for current row first"); return; }
+              state.selectedGeographies.push({});
+              renderGeoRows();
+              setTimeout(function(){
+                var inp = geoContainer.querySelector('.geo-branch-input[data-idx="' + (state.selectedGeographies.length-1) + '"]');
+                if (inp) inp.focus();
+              }, 50);
+            });
+          }
 
-          branchInput.addEventListener("input", function () {
-            state.selectedBranch = "";
-            setGeo({});
-            renderDropdown(this.value);
-          });
-
-          branchDd.addEventListener("mousedown", function (e) {
-            var opt = e.target.closest(".branch-opt");
-            if (opt) {
-              e.preventDefault();
-              selectBranch(opt.dataset.val);
+          document.addEventListener("click", function(e){
+            if (!geoContainer) return;
+            if (!geoContainer.contains(e.target) && e.target.id !== "btn-add-geo") {
+              closeAllPops();
             }
           });
 
-          document.addEventListener("click", function (e) {
-            if (!branchInput.contains(e.target) && !branchDd.contains(e.target))
-              closeDd();
-          });
-
-          dialogFn.branchSelect = function (code) {
-            selectBranch(code);
+          dialogFn.branchSelect = function(code){
+            if (!state.selectedGeographies || !state.selectedGeographies.length) state.selectedGeographies = [{}];
+            selectBranch(0, code);
           };
+
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
@@ -5629,65 +6094,95 @@
           var pChips = document.getElementById("participant-chips");
           var pPop = document.getElementById("nt-participant-pop");
           var pCount = document.getElementById("participant-count");
-          var pDropCount = document.getElementById(
-            "participant-dropdown-count",
-          );
+          var pDropCount = document.getElementById("participant-dropdown-count");
           var pDone = document.getElementById("btn-participant-done");
           var pAttendee = document.getElementById("nt-attendee");
           var pMore = document.getElementById("participant-more");
           var pRange = document.getElementById("participant-range");
           var pLoad = document.getElementById("btn-participant-load");
+          var pBtnEmp = document.getElementById("p-type-employee");
+          var pBtnAgent = document.getElementById("p-type-agent");
           var pLimit = 20;
+
+          /* selectedParticipants: [{reference_doctype, agent_employee, full_name}] */
 
           function pLabel() {
             var n = state.selectedParticipants.length;
             return n === 1 ? "1 participant" : n + " participants";
           }
 
-          function escP(v) {
-            return esc(v);
+          /* ----- Type toggle ----- */
+          function setPickType(type) {
+            state.participantPickType = type;
+            if (pBtnEmp) {
+              pBtnEmp.className = type === "Employee" ? "btn btn-primary" : "btn";
+              pBtnEmp.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+            }
+            if (pBtnAgent) {
+              pBtnAgent.className = type === "Agent" ? "btn btn-primary" : "btn";
+              pBtnAgent.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+            }
+            if (pSearch) {
+              pSearch.placeholder = type === "Agent" ? "Search agents..." : "Search employees...";
+              pSearch.value = "";
+            }
+            renderPDd("");
           }
+          if (pBtnEmp) pBtnEmp.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Employee"); });
+          if (pBtnAgent) pBtnAgent.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Agent"); });
 
-          function pEmployees() {
-            var branch = state.selectedBranch;
-            var bq = (branch || "").toLowerCase();
-            return (state.allEmployees || []).filter(function (emp) {
-              if (bq && (emp.sahayog_branch || "").toLowerCase() !== bq)
-                return false;
-              if (state.selectedParticipants.indexOf(emp.name) !== -1)
-                return false;
+          /* ----- Already-selected key for dedup ----- */
+          function pKey(p) { return p.reference_doctype + ":" + p.agent_employee; }
+
+          /* ----- Source list based on current type ----- */
+          function pSourceList() {
+            var type = state.participantPickType || "Employee";
+            var selectedKeys = (state.selectedParticipants || []).map(pKey);
+            if (type === "Agent") {
+              return (state.allAgents || []).filter(function(a) {
+                return selectedKeys.indexOf("Agent:" + a.name) === -1;
+              });
+            }
+            return (state.allEmployees || []).filter(function(emp) {
+              if (selectedKeys.indexOf("Employee:" + emp.name) !== -1) return false;
               return true;
             });
           }
 
-          function pRowHtml(emp) {
-            var code = emp.name || "";
-            var br = emp.sahayog_branch || "";
+          function pRowHtml(item) {
+            var type = state.participantPickType || "Employee";
+            var displayName = type === "Agent"
+              ? (item.agent_name || item.name)
+              : (item.employee_name || item.name);
+            var sub;
+            if (type === "Agent") {
+              sub = item.name + (item.branch_name ? " - " + item.branch_name : "");
+            } else {
+              var brCode = item.sahayog_branch || "";
+              var brName = "";
+              if (brCode) {
+                var binfo = (state.branchPick || []).find(function(b){ return b.name === brCode; });
+                brName = binfo && binfo.branch ? binfo.branch : "";
+              }
+              sub = item.name + (brName ? " - " + brName : (brCode ? " - " + brCode : ""));
+            }
             return (
-              '<div class="branch-opt" data-val="' +
-              esc(emp.name) +
-              '">' +
-              "<span>" +
-              esc(emp.employee_name || emp.name) +
-              "</span>" +
-              '<span style="color:var(--ink-3);font-size:11px">' +
-              escP(code) +
-              (br && code ? " &middot; " : "") +
-              (br ? escP(br) : "") +
-              "</span></div>"
+              '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
+              "<span>" + esc(displayName) + "</span>" +
+              '<span style="color:var(--ink-3);font-size:11px">' + esc(sub) + "</span>" +
+              "</div>"
             );
           }
 
           function pRows(q) {
-            return pEmployees().filter(function (emp) {
-              var hay = (
-                emp.employee_name +
-                " " +
-                (emp.sahayog_branch || "") +
-                " " +
-                (emp.name || "")
-              ).toLowerCase();
-              return !q || hay.indexOf(q) !== -1;
+            var list = pSourceList();
+            if (!q) return list;
+            var type = state.participantPickType || "Employee";
+            return list.filter(function(item) {
+              var hay = type === "Agent"
+                ? ((item.agent_name || "") + " " + (item.branch_name || "") + " " + (item.name || "")).toLowerCase()
+                : ((item.employee_name || "") + " " + (item.sahayog_branch || "") + " " + (item.name || "")).toLowerCase();
+              return hay.indexOf(q) !== -1;
             });
           }
 
@@ -5697,13 +6192,10 @@
 
           function pMoreFoot(total) {
             var shown = pShown();
+            var type = state.participantPickType || "Employee";
             if (pRange)
-              pRange.textContent =
-                "Showing " +
-                shown +
-                " of " +
-                total +
-                (total === 1 ? " employee" : " employees");
+              pRange.textContent = "Showing " + shown + " of " + total +
+                (total === 1 ? (" " + type.toLowerCase()) : (" " + type.toLowerCase() + "s"));
             if (pMore) pMore.style.display = shown < total ? "flex" : "none";
           }
 
@@ -5711,8 +6203,9 @@
             var q = (filter || "").trim().toLowerCase();
             var list = pRows(q);
             if (!list.length) {
-              pDd.innerHTML =
-                '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No employees found</div>';
+              var type = state.participantPickType || "Employee";
+              pDd.innerHTML = '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No ' +
+                type.toLowerCase() + 's found</div>';
               if (pMore) pMore.style.display = "none";
             } else {
               pDd.innerHTML = list.slice(0, pLimit).map(pRowHtml).join("");
@@ -5722,27 +6215,32 @@
           }
 
           function renderPChips() {
-            var byName = {};
-            state.allEmployees.forEach(function (e) {
-              byName[e.name] = e;
-            });
+            /* Build lookup maps for display names */
+            var empById = {}, agentById = {};
+            (state.allEmployees || []).forEach(function(e) { empById[e.name] = e; });
+            (state.allAgents || []).forEach(function(a) { agentById[a.name] = a; });
             var removable = state.dialogMode !== "edit";
-            pChips.innerHTML = state.selectedParticipants
-              .map(function (empName) {
-                var emp = byName[empName] || {};
-                return (
-                  '<span class="participant-chip">' +
-                  esc(emp.employee_name || empName) +
-                  (removable
-                    ? '<button type="button" data-remove="' +
-                      esc(empName) +
-                      '" title="Remove">&times;</button>'
-                    : "") +
-                  "</span>"
-                );
-              })
-              .join("");
-            var n = state.selectedParticipants.length;
+            pChips.innerHTML = (state.selectedParticipants || []).map(function(p) {
+              var isAgent = p.reference_doctype === "Agent";
+              var displayName = p.full_name || p.agent_employee;
+              if (!displayName) {
+                if (isAgent) {
+                  var a = agentById[p.agent_employee] || {};
+                  displayName = a.agent_name || p.agent_employee;
+                } else {
+                  var e = empById[p.agent_employee] || {};
+                  displayName = e.employee_name || p.agent_employee;
+                }
+              }
+              var key = pKey(p);
+              var idSuffix = isAgent ? ' <span style="font-size:10px;opacity:0.7">(' + esc(p.agent_employee) + ')</span>' : "";
+              return '<span class="participant-chip">' +
+                (isAgent ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">Agent</span>' : "") +
+                esc(displayName) + idSuffix +
+                (removable ? '<button type="button" data-remove="' + esc(key) + '" title="Remove">&times;</button>' : "") +
+                "</span>";
+            }).join("");
+            var n = (state.selectedParticipants || []).length;
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
@@ -5753,9 +6251,10 @@
           function openPop() {
             if (state.dialogMode === "edit") return;
             if (!pPop || !pDd) return;
+            setPickType(state.participantPickType || "Employee");
             pPop.style.display = "block";
             pDd.style.display = "block";
-            renderPDd(pSearch.value);
+            renderPDd(pSearch ? pSearch.value : "");
             if (pSearch) pSearch.focus();
           }
           function closePop() {
@@ -5767,77 +6266,71 @@
           dialogFn.closePop = closePop;
 
           function addParticipant(val) {
-            if (state.selectedParticipants.indexOf(val) !== -1) return;
-            state.selectedParticipants.push(val);
-            renderPChips();
-            if (pSearch) {
-              pSearch.value = "";
-              pSearch.focus();
+            var type = state.participantPickType || "Employee";
+            var key = type + ":" + val;
+            var already = (state.selectedParticipants || []).some(function(p) { return pKey(p) === key; });
+            if (already) return;
+            /* Resolve display name */
+            var fullName = "";
+            if (type === "Agent") {
+              var a = (state.allAgents || []).find(function(x){ return x.name === val; }) || {};
+              fullName = a.agent_name || val;
+            } else {
+              var e = (state.allEmployees || []).find(function(x){ return x.name === val; }) || {};
+              fullName = e.employee_name || val;
             }
+            state.selectedParticipants.push({
+              reference_doctype: type,
+              agent_employee: val,
+              full_name: fullName,
+            });
+            renderPChips();
+            if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
           }
 
-          if (pAttendee) {
-            pAttendee.addEventListener("click", function () {
-              openPop();
-            });
-          }
+          if (pAttendee) pAttendee.addEventListener("click", function() { openPop(); });
           if (pSearch) {
-            pSearch.addEventListener("focus", function () {
-              openPop();
-            });
-            pSearch.addEventListener("input", function () {
-              renderPDd(this.value);
-            });
-            pSearch.addEventListener("keydown", function (e) {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                closePop();
-                pSearch.blur();
-              }
+            pSearch.addEventListener("focus", function() { openPop(); });
+            pSearch.addEventListener("input", function() { renderPDd(this.value); });
+            pSearch.addEventListener("keydown", function(e) {
+              if (e.key === "Escape") { e.preventDefault(); closePop(); pSearch.blur(); }
               if (e.key === "Enter") {
                 e.preventDefault();
                 var first = pDd.querySelector(".branch-opt");
-                if (first && first.dataset.val)
-                  addParticipant(first.dataset.val);
+                if (first && first.dataset.val) addParticipant(first.dataset.val);
               }
             });
           }
           if (pDd) {
-            pDd.addEventListener("mousedown", function (e) {
+            pDd.addEventListener("mousedown", function(e) {
               var opt = e.target.closest(".branch-opt");
-              if (opt) {
-                e.preventDefault();
-                addParticipant(opt.dataset.val);
-              }
+              if (opt) { e.preventDefault(); addParticipant(opt.dataset.val); }
             });
           }
           if (pDone) pDone.addEventListener("click", closePop);
           if (pLoad) {
-            pLoad.addEventListener("click", function () {
+            pLoad.addEventListener("click", function() {
               var q = (pSearch ? pSearch.value : "").trim().toLowerCase();
               var list = pRows(q);
               var start = pShown();
               var chunk = list.slice(start, start + pLimit);
-              if (chunk.length) {
-                pDd.insertAdjacentHTML(
-                  "beforeend",
-                  chunk.map(pRowHtml).join(""),
-                );
-              }
+              if (chunk.length) pDd.insertAdjacentHTML("beforeend", chunk.map(pRowHtml).join(""));
               pMoreFoot(list.length);
             });
           }
-          document.addEventListener("click", function (e) {
+          document.addEventListener("click", function(e) {
             if (!pAttendee || pAttendee.contains(e.target)) return;
             if (pPop && !pPop.contains(e.target)) closePop();
           });
           if (pChips) {
-            pChips.addEventListener("click", function (e) {
+            pChips.addEventListener("click", function(e) {
               var btn = e.target.closest("[data-remove]");
               if (btn) {
-                var i = state.selectedParticipants.indexOf(btn.dataset.remove);
-                if (i !== -1) state.selectedParticipants.splice(i, 1);
+                var key = btn.dataset.remove;
+                state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
+                  return pKey(p) !== key;
+                });
                 renderPChips();
               }
             });
@@ -5884,26 +6377,20 @@
           var eEl      = document.getElementById("new-end-time");
           var pvEl     = document.getElementById("new-schedule-preview");
           var hintEl   = document.getElementById("new-schedule-hint");
-          var alldayEl = document.getElementById("new-allday");
-          var isAllDay = alldayEl && alldayEl.checked;
           var f  = fEl ? fEl.value : "";
           var t  = tEl ? tEl.value : "";
-          var st = (!isAllDay && sEl) ? sEl.value.trim() : "";
-          var et = (!isAllDay && eEl) ? eEl.value.trim() : "";
+          var st = sEl ? sEl.value.trim() : "";
+          var et = eEl ? eEl.value.trim() : "";
 
           // preview
           if (pvEl) {
             var parts = [];
             if (f && t === f) parts.push(fmtSchDate(f));
             else if (f && t) parts.push(fmtSchDate(f) + " – " + fmtSchDate(t));
-            if (isAllDay) {
-              parts.push("All day");
-            } else {
-              var ts = [];
-              if (st) ts.push(fmtSchTime(st));
-              if (et) ts.push(fmtSchTime(et));
-              if (ts.length) parts.push(ts.join(" – "));
-            }
+            var ts = [];
+            if (st) ts.push(fmtSchTime(st));
+            if (et) ts.push(fmtSchTime(et));
+            if (ts.length) parts.push(ts.join(" – "));
             pvEl.textContent = parts.length ? parts.join("    ") : "Select date and time";
           }
 
@@ -5918,7 +6405,7 @@
             var stMins = parseTime(st);
             var etMins = parseTime(et);
             var hasOverlap = false;
-            if (!isAllDay && stMins !== -1 && etMins !== -1 && count > 0) {
+            if (stMins !== -1 && etMins !== -1 && count > 0) {
               hasOverlap = onDate.some(function (ev) {
                 var evSt = parseTime(ev.time || "");
                 var evEt = parseTime(ev.end_time || "");
@@ -5927,11 +6414,15 @@
               });
             }
 
-            if (hasOverlap) {
+            var holDesc = f && state.holidays && state.holidays[f];
+            if (holDesc) {
+              hintEl.textContent = "⚠️ " + holDesc + (holDesc === "Sunday" ? " — avoid scheduling" : " — Holiday, avoid scheduling");
+              hintEl.className = "nt-sched-hint overlap";
+            } else if (hasOverlap) {
               hintEl.textContent = "⚠️ Time overlaps with an existing training on this date";
               hintEl.className = "nt-sched-hint overlap";
             } else if (count > 0) {
-              hintEl.textContent = count + " existing training" + (count === 1 ? "" : "s") + " on this date";
+              hintEl.textContent = count + " other training" + (count === 1 ? "" : "s") + " scheduled on this date";
               hintEl.className = "nt-sched-hint has";
             } else {
               hintEl.textContent = "";
@@ -5940,21 +6431,7 @@
           }
         }
 
-        /* All day toggle — dim/enable time inputs */
-        (function () {
-          var alldayEl = document.getElementById("new-allday");
-          if (!alldayEl) return;
-          alldayEl.addEventListener("change", function () {
-            var isAllDay = alldayEl.checked;
-            ["new-time", "new-end-time"].forEach(function (id) {
-              var el = document.getElementById(id);
-              if (!el) return;
-              el.disabled = isAllDay;
-              el.closest(".nt-dt-cell") && el.closest(".nt-dt-cell").classList.toggle("dimmed", isAllDay);
-            });
-            updateSchedulePreview();
-          });
-        })();
+
 
         ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
           function (id) {
@@ -5997,9 +6474,12 @@
           district: "",
           branch: "",
           range: "all",
+          month: "",
         };
         var trPage = { current: 1, size: 10 };
         var rpPage = { current: 1, size: 10 };
+        state.trainingsList = [];
+        state.trainingsLoaded = false;
 
         /* --- nav switch: Calendar ↔ Trainings --- */
         var activeTab = "calendar"; // "calendar" | "trainings"
@@ -6020,7 +6500,7 @@
           if (navTr) navTr.classList.toggle("active", tab === "trainings");
           if (navRep) navRep.classList.toggle("active", tab === "reports");
 
-          if (tab === "trainings") renderTrainings();
+          if (tab === "trainings") { loadTrainingsList(); }
           if (tab === "reports") showReportsHome();
         }
 
@@ -6062,24 +6542,57 @@
           );
         }
 
+        function loadTrainingsList(){
+          var tbody = document.getElementById("trBody");
+          if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--ink-3)">Loading...</td></tr>';
+          api("get_training_list", {limit: 500}).then(function(rows){
+            state.trainingsList = Array.isArray(rows) ? rows : [];
+            state.trainingsLoaded = true;
+            // Default month filter to current month if not set, for month-wise view
+            var monEl = document.getElementById("tr-month");
+            if (monEl && !monEl.value && !trFilters.month) {
+              var nowMon = new Date().toISOString().slice(0,7);
+              monEl.value = nowMon;
+              trFilters.month = nowMon;
+            }
+            renderTrainings();
+          }).catch(function(err){
+            state.trainingsList = [];
+            renderTrainings();
+            showToast("Could not load trainings: " + err.message);
+          });
+        }
+
         function trFilteredEvents() {
           var f = trFilters;
           var q = f.search.trim().toLowerCase();
           var todayIso2 = isoOf(today);
           var monthKey = todayIso2.slice(0, 7);
+          var source = (state.trainingsLoaded && state.trainingsList && state.trainingsList.length) ? state.trainingsList : state.calEvents;
 
-          return state.calEvents.filter(function (ev) {
+          return source.filter(function (ev) {
             if (f.status) {
               if (f.status === "inprogress" && statusOf(ev) !== "inprogress")
                 return false;
               if (f.status !== "inprogress" && statusOf(ev) !== f.status)
                 return false;
             }
-            if (f.zone && ev.zone !== f.zone) return false;
-            if (f.region && ev.region !== f.region) return false;
-            if (f.district && ev.district !== f.district) return false;
-            if (f.branch && ev.branch !== f.branch) return false;
-            if (f.range === "month") {
+            var geos = ev.geographies || [];
+            if (geos.length) {
+              if (f.zone && !geos.some(function(g){ return g.zone === f.zone; })) return false;
+              if (f.region && !geos.some(function(g){ return g.region === f.region; })) return false;
+              if (f.district && !geos.some(function(g){ return g.district === f.district; })) return false;
+              if (f.branch && !geos.some(function(g){ return g.branch === f.branch; })) return false;
+            } else {
+              if (f.zone && ev.zone !== f.zone) return false;
+              if (f.region && ev.region !== f.region) return false;
+              if (f.district && ev.district !== f.district) return false;
+              if (f.branch && ev.branch !== f.branch) return false;
+            }
+            if (f.month) {
+              var evKey = (ev.from_date || ev.date || "").slice(0, 7);
+              if (evKey !== f.month) return false;
+            } else if (f.range === "month") {
               var evKey = (ev.from_date || ev.date || "").slice(0, 7);
               if (evKey !== monthKey) return false;
             } else if (f.range === "upcoming") {
@@ -6089,7 +6602,7 @@
                 return false;
             }
             if (q) {
-              var hay = [
+              var hayParts = [
                 ev.training_program,
                 ev.trainer,
                 ev.training_location,
@@ -6097,9 +6610,10 @@
                 ev.region,
                 ev.district,
                 ev.branch,
-              ]
-                .join(" ")
-                .toLowerCase();
+              ];
+              var geos = ev.geographies || [];
+              geos.forEach(function(g){ hayParts.push(g.branch); hayParts.push(g.zone); hayParts.push(g.region); hayParts.push(g.district); });
+              var hay = hayParts.join(" ").toLowerCase();
               if (hay.indexOf(q) === -1) return false;
             }
             return true;
@@ -6208,11 +6722,18 @@
                     : st === "upcoming"
                       ? "var(--accent-ink)"
                       : "var(--ink-3)";
+              var canDelete = state.role === "ld_admin";
               var editBtn = canEdit
                 ? '<button class="tr-icon-btn" data-menu-edit="' +
                   esc(ev.name) +
                   '" title="Edit">' +
                   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+                : "";
+              var delBtn = canDelete
+                ? '<button class="tr-icon-btn" data-menu-delete="' +
+                  esc(ev.name) +
+                  '" data-program="' + esc(ev.training_program || "") + '" title="Delete" style="color:#dc2626;">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>'
                 : "";
               return (
                 '<tr data-name="' +
@@ -6231,13 +6752,20 @@
                 timeStr +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.training_location || "—") +
+                (ev.training_location ? esc(ev.training_location) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.trainer || "—") +
+                (ev.trainer ? esc(ev.trainer) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
                 "</td>" +
                 '<td class="td-meta">' +
-                esc(ev.branch || "—") +
+                (function(){
+                  var geos = ev.geographies || [];
+                  if (geos.length > 1) {
+                    var first = geos[0].branch || ev.branch || "—";
+                    return esc(first) + ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:1px 5px;margin-left:3px">+' + (geos.length-1) + '</span>';
+                  }
+                  return esc(ev.branch || (geos[0]&&geos[0].branch) || "—");
+                })() +
                 "</td>" +
                 '<td class="td-meta" style="text-align:center">' +
                 (ev.participants || 0) +
@@ -6253,7 +6781,7 @@
                 meta.label +
                 "</span></td>" +
                 '<td class="td-actions"><div class="td-actions-wrap">' +
-                editBtn +
+                editBtn + delBtn +
                 "</div></td>" +
                 "</tr>"
               );
@@ -6281,6 +6809,22 @@
                 return x.name === btn.dataset.menuEdit;
               });
               if (ev) openDrawer(ev, "edit");
+            });
+          });
+
+          tbody.querySelectorAll("[data-menu-delete]").forEach(function (btn) {
+            btn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var name = btn.dataset.menuDelete;
+              var program = btn.dataset.program || name;
+              if (!confirm('Delete "' + program + '"? This cannot be undone.')) return;
+              api("delete_training", { name: name })
+                .then(function () {
+                  loadData(true);
+                  loadTrainingsList();
+                  showToast("Training deleted");
+                })
+                .catch(function (err) { showToast("Could not delete: " + err.message); });
             });
           });
         }
@@ -6368,6 +6912,7 @@
           onChange("district", "tr-district");
           onChange("branch", "tr-branch");
           onChange("range", "tr-range");
+          onChange("month", "tr-month");
 
           var resetBtn = document.getElementById("tr-reset");
           if (resetBtn) {
@@ -6380,6 +6925,7 @@
                 district: "",
                 branch: "",
                 range: "all",
+                month: "",
               };
               trPage.current = 1;
               [
@@ -6395,6 +6941,8 @@
               });
               var rng = document.getElementById("tr-range");
               if (rng) rng.value = "all";
+              var mon = document.getElementById("tr-month");
+              if (mon) mon.value = "";
               renderTrainings();
             });
           }
@@ -6417,12 +6965,13 @@
 
           // rows per page
           var sizeEl = document.getElementById("tr-page-size");
-          if (sizeEl)
+          if (sizeEl) {
             sizeEl.addEventListener("change", function () {
-              trPage.size = parseInt(sizeEl.value, 10);
+              trPage.size = parseInt(this.value, 10) || 10;
               trPage.current = 1;
               renderTrainings();
             });
+          }
         }
         setupTrFilters();
 

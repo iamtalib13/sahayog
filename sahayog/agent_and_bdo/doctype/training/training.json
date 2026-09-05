@@ -5,23 +5,24 @@
  "creation": "2026-08-11 12:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
- "field_order": [
-  "section_break_details",
-  "training_program",
-  "is_adhoc",
-  "from_date",
-  "to_date",
-  "column_break_details",
-  "start_time",
-  "end_time",
-  "training_location",
-  "trainer",
-  "section_break_geo",
-  "branch",
-  "zone",
-  "column_break_geo",
-  "region",
-  "district",
+  "field_order": [
+   "section_break_details",
+   "training_program",
+   "is_adhoc",
+   "from_date",
+   "to_date",
+   "column_break_details",
+   "start_time",
+   "end_time",
+   "training_location",
+   "trainer",
+   "section_break_geo",
+   "branch",
+   "zone",
+   "column_break_geo",
+   "region",
+   "district",
+   "geographies",
   "section_break_participants",
   "participants",
   "section_break_status",
@@ -133,15 +134,22 @@
    "in_standard_filter": 1,
    "label": "District"
   },
-  {
-   "fieldname": "branch",
-   "fieldtype": "Link",
-   "in_standard_filter": 1,
-   "label": "Branch",
-   "options": "Sahayog Branch"
-  },
-  {
-   "fieldname": "section_break_participants",
+   {
+    "fieldname": "branch",
+    "fieldtype": "Link",
+    "in_standard_filter": 1,
+    "label": "Branch",
+    "options": "Sahayog Branch"
+   },
+   {
+    "description": "Select multiple branches — Zone/Region/District auto-filled from branch (Code - Branch Name)",
+    "fieldname": "geographies",
+    "fieldtype": "Table",
+    "label": "Geographies",
+    "options": "Training Geography"
+   },
+   {
+    "fieldname": "section_break_participants",
    "fieldtype": "Section Break",
    "label": "Participants"
   },
