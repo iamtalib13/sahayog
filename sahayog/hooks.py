@@ -236,6 +236,7 @@ permission_query_conditions = {
     "Item": "sahayog.permissions.get_item_permission",
     "Loan Application": "sahayog.permissions.get_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.get_permission_query_conditions",
+    "Agent Lead": "sahayog.scrm.doctype.agent_lead.agent_lead.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -250,6 +251,7 @@ has_permission = {
     "Item": "sahayog.permissions.has_item_permission",
     "Loan Application": "sahayog.permissions.has_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.has_permission",
+    "Agent Lead": "sahayog.scrm.doctype.agent_lead.agent_lead.has_permission",
 }
 
 # DocType Class
