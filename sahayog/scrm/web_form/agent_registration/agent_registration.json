@@ -99,11 +99,12 @@
   {
    "allow_read_on_all_link_options": 0,
    "fieldname": "state",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "hidden": 0,
    "label": "State",
    "max_length": 0,
    "max_value": 0,
+   "options": "Andhra Pradesh\nArunachal Pradesh\nAssam\nBihar\nChhattisgarh\nGoa\nGujarat\nHaryana\nHimachal Pradesh\nJharkhand\nKarnataka\nKerala\nMadhya Pradesh\nMaharashtra\nManipur\nMeghalaya\nMizoram\nNagaland\nOdisha\nPunjab\nRajasthan\nSikkim\nTamil Nadu\nTelangana\nTripura\nUttar Pradesh\nUttarakhand\nWest Bengal\nAndaman and Nicobar Islands\nChandigarh\nDadra and Nagar Haveli and Daman and Diu\nDelhi\nJammu and Kashmir\nLadakh\nLakshadweep\nPuducherry",
    "precision": "",
    "read_only": 0,
    "reqd": 1,
