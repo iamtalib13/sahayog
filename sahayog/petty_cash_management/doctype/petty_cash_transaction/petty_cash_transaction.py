@@ -1680,53 +1680,131 @@ class PettyCashTransaction(Document):
                     )
 
                 row.beneficiary_account_number = account_number
+    # exclude electricity bill expenses from daily cash limit "13"
+    # def get_current_document_countable_cash_amount(self):
+    #     """
+    #     Cash amount in the current transaction that consumes the configured
+    #     daily cash-expense limit.
+
+    #     Cash paid for Electricity Bill Expenses does not consume the limit.
+    #     Transfer payments do not consume the limit.
+    #     """
+    #     # electricity_category = "Electricity Bill Expenses"
+    #     electricity_category = "13"
+
+    #     return sum(
+    #         flt(row.amount)
+    #         for row in self.items
+    #         if (row.payment_mode or "Cash").strip() == "Cash"
+    #         and row.expense_category != electricity_category
+    #     )
+
+    # def get_submitted_daily_cash_usage(self):
+    #     """
+    #     Finds already submitted countable cash expenses for the same branch
+    #     and transaction date, excluding this transaction itself.
+    #     """
+    #     # electricity_category = "Electricity Bill Expenses"
+    #     electricity_category = "13"
+
+    #     result = frappe.db.sql(
+    #         """
+    #         SELECT COALESCE(SUM(item.amount), 0) AS cash_used
+    #         FROM `tabPetty Cash Transaction Item` AS item
+    #         INNER JOIN `tabPetty Cash Transaction` AS txn
+    #             ON txn.name = item.parent
+    #         WHERE txn.branch = %s
+    #           AND txn.transaction_date = %s
+    #           AND txn.transaction_type = 'Expense'
+    #           AND txn.docstatus = 1
+    #           AND txn.name != %s
+    #           AND item.payment_mode = 'Cash'
+    #           AND item.expense_category != %s
+    #         """,
+    #         (
+    #             self.branch,
+    #             self.transaction_date,
+    #             self.name or "",
+    #             electricity_category,
+    #         ),
+    #         as_dict=True,
+    #     )
+
+    #     return flt(result[0].cash_used) if result else 0.0
 
     def get_current_document_countable_cash_amount(self):
         """
-        Cash amount in the current transaction that consumes the configured
-        daily cash-expense limit.
+        Returns the current document's Cash expense amount that consumes
+        the configured daily cash expense limit.
 
-        Cash paid for Electricity Bill Expenses does not consume the limit.
-        Transfer payments do not consume the limit.
+        Transfer rows and categories configured as exempt in Sahayog Settings
+        are not included.
         """
-        # electricity_category = "Electricity Bill Expenses"
-        electricity_category = "13"
+        exempt_category_ids = set(
+            self.get_cash_limit_exempt_category_ids()
+        )
 
         return sum(
             flt(row.amount)
             for row in self.items
             if (row.payment_mode or "Cash").strip() == "Cash"
-            and row.expense_category != electricity_category
+            and row.expense_category not in exempt_category_ids
         )
+
+    def get_cash_limit_exempt_category_ids(self):
+        """
+        Returns Expense Category document names configured in Sahayog Settings
+        that must not consume the daily cash expense limit.
+        """
+        settings = frappe.get_single("Sahayog Settings")
+
+        return [
+            row.expense_category
+            for row in (settings.cash_limit_exempt_categories or [])
+            if row.expense_category
+        ]
 
     def get_submitted_daily_cash_usage(self):
         """
-        Finds already submitted countable cash expenses for the same branch
-        and transaction date, excluding this transaction itself.
+        Returns submitted countable Cash expenses for the same branch and
+        transaction date, excluding this document.
+
+        Cash rows whose Expense Category is configured as exempt in
+        Sahayog Settings are excluded.
         """
-        # electricity_category = "Electricity Bill Expenses"
-        electricity_category = "13"
+        exempt_category_ids = self.get_cash_limit_exempt_category_ids()
+
+        conditions = """
+            txn.branch = %s
+            AND txn.transaction_date = %s
+            AND txn.transaction_type = 'Expense'
+            AND txn.docstatus = 1
+            AND txn.name != %s
+            AND item.payment_mode = 'Cash'
+        """
+
+        values = [
+            self.branch,
+            self.transaction_date,
+            self.name or "",
+        ]
+
+        if exempt_category_ids:
+            placeholders = ", ".join(["%s"] * len(exempt_category_ids))
+            conditions += f"""
+                AND item.expense_category NOT IN ({placeholders})
+            """
+            values.extend(exempt_category_ids)
 
         result = frappe.db.sql(
-            """
+            f"""
             SELECT COALESCE(SUM(item.amount), 0) AS cash_used
             FROM `tabPetty Cash Transaction Item` AS item
             INNER JOIN `tabPetty Cash Transaction` AS txn
                 ON txn.name = item.parent
-            WHERE txn.branch = %s
-              AND txn.transaction_date = %s
-              AND txn.transaction_type = 'Expense'
-              AND txn.docstatus = 1
-              AND txn.name != %s
-              AND item.payment_mode = 'Cash'
-              AND item.expense_category != %s
+            WHERE {conditions}
             """,
-            (
-                self.branch,
-                self.transaction_date,
-                self.name or "",
-                electricity_category,
-            ),
+            tuple(values),
             as_dict=True,
         )
 
@@ -1769,6 +1847,27 @@ class PettyCashTransaction(Document):
         remaining_limit = max(daily_limit - already_used, 0)
         total_cash_usage = already_used + current_cash_amount
 
+    # exclude electricity bill expenses from daily cash limit "13"
+        # if total_cash_usage > daily_limit:
+        #     frappe.throw(
+        #         _(
+        #             "Daily Cash Expense Limit exceeded for Branch {0} on {1}. "
+        #             "Daily Limit: ₹{2}. Already Used: ₹{3}. "
+        #             "Cash Amount in this Transaction: ₹{4}. "
+        #             "Remaining Cash Limit: ₹{5}. "
+        #             # "Cash paid for Electricity Bill Expenses is excluded from this limit."
+        #             "Cash payments for categories configured as exempt in "
+        #             "Sahayog Settings are excluded from this limit."
+        #         ).format(
+        #             self.branch,
+        #             self.transaction_date,
+        #             daily_limit,
+        #             already_used,
+        #             current_cash_amount,
+        #             remaining_limit,
+        #         )
+        #     )
+
         if total_cash_usage > daily_limit:
             frappe.throw(
                 _(
@@ -1776,7 +1875,8 @@ class PettyCashTransaction(Document):
                     "Daily Limit: ₹{2}. Already Used: ₹{3}. "
                     "Cash Amount in this Transaction: ₹{4}. "
                     "Remaining Cash Limit: ₹{5}. "
-                    "Cash paid for Electricity Bill Expenses is excluded from this limit."
+                    "Cash payments for categories configured as exempt in "
+                    "Sahayog Settings are excluded from this limit."
                 ).format(
                     self.branch,
                     self.transaction_date,
