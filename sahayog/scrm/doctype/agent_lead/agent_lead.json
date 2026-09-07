@@ -51,12 +51,12 @@
   {
    "fieldname": "alternate_number",
    "fieldtype": "Data",
-   "label": "Alternate Number (Optional)"
+   "label": "Alternate Number"
   },
   {
    "fieldname": "email_id",
    "fieldtype": "Data",
-   "label": "Email ID (Optional)"
+   "label": "Email ID"
   },
   {
    "fieldname": "section_location",
@@ -64,11 +64,11 @@
    "label": "Location Details"
   },
   {
-   "fetch_from": "branch.state",
    "fieldname": "state",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "in_list_view": 1,
    "label": "State",
+   "options": "\nAndhra Pradesh\nArunachal Pradesh\nAssam\nBihar\nChhattisgarh\nGoa\nGujarat\nHaryana\nHimachal Pradesh\nJharkhand\nKarnataka\nKerala\nMadhya Pradesh\nMaharashtra\nManipur\nMeghalaya\nMizoram\nNagaland\nOdisha\nPunjab\nRajasthan\nSikkim\nTamil Nadu\nTelangana\nTripura\nUttar Pradesh\nUttarakhand\nWest Bengal\nAndaman and Nicobar Islands\nChandigarh\nDadra and Nagar Haveli and Daman and Diu\nDelhi\nJammu and Kashmir\nLadakh\nLakshadweep\nPuducherry",
    "reqd": 1
   },
   {
