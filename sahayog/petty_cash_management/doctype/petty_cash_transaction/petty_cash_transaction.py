@@ -1497,7 +1497,6 @@ class PettyCashTransaction(Document):
     #                     )
     #                 )
 
-
     def validate_payment_mode_details(self):
         """
         Beneficiary details are mandatory when an expense row is paid by Transfer.
@@ -1524,6 +1523,31 @@ class PettyCashTransaction(Document):
                         )
                     )
 
+                # account_number = (row.beneficiary_account_number or "").strip()
+
+                # if not account_number:
+                #     frappe.throw(
+                #         _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
+                #             row.idx
+                #         )
+                #     )
+
+                # if not account_number.isdigit():
+                #     frappe.throw(
+                #         _(
+                #             "Row #{0}: Beneficiary Account Number must contain only numeric digits. "
+                #             "Alphabets, spaces, special characters, and decimal values are not allowed."
+                #         ).format(row.idx)
+                #     )
+
+                # if not 9 <= len(account_number) <= 20:
+                #     frappe.throw(
+                #         _(
+                #             "Row #{0}: Beneficiary Account Number must be between 9 and 20 digits. "
+                #             "Entered length: {1} digits."
+                #         ).format(row.idx, len(account_number))
+                #     )
+
                 account_number = (row.beneficiary_account_number or "").strip()
 
                 if not account_number:
@@ -1541,10 +1565,10 @@ class PettyCashTransaction(Document):
                         ).format(row.idx)
                     )
 
-                if not 9 <= len(account_number) <= 20:
+                if len(account_number) != 15:
                     frappe.throw(
                         _(
-                            "Row #{0}: Beneficiary Account Number must be between 9 and 20 digits. "
+                            "Row #{0}: Beneficiary Account Number must contain exactly 15 digits. "
                             "Entered length: {1} digits."
                         ).format(row.idx, len(account_number))
                     )
