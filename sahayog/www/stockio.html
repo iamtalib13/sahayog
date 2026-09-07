@@ -3999,10 +3999,70 @@
                     <button
                       v-if="createAssetForm.serial_no"
                       type="button"
-                      @click="addSerialNo"
-                      style="width: 44px; height: 44px; min-width: 44px; border-radius: 10px; border: 1px solid var(--primary-color); background: var(--primary-color); color: white; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);"
-                      title="Add Serial No"
-                    >+</button>
+                      @click="showSerialNoChildTable = !showSerialNoChildTable"
+                      :style="{ width: '44px', height: '44px', minWidth: '44px', borderRadius: '10px', border: '1px solid ' + (showSerialNoChildTable ? '#ef4444' : 'var(--primary-color)'), background: showSerialNoChildTable ? '#ef4444' : 'var(--primary-color)', color: 'white', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)' }"
+                      :title="showSerialNoChildTable ? 'Close Details' : 'Add Serial Details'"
+                    >[[ showSerialNoChildTable ? '−' : '+' ]]</button>
+                  </div>
+
+                  <!-- Serial No Child Table -->
+                  <div v-if="showSerialNoChildTable" style="margin-top: 12px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: var(--bg-surface);">
+                    <div style="padding: 8px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;"><i class="fas fa-barcode" style="margin-right: 6px;"></i>Serial Details</span>
+                      <button type="button" @click="addSerialNoChildRow" style="padding: 4px 10px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: 1px solid var(--primary-color); background: transparent; color: var(--primary-color); cursor: pointer; transition: all 0.2s;"><i class="fas fa-plus" style="margin-right: 4px;"></i>Add Row</button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                      <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem;">
+                        <thead>
+                          <tr style="background: var(--sidebar-hover); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                            <th style="padding: 8px 6px; text-align: center; width: 30px; border-right: 1px solid var(--border-color);">#</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 120px;">Serial No *</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 100px;">MAC Address</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 90px;">Make</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 100px;">Model</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 80px;">Processor</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 60px;">RAM</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 70px;">Storage</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 80px;">OS</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 100px;">Win Key</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 100px;">Office Key</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 90px;">Warr. Start</th>
+                            <th style="padding: 8px 6px; text-align: left; min-width: 90px;">Warr. End</th>
+                            <th style="padding: 8px 6px; text-align: center; width: 32px;"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="(row, idx) in serialNoChildItems" :key="idx" style="border-bottom: 1px solid var(--border-color); transition: background 0.1s;" onmouseover="this.style.background='rgba(100, 116, 139, 0.04)'" onmouseout="this.style.background='transparent'">
+                            <td style="text-align: center; font-weight: 700; color: var(--text-muted); border-right: 1px solid var(--border-color); padding: 6px !important;">[[ idx + 1 ]]</td>
+                            <td style="padding: 4px 6px !important;">
+                              <div class="searchable-select-wrapper">
+                                <input type="text" v-model="row.serial_no" @focus="focusedField = 'sn_child_' + idx" @blur="setTimeout(() => focusedField = null, 200)" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="Search/Type..." />
+                                <div class="searchable-select-dropdown" v-if="focusedField === 'sn_child_' + idx" style="position: absolute; top: 100%; left: 0; width: 100%; max-height: 150px; overflow-y: auto; z-index: 50;">
+                                  <div v-for="sn in filteredSerialNos.filter(s => !row.serial_no || s.toLowerCase().includes(row.serial_no.toLowerCase()))" :key="sn" class="searchable-select-option" style="padding: 6px 8px; font-size: 0.7rem; cursor: pointer;" @mousedown="row.serial_no = sn; focusedField = null;">[[ sn ]]</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.mac_address" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="MAC..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.make" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="Make..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.model_number" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="Model..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.processor" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="i5..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.ram" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="8GB" /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.storage" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="256G" /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.operating_system" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="OS..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.windows_key" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="Win Key..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="text" v-model="row.office_key" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 5px 8px; font-size: 0.75rem; border-radius: 4px; color: var(--text-main);" placeholder="Office Key..." /></td>
+                            <td style="padding: 4px 6px !important;"><input type="date" v-model="row.warranty_start_date" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 4px; font-size: 0.7rem; border-radius: 4px; color: var(--text-main);" /></td>
+                            <td style="padding: 4px 6px !important;"><input type="date" v-model="row.warranty_end_date" style="width: 100%; border: 1px solid var(--border-color); background: transparent; padding: 4px; font-size: 0.7rem; border-radius: 4px; color: var(--text-main);" /></td>
+                            <td style="padding: 4px 6px !important; text-align: center;">
+                              <button type="button" @click="removeSerialNoChildRow(idx)" style="background: transparent; color: #ef4444; border: none; cursor: pointer; font-size: 0.8rem; padding: 4px;"><i class="fas fa-times"></i></button>
+                            </td>
+                          </tr>
+                          <tr v-if="serialNoChildItems.length === 0">
+                            <td colspan="14" style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.75rem;">No serial details added. Click <strong>+ Add Row</strong> to begin.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
 
@@ -13706,6 +13766,8 @@
       emrEditSearch: "",
       emrEditSearchProvider: "",
       showAssetCreateView: false,
+      showSerialNoChildTable: false,
+      serialNoChildItems: [],
       showAssetActions: false,
       showAssetActionModal: false,
       serialMode: 'individual',
@@ -14397,34 +14459,24 @@
           frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
         }
       },
-      async addSerialNo() {
-        const sn = (this.createAssetForm.serial_no || "").trim();
-        if (!sn) return;
-        try {
-          const res = await frappe.call({
-            method: "frappe.client.get_value",
-            args: { doctype: "Serial No", filters: { name: sn }, fieldname: "name" },
-          });
-          if (res.message && res.message.name) {
-            frappe.show_alert({ message: `Serial No "${sn}" already exists`, indicator: 'orange' });
-            return;
-          }
-          await frappe.call({
-            method: "frappe.client.insert",
-            args: {
-              doc: {
-                doctype: "Serial No",
-                serial_no: sn,
-                item_code: this.createAssetForm.item_code || "",
-              },
-            },
-          });
-          frappe.show_alert({ message: `Serial No "${sn}" created`, indicator: 'green' });
-          if (!this.serial_nos.includes(sn)) this.serial_nos.push(sn);
-        } catch (e) {
-          console.error("Error adding serial no:", e);
-          frappe.msgprint(e.message || "Failed to add serial no");
-        }
+      addSerialNoChildRow() {
+        this.serialNoChildItems.push({
+          serial_no: "",
+          mac_address: "",
+          make: "",
+          model_number: "",
+          processor: "",
+          ram: "",
+          storage: "",
+          operating_system: "",
+          windows_key: "",
+          office_key: "",
+          warranty_start_date: "",
+          warranty_end_date: "",
+        });
+      },
+      removeSerialNoChildRow(idx) {
+        this.serialNoChildItems.splice(idx, 1);
       },
       get filteredWarehouses() {
         let q = "";
@@ -15912,6 +15964,8 @@
         if (doctype === "Asset") {
           this.showAssetCreateView = true;
           this.showDetailView = false;
+          this.showSerialNoChildTable = false;
+          this.serialNoChildItems = [];
           this.createAssetForm = {
             name: "",
             asset_name: "",
