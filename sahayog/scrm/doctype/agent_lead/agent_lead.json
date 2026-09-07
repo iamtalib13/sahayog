@@ -51,12 +51,12 @@
   {
    "fieldname": "alternate_number",
    "fieldtype": "Data",
-   "label": "Alternate Number (Optional)"
+   "label": "Alternate Number"
   },
   {
    "fieldname": "email_id",
    "fieldtype": "Data",
-   "label": "Email ID (Optional)"
+   "label": "Email ID"
   },
   {
    "fieldname": "section_location",
