@@ -1,0 +1,253 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:AGL-{YYYY}-{MM}-{DD}-{###}",
+ "creation": "2026-09-07 10:20:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "full_name",
+  "mobile_no",
+  "alternate_number",
+  "email_id",
+  "section_location",
+  "state",
+  "city_district",
+  "pincode",
+  "column_break_loc",
+  "branch",
+  "section_profile",
+  "occupation",
+  "resident_status",
+  "column_break_demo",
+  "age",
+  "gender",
+  "marital_status",
+  "section_qual",
+  "highest_qualification",
+  "preferred_working_hours",
+  "column_break_resume",
+  "resume",
+  "section_status",
+  "lead_source",
+  "status",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Full Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Contact Number (Mobile)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "alternate_number",
+   "fieldtype": "Data",
+   "label": "Alternate Number (Optional)"
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "label": "Email ID (Optional)"
+  },
+  {
+   "fieldname": "section_location",
+   "fieldtype": "Section Break",
+   "label": "Location Details"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "State",
+   "reqd": 1
+  },
+  {
+   "fieldname": "city_district",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "City / District",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pincode",
+   "fieldtype": "Data",
+   "label": "Area PIN Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_loc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Assigned Sahayog Branch",
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "section_profile",
+   "fieldtype": "Section Break",
+   "label": "Profile & Demographics"
+  },
+  {
+   "fieldname": "occupation",
+   "fieldtype": "Select",
+   "label": "Current / Previous Occupation",
+   "options": "\nRetired\nService\nInsurance Agent\nEx-Banker\nGovt. Officer\nTeacher\nRetail Salesperson\nHousewife/Homemaker\nBusiness Owner\nOthers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resident_status",
+   "fieldtype": "Select",
+   "label": "Resident Status",
+   "options": "\nSelf-Owned\nRented"
+  },
+  {
+   "fieldname": "column_break_demo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "age",
+   "fieldtype": "Int",
+   "label": "Age"
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOther"
+  },
+  {
+   "fieldname": "marital_status",
+   "fieldtype": "Select",
+   "label": "Marital Status",
+   "options": "\nSingle\nMarried\nDivorced\nWidow/Widower"
+  },
+  {
+   "fieldname": "section_qual",
+   "fieldtype": "Section Break",
+   "label": "Qualification & Commitment"
+  },
+  {
+   "fieldname": "highest_qualification",
+   "fieldtype": "Select",
+   "label": "Highest Qualification",
+   "options": "\nBelow 10th\n10th Pass\n12th Pass\nGraduate\nPost Graduate\nDoctorate\nProfessional Degree"
+  },
+  {
+   "fieldname": "preferred_working_hours",
+   "fieldtype": "Select",
+   "label": "Preferred Working Hours",
+   "options": "\nFull-Time\nPart-Time"
+  },
+  {
+   "fieldname": "column_break_resume",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resume",
+   "fieldtype": "Attach",
+   "label": "Resume Upload (Image/PDF format)"
+  },
+  {
+   "fieldname": "section_status",
+   "fieldtype": "Section Break",
+   "label": "Status & Tracking"
+  },
+  {
+   "default": "WaFHa Campaign (QR)",
+   "fieldname": "lead_source",
+   "fieldtype": "Data",
+   "label": "Lead Source / Campaign"
+  },
+  {
+   "default": "New",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "\nNew\nIn Touch\nInterested\nNot Interested\nOnboarded\nRejected",
+   "reqd": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Follow-up Remarks"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-07 10:20:00.000000",
+ "modified_by": "Administrator",
+ "module": "SCRM",
+ "name": "Agent Lead",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "All",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "MIS Admin",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "MIS User",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Branch Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
