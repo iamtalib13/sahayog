@@ -136,7 +136,7 @@
    "show_in_filter": 0
   },
   {
-   "allow_read_on_all_link_options": 0,
+   "allow_read_on_all_link_options": 1,
    "fieldname": "branch",
    "fieldtype": "Link",
    "hidden": 0,
