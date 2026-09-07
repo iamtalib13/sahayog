@@ -64,6 +64,7 @@
    "label": "Location Details"
   },
   {
+   "fetch_from": "branch.state",
    "fieldname": "state",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -71,6 +72,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "branch.district",
    "fieldname": "city_district",
    "fieldtype": "Data",
    "in_list_view": 1,

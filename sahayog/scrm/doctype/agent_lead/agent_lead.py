@@ -1,21 +1,75 @@
 import os
+import re
 import frappe
 from frappe.model.document import Document
+from frappe.utils import validate_email_address
 from frappe import _
 
 class AgentLead(Document):
 	def validate(self):
+		# 📱 1. Contact Number (Mobile) Validation
 		if self.mobile_no:
-			# Strip spaces/dashes
-			self.mobile_no = str(self.mobile_no).strip().replace(" ", "").replace("-", "")
-			if len(self.mobile_no) < 10:
-				frappe.throw(_("Mobile number must be at least 10 digits"))
-		
-		# Auto-assign branch based on pincode if matching branch exists
-		if not self.branch and self.pincode:
-			matching_branch = frappe.db.get_value("Sahayog Branch", {"pincode": self.pincode}, "name")
-			if matching_branch:
-				self.branch = matching_branch
+			cleaned_mobile = re.sub(r"\D", "", str(self.mobile_no))
+			if len(cleaned_mobile) != 10 or not re.match(r"^[6-9]\d{9}$", cleaned_mobile):
+				frappe.throw(_("Contact Number must be strictly a 10-digit numeric mobile number starting with 6, 7, 8, or 9."))
+			self.mobile_no = cleaned_mobile
+
+		# 📞 2. Alternate Number Validation (Optional)
+		if self.alternate_number:
+			cleaned_alt = re.sub(r"\D", "", str(self.alternate_number))
+			if len(cleaned_alt) != 10 or not re.match(r"^[6-9]\d{9}$", cleaned_alt):
+				frappe.throw(_("Alternate Number must be strictly a 10-digit numeric mobile number starting with 6, 7, 8, or 9."))
+			self.alternate_number = cleaned_alt
+
+		# 📧 3. Email ID Validation (Optional)
+		if self.email_id:
+			self.email_id = str(self.email_id).strip()
+			if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", self.email_id):
+				frappe.throw(_("Email ID must be in a valid format e.g. name@domain.com"))
+			validate_email_address(self.email_id, throw=True)
+
+		# 📍 4. Area PIN Code Validation
+		if self.pincode:
+			cleaned_pin = re.sub(r"\D", "", str(self.pincode))
+			if len(cleaned_pin) != 6 or not re.match(r"^[1-9]\d{5}$", cleaned_pin):
+				frappe.throw(_("Area PIN Code must be strictly a 6-digit numeric PIN code."))
+			self.pincode = cleaned_pin
+
+		# 🎂 5. Age Validation (18 - 100)
+		if self.age is not None and self.age != "":
+			try:
+				age_val = int(self.age)
+				if age_val < 18 or age_val > 100:
+					frappe.throw(_("Age must be a valid number between 18 and 100 years."))
+			except ValueError:
+				frappe.throw(_("Age must be a valid numeric integer."))
+
+		# 🏢 6. Auto-assign branch or fetch location details from Sahayog Branch
+		if self.branch:
+			b_doc = frappe.db.get_value("Sahayog Branch", self.branch, ["state", "district"], as_dict=True)
+			if b_doc:
+				if not self.state and b_doc.get("state"): self.state = b_doc.get("state")
+				if not self.city_district and b_doc.get("district"): self.city_district = b_doc.get("district")
+		elif self.city_district:
+			try:
+				matching_branch = frappe.db.get_value("Sahayog Branch", {"district": ["like", f"%{self.city_district.strip()}%"]}, "name")
+				if matching_branch:
+					self.branch = matching_branch
+			except Exception:
+				pass
+
+@frappe.whitelist(allow_guest=True)
+def get_sahayog_locations():
+	"""Fetches unique states, districts, and branch options from Sahayog Branch."""
+	branches = frappe.get_all("Sahayog Branch", fields=["name", "sol_id", "branch", "district", "state"], order_by="branch asc")
+	states = sorted(list(set([b.state for b in branches if b.get("state")])))
+	districts = sorted(list(set([b.district for b in branches if b.get("district")])))
+	return {
+		"states": states,
+		"districts": districts,
+		"branches": [{"value": b.name, "label": f"{b.branch} ({b.sol_id or b.name})", "state": b.state, "district": b.district} for b in branches]
+	}
+
 
 @frappe.whitelist(allow_guest=True)
 def ensure_qr_code():
