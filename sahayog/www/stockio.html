@@ -3973,26 +3973,54 @@
                 <!-- Serial No -->
                 <div class="form-group" style="margin-bottom: 16px !important;">
                   <label class="form-label" style="font-size: 0.85rem !important; margin-bottom: 6px !important;">Serial No</label>
-                  <div class="searchable-select-wrapper">
-                    <input
-                      type="text"
-                      class="form-input searchable-select-input"
-                      style="padding: 12px 16px !important;"
-                      :class="{ focused: focusedField === 'asset_serial_no', 'glow-red': !createAssetForm.serial_no }"
-                      v-model="createAssetForm.serial_no"
-                      @focus="onFocusSearchable('asset_serial_no')"
-                      @blur="onBlurSearchable('asset_serial_no')"
-                      placeholder="Search Serial No"
-                    />
-                    <div class="searchable-select-dropdown" v-if="focusedField === 'asset_serial_no'">
-                      <div
-                        v-for="sn in filteredSerialNos"
-                        :key="sn"
-                        class="searchable-select-option"
-                        @mousedown="createAssetForm.serial_no = sn; focusedField = null;"
-                      >
-                        [[ sn ]]
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <div class="searchable-select-wrapper" style="flex: 1;">
+                      <input
+                        type="text"
+                        class="form-input searchable-select-input"
+                        style="padding: 12px 16px !important;"
+                        :class="{ focused: focusedField === 'asset_serial_no', 'glow-red': !createAssetForm.serial_no }"
+                        v-model="createAssetForm.serial_no"
+                        @focus="onFocusSearchable('asset_serial_no')"
+                        @blur="onBlurSearchable('asset_serial_no')"
+                        placeholder="Search Serial No"
+                      />
+                      <div class="searchable-select-dropdown" v-if="focusedField === 'asset_serial_no'">
+                        <div
+                          v-for="sn in filteredSerialNos"
+                          :key="sn"
+                          class="searchable-select-option"
+                          @mousedown="createAssetForm.serial_no = sn; focusedField = null;"
+                        >
+                          [[ sn ]]
+                        </div>
                       </div>
+                    </div>
+                    <button
+                      v-if="createAssetForm.serial_no"
+                      type="button"
+                      @click="showSerialNoChildTable = !showSerialNoChildTable"
+                      :style="{ width: '44px', height: '44px', minWidth: '44px', borderRadius: '10px', border: '1px solid ' + (showSerialNoChildTable ? '#ef4444' : 'var(--primary-color)'), background: showSerialNoChildTable ? '#ef4444' : 'var(--primary-color)', color: 'white', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)' }"
+                      :title="showSerialNoChildTable ? 'Close Details' : 'Add Serial Details'"
+                    >[[ showSerialNoChildTable ? '−' : '+' ]]</button>
+                  </div>
+
+                  <!-- Serial No Child Table -->
+                  <div v-if="showSerialNoChildTable" style="margin-top: 12px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: var(--bg-surface);">
+                    <div style="padding: 8px 12px; background: var(--bg-card); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;"><i class="fas fa-barcode" style="margin-right: 6px;"></i>Serial Details</span>
+                      <button type="button" @click="addSerialNoChildRow" style="padding: 4px 10px; font-size: 0.7rem; font-weight: 700; border-radius: 4px; border: 1px solid var(--primary-color); background: transparent; color: var(--primary-color); cursor: pointer; transition: all 0.2s;"><i class="fas fa-plus" style="margin-right: 4px;"></i>Add Row</button>
+                    </div>
+                    <div style="padding: 8px 12px;">
+                      <div v-for="(row, idx) in serialNoChildItems" :key="idx" style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <select v-model="row.field" style="flex: 0 0 160px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: var(--text-main); background: var(--bg-surface); cursor: pointer;">
+                          <option value="" disabled>Select Field</option>
+                          <option v-for="f in serialNoChildFields" :key="f" :value="f">[[ f ]]</option>
+                        </select>
+                        <input type="text" v-model="row.value" :placeholder="'Enter ' + (row.field || 'value')" style="flex: 1; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.78rem; color: var(--text-main); background: var(--bg-surface);" />
+                        <button type="button" @click="removeSerialNoChildRow(idx)" style="width: 32px; height: 32px; min-width: 32px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: all 0.2s;"><i class="fas fa-times"></i></button>
+                      </div>
+                      <div v-if="serialNoChildItems.length === 0" style="text-align: center; padding: 14px; color: var(--text-muted); font-size: 0.75rem;">No serial details added. Click <strong>+ Add Row</strong> to begin.</div>
                     </div>
                   </div>
                 </div>
@@ -13697,6 +13725,9 @@
       emrEditSearch: "",
       emrEditSearchProvider: "",
       showAssetCreateView: false,
+      showSerialNoChildTable: false,
+      serialNoChildItems: [],
+      serialNoChildFields: ["Serial No", "MAC Address", "Make", "Model", "Processor", "RAM", "Storage", "OS", "Windows Key", "Office Key", "Warranty Start", "Warranty End"],
       showAssetActions: false,
       showAssetActionModal: false,
       serialMode: 'individual',
@@ -14387,6 +14418,12 @@
           document.body.removeChild(ta);
           frappe.show_alert({ message: __('Asset ID copied to clipboard'), indicator: 'green' });
         }
+      },
+      addSerialNoChildRow() {
+        this.serialNoChildItems.push({ field: "", value: "" });
+      },
+      removeSerialNoChildRow(idx) {
+        this.serialNoChildItems.splice(idx, 1);
       },
       get filteredWarehouses() {
         let q = "";
@@ -15874,6 +15911,8 @@
         if (doctype === "Asset") {
           this.showAssetCreateView = true;
           this.showDetailView = false;
+          this.showSerialNoChildTable = false;
+          this.serialNoChildItems = [];
           this.createAssetForm = {
             name: "",
             asset_name: "",
@@ -16486,15 +16525,32 @@
               },
             });
             if (!snRes.message || !snRes.message.name) {
+              const snFieldMap = {
+                "Serial No": "Serial No",
+                "MAC Address": "MAC Address",
+                "Make": "Make",
+                "Model": "Model Number",
+                "Processor": "Processor",
+                "RAM": "RAM",
+                "Storage": "Storage",
+                "OS": "Operating System",
+                "Windows Key": "Windows Key",
+                "Office Key": "Office Key",
+                "Warranty Start": "Warranty start date",
+                "Warranty End": "Warranty end date",
+              };
+              const configTable = this.serialNoChildItems
+                .filter(r => r.field && r.value)
+                .map(r => ({ config_type: snFieldMap[r.field] || r.field, config_value: r.value }));
+              const snDoc = {
+                doctype: "Serial No",
+                serial_no: this.createAssetForm.serial_no,
+                item_code: this.createAssetForm.item_code,
+              };
+              if (configTable.length > 0) snDoc.configuration_table = configTable;
               await frappe.call({
                 method: "frappe.client.insert",
-                args: {
-                  doc: {
-                    doctype: "Serial No",
-                    serial_no: this.createAssetForm.serial_no,
-                    item_code: this.createAssetForm.item_code,
-                  },
-                },
+                args: { doc: snDoc },
               });
             }
           }
