@@ -137,6 +137,20 @@
   },
   {
    "allow_read_on_all_link_options": 0,
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "hidden": 0,
+   "label": "Assigned Sahayog Branch (Optional)",
+   "max_length": 0,
+   "max_value": 0,
+   "options": "Sahayog Branch",
+   "precision": "",
+   "read_only": 0,
+   "reqd": 0,
+   "show_in_filter": 0
+  },
+  {
+   "allow_read_on_all_link_options": 0,
    "fieldname": "section_profile",
    "fieldtype": "Section Break",
    "hidden": 0,
