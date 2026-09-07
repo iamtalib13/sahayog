@@ -80,5 +80,65 @@ def submit_public_agent_lead(lead_data):
 	return {
 		"status": "success",
 		"name": doc.name,
-		"message": _("Thank you for registering! Our branch team will contact you shortly.")
+		"message": _("Thank you for registering! Our representative will contact you shortly.")
 	}
+
+@frappe.whitelist()
+def get_agent_lead_dashboard_data(start=0, page_length=10):
+	user = frappe.session.user
+	roles = frappe.get_roles(user)
+	is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+	filters = {}
+
+	try:
+		start = int(start)
+	except Exception:
+		start = 0
+
+	try:
+		page_length = int(page_length)
+	except Exception:
+		page_length = 10
+
+	stats_query = """
+		SELECT
+			COUNT(name) as total_leads,
+			COALESCE(SUM(CASE WHEN status = 'New' THEN 1 ELSE 0 END), 0) as new_count,
+			COALESCE(SUM(CASE WHEN status IN ('In Touch', 'Interested') THEN 1 ELSE 0 END), 0) as active_count,
+			COALESCE(SUM(CASE WHEN status = 'Onboarded' THEN 1 ELSE 0 END), 0) as onboarded_count,
+			COALESCE(SUM(CASE WHEN status = 'Rejected' THEN 1 ELSE 0 END), 0) as rejected_count
+		FROM `tabAgent Lead`
+	"""
+	stats_res = frappe.db.sql(stats_query, as_dict=True)[0]
+	total_leads = int(stats_res.total_leads or 0)
+
+	records = frappe.get_all(
+		"Agent Lead",
+		filters=filters,
+		fields=[
+			"name",
+			"full_name",
+			"mobile_no",
+			"city_district",
+			"occupation",
+			"status",
+			"creation",
+		],
+		order_by="creation desc",
+		start=start,
+		page_length=page_length,
+	)
+
+	return {
+		"records": records,
+		"stats": {
+			"total_leads": total_leads,
+			"new_count": int(stats_res.new_count or 0),
+			"active_count": int(stats_res.active_count or 0),
+			"onboarded_count": int(stats_res.onboarded_count or 0),
+			"rejected_count": int(stats_res.rejected_count or 0),
+		},
+		"is_admin": is_admin,
+		"total_count": total_leads
+	}
+
