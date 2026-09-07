@@ -100,19 +100,13 @@ frappe.ready(function() {
 	// 🏢 Auto-fetch State and City/District from Sahayog Branch in Web Form
 	frappe.web_form.on('branch', (field, value) => {
 		if (value) {
-			frappe.call({
-				method: "frappe.client.get",
-				args: {
-					doctype: "Sahayog Branch",
-					name: value
-				},
-				callback: function(r) {
-					if (r.message) {
+			frappe.db.get_value("Sahayog Branch", value, ["state", "district"])
+				.then(r => {
+					if (r && r.message) {
 						if (r.message.state) frappe.web_form.set_value('state', r.message.state);
 						if (r.message.district) frappe.web_form.set_value('city_district', r.message.district);
 					}
-				}
-			});
+				});
 		}
 	});
 
