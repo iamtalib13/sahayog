@@ -554,6 +554,32 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
         }
     },
 
+    // beneficiary_account_number(frm, cdt, cdn) {
+    //     const row = locals[cdt][cdn];
+
+    //     if (!row.beneficiary_account_number) {
+    //         return;
+    //     }
+
+    //     const digits_only = String(row.beneficiary_account_number)
+    //         .replace(/\D/g, '')
+    //         .slice(0, 15);
+
+    //     if (row.beneficiary_account_number !== digits_only) {
+    //         frappe.model.set_value(
+    //             cdt,
+    //             cdn,
+    //             'beneficiary_account_number',
+    //             ""
+    //         );
+
+    //         frappe.show_alert({
+    //             message: __('Beneficiary Account Number accepts only numeric digits.'),
+    //             indicator: 'orange'
+    //         }, 3);
+    //     }
+    // },
+
     beneficiary_account_number(frm, cdt, cdn) {
         const row = locals[cdt][cdn];
 
@@ -561,20 +587,34 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
             return;
         }
 
-        const digits_only = String(row.beneficiary_account_number)
-            .replace(/\D/g, '')
-            .slice(0, 20);
+        const entered_value = String(row.beneficiary_account_number);
+        const digits_only = entered_value.replace(/\D/g, '');
 
-        if (row.beneficiary_account_number !== digits_only) {
+        // Remove alphabets, spaces, and special characters only.
+        // Do NOT slice/truncate digits beyond 15.
+        if (entered_value !== digits_only) {
             frappe.model.set_value(
                 cdt,
                 cdn,
                 'beneficiary_account_number',
-                ""
+                digits_only
             );
 
             frappe.show_alert({
                 message: __('Beneficiary Account Number accepts only numeric digits.'),
+                indicator: 'orange'
+            }, 3);
+
+            return;
+        }
+
+        // Show immediate warning, but do not modify the entered account number.
+        if (digits_only.length !== 15) {
+            frappe.show_alert({
+                message: __(
+                    'Beneficiary Account Number must contain exactly 15 digits. Entered: {0} digits.',
+                    [digits_only.length]
+                ),
                 indicator: 'orange'
             }, 3);
         }
