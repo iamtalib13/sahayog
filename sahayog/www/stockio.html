@@ -16525,15 +16525,32 @@
               },
             });
             if (!snRes.message || !snRes.message.name) {
+              const snFieldMap = {
+                "Serial No": "Serial No",
+                "MAC Address": "MAC Address",
+                "Make": "Make",
+                "Model": "Model Number",
+                "Processor": "Processor",
+                "RAM": "RAM",
+                "Storage": "Storage",
+                "OS": "Operating System",
+                "Windows Key": "Windows Key",
+                "Office Key": "Office Key",
+                "Warranty Start": "Warranty start date",
+                "Warranty End": "Warranty end date",
+              };
+              const configTable = this.serialNoChildItems
+                .filter(r => r.field && r.value)
+                .map(r => ({ config_type: snFieldMap[r.field] || r.field, config_value: r.value }));
+              const snDoc = {
+                doctype: "Serial No",
+                serial_no: this.createAssetForm.serial_no,
+                item_code: this.createAssetForm.item_code,
+              };
+              if (configTable.length > 0) snDoc.configuration_table = configTable;
               await frappe.call({
                 method: "frappe.client.insert",
-                args: {
-                  doc: {
-                    doctype: "Serial No",
-                    serial_no: this.createAssetForm.serial_no,
-                    item_code: this.createAssetForm.item_code,
-                  },
-                },
+                args: { doc: snDoc },
               });
             }
           }
