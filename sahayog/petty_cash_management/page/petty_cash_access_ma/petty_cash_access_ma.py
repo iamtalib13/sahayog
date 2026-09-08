@@ -134,14 +134,17 @@ def get_eligible_employees():
             "user_id": ["is", "set"]
         },
         fields=["name", "employee_name", "designation",
-                "user_id", "sahayog_branch"],
+                # "user_id", "sahayog_branch"],
+                "user_id", "petty_cash_branch"],
         order_by="employee_name asc"
     )
 
     for emp in employees:
-        if emp.sahayog_branch:
+        # if emp.sahayog_branch:
+        if emp.petty_cash_branch:
             branch_name = frappe.db.get_value(
-                "Sahayog Branch", emp.sahayog_branch, "branch")
+                # "Sahayog Branch", emp.sahayog_branch, "branch")
+                "Sahayog Branch", emp.petty_cash_branch, "branch")
             emp.branch_name = branch_name or "Unknown"
         else:
             emp.branch_name = "N/A"

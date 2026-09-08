@@ -385,7 +385,8 @@ def get_current_user_branch():
     branch = frappe.db.get_value(
         "Employee",
         {"user_id": frappe.session.user, "status": "Active"},
-        "sahayog_branch"
+        # "sahayog_branch"
+        "petty_cash_branch"
     )
     return branch
 

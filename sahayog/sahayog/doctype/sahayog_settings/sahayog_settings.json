@@ -28,6 +28,8 @@
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
+  "daily_cash_expense_limit",
+  "cash_limit_exempt_categories",
   "pending_request_dashboard_tab",
   "pending_request_setting",
   "password_security_tab",
@@ -308,13 +310,26 @@
    "fieldname": "allow_special_characters",
    "fieldtype": "Check",
    "label": "Allow Special Characters"
+  },
+  {
+   "fieldname": "daily_cash_expense_limit",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Daily Cash Expense Limit",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cash_limit_exempt_categories",
+   "fieldtype": "Table",
+   "label": "Cash Limit Exempt Categories",
+   "options": "Petty Cash Cash Limit Exempt Category"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-27 15:40:00.000000",
+ "modified": "2026-09-07 15:11:32.570093",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",

@@ -46,7 +46,8 @@ class PettyCashTransaction(Document):
         if "HO Petty Cash Manager" not in frappe.get_roles():
             self.transaction_type = "Expense"
             emp_branch = frappe.db.get_value(
-                "Employee", {"user_id": frappe.session.user, "status": "Active"}, "sahayog_branch")
+                # "Employee", {"user_id": frappe.session.user, "status": "Active"}, "sahayog_branch")
+                "Employee", {"user_id": frappe.session.user, "status": "Active"}, "petty_cash_branch")
             if emp_branch:
                 self.branch = emp_branch
 
@@ -287,6 +288,10 @@ class PettyCashTransaction(Document):
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
 
+        # Validate Payment Mode
+        self.validate_payment_mode_details()
+        self.validate_daily_cash_expense_limit()
+
         # REQUIREMENT 1: On Save, create Draft Journal Entry if Fund Allocation
         # if self.transaction_type == "Fund Allocation" and not self.journal_entry_ref:
         #     self.create_ho_fund_allocation_je()
@@ -461,6 +466,10 @@ class PettyCashTransaction(Document):
 
     def on_submit(self):
         if self.transaction_type == "Expense":
+            # 1. Validate Payment Mode
+            self.validate_payment_mode_details()
+            self.validate_daily_cash_expense_limit()
+            # 2. Validate against Active Wallet
             self.validate_expense_against_active_wallet()
         # 1. Fund Allocation flow
         if self.transaction_type == "Fund Allocation":
@@ -1455,42 +1464,322 @@ class PettyCashTransaction(Document):
                 )
 
 
-# @frappe.whitelist()
-# def get_category_limit_status(branch, category, transaction_date, docname=None):
-#     """
-#     API used by Client Script to show available limit.
-#     """
-#     if not branch or not category or not transaction_date:
-#         return 0
+##########################################################################################
+    # def validate_payment_mode_details(self):
+    #     """
+    #     Beneficiary details are mandatory when an expense row is paid by Transfer.
+    #     """
+    #     if self.transaction_type != "Expense":
+    #         return
 
-#     branch_type = frappe.db.get_value("Branch Petty Cash Account", {
-#                                       "branch": branch}, "branch_type")
-#     category_doc = frappe.get_doc("Expense Category", category)
-#     limit = category_doc.metro_limit if branch_type == "Metro" else category_doc.non_metro_limit
+    #     for row in self.items:
+    #         payment_mode = (row.payment_mode or "Cash").strip()
 
-#     if limit == 0:
-#         return 999999999
+    #         if payment_mode not in ("Cash", "Transfer"):
+    #             frappe.throw(
+    #                 _("Row #{0}: Payment Mode must be Cash or Transfer.").format(
+    #                     row.idx
+    #                 )
+    #             )
 
-#     first_day = get_first_day(transaction_date)
-#     last_day = get_last_day(transaction_date)
+    #         if payment_mode == "Transfer":
+    #             if not (row.beneficiary_name or "").strip():
+    #                 frappe.throw(
+    #                     _("Row #{0}: Beneficiary Name is mandatory for Transfer payment.").format(
+    #                         row.idx
+    #                     )
+    #                 )
 
-#     # Same SQL Update Here
-#     spent_sql = """
-#             SELECT COALESCE(SUM(child.amount), 0)
-#             FROM `tabPetty Cash Transaction Item` child
-#             JOIN `tabPetty Cash Transaction` parent ON child.parent = parent.name
-#             WHERE parent.branch = %s
-#               AND child.expense_category = %s
-#               AND parent.transaction_date BETWEEN %s AND %s
-#               AND parent.docstatus = 1
-#               AND parent.approval_status != 'Verified'
-#               AND parent.name != %s
-#         """
+    #             if not (row.beneficiary_account_number or "").strip():
+    #                 frappe.throw(
+    #                     _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
+    #                         row.idx
+    #                     )
+    #                 )
 
-#     already_spent = frappe.db.sql(
-#         spent_sql, (branch, category, first_day, last_day, docname or "New"))[0][0]
+    def validate_payment_mode_details(self):
+        """
+        Beneficiary details are mandatory when an expense row is paid by Transfer.
+        Beneficiary Account Number must contain only 9 to 20 numeric digits.
+        """
+        if self.transaction_type != "Expense":
+            return
 
-#     return max(flt(limit) - flt(already_spent), 0)
+        for row in self.items:
+            payment_mode = (row.payment_mode or "Cash").strip()
+
+            if payment_mode not in ("Cash", "Transfer"):
+                frappe.throw(
+                    _("Row #{0}: Payment Mode must be Cash or Transfer.").format(
+                        row.idx
+                    )
+                )
+
+            if payment_mode == "Transfer":
+                if not (row.beneficiary_name or "").strip():
+                    frappe.throw(
+                        _("Row #{0}: Beneficiary Name is mandatory for Transfer payment.").format(
+                            row.idx
+                        )
+                    )
+
+                # account_number = (row.beneficiary_account_number or "").strip()
+
+                # if not account_number:
+                #     frappe.throw(
+                #         _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
+                #             row.idx
+                #         )
+                #     )
+
+                # if not account_number.isdigit():
+                #     frappe.throw(
+                #         _(
+                #             "Row #{0}: Beneficiary Account Number must contain only numeric digits. "
+                #             "Alphabets, spaces, special characters, and decimal values are not allowed."
+                #         ).format(row.idx)
+                #     )
+
+                # if not 9 <= len(account_number) <= 20:
+                #     frappe.throw(
+                #         _(
+                #             "Row #{0}: Beneficiary Account Number must be between 9 and 20 digits. "
+                #             "Entered length: {1} digits."
+                #         ).format(row.idx, len(account_number))
+                #     )
+
+                account_number = (row.beneficiary_account_number or "").strip()
+
+                if not account_number:
+                    frappe.throw(
+                        _("Row #{0}: Beneficiary Account Number is mandatory for Transfer payment.").format(
+                            row.idx
+                        )
+                    )
+
+                if not account_number.isdigit():
+                    frappe.throw(
+                        _(
+                            "Row #{0}: Beneficiary Account Number must contain only numeric digits. "
+                            "Alphabets, spaces, special characters, and decimal values are not allowed."
+                        ).format(row.idx)
+                    )
+
+                if len(account_number) != 15:
+                    frappe.throw(
+                        _(
+                            "Row #{0}: Beneficiary Account Number must contain exactly 15 digits. "
+                            "Entered length: {1} digits."
+                        ).format(row.idx, len(account_number))
+                    )
+
+                row.beneficiary_account_number = account_number
+    # exclude electricity bill expenses from daily cash limit "13"
+    # def get_current_document_countable_cash_amount(self):
+    #     """
+    #     Cash amount in the current transaction that consumes the configured
+    #     daily cash-expense limit.
+
+    #     Cash paid for Electricity Bill Expenses does not consume the limit.
+    #     Transfer payments do not consume the limit.
+    #     """
+    #     # electricity_category = "Electricity Bill Expenses"
+    #     electricity_category = "13"
+
+    #     return sum(
+    #         flt(row.amount)
+    #         for row in self.items
+    #         if (row.payment_mode or "Cash").strip() == "Cash"
+    #         and row.expense_category != electricity_category
+    #     )
+
+    # def get_submitted_daily_cash_usage(self):
+    #     """
+    #     Finds already submitted countable cash expenses for the same branch
+    #     and transaction date, excluding this transaction itself.
+    #     """
+    #     # electricity_category = "Electricity Bill Expenses"
+    #     electricity_category = "13"
+
+    #     result = frappe.db.sql(
+    #         """
+    #         SELECT COALESCE(SUM(item.amount), 0) AS cash_used
+    #         FROM `tabPetty Cash Transaction Item` AS item
+    #         INNER JOIN `tabPetty Cash Transaction` AS txn
+    #             ON txn.name = item.parent
+    #         WHERE txn.branch = %s
+    #           AND txn.transaction_date = %s
+    #           AND txn.transaction_type = 'Expense'
+    #           AND txn.docstatus = 1
+    #           AND txn.name != %s
+    #           AND item.payment_mode = 'Cash'
+    #           AND item.expense_category != %s
+    #         """,
+    #         (
+    #             self.branch,
+    #             self.transaction_date,
+    #             self.name or "",
+    #             electricity_category,
+    #         ),
+    #         as_dict=True,
+    #     )
+
+    #     return flt(result[0].cash_used) if result else 0.0
+
+    def get_current_document_countable_cash_amount(self):
+        """
+        Returns the current document's Cash expense amount that consumes
+        the configured daily cash expense limit.
+
+        Transfer rows and categories configured as exempt in Sahayog Settings
+        are not included.
+        """
+        exempt_category_ids = set(
+            self.get_cash_limit_exempt_category_ids()
+        )
+
+        return sum(
+            flt(row.amount)
+            for row in self.items
+            if (row.payment_mode or "Cash").strip() == "Cash"
+            and row.expense_category not in exempt_category_ids
+        )
+
+    def get_cash_limit_exempt_category_ids(self):
+        """
+        Returns Expense Category document names configured in Sahayog Settings
+        that must not consume the daily cash expense limit.
+        """
+        settings = frappe.get_single("Sahayog Settings")
+
+        return [
+            row.expense_category
+            for row in (settings.cash_limit_exempt_categories or [])
+            if row.expense_category
+        ]
+
+    def get_submitted_daily_cash_usage(self):
+        """
+        Returns submitted countable Cash expenses for the same branch and
+        transaction date, excluding this document.
+
+        Cash rows whose Expense Category is configured as exempt in
+        Sahayog Settings are excluded.
+        """
+        exempt_category_ids = self.get_cash_limit_exempt_category_ids()
+
+        conditions = """
+            txn.branch = %s
+            AND txn.transaction_date = %s
+            AND txn.transaction_type = 'Expense'
+            AND txn.docstatus = 1
+            AND txn.name != %s
+            AND item.payment_mode = 'Cash'
+        """
+
+        values = [
+            self.branch,
+            self.transaction_date,
+            self.name or "",
+        ]
+
+        if exempt_category_ids:
+            placeholders = ", ".join(["%s"] * len(exempt_category_ids))
+            conditions += f"""
+                AND item.expense_category NOT IN ({placeholders})
+            """
+            values.extend(exempt_category_ids)
+
+        result = frappe.db.sql(
+            f"""
+            SELECT COALESCE(SUM(item.amount), 0) AS cash_used
+            FROM `tabPetty Cash Transaction Item` AS item
+            INNER JOIN `tabPetty Cash Transaction` AS txn
+                ON txn.name = item.parent
+            WHERE {conditions}
+            """,
+            tuple(values),
+            as_dict=True,
+        )
+
+        return flt(result[0].cash_used) if result else 0.0
+
+    def validate_daily_cash_expense_limit(self):
+        """
+        Prevents the branch from submitting countable Cash expenses above
+        the configured daily cash limit.
+
+        The configured value comes from:
+        Sahayog Settings.daily_cash_expense_limit
+        """
+        if self.transaction_type != "Expense":
+            return
+
+        daily_limit = flt(
+            frappe.db.get_single_value(
+                "Sahayog Settings",
+                "daily_cash_expense_limit"
+            ) or 0
+        )
+
+        if daily_limit <= 0:
+            frappe.throw(
+                _(
+                    "Daily Cash Expense Limit is not configured. "
+                    "Please configure it in Sahayog Settings under Petty Cash Management."
+                )
+            )
+
+        current_cash_amount = self.get_current_document_countable_cash_amount()
+
+        # This transaction contains only transfers, or only electricity
+        # expenses paid in cash. Neither consumes the regular daily cash limit.
+        if current_cash_amount <= 0:
+            return
+
+        already_used = self.get_submitted_daily_cash_usage()
+        remaining_limit = max(daily_limit - already_used, 0)
+        total_cash_usage = already_used + current_cash_amount
+
+    # exclude electricity bill expenses from daily cash limit "13"
+        # if total_cash_usage > daily_limit:
+        #     frappe.throw(
+        #         _(
+        #             "Daily Cash Expense Limit exceeded for Branch {0} on {1}. "
+        #             "Daily Limit: ₹{2}. Already Used: ₹{3}. "
+        #             "Cash Amount in this Transaction: ₹{4}. "
+        #             "Remaining Cash Limit: ₹{5}. "
+        #             # "Cash paid for Electricity Bill Expenses is excluded from this limit."
+        #             "Cash payments for categories configured as exempt in "
+        #             "Sahayog Settings are excluded from this limit."
+        #         ).format(
+        #             self.branch,
+        #             self.transaction_date,
+        #             daily_limit,
+        #             already_used,
+        #             current_cash_amount,
+        #             remaining_limit,
+        #         )
+        #     )
+
+        if total_cash_usage > daily_limit:
+            frappe.throw(
+                _(
+                    "Daily Cash Expense Limit exceeded for Branch {0} on {1}. "
+                    "Daily Limit: ₹{2}. Already Used: ₹{3}. "
+                    "Cash Amount in this Transaction: ₹{4}. "
+                    "Remaining Cash Limit: ₹{5}. "
+                    "Cash payments for categories configured as exempt in "
+                    "Sahayog Settings are excluded from this limit."
+                ).format(
+                    self.branch,
+                    self.transaction_date,
+                    daily_limit,
+                    already_used,
+                    current_cash_amount,
+                    remaining_limit,
+                )
+            )
 
 
 @frappe.whitelist()
@@ -2424,7 +2713,8 @@ def download_detailed_report_by_date_range(from_date=None, to_date=None):
         user_branch = frappe.db.get_value(
             "Employee",
             {"user_id": frappe.session.user, "status": "Active"},
-            "sahayog_branch"
+            # "sahayog_branch"
+            "petty_cash_branch"
         )
 
         if not user_branch:

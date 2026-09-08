@@ -1,17 +1,18 @@
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
+
 def execute():
     fields = {
         "Employee": [
-          {
+            {
                 "fieldname": "custom_zone",
                 "fieldtype": "Link",
                 "insert_after": "grade",
                 "reqd": 1,
                 "label": "Zone",
-                "options":"Zone",
-               
+                "options": "Zone",
+
             },
 
 
@@ -21,25 +22,25 @@ def execute():
                 "insert_after": "custom_zone",
                 "reqd": 1,
                 "label": "Region",
-                "options":"Region",
+                "options": "Region",
             },
-             {
+            {
                 "fieldname": "custom_district",
                 "fieldtype": "Data",
                 "insert_after": "custom_region",
                 "reqd": 1,
                 "label": "District",
             },
-           
-    
-            
+
+
+
             {
                 "fieldname": "custom_division",
                 "fieldtype": "Link",
                 "insert_after": "custom_district",
                 "reqd": 1,
                 "label": "Division",
-                "options":"Division",
+                "options": "Division",
             },
             {
                 "fieldname": "cxo_level",
@@ -55,7 +56,7 @@ def execute():
                 "insert_after": "erpnext_user",
                 "label": "Skip Auto Creation",
             },
-             
+
             {
                 "fieldname": "custom_cluter",
                 "fieldtype": "Link",
@@ -63,14 +64,14 @@ def execute():
                 "insert_after": "custom_division",
                 "label": "Cluster"
             },
-                {
+            {
                 "fieldname": "sol_id",
                 "fieldtype": "Data",
                 "fetch_from": "branch.sol_id",
                 "insert_after": "branch",
                 "label": "Sol ID"
             },
-               {
+            {
                 "fieldname": "sahayog_branch",
                 "fieldtype": "Link",
                 "options": "Sahayog Branch",
@@ -83,7 +84,7 @@ def execute():
                 "insert_after": "status",
                 "label": "PIP Status",
                 "default": 0
-            
+
             },
             {
                 "fieldname": "custom_is_support_staff",
@@ -91,6 +92,13 @@ def execute():
                 "insert_after": "pip_status",
                 "label": "Is Support Staff",
                 "default": 0
+            },
+            {
+                "fieldname": "petty_cash_branch",
+                "fieldtype": "Link",
+                "options": "Sahayog Branch",
+                "insert_after": "sahayog_branch",
+                "label": "Petty Cash Branch"
             },
         ]
     }

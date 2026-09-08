@@ -459,10 +459,13 @@ frappe.ui.form.on('Petty Cash Transaction', {
             frappe.db.get_value(
                 'Employee',
                 { user_id: frappe.session.user, status: 'Active' },
-                'sahayog_branch'
+                // 'sahayog_branch'
+                'petty_cash_branch'
             ).then(r => {
-                if (r && r.message && r.message.sahayog_branch) {
-                    frm.set_value('branch', r.message.sahayog_branch);
+                // if (r && r.message && r.message.sahayog_branch) {
+                //     frm.set_value('branch', r.message.sahayog_branch);
+                if (r && r.message && r.message.petty_cash_branch) {
+                    frm.set_value('branch', r.message.petty_cash_branch);
                     frm.trigger('fetch_balance');
                     check_branch_wallet_status(frm);
                 }
@@ -539,6 +542,81 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
                 indicator: 'red',
                 message: __('Row {0}: Description can contain maximum 30 characters including spaces.', [row.idx])
             });
+        }
+    },
+
+    payment_mode(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (row.payment_mode !== 'Transfer') {
+            frappe.model.set_value(cdt, cdn, 'beneficiary_name', '');
+            frappe.model.set_value(cdt, cdn, 'beneficiary_account_number', '');
+        }
+    },
+
+    // beneficiary_account_number(frm, cdt, cdn) {
+    //     const row = locals[cdt][cdn];
+
+    //     if (!row.beneficiary_account_number) {
+    //         return;
+    //     }
+
+    //     const digits_only = String(row.beneficiary_account_number)
+    //         .replace(/\D/g, '')
+    //         .slice(0, 15);
+
+    //     if (row.beneficiary_account_number !== digits_only) {
+    //         frappe.model.set_value(
+    //             cdt,
+    //             cdn,
+    //             'beneficiary_account_number',
+    //             ""
+    //         );
+
+    //         frappe.show_alert({
+    //             message: __('Beneficiary Account Number accepts only numeric digits.'),
+    //             indicator: 'orange'
+    //         }, 3);
+    //     }
+    // },
+
+    beneficiary_account_number(frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+
+        if (!row.beneficiary_account_number) {
+            return;
+        }
+
+        const entered_value = String(row.beneficiary_account_number);
+        const digits_only = entered_value.replace(/\D/g, '');
+
+        // Remove alphabets, spaces, and special characters only.
+        // Do NOT slice/truncate digits beyond 15.
+        if (entered_value !== digits_only) {
+            frappe.model.set_value(
+                cdt,
+                cdn,
+                'beneficiary_account_number',
+                digits_only
+            );
+
+            frappe.show_alert({
+                message: __('Beneficiary Account Number accepts only numeric digits.'),
+                indicator: 'orange'
+            }, 3);
+
+            return;
+        }
+
+        // Show immediate warning, but do not modify the entered account number.
+        if (digits_only.length !== 15) {
+            frappe.show_alert({
+                message: __(
+                    'Beneficiary Account Number must contain exactly 15 digits. Entered: {0} digits.',
+                    [digits_only.length]
+                ),
+                indicator: 'orange'
+            }, 3);
         }
     },
 

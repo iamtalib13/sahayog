@@ -57,7 +57,8 @@ def get_transaction_query_conditions(user):
 
     # Dynamic Subquery - Database evaluates this live on every request
     escaped_user = frappe.db.escape(user)
-    return f"`tabPetty Cash Transaction`.branch = (SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = {escaped_user} AND status = 'Active' LIMIT 1)"
+    # return f"`tabPetty Cash Transaction`.branch = (SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = {escaped_user} AND status = 'Active' LIMIT 1)"
+    return f"`tabPetty Cash Transaction`.branch = (SELECT petty_cash_branch FROM `tabEmployee` WHERE user_id = {escaped_user} AND status = 'Active' LIMIT 1)"
 
 
 def has_transaction_permission(doc, ptype, user):
@@ -76,7 +77,8 @@ def has_transaction_permission(doc, ptype, user):
 
     # SQL bypasses frappe.db.get_value caching
     branch_data = frappe.db.sql(
-        "SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = %s AND status = 'Active' LIMIT 1",
+        # "SELECT sahayog_branch FROM `tabEmployee` WHERE user_id = %s AND status = 'Active' LIMIT 1",
+        "SELECT petty_cash_branch FROM `tabEmployee` WHERE user_id = %s AND status = 'Active' LIMIT 1",
         (user,)
     )
 
