@@ -3,7 +3,7 @@ import frappe
 from frappe import _
 
 def create_user(doc, method=None):
-    if doc.custom_skip_auto_creation != 0:
+    if doc.get("custom_skip_auto_creation"):
         return  # Skip if flagged
 
     try:
@@ -22,6 +22,7 @@ def create_user(doc, method=None):
         if existing_user:
             if not doc.user_id:
                 frappe.db.set_value("Employee", doc.name, "user_id", existing_user, update_modified=False)
+                doc.user_id = existing_user
             return
 
         # --- Create User without setting default password ---
@@ -46,9 +47,24 @@ def create_user(doc, method=None):
 
         user_doc.flags.ignore_permissions = True
         user_doc.flags.ignore_password_policy = True
+        user_doc.flags.in_import = True
         user_doc.insert(ignore_permissions=True)
 
     except Exception as e:
+        # Revert user_id so doc.on_update() doesn't fail with "User not found"
+        try:
+            frappe.db.set_value("Employee", doc.name, "user_id", None, update_modified=False)
+        except Exception:
+            pass
+        doc.user_id = None
+
+        # Suppress any throttled/not found messages in UI message log
+        if getattr(frappe.local, "message_log", None):
+            frappe.local.message_log = [
+                m for m in frappe.local.message_log
+                if "Throttled" not in str(m) and "not found" not in str(m)
+            ]
+
         frappe.log_error(message=f"Employee: {doc.name} - Error: {str(e)}", title="Error creating user from employee")
 
 # def execute():

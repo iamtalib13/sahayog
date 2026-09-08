@@ -345,6 +345,7 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         "reporting_manager_code": str(emp_raw.get("reportingManagerCode") or "").strip(),
         "designation": resolver.resolve_designation(attrs.get("Designation")),
         "department": resolver.resolve_department(attrs.get("Department")),
+        "sub_department": (attrs.get("SubDepartment") or attrs.get("Sub Department") or "").strip(),
         "custom_zone": resolver.resolve_zone(attrs.get("Zone")),
         "custom_region": resolver.resolve_region(attrs.get("Region")),
         "custom_district": attrs.get("DistrictName") or attrs.get("District Name") or "",
@@ -365,6 +366,10 @@ def fast_upsert_employees(
     """
     if not raw_employees:
         return {"inserted": 0, "updated": 0, "skipped": 0, "errors": []}
+
+    # Ensure silent bulk processing without rate-limiting or leaked UI popups
+    frappe.flags.in_import = True
+    frappe.flags.mute_messages = True
 
     resolver = resolver or MasterResolver()
     parsed_records = [parse_employee_payload(e, resolver) for e in raw_employees if e.get("employeeCode")]
@@ -435,6 +440,8 @@ def fast_upsert_employees(
                 doc.flags.ignore_mandatory = True
                 doc.flags.ignore_permissions = True
                 doc.flags.ignore_links = True
+                doc.flags.in_import = True
+                doc.flags.mute_messages = True
                 doc.insert(ignore_permissions=True)
                 existing_records[code] = doc
                 inserted += 1
@@ -442,6 +449,12 @@ def fast_upsert_employees(
             err_msg = f"Failed {code}: {str(ex)}"
             logger.error(err_msg)
             errors.append(err_msg)
+            # Suppress any leaked throw messages from Desk modal
+            if getattr(frappe.local, "message_log", None):
+                frappe.local.message_log = [
+                    m for m in frappe.local.message_log
+                    if "Throttled" not in str(m) and "not found" not in str(m)
+                ]
 
     return {"inserted": inserted, "updated": updated, "skipped": skipped, "errors": errors}
 
@@ -456,6 +469,9 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
 
+    frappe.flags.in_import = True
+    frappe.flags.mute_messages = True
+
     emp_number = frappe.db.get_value("Employee", employee_name, "employee_number") or employee_name
     client = ZingHRClient()
     raw_emp = client.fetch_single(emp_number)
@@ -465,6 +481,9 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
 
     res = fast_upsert_employees([raw_emp], sync_mode="update_only")
     frappe.db.commit()
+
+    if getattr(frappe.local, "message_log", None):
+        frappe.local.message_log = []
 
     return {"status": "success", "message": _("Employee {0} updated from ZingHR!").format(employee_name), "details": res}
 
@@ -480,6 +499,9 @@ def sync_zinghr_batch(
     """Sync a single page batch synchronously and return results."""
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+
+    frappe.flags.in_import = True
+    frappe.flags.mute_messages = True
 
     page_number = int(page_number)
     page_size = int(page_size) if page_size else 100
@@ -502,6 +524,10 @@ def sync_zinghr_batch(
 
     res = fast_upsert_employees(employees, sync_mode=sync_mode, resolver=resolver)
     frappe.db.commit()
+
+    # Clear server messages so no internal throws/warnings trigger UI popups
+    if getattr(frappe.local, "message_log", None):
+        frappe.local.message_log = []
 
     return {
         "status": "success",
@@ -559,6 +585,9 @@ def run_bulk_sync_job(
     max_pages: Optional[int] = None
 ) -> Dict[str, Any]:
     """Optimized bulk sync runner."""
+    frappe.flags.in_import = True
+    frappe.flags.mute_messages = True
+
     client = ZingHRClient()
     resolver = MasterResolver()
     current_page = int(page_number)
