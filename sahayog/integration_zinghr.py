@@ -614,6 +614,50 @@ def bulk_sync_from_zinghr(
     return run_bulk_sync_job(from_date, to_date, sync_mode, page_size, page_number, max_pages)
 
 
+def get_system_manager_users() -> list[str]:
+    """Return enabled users with the System Manager role."""
+    try:
+        sm_parents = frappe.get_all(
+            "Has Role",
+            filters={"role": "System Manager", "parenttype": "User"},
+            pluck="parent",
+        )
+        if not sm_parents:
+            return []
+        return frappe.get_all(
+            "User",
+            filters={"name": ["in", list(set(sm_parents))], "enabled": 1},
+            pluck="name",
+        )
+    except Exception as e:
+        logger.warning(f"Failed to fetch System Manager users: {e}")
+        return []
+
+
+def emit_zinghr_progress(
+    percent: int,
+    title: str,
+    description: str,
+    users: Optional[list[str]] = None,
+) -> None:
+    """Publish ZingHR sync progress exclusively to System Managers."""
+    try:
+        target_users = users if users is not None else get_system_manager_users()
+        for u in target_users:
+            frappe.publish_realtime(
+                event="zinghr_sync_progress",
+                message={
+                    "percent": percent,
+                    "title": title,
+                    "description": description,
+                },
+                user=u,
+                after_commit=False,
+            )
+    except Exception as e:
+        logger.warning(f"Failed to publish ZingHR sync progress: {e}")
+
+
 def run_bulk_sync_job(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
@@ -635,6 +679,7 @@ def run_bulk_sync_job(
 
     client = ZingHRClient()
     resolver = MasterResolver()
+    sm_users = get_system_manager_users()
     pages_processed, total_fetched, total_inserted, total_updated, total_skipped = 0, 0, 0, 0, 0
     all_errors = []
 
@@ -656,20 +701,30 @@ def run_bulk_sync_job(
 
         frappe.db.commit()
 
-        # Emit Desk Progress
+        # Emit Desk Progress only to System Managers (custom event, scoped to Employee list)
         percent = min(int((total_fetched / total_records) * 100), 100) if total_records else 0
-        frappe.publish_progress(
+        emit_zinghr_progress(
             percent=percent,
             title=_("Syncing Employees from ZingHR"),
             description=_("Batch {0}: {1}/{2} records (Updated: {3}, Inserted: {4})").format(
                 current_page, total_fetched, total_records, total_updated, total_inserted
-            )
+            ),
+            users=sm_users,
         )
 
         if (max_pages and pages_processed >= max_pages) or len(employees) < page_size or total_fetched >= total_records:
             break
 
         current_page += 1
+
+    emit_zinghr_progress(
+        percent=100,
+        title=_("Syncing Employees from ZingHR"),
+        description=_("Sync completed: {0} processed ({1} inserted, {2} updated)").format(
+            total_fetched, total_inserted, total_updated
+        ),
+        users=sm_users,
+    )
 
     summary = {
         "status": "success",

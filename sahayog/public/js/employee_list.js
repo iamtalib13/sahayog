@@ -49,14 +49,16 @@ frappe.listview_settings["Employee"] = {
 			__("Actions")
 		);
 
-		// 2. Sync from ZingHR Action
-		listview.page.add_inner_button(
-			__("Sync from ZingHR (Bulk)"),
-			function () {
-				show_zinghr_sync_dialog(listview);
-			},
-			__("Actions")
-		);
+		// 2. Sync from ZingHR Action (Restricted to System Managers)
+		if (frappe.user && frappe.user.has_role("System Manager")) {
+			listview.page.add_inner_button(
+				__("Sync from ZingHR (Bulk)"),
+				function () {
+					show_zinghr_sync_dialog(listview);
+				},
+				__("Actions")
+			);
+		}
 	},
 };
 
@@ -261,18 +263,21 @@ function show_zinghr_sync_dialog(listview) {
 					const eff_total = max_batches > 0 ? max_batches * page_size : total_records_available;
 					const pct = eff_total > 0 ? Math.min(Math.round((total_fetched / eff_total) * 100), 100) : 50;
 
-					frappe.show_progress(
-						progress_title,
-						pct,
-						100,
-						__("Batch {0}: Processed {1} records (Inserted: {2}, Updated: {3}, Skipped: {4})...", [
-							current_page,
-							total_fetched,
-							total_inserted,
-							total_updated,
-							total_skipped,
-						])
-					);
+					const current_route = frappe.get_route();
+					if (current_route && current_route[0] === "List" && current_route[1] === "Employee") {
+						frappe.show_progress(
+							progress_title,
+							pct,
+							100,
+							__("Batch {0}: Processed {1} records (Inserted: {2}, Updated: {3}, Skipped: {4})...", [
+								current_page,
+								total_fetched,
+								total_inserted,
+								total_updated,
+								total_skipped,
+							])
+						);
+					}
 
 					if (max_batches > 0 && current_page >= max_batches) {
 						break;
@@ -326,3 +331,58 @@ function show_zinghr_sync_dialog(listview) {
 
 	dialog.show();
 }
+
+// Scoped ZingHR sync progress listener: only active for System Managers on Employee List
+function setup_zinghr_realtime_listener() {
+	if (!frappe.user || !frappe.user.has_role("System Manager")) {
+		return;
+	}
+
+	frappe.realtime.off("zinghr_sync_progress");
+	frappe.realtime.on("zinghr_sync_progress", function (data) {
+		const route = frappe.get_route();
+		const is_employee_list = route && route[0] === "List" && route[1] === "Employee";
+
+		if (!is_employee_list) {
+			if (frappe.cur_progress && frappe.cur_progress.title === (data.title || __("Syncing Employees from ZingHR"))) {
+				frappe.hide_progress();
+			}
+			return;
+		}
+
+		frappe.show_progress(
+			data.title || __("Syncing Employees from ZingHR"),
+			data.percent,
+			100,
+			data.description
+		);
+
+		if (data.percent >= 100) {
+			setTimeout(function () {
+				if (frappe.cur_progress && frappe.cur_progress.title === (data.title || __("Syncing Employees from ZingHR"))) {
+					frappe.hide_progress();
+				}
+				if (cur_list && cur_list.doctype === "Employee") {
+					cur_list.refresh();
+				}
+				frappe.show_alert({
+					message: data.description || __("ZingHR Employee sync completed!"),
+					indicator: "green",
+				}, 6);
+			}, 1500);
+		}
+	});
+
+	$(document).off("page-change.zinghr_sync");
+	$(document).on("page-change.zinghr_sync", function () {
+		const route = frappe.get_route();
+		const is_employee_list = route && route[0] === "List" && route[1] === "Employee";
+		if (!is_employee_list) {
+			if (frappe.cur_progress && frappe.cur_progress.title === __("Syncing Employees from ZingHR")) {
+				frappe.hide_progress();
+			}
+		}
+	});
+}
+
+setup_zinghr_realtime_listener();
