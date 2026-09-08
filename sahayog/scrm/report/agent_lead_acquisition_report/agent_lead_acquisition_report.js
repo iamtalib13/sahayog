@@ -41,6 +41,20 @@ frappe.query_reports["Agent Lead Acquisition Report"] = {
 		}
 	],
 	"onload": function(report) {
+		// 🚫 Inject CSS to permanently hide Frappe's default 'Actions' dropdown button
+		if (!$("#agent-lead-report-custom-css").length) {
+			$("<style id='agent-lead-report-custom-css'>")
+				.prop("type", "text/css")
+				.html(`
+					.page-actions .menu-btn-group,
+					.page-actions .actions-btn-group,
+					.page-actions [data-label="Actions"] {
+						display: none !important;
+					}
+				`)
+				.appendTo("head");
+		}
+
 		// Clear Filters Button
 		report.page.add_inner_button(__('Clear Filters'), function () {
 			report.filters.forEach(f => f.set_value(''));
