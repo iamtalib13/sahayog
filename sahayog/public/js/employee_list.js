@@ -148,20 +148,30 @@ function show_zinghr_sync_dialog(listview) {
 
 			if (execution_type === "background") {
 				// Background worker execution
+				const bg_args = {
+					sync_mode: sync_mode,
+					page_size: page_size,
+					run_in_background: 1,
+				};
+				if (from_date) bg_args.from_date = from_date;
+				if (to_date) bg_args.to_date = to_date;
+				if (max_batches > 0) bg_args.max_pages = max_batches;
+
 				frappe.call({
 					method: "sahayog.integration_zinghr.bulk_sync_from_zinghr",
-					args: {
-						sync_mode: sync_mode,
-						from_date: from_date,
-						to_date: to_date,
-						page_size: page_size,
-						max_pages: max_batches > 0 ? max_batches : null,
-						run_in_background: 1,
-					},
+					args: bg_args,
 					freeze: true,
 					freeze_message: __("Starting ZingHR background job..."),
 					callback: function (r) {
 						if (r && r.message) {
+							if (r.message.status === "error") {
+								frappe.msgprint({
+									title: __("Sync Error"),
+									indicator: "red",
+									message: r.message.message || __("Failed to start background sync."),
+								});
+								return;
+							}
 							frappe.show_alert({
 								message: __("ZingHR Bulk Sync queued in background!"),
 								indicator: "green",
@@ -171,16 +181,33 @@ function show_zinghr_sync_dialog(listview) {
 								indicator: "blue",
 								message: __(
 									"{0}<br><br>You can track job progress in <a href='/app/rq-job' target='_blank'><b>Background Jobs (RQ Jobs)</b></a>.",
-									[r.message.message]
+									[r.message.message || __("Background sync started.")]
 								),
 							});
 						}
 					},
 					error: function (err) {
+						let msg = __("Failed to start background sync.");
+						if (typeof err === "string") msg = err;
+						else if (err && err.message) msg = typeof err.message === "string" ? err.message : JSON.stringify(err.message);
+						else if (err && err.responseJSON) {
+							if (err.responseJSON._server_messages) {
+								try {
+									const msgs = JSON.parse(err.responseJSON._server_messages);
+									msg = msgs.map((m) => JSON.parse(m).message).join("<br>");
+								} catch (e) {}
+							} else if (err.responseJSON.exc) {
+								try {
+									msg = JSON.parse(err.responseJSON.exc)[0] || msg;
+								} catch (e) {
+									msg = err.responseJSON.exc;
+								}
+							}
+						}
 						frappe.msgprint({
 							title: __("Sync Error"),
 							indicator: "red",
-							message: err.message || __("Failed to start background sync."),
+							message: msg,
 						});
 					},
 				});
@@ -201,16 +228,18 @@ function show_zinghr_sync_dialog(listview) {
 
 			try {
 				while (true) {
+					const live_args = {
+						page_number: current_page,
+						page_size: page_size,
+						sync_mode: sync_mode,
+					};
+					if (from_date) live_args.from_date = from_date;
+					if (to_date) live_args.to_date = to_date;
+
 					const batch_resp = await new Promise((resolve, reject) => {
 						frappe.call({
 							method: "sahayog.integration_zinghr.sync_zinghr_batch",
-							args: {
-								page_number: current_page,
-								page_size: page_size,
-								sync_mode: sync_mode,
-								from_date: from_date,
-								to_date: to_date,
-							},
+							args: live_args,
 							callback: (res) => resolve(res.message),
 							error: (err) => reject(err),
 						});

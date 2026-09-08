@@ -488,6 +488,25 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
     return {"status": "success", "message": _("Employee {0} updated from ZingHR!").format(employee_name), "details": res}
 
 
+def _clean_param(val: Any) -> Optional[str]:
+    if val is None or val == "":
+        return None
+    s = str(val).strip()
+    if s.lower() in ["null", "none", "undefined", ""]:
+        return None
+    return s
+
+
+def _clean_int(val: Any, default: Optional[int] = None) -> Optional[int]:
+    clean = _clean_param(val)
+    if clean is None:
+        return default
+    try:
+        return int(clean)
+    except (ValueError, TypeError):
+        return default
+
+
 @frappe.whitelist()
 def sync_zinghr_batch(
     page_number: int = 1,
@@ -503,8 +522,11 @@ def sync_zinghr_batch(
     frappe.flags.in_import = True
     frappe.flags.mute_messages = True
 
-    page_number = int(page_number)
-    page_size = int(page_size) if page_size else 100
+    page_number = _clean_int(page_number, default=1)
+    page_size = _clean_int(page_size, default=100)
+    from_date = _clean_param(from_date)
+    to_date = _clean_param(to_date)
+    sync_mode = _clean_param(sync_mode) or "all"
 
     client = ZingHRClient()
     resolver = MasterResolver()
@@ -555,23 +577,39 @@ def bulk_sync_from_zinghr(
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
 
-    page_size = int(page_size) if page_size else 100
-    page_number = int(page_number) if page_number else 1
-    max_pages = int(max_pages) if max_pages else None
+    page_size = _clean_int(page_size, default=100)
+    page_number = _clean_int(page_number, default=1)
+    max_pages = _clean_int(max_pages, default=None)
+    from_date = _clean_param(from_date)
+    to_date = _clean_param(to_date)
+    sync_mode = _clean_param(sync_mode) or "all"
+    is_bg = bool(run_in_background and str(run_in_background).lower() in ["true", "1"])
 
-    if run_in_background or (isinstance(run_in_background, str) and run_in_background.lower() in ["true", "1"]):
-        frappe.enqueue(
-            "sahayog.integration_zinghr.run_bulk_sync_job",
-            queue="long",
-            timeout=7200,
-            from_date=from_date,
-            to_date=to_date,
-            sync_mode=sync_mode,
-            page_size=page_size,
-            page_number=page_number,
-            max_pages=max_pages
-        )
-        return {"status": "queued", "message": _("Bulk sync started in background (batches of {0}).").format(page_size)}
+    if is_bg:
+        try:
+            job = frappe.enqueue(
+                "sahayog.integration_zinghr.run_bulk_sync_job",
+                queue="long",
+                timeout=7200,
+                from_date=from_date,
+                to_date=to_date,
+                sync_mode=sync_mode,
+                page_size=page_size,
+                page_number=page_number,
+                max_pages=max_pages
+            )
+            frappe.db.commit()
+            return {
+                "status": "queued",
+                "message": _("Bulk sync started in background (batches of {0}).").format(page_size),
+                "job_id": getattr(job, "id", None)
+            }
+        except Exception as e:
+            frappe.log_error(f"Failed to enqueue bulk sync: {str(e)}", "ZingHR Background Sync")
+            return {
+                "status": "error",
+                "message": f"Failed to start background sync: {str(e)}"
+            }
 
     return run_bulk_sync_job(from_date, to_date, sync_mode, page_size, page_number, max_pages)
 
@@ -588,9 +626,15 @@ def run_bulk_sync_job(
     frappe.flags.in_import = True
     frappe.flags.mute_messages = True
 
+    current_page = _clean_int(page_number, default=1)
+    page_size = _clean_int(page_size, default=100)
+    max_pages = _clean_int(max_pages, default=None)
+    from_date = _clean_param(from_date)
+    to_date = _clean_param(to_date)
+    sync_mode = _clean_param(sync_mode) or "all"
+
     client = ZingHRClient()
     resolver = MasterResolver()
-    current_page = int(page_number)
     pages_processed, total_fetched, total_inserted, total_updated, total_skipped = 0, 0, 0, 0, 0
     all_errors = []
 
