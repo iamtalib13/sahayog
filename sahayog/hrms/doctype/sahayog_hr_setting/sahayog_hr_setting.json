@@ -26,7 +26,13 @@
   "col_break_zinghr",
   "zinghr_username",
   "zinghr_password",
-  "zinghr_basic_token"
+  "zinghr_basic_token",
+  "zinghr_sync_section",
+  "zinghr_enable_auto_sync",
+  "zinghr_last_sync_datetime",
+  "col_break_zinghr_sync",
+  "zinghr_sync_lookback_days",
+  "zinghr_last_sync_status"
  ],
  "fields": [
   {
@@ -142,6 +148,39 @@
    "fieldname": "zinghr_basic_token",
    "fieldtype": "Password",
    "label": "ZingHR Basic Token (Base64)"
+  },
+  {
+   "fieldname": "zinghr_sync_section",
+   "fieldtype": "Section Break",
+   "label": "ZingHR Auto Delta Sync"
+  },
+  {
+   "default": "1",
+   "fieldname": "zinghr_enable_auto_sync",
+   "fieldtype": "Check",
+   "label": "Enable Daily Auto Sync"
+  },
+  {
+   "fieldname": "zinghr_last_sync_datetime",
+   "fieldtype": "Datetime",
+   "label": "Last Synced On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_zinghr_sync",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "zinghr_sync_lookback_days",
+   "fieldtype": "Int",
+   "label": "Lookback Days Buffer"
+  },
+  {
+   "fieldname": "zinghr_last_sync_status",
+   "fieldtype": "Small Text",
+   "label": "Last Sync Summary",
+   "read_only": 1
   },
   {
    "fieldname": "zinghr_integration_tab",

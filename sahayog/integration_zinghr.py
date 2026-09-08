@@ -1,7 +1,8 @@
 import base64
+from datetime import timedelta
 import frappe
 from frappe import _
-from frappe.utils import getdate, now_datetime, today
+from frappe.utils import getdate, now_datetime, today, cint, add_days
 import requests
 from typing import Dict, Any, Optional, List, Tuple, Set
 
@@ -111,9 +112,13 @@ class ZingHRClient:
 
         payload = {"pageSize": page_size, "pageNumber": page_number}
         if from_date:
-            payload["FromDate"] = _fmt_date(from_date)
+            f_date = _fmt_date(from_date)
+            payload["FromDate"] = f_date
+            payload["Fromdate"] = f_date
         if to_date:
-            payload["ToDate"] = _fmt_date(to_date)
+            t_date = _fmt_date(to_date)
+            payload["ToDate"] = t_date
+            payload["Todate"] = t_date
 
         data = self._request(payload, timeout=60)
         if isinstance(data, dict):
@@ -736,4 +741,68 @@ def run_bulk_sync_job(
         "errors": all_errors[:10]
     }
     logger.info(f"ZingHR sync completed: {summary}")
+
+    # Track last sync in Sahayog HR Setting
+    try:
+        date_info = f"({from_date} to {to_date})" if from_date or to_date else "(Full Sync)"
+        frappe.db.set_value(
+            "Sahayog HR Setting",
+            None,
+            {
+                "zinghr_last_sync_datetime": now_datetime(),
+                "zinghr_last_sync_status": (
+                    f"Sync {date_info} at {now_datetime().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                    f"Status: {summary.get('status')} | Fetched: {summary.get('total_fetched')} | "
+                    f"Inserted: {summary.get('total_inserted')} | Updated: {summary.get('total_updated')} | "
+                    f"Errors: {summary.get('error_count')}"
+                ),
+            },
+            update_modified=False,
+        )
+        frappe.db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to update Sahayog HR Setting sync status: {e}")
+
+    return summary
+
+
+def auto_daily_delta_sync() -> Dict[str, Any]:
+    """
+    Scheduled Daily Delta Sync:
+    Runs automatically (e.g. at 2:30 AM via Frappe scheduler).
+    Fetches only changed/added records between (last_sync - buffer) and today.
+    Takes 5-15 seconds instead of doing a full 13,400+ record sweep.
+    """
+    try:
+        settings = frappe.get_single("Sahayog HR Setting")
+    except Exception:
+        settings = frappe.get_cached_doc("Sahayog HR Setting")
+
+    if not cint(settings.get("zinghr_enable_auto_sync", 1)):
+        logger.info("ZingHR Daily Auto Delta Sync is disabled in Sahayog HR Setting.")
+        return {"status": "skipped", "message": "Auto sync disabled in Sahayog HR Setting"}
+
+    lookback_days = cint(settings.get("zinghr_sync_lookback_days") or 1)
+    last_sync = settings.get("zinghr_last_sync_datetime")
+
+    today_date = getdate(today())
+
+    if last_sync:
+        from_date = (getdate(last_sync) - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
+    else:
+        from_date = (today_date - timedelta(days=max(lookback_days, 1))).strftime("%Y-%m-%d")
+
+    to_date = today_date.strftime("%Y-%m-%d")
+
+    logger.info(f"Starting ZingHR Auto Daily Delta Sync: from {from_date} to {to_date} (lookback={lookback_days}d)")
+
+    summary = run_bulk_sync_job(
+        from_date=from_date,
+        to_date=to_date,
+        sync_mode="all",
+        page_size=100,
+        page_number=1,
+        max_pages=None,
+    )
+
     return summary

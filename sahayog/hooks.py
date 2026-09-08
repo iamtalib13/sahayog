@@ -463,6 +463,10 @@ scheduler_events = {
             "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
             "sahayog.tasks.auto_process_relieved_employees"
         ],
+        # Run daily at 2:30 AM — ZingHR Daily Delta Sync (incremental employee updates)
+        "30 2 * * *": [
+            "sahayog.integration_zinghr.auto_daily_delta_sync"
+        ],
 
         # "0 23 * * *" means: Run at minute 0 past hour 23 (11:00 PM) every day
         "0 23 * * *": [
