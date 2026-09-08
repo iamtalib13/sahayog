@@ -1,0 +1,611 @@
+import base64
+import frappe
+from frappe import _
+from frappe.utils import getdate, now_datetime, today
+import requests
+from typing import Dict, Any, Optional, List, Tuple, Set
+
+logger = frappe.logger("zinghr_integration")
+TOKEN_CACHE_KEY = "zinghr_api_jwt_token"
+
+
+class ZingHRConfig:
+    """Dynamically loads and validates API settings from 'Sahayog HR Setting'."""
+
+    @classmethod
+    def get(cls) -> Dict[str, str]:
+        try:
+            settings = frappe.get_cached_doc("Sahayog HR Setting")
+        except Exception:
+            settings = frappe.get_single("Sahayog HR Setting")
+
+        auth_url = (settings.get("zinghr_auth_url") or "").strip()
+        emp_url = (settings.get("zinghr_employee_url") or "").strip()
+
+        if not auth_url or not emp_url:
+            frappe.throw(_("ZingHR API URLs are not configured in 'Sahayog HR Setting'."))
+
+        # Resolve Basic Auth token
+        basic_token = ""
+        try:
+            basic_token = (settings.get_password("zinghr_basic_token") or "").strip()
+        except Exception:
+            basic_token = (settings.get("zinghr_basic_token") or "").strip()
+
+        username = (settings.get("zinghr_username") or "").strip()
+        password = ""
+        try:
+            password = (settings.get_password("zinghr_password") or "").strip()
+        except Exception:
+            password = (settings.get("zinghr_password") or "").strip()
+
+        if basic_token and not basic_token.startswith("*"):
+            auth_header = f"Basic {basic_token.replace('Basic ', '').strip()}"
+        elif username and password:
+            encoded = base64.b64encode(f"{username}:{password}".encode()).decode()
+            auth_header = f"Basic {encoded}"
+        else:
+            frappe.throw(_("ZingHR credentials are not configured in 'Sahayog HR Setting'."))
+
+        return {
+            "auth_url": auth_url,
+            "emp_url": emp_url,
+            "basic_auth": auth_header
+        }
+
+
+class ZingHRClient:
+    """Client for ZingHR Auth and Employee API."""
+
+    def __init__(self):
+        config = ZingHRConfig.get()
+        self.auth_url = config["auth_url"]
+        self.emp_url = config["emp_url"]
+        self.basic_auth = config["basic_auth"]
+
+    def get_jwt_token(self, force_refresh: bool = False) -> str:
+        cache = frappe.cache()
+        if not force_refresh:
+            cached = cache.get_value(TOKEN_CACHE_KEY)
+            if cached:
+                return cached
+
+        try:
+            res = requests.get(self.auth_url, headers={"Authorization": self.basic_auth, "Accept": "application/json"}, timeout=20)
+            res.raise_for_status()
+            token = res.json().get("data")
+            if not token:
+                raise ValueError("Token missing in response")
+            cache.set_value(TOKEN_CACHE_KEY, token, expires_in_sec=900)
+            return token
+        except Exception as e:
+            logger.error(f"ZingHR Auth Failed: {str(e)}")
+            frappe.throw(_("Failed to authenticate with ZingHR API: {0}").format(str(e)))
+
+    def _request(self, payload: Dict[str, Any], timeout: int = 45) -> Dict[str, Any]:
+        token = self.get_jwt_token()
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Accept": "application/json"}
+
+        res = requests.post(self.emp_url, headers=headers, json=payload, timeout=timeout)
+        if res.status_code == 401:
+            token = self.get_jwt_token(force_refresh=True)
+            headers["Authorization"] = f"Bearer {token}"
+            res = requests.post(self.emp_url, headers=headers, json=payload, timeout=timeout)
+
+        res.raise_for_status()
+        return res.json().get("data", {})
+
+    def fetch_single(self, employee_code: str) -> Optional[Dict[str, Any]]:
+        data = self._request({"employeeCode": str(employee_code).strip()})
+        employees = data.get("employees", []) if isinstance(data, dict) else data
+        return employees[0] if employees else None
+
+    def fetch_batch(self, page_size: int, page_number: int, from_date: Optional[str] = None, to_date: Optional[str] = None) -> Tuple[List[Dict[str, Any]], int]:
+        def _fmt_date(d):
+            if not d:
+                return None
+            try:
+                return getdate(d).strftime("%d-%m-%Y")
+            except Exception:
+                return str(d).strip()
+
+        payload = {"pageSize": page_size, "pageNumber": page_number}
+        if from_date:
+            payload["FromDate"] = _fmt_date(from_date)
+        if to_date:
+            payload["ToDate"] = _fmt_date(to_date)
+
+        data = self._request(payload, timeout=60)
+        if isinstance(data, dict):
+            return data.get("employees", []), int(data.get("totalEmployeeCount") or len(data.get("employees", [])))
+        return data, len(data)
+
+
+class MasterResolver:
+    """In-memory case-insensitive cache for fast master lookup without repeated DB queries."""
+
+    def __init__(self, company: str = "Sahayog"):
+        self.company = company
+        self.zones: Dict[str, str] = {z.lower(): z for z in frappe.get_all("Zone", pluck="name")}
+        self.regions: Dict[str, str] = {r.lower(): r for r in frappe.get_all("Region", pluck="name")}
+        self.designations: Dict[str, str] = {d.lower(): d for d in frappe.get_all("Designation", pluck="name")}
+        self.departments: Dict[str, str] = {
+            d.department_name.lower(): d.name
+            for d in frappe.get_all("Department", fields=["name", "department_name"])
+            if d.department_name
+        }
+        # Map Sahayog Branch by name (SOL ID), sol_id, branch_code, and branch label
+        self.sahayog_branches: Dict[str, str] = {}
+        self.sahayog_branches_by_label: Dict[str, str] = {}
+        for b in frappe.get_all("Sahayog Branch", fields=["name", "sol_id", "branch_code", "branch"]):
+            bname = str(b.name).strip()
+            self.sahayog_branches[bname.lower()] = bname
+            if b.sol_id:
+                self.sahayog_branches[str(b.sol_id).strip().lower()] = bname
+            if b.branch_code:
+                self.sahayog_branches[str(b.branch_code).strip().lower()] = bname
+            if b.branch:
+                self.sahayog_branches_by_label[b.branch.strip().lower()] = bname
+
+        self.branches: Dict[str, str] = {b.lower(): b for b in frappe.get_all("Branch", pluck="name")}
+        self.branch_sol_ids: Dict[str, str] = {
+            b.name.lower(): str(b.sol_id).strip()
+            for b in frappe.get_all("Branch", fields=["name", "sol_id"])
+            if b.sol_id
+        }
+        self.divisions: Dict[str, str] = {d.lower(): d for d in frappe.get_all("Division", pluck="name")}
+
+    def resolve_zone(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        raw = val.strip().upper().replace(" ", "")
+        if not raw.startswith("ZONE-"):
+            raw = f"ZONE-{raw}"
+        key = raw.lower()
+        if key in self.zones:
+            return self.zones[key]
+        doc = frappe.get_doc({"doctype": "Zone", "zone": raw}).insert(ignore_permissions=True)
+        self.zones[key] = doc.name
+        return doc.name
+
+    def resolve_region(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        raw = val.strip()
+        clean = raw.replace(" ", "").upper().replace("-", "").replace("_", "")
+        if clean in ["HEADOFFICE", "HO"]:
+            if "head office" not in self.regions:
+                doc = frappe.get_doc({"doctype": "Region", "region": "HEAD OFFICE"}).insert(ignore_permissions=True)
+                self.regions["head office"] = doc.name
+            return self.regions.get("head office", "HEAD OFFICE")
+
+        key = raw.lower()
+        if key in self.regions:
+            return self.regions[key]
+
+        reg = raw.upper().replace(" ", "")
+        if not reg.startswith("REGION-"):
+            reg = f"REGION-{reg}"
+        reg_key = reg.lower()
+        if reg_key in self.regions:
+            return self.regions[reg_key]
+
+        doc = frappe.get_doc({"doctype": "Region", "region": reg}).insert(ignore_permissions=True)
+        self.regions[reg_key] = doc.name
+        return doc.name
+
+    def resolve_designation(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        clean = val.strip()
+        key = clean.lower()
+        if key in self.designations:
+            return self.designations[key]
+        doc = frappe.get_doc({"doctype": "Designation", "designation_name": clean}).insert(ignore_permissions=True)
+        self.designations[key] = doc.name
+        return doc.name
+
+    def resolve_department(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        clean = val.strip()
+        key = clean.lower()
+        if key in self.departments:
+            return self.departments[key]
+        doc = frappe.get_doc({"doctype": "Department", "department_name": clean, "company": self.company}).insert(ignore_permissions=True)
+        self.departments[key] = doc.name
+        return doc.name
+
+    def resolve_sahayog_branch(
+        self,
+        branch_code: Optional[str],
+        branch_name: Optional[str],
+        resolved_branch: Optional[str] = None,
+    ) -> Optional[str]:
+        if branch_code:
+            code = str(branch_code).strip().lower()
+            if code in self.sahayog_branches:
+                return self.sahayog_branches[code]
+            lcode = code.lstrip("0")
+            if lcode in self.sahayog_branches:
+                return self.sahayog_branches[lcode]
+
+        if branch_name:
+            b_name = str(branch_name).strip().lower()
+            if b_name in self.sahayog_branches_by_label:
+                return self.sahayog_branches_by_label[b_name]
+            clean_b = b_name.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
+            if clean_b in self.sahayog_branches_by_label:
+                return self.sahayog_branches_by_label[clean_b]
+
+        # Fallback: If sahayog_branch not matched, lookup sol_id from Branch master
+        target_branch = resolved_branch or branch_name
+        if target_branch:
+            tb_key = str(target_branch).strip().lower()
+            sol = self.branch_sol_ids.get(tb_key)
+            if not sol:
+                clean_tb = tb_key.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
+                sol = self.branch_sol_ids.get(clean_tb)
+            if sol:
+                sol_key = sol.lower()
+                if sol_key in self.sahayog_branches:
+                    return self.sahayog_branches[sol_key]
+                return sol
+
+        return None
+
+    def resolve_branch(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        clean = val.strip()
+        key = clean.lower()
+        if key in self.branches:
+            return self.branches[key]
+        doc = frappe.get_doc({"doctype": "Branch", "branch": clean}).insert(ignore_permissions=True)
+        self.branches[key] = doc.name
+        return doc.name
+
+    def resolve_division(self, val: Optional[str]) -> Optional[str]:
+        if not val:
+            return None
+        key = val.strip().lower()
+        if key in self.divisions:
+            return self.divisions[key]
+        doc = frappe.get_doc({"doctype": "Division", "division": val.strip()}).insert(ignore_permissions=True)
+        self.divisions[key] = doc.name
+        return doc.name
+
+    @staticmethod
+    def resolve_gender(val: Optional[str]) -> str:
+        if not val:
+            return "Male"
+        lower = str(val).strip().lower()
+        if lower in ["f", "female", "woman"]:
+            return "Female"
+        if lower in ["o", "other"]:
+            return "Other"
+        return "Male"
+
+
+def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) -> Dict[str, Any]:
+    """Parse raw ZingHR JSON to structured dictionary ready for DB upsert."""
+    attrs = {}
+    for a in emp_raw.get("attributes", []):
+        code = a.get("attributeTypeCode") or ""
+        desc = a.get("attributeTypeDescription") or ""
+        val = (a.get("attributeTypeUnitDescription") or "").strip()
+        if code:
+            attrs[code] = val
+        if desc:
+            attrs[desc] = val
+
+    def _date(val):
+        try:
+            return getdate(val) if val and str(val).strip() else None
+        except Exception:
+            return None
+
+    branch = resolver.resolve_branch(attrs.get("Branch"))
+    sahayog_branch = resolver.resolve_sahayog_branch(
+        attrs.get("BranchCode") or attrs.get("Branch Code"),
+        attrs.get("Branch"),
+        resolved_branch=branch,
+    )
+    sol_id = sahayog_branch
+    if not sol_id and branch:
+        b_key = branch.lower()
+        if b_key in resolver.branch_sol_ids:
+            sol_id = resolver.branch_sol_ids[b_key]
+            if not sahayog_branch:
+                sahayog_branch = resolver.sahayog_branches.get(sol_id.lower(), sol_id)
+
+    leaving_date = _date(emp_raw.get("dateOfLeaving") or emp_raw.get("exitDate"))
+    today_date = getdate(today())
+    is_past_leaving = bool(leaving_date and leaving_date <= today_date)
+    is_left_status = emp_raw.get("employeeStatus") in ["Left", "Resigned", "FnF InProcess", "FnF Locked"]
+    is_exited = bool(is_past_leaving or is_left_status)
+    status = "Left" if is_exited else "Active"
+
+    return {
+        "employee_number": str(emp_raw.get("employeeCode", "")).strip(),
+        "first_name": (emp_raw.get("firstName") or "").strip(),
+        "middle_name": (emp_raw.get("middleName") or "").strip(),
+        "last_name": (emp_raw.get("lastName") or "").strip(),
+        "employee_name": (emp_raw.get("employeeName") or f"{emp_raw.get('firstName', '')} {emp_raw.get('lastName', '')}").strip(),
+        "company_email": (emp_raw.get("email") or "").strip(),
+        "cell_number": (emp_raw.get("mobileNo") or "").strip(),
+        "gender": resolver.resolve_gender(emp_raw.get("gender")),
+        "date_of_birth": _date(emp_raw.get("dateOfBirth")),
+        "date_of_joining": _date(emp_raw.get("dateOfJoining")),
+        "status": status,
+        "relieving_date": leaving_date,
+        "resignation_letter_date": leaving_date,
+        "_is_past_leaving": is_past_leaving,
+        "_is_exited": is_exited,
+        "reporting_manager_code": str(emp_raw.get("reportingManagerCode") or "").strip(),
+        "designation": resolver.resolve_designation(attrs.get("Designation")),
+        "department": resolver.resolve_department(attrs.get("Department")),
+        "custom_zone": resolver.resolve_zone(attrs.get("Zone")),
+        "custom_region": resolver.resolve_region(attrs.get("Region")),
+        "custom_district": attrs.get("DistrictName") or attrs.get("District Name") or "",
+        "custom_division": resolver.resolve_division(attrs.get("BusinessUnit") or attrs.get("SubDepartment") or "HEAD OFFICE"),
+        "sahayog_branch": sahayog_branch,
+        "sol_id": sol_id,
+        "branch": branch,
+    }
+
+
+def fast_upsert_employees(
+    raw_employees: List[Dict[str, Any]],
+    sync_mode: str = "all",
+    resolver: Optional[MasterResolver] = None
+) -> Dict[str, Any]:
+    """
+    High-performance batch upsert using bulk pre-fetching and direct diff updates.
+    """
+    if not raw_employees:
+        return {"inserted": 0, "updated": 0, "skipped": 0, "errors": []}
+
+    resolver = resolver or MasterResolver()
+    parsed_records = [parse_employee_payload(e, resolver) for e in raw_employees if e.get("employeeCode")]
+    emp_codes = [p["employee_number"] for p in parsed_records]
+
+    # Bulk fetch existing employees in 1 query
+    existing_records = {
+        (e.employee_number or e.name): e
+        for e in frappe.get_all("Employee", filters={"employee_number": ["in", emp_codes]}, fields=["name", "employee_number", "status"])
+    }
+
+    # Bulk fetch reporting managers
+    mgr_codes = list({p["reporting_manager_code"] for p in parsed_records if p["reporting_manager_code"]})
+    mgr_map = {}
+    if mgr_codes:
+        mgr_map = {
+            (m.employee_number or m.name): m.name
+            for m in frappe.get_all("Employee", filters={"employee_number": ["in", mgr_codes]}, fields=["name", "employee_number"])
+        }
+
+    now = now_datetime()
+    inserted, updated, skipped, errors = 0, 0, 0, []
+
+    for item in parsed_records:
+        code = item["employee_number"]
+        existing = existing_records.get(code) or (code if frappe.db.exists("Employee", code) else None)
+        emp_name = existing.name if hasattr(existing, "name") else existing
+
+        is_past_leaving = item.pop("_is_past_leaving", False)
+        is_exited = item.pop("_is_exited", False)
+
+        # Check sync mode constraints
+        if emp_name and sync_mode == "insert_only":
+            skipped += 1
+            continue
+        if not emp_name and sync_mode == "update_only":
+            skipped += 1
+            continue
+
+        item["reports_to"] = mgr_map.get(item.pop("reporting_manager_code", None))
+        item["custom_zinghr_last_synced"] = now
+
+        try:
+            if emp_name:
+                # Fast direct update: Status is Left if past/resigned, else Active
+                frappe.db.set_value("Employee", emp_name, item, update_modified=True)
+                if item.get("status") == "Left":
+                    user_id = frappe.db.get_value("Employee", emp_name, "user_id")
+                    if not user_id:
+                        user_id = (
+                            frappe.db.get_value("User", {"email": f"{code}@sahayog.com"}, "name")
+                            or frappe.db.get_value("User", {"username": code}, "name")
+                        )
+                    if user_id and frappe.db.exists("User", user_id):
+                        frappe.db.set_value("User", user_id, "enabled", 0, update_modified=True)
+                updated += 1
+            else:
+                # New Employee creation:
+                # Skip insertion if leaving date is in the past or already exited!
+                if is_past_leaving or is_exited:
+                    skipped += 1
+                    continue
+
+                doc = frappe.new_doc("Employee")
+                doc.update(item)
+                doc.name = code
+                doc.company = resolver.company
+                doc.flags.ignore_mandatory = True
+                doc.flags.ignore_permissions = True
+                doc.flags.ignore_links = True
+                doc.insert(ignore_permissions=True)
+                existing_records[code] = doc
+                inserted += 1
+        except Exception as ex:
+            err_msg = f"Failed {code}: {str(ex)}"
+            logger.error(err_msg)
+            errors.append(err_msg)
+
+    return {"inserted": inserted, "updated": updated, "skipped": skipped, "errors": errors}
+
+
+# ==============================================================================
+# Whitelisted RPC Methods
+# ==============================================================================
+
+@frappe.whitelist()
+def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
+    """Single employee fast update."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+
+    emp_number = frappe.db.get_value("Employee", employee_name, "employee_number") or employee_name
+    client = ZingHRClient()
+    raw_emp = client.fetch_single(emp_number)
+
+    if not raw_emp:
+        return {"status": "not_found", "message": _("Employee {0} not found in ZingHR.").format(emp_number)}
+
+    res = fast_upsert_employees([raw_emp], sync_mode="update_only")
+    frappe.db.commit()
+
+    return {"status": "success", "message": _("Employee {0} updated from ZingHR!").format(employee_name), "details": res}
+
+
+@frappe.whitelist()
+def sync_zinghr_batch(
+    page_number: int = 1,
+    page_size: int = 100,
+    sync_mode: str = "all",
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None
+) -> Dict[str, Any]:
+    """Sync a single page batch synchronously and return results."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+
+    page_number = int(page_number)
+    page_size = int(page_size) if page_size else 100
+
+    client = ZingHRClient()
+    resolver = MasterResolver()
+
+    employees, total_records = client.fetch_batch(page_size, page_number, from_date, to_date)
+    if not employees:
+        return {
+            "status": "completed",
+            "page_number": page_number,
+            "total_records": total_records,
+            "fetched": 0,
+            "inserted": 0,
+            "updated": 0,
+            "skipped": 0,
+            "errors": []
+        }
+
+    res = fast_upsert_employees(employees, sync_mode=sync_mode, resolver=resolver)
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "page_number": page_number,
+        "total_records": total_records,
+        "fetched": len(employees),
+        "inserted": res["inserted"],
+        "updated": res["updated"],
+        "skipped": res["skipped"],
+        "errors": res["errors"]
+    }
+
+
+@frappe.whitelist()
+def bulk_sync_from_zinghr(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    sync_mode: str = "all",
+    page_size: int = 100,
+    page_number: int = 1,
+    max_pages: Optional[int] = None,
+    run_in_background: bool = True
+) -> Dict[str, Any]:
+    """Bulk sync with background queue support."""
+    if frappe.session.user == "Guest":
+        frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+
+    page_size = int(page_size) if page_size else 100
+    page_number = int(page_number) if page_number else 1
+    max_pages = int(max_pages) if max_pages else None
+
+    if run_in_background or (isinstance(run_in_background, str) and run_in_background.lower() in ["true", "1"]):
+        frappe.enqueue(
+            "sahayog.integration_zinghr.run_bulk_sync_job",
+            queue="long",
+            timeout=7200,
+            from_date=from_date,
+            to_date=to_date,
+            sync_mode=sync_mode,
+            page_size=page_size,
+            page_number=page_number,
+            max_pages=max_pages
+        )
+        return {"status": "queued", "message": _("Bulk sync started in background (batches of {0}).").format(page_size)}
+
+    return run_bulk_sync_job(from_date, to_date, sync_mode, page_size, page_number, max_pages)
+
+
+def run_bulk_sync_job(
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    sync_mode: str = "all",
+    page_size: int = 100,
+    page_number: int = 1,
+    max_pages: Optional[int] = None
+) -> Dict[str, Any]:
+    """Optimized bulk sync runner."""
+    client = ZingHRClient()
+    resolver = MasterResolver()
+    current_page = int(page_number)
+    pages_processed, total_fetched, total_inserted, total_updated, total_skipped = 0, 0, 0, 0, 0
+    all_errors = []
+
+    logger.info(f"Starting ZingHR fast sync in batches of {page_size}. Mode: {sync_mode}")
+
+    while True:
+        employees, total_records = client.fetch_batch(page_size, current_page, from_date, to_date)
+        if not employees:
+            break
+
+        total_fetched += len(employees)
+        pages_processed += 1
+
+        res = fast_upsert_employees(employees, sync_mode=sync_mode, resolver=resolver)
+        total_inserted += res["inserted"]
+        total_updated += res["updated"]
+        total_skipped += res["skipped"]
+        all_errors.extend(res["errors"])
+
+        frappe.db.commit()
+
+        # Emit Desk Progress
+        percent = min(int((total_fetched / total_records) * 100), 100) if total_records else 0
+        frappe.publish_progress(
+            percent=percent,
+            title=_("Syncing Employees from ZingHR"),
+            description=_("Batch {0}: {1}/{2} records (Updated: {3}, Inserted: {4})").format(
+                current_page, total_fetched, total_records, total_updated, total_inserted
+            )
+        )
+
+        if (max_pages and pages_processed >= max_pages) or len(employees) < page_size or total_fetched >= total_records:
+            break
+
+        current_page += 1
+
+    summary = {
+        "status": "success",
+        "total_fetched": total_fetched,
+        "total_inserted": total_inserted,
+        "total_updated": total_updated,
+        "total_skipped": total_skipped,
+        "error_count": len(all_errors),
+        "errors": all_errors[:10]
+    }
+    logger.info(f"ZingHR sync completed: {summary}")
+    return summary
