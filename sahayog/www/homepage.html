@@ -499,6 +499,7 @@
             <p class="profile-greeting" id="greeting-message"></p>
             <p class="profile-name" id="emp_name">Admin</p>
             <span class="profile-role" id="emp_designation">Admin</span>
+            <span class="profile-role" id="emp_code_id"></span>
             <span class="profile-role" id="emp_branch_sol"></span>
           </div>
         </div>
@@ -1190,10 +1191,12 @@
           );
           const fields = encodeURIComponent(
             JSON.stringify([
+              "name",
               "employee_name",
               "designation",
               "branch",
               "sol_id",
+              "employee_number",
             ]),
           );
           const empRes = await fetch(
@@ -1217,6 +1220,31 @@
             const branchSol = `Branch : ${branch} | SOL ID : ${solId}`;
             document.getElementById("emp_branch_sol").innerHTML = branchSol;
 
+            const empNumber = emp.employee_number || emp.name || "N/A";
+            let costCode = "N/A";
+
+            // Fetch cost_code from Employee Cost Code DocType safely
+            try {
+              const empCodeFilters = encodeURIComponent(
+                JSON.stringify([["employee_code", "=", emp.name || empNumber]]),
+              );
+              const costCodeRes = await fetch(
+                `/api/resource/Employee Cost Code?filters=${empCodeFilters}&fields=["cost_code"]`,
+              );
+              const costCodeData = await costCodeRes.json();
+              if (costCodeData.data && costCodeData.data.length > 0) {
+                costCode = costCodeData.data[0].cost_code || "N/A";
+              }
+            } catch (cErr) {
+              console.warn("Could not fetch cost_code:", cErr);
+            }
+
+            const empCodeIdDetails = `Emp ID : ${empNumber} | Cost Code : ${costCode}`;
+            const empCodeElem = document.getElementById("emp_code_id");
+            if (empCodeElem) {
+              empCodeElem.textContent = empCodeIdDetails;
+            }
+
             const initial = employeeName.trim().charAt(0).toUpperCase();
             document.getElementById("avatar-initial").textContent = initial;
 
@@ -1225,6 +1253,8 @@
           } else {
             document.getElementById("emp_name").textContent = "Not Found";
             document.getElementById("emp_designation").textContent = "-";
+            const empCodeElem = document.getElementById("emp_code_id");
+            if (empCodeElem) empCodeElem.textContent = "-";
             document.getElementById("avatar-initial").textContent = "?";
             document.getElementById("greeting-message").textContent =
               `${greeting},`;

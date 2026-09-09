@@ -1086,6 +1086,10 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     import csv
     import io
 
+    from_date_obj, to_date_obj = validate_date_range(from_date, to_date)
+    user = frappe.session.user
+    ui_filters = frappe.parse_json(filters) if filters else {}
+
     info = get_report_info()
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
 
@@ -1096,125 +1100,126 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     backup_path = os.path.join(site_private_path, backup_filename)
     standard_path = os.path.join(site_private_path, "lead_report.csv")
 
-    # Seamless fallback to backup file if active file is Generating or missing!
-    if info.get("status") == "Generating" or not os.path.exists(report_path):
-        if os.path.exists(backup_path):
-            report_path = backup_path
-        elif os.path.exists(standard_path):
-            report_path = standard_path
-        else:
-            frappe.throw("Master lead report file is being generated for the first time. Please retry in 1 minute.")
+    target_path = None
+    if os.path.exists(report_path) and info.get("status") != "Generating":
+        target_path = report_path
+    elif os.path.exists(backup_path):
+        target_path = backup_path
+    elif os.path.exists(standard_path):
+        target_path = standard_path
 
-    from_date, to_date = validate_date_range(from_date, to_date)
-    ui_filters = frappe.parse_json(filters) if filters else {}
-
-    # 1. Preferences & UI filters parsing
-    user = frappe.session.user
-    has_pref = False
-    is_all_regions = False 
-    products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
-    
-    if user != "Administrator":
-        pref_res = get_user_report_preference_record(user)
-        if pref_res:
-            has_pref = True
-            p = pref_res[0]
-            is_all_regions = p.get("all_regions")
-            zones_pref = {norm(x) for x in p.get("zone", [])}
-            regions_pref = {norm(x) for x in p.get("region", [])}
-            sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
-
-    # UI Filters Standardizing
-    if "product" in ui_filters:
-        products_pref = {norm(x) for x in ui_filters.get("product", [])}
-    if "source" in ui_filters:
-        sources_pref = {norm(x) for x in ui_filters.get("source", [])}
-    if "zone" in ui_filters:
-        ui_zones = {norm(x) for x in ui_filters.get("zone", [])}
-        zones_pref = zones_pref.intersection(ui_zones) if ui_zones else set()
-    if "region" in ui_filters:
-        ui_regions = {norm(x) for x in ui_filters.get("region", [])}
-        regions_pref = regions_pref.intersection(ui_regions) if ui_regions else set()
-    if "sol_id" in ui_filters:
-        ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
-        sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
-
-    current_emp_number = frappe.db.get_value("Employee", {"user_id": user}, "employee_number")
-
-    # 2. Date parser helper
-    def parse_csv_date(date_str):
-        try:
-            return datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
-        except:
-            return None
-
-    # Stream to memory
-    output = io.StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-    
+    matching_rows = []
     headers = [
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
     ]
-    writer.writerow(headers)
 
-    with open(report_path, "r", encoding="utf-8") as f_in:
-        reader = csv.reader(f_in)
-        
-        # Skip the header row
+    if target_path and os.path.exists(target_path):
         try:
-            next(reader)
-        except StopIteration:
-            pass
+            has_pref = False
+            is_all_regions = False
+            products_pref, sources_pref, zones_pref, regions_pref, sol_ids_pref = set(), set(), set(), set(), set()
 
-        for row in reader:
-            if len(row) < 17:
-                continue
+            if user != "Administrator":
+                pref_res = get_user_report_preference_record(user)
+                if pref_res:
+                    has_pref = True
+                    p = pref_res[0]
+                    is_all_regions = p.get("all_regions")
+                    zones_pref = {norm(x) for x in p.get("zone", []) if x}
+                    regions_pref = {norm(x) for x in p.get("region", []) if x}
+                    sol_ids_pref = {str(x.get("value") if isinstance(x, dict) else x) for x in p.get("sol_id", []) if x}
 
-            # A. Date Filter Check (row[16] is Created On)
-            row_date = parse_csv_date(row[16])
-            if not row_date or row_date < from_date or row_date > to_date:
-                continue
+            if ui_filters.get("product"):
+                products_pref = {norm(x) for x in ui_filters.get("product", []) if x}
+            if ui_filters.get("source"):
+                sources_pref = {norm(x) for x in ui_filters.get("source", []) if x}
+            if ui_filters.get("zone"):
+                ui_zones = {norm(x) for x in ui_filters.get("zone", []) if x}
+                zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
+            if ui_filters.get("region"):
+                ui_regions = {norm(x) for x in ui_filters.get("region", []) if x}
+                regions_pref = regions_pref.intersection(ui_regions) if regions_pref else ui_regions
+            if ui_filters.get("sol_id"):
+                ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in ui_filters.get("sol_id", []) if x}
+                sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
 
-            # B. Owner Preference (If no preference -> only own leads)
-            if user != "Administrator" and not has_pref:
-                if len(row) > 17 and row[17] != user:
-                    continue
+            def parse_csv_date(date_str):
+                try:
+                    return datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
+                except Exception:
+                    return None
 
-            # C. SOL ID Preference
-            curr_sol = row[11]
-            if sol_ids_pref and curr_sol not in sol_ids_pref:
-                continue
+            with open(target_path, "r", encoding="utf-8") as f_in:
+                reader = csv.reader(f_in)
+                try:
+                    next(reader)
+                except StopIteration:
+                    pass
 
-            # D. Zone / Region Preference
-            curr_zone = norm(row[15])
-            curr_region = norm(row[14])
-            if zones_pref and curr_zone not in zones_pref:
-                continue
-            
-            region_match = True
-            if is_all_regions:
-                region_match = True
-            elif regions_pref:
-                allowed = set(regions_pref)
-                for r in list(regions_pref):
-                    allowed |= REGION_ALIAS_MAP.get(r, set())
-                region_match = curr_region in allowed
-            if not region_match:
-                continue
+                for row in reader:
+                    if len(row) < 17:
+                        continue
+                    row_date = parse_csv_date(row[16])
+                    if not row_date or row_date < from_date_obj or row_date > to_date_obj:
+                        continue
+                    if user != "Administrator" and not has_pref:
+                        if len(row) > 17 and row[17] != user:
+                            continue
+                    if sol_ids_pref and row[11] not in sol_ids_pref:
+                        continue
+                    if zones_pref and norm(row[15]) not in zones_pref:
+                        continue
+                    if not is_all_regions and regions_pref:
+                        allowed = set(regions_pref)
+                        for r in list(regions_pref):
+                            allowed |= REGION_ALIAS_MAP.get(r, set())
+                        if norm(row[14]) not in allowed:
+                            continue
+                    if products_pref and norm(row[5]) not in products_pref:
+                        continue
+                    if sources_pref and norm(row[4]) not in sources_pref:
+                        continue
 
-            # E. UI Product Filter
-            if products_pref and norm(row[5]) not in products_pref:
-                continue
+                    matching_rows.append(row)
+        except Exception:
+            frappe.log_error(title="Fast CSV Read Exception", message=frappe.get_traceback())
 
-            # F. UI Source Filter
-            if sources_pref and norm(row[4]) not in sources_pref:
-                continue
+    # Automatic fallback to direct DB query if CSV file had 0 matching rows
+    if not matching_rows:
+        leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user, ui_filters)
+        for r in leads:
+            b = r.get("branch_info", {})
+            created_on_str = format_date(r.get("creation"), "dd-mm-yyyy") if r.get("creation") else ""
+            row = [
+                r.get("name") or "",
+                r.get("status") or "",
+                r.get("lead_name") or "",
+                r.get("contact") or "",
+                r.get("source") or "",
+                r.get("product_code") or "",
+                r.get("product_name") or "",
+                r.get("amount") or 0,
+                r.get("employee_name") or "",
+                r.get("employee_id") or "",
+                r.get("designation") or "",
+                r.get("sol_id") or "",
+                b.get("branch") or "",
+                b.get("district") or "",
+                b.get("region") or "",
+                b.get("zone") or "",
+                created_on_str,
+                r.get("lead_owner") or ""
+            ]
+            matching_rows.append(row)
 
-            # Write matching row
-            writer.writerow(row)
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    writer.writerow(headers)
+    for r in matching_rows:
+        writer.writerow(r)
 
     filedata = output.getvalue().encode("utf-8")
     output.close()

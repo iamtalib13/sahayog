@@ -753,13 +753,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
 
                         <div class="d-flex align-items-center" style="gap: 6px;">
-                            <button class="btn btn-xs btn-outline-success font-weight-bold"
-                                    @click="openTodaysLeadReport"
-                                    style="height: 32px; font-size: 11px; padding: 0 10px; border-radius: 4px;">
-                                <i class="fa fa-calendar-check-o mr-1"></i> Today's Leads
-                            </button>
                             <button v-if="totalLeadsInReport > 0" class="btn-generate-sm"
-                                    @click="downloadReport" 
+                                    @click="openDownloadDialog" 
                                     :disabled="loading">
                                 <i class="fa fa-download mr-1"></i> DOWNLOAD
                             </button>
@@ -1228,6 +1223,42 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             });
           }
         }
+      });
+    },
+
+    openDownloadDialog() {
+      let d = new frappe.ui.Dialog({
+        title: __("Download & View Report Options"),
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "download_options_html",
+            options: `
+              <div style="display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
+                <p style="font-size: 13px; color: #4b5563; margin-bottom: 5px;">Select an option below:</p>
+                <button id="btn-dl-todays-leads" class="btn btn-outline-primary text-left font-weight-bold" style="padding: 10px 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                  <span><i class="fa fa-calendar-check-o text-success mr-2"></i> Today's Lead Records</span>
+                  <i class="fa fa-arrow-right text-muted"></i>
+                </button>
+                <button id="btn-dl-filtered-past" class="btn btn-outline-info text-left font-weight-bold" style="padding: 10px 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                  <span><i class="fa fa-filter text-info mr-2"></i> Download Filtered Past Data</span>
+                  <i class="fa fa-download text-muted"></i>
+                </button>
+              </div>
+            `
+          }
+        ]
+      });
+      d.show();
+
+      d.$wrapper.find('#btn-dl-todays-leads').on('click', () => {
+        d.hide();
+        this.openTodaysLeadReport();
+      });
+
+      d.$wrapper.find('#btn-dl-filtered-past').on('click', () => {
+        d.hide();
+        this.downloadReport();
       });
     },
 
