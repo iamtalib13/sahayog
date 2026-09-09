@@ -943,10 +943,13 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		}
 		function apiUpdateFunction(name, val) {
 			frappe.call({
-				method: "frappe.client.set_value",
-				args: { doctype: "Function", name, fieldname: "function", value: val },
+				method: "sahayog.branch_score_card.doctype.branch_score_card_settings.branch_score_card_settings.rename_function_doc",
+				args: { old_name: name, new_name: val },
 				callback(r) {
-					if (!r.exc) { frappe.show_alert({ message: "Function renamed.", indicator: "green" }); loadAll(); }
+					if (!r.exc) {
+						frappe.show_alert({ message: "Function renamed successfully.", indicator: "green" });
+						frm.reload_doc();
+					}
 				},
 			});
 		}
@@ -984,10 +987,13 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		}
 		function apiUpdateParameter(name, val) {
 			frappe.call({
-				method: "frappe.client.set_value",
-				args: { doctype: "Parameter", name, fieldname: "parameter", value: val },
+				method: "sahayog.branch_score_card.doctype.branch_score_card_settings.branch_score_card_settings.rename_parameter_doc",
+				args: { old_name: name, new_name: val },
 				callback(r) {
-					if (!r.exc) { frappe.show_alert({ message: "Parameter updated.", indicator: "green" }); loadAll(); }
+					if (!r.exc) {
+						frappe.show_alert({ message: "Parameter renamed successfully.", indicator: "green" });
+						frm.reload_doc();
+					}
 				},
 			});
 		}

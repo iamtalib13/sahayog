@@ -14,6 +14,8 @@
   "account_opening_error_count",
   "column_break_bgsg",
   "reconciliation_discrepancy_count",
+  "section_break_qccm",
+  "table_select_miscellaneous",
   "section_break_xcsu",
   "account_opening_error",
   "section_break_bcws",
@@ -91,12 +93,20 @@
    "fieldname": "bank_reconciliation_discrepancy",
    "fieldtype": "Table",
    "options": "Bank Reconciliation Discrepancy"
+  },
+  {
+   "fieldname": "section_break_qccm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "table_select_miscellaneous",
+   "fieldtype": "HTML"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-01 16:33:44.608423",
+ "modified": "2026-09-09 11:10:10.845738",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Miscellaneous",

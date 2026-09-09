@@ -44,7 +44,7 @@ function render_manual_sync_button_filter(listview) {
     // 1. Manual Sync Button
     let $sync_btn_group = $(`
         <div id="manual-sync-filter-btn-group" class="btn-group" style="margin-right: 8px;">
-            <button id="manual-sync-filter-btn" class="btn btn-default btn-xs btn-sm" style="background-color: #006768; color: #ffffff; border-color: #006768; display: inline-flex; align-items: center; justify-content: center;">
+            <button id="manual-sync-filter-btn" class="btn btn-default btn-xs btn-sm" style="background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="fa fa-refresh" style="margin-right: 5px; color: #ffffff; font-size: 11px;"></i> 
                 <span style="color: #ffffff;">${__('Manual Sync')}</span>
             </button>
@@ -63,7 +63,7 @@ function render_manual_sync_button_filter(listview) {
     // 2. Status Dropdown (Z-Index fix applied to list container/dropdown)
     let $status_btn_group = $(`
         <div id="status-filter-btn-group" class="btn-group" style="margin-right: 8px; z-index: 100;">
-            <button class="btn btn-default btn-xs btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: #006768; color: #ffffff; border-color: #006768; display: inline-flex; align-items: center; justify-content: center;">
+            <button class="btn btn-default btn-xs btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="fa fa-filter" style="margin-right: 5px; color: #ffffff; font-size: 11px;"></i> 
                 <span id="selected-status-label" style="color: #ffffff;">${current_label}</span> 
                 <span class="caret" style="border-top-color: #ffffff; margin-left: 5px;"></span>
@@ -357,8 +357,8 @@ function show_bulk_sync_dialog(listview) {
     let $primary_btn = d.get_primary_btn();
     if ($primary_btn && $primary_btn.length) {
         $primary_btn.css({
-            'background-color': '#006768',
-            'border-color': '#006768',
+            'background-color': '#0d5c75',
+            'border-color': '#0d5c75',
             'color': '#ffffff'
         });
     }
@@ -371,7 +371,7 @@ function execute_bulk_sync(listview, dialog, values) {
                 <p><b>Processing Date:</b> ${data.current_date} (${data.current}/${data.total})</p>
                 <div class="progress" style="height: 18px; background-color: #e5e7eb; border-radius: 4px;">
                     <div class="progress-bar progress-bar-striped active" role="progressbar" 
-                         style="width: ${data.percent}%; background-color: #006768; color: #ffffff; line-height: 18px; font-weight: bold;">
+                         style="width: ${data.percent}%; background-color: #0d5c75; color: #ffffff; line-height: 18px; font-weight: bold;">
                         ${data.percent}%
                     </div>
                 </div>

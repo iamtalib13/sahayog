@@ -47,8 +47,8 @@ frappe.ui.form.on('Account Opening Operations', {
 
                     /* Table Header Styling with Curved Top Corners */
                     .grid-heading-row {
-                        background-color: #2a7e78 !important;
-                        border-bottom: 1px solid #2a7e78 !important;
+                        background-color: #0d5c75 !important;
+                        border-bottom: 1px solid #0d5c75 !important;
                         border-top-left-radius: 7px !important;
                         border-top-right-radius: 7px !important;
                     }
@@ -99,7 +99,7 @@ frappe.ui.form.on('Account Opening Operations', {
                     }
 
                     .custom-grid-search:focus {
-                        border-color: #2a7e78 !important;
+                        border-color: #0d5c75 !important;
                         box-shadow: none !important;
                     }
 
@@ -158,7 +158,7 @@ frappe.ui.form.on('Account Opening Operations', {
                     .form-control:focus, 
                     .frappe-control input:focus {
                         background-color: #ffffff !important;
-                        border-color: #2a7e78 !important;
+                        border-color: #0d5c75 !important;
                         box-shadow: 0 0 0 2px rgba(42, 126, 120, 0.15) !important;
                     }
 
@@ -244,12 +244,13 @@ frappe.ui.form.on('Account Opening Operations', {
             }
         });
 
-        frm.trigger('render_table_search_inputs');
+        //frm.trigger('render_table_search_inputs');
         frm.trigger('bind_zero_ip_grid_render');
         frm.trigger('render_scheme_dropdowns');
     },
 
     render_table_search_inputs(frm) {
+        /*
         ['table_dllf', 'table_zero_ip_funding'].forEach(fieldname => {
             let field = frm.get_field(fieldname);
             if (!field || !field.grid || !field.grid.wrapper) return;
@@ -343,11 +344,12 @@ frappe.ui.form.on('Account Opening Operations', {
                 }
             });
         });
+        */
     },
 
     onload_post_render(frm) {
         frm.trigger('render_scheme_dropdowns');
-        frm.trigger('render_table_search_inputs');
+        //frm.trigger('render_table_search_inputs');
     },
 
     bind_zero_ip_grid_render(frm) {
@@ -358,7 +360,7 @@ frappe.ui.form.on('Account Opening Operations', {
             field.grid.wrapper.off('grid-render');
             field.grid.wrapper.on('grid-render', function() {
                 frm.trigger('render_scheme_dropdowns');
-                frm.trigger('render_table_search_inputs');
+                //frm.trigger('render_table_search_inputs');
             });
         }
     },

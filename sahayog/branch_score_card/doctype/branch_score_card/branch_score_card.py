@@ -1,7 +1,8 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import cint, flt
+from frappe.utils import cint, flt, getdate, get_time
+from datetime import time
 
 
 class BranchScoreCard(Document):
@@ -42,7 +43,7 @@ class BranchScoreCard(Document):
         filters = {
             "branch": self.branch,
             "month": self.month,
-            "year": cint(self.year),
+            "year": str(self.year).strip(),
         }
 
         if not self.is_new():
@@ -106,7 +107,8 @@ class BranchScoreCard(Document):
             "December": "12",
         }.get(clean_month)
 
-        year_val = cint(self.year)
+        year_str = str(self.year).strip()
+        year_val = cint(year_str.split("-")[0]) if "-" in year_str else cint(year_str)
 
         # -----------------------------------------------------
         # 6. READ CRL DATA (Updated with Day-wise Cutoff Logic)
@@ -238,6 +240,44 @@ class BranchScoreCard(Document):
                     account_opening_error_count = cint(misc_data[0].account_opening_error_count)
                     reconciliation_discrepancy_count = cint(misc_data[0].reconciliation_discrepancy_count)
                     
+        # -----------------------------------------------------
+        # 7.6. READ AUDIT AND COMPLIANCE DATA
+        # -----------------------------------------------------
+        iad_audit_risk = None
+        iad_closure_days = None
+        com_visit_rating = None
+        com_visit_closure_days = None
+
+        if clean_month and sol_id:
+            audit_doc_name = frappe.db.get_value("Audit and Compliance", {"sol_id": sol_id}, "name")
+            
+            if audit_doc_name:
+                audit_doc = frappe.get_doc("Audit and Compliance", audit_doc_name)
+                
+                # 1. Audit Score Table
+                for row in getattr(audit_doc, "audit_score_table", []) or []:
+                    if str(row.month).strip().capitalize() == clean_month:
+                        iad_audit_risk = row.risk_level
+                        break
+
+                # 2. Audit Closure Table
+                for row in getattr(audit_doc, "audit_closure_table", []) or []:
+                    if str(row.month).strip().capitalize() == clean_month:
+                        iad_closure_days = str(row.delay_in_closure).strip() if row.delay_in_closure is not None else None
+                        break
+
+                # 3. COM Visit Table
+                for row in getattr(audit_doc, "com_visit", []) or []:
+                    if str(row.month).strip().capitalize() == clean_month:
+                        com_visit_rating = row.performance_rating
+                        break
+
+                # 4. COM Visit Compliance Table
+                for row in getattr(audit_doc, "com_visit_compliance", []) or []:
+                    if str(row.month).strip().capitalize() == clean_month:
+                        com_visit_closure_days = str(row.turnaround_time_days).strip() if row.turnaround_time_days is not None else None
+                        break
+                    
 
         # -----------------------------------------------------
         # 8. UNIVERSAL DYNAMIC SCORING (Evaluates 0 Values directly)
@@ -247,7 +287,7 @@ class BranchScoreCard(Document):
 
             row_weightage = flt(row.weightage)
             score_obtained = 0
-            data_source = row.data_source or "System Report"
+            data_source = row.data_source or ""
 
             if row.scoring_methodology:
                 jinja_context = {
@@ -265,6 +305,10 @@ class BranchScoreCard(Document):
                     "zero_ip_funding_count": zero_ip_count_value,
                     "account_opening_error_count": account_opening_error_count,
                     "reconciliation_discrepancy_count": reconciliation_discrepancy_count,
+                    "iad_audit_risk": iad_audit_risk,
+                    "iad_closure_days": iad_closure_days,
+                    "com_visit_rating": com_visit_rating,
+                    "com_visit_closure_days": com_visit_closure_days,
                 }
                 try:
                     rendered = frappe.render_template(
@@ -307,22 +351,26 @@ class BranchScoreCard(Document):
 
 
 def get_or_create_score_card(branch, month, year):
-    year = cint(year)
-    clean_month = str(month).strip().capitalize()
+    clean_year = str(year).strip() if year else ""
+    clean_month = str(month).strip().capitalize() if month else ""
 
-    existing_name = frappe.db.get_value(
-        "Branch Score Card",
-        {"branch": branch, "month": clean_month, "year": year},
-        "name",
-    )
+    expected_name = f"{branch}-{clean_month}-{clean_year}"
 
-    if existing_name:
-        doc = frappe.get_doc("Branch Score Card", existing_name)
+    if frappe.db.exists("Branch Score Card", expected_name):
+        doc = frappe.get_doc("Branch Score Card", expected_name)
     else:
-        doc = frappe.new_doc("Branch Score Card")
-        doc.branch = branch
-        doc.month = clean_month
-        doc.year = year
+        existing_name = frappe.db.get_value(
+            "Branch Score Card",
+            {"branch": branch, "month": clean_month, "year": clean_year},
+            "name",
+        )
+        if existing_name:
+            doc = frappe.get_doc("Branch Score Card", existing_name)
+        else:
+            doc = frappe.new_doc("Branch Score Card")
+            doc.branch = branch
+            doc.month = clean_month
+            doc.year = clean_year
 
     return doc
 
@@ -367,6 +415,56 @@ def trigger_score_card_creation(doc, method=None):
         or getattr(doc, "branch", None)
         or getattr(doc, "sahayog_branch", None)
     )
+    
+    if doc.doctype == "Audit and Compliance":
+        clean_branch = str(branch).strip() if branch else ""
+        sol_id = (
+            frappe.db.get_value("Sahayog Branch", {"branch": clean_branch}, "sol_id")
+            or frappe.db.get_value("Sahayog Branch", clean_branch, "sol_id")
+            or clean_branch
+        )
+        
+        year_val = getattr(doc, "year", None)
+        if not sol_id or not year_val:
+            return
+
+        months_to_trigger = set()
+        
+        # 1. Audit Score Table
+        for row in getattr(doc, "audit_score_table", []) or []:
+            if row.month:
+                months_to_trigger.add(str(row.month).strip().capitalize())
+
+        # 2. Audit Closure Table
+        for row in getattr(doc, "audit_closure_table", []) or []:
+            if row.month:
+                months_to_trigger.add(str(row.month).strip().capitalize())
+
+        # 3. COM Visit Table
+        for row in getattr(doc, "com_visit", []) or []:
+            if row.month:
+                months_to_trigger.add(str(row.month).strip().capitalize())
+
+        # 4. COM Visit Compliance Table
+        for row in getattr(doc, "com_visit_compliance", []) or []:
+            if row.month:
+                months_to_trigger.add(str(row.month).strip().capitalize())
+
+        try:
+            frappe.flags.in_score_card_trigger = True
+            clean_year = str(year_val).strip()
+            for clean_month in months_to_trigger:
+                fetch_score_card_data(branch=sol_id, month=clean_month, year=clean_year)
+        except Exception as e:
+            frappe.log_error(
+                title=f"Auto Score Card Creation Failed [{doc.doctype} : {doc.name}]",
+                message=f"Branch SOL: {sol_id}, Year: {year_val}\nError: {str(e)}",
+            )
+        finally:
+            frappe.flags.in_score_card_trigger = False
+        
+        return
+    
     month = getattr(doc, "month", None)
     year = getattr(doc, "year", None)
 
@@ -392,10 +490,7 @@ def trigger_score_card_creation(doc, method=None):
              or clean_branch
 
     clean_month = str(month).strip().capitalize()
-    try:
-        clean_year = int(year)
-    except (ValueError, TypeError):
-        clean_year = str(year).strip()
+    clean_year = str(year).strip() if year else ""
 
     if not sol_id or not clean_month or not clean_year:
         return

@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-05 13:06:17.226123",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "report_published_date",
+  "compliance_report",
+  "recived_date",
+  "delay_in_closure"
+ ],
+ "fields": [
+  {
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Month"
+  },
+  {
+   "fieldname": "report_published_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Report Published Date"
+  },
+  {
+   "fieldname": "compliance_report",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Compliance Report Status",
+   "options": "Received\nPending"
+  },
+  {
+   "fieldname": "recived_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Recived Date"
+  },
+  {
+   "fieldname": "delay_in_closure",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Delay in Closure"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-07 11:00:19.848745",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "Audit Closure Delay Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-09 11:35:38.699507",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "date_of_publish",
+  "status",
+  "date_of_closure",
+  "turnaround_time_days"
+ ],
+ "fields": [
+  {
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Month"
+  },
+  {
+   "fieldname": "date_of_publish",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Publish"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nCompleted"
+  },
+  {
+   "fieldname": "date_of_closure",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Closure"
+  },
+  {
+   "fieldname": "turnaround_time_days",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Turnaround Time (Days)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-09 13:05:19.654617",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "COM Visit Compliance Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

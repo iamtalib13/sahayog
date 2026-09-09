@@ -22,6 +22,8 @@
   "ftnr_percentage",
   "section_break_kpsh",
   "zero_ip_funding_count",
+  "section_break_aiff",
+  "account_opening_html_table_select",
   "section_break_iwri",
   "table_dllf",
   "section_break_hgdr",
@@ -133,12 +135,20 @@
    "fieldname": "branch",
    "fieldtype": "Data",
    "label": "Branch"
+  },
+  {
+   "fieldname": "section_break_aiff",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "account_opening_html_table_select",
+   "fieldtype": "HTML"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-01 13:07:16.250990",
+ "modified": "2026-09-09 10:44:40.292065",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Account Opening Operations",

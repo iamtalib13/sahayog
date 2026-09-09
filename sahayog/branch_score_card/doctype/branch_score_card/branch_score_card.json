@@ -70,11 +70,10 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Month",
-   "reqd": 1,
-   "set_only_once": 1,
    "options": "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_etsk",
@@ -82,7 +81,7 @@
   },
   {
    "fieldname": "year",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Year",
@@ -171,8 +170,7 @@
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-31 12:06:57.562741",
- "modified": "2026-09-02 15:14:04.399025",
+ "modified": "2026-09-07 17:33:08.599587",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Branch Score Card",

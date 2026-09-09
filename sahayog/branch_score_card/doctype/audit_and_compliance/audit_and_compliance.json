@@ -1,0 +1,126 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-05 11:23:37.390186",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sol_id",
+  "column_break_smwz",
+  "branch_name",
+  "column_break_zhly",
+  "year",
+  "section_break_dplg",
+  "table_selector_html",
+  "section_break_spco",
+  "audit_score_table",
+  "audit_closure_delay_section",
+  "audit_closure_table",
+  "com_visit_section",
+  "com_visit",
+  "com_visit_compliance_section",
+  "com_visit_compliance"
+ ],
+ "fields": [
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Link",
+   "label": "Sol Id",
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "column_break_smwz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "sol_id.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name"
+  },
+  {
+   "fieldname": "column_break_zhly",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Data",
+   "label": "Year"
+  },
+  {
+   "fieldname": "section_break_spco",
+   "fieldtype": "Section Break",
+   "label": "Audit Score"
+  },
+  {
+   "fieldname": "audit_closure_delay_section",
+   "fieldtype": "Section Break",
+   "label": "Audit Closure Delay"
+  },
+  {
+   "fieldname": "audit_score_table",
+   "fieldtype": "Table",
+   "options": "Audit Score Item"
+  },
+  {
+   "fieldname": "audit_closure_table",
+   "fieldtype": "Table",
+   "options": "Audit Closure Delay Item"
+  },
+  {
+   "fieldname": "section_break_dplg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "table_selector_html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "com_visit",
+   "fieldtype": "Table",
+   "options": "COM Visit Item"
+  },
+  {
+   "fieldname": "com_visit_section",
+   "fieldtype": "Section Break",
+   "label": "COM Visit"
+  },
+  {
+   "fieldname": "com_visit_compliance_section",
+   "fieldtype": "Section Break",
+   "label": "COM Visit Compliance"
+  },
+  {
+   "fieldname": "com_visit_compliance",
+   "fieldtype": "Table",
+   "options": "COM Visit Compliance Item"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-09 11:44:50.529519",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "Audit and Compliance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

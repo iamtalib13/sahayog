@@ -30,13 +30,13 @@ frappe.ui.form.on('Miscellaneous', {
                             fieldtype: 'HTML',
                             fieldname: 'format_info',
                             options: `
-                                <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #006768; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                     <div>
                                         <b>Required Excel Columns for Account Opening Error:</b><br>
                                         <span style="color: #555;">BRANCH CODE ( SOL ID ), A/C Opening Date</span>
                                     </div>
                                     <div>
-                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #006768; font-weight: 600; text-decoration: none;">
+                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
                                             <i class="fa fa-download"></i> Download Template
                                         </button>
                                     </div>
@@ -122,13 +122,13 @@ frappe.ui.form.on('Miscellaneous', {
                             fieldtype: 'HTML',
                             fieldname: 'format_info',
                             options: `
-                                <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #006768; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                     <div>
                                         <b>Required Excel Columns for Bank Reconciliation:</b><br>
                                         <span style="color: #555;">BRANCH CODE ( SOL ID ), Discrepancy Date</span>
                                     </div>
                                     <div>
-                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #006768; font-weight: 600; text-decoration: none;">
+                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
                                             <i class="fa fa-download"></i> Download Template
                                         </button>
                                     </div>
@@ -218,8 +218,8 @@ frappe.ui.form.on('Miscellaneous', {
 
                 /* Native Header Styling (Flex Overrides Removed to Fix Gear Icon & Columns Alignment) */
                 .grid-heading-row {
-                    background-color: #2a7e78 !important;
-                    border-bottom: 1px solid #2a7e78 !important;
+                    background-color: #0d5c75 !important;
+                    border-bottom: 1px solid #0d5c75 !important;
                     border-top-left-radius: 7px !important;
                     border-top-right-radius: 7px !important;
                 }
@@ -294,7 +294,7 @@ frappe.ui.form.on('Miscellaneous', {
                 .form-control:focus, 
                 .frappe-control input:focus {
                     background-color: #ffffff !important;
-                    border-color: #2a7e78 !important;
+                    border-color: #0d5c75 !important;
                     box-shadow: 0 0 0 2px rgba(42, 126, 120, 0.15) !important;
                 }
 
