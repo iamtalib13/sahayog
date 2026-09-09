@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-11-04 12:21:25.888669",
+ "creation": "2026-08-03 12:24:24.924646",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -139,8 +139,10 @@
    "fetch_from": "employee_id.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Employee Name",
-   "read_only": 1
+   "read_only": 1,
+   "width": "220"
   },
   {
    "fetch_from": "employee_id.designation",
@@ -211,7 +213,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-02 11:45:33.165013",
+ "modified": "2026-09-09 16:23:15.928270",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Unauthorized Absence",
