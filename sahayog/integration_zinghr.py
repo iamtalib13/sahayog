@@ -129,8 +129,12 @@ class ZingHRClient:
 class MasterResolver:
     """In-memory case-insensitive cache for fast master lookup without repeated DB queries."""
 
-    def __init__(self, company: str = "Sahayog"):
-        self.company = company
+    def __init__(self, company: Optional[str] = None):
+        self.company = (
+            company
+            or frappe.db.get_single_value("Global Defaults", "default_company")
+            or "Sahayog"
+        )
         self.zones: Dict[str, str] = {z.lower(): z for z in frappe.get_all("Zone", pluck="name")}
         self.regions: Dict[str, str] = {r.lower(): r for r in frappe.get_all("Region", pluck="name")}
         self.designations: Dict[str, str] = {d.lower(): d for d in frappe.get_all("Designation", pluck="name")}
@@ -227,13 +231,16 @@ class MasterResolver:
         branch_name: Optional[str],
         resolved_branch: Optional[str] = None,
     ) -> Optional[str]:
-        if branch_code:
-            code = str(branch_code).strip().lower()
-            if code in self.sahayog_branches:
-                return self.sahayog_branches[code]
-            lcode = code.lstrip("0")
-            if lcode in self.sahayog_branches:
-                return self.sahayog_branches[lcode]
+        # BranchCode must strictly be an integer; if it is a String (non-digit), fall back to Branch
+        if branch_code is not None:
+            raw_code = str(branch_code).strip()
+            if raw_code.isdigit():
+                code = raw_code.lower()
+                if code in self.sahayog_branches:
+                    return self.sahayog_branches[code]
+                lcode = code.lstrip("0")
+                if lcode and lcode in self.sahayog_branches:
+                    return self.sahayog_branches[lcode]
 
         if branch_name:
             b_name = str(branch_name).strip().lower()
@@ -252,10 +259,12 @@ class MasterResolver:
                 clean_tb = tb_key.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
                 sol = self.branch_sol_ids.get(clean_tb)
             if sol:
-                sol_key = sol.lower()
+                sol_str = str(sol).strip()
+                sol_key = sol_str.lower()
                 if sol_key in self.sahayog_branches:
                     return self.sahayog_branches[sol_key]
-                return sol
+                if sol_str.isdigit():
+                    return sol_str
 
         return None
 
@@ -310,19 +319,41 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         except Exception:
             return None
 
-    branch = resolver.resolve_branch(attrs.get("Branch"))
+    raw_branch_code = attrs.get("BranchCode") or attrs.get("Branch Code")
+    raw_branch_name = attrs.get("Branch")
+    branch = resolver.resolve_branch(raw_branch_name)
     sahayog_branch = resolver.resolve_sahayog_branch(
-        attrs.get("BranchCode") or attrs.get("Branch Code"),
-        attrs.get("Branch"),
+        branch_code=raw_branch_code,
+        branch_name=raw_branch_name,
         resolved_branch=branch,
     )
+
+    def _is_integer_value(val: Any) -> bool:
+        if val is None:
+            return False
+        s = str(val).strip()
+        return bool(s and s.isdigit())
+
+    # sahayog_branch set krte time check: integer value he chahiye.
+    # String / non-integer rhi to fallback me chale jana chahiye with Branch fallback.
+    if not _is_integer_value(sahayog_branch):
+        sahayog_branch = None
+        target_branch = branch or raw_branch_name
+        if target_branch:
+            tb_key = str(target_branch).strip().lower()
+            sol = resolver.branch_sol_ids.get(tb_key)
+            if not sol:
+                clean_tb = tb_key.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
+                sol = resolver.branch_sol_ids.get(clean_tb)
+            if sol and _is_integer_value(sol):
+                sol_str = str(sol).strip()
+                sahayog_branch = resolver.sahayog_branches.get(sol_str.lower(), sol_str)
+
+    # Ensure sahayog_branch is strictly integer digits, else None
+    if sahayog_branch and not _is_integer_value(sahayog_branch):
+        sahayog_branch = None
+
     sol_id = sahayog_branch
-    if not sol_id and branch:
-        b_key = branch.lower()
-        if b_key in resolver.branch_sol_ids:
-            sol_id = resolver.branch_sol_ids[b_key]
-            if not sahayog_branch:
-                sahayog_branch = resolver.sahayog_branches.get(sol_id.lower(), sol_id)
 
     leaving_date = _date(emp_raw.get("dateOfLeaving") or emp_raw.get("exitDate"))
     today_date = getdate(today())
@@ -330,6 +361,12 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
     is_left_status = emp_raw.get("employeeStatus") in ["Left", "Resigned", "FnF InProcess", "FnF Locked"]
     is_exited = bool(is_past_leaving or is_left_status)
     status = "Left" if is_exited else "Active"
+    cost_code = (
+        attrs.get("CostCode")
+        or attrs.get("Cost Code")
+        or emp_raw.get("costCode")
+        or ""
+    ).strip()
 
     return {
         "employee_number": str(emp_raw.get("employeeCode", "")).strip(),
@@ -337,6 +374,8 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         "middle_name": (emp_raw.get("middleName") or "").strip(),
         "last_name": (emp_raw.get("lastName") or "").strip(),
         "employee_name": (emp_raw.get("employeeName") or f"{emp_raw.get('firstName', '')} {emp_raw.get('lastName', '')}").strip(),
+        "company": resolver.company,
+        "cost_code": cost_code,
         "company_email": (emp_raw.get("email") or "").strip(),
         "cell_number": (emp_raw.get("mobileNo") or "").strip(),
         "gender": resolver.resolve_gender(emp_raw.get("gender")),
@@ -344,7 +383,6 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         "date_of_joining": _date(emp_raw.get("dateOfJoining")),
         "status": status,
         "relieving_date": leaving_date,
-        "resignation_letter_date": leaving_date,
         "_is_past_leaving": is_past_leaving,
         "_is_exited": is_exited,
         "reporting_manager_code": str(emp_raw.get("reportingManagerCode") or "").strip(),
@@ -383,7 +421,11 @@ def fast_upsert_employees(
     # Bulk fetch existing employees in 1 query
     existing_records = {
         (e.employee_number or e.name): e
-        for e in frappe.get_all("Employee", filters={"employee_number": ["in", emp_codes]}, fields=["name", "employee_number", "status"])
+        for e in frappe.get_all(
+            "Employee",
+            filters={"employee_number": ["in", emp_codes]},
+            fields=["name", "employee_number", "status", "exclude_zinghr"],
+        )
     }
 
     # Bulk fetch reporting managers
@@ -414,13 +456,22 @@ def fast_upsert_employees(
             skipped += 1
             continue
 
+        # Skip update if exclude_zinghr is checked
+        if emp_name:
+            is_excluded = getattr(existing, "exclude_zinghr", None)
+            if is_excluded is None:
+                is_excluded = frappe.db.get_value("Employee", emp_name, "exclude_zinghr")
+            if is_excluded:
+                skipped += 1
+                continue
+
         item["reports_to"] = mgr_map.get(item.pop("reporting_manager_code", None))
         item["custom_zinghr_last_synced"] = now
 
         try:
             if emp_name:
                 # Fast direct update: Status is Left if past/resigned, else Active
-                frappe.db.set_value("Employee", emp_name, item, update_modified=True)
+                frappe.db.set_value("Employee", emp_name, item, update_modified=False)
                 if item.get("status") == "Left":
                     user_id = frappe.db.get_value("Employee", emp_name, "user_id")
                     if not user_id:
@@ -429,7 +480,7 @@ def fast_upsert_employees(
                             or frappe.db.get_value("User", {"username": code}, "name")
                         )
                     if user_id and frappe.db.exists("User", user_id):
-                        frappe.db.set_value("User", user_id, "enabled", 0, update_modified=True)
+                        frappe.db.set_value("User", user_id, "enabled", 0, update_modified=False)
                 updated += 1
             else:
                 # New Employee creation:
@@ -473,6 +524,13 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
     """Single employee fast update."""
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+
+    if frappe.db.get_value("Employee", employee_name, "exclude_zinghr"):
+        return {
+            "status": "skipped",
+            "message": _("Employee {0} has 'Exclude ZingHR' enabled. Update skipped.").format(employee_name),
+            "details": {"inserted": 0, "updated": 0, "skipped": 1, "errors": []},
+        }
 
     frappe.flags.in_import = True
     frappe.flags.mute_messages = True
