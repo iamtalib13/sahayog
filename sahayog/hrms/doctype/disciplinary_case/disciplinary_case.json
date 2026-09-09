@@ -46,6 +46,7 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Issue In Details",
@@ -145,15 +146,15 @@
    "options": "Employee",
    "reqd": 1
   },
-   {
-    "fetch_from": "employee_id.employee_name",
-    "fieldname": "employee_name",
-    "fieldtype": "Data",
-    "in_list_view": 1,
-    "label": "Employee Name",
-    "read_only": 1,
-    "width": "220"
-   },
+  {
+   "fetch_from": "employee_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1,
+   "width": "220"
+  },
   {
    "fetch_from": "employee_id.designation",
    "fieldname": "designation",
@@ -227,19 +228,19 @@
    "fieldtype": "Data",
    "label": "Personal Email"
   },
-   {
-    "fieldname": "show_cause_date",
-    "fieldtype": "Date",
-    "label": "Show Cause Date",
-    "allow_on_submit": 1,
-    "read_only": 1
-   }
+  {
+   "allow_on_submit": 1,
+   "fieldname": "show_cause_date",
+   "fieldtype": "Date",
+   "label": "Show Cause Date",
+   "read_only": 1
+  }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-05 10:30:51.446122",
+ "modified": "2026-09-09 16:09:18.394290",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",

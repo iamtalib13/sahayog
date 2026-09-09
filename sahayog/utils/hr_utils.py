@@ -51,7 +51,8 @@ def get_hr_cc_recipients(doctype, employee_id, docname=None):
             if hr_email:
                 cc_list.append(hr_email)
             
-    return list(set([e for e in cc_list if e]))
+    # dict.fromkeys preserves insertion order (set() would shuffle CC order in Outlook)
+    return list(dict.fromkeys([e for e in cc_list if e]))
 
 
 def send_hr_workflow_email(docname, doctype, template_name=None, print_format=None):
@@ -61,6 +62,8 @@ def send_hr_workflow_email(docname, doctype, template_name=None, print_format=No
     - print_format: Defaults to Doctype name.
     """
     from frappe.utils import formatdate
+
+    import sahayog.hrms.dams_email_service  # noqa: F401 -- applies order-preserving To/CC patch
 
     doc = frappe.get_doc(doctype, docname)
     emp_id = doc.get("employee_id")
