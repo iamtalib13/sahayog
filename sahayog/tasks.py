@@ -360,6 +360,7 @@ def get_relieved_employees_count():
         SELECT count(*)
         FROM `tabEmployee`
         WHERE status = 'Active'
+          AND (exclude_zinghr = 0 OR exclude_zinghr IS NULL)
           AND relieving_date IS NOT NULL
           AND relieving_date != ''
           AND relieving_date != '0000-00-00'
@@ -379,12 +380,13 @@ def auto_process_relieved_employees():
     """
     current_date = getdate(today())
     
-    # Fetch employees who are Active AND explicitly have a valid relieving_date <= today
+    # Fetch employees who are Active AND explicitly have a valid relieving_date <= today (ignoring exclude_zinghr=1)
     relieved_employees = frappe.db.sql(
         """
         SELECT name, employee_number, employee_name, user_id, relieving_date
         FROM `tabEmployee`
         WHERE status = 'Active'
+          AND (exclude_zinghr = 0 OR exclude_zinghr IS NULL)
           AND relieving_date IS NOT NULL
           AND relieving_date != ''
           AND relieving_date != '0000-00-00'

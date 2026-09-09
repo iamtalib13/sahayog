@@ -368,6 +368,9 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         or ""
     ).strip()
 
+    division_val = attrs.get("BusinessUnit") or attrs.get("SubDepartment")
+    division = resolver.resolve_division(division_val or "HEAD OFFICE") if (division_val or not emp_raw.get("attributes")) else None
+
     return {
         "employee_number": str(emp_raw.get("employeeCode", "")).strip(),
         "first_name": (emp_raw.get("firstName") or "").strip(),
@@ -385,6 +388,7 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         "relieving_date": leaving_date,
         "_is_past_leaving": is_past_leaving,
         "_is_exited": is_exited,
+        "_has_attributes": bool(emp_raw.get("attributes")),
         "reporting_manager_code": str(emp_raw.get("reportingManagerCode") or "").strip(),
         "designation": resolver.resolve_designation(attrs.get("Designation")),
         "department": resolver.resolve_department(attrs.get("Department")),
@@ -392,11 +396,45 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         "custom_zone": resolver.resolve_zone(attrs.get("Zone")),
         "custom_region": resolver.resolve_region(attrs.get("Region")),
         "custom_district": attrs.get("DistrictName") or attrs.get("District Name") or "",
-        "custom_division": resolver.resolve_division(attrs.get("BusinessUnit") or attrs.get("SubDepartment") or "HEAD OFFICE"),
+        "custom_division": division,
         "sahayog_branch": sahayog_branch,
         "sol_id": sol_id,
         "branch": branch,
     }
+
+
+def deduplicate_raw_employees(raw_employees: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Deduplicate raw employees from ZingHR API.
+    ZingHR batch endpoints often return multiple entries for the same employee,
+    where one entry contains full attributes (e.g. 62 items) and the other
+    contains attributes: None or [].
+    We merge duplicate entries, preserving the one with the most attributes.
+    """
+    if not raw_employees:
+        return []
+
+    deduped: Dict[str, Dict[str, Any]] = {}
+    for emp in raw_employees:
+        code = str(emp.get("employeeCode") or "").strip()
+        if not code:
+            continue
+        if code not in deduped:
+            deduped[code] = emp
+        else:
+            existing = deduped[code]
+            existing_attrs = existing.get("attributes") or []
+            new_attrs = emp.get("attributes") or []
+            if len(new_attrs) > len(existing_attrs):
+                merged = {**existing, **emp}
+                merged["attributes"] = new_attrs
+                deduped[code] = merged
+            else:
+                merged = {**emp, **existing}
+                merged["attributes"] = existing_attrs
+                deduped[code] = merged
+
+    return list(deduped.values())
 
 
 def fast_upsert_employees(
@@ -415,6 +453,10 @@ def fast_upsert_employees(
     frappe.flags.mute_messages = True
 
     resolver = resolver or MasterResolver()
+
+    # Deduplicate employees in this batch, keeping the rich attribute payload
+    raw_employees = deduplicate_raw_employees(raw_employees)
+
     parsed_records = [parse_employee_payload(e, resolver) for e in raw_employees if e.get("employeeCode")]
     emp_codes = [p["employee_number"] for p in parsed_records]
 
@@ -447,6 +489,7 @@ def fast_upsert_employees(
 
         is_past_leaving = item.pop("_is_past_leaving", False)
         is_exited = item.pop("_is_exited", False)
+        has_attributes = item.pop("_has_attributes", True)
 
         # Check sync mode constraints
         if emp_name and sync_mode == "insert_only":
@@ -465,14 +508,31 @@ def fast_upsert_employees(
                 skipped += 1
                 continue
 
-        item["reports_to"] = mgr_map.get(item.pop("reporting_manager_code", None))
+        rep_code = item.pop("reporting_manager_code", None)
+        if rep_code and mgr_map.get(rep_code):
+            item["reports_to"] = mgr_map[rep_code]
+
         item["custom_zinghr_last_synced"] = now
 
         try:
             if emp_name:
+                # Protect organizational/master fields from being wiped out by empty/None values
+                update_fields = {}
+                for k, v in item.items():
+                    # For master/attribute fields: do not overwrite existing DB values with None/empty
+                    if k in (
+                        "custom_zone", "custom_region", "custom_district",
+                        "sahayog_branch", "sol_id", "branch",
+                        "designation", "department", "sub_department",
+                        "cost_code", "custom_division"
+                    ):
+                        if not v:
+                            continue
+                    update_fields[k] = v
+
                 # Fast direct update: Status is Left if past/resigned, else Active
-                frappe.db.set_value("Employee", emp_name, item, update_modified=False)
-                if item.get("status") == "Left":
+                frappe.db.set_value("Employee", emp_name, update_fields, update_modified=False)
+                if update_fields.get("status") == "Left":
                     user_id = frappe.db.get_value("Employee", emp_name, "user_id")
                     if not user_id:
                         user_id = (

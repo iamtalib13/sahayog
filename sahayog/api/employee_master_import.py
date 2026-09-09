@@ -1074,10 +1074,12 @@ def _update_employee(emp_name, row_dict, field_map, cache=None, existing_cols=No
 
     relieving = updates.get("relieving_date")
     if relieving and getdate(relieving) <= getdate(today()):
-        updates["status"] = "Left"
-        user_id = frappe.db.get_value("Employee", emp_name, "user_id")
-        if user_id:
-            frappe.db.set_value("User", user_id, "enabled", 0, update_modified=False)
+        is_excluded = frappe.db.get_value("Employee", emp_name, "exclude_zinghr")
+        if not is_excluded:
+            updates["status"] = "Left"
+            user_id = frappe.db.get_value("Employee", emp_name, "user_id")
+            if user_id:
+                frappe.db.set_value("User", user_id, "enabled", 0, update_modified=False)
 
     if updates:
         frappe.db.set_value("Employee", emp_name, updates, update_modified=True)
