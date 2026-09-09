@@ -19,12 +19,12 @@ frappe.listview_settings['Account Opening Operations'] = {
                         fieldtype: 'HTML',
                         fieldname: 'format_info',
                         options: `
-                            <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #006768; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for FTR/FTNR:</b><br>
                                     <span style="color: #555;">Sol ID, Date, Status</span>
                                 </div>
-                                <button class="btn btn-xs btn-default btn-download-ftr-template" style="margin-left: 10px; border-color: #006768; color: #006768;">
+                                <button class="btn btn-xs btn-default btn-download-ftr-template" style="margin-left: 10px; border-color: #0d5c75; color: #0d5c75;">
                                     <i class="fa fa-download"></i> Download Template
                                 </button>
                             </div>
@@ -111,12 +111,12 @@ frappe.listview_settings['Account Opening Operations'] = {
                         fieldtype: 'HTML',
                         fieldname: 'format_info',
                         options: `
-                            <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #006768; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for Zero IP Funding:</b><br>
                                     <span style="color: #555;">SOL ID, A/C Opening Date, Scheme Code</span>
                                 </div>
-                                <button class="btn btn-xs btn-default btn-download-zero-ip-template" style="margin-left: 10px; border-color: #006768; color: #006768;">
+                                <button class="btn btn-xs btn-default btn-download-zero-ip-template" style="margin-left: 10px; border-color: #0d5c75; color: #0d5c75;">
                                     <i class="fa fa-download"></i> Download Template
                                 </button>
                             </div>
@@ -196,8 +196,8 @@ frappe.listview_settings['Account Opening Operations'] = {
             }
 
             actions_btn.css({
-                'background-color': '#006768',
-                'border-color': '#006768',
+                'background-color': '#0d5c75',
+                'border-color': '#0d5c75',
                 'color': '#ffffff'
             });
 
@@ -209,7 +209,7 @@ frappe.listview_settings['Account Opening Operations'] = {
 
             let dropdown_menu = actions_btn.siblings('.dropdown-menu');
             dropdown_menu.find('.dropdown-item').css({
-                'color': '#008b8c',
+                'color': '#0d5c75',
                 'font-weight': '500'
             });
         }, 200);

@@ -242,6 +242,7 @@ function inject_column_search_bars(frm) {
 }
 
 function build_search_row(grid, $wrapper, $header) {
+    /*
     if ($wrapper.find('.custom-grid-search-row').length > 0) return;
 
     let $search_row = $('<div class="grid-heading-row custom-grid-search-row" style="background-color: #f0f4f8; border-bottom: 2px solid #cbd5e1; display: flex;"></div>');
@@ -340,6 +341,7 @@ function build_search_row(grid, $wrapper, $header) {
             }
         });
     });
+    */
 }
 
 // Helper Function 1: Auto Set Month Dates
@@ -457,7 +459,7 @@ function apply_custom_grid_theme(frm) {
 
             .form-layout .form-control,
             .form-layout .like-disabled-input {
-                border: 1px solid #d0e3e3 !important;
+                border: 1px solid #c2dede !important;
                 border-radius: 8px !important;
                 color: #2d3748 !important;
                 background-color: #fcfdfe !important;
@@ -469,9 +471,9 @@ function apply_custom_grid_theme(frm) {
 
             .form-layout .form-control:focus,
             .form-layout .form-control:hover {
-                border-color: #5ba4a4 !important;
+                border-color: #0d5c75 !important;
                 background-color: #ffffff !important;
-                box-shadow: 0 0 0 3px rgba(91, 164, 164, 0.12) !important;
+                box-shadow: 0 0 0 3px rgba(13, 92, 117, 0.12) !important;
             }
 
             .form-layout .like-disabled-input {
@@ -479,8 +481,9 @@ function apply_custom_grid_theme(frm) {
                 border-color: #e2e8f0 !important;
             }
 
+            /* Child Table Header Background */
             .grid-heading-row {
-                background-color: #3b7a7a !important;
+                background-color: #0d5c75 !important;
                 border-radius: 6px 6px 0 0 !important;
                 --text-muted: #ffffff !important;
                 --text-color: #ffffff !important;
@@ -503,19 +506,20 @@ function apply_custom_grid_theme(frm) {
                 border-bottom: 1px solid #e2e8f0 !important;
             }
 
+            /* Custom Column Filter Input */
             .custom-col-filter {
                 height: 26px !important;
                 font-size: 11px !important;
-                border: 1px solid #cbd5e1 !important;
-                border-radius: 6px !important;
+                border: 1.5px solid #0d5c75 !important;
+                border-radius: 15px !important;
                 background-color: #ffffff !important;
-                color: #334155 !important;
-                box-shadow: none !important;
+                color: #0d5c75 !important;
+                box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.15) !important;
             }
 
             .custom-col-filter:focus {
-                border-color: #5ba4a4 !important;
-                box-shadow: 0 0 0 2px rgba(91, 164, 164, 0.15) !important;
+                border-color: #0e4a5d !important;
+                box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2), 0px 0px 6px rgba(13, 92, 117, 0.4) !important;
             }
 
             .grid-body .grid-row:nth-child(odd) {
@@ -532,8 +536,11 @@ function apply_custom_grid_theme(frm) {
                 background-color: #f1f5f9 !important;
             }
 
-            [data-fieldname="re_sync"] button {
-                background-color: #3b7a7a !important;
+            /* Re Sync & Manual Action Buttons */
+            [data-fieldname="re_sync"] button,
+            .btn-manual-sync,
+            .btn-primary-teal {
+                background-color: #0d5c75 !important;
                 color: #ffffff !important;
                 border-radius: 8px !important;
                 border: none !important;
@@ -542,8 +549,10 @@ function apply_custom_grid_theme(frm) {
                 padding: 6px 18px !important;
             }
 
-            [data-fieldname="re_sync"] button:hover {
-                background-color: #2c5e5e !important;
+            [data-fieldname="re_sync"] button:hover,
+            .btn-manual-sync:hover,
+            .btn-primary-teal:hover {
+                background-color: #0e4a5d !important;
             }
         </style>
     `;

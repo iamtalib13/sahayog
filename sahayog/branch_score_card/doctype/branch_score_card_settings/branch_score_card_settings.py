@@ -89,3 +89,25 @@ class BranchScoreCardSettings(Document):
                     ),
                     title=_("Invalid Scoring Rule")
                 )
+
+
+# =========================================================
+# Custom Whitelisted Methods for Document Renaming
+# =========================================================
+
+@frappe.whitelist()
+def rename_function_doc(old_name, new_name):
+    if old_name == new_name:
+        return
+    frappe.rename_doc("Function", old_name, new_name, force=True)
+    frappe.db.sql("UPDATE `tabParameter` SET `function` = %s WHERE `function` = %s", (new_name, old_name))
+    frappe.db.sql("UPDATE `tabBranch Score Card Item` SET `function` = %s WHERE `function` = %s", (new_name, old_name))
+    frappe.db.commit()
+
+@frappe.whitelist()
+def rename_parameter_doc(old_name, new_name):
+    if old_name == new_name:
+        return
+    frappe.rename_doc("Parameter", old_name, new_name, force=True)
+    frappe.db.sql("UPDATE `tabBranch Score Card Item` SET `parameter` = %s WHERE `parameter` = %s", (new_name, old_name))
+    frappe.db.commit()
