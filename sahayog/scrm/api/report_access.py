@@ -180,16 +180,17 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             COALESCE(lp.product, '-') as product_code,
             COALESCE(lp.product_name, '-') as product_name,
             COALESCE(lp.product_amount, 0) as amount,
-            COALESCE(emp.employee_name, '-') as employee_name,
-            COALESCE(emp.employee_number, '-') as employee_id,
-            COALESCE(emp.designation, '-') as designation,
+            COALESCE(emp.employee_name, emp_owner.employee_name, '-') as employee_name,
+            COALESCE(emp.employee_number, emp_owner.employee_number, '-') as employee_id,
+            COALESCE(emp.designation, emp_owner.designation, '-') as designation,
             b.branch,
             b.district,
             b.region,
             b.zone
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-        LEFT JOIN `tabEmployee` emp ON emp.user_id = l.lead_owner AND emp.status = 'Active'
+        LEFT JOIN `tabEmployee` emp ON (LOWER(emp.user_id) = LOWER(l.lead_owner) OR emp.employee_number = l.lead_owner)
+        LEFT JOIN `tabEmployee` emp_owner ON (LOWER(emp_owner.user_id) = LOWER(l.owner) OR emp_owner.employee_number = l.owner)
         LEFT JOIN `tabSahayog Branch` b ON b.sol_id = l.sol_id
         WHERE {where_clause}
         ORDER BY l.creation DESC
@@ -828,9 +829,9 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(lp.product, ''),
             IFNULL(lp.product_name, ''),
             IFNULL(lp.product_amount, 0),
-            IFNULL(e.employee_name, ''),
-            IFNULL(e.employee_number, ''),
-            IFNULL(e.designation, ''),
+            IFNULL(COALESCE(e.employee_name, e_owner.employee_name), ''),
+            IFNULL(COALESCE(e.employee_number, e_owner.employee_number), ''),
+            IFNULL(COALESCE(e.designation, e_owner.designation), ''),
             IFNULL(l.sol_id, ''),
             IFNULL(sb.branch, ''),
             IFNULL(sb.district, ''),
@@ -840,7 +841,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(l.lead_owner, '')
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-        LEFT JOIN `tabEmployee` e ON e.user_id = l.lead_owner AND e.status = 'Active'
+        LEFT JOIN `tabEmployee` e ON (LOWER(e.user_id) = LOWER(l.lead_owner) OR e.employee_number = l.lead_owner)
+        LEFT JOIN `tabEmployee` e_owner ON (LOWER(e_owner.user_id) = LOWER(l.owner) OR e_owner.employee_number = l.owner)
         LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
         WHERE {where_clause}
         ORDER BY l.creation DESC
