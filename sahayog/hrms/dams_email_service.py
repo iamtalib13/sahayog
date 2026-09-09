@@ -2,6 +2,34 @@ import frappe
 from frappe import _
 
 
+# Preserve dialog To/CC order in Outlook.
+# Root cause: Frappe core QueueBuilder._get_emails_list does
+# `[each for each in set(emails) if each]` which destroys insertion order
+# (set iteration is hash-based, changes per process -> "alternate" order in Outlook).
+# Patch once at import to order-preserving dedupe. Same dedupe semantics, stable order.
+try:
+    from frappe.email.doctype.email_queue.email_queue import QueueBuilder as _DamsQueueBuilder
+
+    if not getattr(_DamsQueueBuilder._get_emails_list, "_dams_order_preserving", False):
+        def _dams_ordered_get_emails_list(self, emails=None):
+            from frappe.utils import split_emails
+
+            emails = split_emails(emails) if isinstance(emails, str) else (emails or [])
+            ordered = []
+            seen = set()
+            for e in emails:
+                e = e.strip() if isinstance(e, str) else e
+                if e and e not in seen:
+                    seen.add(e)
+                    ordered.append(e)
+            return ordered
+
+        _dams_ordered_get_emails_list._dams_order_preserving = True
+        _DamsQueueBuilder._get_emails_list = _dams_ordered_get_emails_list
+except Exception:
+    pass  # never break mail sending if core changes
+
+
 # =========================
 # 1. GET DEFAULTS
 # =========================
