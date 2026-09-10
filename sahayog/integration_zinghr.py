@@ -359,10 +359,10 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
     today_date = getdate(today())
 
     # If a leaving_date/exitDate is specified:
-    # Future exit date (> today) means employee is still serving notice and is ACTIVE.
-    # Past/today exit date (<= today) means employee has left.
+    # Today or Future date (>= today): employee is still working (today is their last working day!).
+    # Strictly past exit date (< today): employee has left.
     if leaving_date:
-        if leaving_date <= today_date:
+        if leaving_date < today_date:
             is_past_leaving = True
             is_exited = True
             status = "Left"

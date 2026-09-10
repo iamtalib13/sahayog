@@ -121,12 +121,12 @@ def emp_enable_disable(doc, method):
 
 def validate_relieving_date_status(doc, method=None):
     """
-    If relieving_date is in the future (> today), ensure status remains 'Active'.
-    Employees serving their notice period are active until the exit date arrives.
+    If relieving_date is today or in the future (>= today), ensure status remains 'Active'.
+    Today is the employee's last working day, so they are relieved only after today has passed.
     """
     if doc.relieving_date:
         today_date = getdate(today())
         relieving_date = getdate(doc.relieving_date)
-        if relieving_date > today_date:
+        if relieving_date >= today_date:
             doc.status = "Active"
 

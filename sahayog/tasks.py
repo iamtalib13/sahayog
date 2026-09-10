@@ -351,8 +351,8 @@ def auto_approve_attendance_corrections():
 @frappe.whitelist()
 def get_relieved_employees_count():
     """
-    Returns the count of Active employees whose relieving_date is in the past (<= today).
-    Used to show user confirmation with exact count before executing.
+    Returns the count of Active employees whose relieving_date is in the past (< today).
+    Today is their last working day, so they become Left only after the date has passed.
     """
     current_date = getdate(today())
     count = frappe.db.sql(
@@ -364,7 +364,7 @@ def get_relieved_employees_count():
           AND relieving_date IS NOT NULL
           AND relieving_date != ''
           AND relieving_date != '0000-00-00'
-          AND relieving_date <= %s
+          AND relieving_date < %s
         """,
         (current_date,),
     )[0][0]
@@ -375,12 +375,13 @@ def get_relieved_employees_count():
 def auto_process_relieved_employees():
     """
     Daily scheduled task (runs at 2:00 AM) and manual trigger from Employee List:
-    Find all Active employees whose relieving_date is NOT NULL, NOT EMPTY, and <= today,
+    Find all Active employees whose relieving_date is strictly in the past (< today),
     set their status to 'Left', and disable their linked User accounts (enabled = 0).
+    Today is the employee's last working day, so they are relieved only once today has passed.
     """
     current_date = getdate(today())
     
-    # Fetch employees who are Active AND explicitly have a valid relieving_date <= today (ignoring exclude_zinghr=1)
+    # Fetch employees who are Active AND explicitly have a valid relieving_date < today (ignoring exclude_zinghr=1)
     relieved_employees = frappe.db.sql(
         """
         SELECT name, employee_number, employee_name, user_id, relieving_date
@@ -390,7 +391,7 @@ def auto_process_relieved_employees():
           AND relieving_date IS NOT NULL
           AND relieving_date != ''
           AND relieving_date != '0000-00-00'
-          AND relieving_date <= %s
+          AND relieving_date < %s
         """,
         (current_date,),
         as_dict=True,
