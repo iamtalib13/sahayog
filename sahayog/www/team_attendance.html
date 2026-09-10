@@ -1429,6 +1429,22 @@
                 >
                   ✏️ Update
                 </button>
+                <button
+                  id="btnFixDuplicateCodes"
+                  class="btn-clear"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    background: #fff7ed;
+                    color: #c2410c;
+                    border: 1px solid #fdba74;
+                  "
+                  onclick="openFixDuplicateModal()"
+                >
+                  🛠 Fix Duplicate Code
+                </button>
               </div>
             </div>
 
@@ -2605,6 +2621,122 @@
                     overflow-y: auto;
                   "
                 ></div>
+              </div>
+            </div>
+
+            <!-- FIX DUPLICATE EMPLOYEE CODE MODAL -->
+            <div
+              id="fixDuplicateModal"
+              style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 5000;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(4px);
+              "
+            >
+              <div
+                class="custom-scroll"
+                style="
+                  background: #fff;
+                  padding: 28px;
+                  border-radius: 20px;
+                  width: 95%;
+                  max-width: 760px;
+                  max-height: 88vh;
+                  overflow-y: auto;
+                  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                    border-bottom: 2px solid #f1f5f9;
+                    padding-bottom: 14px;
+                  "
+                >
+                  <h3
+                    style="
+                      font-family: &quot;Syne&quot;, sans-serif;
+                      font-weight: 800;
+                      color: #c2410c;
+                      margin: 0;
+                    "
+                  >
+                    🛠 Fix Duplicate Employee Codes
+                  </h3>
+                  <button
+                    onclick="closeFixDuplicateModal()"
+                    style="
+                      background: #f1f5f9;
+                      border: none;
+                      width: 32px;
+                      height: 32px;
+                      border-radius: 50%;
+                      cursor: pointer;
+                      color: var(--muted);
+                    "
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div
+                  style="
+                    font-size: 11px;
+                    background: #fff7ed;
+                    border: 1px solid #fdba74;
+                    border-radius: 8px;
+                    padding: 10px 12px;
+                    margin-bottom: 14px;
+                    color: #9a3412;
+                  "
+                >
+                  Same <strong>Employee Code</strong> is assigned to 2 or more
+                  employees. The first (oldest) record stays
+                  <strong>as-is</strong> — assign a new free code to the
+                  remaining rows and press <strong>Fix</strong>. You can edit
+                  the suggested code if needed. Fixing renames both the
+                  document name and the code; linked Attendance / Leave
+                  records are updated automatically.
+                </div>
+
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    margin-bottom: 14px;
+                  "
+                >
+                  <button
+                    onclick="loadDuplicateCodes()"
+                    id="btnRefreshDuplicates"
+                    class="btn-clear"
+                    style="
+                      padding: 7px 16px;
+                      font-size: 11px;
+                      font-weight: 700;
+                      background: #fff7ed;
+                      color: #c2410c;
+                      border: 1px solid #fdba74;
+                    "
+                  >
+                    🔄 Refresh List
+                  </button>
+                  <span
+                    id="dupSummary"
+                    style="font-size: 12px; color: var(--muted)"
+                  ></span>
+                </div>
+
+                <div id="dupList"></div>
               </div>
             </div>
 
@@ -4344,12 +4476,22 @@
             document.getElementById("btnImportEmployees");
           const btnUpdateEmployees =
             document.getElementById("btnUpdateEmployees");
+          const btnFixDuplicateCodes = document.getElementById(
+            "btnFixDuplicateCodes",
+          );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
               tab === "attendance" ? "inline-block" : "none";
           if (btnUpdateEmployees)
             btnUpdateEmployees.style.display =
               tab === "attendance" && userRoles.includes("Administrator")
+                ? "inline-block"
+                : "none";
+          if (btnFixDuplicateCodes)
+            btnFixDuplicateCodes.style.display =
+              tab === "attendance" &&
+              (userRoles.includes("Administrator") ||
+                userRoles.includes("HR Manager"))
                 ? "inline-block"
                 : "none";
           if (tab === "attendance") {
@@ -4851,12 +4993,22 @@
             document.getElementById("btnImportEmployees");
           const btnUpdateEmployees =
             document.getElementById("btnUpdateEmployees");
+          const btnFixDuplicateCodes2 = document.getElementById(
+            "btnFixDuplicateCodes",
+          );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
               currentTab === "attendance" ? "inline-block" : "none";
           if (btnUpdateEmployees)
             btnUpdateEmployees.style.display =
               currentTab === "attendance" && userRoles.includes("Administrator")
+                ? "inline-block"
+                : "none";
+          if (btnFixDuplicateCodes2)
+            btnFixDuplicateCodes2.style.display =
+              currentTab === "attendance" &&
+              (userRoles.includes("Administrator") ||
+                userRoles.includes("HR Manager"))
                 ? "inline-block"
                 : "none";
           if (leaveTab) {
@@ -6852,6 +7004,155 @@
 
       function closeUpdateModal() {
         document.getElementById("updateEmployeesModal").style.display = "none";
+      }
+
+      function openFixDuplicateModal() {
+        document.getElementById("fixDuplicateModal").style.display = "flex";
+        loadDuplicateCodes();
+      }
+
+      function closeFixDuplicateModal() {
+        document.getElementById("fixDuplicateModal").style.display = "none";
+      }
+
+      function _nextFreeCode(code) {
+        const m = /^P\.?(\d+)$/.exec((code || "").trim());
+        if (!m) return code;
+        const prefix = (code.trim().startsWith("P.") ? "P." : "P");
+        return prefix + (parseInt(m[1], 10) + 1);
+      }
+
+      async function loadDuplicateCodes() {
+        const listDiv = document.getElementById("dupList");
+        const summary = document.getElementById("dupSummary");
+        const btn = document.getElementById("btnRefreshDuplicates");
+        listDiv.innerHTML =
+          '<div style="font-size:13px; color:var(--muted);">⏳ Checking duplicate codes...</div>';
+        summary.textContent = "";
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "⏳ Checking...";
+        }
+        let res = null;
+        try {
+          res = await callAPI("get_duplicate_employee_codes", {}, "employee");
+        } catch (e) {
+          listDiv.innerHTML =
+            '<div style="font-size:13px; color:#dc2626;">❌ ' +
+            String(e) +
+            "</div>";
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "🔄 Refresh List";
+          }
+          return;
+        }
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "🔄 Refresh List";
+        }
+        const groups = (res && res.groups) || [];
+        if (groups.length === 0) {
+          summary.textContent = "All clear";
+          listDiv.innerHTML =
+            '<div style="font-size:13px; font-weight:600; color:#15803d; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:12px;">✅ No duplicates — all employee codes are unique.</div>';
+          return;
+        }
+        summary.textContent =
+          groups.length +
+          " duplicate code(s) found";
+        let freeCode = (res && res.suggested_next) || "P1";
+        const codePool =
+          res && res.suggested_codes && res.suggested_codes.length
+            ? res.suggested_codes.slice()
+            : [freeCode];
+        let poolIdx = 0;
+        let html = "";
+        groups.forEach((g) => {
+          html +=
+            '<div style="border:1px solid #fdba74; border-radius:12px; margin-bottom:14px; overflow:hidden;">' +
+            '<div style="background:#fff7ed; padding:10px 14px; font-size:13px; font-weight:800; color:#9a3412;">Code: ' +
+            g.employee_number +
+            " — " +
+            g.count +
+            " employees</div>";
+          (g.employees || []).forEach((e, idx) => {
+            const keep = idx === 0;
+            const doj = e.date_of_joining || "-";
+            const branch = e.sahayog_branch || e.sol_id || "-";
+            html +=
+              '<div style="display:flex; gap:10px; align-items:center; padding:10px 14px; border-top:1px solid #f1f5f9; flex-wrap:wrap;">' +
+              '<div style="flex:1; min-width:180px;">' +
+              '<div style="font-size:13px; font-weight:700; color:var(--text);">' +
+              (e.employee_name || e.name) +
+              "</div>" +
+              '<div style="font-size:11px; color:var(--muted);">ID: ' +
+              e.name +
+              ' • Code: <strong style="color:#c2410c;">' +
+              (e.employee_number || "-") +
+              "</strong> • " +
+              (e.designation || "-") +
+              " • DOJ: " +
+              doj +
+              " • Branch: " +
+              branch +
+              " • " +
+              (e.status || "") +
+              "</div></div>";
+            if (keep) {
+              html +=
+                '<span style="font-size:10px; font-weight:800; background:#dcfce7; color:#15803d; border-radius:20px; padding:4px 12px;">✓ KEEP AS-IS</span>';
+            } else {
+              const suggestion =
+                poolIdx < codePool.length
+                  ? codePool[poolIdx++]
+                  : freeCode;
+              freeCode = _nextFreeCode(suggestion);
+              const inputId = "dupNewCode_" + e.name.replace(/[^a-zA-Z0-9]/g, "_");
+              html +=
+                '<input id="' +
+                inputId +
+                '" value="' +
+                suggestion +
+                '" class="search-input" style="width:110px; height:32px; border-radius:6px;" />' +
+                '<button class="bulk-btn bulk-in" data-emp="' +
+                e.name +
+                '" data-input="' +
+                inputId +
+                '" onclick="fixOneDuplicateCode(this)">Fix</button>';
+            }
+            html += "</div>";
+          });
+          html += "</div>";
+        });
+        listDiv.innerHTML = html;
+      }
+
+      async function fixOneDuplicateCode(btnEl) {
+        const emp = btnEl.getAttribute("data-emp");
+        const inputId = btnEl.getAttribute("data-input");
+        const input = document.getElementById(inputId);
+        const newCode = (input && input.value ? input.value : "").trim();
+        if (!newCode) {
+          showToast("Please enter the new code");
+          return;
+        }
+        btnEl.disabled = true;
+        btnEl.textContent = "Fixing...";
+        try {
+          const res = await callAPI(
+            "fix_duplicate_employee_code",
+            { employee: emp, new_code: newCode },
+            "employee",
+          );
+          showToast((res && res.message) || "Fixed");
+          await loadDuplicateCodes();
+          fetchTeamData();
+        } catch (e) {
+          showToast(String(e));
+          btnEl.disabled = false;
+          btnEl.textContent = "Fix";
+        }
       }
 
       function downloadUpdateTemplate() {

@@ -455,8 +455,45 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                     emp = frappe.db.get_value("Employee", existing_employee, "*", as_dict=True)
                     updated_fields = []
 
+                    # ── Employee Code is special: never blind-overwrite it.
+                    # A careless CSV value here used to stamp the same code on
+                    # multiple employees (duplicates). Guard + rename instead.
+                    csv_code = (row.get("employee_number") or "").strip()
+                    if csv_code and csv_code != emp.get("employee_number"):
+                        if not (force_update or not emp.get("employee_number")):
+                            pass  # non-force mode: keep existing code
+                        else:
+                            clash = None
+                            if frappe.db.exists("Employee", csv_code):
+                                clash = csv_code
+                            else:
+                                clash = frappe.db.exists("Employee", {"employee_number": csv_code})
+                            if clash and clash != existing_employee:
+                                reason = (
+                                    f"Employee Code {csv_code} is already used by {clash}. "
+                                    "Skipped to avoid duplicate — use the Fix Duplicate Code tool."
+                                )
+                                logger.warning(f"[BulkImport] Row {i} ({emp_label}) FAILED — {reason}")
+                                results["failed"] += 1
+                                results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                                results["rows"].append({"row": i, "employee": existing_employee, "name": emp_label, "status": "Failed"})
+                                continue
+                            try:
+                                frappe.rename_doc("Employee", existing_employee, csv_code, force=True)
+                                frappe.db.set_value("Employee", csv_code, "employee_number", csv_code)
+                                existing_employee = csv_code
+                                emp = frappe.db.get_value("Employee", existing_employee, "*", as_dict=True)
+                                updated_fields.append("employee_number")
+                                logger.info(f"[BulkImport] Row {i} ({emp_label}) — re-coded to {csv_code} via rename")
+                            except Exception as e:
+                                reason = f"Could not change Employee Code to {csv_code}: {e}"
+                                logger.warning(f"[BulkImport] Row {i} ({emp_label}) FAILED — {reason}")
+                                results["failed"] += 1
+                                results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                                results["rows"].append({"row": i, "employee": existing_employee, "name": emp_label, "status": "Failed"})
+                                continue
+
                     field_map = {
-                        "employee_number": ("employee_number", lambda v: v.strip()),
                         "first_name": ("first_name", lambda v: v.strip()),
                         "middle_name": ("middle_name", lambda v: v.strip()),
                         "last_name": ("last_name", lambda v: v.strip()),
@@ -586,9 +623,31 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                 )
 
             # ── 5. Create Employee document ───────────────────────────────────
+            # Honor the CSV's employee_number (else autoname invents a new P
+            # code and the sheet's code is silently lost). Reject clashes so
+            # a duplicate code can never be created from here.
+            new_code = (row.get("employee_number") or "").strip()
+            if new_code:
+                clash = None
+                if frappe.db.exists("Employee", new_code):
+                    clash = new_code
+                else:
+                    clash = frappe.db.exists("Employee", {"employee_number": new_code})
+                if clash:
+                    reason = (
+                        f"Employee Code {new_code} is already used by {clash}. "
+                        "Skipped to avoid duplicate — use the Fix Duplicate Code tool."
+                    )
+                    logger.warning(f"[BulkImport] Row {i} ({emp_label}) FAILED — {reason}")
+                    results["failed"] += 1
+                    results["errors"].append({"row": i, "name": emp_label, "error": reason})
+                    results["rows"].append({"row": i, "employee": "", "name": emp_label, "status": "Failed"})
+                    continue
+
             logger.info(f"[BulkImport] Row {i} ({emp_label}) — creating employee...")
             emp_data = {
                 "doctype": "Employee",
+                "employee_number": new_code or None,
                 "first_name": row.get("first_name"),
                 "middle_name": row.get("middle_name"),
                 "last_name": row.get("last_name"),
@@ -710,6 +769,141 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
 
 
 @frappe.whitelist()
+def get_duplicate_employee_codes():
+    """List employee_number values shared by 2+ employees (support staff).
+
+    Used by the portal's 'Fix Duplicate Code' tool. Returns groups ordered
+    by count desc, keeping earliest-created record first in each group so
+    the UI can suggest keeping it as-is and re-coding the rest.
+    """
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    dup_codes = frappe.db.sql("""
+        SELECT employee_number, COUNT(*) AS c
+        FROM `tabEmployee`
+        WHERE custom_is_support_staff = 1
+          AND employee_number IS NOT NULL AND employee_number != ''
+        GROUP BY employee_number
+        HAVING c > 1
+        ORDER BY c DESC, employee_number ASC
+        LIMIT 100
+    """, as_dict=True)
+
+    groups = []
+    for row in dup_codes:
+        code = row["employee_number"]
+        employees = frappe.get_all(
+            "Employee",
+            filters={"employee_number": code, "custom_is_support_staff": 1},
+            fields=["name", "employee_name", "employee_number", "status",
+                    "designation", "department", "sahayog_branch", "sol_id",
+                    "date_of_joining", "cell_number", "creation"],
+            order_by="creation asc",
+            limit=50,
+        )
+        # Rightful owner first: the doc whose name matches the code is
+        # almost certainly the original (update-bug leaves name != code
+        # on the wrongly overwritten record). Fall back to creation order.
+        employees.sort(key=lambda e: (e["name"] != code, str(e.get("creation") or "")))
+        groups.append({
+            "employee_number": code,
+            "count": row["c"],
+            "employees": employees,
+        })
+
+    # Verified-free suggestions: scan upward from current max and keep only
+    # codes free BOTH as doc name and as employee_number field, so applying
+    # a suggestion can never create a fresh duplicate. One per fixable row.
+    fixable = sum(max(len(g["employees"]) - 1, 0) for g in groups)
+    suggested_codes = _next_verified_free_codes(max(fixable, 1))
+
+    return {"groups": groups, "suggested_next": suggested_codes[0],
+            "suggested_codes": suggested_codes}
+
+
+def _next_verified_free_codes(n):
+    """Return n P-codes guaranteed unused as name and as employee_number."""
+    used_names = {r[0] for r in frappe.db.sql(
+        "SELECT name FROM `tabEmployee` WHERE name LIKE 'P%'")}
+    used_codes = {r[0] for r in frappe.db.sql(
+        "SELECT employee_number FROM `tabEmployee` "
+        "WHERE employee_number LIKE 'P%'")}
+    used = used_names | used_codes
+
+    max_num = 0
+    for val in used:
+        num_str = val[2:] if val.startswith("P.") else val[1:]
+        try:
+            num = cint(num_str)
+            if num > max_num:
+                max_num = num
+        except Exception:
+            continue
+
+    out, i = [], max_num + 1
+    while len(out) < n:
+        for prefix in ("P",):  # portal convention is P<number>
+            code = f"{prefix}{i}"
+            if code not in used:
+                out.append(code)
+                used.add(code)
+                if len(out) >= n:
+                    break
+        i += 1
+    return out
+
+
+@frappe.whitelist()
+def fix_duplicate_employee_code(employee, new_code):
+    """Re-code one duplicate employee to a fresh unique code via rename.
+
+    Keeps name == employee_number convention: renames the doc and syncs
+    the employee_number field. Linked records (Attendance, Leave, etc.)
+    are updated automatically by frappe.rename_doc.
+    """
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if not employee or not frappe.db.exists("Employee", employee):
+        frappe.throw(_("Employee {0} not found").format(employee))
+
+    # Support-staff tool only — never re-code regular (HR-EMP) employees
+    if not frappe.db.get_value("Employee", employee, "custom_is_support_staff"):
+        frappe.throw(_("This tool is only for Support Staff employees"))
+
+    new_code = (new_code or "").strip()
+    if not new_code:
+        frappe.throw(_("New employee code cannot be empty"))
+
+    current = frappe.db.get_value(
+        "Employee", employee,
+        ["name", "employee_number", "employee_name"], as_dict=True,
+    )
+    if current["employee_number"] == new_code and employee == new_code:
+        return {"success": True, "message": _("Already on code {0}").format(new_code),
+                "employee": new_code}
+
+    # New code must be free both as doc name and as employee_number field
+    if frappe.db.exists("Employee", new_code):
+        frappe.throw(_("Employee code {0} already exists").format(new_code))
+    other = frappe.db.exists("Employee", {"employee_number": new_code})
+    if other and other != employee:
+        frappe.throw(_("Employee code {0} is already used by {1}").format(new_code, other))
+
+    frappe.rename_doc("Employee", employee, new_code, force=True)
+    # rename_doc only changes `name` — sync the field too
+    frappe.db.set_value("Employee", new_code, "employee_number", new_code)
+
+    return {"success": True,
+            "message": _("Employee {0} re-coded to {1}").format(
+                current["employee_name"] or employee, new_code),
+            "employee": new_code}
+
+
+@frappe.whitelist()
 def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, resignation_type=None, attachment_url=None):
     roles = frappe.get_roles(frappe.session.user)
     is_hr = any(r in roles for r in ["HR Manager", "HR User", "Administrator"])
@@ -800,13 +994,16 @@ def update_employee_profile(employee, data):
 
     # Handle employee code change
     if "employee_number" in data and data["employee_number"] != employee:
-        from frappe.utils import now
         new_code = data["employee_number"].strip()
         if not new_code:
             frappe.throw(_("Employee code cannot be empty"))
         if frappe.db.exists("Employee", new_code):
             frappe.throw(_("Employee code {0} already exists").format(new_code))
+        other = frappe.db.exists("Employee", {"employee_number": new_code})
+        if other and other != employee:
+            frappe.throw(_("Employee code {0} is already used by {1}").format(new_code, other))
         frappe.rename_doc("Employee", employee, new_code, force=True)
+        frappe.db.set_value("Employee", new_code, "employee_number", new_code)
         employee = new_code
 
     update = {}
