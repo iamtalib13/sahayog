@@ -147,8 +147,8 @@ frappe.ui.form.on("Unauthorized Absence", {
   },
 
   before_submit(frm) {
-    if (!frm.doc.response_of_ua) { frappe.throw(__("Please fill Response of UA before submitting.")); }
-    if (!String(frm.doc.remarks || "").trim()) { frappe.throw(__("Please fill Remarks before submitting.")); }
+    //if (!frm.doc.response_of_ua) { frappe.throw(__("Please fill Response of UA before submitting.")); }
+    //if (!String(frm.doc.remarks || "").trim()) { frappe.throw(__("Please fill Remarks before submitting.")); }
   },
 
   show_print_button: function (frm) {
