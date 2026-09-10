@@ -123,10 +123,23 @@ def validate_relieving_date_status(doc, method=None):
     """
     If relieving_date is today or in the future (>= today), ensure status remains 'Active'.
     Today is the employee's last working day, so they are relieved only after today has passed.
+    Also ensures that Active employees have their linked User account enabled.
     """
     if doc.relieving_date:
         today_date = getdate(today())
         relieving_date = getdate(doc.relieving_date)
         if relieving_date >= today_date:
             doc.status = "Active"
+
+    if doc.status == "Active":
+        user_to_enable = doc.get("user_id")
+        if not user_to_enable or not frappe.db.exists("User", user_to_enable):
+            emp_num = doc.get("employee_number") or doc.name
+            user_to_enable = (
+                frappe.db.get_value("User", {"email": f"{emp_num}@sahayog.com"}, "name")
+                or frappe.db.get_value("User", {"username": emp_num}, "name")
+            )
+        if user_to_enable and frappe.db.exists("User", user_to_enable):
+            if not frappe.db.get_value("User", user_to_enable, "enabled"):
+                frappe.db.set_value("User", user_to_enable, "enabled", 1, update_modified=False)
 

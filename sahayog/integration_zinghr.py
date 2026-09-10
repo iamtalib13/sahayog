@@ -562,6 +562,17 @@ def fast_upsert_employees(
                         )
                     if user_id and frappe.db.exists("User", user_id):
                         frappe.db.set_value("User", user_id, "enabled", 0, update_modified=False)
+                elif update_fields.get("status") == "Active":
+                    user_id = frappe.db.get_value("Employee", emp_name, "user_id")
+                    if not user_id:
+                        user_id = (
+                            frappe.db.get_value("User", {"email": f"{code}@sahayog.com"}, "name")
+                            or frappe.db.get_value("User", {"username": code}, "name")
+                        )
+                    if user_id and frappe.db.exists("User", user_id):
+                        if not frappe.db.get_value("User", user_id, "enabled"):
+                            frappe.db.set_value("User", user_id, "enabled", 1, update_modified=False)
+
                 updated += 1
             else:
                 # New Employee creation:
