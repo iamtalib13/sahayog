@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from frappe.utils import getdate, add_days
+from frappe.utils import getdate, add_days, today
 
 
 def _ensure_link(doc, fieldname, target_doctype, label_field, name_prefix=None):
@@ -117,4 +117,16 @@ def emp_enable_disable(doc, method):
         # Log the error in Error Log doctype and throw an exception
         frappe.log_error(f"Failed to update user status for {user}: {str(e)}", "User Status Update Error")
         frappe.throw("An error occurred while updating the user status.")
+
+
+def validate_relieving_date_status(doc, method=None):
+    """
+    If relieving_date is in the future (> today), ensure status remains 'Active'.
+    Employees serving their notice period are active until the exit date arrives.
+    """
+    if doc.relieving_date:
+        today_date = getdate(today())
+        relieving_date = getdate(doc.relieving_date)
+        if relieving_date > today_date:
+            doc.status = "Active"
 

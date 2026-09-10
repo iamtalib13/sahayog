@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sahayog Branch & Employee Hierarchy | ApexTree</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    
+    <!-- Polyfill for crypto.randomUUID (required for ApexTree on HTTP / non-HTTPS origins) -->
+    <script>
+      (function() {
+        if (!window.crypto) {
+          window.crypto = {};
+        }
+        if (typeof window.crypto.randomUUID !== 'function') {
+          window.crypto.randomUUID = function() {
+            if (typeof window.crypto.getRandomValues === 'function') {
+              try {
+                return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
+                  return (c ^ window.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+                });
+              } catch (e) {}
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+          };
+        }
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/apextree"></script>
+
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --surface: #ffffff;
+        --bg: #f8fafc;
+        --border: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      }
+
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text-main);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Navbar */
+      .navbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #fff;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 18px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .brand-text h1 {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.2;
+      }
+
+      .brand-text p {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .navbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .desk-link {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+      .desk-link:hover {
+        background: #f1f5f9;
+        color: var(--text-main);
+      }
+
+      /* Control Toolbar */
+      .toolbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .controls-group {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      .branch-picker-wrapper {
+        position: relative;
+        min-width: 300px;
+      }
+
+      .branch-picker-wrapper label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+
+      .select-custom {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        outline: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      .select-custom:focus {
+        border-color: var(--primary);
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      /* View Mode Toggle Group */
+      .mode-toggle {
+        display: inline-flex;
+        background: #f1f5f9;
+        padding: 3px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+
+      .mode-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.15s ease;
+      }
+
+      .mode-btn.active {
+        background: #ffffff;
+        color: var(--primary);
+        font-weight: 600;
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Status Checkbox */
+      .checkbox-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--primary);
+        cursor: pointer;
+      }
+
+      /* Option Buttons */
+      .btn-icon-text {
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text-main);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.15s ease;
+      }
+
+      .btn-icon-text:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      /* Branch Summary & Legend Header Bar */
+      .branch-summary-bar {
+        background: #ffffff;
+        border-bottom: 1px solid var(--border);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .branch-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .branch-name-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .badge-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+      }
+
+      .badge-branch {
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+
+      .badge-stats {
+        background: #ecfdf5;
+        color: #047857;
+      }
+
+      .badge-zone {
+        background: #f1f5f9;
+        color: #334155;
+      }
+
+      .legend-container {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+      }
+
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+
+      /* Tree Canvas Wrapper */
+      .canvas-area {
+        flex: 1;
+        position: relative;
+        background: #f8fafc;
+        overflow: hidden;
+        min-height: 620px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #svg-tree {
+        width: 100%;
+        min-height: 620px;
+        flex: 1;
+        margin: 0 auto;
+        outline: none;
+      }
+
+      /* Loading State */
+      .loading-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(248, 250, 252, 0.85);
+        backdrop-filter: blur(4px);
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        z-index: 40;
+      }
+
+      .loading-overlay.active {
+        display: flex;
+      }
+
+      .spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid #e2e8f0;
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Empty State */
+      .empty-state {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        text-align: center;
+        gap: 12px;
+        height: 100%;
+      }
+
+      .empty-state.active {
+        display: flex;
+      }
+
+      .empty-icon {
+        width: 64px;
+        height: 64px;
+        background: #e2e8f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: #64748b;
+      }
+
+      /* Modern Modal Detail Popup (backdrop-filter: blur) */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        padding: 16px;
+      }
+
+      .modal-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .modal-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.2);
+        max-width: 480px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        transform: scale(0.95);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative;
+      }
+
+      .modal-backdrop.active .modal-card {
+        transform: scale(1);
+      }
+
+      .modal-header-banner {
+        height: 80px;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        position: relative;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .modal-close-btn {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: #ffffff;
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease;
+      }
+      .modal-close-btn:hover {
+        background: rgba(255, 255, 255, 0.35);
+      }
+
+      .modal-body {
+        padding: 0 24px 24px;
+        position: relative;
+      }
+
+      .modal-avatar-wrapper {
+        margin-top: -40px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+
+      .modal-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 4px solid #ffffff;
+        box-shadow: var(--shadow-md);
+        background: #ffffff;
+        object-fit: cover;
+      }
+
+      .modal-status-badge {
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .modal-title {
+        font-size: 19px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 2px;
+      }
+
+      .modal-subtitle {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 18px;
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 20px;
+      }
+
+      .modal-grid-full {
+        grid-column: 1 / -1;
+      }
+
+      .modal-item-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 2px;
+      }
+
+      .modal-item-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-main);
+        word-break: break-word;
+      }
+
+      .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .btn-primary {
+        padding: 8px 16px;
+        background: var(--primary);
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background 0.15s ease;
+      }
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        padding: 8px 16px;
+        background: #f1f5f9;
+        color: var(--text-main);
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .btn-secondary:hover {
+        background: #e2e8f0;
+      }
+
+      /* Hover glow for ApexTree cards */
+      .apextree-node {
+        cursor: pointer;
+        transition: filter 0.2s ease;
+      }
+      .apextree-node:hover {
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.12));
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Top Navbar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Sahayog Branch & Employee Hierarchy</h1>
+          <p>Interactive Organizational Tree powered by ApexTree</p>
+        </div>
+      </div>
+
+      <div class="navbar-actions">
+        <a href="/app" class="desk-link" title="Open Frappe Desk">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Frappe Desk
+        </a>
+      </div>
+    </header>
+
+    <!-- Controls Toolbar -->
+    <section class="toolbar">
+      <div class="controls-group">
+        <!-- Branch Selector -->
+        <div class="branch-picker-wrapper">
+          <label for="branch-select">Select Sahayog Branch</label>
+          <select id="branch-select" class="select-custom">
+            {% for b in all_branches %}
+            <option value="{{ b.sol_id }}" {% if b.sol_id == selected_sol_id %}selected{% endif %}>
+              [{{ b.sol_id }}] {{ b.branch }} ({{ b.district or b.zone or '' }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- View Mode -->
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">View Mode</label>
+          <div class="mode-toggle" id="view-mode-toggle">
+            <button type="button" class="mode-btn active" data-mode="hierarchy" title="Reporting hierarchy (Manager to Team)">Reporting Tree</button>
+            <button type="button" class="mode-btn" data-mode="department" title="Grouped by Department">By Department</button>
+            <button type="button" class="mode-btn" data-mode="flat" title="All branch employees directly under branch">All Staff</button>
+          </div>
+        </div>
+
+        <!-- Active Filter -->
+        <div style="padding-top: 18px;">
+          <label class="checkbox-label" title="Show only active employees">
+            <input type="checkbox" id="filter-active-only" checked />
+            Active Only
+          </label>
+        </div>
+      </div>
+
+      <!-- Layout Controls -->
+      <div class="controls-group">
+        <!-- Direction Toggle -->
+        <button type="button" class="btn-icon-text" id="btn-toggle-direction" title="Toggle layout orientation">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9\"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          <span id="direction-label">Vertical</span>
+        </button>
+
+        <!-- Edge Style Toggle -->
+        <button type="button" class="btn-icon-text" id="btn-toggle-edge" title="Toggle line curve style">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a4.5 4.5 0 0 0 0-9H5"></path><circle cx="18" cy="5" r="3"></circle></svg>
+          <span id="edge-label">Curved</span>
+        </button>
+
+        <!-- Reset View -->
+        <button type="button" class="btn-icon-text" id="btn-fit-view" title="Center tree view">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+          Center View
+        </button>
+      </div>
+    </section>
+
+    <!-- Branch Meta Summary & Department Legend -->
+    <section class="branch-summary-bar">
+      <div class="branch-meta">
+        <span class="branch-name-title" id="meta-branch-title">
+          {{ initial_branch.branch }}
+        </span>
+        <span class="badge-pill badge-branch" id="meta-sol-id">SOL ID: {{ initial_branch.sol_id }}</span>
+        <span class="badge-pill badge-zone" id="meta-zone">{{ initial_branch.zone or 'HO' }}</span>
+        <span class="badge-pill badge-stats" id="meta-active-count">
+          {{ initial_summary.active_employees or 0 }} Active / {{ initial_summary.total_employees or 0 }} Total Staff
+        </span>
+      </div>
+
+      <div class="legend-container" id="dynamic-legend">
+        {% for item in initial_summary.legend %}
+        <span class="legend-item">
+          <i class="legend-dot" style="background: {{ item.accentColor }};"></i>
+          {{ item.department }} ({{ item.count }})
+        </span>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Canvas Area -->
+    <main class="canvas-area" id="canvas-container">
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Loading branch hierarchy...</p>
+      </div>
+
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">👥</div>
+        <h3 style="font-size: 16px; font-weight: 600;">No Employees Found</h3>
+        <p style="font-size: 13px; color: var(--text-muted); max-width: 360px;">
+          There are currently no employees assigned to this Sahayog Branch with the selected filters.
+        </p>
+      </div>
+
+      <!-- ApexTree SVG Container -->
+      <div id="svg-tree"></div>
+    </main>
+
+    <!-- Detail Modal Popup with blurred backdrop -->
+    <div class="modal-backdrop" id="detail-modal" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <div class="modal-header-banner" id="modal-banner">
+          <button type="button" class="modal-close-btn" id="modal-close-btn" title="Close modal (Esc)">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-avatar-wrapper">
+            <img id="modal-avatar" class="modal-avatar" src="" alt="Avatar" />
+            <span id="modal-status-badge" class="modal-status-badge">Active</span>
+          </div>
+          <h2 id="modal-title" class="modal-title"></h2>
+          <p id="modal-subtitle" class="modal-subtitle"></p>
+
+          <!-- Dynamic Details Grid -->
+          <div class="modal-grid" id="modal-grid">
+            <!-- Filled via JS -->
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary" id="modal-btn-dismiss">Close</button>
+            <a href="#" id="modal-desk-btn" class="btn-primary" target="_blank">
+              View in Desk ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client-side Logic -->
+    <script>
+      (function() {
+        let currentTreeData = {{ initial_tree | safe }};
+        let currentBranch = {{ initial_branch | tojson | safe }};
+        let currentSummary = {{ initial_summary | tojson | safe }};
+        let currentSolId = '{{ selected_sol_id }}';
+        let currentViewMode = 'hierarchy';
+        let currentDirection = 'top';
+        let currentEdgeStyle = 'curved';
+
+        const treeContainer = document.getElementById('svg-tree');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const emptyState = document.getElementById('empty-state');
+        const branchSelect = document.getElementById('branch-select');
+        const filterActiveOnly = document.getElementById('filter-active-only');
+        const viewModeToggle = document.getElementById('view-mode-toggle');
+        const btnToggleDir = document.getElementById('btn-toggle-direction');
+        const dirLabel = document.getElementById('direction-label');
+        const btnToggleEdge = document.getElementById('btn-toggle-edge');
+        const edgeLabel = document.getElementById('edge-label');
+        const btnFitView = document.getElementById('btn-fit-view');
+
+        const detailModal = document.getElementById('detail-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalDismissBtn = document.getElementById('modal-btn-dismiss');
+        const modalBanner = document.getElementById('modal-banner');
+        const modalAvatar = document.getElementById('modal-avatar');
+        const modalStatusBadge = document.getElementById('modal-status-badge');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSubtitle = document.getElementById('modal-subtitle');
+        const modalGrid = document.getElementById('modal-grid');
+        const modalDeskBtn = document.getElementById('modal-desk-btn');
+
+        let apexTreeInstance = null;
+
+        // Tree Renderer
+        function renderTree(treeData) {
+          try {
+            if (!treeData || !treeData.id) {
+              treeContainer.style.display = 'none';
+              emptyState.classList.add('active');
+              return;
+            }
+
+            treeContainer.style.display = 'block';
+            emptyState.classList.remove('active');
+
+            if (apexTreeInstance) {
+              try {
+                apexTreeInstance.destroy();
+              } catch (e) {
+                console.warn('ApexTree destroy note:', e);
+              }
+              apexTreeInstance = null;
+            }
+
+            treeContainer.innerHTML = '';
+
+            const containerWidth = treeContainer.clientWidth || window.innerWidth - 48 || 1000;
+            const containerHeight = Math.max(window.innerHeight - 240, 600);
+
+            const options = {
+              contentKey: 'data',
+              width: '100%',
+              viewPortWidth: containerWidth,
+              viewPortHeight: containerHeight,
+              nodeWidth: 260,
+              nodeHeight: 78,
+              childrenSpacing: currentDirection === 'top' ? 70 : 45,
+              siblingSpacing: 30,
+              direction: currentDirection,
+              edgeStyle: currentEdgeStyle,
+              enableToolbar: true,
+              onNodeClick: function(node) {
+                handleNodeClick(node);
+              }
+            };
+
+            apexTreeInstance = new ApexTree(treeContainer, options);
+            apexTreeInstance.render(treeData);
+
+            setTimeout(attachNodeClickListeners, 350);
+          } catch (err) {
+            console.error('Error rendering tree:', err);
+            loadingOverlay.classList.remove('active');
+          }
+        }
+
+        function attachNodeClickListeners() {
+          const nodes = treeContainer.querySelectorAll('g[data-id], .apextree-node, foreignObject');
+          nodes.forEach(n => {
+            n.style.cursor = 'pointer';
+          });
+        }
+
+        function handleNodeClick(node) {
+          if (!node || !node.data) return;
+          const d = node.data;
+          const nodeType = d.node_type || 'employee';
+
+          if (nodeType === 'branch') {
+            const b = d.details || {};
+            modalBanner.style.background = 'linear-gradient(135deg, #0f172a, #334155)';
+            modalAvatar.src = d.imageURL;
+            modalStatusBadge.textContent = 'BRANCH';
+            modalStatusBadge.style.background = '#eff6ff';
+            modalStatusBadge.style.color = '#1d4ed8';
+
+            modalTitle.textContent = b.branch || d.name;
+            modalSubtitle.textContent = 'SOL ID: ' + (b.sol_id || d.branch_id);
+
+            modalGrid.innerHTML = `
+              <div>
+                <div class="modal-item-label">SOL ID</div>
+                <div class="modal-item-value">${b.sol_id || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Branch Code</div>
+                <div class="modal-item-value">${b.branch_code || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Zone</div>
+                <div class="modal-item-value">${b.zone || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Region</div>
+                <div class="modal-item-value">${b.region || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">District</div>
+                <div class="modal-item-value">${b.district || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">State</div>
+                <div class="modal-item-value">${b.state || '-'}</div>
+              </div>
+              <div class="modal-grid-full">
+                <div class="modal-item-label">Branch Address</div>
+                <div class="modal-item-value">${b.branch_address || 'Not specified'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Email</div>
+                <div class="modal-item-value">${b.email ? '<a href="mailto:' + b.email + '" style="color: var(--primary); text-decoration: none;">' + b.email + '</a>' : '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Staff Count</div>
+                <div class="modal-item-value">${d.active_employees || 0} Active / ${d.total_employees || 0} Total</div>
+              </div>
+            `;
+
+            modalDeskBtn.href = '/app/sahayog-branch/' + encodeURIComponent(b.name || b.sol_id);
+            modalDeskBtn.textContent = 'Open Branch in Desk ↗';
+          } else if (nodeType === 'department') {
+            const dt = d.details || {};
+            modalBanner.style.background = 'linear-gradient(135deg, ' + (d.accentColor || '#4f46e5') + ', #0f172a)';
+            modalAvatar.src = d.imageURL;
+            modalStatusBadge.textContent = 'DEPARTMENT';
+            modalStatusBadge.style.background = d.badge ? d.badge.color : '#eff6ff';
+            modalStatusBadge.style.color = d.accentColor || '#1d4ed8';
+
+            modalTitle.textContent = d.name;
+            modalSubtitle.textContent = (dt.count || 0) + ' Staff Assigned';
+
+            modalGrid.innerHTML = `
+              <div>
+                <div class="modal-item-label">Department</div>
+                <div class="modal-item-value">${d.name}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Staff Count</div>
+                <div class="modal-item-value">${dt.count || 0}</div>
+              </div>
+              <div class="modal-grid-full">
+                <div class="modal-item-label">Branch</div>
+                <div class="modal-item-value">${dt.branch || '-'}</div>
+              </div>
+            `;
+            modalDeskBtn.href = '/app/employee?department=' + encodeURIComponent(d.name);
+            modalDeskBtn.textContent = 'View Employees in Desk ↗';
+          } else {
+            // Employee
+            const e = d.details || {};
+            const isAct = (e.status || 'Active') === 'Active';
+
+            modalBanner.style.background = 'linear-gradient(135deg, ' + (d.accentColor || '#2563eb') + ', #0f172a)';
+            modalAvatar.src = d.imageURL;
+            modalStatusBadge.textContent = e.status || 'Active';
+            modalStatusBadge.style.background = isAct ? '#ecfdf5' : '#fef2f2';
+            modalStatusBadge.style.color = isAct ? '#047857' : '#b91c1c';
+
+            modalTitle.textContent = e.employee_name || d.name;
+            modalSubtitle.textContent = (e.designation || 'Staff') + ' • ' + (e.department || 'Sahayog');
+
+            const reportsToDisplay = e.reports_to_name
+              ? e.reports_to_name + ' (' + e.reports_to + ')'
+              : (e.reports_to ? e.reports_to : 'Direct to Branch');
+
+            modalGrid.innerHTML = `
+              <div>
+                <div class="modal-item-label">Employee ID</div>
+                <div class="modal-item-value">${e.name || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Status</div>
+                <div class="modal-item-value">${e.status || 'Active'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Department</div>
+                <div class="modal-item-value">${e.department || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Designation</div>
+                <div class="modal-item-value">${e.designation || '-'}</div>
+              </div>
+              <div class="modal-grid-full">
+                <div class="modal-item-label">Reports To</div>
+                <div class="modal-item-value">${reportsToDisplay}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Mobile</div>
+                <div class="modal-item-value">${e.cell_number ? '<a href="tel:' + e.cell_number + '" style="color: var(--primary); text-decoration: none;">' + e.cell_number + '</a>' : '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Email</div>
+                <div class="modal-item-value">${e.company_email ? '<a href="mailto:' + e.company_email + '" style="color: var(--primary); text-decoration: none;">' + e.company_email + '</a>' : (e.personal_email || '-')}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Date of Joining</div>
+                <div class="modal-item-value">${e.date_of_joining || '-'}</div>
+              </div>
+              <div>
+                <div class="modal-item-label">Gender</div>
+                <div class="modal-item-value">${e.gender || '-'}</div>
+              </div>
+            `;
+
+            modalDeskBtn.href = '/app/employee/' + encodeURIComponent(e.name);
+            modalDeskBtn.textContent = 'Open Employee in Desk ↗';
+          }
+
+          openModal();
+        }
+
+        function openModal() {
+          detailModal.classList.add('active');
+        }
+
+        function closeModal() {
+          detailModal.classList.remove('active');
+        }
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        modalDismissBtn.addEventListener('click', closeModal);
+        detailModal.addEventListener('click', function(e) {
+          if (e.target === detailModal) closeModal();
+        });
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && detailModal.classList.contains('active')) {
+            closeModal();
+          }
+        });
+
+        // Update Header Meta
+        function updateHeaderMeta(branch, summary) {
+          const titleEl = document.getElementById('meta-branch-title');
+          const solEl = document.getElementById('meta-sol-id');
+          const zoneEl = document.getElementById('meta-zone');
+          const activeEl = document.getElementById('meta-active-count');
+          const legendEl = document.getElementById('dynamic-legend');
+
+          if (branch && branch.branch) {
+            titleEl.textContent = branch.branch;
+            solEl.textContent = 'SOL ID: ' + branch.sol_id;
+            zoneEl.textContent = branch.zone || 'BRANCH';
+          }
+
+          if (summary) {
+            activeEl.textContent = (summary.active_employees || 0) + ' Active / ' + (summary.total_employees || 0) + ' Total Staff';
+
+            if (summary.legend && summary.legend.length) {
+              legendEl.innerHTML = summary.legend.map(item => `
+                <span class="legend-item">
+                  <i class="legend-dot" style="background: ${item.accentColor};"></i>
+                  ${item.department} (${item.count})
+                </span>
+              `).join('');
+            } else {
+              legendEl.innerHTML = '<span class="legend-item" style="color: var(--text-muted);">No staff registered</span>';
+            }
+          }
+        }
+
+        // Fetch hierarchy dynamically via Frappe whitelist API
+        async function fetchBranchData(solId, viewMode, activeOnly) {
+          loadingOverlay.classList.add('active');
+          const statusFilter = activeOnly ? 'Active' : 'All';
+
+          try {
+            const url = '/api/method/sahayog.www.branch_master.get_branch_tree_data?sol_id=' + encodeURIComponent(solId) + '&view_mode=' + encodeURIComponent(viewMode) + '&status_filter=' + encodeURIComponent(statusFilter);
+            const res = await fetch(url);
+            const json = await res.json();
+
+            if (json.message && json.message.status === 'success') {
+              const data = json.message.data;
+              currentTreeData = data.tree;
+              currentBranch = data.branch;
+              currentSummary = data.summary;
+
+              updateHeaderMeta(currentBranch, currentSummary);
+              renderTree(currentTreeData);
+
+              const newUrl = new URL(window.location);
+              newUrl.searchParams.set('branch', solId);
+              window.history.replaceState({}, '', newUrl);
+            } else {
+              console.error('API Error:', json);
+            }
+          } catch (err) {
+            console.error('Fetch error:', err);
+          } finally {
+            loadingOverlay.classList.remove('active');
+          }
+        }
+
+        branchSelect.addEventListener('change', function() {
+          currentSolId = this.value;
+          fetchBranchData(currentSolId, currentViewMode, filterActiveOnly.checked);
+        });
+
+        viewModeToggle.addEventListener('click', function(e) {
+          const btn = e.target.closest('.mode-btn');
+          if (!btn) return;
+
+          viewModeToggle.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          currentViewMode = btn.dataset.mode;
+          fetchBranchData(currentSolId, currentViewMode, filterActiveOnly.checked);
+        });
+
+        filterActiveOnly.addEventListener('change', function() {
+          fetchBranchData(currentSolId, currentViewMode, this.checked);
+        });
+
+        btnToggleDir.addEventListener('click', function() {
+          currentDirection = currentDirection === 'top' ? 'left' : 'top';
+          dirLabel.textContent = currentDirection === 'top' ? 'Vertical' : 'Horizontal';
+          renderTree(currentTreeData);
+        });
+
+        btnToggleEdge.addEventListener('click', function() {
+          currentEdgeStyle = currentEdgeStyle === 'curved' ? 'straight' : 'curved';
+          edgeLabel.textContent = currentEdgeStyle === 'curved' ? 'Curved' : 'Straight';
+          renderTree(currentTreeData);
+        });
+
+        btnFitView.addEventListener('click', function() {
+          if (apexTreeInstance && typeof apexTreeInstance.fitScreen === 'function') {
+            apexTreeInstance.fitScreen();
+          } else {
+            renderTree(currentTreeData);
+          }
+        });
+
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            if (currentTreeData) renderTree(currentTreeData);
+          }, 250);
+        });
+
+        // Initial Render
+        renderTree(currentTreeData);
+      })();
+    </script>
+  </body>
+</html>

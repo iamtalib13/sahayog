@@ -1170,8 +1170,11 @@ def _normalize_status(val, relieving_date=None):
     if relieving_date:
         try:
             rd = getdate(relieving_date) if isinstance(relieving_date, str) else relieving_date
-            if rd and rd <= getdate(today()):
-                return "Left"
+            if rd:
+                if rd > getdate(today()):
+                    return "Active"
+                else:
+                    return "Left"
         except Exception:
             pass
 

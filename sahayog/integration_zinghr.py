@@ -357,10 +357,31 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
 
     leaving_date = _date(emp_raw.get("dateOfLeaving") or emp_raw.get("exitDate"))
     today_date = getdate(today())
-    is_past_leaving = bool(leaving_date and leaving_date <= today_date)
-    is_left_status = emp_raw.get("employeeStatus") in ["Left", "Resigned", "FnF InProcess", "FnF Locked"]
-    is_exited = bool(is_past_leaving or is_left_status)
-    status = "Left" if is_exited else "Active"
+
+    # If a leaving_date/exitDate is specified:
+    # Future exit date (> today) means employee is still serving notice and is ACTIVE.
+    # Past/today exit date (<= today) means employee has left.
+    if leaving_date:
+        if leaving_date <= today_date:
+            is_past_leaving = True
+            is_exited = True
+            status = "Left"
+        else:
+            is_past_leaving = False
+            is_exited = False
+            status = "Active"
+    else:
+        # No exit date provided; check ZingHR raw status
+        raw_status = (emp_raw.get("employeeStatus") or "").strip()
+        if raw_status in ["Left", "FnF Locked"]:
+            is_past_leaving = True
+            is_exited = True
+            status = "Left"
+        else:
+            is_past_leaving = False
+            is_exited = False
+            status = "Active"
+
     cost_code = (
         attrs.get("CostCode")
         or attrs.get("Cost Code")
@@ -602,7 +623,7 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
     if not raw_emp:
         return {"status": "not_found", "message": _("Employee {0} not found in ZingHR.").format(emp_number)}
 
-    res = fast_upsert_employees([raw_emp], sync_mode="update_only")
+    res = fast_upsert_employees([raw_emp], sync_mode="all")
     frappe.db.commit()
 
     if getattr(frappe.local, "message_log", None):
@@ -923,4 +944,13 @@ def auto_daily_delta_sync() -> Dict[str, Any]:
         max_pages=None,
     )
 
+    # Automatically process any active employees whose relieving_date has arrived or passed
+    try:
+        from sahayog.tasks import auto_process_relieved_employees
+        auto_process_relieved_employees()
+    except Exception as ex:
+        logger.warning(f"Error during auto_process_relieved_employees in daily sync: {ex}")
+
     return summary
+
+

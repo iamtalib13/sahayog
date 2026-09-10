@@ -296,6 +296,7 @@ doc_events = {
         "before_save": [
             "sahayog.doc_events.capital_emp_name.capital_emp_name",
             "sahayog.doc_events.employee.set_confirmation_date",
+            "sahayog.doc_events.employee.validate_relieving_date_status",
         ],
         # "before_save": [
         #      "sahayog.doc_events.employee.emp_enable_disable",
