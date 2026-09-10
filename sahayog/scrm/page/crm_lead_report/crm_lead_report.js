@@ -1241,7 +1241,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   <i class="fa fa-arrow-right text-muted"></i>
                 </button>
                 <button id="btn-dl-filtered-past" class="btn btn-outline-info text-left font-weight-bold" style="padding: 10px 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                  <span><i class="fa fa-filter text-info mr-2"></i> Download Filtered Past Data</span>
+                  <span><i class="fa fa-filter text-info mr-2"></i> Download Filtered Previous Data</span>
                   <i class="fa fa-download text-muted"></i>
                 </button>
               </div>
