@@ -9,6 +9,41 @@ from frappe.utils import flt, nowdate, getdate
 from frappe.utils.csvutils import build_csv_response
 
 
+def _payroll_attendance_cycle(payroll_month):
+    """Attendance cycle (26th prev-month → 25th payroll-month) for a YYYY-MM payroll month."""
+    year, month = int(payroll_month[:4]), int(payroll_month[5:7])
+    if month == 1:
+        start = getdate(f"{year - 1}-12-26")
+    else:
+        start = getdate(f"{year}-{month - 1:02d}-26")
+    end = getdate(f"{year}-{month:02d}-25")
+    return start, end
+
+
+def _prev_payroll_month(payroll_month):
+    year, month = int(payroll_month[:4]), int(payroll_month[5:7])
+    if month == 1:
+        return f"{year - 1}-12"
+    return f"{year}-{month - 1:02d}"
+
+
+def _attendance_counts(employee, start, end):
+    """(present_days, lop_days) from submitted Attendance in cycle.
+
+    Half Day counts 0.5 present; Absent counts as LOP; approved leave is paid.
+    """
+    rows = frappe.db.sql(
+        """SELECT status, COUNT(*) AS c FROM `tabAttendance`
+           WHERE employee=%s AND attendance_date BETWEEN %s AND %s AND docstatus=1
+           GROUP BY status""",
+        (employee, start, end), as_dict=True,
+    )
+    counts = {r.status: r.c for r in rows}
+    present = flt(counts.get("Present", 0)) + 0.5 * flt(counts.get("Half Day", 0))
+    lop = flt(counts.get("Absent", 0))
+    return present, lop
+
+
 @frappe.whitelist()
 def create_payroll_run(payroll_month, branch_filter=None):
     """
@@ -60,27 +95,31 @@ def generate_salary_register(payroll_run_id):
     if payroll.status != "Draft":
         frappe.throw(_("Payroll is already generated"))
     
-    # Get active support staff
-    filters = {
-        "custom_is_support_staff": 1,
-        "status": "Active"
-    }
-    
+    # Employees applicable for this payroll period:
+    # Active all + Left whose last working date falls in/after the cycle
+    # (backdated resigned staff are excluded automatically).
+    cycle_start, cycle_end = _payroll_attendance_cycle(payroll.payroll_month)
+
+    base = {"custom_is_support_staff": 1}
     if payroll.branch_filter:
-        filters["sahayog_branch"] = payroll.branch_filter
-    
-    employees = frappe.get_all(
+        base["sahayog_branch"] = payroll.branch_filter
+
+    emp_fields = [
+        "name", "employee_name", "sahayog_branch", "designation",
+        "ctc", "custom_medical_deduction", "custom_staff_loan_emi",
+        "bank_name", "bank_ac_no", "status",
+        "date_of_joining", "relieving_date",
+    ]
+    employees = frappe.get_all("Employee", filters={**base, "status": "Active"}, fields=emp_fields)
+    left_staff = frappe.get_all(
         "Employee",
-        filters=filters,
-        fields=[
-            "name", "employee_name", "sahayog_branch", "designation",
-            "ctc", "custom_medical_deduction", "custom_staff_loan_emi",
-            "bank_name", "bank_ac_no"
-        ]
+        filters={**base, "status": "Left", "relieving_date": [">=", cycle_start]},
+        fields=emp_fields,
     )
-    
+    employees += [e for e in left_staff if e.name not in {x.name for x in employees}]
+
     if not employees:
-        frappe.throw(_("No active support staff found"))
+        frappe.throw(_("No applicable support staff found for this payroll period"))
     
     # Check if any salary registers already exist
     existing_registers = frappe.get_all("Salary Register", 
@@ -100,18 +139,42 @@ def generate_salary_register(payroll_run_id):
     
     for emp in employees:
         try:
-            gross = flt(emp.get("ctc", 0))
-            
-            if gross <= 0:
+            monthly = flt(emp.get("ctc", 0))
+
+            if monthly <= 0:
                 errors.append(f"{emp.name} - {emp.employee_name}: CTC not set")
                 continue
-            
+
+            # Attendance auto-fetch (26th→25th cycle); approved corrections/
+            # leaves already flow in via submitted Attendance records.
+            present_days, lop_days = _attendance_counts(emp.name, cycle_start, cycle_end)
+            # Arrear auto-adjustment: salary is processed before the cycle's
+            # tail (26th–31st) finalizes, so days paid in advance are settled
+            # here. Diff of prev paid LOP vs prev actual LOP → +/− days.
+            arrears_days = 0
+            prev_month = _prev_payroll_month(payroll.payroll_month)
+            prev_lop = frappe.db.get_value(
+                "Salary Register",
+                {"employee": emp.name, "payroll_month": prev_month}, "lop_days")
+            if prev_lop is not None:
+                prev_start, prev_end = _payroll_attendance_cycle(prev_month)
+                _, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
+                arrears_days = flt(prev_lop) - flt(lop_actual)
+            per_day = monthly / 30
+            gross = monthly - round(per_day * lop_days, 2) + round(per_day * arrears_days, 2)
+
             medical = flt(emp.get("custom_medical_deduction", 0))
-            loan = flt(emp.get("custom_staff_loan_emi", 0))
-            
+            # Staff Loan EMI: open Staff Loan register wins (auto-reflect);
+            # else fall back to the Employee field (existing behavior).
+            try:
+                from sahayog.api.staff_loan import get_open_emi_total
+                loan = get_open_emi_total(emp.name) or flt(emp.get("custom_staff_loan_emi", 0))
+            except Exception:
+                loan = flt(emp.get("custom_staff_loan_emi", 0))
+
             total_ded = medical + loan
             net = gross - total_ded
-            
+
             # Create Salary Register Entry
             salary_reg = frappe.get_doc({
                 "doctype": "Salary Register",
@@ -121,9 +184,16 @@ def generate_salary_register(payroll_run_id):
                 "employee_name": emp.employee_name,
                 "branch": emp.sahayog_branch,
                 "designation": emp.designation,
+                "monthly_gross": monthly,
                 "gross_salary": gross,
+                "present_days": present_days,
+                "lop_days": lop_days,
+                "arrears_days": arrears_days,
                 "medical_deduction": medical,
                 "staff_loan_emi": loan,
+                "vehicle_deduction": 0,
+                "salary_advance": 0,
+                "vl_loan": 0,
                 "other_deduction": 0,
                 "total_deductions": total_ded,
                 "net_salary": net,
@@ -193,19 +263,25 @@ def get_salary_register_list(payroll_month=None, branch=None):
         filters=filters,
         fields=[
             "name", "employee", "employee_name", "branch", "designation",
-            "gross_salary", "medical_deduction", "staff_loan_emi",
+            "monthly_gross", "gross_salary",
+            "present_days", "lop_days", "arrears_days",
+            "medical_deduction", "staff_loan_emi",
+            "vehicle_deduction", "salary_advance", "vl_loan",
             "other_deduction", "total_deductions", "net_salary",
             "bank_name", "bank_account_no", "payroll_run"
         ],
         order_by="branch, employee_name"
     )
-    
+
     # Calculate summary
     summary = {
         "total_employees": len(registers),
         "total_gross": sum(flt(r.gross_salary) for r in registers),
         "total_medical": sum(flt(r.medical_deduction) for r in registers),
         "total_loan": sum(flt(r.staff_loan_emi) for r in registers),
+        "total_vehicle": sum(flt(r.vehicle_deduction) for r in registers),
+        "total_advance": sum(flt(r.salary_advance) for r in registers),
+        "total_vl": sum(flt(r.vl_loan) for r in registers),
         "total_other": sum(flt(r.other_deduction) for r in registers),
         "total_deductions": sum(flt(r.total_deductions) for r in registers),
         "total_net": sum(flt(r.net_salary) for r in registers)
@@ -254,7 +330,12 @@ def update_salary_deduction(register_id, other_deduction, reason=None):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
     
     salary_reg = frappe.get_doc("Salary Register", register_id)
-    
+
+    # Payroll lock: no edits once submitted/paid (authorized adjustment only)
+    run_status = frappe.db.get_value("Payroll Run", salary_reg.payroll_run, "status")
+    if run_status in ("Submitted", "Paid"):
+        frappe.throw(_("Payroll is {0} and locked. Changes need an authorized adjustment.").format(run_status))
+
     salary_reg.other_deduction = flt(other_deduction)
     if reason:
         salary_reg.other_deduction_reason = reason
@@ -279,28 +360,40 @@ def get_employee_salary_slip(employee, payroll_month):
         {"employee": employee, "payroll_month": payroll_month},
         [
             "name", "employee_name", "designation", "branch",
-            "gross_salary", "medical_deduction", "staff_loan_emi",
+            "monthly_gross", "gross_salary",
+            "present_days", "lop_days", "arrears_days",
+            "medical_deduction", "staff_loan_emi",
+            "vehicle_deduction", "salary_advance", "vl_loan",
             "other_deduction", "other_deduction_reason",
             "total_deductions", "net_salary",
             "bank_name", "bank_account_no"
         ],
         as_dict=True
     )
-    
+
     if not salary_reg:
         frappe.throw(_("Salary register not found for {0} in {1}").format(employee, payroll_month))
-    
+
     # Build earnings list
     earnings = [
-        {"component": "Basic Salary", "amount": salary_reg.gross_salary}
+        {"component": "Monthly Gross", "amount": salary_reg.monthly_gross},
+        {"component": f"Gross Salary (Present: {salary_reg.present_days} days)", "amount": salary_reg.gross_salary},
     ]
-    
+    if flt(salary_reg.arrears_days) != 0:
+        earnings.append({"component": f"Arrears ({salary_reg.arrears_days} days, incl. in gross)", "amount": 0})
+
     # Build deductions list
     deductions = []
     if flt(salary_reg.medical_deduction) > 0:
         deductions.append({"component": "Medical Deduction", "amount": salary_reg.medical_deduction})
     if flt(salary_reg.staff_loan_emi) > 0:
         deductions.append({"component": "Staff Loan EMI", "amount": salary_reg.staff_loan_emi})
+    if flt(salary_reg.vehicle_deduction) > 0:
+        deductions.append({"component": "Vehicle Deduction", "amount": salary_reg.vehicle_deduction})
+    if flt(salary_reg.salary_advance) > 0:
+        deductions.append({"component": "Salary Advance", "amount": salary_reg.salary_advance})
+    if flt(salary_reg.vl_loan) > 0:
+        deductions.append({"component": "VL Loan", "amount": salary_reg.vl_loan})
     if flt(salary_reg.other_deduction) > 0:
         deductions.append({
             "component": "Other Deduction", 
@@ -319,42 +412,163 @@ def get_employee_salary_slip(employee, payroll_month):
 @frappe.whitelist()
 def export_bank_payment_csv(payroll_month, branch=None):
     """
-    Generate bank payment CSV file
+    Salary sheet CSV in HR sheet column order:
+    Region, District, Branch Name, DOJ, Relieving, Status, Present, LOP,
+    Arrears, Monthly Gross, Gross, Mediclaim, Staff Loan, Salary Advance,
+    VL Loan, Total Deductions, Net Pay, Account No, UHID (+ Code/Name first).
     """
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
-    
+
     # Get salary register data
     data = get_salary_register_list(payroll_month, branch)
-    
+
+    emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    uhid_col = ("custom_uhid_number" if "custom_uhid_number" in emp_cols
+                else "uhid_number" if "uhid_number" in emp_cols else None)
+
     # Prepare CSV data
     csv_data = []
     csv_data.append([
-        "Employee Code", "Employee Name", "Designation", "Branch",
-        "Bank Name", "Account Number", "Gross Salary",
-        "Medical Deduction", "Loan EMI", "Other Deduction",
-        "Total Deduction", "Net Salary"
+        "Employee Code", "Employee Name",
+        "Region", "District", "Branch Name",
+        "Date of Joining", "Date of Relieving", "Employee Status",
+        "Present Days", "LOP", "Arrears_Days",
+        "Monthly Gross Salary", "Gross Salary",
+        "Mediclaim Deduction", "Staff Loan", "Salary Advance", "VL LOAN",
+        "Total Deductions", "Net Pay",
+        "Account NO.", "UHID No",
     ])
-    
+
     for row in data["data"]:
+        emp = frappe.db.get_value(
+            "Employee", row["employee"],
+            ["custom_region", "custom_district", "date_of_joining",
+             "relieving_date", "status", uhid_col or "name"],
+            as_dict=True,
+        ) or {}
+        branch_name = frappe.db.get_value("Sahayog Branch", row["branch"] or "", "branch") \
+            or row["branch"] or ""
         csv_data.append([
             row["employee"],
             row["employee_name"],
-            row["designation"] or "",
-            row["branch"] or "",
-            row["bank_name"] or "",
+            emp.get("custom_region") or "",
+            emp.get("custom_district") or "",
+            branch_name,
+            emp.get("date_of_joining") or "",
+            emp.get("relieving_date") or "",
+            "Left" if emp.get("status") == "Left" else "Active",
+            f"{flt(row.get('present_days')):.1f}",
+            f"{flt(row.get('lop_days')):.1f}",
+            f"{flt(row.get('arrears_days')):.1f}",
+            f"{flt(row.get('monthly_gross')):.2f}",
+            f"{flt(row['gross_salary']):.2f}",
+            f"{flt(row['medical_deduction']):.2f}",
+            f"{flt(row['staff_loan_emi']):.2f}",
+            f"{flt(row.get('salary_advance')):.2f}",
+            f"{flt(row.get('vl_loan')):.2f}",
+            f"{flt(row['total_deductions']):.2f}",
+            f"{flt(row['net_salary']):.2f}",
             row["bank_account_no"] or "",
-            f"{row['gross_salary']:.2f}",
-            f"{row['medical_deduction']:.2f}",
-            f"{row['staff_loan_emi']:.2f}",
-            f"{row['other_deduction']:.2f}",
-            f"{row['total_deductions']:.2f}",
-            f"{row['net_salary']:.2f}"
+            (emp.get(uhid_col) if uhid_col else "") or "",
         ])
-    
+
     # Build CSV response
-    build_csv_response(csv_data, f"salary_payment_{payroll_month}")
+    build_csv_response(csv_data, f"salary_sheet_{payroll_month}")
+
+
+@frappe.whitelist()
+def upload_salary_sheet(payroll_month, rows):
+    """HR salary-sheet upload: code-keyed payhead changes + recalculation.
+
+    Editable payheads: monthly_gross, medical_deduction, staff_loan_emi,
+    vehicle_deduction, salary_advance, vl_loan, other_deduction (+reason),
+    arrears_days. Gross is recomputed (monthly − LOP + arrears),
+    totals/net via Salary Register validate. Only on Draft/Generated runs.
+    """
+    import json
+
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "Administrator"]):
+        frappe.throw(_("Not authorized"), frappe.PermissionError)
+
+    if isinstance(rows, str):
+        rows = json.loads(rows)
+
+    run = frappe.db.get_value("Payroll Run", {"payroll_month": payroll_month},
+                              ["name", "status"], as_dict=True)
+    if not run:
+        frappe.throw(_("No payroll run found for {0}. Generate payroll first.").format(payroll_month))
+    if run.status not in ("Draft", "Generated"):
+        frappe.throw(_("Payroll is {0} and locked. Changes need an authorized adjustment.").format(run.status))
+
+    PAYHEADS = ("monthly_gross", "medical_deduction", "staff_loan_emi",
+                "vehicle_deduction", "salary_advance", "vl_loan",
+                "other_deduction", "arrears_days")
+    results = {"updated": 0, "failed": 0, "errors": [], "rows": []}
+
+    for i, row in enumerate(rows, start=2):
+        code = (row.get("employee_code") or row.get("employee") or "").strip()
+        if not code:
+            results["failed"] += 1
+            results["errors"].append({"row": i, "employee_code": "", "error": "Missing Employee Code"})
+            results["rows"].append({"row": i, "employee_code": "", "status": "Failed"})
+            continue
+        name = frappe.db.exists("Salary Register", {"payroll_month": payroll_month, "employee": code})
+        if not name:
+            reason = f"No salary record for {code} in {payroll_month}"
+            results["failed"] += 1
+            results["errors"].append({"row": i, "employee_code": code, "error": reason})
+            results["rows"].append({"row": i, "employee_code": code, "status": "Failed"})
+            continue
+        try:
+            reg = frappe.get_doc("Salary Register", name)
+            changed = []
+            for head in PAYHEADS:
+                if row.get(head) not in (None, ""):
+                    reg.set(head, flt(row.get(head)))
+                    changed.append(head)
+            if row.get("other_reason") not in (None, ""):
+                reg.other_deduction_reason = row.get("other_reason")
+                changed.append("other_deduction_reason")
+            if not changed:
+                results["rows"].append({"row": i, "employee_code": code, "status": "Skipped (No Changes)"})
+                continue
+            # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals)
+            if "monthly_gross" in changed or "arrears_days" in changed:
+                per_day = flt(reg.monthly_gross) / 30
+                reg.gross_salary = (flt(reg.monthly_gross)
+                                    - round(per_day * flt(reg.lop_days), 2)
+                                    + round(per_day * flt(reg.arrears_days), 2))
+            reg.save(ignore_permissions=True)
+            results["updated"] += 1
+            results["rows"].append({"row": i, "employee_code": code,
+                                    "status": f"Updated ({', '.join(changed)})"})
+        except Exception as e:
+            frappe.db.rollback()
+            results["failed"] += 1
+            results["errors"].append({"row": i, "employee_code": code, "error": str(e)})
+            results["rows"].append({"row": i, "employee_code": code, "status": "Failed"})
+
+    frappe.db.commit()
+
+    # Refresh run totals
+    totals = frappe.db.sql(
+        """SELECT COUNT(*), SUM(gross_salary), SUM(total_deductions), SUM(net_salary)
+           FROM `tabSalary Register` WHERE payroll_run=%s""", run.name)[0]
+    frappe.db.set_value("Payroll Run", run.name, {
+        "total_employees": totals[0] or 0, "total_gross": totals[1] or 0,
+        "total_deductions": totals[2] or 0, "total_net_pay": totals[3] or 0})
+
+    return results
+
+
+PT_TEMPLATE_COLUMNS = [
+    "employee_code", "monthly_gross", "medical_deduction", "staff_loan_emi",
+    "vehicle_deduction", "salary_advance", "vl_loan",
+    "other_deduction", "other_reason", "arrears_days",
+]
 
 
 @frappe.whitelist()
@@ -408,7 +622,21 @@ def mark_payroll_paid(payroll_run_id):
     # Change status to Paid
     payroll.status = "Paid"
     payroll.save(ignore_permissions=True)
-    
+
+    # Auto-settle staff loans from paid EMIs (balance update + auto-close)
+    try:
+        from sahayog.api.staff_loan import settle_loans_on_paid
+        registers = frappe.get_all(
+            "Salary Register", filters={"payroll_run": payroll.name},
+            fields=["employee", "staff_loan_emi"])
+        for reg in registers:
+            if flt(reg.staff_loan_emi) > 0:
+                settle_loans_on_paid(reg.employee, reg.staff_loan_emi,
+                                     payroll.payroll_month, payroll.name)
+    except Exception as e:
+        frappe.log_error(f"Loan settlement failed for {payroll.name}: {e}",
+                         "Payroll Loan Settlement")
+
     frappe.db.commit()
     
     return {
