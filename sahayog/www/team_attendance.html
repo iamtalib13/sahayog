@@ -7139,20 +7139,27 @@
         }
         btnEl.disabled = true;
         btnEl.textContent = "Fixing...";
+        let res = null;
         try {
-          const res = await callAPI(
+          res = await callAPI(
             "fix_duplicate_employee_code",
             { employee: emp, new_code: newCode },
             "employee",
           );
-          showToast((res && res.message) || "Fixed");
-          await loadDuplicateCodes();
-          fetchTeamData();
         } catch (e) {
           showToast(String(e));
           btnEl.disabled = false;
           btnEl.textContent = "Fix";
+          return;
         }
+        if (!res) {
+          btnEl.disabled = false;
+          btnEl.textContent = "Fix";
+          return;
+        }
+        showToast((res && res.message) || "Fixed");
+        await loadDuplicateCodes();
+        fetchTeamData();
       }
 
       function downloadUpdateTemplate() {
@@ -7946,6 +7953,10 @@
           "payroll",
         );
         if (!data) return;
+        window._payrollUnmarked = (data.data || []).reduce(
+          (s, r) => s + (parseFloat(r.unmarked_days) || 0),
+          0,
+        );
 
         const hasPayrollRun =
           data.payroll_run && data.payroll_run.status !== "Draft";
@@ -8000,6 +8011,10 @@
               `
                   : ""
               }
+              <button class="btn-clear" onclick="openLoanManager()" 
+                style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">🏦 Loans</button>
+              <button class="btn-clear" onclick="openRevisionManager()" 
+                style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📈 Revisions</button>
               ${
                 canEdit
                   ? `
@@ -8064,6 +8079,7 @@
                   <th style="padding:12px; text-align:right;">Present</th>
                   <th style="padding:12px; text-align:right;">LOP</th>
                   <th style="padding:12px; text-align:right;">Arrears</th>
+                  <th style="padding:12px; text-align:right;">Unmarked</th>
                   <th style="padding:12px; text-align:right;">Gross</th>
                   <th style="padding:12px; text-align:right;">Medical</th>
                   <th style="padding:12px; text-align:right;">Loan EMI</th>
@@ -8085,6 +8101,7 @@
                     <td style="padding:12px; text-align:right;">${row.present_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right;">${row.lop_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right;">${row.arrears_days ?? "-"}</td>
+                    <td style="padding:12px; text-align:right; ${(row.unmarked_days || 0) > 0 ? "color:#d97706; font-weight:700;" : ""}">${row.unmarked_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString("en-IN")}</td>
@@ -8258,6 +8275,7 @@
         }
         btn.disabled = false;
         btn.textContent = "Upload & Recalculate";
+        if (!res) return; // validation message already shown by callAPI
         const div = document.getElementById("salaryUploadResults");
         div.style.display = "block";
         const errs = res.errors || [];
@@ -8278,7 +8296,220 @@
         loadPayrollDashboard();
       }
 
-      async function generatePayroll(month) {        if (
+      async function openLoanManager() {
+        const old = document.getElementById("loanManagerModal");
+        if (old) old.remove();
+        const modal = document.createElement("div");
+        modal.id = "loanManagerModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:95%; max-width:600px; max-height:88vh; overflow-y:auto;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">🏦 Staff Loans</h3>
+              <button onclick="document.getElementById('loanManagerModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">New Loan</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+              <input id="loanEmp" class="member-select" placeholder="Employee Code (e.g. P716)" />
+              <input id="loanAmount" type="number" min="1" step="0.01" class="member-select" placeholder="Loan Amount" />
+              <input id="loanEmi" type="number" min="1" step="0.01" class="member-select" placeholder="Monthly EMI" />
+              <input id="loanDate" type="date" class="member-select" />
+            </div>
+            <input id="loanRemarks" class="member-select" placeholder="Remarks (optional)" style="margin-bottom:12px;" />
+            <button onclick="submitStaffLoan()" id="btnSubmitLoan" class="btn-in" style="width:100%; padding:10px; font-weight:700; margin-bottom:16px;">Create Loan</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Open Loans</div>
+              <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="loadOpenLoans()">🔄 Refresh</button>
+            </div>
+            <div id="openLoansList"><div style="font-size:12px; color:var(--muted);">Loading...</div></div>
+            <div id="loanHistoryDiv" style="display:none; margin-top:12px;"></div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        loadOpenLoans();
+      }
+
+      async function loadOpenLoans() {
+        const div = document.getElementById("openLoansList");
+        let loans = [];
+        try {
+          loans = (await callAPI("get_staff_loans", { status: "Open" }, "staff_loan")) || [];
+        } catch (e) {
+          div.innerHTML = `<div style="font-size:12px; color:#dc2626;">${e}</div>`;
+          return;
+        }
+        if (!loans.length) {
+          div.innerHTML = '<div style="font-size:12px; color:#15803d;">No open loans. 🎉</div>';
+          return;
+        }
+        div.innerHTML = `<table style="width:100%; border-collapse:collapse; font-size:11px;">
+          <thead><tr style="background:#f8fafc; text-align:left;"><th style="padding:6px;">Employee</th><th style="padding:6px; text-align:right;">Loan</th><th style="padding:6px; text-align:right;">EMI</th><th style="padding:6px; text-align:right;">Balance</th><th style="padding:6px; text-align:center;">Action</th></tr></thead>
+          <tbody>${loans.map((l) => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${l.employee_name || l.employee}<div style="font-size:10px; color:var(--muted);">${l.employee}</div></td><td style="padding:6px; text-align:right;">₹${Number(l.loan_amount).toLocaleString("en-IN")}</td><td style="padding:6px; text-align:right;">₹${Number(l.emi_amount).toLocaleString("en-IN")}</td><td style="padding:6px; text-align:right; font-weight:700;">₹${Number(l.balance_amount).toLocaleString("en-IN")}</td><td style="padding:6px; text-align:center; white-space:nowrap;"><button class="btn-clear" style="font-size:10px; padding:3px 8px;" onclick="showLoanHistory('${l.employee}')">History</button> <button class="btn-clear" style="font-size:10px; padding:3px 8px;" onclick="closeStaffLoan('${l.name}')">Close</button></td></tr>`).join("")}</tbody></table>`;
+      }
+
+      async function showLoanHistory(employee) {
+        const div = document.getElementById("loanHistoryDiv");
+        div.style.display = "block";
+        div.innerHTML = '<div style="font-size:12px; color:var(--muted);">Loading history...</div>';
+        let data = null;
+        try {
+          data = await callAPI("get_loan_history", { employee }, "staff_loan");
+        } catch (e) {
+          div.innerHTML = `<div style="font-size:12px; color:#dc2626;">${e}</div>`;
+          return;
+        }
+        if (!data) return; // validation message already shown by callAPI
+        const reps = (data && data.repayments) || [];
+        div.innerHTML = `<div style="font-size:12px; font-weight:700; margin-bottom:6px;">Repayment history — ${employee} <button class="btn-clear" style="font-size:10px; padding:2px 8px; margin-left:6px;" onclick="document.getElementById('loanHistoryDiv').style.display='none'">Hide</button></div>` +
+          (reps.length
+            ? `<table style="width:100%; border-collapse:collapse; font-size:11px;">
+              <thead><tr style="background:#f8fafc; text-align:left;"><th style="padding:6px;">Month</th><th style="padding:6px;">Loan</th><th style="padding:6px; text-align:right;">Amount</th></tr></thead>
+              <tbody>${reps.map((r) => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${r.payroll_month || "-"}</td><td style="padding:6px;">${r.loan}</td><td style="padding:6px; text-align:right;">₹${Number(r.amount).toLocaleString("en-IN")}</td></tr>`).join("")}</tbody></table>`
+            : '<div style="font-size:12px; color:var(--muted);">No repayments yet — first EMI settles on payroll Paid.</div>');
+      }
+
+      async function closeStaffLoan(loan) {
+        if (!(await showConfirmDialog(`Close loan ${loan}?\n\nOnly fully-recovered (zero balance) loans can be closed.`))) return;
+        let res = null;
+        try {
+          res = await callAPI("close_staff_loan", { loan }, "staff_loan");
+        } catch (e) {
+          showToast(String(e));
+          return;
+        }
+        if (!res) return; // validation message already shown by callAPI
+        showToast(res.message || "Loan closed");
+        loadOpenLoans();
+      }
+
+      async function submitStaffLoan() {        const employee = document.getElementById("loanEmp").value.trim();
+        const loan_amount = document.getElementById("loanAmount").value;
+        const emi_amount = document.getElementById("loanEmi").value;
+        const disbursed_date = document.getElementById("loanDate").value;
+        const remarks = document.getElementById("loanRemarks").value.trim();
+        if (!employee || !loan_amount || !emi_amount) {
+          showToast("Employee Code, Loan Amount and EMI are required");
+          return;
+        }
+        const btn = document.getElementById("btnSubmitLoan");
+        btn.disabled = true;
+        btn.textContent = "Creating...";
+        let res = null;
+        try {
+          res = await callAPI(
+            "create_staff_loan",
+            { employee, loan_amount, emi_amount, disbursed_date, remarks },
+            "staff_loan",
+          );
+        } catch (e) {
+          showToast(String(e));
+          btn.disabled = false;
+          btn.textContent = "Create Loan";
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = "Create Loan";
+        if (!res) return; // validation message already shown by callAPI
+        showToast(res.message || "Loan created");
+        document.getElementById("loanEmp").value = "";
+        document.getElementById("loanAmount").value = "";
+        document.getElementById("loanEmi").value = "";
+        loadOpenLoans();
+      }
+
+      async function openRevisionManager() {
+        const old = document.getElementById("revisionManagerModal");
+        if (old) old.remove();
+        const modal = document.createElement("div");
+        modal.id = "revisionManagerModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:95%; max-width:560px; max-height:88vh; overflow-y:auto;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">📈 Salary Revisions</h3>
+              <button onclick="document.getElementById('revisionManagerModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            <div style="font-size:11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:var(--muted);">
+              Past salary slips never change — the new salary applies from the effective date onwards.
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+              <input id="revEmp" class="member-select" placeholder="Employee Code (e.g. P716)" />
+              <input id="revSalary" type="number" min="1" step="0.01" class="member-select" placeholder="Revised Salary" />
+              <input id="revDate" type="date" class="member-select" />
+              <input id="revReason" class="member-select" placeholder="Reason (e.g. Annual appraisal)" />
+            </div>
+            <button onclick="submitSalaryRevision()" id="btnSubmitRevision" class="btn-in" style="width:100%; padding:10px; font-weight:700; margin-bottom:16px;">Apply Revision</button>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <input id="revHistoryEmp" class="member-select" placeholder="Employee Code for history" style="flex:1;" />
+              <button class="btn-clear" style="font-size:11px; padding:7px 14px;" onclick="loadRevisionHistory()">History</button>
+            </div>
+            <div id="revisionHistoryList"></div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      async function submitSalaryRevision() {
+        const employee = document.getElementById("revEmp").value.trim();
+        const new_salary = document.getElementById("revSalary").value;
+        const effective_date = document.getElementById("revDate").value;
+        const reason = document.getElementById("revReason").value.trim();
+        if (!employee || !new_salary || !effective_date) {
+          showToast("Employee Code, Revised Salary and Effective Date are required");
+          return;
+        }
+        const btn = document.getElementById("btnSubmitRevision");
+        btn.disabled = true;
+        btn.textContent = "Applying...";
+        let res = null;
+        try {
+          res = await callAPI(
+            "apply_salary_revision",
+            { employee, new_salary, effective_date, reason },
+            "salary_revision",
+          );
+        } catch (e) {
+          showToast(String(e));
+          btn.disabled = false;
+          btn.textContent = "Apply Revision";
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = "Apply Revision";
+        if (!res) return; // validation message already shown by callAPI
+        showToast(res.message || "Revision applied");
+      }
+
+      async function loadRevisionHistory() {
+        const employee = document.getElementById("revHistoryEmp").value.trim();
+        const div = document.getElementById("revisionHistoryList");
+        if (!employee) {
+          showToast("Enter employee code");
+          return;
+        }
+        let data = null;
+        try {
+          data = await callAPI("get_salary_history", { employee }, "salary_revision");
+        } catch (e) {
+          div.innerHTML = `<div style="font-size:12px; color:#dc2626;">${e}</div>`;
+          return;
+        }
+        if (!data) return; // validation message already shown by callAPI
+        const revs = data.revisions || [];
+        div.innerHTML = `<div style="font-size:12px; margin-bottom:8px;">Current salary: <strong>₹${Number(data.current_salary).toLocaleString("en-IN")}</strong></div>` +
+          (revs.length
+            ? `<table style="width:100%; border-collapse:collapse; font-size:11px;">
+              <thead><tr style="background:#f8fafc; text-align:left;"><th style="padding:6px;">Effective</th><th style="padding:6px; text-align:right;">Old → New</th><th style="padding:6px;">Reason</th></tr></thead>
+              <tbody>${revs.map((r) => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${r.effective_date || "-"}</td><td style="padding:6px; text-align:right;">₹${Number(r.old_salary).toLocaleString("en-IN")} → ₹${Number(r.new_salary).toLocaleString("en-IN")}</td><td style="padding:6px;">${r.reason || "-"}</td></tr>`).join("")}</tbody></table>`
+            : '<div style="font-size:12px; color:var(--muted);">No revisions yet.</div>');
+      }
+
+      async function generatePayroll(month) {
+        if (
           !(await showConfirmDialog(
             `Generate payslips for ${month}?\n\nThis will create salary registers for all active support staff.`,
           ))
@@ -8328,6 +8559,7 @@
                 <span>Present: <strong>${data.register.present_days ?? "-"}</strong></span>
                 <span>LOP: <strong>${data.register.lop_days ?? "-"}</strong></span>
                 <span>Arrears: <strong>${data.register.arrears_days ?? "-"}d</strong></span>
+                <span>Unmarked: <strong>${data.register.unmarked_days ?? "-"}</strong></span>
               </div>
             </div>
             <div style="margin-bottom:16px;">
@@ -8473,9 +8705,14 @@
       }
 
       async function submitPayroll(payrollRunId, month) {
+        const unmarked = window._payrollUnmarked || 0;
+        const warn =
+          unmarked > 0
+            ? `\n\n⚠️ ${unmarked} past day(s) across staff have NO attendance marked — they will be treated as PAID. Ask managers to mark Absent where applicable before submitting.`
+            : "";
         if (
           !(await showConfirmDialog(
-            `Submit payroll for ${month}?\n\nThis will lock the payroll. No further edits will be allowed.\n\nAre you sure all salary registers are reviewed and correct?`,
+            `Submit payroll for ${month}?${warn}\n\nThis will lock the payroll. No further edits will be allowed.\n\nAre you sure all salary registers are reviewed and correct?`,
           ))
         ) {
           return;
