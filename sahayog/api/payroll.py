@@ -158,7 +158,7 @@ def generate_salary_register(payroll_run_id):
                 {"employee": emp.name, "payroll_month": prev_month}, "lop_days")
             if prev_lop is not None:
                 prev_start, prev_end = _payroll_attendance_cycle(prev_month)
-                _, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
+                _prev_present, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
                 arrears_days = flt(prev_lop) - flt(lop_actual)
             per_day = monthly / 30
             gross = monthly - round(per_day * lop_days, 2) + round(per_day * arrears_days, 2)
