@@ -8092,7 +8092,7 @@
                     <td style="padding:12px; text-align:right; color:var(--success); font-weight:700;">₹${Number(row.net_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:center;">
                       <button class="btn-clear" style="font-size:10px; padding:4px 8px;" onclick="viewSalarySlip('${row.employee}', '${month}')">👁️ View</button>
-                      ${canEdit ? `<button class="btn-clear" style="font-size:10px; padding:4px 8px; margin-left:4px;" onclick="openEditDeductionModal('${row.name}', '${row.employee_name}', ${row.other_deduction}, '${(row.other_deduction_reason || "").replace(/'/g, "\\'")}')">✏️ Edit</button>` : ""}
+                      ${canEdit ? `<button class="btn-clear" style="font-size:10px; padding:4px 8px; margin-left:4px;" onclick="openEditDeductionModal('${row.name}', '${row.employee}', '${month}')">✏️ Edit</button>` : ""}
                     </td>
                   </tr>
                 `,
@@ -8353,42 +8353,58 @@
 
       async function openEditDeductionModal(
         registerId,
-        employeeName,
-        currentAmount,
-        currentReason,
+        employee,
+        month,
       ) {
+        const data = await callAPI(
+          "get_employee_salary_slip",
+          { employee, payroll_month: month },
+          "payroll",
+        );
+        if (!data) return;
+        const r = data.register;
         const modal = document.createElement("div");
         modal.id = "editDeductionModal";
         modal.style.cssText =
           "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
         modal.onclick = () => modal.remove();
 
+        const numField = (key, label, val, min = "0") => `
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">${label}</label>
+            <input type="number" id="edit_${key}" class="member-select" value="${val ?? 0}" min="${min}" step="0.01" style="font-size:14px; font-weight:600;">
+          </div>`;
+
         modal.innerHTML = `
-          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:450px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
-              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">Edit Other Deduction</h3>
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:90%; max-width:480px; max-height:88vh; overflow-y:auto;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">Edit Salary</h3>
               <button onclick="document.getElementById('editDeductionModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
             </div>
-            
-            <div style="text-align:center; margin-bottom:20px; padding:12px; background:#f8fafc; border-radius:10px;">
-              <div style="font-size:15px; font-weight:700; color:var(--brand);">${employeeName}</div>
-              <div style="font-size:11px; color:var(--muted); margin-top:4px;">Adjust other deductions (penalties, arrears, etc.)</div>
+
+            <div style="text-align:center; margin-bottom:16px; padding:12px; background:#f8fafc; border-radius:10px;">
+              <div style="font-size:15px; font-weight:700; color:var(--brand);">${r.employee_name}</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:4px;">Present: ${r.present_days ?? "-"} • LOP: ${r.lop_days ?? "-"} (auto from attendance, not editable)</div>
             </div>
-            
-            <form id="editDeductionForm" onsubmit="event.preventDefault(); saveOtherDeduction('${registerId}');">
-              <div style="margin-bottom:14px;">
-                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Other Deduction Amount</label>
-                <input type="number" id="otherDeductionAmount" class="member-select" value="${currentAmount || 0}" min="0" step="0.01" required style="font-size:14px; font-weight:600;">
-              </div>
-              
+
+            <form id="editDeductionForm" onsubmit="event.preventDefault(); saveOtherDeduction('${registerId}', '${employee}', '${month}');">
+              ${numField("monthly_gross", "Monthly Gross Salary", r.monthly_gross)}
+              ${numField("arrears_days", "Arrears Days (+/-)", r.arrears_days, "-31")}
+              ${numField("medical_deduction", "Medical Deduction", r.medical_deduction)}
+              ${numField("staff_loan_emi", "Staff Loan EMI", r.staff_loan_emi)}
+              ${numField("vehicle_deduction", "Vehicle Deduction", r.vehicle_deduction)}
+              ${numField("salary_advance", "Salary Advance", r.salary_advance)}
+              ${numField("vl_loan", "VL Loan", r.vl_loan)}
+              ${numField("other_deduction", "Other Deduction", r.other_deduction)}
+
               <div style="margin-bottom:20px;">
-                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason <span style="color:#dc2626;">*</span></label>
-                <textarea id="otherDeductionReason" class="member-select" rows="3" required placeholder="e.g., Penalty for unauthorized absence, Advance salary recovery, etc.">${currentReason || ""}</textarea>
+                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason (for Other Deduction) <span style="color:#dc2626;">*</span></label>
+                <textarea id="edit_other_reason" class="member-select" rows="2" placeholder="e.g., Penalty, advance recovery, etc.">${r.other_deduction_reason || ""}</textarea>
               </div>
-              
+
               <div style="display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f1f5f9; padding-top:16px;">
                 <button type="button" class="btn-clear" onclick="document.getElementById('editDeductionModal').remove()" style="padding:9px 20px;">Cancel</button>
-                <button type="submit" id="btnSaveDeduction" class="btn-in" style="padding:9px 24px; font-weight:700;">Save Changes</button>
+                <button type="submit" id="btnSaveDeduction" class="btn-in" style="padding:9px 24px; font-weight:700;">Save & Recalculate</button>
               </div>
             </form>
           </div>
@@ -8397,39 +8413,62 @@
         document.body.appendChild(modal);
       }
 
-      async function saveOtherDeduction(registerId) {
-        const amount = document.getElementById("otherDeductionAmount").value;
+      async function saveOtherDeduction(registerId, employee, month) {
+        const val = (k) =>
+          document.getElementById("edit_" + k).value;
+        const other = parseFloat(val("other_deduction")) || 0;
         const reason = document
-          .getElementById("otherDeductionReason")
+          .getElementById("edit_other_reason")
           .value.trim();
 
-        if (parseFloat(amount) > 0 && !reason) {
+        if (other > 0 && !reason) {
           showToast("Please provide reason for deduction");
           return;
         }
 
         const btn = document.getElementById("btnSaveDeduction");
-        const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = "Saving...";
 
-        const res = await callAPI(
-          "update_salary_deduction",
-          {
-            register_id: registerId,
-            other_deduction: amount,
-            reason: reason,
-          },
-          "payroll",
-        );
+        let res = null;
+        try {
+          res = await callAPI(
+            "upload_salary_sheet",
+            {
+              payroll_month: month,
+              rows: [
+                {
+                  employee_code: employee,
+                  monthly_gross: val("monthly_gross"),
+                  arrears_days: val("arrears_days"),
+                  medical_deduction: val("medical_deduction"),
+                  staff_loan_emi: val("staff_loan_emi"),
+                  vehicle_deduction: val("vehicle_deduction"),
+                  salary_advance: val("salary_advance"),
+                  vl_loan: val("vl_loan"),
+                  other_deduction: other,
+                  other_reason: reason,
+                },
+              ],
+            },
+            "payroll",
+          );
+        } catch (e) {
+          showToast(String(e));
+          btn.disabled = false;
+          btn.textContent = "Save & Recalculate";
+          return;
+        }
 
         btn.disabled = false;
-        btn.textContent = originalText;
+        btn.textContent = "Save & Recalculate";
 
-        if (res && res.success) {
-          showToast("✅ Deduction updated successfully!");
+        if (res && (res.failed || 0) === 0) {
+          showToast("✅ Salary updated & recalculated!");
           document.getElementById("editDeductionModal").remove();
           loadPayrollDashboard(); // Refresh the table
+        } else {
+          showToast("❌ " + ((res.errors || [])[0] || {}).error || "Update failed");
         }
       }
 
