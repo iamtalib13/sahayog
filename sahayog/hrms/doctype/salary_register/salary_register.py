@@ -14,9 +14,12 @@ class SalaryRegister(Document):
 		self.total_deductions = (
 			flt(self.medical_deduction) +
 			flt(self.staff_loan_emi) +
+			flt(self.vehicle_deduction) +
+			flt(self.salary_advance) +
+			flt(self.vl_loan) +
 			flt(self.other_deduction)
 		)
-		
+
 		self.net_salary = flt(self.gross_salary) - flt(self.total_deductions)
 	
 	def before_save(self):
