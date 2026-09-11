@@ -27,6 +27,34 @@ def _prev_payroll_month(payroll_month):
     return f"{year}-{month - 1:02d}"
 
 
+def _month_days(payroll_month):
+    """Calendar days of the payroll month (HR per-day rate = monthly / this)."""
+    from calendar import monthrange
+    year, month = int(payroll_month[:4]), int(payroll_month[5:7])
+    return monthrange(year, month)[1]
+
+
+def _unmarked_days(employee, start, end, doj=None, lwd=None):
+    """Past service days in cycle with no Attendance record (info only).
+
+    Future days are excluded (not yet due). These days are paid-in-advance
+    and settle via arrears once actually marked.
+    """
+    today = getdate(nowdate())
+    win_start = max(getdate(start), getdate(doj)) if doj else getdate(start)
+    win_end = min(getdate(end), today)
+    if lwd:
+        win_end = min(win_end, getdate(lwd))
+    if win_end < win_start:
+        return 0
+    window_days = (win_end - win_start).days + 1
+    recorded = frappe.db.sql(
+        """SELECT COUNT(DISTINCT attendance_date) AS c FROM `tabAttendance`
+           WHERE employee=%s AND attendance_date BETWEEN %s AND %s AND docstatus != 2""",
+        (employee, win_start, win_end), as_dict=True)[0].c or 0
+    return max(window_days - recorded, 0)
+
+
 def _attendance_counts(employee, start, end):
     """(present_days, lop_days) from submitted Attendance in cycle.
 
@@ -148,6 +176,8 @@ def generate_salary_register(payroll_run_id):
             # Attendance auto-fetch (26th→25th cycle); approved corrections/
             # leaves already flow in via submitted Attendance records.
             present_days, lop_days = _attendance_counts(emp.name, cycle_start, cycle_end)
+            unmarked = _unmarked_days(emp.name, cycle_start, cycle_end,
+                                      emp.get("date_of_joining"), emp.get("relieving_date"))
             # Arrear auto-adjustment: salary is processed before the cycle's
             # tail (26th–31st) finalizes, so days paid in advance are settled
             # here. Diff of prev paid LOP vs prev actual LOP → +/− days.
@@ -158,9 +188,10 @@ def generate_salary_register(payroll_run_id):
                 {"employee": emp.name, "payroll_month": prev_month}, "lop_days")
             if prev_lop is not None:
                 prev_start, prev_end = _payroll_attendance_cycle(prev_month)
-                _, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
+                _prev_present, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
                 arrears_days = flt(prev_lop) - flt(lop_actual)
-            per_day = monthly / 30
+            # HR per-day rate = monthly / calendar days of payroll month
+            per_day = monthly / _month_days(payroll.payroll_month)
             gross = monthly - round(per_day * lop_days, 2) + round(per_day * arrears_days, 2)
 
             medical = flt(emp.get("custom_medical_deduction", 0))
@@ -189,6 +220,7 @@ def generate_salary_register(payroll_run_id):
                 "present_days": present_days,
                 "lop_days": lop_days,
                 "arrears_days": arrears_days,
+                "unmarked_days": unmarked,
                 "medical_deduction": medical,
                 "staff_loan_emi": loan,
                 "vehicle_deduction": 0,
@@ -264,7 +296,7 @@ def get_salary_register_list(payroll_month=None, branch=None):
         fields=[
             "name", "employee", "employee_name", "branch", "designation",
             "monthly_gross", "gross_salary",
-            "present_days", "lop_days", "arrears_days",
+            "present_days", "lop_days", "arrears_days", "unmarked_days",
             "medical_deduction", "staff_loan_emi",
             "vehicle_deduction", "salary_advance", "vl_loan",
             "other_deduction", "total_deductions", "net_salary",
@@ -361,7 +393,7 @@ def get_employee_salary_slip(employee, payroll_month):
         [
             "name", "employee_name", "designation", "branch",
             "monthly_gross", "gross_salary",
-            "present_days", "lop_days", "arrears_days",
+            "present_days", "lop_days", "arrears_days", "unmarked_days",
             "medical_deduction", "staff_loan_emi",
             "vehicle_deduction", "salary_advance", "vl_loan",
             "other_deduction", "other_deduction_reason",
@@ -537,7 +569,7 @@ def upload_salary_sheet(payroll_month, rows):
                 continue
             # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals)
             if "monthly_gross" in changed or "arrears_days" in changed:
-                per_day = flt(reg.monthly_gross) / 30
+                per_day = flt(reg.monthly_gross) / _month_days(payroll_month)
                 reg.gross_salary = (flt(reg.monthly_gross)
                                     - round(per_day * flt(reg.lop_days), 2)
                                     + round(per_day * flt(reg.arrears_days), 2))
