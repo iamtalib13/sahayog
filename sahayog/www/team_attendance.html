@@ -8000,6 +8000,14 @@
               `
                   : ""
               }
+              ${
+                canEdit
+                  ? `
+                <button class="btn-clear" onclick="openSalaryUploadModal('${month}')" 
+                  style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📤 Upload Sheet</button>
+              `
+                  : ""
+              }
             </div>
           </div>
           ${
@@ -8053,6 +8061,9 @@
                 <tr style="text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">
                   <th style="padding:12px;">Employee</th>
                   <th style="padding:12px;">Branch</th>
+                  <th style="padding:12px; text-align:right;">Present</th>
+                  <th style="padding:12px; text-align:right;">LOP</th>
+                  <th style="padding:12px; text-align:right;">Arrears</th>
                   <th style="padding:12px; text-align:right;">Gross</th>
                   <th style="padding:12px; text-align:right;">Medical</th>
                   <th style="padding:12px; text-align:right;">Loan EMI</th>
@@ -8071,6 +8082,9 @@
                       <div style="font-size:10px; color:var(--muted);">${row.employee}</div>
                     </td>
                     <td style="padding:12px;">${row.branch || "-"}</td>
+                    <td style="padding:12px; text-align:right;">${row.present_days ?? "-"}</td>
+                    <td style="padding:12px; text-align:right;">${row.lop_days ?? "-"}</td>
+                    <td style="padding:12px; text-align:right;">${row.arrears_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString("en-IN")}</td>
@@ -8127,8 +8141,144 @@
         });
       }
 
-      async function generatePayroll(month) {
-        if (
+      const SALARY_UPLOAD_COLUMNS = [
+        "employee_code",
+        "monthly_gross",
+        "medical_deduction",
+        "staff_loan_emi",
+        "vehicle_deduction",
+        "salary_advance",
+        "vl_loan",
+        "other_deduction",
+        "other_reason",
+        "arrears_days",
+      ];
+
+      function openSalaryUploadModal(month) {
+        const old = document.getElementById("salaryUploadModal");
+        if (old) old.remove();
+        const modal = document.createElement("div");
+        modal.id = "salaryUploadModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:95%; max-width:560px; max-height:88vh; overflow-y:auto;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">📤 Upload Salary Sheet (${month})</h3>
+              <button onclick="document.getElementById('salaryUploadModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            <div style="font-size:11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:var(--muted);">
+              Only <strong>Employee Code</strong> is mandatory — it identifies the record.
+              Fill only the payheads to change (Gross, Medical, Staff Loan, Vehicle, Advance, VL Loan, Other + reason, Arrears days).
+              Salary is recalculated after upload. Locked (Submitted/Paid) payroll cannot be uploaded to.
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+              <button class="btn-clear" style="font-size:11px; padding:7px 14px;" onclick="downloadSalaryTemplate()">⬇ Download Template</button>
+            </div>
+            <input type="file" id="salaryCsvFile" accept=".csv" class="member-select" style="padding:6px; font-size:12px; margin-bottom:10px" />
+            <button onclick="submitSalaryUpload('${month}')" id="btnSubmitSalaryUpload" class="btn-in" style="width:100%; padding:10px; font-weight:700;">Upload & Recalculate</button>
+            <div id="salaryUploadResults" style="display:none; margin-top:14px;"></div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      function downloadSalaryTemplate() {
+        const sample = [
+          "P1",
+          "9000",
+          "100",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "",
+          "0",
+        ];
+        const csv = [
+          SALARY_UPLOAD_COLUMNS.join(","),
+          sample.join(","),
+        ].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "salary_sheet_upload_template.csv";
+        a.click();
+      }
+
+      async function submitSalaryUpload(month) {
+        const file = document.getElementById("salaryCsvFile").files[0];
+        if (!file) {
+          showToast("Please select a CSV file");
+          return;
+        }
+        const btn = document.getElementById("btnSubmitSalaryUpload");
+        btn.disabled = true;
+        btn.textContent = "Uploading...";
+        const text = await file.text();
+        const lines = text.trim().split("\n");
+        const headers = lines[0]
+          .split(",")
+          .map((h) => h.trim().replace(/^"|"$/g, ""));
+        const rows = lines.slice(1).filter((l) => l.trim()).map((line) => {
+          const vals = [];
+          let cur = "",
+            inQ = false;
+          for (let c of line) {
+            if (c === '"') {
+              inQ = !inQ;
+            } else if (c === "," && !inQ) {
+              vals.push(cur.trim());
+              cur = "";
+            } else {
+              cur += c;
+            }
+          }
+          vals.push(cur.trim());
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = (vals[i] || "").replace(/^"|"$/g, "");
+          });
+          return obj;
+        });
+        let res = null;
+        try {
+          res = await callAPI(
+            "upload_salary_sheet",
+            { payroll_month: month, rows },
+            "payroll",
+          );
+        } catch (e) {
+          showToast(String(e));
+          btn.disabled = false;
+          btn.textContent = "Upload & Recalculate";
+          return;
+        }
+        btn.disabled = false;
+        btn.textContent = "Upload & Recalculate";
+        const div = document.getElementById("salaryUploadResults");
+        div.style.display = "block";
+        const errs = res.errors || [];
+        let html = `<div style="font-size:13px; font-weight:700; margin-bottom:8px;">✅ Updated: ${res.updated || 0} &nbsp; ❌ Failed: ${res.failed || 0}</div>`;
+        if (errs.length) {
+          html += `<table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:10px;">
+            <thead><tr style="background:#fef2f2;"><th style="padding:6px; text-align:left;">Row</th><th style="padding:6px; text-align:left;">Employee Code</th><th style="padding:6px; text-align:left;">Reason</th></tr></thead>
+            <tbody>${errs.map((e) => `<tr style="border-bottom:1px solid #f1f5f9;"><td style="padding:6px;">${e.row}</td><td style="padding:6px;">${e.employee_code || "-"}</td><td style="padding:6px;">${e.error}</td></tr>`).join("")}</tbody></table>`;
+          const errCsv = ["Row,Employee Code,Reason"]
+            .concat(errs.map((e) => `${e.row},"${e.employee_code || ""}","${(e.error || "").replace(/"/g, "'")}"`))
+            .join("\n");
+          const blob = new Blob([errCsv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          html += `<a href="${url}" download="salary_upload_errors_${month}.csv" class="btn-clear" style="font-size:11px; padding:7px 14px; text-decoration:none;">⬇ Download Error File</a>`;
+        }
+        div.innerHTML = html;
+        if ((res.failed || 0) === 0) showToast(`Salary sheet updated: ${res.updated} records`);
+        loadPayrollDashboard();
+      }
+
+      async function generatePayroll(month) {        if (
           !(await showConfirmDialog(
             `Generate payslips for ${month}?\n\nThis will create salary registers for all active support staff.`,
           ))
@@ -8174,6 +8324,11 @@
               <div style="font-size:16px; font-weight:700; color:var(--brand);">${data.register.employee_name}</div>
               <div style="font-size:11px; color:var(--muted); margin-top:2px;">${data.register.designation} | ${data.register.branch}</div>
               <div style="font-size:13px; font-weight:600; color:var(--brand2); margin-top:6px;">For the month of ${month}</div>
+              <div style="display:flex; gap:8px; justify-content:center; margin-top:8px; font-size:11px; color:var(--muted);">
+                <span>Present: <strong>${data.register.present_days ?? "-"}</strong></span>
+                <span>LOP: <strong>${data.register.lop_days ?? "-"}</strong></span>
+                <span>Arrears: <strong>${data.register.arrears_days ?? "-"}d</strong></span>
+              </div>
             </div>
             <div style="margin-bottom:16px;">
               <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Earnings</div>
