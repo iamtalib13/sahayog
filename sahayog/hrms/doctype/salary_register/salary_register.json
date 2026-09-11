@@ -21,6 +21,7 @@
    "present_days",
    "lop_days",
    "arrears_days",
+   "unmarked_days",
    "section_deductions",
    "medical_deduction",
    "staff_loan_emi",
@@ -135,6 +136,13 @@
    "fieldname": "arrears_days",
    "fieldtype": "Float",
    "label": "Arrears Days"
+  },
+  {
+   "default": "0",
+   "description": "Past cycle days with no attendance record (paid-in-advance, info only)",
+   "fieldname": "unmarked_days",
+   "fieldtype": "Float",
+   "label": "Unmarked Days"
   },
   {
    "fieldname": "section_deductions",
