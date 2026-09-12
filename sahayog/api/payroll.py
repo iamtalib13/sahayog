@@ -443,71 +443,68 @@ def get_employee_salary_slip(employee, payroll_month):
 
 @frappe.whitelist()
 def export_bank_payment_csv(payroll_month, branch=None):
-    """
-    Salary sheet CSV in HR sheet column order:
-    Region, District, Branch Name, DOJ, Relieving, Status, Present, LOP,
-    Arrears, Monthly Gross, Gross, Mediclaim, Staff Loan, Salary Advance,
-    VL Loan, Total Deductions, Net Pay, Account No, UHID (+ Code/Name first).
-    """
+    """Salary Register export in HR's 28-column register format."""
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "Administrator"]):
         frappe.throw(_("Not authorized"), frappe.PermissionError)
 
-    # Get salary register data
-    data = get_salary_register_list(payroll_month, branch)
+    filters = {"payroll_month": payroll_month}
+    if branch:
+        filters["branch"] = branch
 
-    emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
-    uhid_col = ("custom_uhid_number" if "custom_uhid_number" in emp_cols
-                else "uhid_number" if "uhid_number" in emp_cols else None)
+    rows = frappe.db.sql(
+        """SELECT sr.employee, sr.employee_name,
+                  e.gender, e.company, e.custom_division, sb.state,
+                  e.custom_zone, e.custom_region, sb.branch AS branch_name,
+                  e.sol_id, e.department, e.designation,
+                  e.date_of_joining, e.final_confirmation_date, e.status,
+                  e.resignation_letter_date, e.relieving_date,
+                  sr.present_days, sr.lop_days, sr.arrears_days,
+                  sr.monthly_gross, sr.gross_salary,
+                  sr.medical_deduction, sr.staff_loan_emi, sr.vl_loan,
+                  sr.other_deduction, sr.total_deductions, sr.net_salary,
+                  sr.bank_account_no
+           FROM `tabSalary Register` sr
+           LEFT JOIN `tabEmployee` e ON e.name = sr.employee
+           LEFT JOIN `tabSahayog Branch` sb ON sb.name = sr.branch
+           WHERE sr.payroll_month = %(month)s
+             AND (%(branch)s IS NULL OR sr.branch = %(branch)s)
+           ORDER BY sr.branch, sr.employee_name""",
+        {"month": payroll_month, "branch": branch}, as_dict=True)
 
-    # Prepare CSV data
-    csv_data = []
-    csv_data.append([
-        "Employee Code", "Employee Name",
-        "Region", "District", "Branch Name",
-        "Date of Joining", "Date of Relieving", "Employee Status",
-        "Present Days", "LOP", "Arrears_Days",
-        "Monthly Gross Salary", "Gross Salary",
-        "Mediclaim Deduction", "Staff Loan", "Salary Advance", "VL LOAN",
-        "Total Deductions", "Net Pay",
-        "Account NO.", "UHID No",
-    ])
+    def fmt_date(d):
+        return d.strftime("%d/%m/%Y") if d else ""
 
-    for row in data["data"]:
-        emp = frappe.db.get_value(
-            "Employee", row["employee"],
-            ["custom_region", "custom_district", "date_of_joining",
-             "relieving_date", "status", uhid_col or "name"],
-            as_dict=True,
-        ) or {}
-        branch_name = frappe.db.get_value("Sahayog Branch", row["branch"] or "", "branch") \
-            or row["branch"] or ""
+    csv_data = [[
+        "Employee Code", "Employee Name", "Gender", "Company Name",
+        "Business Unit", "State", "Zone", "Region", "Branch", "Branch Code",
+        "Department", "Designation", "Date Of Joining", "Date Of Confirmation",
+        "Employee Status", "Date of Resignation", "Date_Of_Leaving",
+        "Days_Worked", "LOP", "Arrears_Days", "Fixed Gross", "Gross_Salary",
+        "Medical Deduction", "Staff Loan", "VL Loan", "Other Deduction",
+        "Total Deduction", "Net Pay", "Bank Account No",
+    ]]
+    for r in rows:
         csv_data.append([
-            row["employee"],
-            row["employee_name"],
-            emp.get("custom_region") or "",
-            emp.get("custom_district") or "",
-            branch_name,
-            emp.get("date_of_joining") or "",
-            emp.get("relieving_date") or "",
-            "Left" if emp.get("status") == "Left" else "Active",
-            f"{flt(row.get('present_days')):.1f}",
-            f"{flt(row.get('lop_days')):.1f}",
-            f"{flt(row.get('arrears_days')):.1f}",
-            f"{flt(row.get('monthly_gross')):.2f}",
-            f"{flt(row['gross_salary']):.2f}",
-            f"{flt(row['medical_deduction']):.2f}",
-            f"{flt(row['staff_loan_emi']):.2f}",
-            f"{flt(row.get('salary_advance')):.2f}",
-            f"{flt(row.get('vl_loan')):.2f}",
-            f"{flt(row['total_deductions']):.2f}",
-            f"{flt(row['net_salary']):.2f}",
-            row["bank_account_no"] or "",
-            (emp.get(uhid_col) if uhid_col else "") or "",
+            r.employee or "", r.employee_name or "",
+            r.gender or "", r.company or "",
+            r.custom_division or "", r.state or "",
+            r.custom_zone or "", r.custom_region or "",
+            r.branch_name or "", r.sol_id or "",
+            r.department or "", r.designation or "",
+            fmt_date(r.date_of_joining), fmt_date(r.final_confirmation_date),
+            r.status or "",
+            fmt_date(r.resignation_letter_date), fmt_date(r.relieving_date),
+            f"{flt(r.present_days):.1f}", f"{flt(r.lop_days):.1f}",
+            f"{flt(r.arrears_days):.1f}",
+            f"{flt(r.monthly_gross):.2f}", f"{flt(r.gross_salary):.2f}",
+            f"{flt(r.medical_deduction):.2f}", f"{flt(r.staff_loan_emi):.2f}",
+            f"{flt(r.vl_loan):.2f}", f"{flt(r.other_deduction):.2f}",
+            f"{flt(r.total_deductions):.2f}", f"{flt(r.net_salary):.2f}",
+            r.bank_account_no or "",
         ])
 
-    # Build CSV response
-    build_csv_response(csv_data, f"salary_sheet_{payroll_month}")
+    build_csv_response(csv_data, f"salary_register_{payroll_month}")
 
 
 @frappe.whitelist()
@@ -535,7 +532,7 @@ def upload_salary_sheet(payroll_month, rows):
     if run.status not in ("Draft", "Generated"):
         frappe.throw(_("Payroll is {0} and locked. Changes need an authorized adjustment.").format(run.status))
 
-    PAYHEADS = ("monthly_gross", "medical_deduction", "staff_loan_emi",
+    PAYHEADS = ("monthly_gross", "gross_salary", "medical_deduction", "staff_loan_emi",
                 "vehicle_deduction", "salary_advance", "vl_loan",
                 "other_deduction", "arrears_days")
     results = {"updated": 0, "failed": 0, "errors": [], "rows": []}
@@ -567,8 +564,9 @@ def upload_salary_sheet(payroll_month, rows):
             if not changed:
                 results["rows"].append({"row": i, "employee_code": code, "status": "Skipped (No Changes)"})
                 continue
-            # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals)
-            if "monthly_gross" in changed or "arrears_days" in changed:
+            # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals).
+            # Direct gross_salary in the sheet always wins (HR override).
+            if "gross_salary" not in changed and ("monthly_gross" in changed or "arrears_days" in changed):
                 per_day = flt(reg.monthly_gross) / _month_days(payroll_month)
                 reg.gross_salary = (flt(reg.monthly_gross)
                                     - round(per_day * flt(reg.lop_days), 2)
@@ -597,7 +595,7 @@ def upload_salary_sheet(payroll_month, rows):
 
 
 PT_TEMPLATE_COLUMNS = [
-    "employee_code", "monthly_gross", "medical_deduction", "staff_loan_emi",
+    "employee_code", "monthly_gross", "gross_salary", "medical_deduction", "staff_loan_emi",
     "vehicle_deduction", "salary_advance", "vl_loan",
     "other_deduction", "other_reason", "arrears_days",
 ]

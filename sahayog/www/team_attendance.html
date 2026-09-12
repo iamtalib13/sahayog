@@ -8161,6 +8161,7 @@
       const SALARY_UPLOAD_COLUMNS = [
         "employee_code",
         "monthly_gross",
+        "gross_salary",
         "medical_deduction",
         "staff_loan_emi",
         "vehicle_deduction",
@@ -8188,6 +8189,7 @@
             <div style="font-size:11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:var(--muted);">
               Only <strong>Employee Code</strong> is mandatory — it identifies the record.
               Fill only the payheads to change (Gross, Medical, Staff Loan, Vehicle, Advance, VL Loan, Other + reason, Arrears days).
+              Direct <strong>gross_salary</strong> always wins over recomputation.
               Salary is recalculated after upload. Locked (Submitted/Paid) payroll cannot be uploaded to.
             </div>
             <div style="display:flex; gap:10px; margin-bottom:12px;">
@@ -8205,6 +8207,7 @@
         const sample = [
           "P1",
           "9000",
+          "",
           "100",
           "0",
           "0",
@@ -8621,6 +8624,7 @@
 
             <form id="editDeductionForm" onsubmit="event.preventDefault(); saveOtherDeduction('${registerId}', '${employee}', '${month}');">
               ${numField("monthly_gross", "Monthly Gross Salary", r.monthly_gross)}
+              ${numField("gross_salary", "Gross Salary (direct override)", r.gross_salary)}
               ${numField("arrears_days", "Arrears Days (+/-)", r.arrears_days, "-31")}
               ${numField("medical_deduction", "Medical Deduction", r.medical_deduction)}
               ${numField("staff_loan_emi", "Staff Loan EMI", r.staff_loan_emi)}
@@ -8672,6 +8676,7 @@
                 {
                   employee_code: employee,
                   monthly_gross: val("monthly_gross"),
+                  gross_salary: val("gross_salary"),
                   arrears_days: val("arrears_days"),
                   medical_deduction: val("medical_deduction"),
                   staff_loan_emi: val("staff_loan_emi"),
