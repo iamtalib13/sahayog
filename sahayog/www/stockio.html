@@ -16197,17 +16197,14 @@
       async handleBulkAssetInsertFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("is_private", 0);
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.xhr({
-            url: "/api/method/upload_file",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
+          const uploadRes = await frappe.call({
+            method: "frappe.handler.upload_file",
+            args: {
+              file: file,
+              is_private: 0
+            }
           });
           const fileUrl = uploadRes.message.file_url;
           frappe.show_alert("Processing bulk insert...", 5);
@@ -16232,17 +16229,14 @@
       async handleBulkAssetUpdateFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("is_private", 0);
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.xhr({
-            url: "/api/method/upload_file",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
+          const uploadRes = await frappe.call({
+            method: "frappe.handler.upload_file",
+            args: {
+              file: file,
+              is_private: 0
+            }
           });
           const fileUrl = uploadRes.message.file_url;
           frappe.show_alert("Processing bulk update...", 5);
