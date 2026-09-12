@@ -16199,14 +16199,28 @@
         if (!file) return;
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.call({
-            method: "frappe.handler.upload_file",
-            args: {
-              file: file,
-              is_private: 0
-            }
+          const fileUrl = await new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("is_private", 0);
+            $.ajax({
+              type: "POST",
+              url: "/api/method/upload_file",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function(r) {
+                if (r.message && r.message.file_url) {
+                  resolve(r.message.file_url);
+                } else {
+                  reject(new Error("No file URL returned"));
+                }
+              },
+              error: function(r) {
+                reject(new Error(r.responseJSON ? r.responseJSON._server_messages : "Upload failed"));
+              }
+            });
           });
-          const fileUrl = uploadRes.message.file_url;
           frappe.show_alert("Processing bulk insert...", 5);
           const res = await frappe.call({
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
@@ -16231,14 +16245,28 @@
         if (!file) return;
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.call({
-            method: "frappe.handler.upload_file",
-            args: {
-              file: file,
-              is_private: 0
-            }
+          const fileUrl = await new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("is_private", 0);
+            $.ajax({
+              type: "POST",
+              url: "/api/method/upload_file",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function(r) {
+                if (r.message && r.message.file_url) {
+                  resolve(r.message.file_url);
+                } else {
+                  reject(new Error("No file URL returned"));
+                }
+              },
+              error: function(r) {
+                reject(new Error(r.responseJSON ? r.responseJSON._server_messages : "Upload failed"));
+              }
+            });
           });
-          const fileUrl = uploadRes.message.file_url;
           frappe.show_alert("Processing bulk update...", 5);
           const res = await frappe.call({
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets_from_file",

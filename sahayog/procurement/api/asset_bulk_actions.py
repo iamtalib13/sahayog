@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 import csv
 import io
+import os
 
 
 def cancel_linked_docs(asset_name):
@@ -157,12 +158,40 @@ def create_asset_with_name(doc, custom_name=None):
 
 def _read_file_content(file_url):
     """Read file content from a file URL."""
-    if file_url.startswith("/files/"):
-        file_path = frappe.get_site_path("public", file_url)
+    file_name = file_url.split("/")[-1]
+    private_path = frappe.get_site_path("private", "files", file_name)
+    public_path = frappe.get_site_path("public", "files", file_name)
+    if os.path.exists(private_path):
+        file_path = private_path
+    elif os.path.exists(public_path):
+        file_path = public_path
     else:
-        file_path = frappe.get_site_path(file_url.lstrip("/"))
-    with open(file_path, "r") as f:
-        return f.read()
+        frappe.throw(f"File not found: {file_url}")
+
+    # If Excel file, read with openpyxl
+    if file_name.lower().endswith(('.xlsx', '.xls')):
+        import openpyxl
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+        if not rows:
+            return ""
+        import io, csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in rows:
+            writer.writerow([str(cell) if cell is not None else "" for cell in row])
+        return output.getvalue()
+
+    # For CSV, try UTF-8 first, then latin-1
+    for encoding in ['utf-8', 'latin-1', 'cp1252']:
+        try:
+            with open(file_path, "r", encoding=encoding) as f:
+                return f.read()
+        except UnicodeDecodeError:
+            continue
+    frappe.throw(f"Could not read file with any supported encoding: {file_name}")
 
 
 def _parse_csv(file_content):
