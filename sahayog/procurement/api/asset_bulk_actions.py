@@ -250,6 +250,18 @@ def bulk_insert_assets(file_url):
                 "company": frappe.defaults.get_global_default("company"),
             }
 
+            # Ensure Serial No exists before creating Asset
+            serial_no = doc_data.get("serial_no")
+            item_code = doc_data.get("item_code")
+            if serial_no and item_code:
+                if not frappe.db.exists("Serial No", serial_no):
+                    sn = frappe.get_doc({
+                        "doctype": "Serial No",
+                        "serial_no": serial_no,
+                        "item_code": item_code,
+                    })
+                    sn.insert(ignore_permissions=True)
+
             doc = frappe.get_doc(doc_data)
             doc.insert(ignore_permissions=True)
             frappe.db.commit()
