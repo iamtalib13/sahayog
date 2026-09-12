@@ -269,7 +269,14 @@ def update_loan_field_without_validation(docname, fieldname, value=None, new_use
     """
     if isinstance(fieldname, str) and fieldname.startswith("{"):
         fieldname = frappe.parse_json(fieldname)
-    
+
+    # Valuer update is restricted to Credit Loan User / Admin only
+    involved_fields = list(fieldname.keys()) if isinstance(fieldname, dict) else [fieldname]
+    if "valuer" in involved_fields:
+        allowed_roles = {"Administrator", "Credit Loan User", "System Manager"}
+        if not allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))):
+            frappe.throw(_("Only Credit Loan User or Administrator can update Valuer."))
+
     frappe.db.set_value("Loan Application", docname, fieldname, value)
 
     # Handle document sharing logic from the backend
