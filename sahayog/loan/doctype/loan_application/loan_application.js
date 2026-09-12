@@ -797,6 +797,49 @@ frappe.ui.form.on("Loan Application", {
         });
         d.show();
       }, __("Update Loan Case"));
+
+      // 3. UPDATE VALUER BUTTON (Credit Loan User + Admin only, allow on submit)
+      frm.add_custom_button(__("Update Valuer"), function () {
+        let d = new frappe.ui.Dialog({
+          title: __('Update Valuer'),
+          fields: [
+            {
+              label: __('Select Valuer'),
+              fieldname: 'valuer',
+              fieldtype: 'Link',
+              options: 'Valuer Master',
+              default: frm.doc.valuer,
+              reqd: 1
+            }
+          ],
+          primary_action_label: __('Update'),
+          primary_action(values) {
+            if (values.valuer === frm.doc.valuer) {
+              frappe.msgprint(__('Selected valuer is already assigned.'));
+              d.hide();
+              return;
+            }
+            frappe.call({
+              method: 'sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation',
+              args: {
+                docname: frm.doc.name,
+                fieldname: 'valuer',
+                value: values.valuer
+              },
+              freeze: true,
+              freeze_message: __('Updating Valuer...'),
+              callback: function (r) {
+                if (!r.exc) {
+                  frappe.show_alert({ message: __('Valuer updated successfully'), indicator: 'green' });
+                  d.hide();
+                  frm.reload_doc();
+                }
+              }
+            });
+          }
+        });
+        d.show();
+      }, __("Update Loan Case"));
     }
 
 
