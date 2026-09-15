@@ -153,10 +153,8 @@ def is_valid_approver(docname):
                 
                 if is_direct or current_user == "Administrator":
                     can_delegate = True
-                    can_bypass = True
                 
-                if is_group_member:
-                    can_bypass = True
+                can_bypass = (current_user == "Administrator")
                 
                 if can_delegate or can_bypass:
                     break
@@ -305,6 +303,9 @@ def bypass_approval(docname, remark):
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
+    if current_user != "Administrator":
+        frappe.throw("Only Administrator is authorized to bypass approval levels.")
+
     if doc.approval_status != "Pending Approval":
         frappe.throw(f"Request must be in 'Pending Approval' status to bypass.")
 
@@ -313,14 +314,7 @@ def bypass_approval(docname, remark):
     for d in doc.approvers:
         if d.is_bypassed or d.approver_status == "Approved": continue
         
-        is_direct = (d.selection_type == "User" and (d.approver == current_user or d.delegated_to == current_user))
-        is_group_member = False
-        if d.selection_type == "Group" and d.group_email:
-            user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
-            if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
-                is_group_member = True
-        
-        if is_direct or is_group_member or current_user == "Administrator":
+        if current_user == "Administrator":
             d.is_bypassed = 1
             d.approver_status = "Skipped"
             bypassed_any = True
