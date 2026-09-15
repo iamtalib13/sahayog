@@ -26,6 +26,8 @@ class ApprovalRequest(Document):
             self.designation = emp.designation
 
     def validate(self):
+        self.validate_creator_not_approver()
+
         if self.is_new():
             return
 
@@ -34,6 +36,27 @@ class ApprovalRequest(Document):
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
+
+    def validate_creator_not_approver(self):
+        creator_user = self.owner or frappe.session.user
+        creator_emp = self.employee
+
+        if not creator_emp and creator_user:
+            creator_emp = frappe.db.get_value("Employee", {"user_id": creator_user}, "name")
+
+        for d in self.approvers:
+            if d.selection_type == "User" and d.approver:
+                if d.approver == creator_user:
+                    frappe.throw(
+                        f"Row #{d.idx}: You cannot select yourself ({d.approver}) as an approver."
+                    )
+                if creator_emp:
+                    approver_emp = frappe.db.get_value("Employee", {"user_id": d.approver}, "name")
+                    if approver_emp and approver_emp == creator_emp:
+                        frappe.throw(
+                            f"Row #{d.idx}: You cannot select your own Employee record ({d.approver_name or d.approver}) as an approver."
+                        )
+
 
 
 def ensure_docshare(doc, user):
