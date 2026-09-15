@@ -4414,6 +4414,30 @@
         );
       }
 
+      // ── TAB PERSISTENCE (stay on same tab after refresh) ──
+      const TAB_BTN_IDS = {
+        attendance: "tabAttendance",
+        hr_dashboard: "tabHRDashboard",
+        leave: "tabLeaveRequests",
+        corrections: "tabCorrApproval",
+        reports: "tabReports",
+        payroll: "tabPayroll",
+      };
+      function restoreLastTab() {
+        let saved = null;
+        try {
+          saved = localStorage.getItem("ss_active_tab");
+        } catch (e) {}
+        const allowed = isHR()
+          ? ["attendance", "hr_dashboard", "leave", "corrections", "reports", "payroll"]
+          : isBranchManager()
+            ? ["attendance", "leave", "corrections"]
+            : ["attendance"];
+        const fallback = isHR() ? "hr_dashboard" : "attendance";
+        const tab = allowed.includes(saved) ? saved : fallback;
+        switchTab(tab, document.getElementById(TAB_BTN_IDS[tab]));
+      }
+
       function switchTab(tab, btn) {
         if (
           (tab === "leave" || tab === "corrections") &&
@@ -4429,6 +4453,9 @@
         }
 
         currentTab = tab;
+        try {
+          localStorage.setItem("ss_active_tab", tab);
+        } catch (e) {}
         currentSubTab = "pending"; // Reset sub-tab when switching main tabs
 
         // Update sub-tab active state
@@ -5034,10 +5061,10 @@
               currentTab === "attendance" ? "flex" : "none";
           }
 
-          // Set HR Dashboard as default on first load
+          // Restore last-visited tab on reload (default: HR Dashboard)
           if (isFirstLoad) {
             isFirstLoad = false;
-            switchTab("hr_dashboard", hrTab);
+            restoreLastTab();
           }
           populateAllFilters();
           updatePendingBadges();
@@ -5066,6 +5093,7 @@
           }
           if (isFirstLoad) {
             isFirstLoad = false;
+            restoreLastTab();
           }
           populateAllFilters();
           updatePendingBadges();
@@ -6292,7 +6320,7 @@
           <div class="dash-section"><div class="dash-sec-title">Banking</div>
             ${row("Bank Name", e.bank_name)} ${row("Account Number", e.bank_ac_no)}
           </div>
-          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}${row("Staff Loan EMI", "₹ " + Number(e.custom_staff_loan_emi || 0).toLocaleString("en-IN"))}${row("Medical Deduction", "₹ " + Number(e.custom_medical_deduction || 0).toLocaleString("en-IN"))}</div>` : ""}
+          ${e.ctc != null ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>${row("Monthly Gross Salary", "₹ " + Number(e.ctc).toLocaleString("en-IN"))}${row("Medical Deduction", "₹ " + Number(e.custom_medical_deduction || 0).toLocaleString("en-IN"))}</div>` : ""}
         `;
       }
 
@@ -6485,7 +6513,6 @@
                 ? `<div class="dash-section"><div class="dash-sec-title">Salary & Deductions <span style="font-size:9px;background:#f5f3ff;color:var(--brand2);padding:2px 6px;border-radius:10px;margin-left:4px;">HR Manager Only</span></div>
               <div style="display:grid;gap:10px;">
                 <div><label style="font-size:11px;color:var(--muted);">Monthly Gross Salary</label>${inp("ctc", e.ctc, "number")}</div>
-                <div><label style="font-size:11px;color:var(--muted);">Staff Loan EMI</label>${inp("custom_staff_loan_emi", e.custom_staff_loan_emi, "number")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Medical Deduction</label>${inp("custom_medical_deduction", e.custom_medical_deduction, "number")}</div>
               </div>
             </div>`
@@ -8007,7 +8034,7 @@
                 showPaymentReport
                   ? `
                 <button class="btn-clear" onclick="downloadBankPayment('${month}')" 
-                  style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📥 Payment Report</button>
+                  style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">📥 Salary Register</button>
               `
                   : ""
               }
@@ -8761,7 +8788,7 @@
       }
 
       async function downloadBankPayment(month) {
-        showToast("Generating bank payment file...");
+        showToast("Generating salary register...");
         try {
           const response = await fetch(
             `/api/method/sahayog.api.payroll.export_bank_payment_csv`,
@@ -8781,9 +8808,9 @@
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `salary_payment_${month}.csv`;
+          a.download = `salary_register_${month}.csv`;
           a.click();
-          showToast("✅ Bank payment file downloaded!");
+          showToast("✅ Salary register downloaded!");
         } catch (e) {
           showToast("Error downloading file");
           console.error(e);

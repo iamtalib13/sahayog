@@ -134,7 +134,7 @@ def generate_salary_register(payroll_run_id):
 
     emp_fields = [
         "name", "employee_name", "sahayog_branch", "designation",
-        "ctc", "custom_medical_deduction", "custom_staff_loan_emi",
+        "ctc", "custom_medical_deduction",
         "bank_name", "bank_ac_no", "status",
         "date_of_joining", "relieving_date",
     ]
@@ -195,13 +195,13 @@ def generate_salary_register(payroll_run_id):
             gross = monthly - round(per_day * lop_days, 2) + round(per_day * arrears_days, 2)
 
             medical = flt(emp.get("custom_medical_deduction", 0))
-            # Staff Loan EMI: open Staff Loan register wins (auto-reflect);
-            # else fall back to the Employee field (existing behavior).
+            # Staff Loan EMI comes only from the open Staff Loan register
+            # (single source of truth; Employee-level EMI field removed).
             try:
                 from sahayog.api.staff_loan import get_open_emi_total
-                loan = get_open_emi_total(emp.name) or flt(emp.get("custom_staff_loan_emi", 0))
+                loan = get_open_emi_total(emp.name) or 0
             except Exception:
-                loan = flt(emp.get("custom_staff_loan_emi", 0))
+                loan = 0
 
             total_ded = medical + loan
             net = gross - total_ded
