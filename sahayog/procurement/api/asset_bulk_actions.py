@@ -233,10 +233,17 @@ def bulk_insert_assets(file_url):
                 errors[asset_name] = "Asset already exists"
                 continue
 
+            # Get item_name from Item doctype for asset_name
+            item_code = row.get("item_code", "").strip()
+            item_name = asset_name
+            if item_code:
+                item_name = frappe.db.get_value("Item", item_code, "item_name") or asset_name
+
             doc_data = {
                 "doctype": "Asset",
-                "asset_name": asset_name,
-                "item_code": row.get("item_code", "").strip(),
+                "name": asset_name,
+                "asset_name": item_name,
+                "item_code": item_code,
                 "custom_invoice_number": row.get("custom_invoice_number", "").strip() or None,
                 "brand": row.get("brand", "").strip() or None,
                 "serial_no": row.get("serial_no", "").strip() or None,
