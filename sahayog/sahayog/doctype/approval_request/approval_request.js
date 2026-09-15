@@ -472,6 +472,8 @@ frappe.ui.form.on('Approval Request', {
             let status_html = "";
             if (row.approver_status === "Approved") {
                 status_html = '<div style="color: #16a34a; font-weight: bold; font-size: 10px; margin-top: 2px;">✓ Approved</div>';
+            } else if (row.approver_status === "Rejected") {
+                status_html = '<div style="color: #dc2626; font-weight: bold; font-size: 10px; margin-top: 2px;">✕ Rejected</div>';
             } else if (row.approver_status === "Pending") {
                 status_html = '<div style="color: #f59e0b; font-weight: bold; font-size: 10px; margin-top: 2px;">● Pending</div>';
             } else if (row.approver_status === "Skipped") {
@@ -645,10 +647,10 @@ frappe.ui.form.on('Approval Request', {
                 .custom-approval-journey {
                     background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
                     border: 1px solid #dbe7f3;
-                    border-radius: 16px;
-                    padding: 22px 24px 18px 24px;
-                    margin-bottom: 18px;
-                    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+                    border-radius: 8px;
+                    padding: 6px 12px 6px 12px;
+                    margin-bottom: 8px;
+                    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
                     position: relative;
                     overflow: hidden;
                 }
@@ -658,7 +660,7 @@ frappe.ui.form.on('Approval Request', {
                     top: 0;
                     left: 0;
                     right: 0;
-                    height: 4px;
+                    height: 2px;
                     background: linear-gradient(90deg, #3b82f6, #22c55e, #f59e0b);
                 }
                 .custom-approval-journey .intro-header {
@@ -666,30 +668,30 @@ frappe.ui.form.on('Approval Request', {
                     justify-content: space-between;
                     align-items: center;
                     flex-wrap: wrap;
-                    gap: 10px;
-                    margin-bottom: 20px;
+                    gap: 4px;
+                    margin-bottom: 6px;
                 }
                 .custom-approval-journey .intro-title-wrap {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 1px;
                 }
                 .custom-approval-journey .intro-title {
-                    font-size: 15px;
+                    font-size: 11px;
                     font-weight: 700;
                     color: #0f172a;
-                    letter-spacing: 0.2px;
+                    letter-spacing: 0.1px;
                 }
                 .custom-approval-journey .intro-subtitle {
-                    font-size: 12px;
+                    font-size: 9px;
                     color: #64748b;
                 }
                 .custom-approval-journey .status-badge {
-                    font-size: 11px;
+                    font-size: 9px;
                     font-weight: 700;
-                    padding: 6px 12px;
+                    padding: 2px 6px;
                     border-radius: 999px;
-                    letter-spacing: 0.4px;
+                    letter-spacing: 0.2px;
                     text-transform: uppercase;
                     white-space: nowrap;
                 }
@@ -702,7 +704,7 @@ frappe.ui.form.on('Approval Request', {
                     display: flex;
                     align-items: flex-start;
                     overflow-x: auto;
-                    padding: 8px 2px 6px;
+                    padding: 2px 1px 2px;
                     scrollbar-width: thin;
                 }
                 .custom-approval-journey .checkpoint-wrapper {
@@ -715,37 +717,48 @@ frappe.ui.form.on('Approval Request', {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    min-width: 120px;
-                    max-width: 150px;
+                    min-width: 70px;
+                    max-width: 95px;
                 }
                 .custom-approval-journey .checkpoint-dot {
-                    width: 40px;
-                    height: 40px;
+                    width: 20px;
+                    height: 20px;
                     border-radius: 999px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
+                    font-size: 9px;
                     font-weight: 700;
                     transition: all 0.2s ease;
                 }
-                .custom-approval-journey .node-idle     { background:#f8fafc; color:#94a3b8; border:2px solid #dbe7f3; }
-                .custom-approval-journey .node-active   { background:#fff7ed; color:#ea580c; border:2px solid #fb923c; box-shadow:0 0 0 5px rgba(251,146,60,0.12); }
-                .custom-approval-journey .node-done     { background:#16a34a; color:#fff; border:2px solid #16a34a; }
-                .custom-approval-journey .node-rejected { background:#dc2626; color:#fff; border:2px solid #dc2626; }
+                .custom-approval-journey .node-idle     { background:#f8fafc; color:#94a3b8; border:1.5px solid #dbe7f3; }
+                .custom-approval-journey .node-active   { background:#fff7ed; color:#ea580c; border:1.5px solid #fb923c; box-shadow:0 0 0 3px rgba(251,146,60,0.12); }
+                .custom-approval-journey .node-done     { background:#16a34a; color:#fff; border:1.5px solid #16a34a; }
+                .custom-approval-journey .node-rejected { background:#dc2626; color:#fff; border:1.5px solid #dc2626; }
 
                 .custom-approval-journey .checkpoint-label {
-                    margin-top: 10px;
-                    font-size: 12px;
+                    margin-top: 3px;
+                    font-size: 10px;
                     font-weight: 700;
                     color: #0f172a;
                     text-align: center;
-                    line-height: 1.35;
+                    line-height: 1.15;
                     word-break: break-word;
                 }
                 .custom-approval-journey .checkpoint-sublabel {
-                    margin-top: 3px;
-                    font-size: 10px;
+                    margin-top: 1px;
+                    font-size: 8px;
+                    color: #64748b;
+                    text-align: center;
+                    line-height: 1.1;
+                }
+                .custom-approval-journey .connector {
+                    flex: 1;
+                    height: 2px;
+                    border-radius: 999px;
+                    margin: 0 2px 14px;
+                    min-width: 18px;
+                }
                     color: #64748b;
                     text-align: center;
                     line-height: 1.3;
