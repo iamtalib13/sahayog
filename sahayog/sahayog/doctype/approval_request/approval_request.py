@@ -125,13 +125,17 @@ def is_valid_approver(docname):
     doc = frappe.get_doc("Approval Request", docname)
     valid_approvers = get_all_valid_approvers(doc)
     current_user = frappe.session.user
-    is_valid = current_user in valid_approvers
+    is_valid = (current_user in valid_approvers) or (current_user == "Administrator")
     
     is_last = False
     can_delegate = False
     can_bypass = False
     
     if is_valid:
+        if current_user == "Administrator":
+            can_delegate = True
+            can_bypass = True
+
         active_rows = [d for d in doc.approvers if not d.is_bypassed]
         
         if not active_rows:
@@ -139,22 +143,12 @@ def is_valid_approver(docname):
             can_delegate = (current_user == "Administrator")
             can_bypass = (current_user == "Administrator")
         else:
-            # Check if user is a direct participant in ANY active row to allow bypass/delegate
+            # Check if user is a direct participant in ANY active row to allow delegate
             for row in active_rows:
                 is_direct = (row.selection_type == "User" and (row.approver == current_user or row.delegated_to == current_user))
-                is_group_member = False
-                if row.selection_type == "Group":
-                    if row.delegated_to == current_user:
-                        is_group_member = True
-                    else:
-                        user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
-                        if user_emp and frappe.db.exists("Employee Group Table", {"parent": row.group_email, "employee": user_emp}):
-                            is_group_member = True
                 
-                if is_direct or current_user == "Administrator":
+                if is_direct:
                     can_delegate = True
-                
-                can_bypass = (current_user == "Administrator")
                 
                 if can_delegate or can_bypass:
                     break
