@@ -6098,6 +6098,17 @@
                   ? null
                   : b.dataset.status;
               render();
+              /* Sync the same status filter to the Trainings tab (one-way,
+                 guarded so calendar behaviour never breaks). */
+              try {
+                if (typeof trFilters !== "undefined") {
+                  trFilters.status = state.statusFilter || "";
+                  var trStatusSel = document.getElementById("tr-status");
+                  if (trStatusSel) trStatusSel.value = trFilters.status;
+                }
+                if (typeof trPage !== "undefined") trPage.current = 1;
+                if (typeof renderTrainings === "function") renderTrainings();
+              } catch (e) {}
             };
           });
 
