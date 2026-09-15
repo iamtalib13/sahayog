@@ -201,6 +201,16 @@ def _parse_csv(file_content):
 
 
 @frappe.whitelist()
+def get_serial_config_types():
+    """Get config_type options from Sahayog Serial Configuration child doctype."""
+    meta = frappe.get_meta("Sahayog Serial Configuration")
+    field = meta.get_field("config_type")
+    if field and field.options:
+        return [opt.strip() for opt in field.options.split("\n") if opt.strip()]
+    return []
+
+
+@frappe.whitelist()
 def bulk_insert_assets(file_url):
     """Insert assets from a CSV/Excel file.
     
@@ -215,6 +225,9 @@ def bulk_insert_assets(file_url):
 
     if not rows:
         frappe.throw(_("No data found in file"))
+
+    # Get config types dynamically from child doctype
+    config_types = get_serial_config_types()
 
     inserted = 0
     failed = []
@@ -261,11 +274,20 @@ def bulk_insert_assets(file_url):
             item_code = doc_data.get("item_code")
             if serial_no and item_code:
                 if not frappe.db.exists("Serial No", serial_no):
+                    # Build configuration_table from CSV columns
+                    configuration_table = []
+                    for ct in config_types:
+                        val = row.get(ct, "").strip()
+                        if val:
+                            configuration_table.append({"config_type": ct, "config_value": val})
+
                     sn = frappe.get_doc({
                         "doctype": "Serial No",
                         "serial_no": serial_no,
                         "item_code": item_code,
                     })
+                    if configuration_table:
+                        sn.configuration_table = configuration_table
                     sn.insert(ignore_permissions=True)
 
             doc = frappe.get_doc(doc_data)
