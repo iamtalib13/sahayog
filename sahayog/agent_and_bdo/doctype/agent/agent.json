@@ -12,6 +12,9 @@
   "agent_status",
   "agent_type",
   "creation_date",
+  "cif",
+  "agent_operative_account",
+  "agent_saving_account",
   "column_break_dxwu",
   "branch_code",
   "branch_name",
@@ -19,6 +22,9 @@
   "auth_id",
   "status",
   "employee",
+  "pan_card",
+  "pan_status",
+  "agent_security_account",
   "bdo_details_section",
   "requested_by",
   "requested_on",
@@ -198,12 +204,42 @@
    "fieldname": "get_commission",
    "fieldtype": "Button",
    "label": "Get Commission"
+  },
+  {
+   "fieldname": "agent_operative_account",
+   "fieldtype": "Data",
+   "label": "Agent Operative Account"
+  },
+  {
+   "fieldname": "agent_security_account",
+   "fieldtype": "Data",
+   "label": "Agent Security Account"
+  },
+  {
+   "fieldname": "agent_saving_account",
+   "fieldtype": "Data",
+   "label": "Agent Saving Account"
+  },
+  {
+   "fieldname": "pan_card",
+   "fieldtype": "Data",
+   "label": "PAN Card"
+  },
+  {
+   "fieldname": "pan_status",
+   "fieldtype": "Data",
+   "label": "PAN Status"
+  },
+  {
+   "fieldname": "cif",
+   "fieldtype": "Data",
+   "label": "CIF"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-18 12:58:28.766388",
+ "modified": "2026-09-12 12:43:22.981577",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
