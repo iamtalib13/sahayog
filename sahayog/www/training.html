@@ -2542,6 +2542,296 @@
           display: none;
         }
       }
+      /* ---------- Mobile-friendly (minimal, CSS-only, no JS changes) ---------- */
+      @media (max-width: 768px) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto 1fr;
+          grid-template-areas: "header" "sidebar" "main";
+          height: 100dvh;
+        }
+        .app.collapsed {
+          grid-template-columns: 1fr;
+        }
+        /* Sidebar becomes a compact top strip; all nav items stay clickable */
+        .sidebar {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          overflow: visible;
+        }
+        .sidebar-top {
+          height: 48px;
+        }
+        .collapse-btn {
+          display: none;
+        }
+        .sidebar-scroll {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 8px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 6px 8px;
+          -webkit-overflow-scrolling: touch;
+        }
+        .sidebar-section {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          flex-shrink: 0;
+        }
+        .sidebar-section + .sidebar-section {
+          margin-top: 0;
+          margin-left: 4px;
+          padding-left: 8px;
+          border-left: 1px solid var(--border);
+        }
+        .sidebar-section-title {
+          display: none;
+        }
+        .nav-item {
+          height: 32px;
+          width: auto;
+          padding: 0 10px 0 8px;
+          margin-bottom: 0;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .item-label {
+          font-size: 12.5px;
+        }
+        .sidebar-footer {
+          display: none;
+        }
+        /* Header wraps; restore search hidden at 920px as full-width row */
+        .header {
+          flex-wrap: wrap;
+          height: auto;
+          min-height: var(--header-h);
+          padding: 8px 12px;
+          row-gap: 8px;
+        }
+        .header-title {
+          font-size: 14px;
+        }
+        .header-sub {
+          font-size: 11px;
+        }
+        .search {
+          display: flex;
+          order: 3;
+          flex: 1 1 100%;
+          width: 100%;
+          max-width: none;
+          margin-left: 0;
+        }
+        /* Calendar toolbar stacks cleanly */
+        .cal-toolbar {
+          padding: 8px 12px 0;
+          row-gap: 8px;
+        }
+        .month-title-block {
+          order: -1;
+          flex: 1 1 100%;
+          text-align: left;
+        }
+        .month-title {
+          font-size: 16px;
+        }
+        .view-switch {
+          flex: 1;
+        }
+        .view-switch button {
+          flex: 1;
+          padding: 0 6px;
+        }
+        .filters-bar {
+          padding: 8px 12px;
+          gap: 6px;
+        }
+        .filters-bar .filter-group {
+          flex: 1 1 30%;
+        }
+        .filters-bar .filter-group select {
+          width: 100%;
+          min-width: 0;
+        }
+        .status-summary {
+          padding: 4px 12px 5px;
+          overflow-x: auto;
+          flex-wrap: nowrap;
+          -webkit-overflow-scrolling: touch;
+        }
+        .status-summary button {
+          flex-shrink: 0;
+        }
+        .cal-body {
+          padding: 0 10px 8px;
+          overflow: auto;
+        }
+        .cal-content {
+          min-height: 0;
+        }
+        /* Month grid stays 7-col but compact; chips truncate, tap targets intact */
+        .weekday-row div {
+          padding: 4px 2px;
+          font-size: 9.5px;
+          text-align: center;
+        }
+        .day-cell {
+          min-height: 58px;
+          padding: 3px;
+          gap: 3px;
+        }
+        .day-num {
+          width: 20px;
+          height: 20px;
+          font-size: 11.5px;
+        }
+        .event-chip {
+          font-size: 10px;
+          padding: 2px 4px;
+        }
+        .event-chip-time,
+        .event-chip .status-dot,
+        .holiday-label,
+        .sunday-label {
+          display: none;
+        }
+        /* Week view becomes a vertical stack (same DOM, same handlers) */
+        .week-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+          background: transparent;
+          border-bottom: none;
+          overflow-y: auto;
+        }
+        .week-day-col {
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+        }
+        /* Day view padding */
+        .day-view {
+          padding: 10px 2px 16px;
+        }
+        .day-view-time {
+          width: 64px;
+        }
+        /* Trainings list: keep ALL columns via horizontal swipe (override hide rule) */
+        .trainings-view {
+          padding: 12px;
+          overflow-y: auto;
+        }
+        .tr-search {
+          flex: 1 1 100%;
+          max-width: none;
+        }
+        .tr-toolbar .field-select,
+        .tr-toolbar input[type="month"] {
+          flex: 1 1 44%;
+          min-width: 0;
+          max-width: none;
+        }
+        .tr-stats {
+          gap: 8px;
+        }
+        .tr-stat-card {
+          flex: 1 1 44%;
+          min-width: 0;
+          max-width: none;
+          padding: 10px 12px;
+        }
+        .tr-stat-card .sc-num {
+          font-size: 20px;
+        }
+        .tr-table-wrap {
+          overflow-x: auto;
+          max-height: none;
+        }
+        .tr-table {
+          min-width: 720px;
+        }
+        .tr-table th:nth-child(n + 4),
+        .tr-table td:nth-child(n + 4) {
+          display: table-cell;
+        }
+        /* Reports: toolbar wraps, table swipes */
+        .report-toolbar {
+          align-items: stretch;
+        }
+        .report-emp-search {
+          flex: 1 1 100%;
+          max-width: none;
+        }
+        .report-toolbar .field-select,
+        .report-toolbar .report-input {
+          flex: 1 1 44%;
+          min-width: 0;
+          max-width: none;
+        }
+        .report-table {
+          min-width: 720px;
+        }
+        .report-cards {
+          grid-template-columns: 1fr;
+        }
+        /* Drawer + modals: full-width sheets, same open/close logic */
+        .drawer {
+          width: 100vw;
+          max-width: 100vw;
+        }
+        .meta-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        #addModal .modal {
+          width: 100vw;
+          max-width: 100vw;
+          max-height: 94dvh;
+        }
+        .modal-wrap.open {
+          align-items: flex-end;
+        }
+        #addModal .modal,
+        .modal {
+          border-radius: 12px 12px 0 0;
+        }
+        .more-modal {
+          width: 100vw;
+          max-width: 100vw;
+        }
+        .nt-head {
+          padding: 12px 12px 10px;
+          flex-wrap: wrap;
+          row-gap: 8px;
+        }
+        .nt-body {
+          padding: 10px 12px;
+        }
+        .budget-edit {
+          grid-template-columns: 1fr;
+        }
+        .toast {
+          left: 12px;
+          right: 12px;
+          transform: translateX(0) translateY(20px);
+          text-align: center;
+        }
+        .toast.show {
+          transform: translateX(0) translateY(0);
+        }
+      }
+      @media (max-width: 380px) {
+        .filters-bar .filter-group {
+          flex: 1 1 46%;
+        }
+        .meta-grid {
+          grid-template-columns: 1fr;
+        }
+        .nt-dt-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
     </style>
   </head>
   <body>
