@@ -241,7 +241,6 @@ def bulk_insert_assets(file_url):
 
             doc_data = {
                 "doctype": "Asset",
-                "name": asset_name,
                 "asset_name": item_name,
                 "item_code": item_code,
                 "custom_invoice_number": row.get("custom_invoice_number", "").strip() or None,
@@ -271,6 +270,11 @@ def bulk_insert_assets(file_url):
 
             doc = frappe.get_doc(doc_data)
             doc.insert(ignore_permissions=True)
+
+            # Rename to the Excel name after insert (naming_series overrides name)
+            if doc.name != asset_name:
+                frappe.rename_doc("Asset", doc.name, asset_name, force=True)
+
             frappe.db.commit()
             inserted += 1
         except Exception as e:
