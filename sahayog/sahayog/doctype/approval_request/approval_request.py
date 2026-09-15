@@ -272,6 +272,8 @@ def delegate_approval(docname, delegate_user, remark):
     try:
         target_row.delegated_to = delegate_user
         target_row.approver_status = "Skipped"
+        target_row.remark = f"Delegated to {delegate_user}. Remark: {remark}"
+        target_row.action_date = frappe.utils.now_datetime()
         doc.add_comment("Comment", f"Approval delegated to {delegate_user} by {current_user}. Remark: {remark}")
         doc.save(ignore_permissions=True)
     finally:
@@ -470,26 +472,29 @@ def process_approval(docname, action, remark):
         doc.acted_by = user
         doc.approver_remark = remark
 
-        if action == "Approved":
-            for d in doc.approvers:
-                if d.is_bypassed: continue
-                
-                is_direct = (d.selection_type == "User" and (d.approver == user or d.delegated_to == user))
-                is_group_member = False
-                if d.selection_type == "Group" and d.group_email:
-                    user_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
-                    if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
-                        is_group_member = True
-                
-                is_manager = False
-                if d.selection_type == "User" and d.approver:
-                    reports_to = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
-                    if reports_to:
-                        mgr_user = frappe.db.get_value("Employee", reports_to, "user_id")
-                        if mgr_user == user: is_manager = True
-                
-                if is_direct or is_group_member or is_manager or user == "Administrator":
-                    d.approver_status = "Approved"
+        for d in doc.approvers:
+            if d.is_bypassed or d.approver_status in ["Approved", "Rejected"]:
+                continue
+            
+            is_direct = (d.selection_type == "User" and (d.approver == user or d.delegated_to == user))
+            is_group_member = False
+            if d.selection_type == "Group" and d.group_email:
+                user_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+                if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
+                    is_group_member = True
+            
+            is_manager = False
+            if d.selection_type == "User" and d.approver:
+                reports_to = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
+                if reports_to:
+                    mgr_user = frappe.db.get_value("Employee", reports_to, "user_id")
+                    if mgr_user == user: is_manager = True
+            
+            if is_direct or is_group_member or is_manager or user == "Administrator":
+                d.approver_status = action
+                d.remark = remark
+                d.action_date = frappe.utils.now_datetime()
+                break
 
         doc.save(ignore_permissions=True)
 
