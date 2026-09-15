@@ -82,10 +82,32 @@ frappe.ui.form.on('Approval Approver', {
             return;
         }
 
+        let creator = frm.doc.owner || frappe.session.user;
+        if (row.approver === creator) {
+            frappe.model.set_value(cdt, cdn, 'approver', '');
+            frappe.model.set_value(cdt, cdn, 'approver_name', '');
+            frappe.msgprint({
+                title: __('Invalid Approver'),
+                indicator: 'red',
+                message: __('You cannot select yourself as an approver.')
+            });
+            return;
+        }
+
         // Fetch Employee Company Email and Full Name
-        frappe.db.get_value('Employee', { 'user_id': row.approver }, ['employee_name', 'company_email'])
+        frappe.db.get_value('Employee', { 'user_id': row.approver }, ['name', 'employee_name', 'company_email'])
             .then(r => {
                 if (r.message) {
+                    if (frm.doc.employee && r.message.name === frm.doc.employee) {
+                        frappe.model.set_value(cdt, cdn, 'approver', '');
+                        frappe.model.set_value(cdt, cdn, 'approver_name', '');
+                        frappe.msgprint({
+                            title: __('Invalid Approver'),
+                            indicator: 'red',
+                            message: __('You cannot select your own Employee record as an approver.')
+                        });
+                        return;
+                    }
                     if (!r.message.company_email) {
                         frappe.model.set_value(cdt, cdn, 'approver', '');
                         frappe.model.set_value(cdt, cdn, 'approver_name', '');
@@ -266,7 +288,12 @@ frappe.ui.form.on('Approval Request', {
             if (row.selection_type !== 'User') {
                 return { filters: { 'name': ['=', 'FORCE_EMPTY_LINK'] } };
             }
-            return {};
+            let creator = doc.owner || frappe.session.user;
+            return {
+                filters: {
+                    'name': ['!=', creator]
+                }
+            };
         });
 
         // Stop "Group Email" selection if Type is NOT Group
