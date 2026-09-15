@@ -285,9 +285,8 @@ def bulk_insert_assets(file_url):
                         "doctype": "Serial No",
                         "serial_no": serial_no,
                         "item_code": item_code,
+                        "configuration_table": configuration_table,
                     })
-                    if configuration_table:
-                        sn.configuration_table = configuration_table
                     sn.insert(ignore_permissions=True)
 
             doc = frappe.get_doc(doc_data)

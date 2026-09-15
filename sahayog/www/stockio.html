@@ -16226,9 +16226,13 @@
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
             args: { file_url: fileUrl },
           });
+          console.log("Bulk insert response:", res);
           const result = res.message;
+          console.log("Bulk insert result:", result);
           let msg = `${result.inserted} asset(s) inserted successfully`;
           if (result.failed && result.failed.length > 0) {
+            console.log("Failed assets:", result.failed);
+            console.log("Errors:", result.errors);
             msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
           }
           frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
