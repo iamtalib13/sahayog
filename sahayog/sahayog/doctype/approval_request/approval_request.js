@@ -441,9 +441,14 @@ frappe.ui.form.on('Approval Request', {
     },
     category: function(frm) {
         if (frm.doc.category) {
-            frappe.db.get_value('Approval Category', frm.doc.category, 'category').then(r => {
-                if (r.message && r.message.category) frm.set_value('title', r.message.category);
+            frappe.db.get_value('Approval Category', frm.doc.category, ['category', 'approval_suggestion']).then(r => {
+                if (r.message) {
+                    if (r.message.category) frm.set_value('title', r.message.category);
+                    if (r.message.approval_suggestion) frm.set_value('approval_suggestion', r.message.approval_suggestion);
+                }
             });
+        } else {
+            frm.set_value('approval_suggestion', '');
         }
     },
 
