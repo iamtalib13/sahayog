@@ -220,6 +220,21 @@ def get_asset_template_dropdowns():
 
 
 @frappe.whitelist()
+def preview_bulk_insert_assets(file_url):
+    """Parse CSV/Excel and return rows for preview without inserting."""
+    if not file_url:
+        frappe.throw(_("No file provided"))
+
+    content = _read_file_content(file_url)
+    rows = _parse_csv(content)
+
+    if not rows:
+        frappe.throw(_("No data found in file"))
+
+    return {"total": len(rows), "rows": rows}
+
+
+@frappe.whitelist()
 def bulk_insert_assets(file_url):
     """Insert assets from a CSV/Excel file.
     
