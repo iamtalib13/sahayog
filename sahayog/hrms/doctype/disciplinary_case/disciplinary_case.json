@@ -46,7 +46,6 @@
    "reqd": 1
   },
   {
-   "allow_on_submit": 1,
    "fieldname": "description",
    "fieldtype": "Small Text",
    "label": "Issue In Details",
@@ -142,6 +141,7 @@
    "fieldtype": "Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee ID",
    "options": "Employee",
    "reqd": 1
@@ -151,6 +151,7 @@
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee Name",
    "read_only": 1,
    "width": "220"
@@ -240,7 +241,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-09 16:09:18.394290",
+ "modified": "2026-09-15 16:27:44.284608",
  "modified_by": "Administrator",
  "module": "HRMS",
  "name": "Disciplinary Case",
