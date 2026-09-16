@@ -114,6 +114,13 @@ def get_data(filters):
 	conditions = []
 	values = {}
 
+	# Filter by owner for regular Employee role (only show own created records)
+	user_roles = frappe.get_roles(frappe.session.user)
+	allowed_all_roles = ["System Manager", "MIS Admin", "MIS User", "MIS Executive"]
+	if not any(r in user_roles for r in allowed_all_roles):
+		conditions.append("owner = %(current_user)s")
+		values["current_user"] = frappe.session.user
+
 	if filters.get("from_date"):
 		conditions.append("date >= %(from_date)s")
 		values["from_date"] = filters.get("from_date")
