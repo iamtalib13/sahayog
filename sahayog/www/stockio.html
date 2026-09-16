@@ -9169,7 +9169,7 @@
                  <button @click="itemView = 'card'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'card' ? '#369696' : 'transparent', color: itemView === 'card' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">Card</button>
                  <button @click="itemView = 'list'" :style="{ padding: '4px 10px', fontSize: '0.75rem', border: 'none', borderRadius: '4px', background: itemView === 'list' ? '#369696' : 'transparent', color: itemView === 'list' ? 'white' : 'var(--text-muted)', cursor: 'pointer' }">List</button>
               </div>
-              <div v-if="activeItem === 'Asset Master' && isAdmin" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-left: auto;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
+              <div v-if="activeItem === 'Asset Master'" @click="showBulkAssetModal = true" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; box-shadow: 0 2px 8px rgba(139,92,246,0.3); transition: all 0.2s; margin-left: auto;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 12px rgba(139,92,246,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 8px rgba(139,92,246,0.3)'">
                 <i class="fas fa-layer-group"></i>
                 <span>Bulk Actions</span>
               </div>
@@ -9362,13 +9362,14 @@
     v-if="showBulkAssetInsertModal"
     @click.self="showBulkAssetInsertModal = false"
   >
-    <div class="profile-modal" style="max-width: 500px;">
+    <div class="profile-modal" style="max-width: 900px;">
       <div class="profile-modal-header">
         <h3>Bulk Insert Assets</h3>
-        <button class="profile-close" @click="showBulkAssetInsertModal = false">&times;</button>
+        <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertFileName = ''">&times;</button>
       </div>
-      <div class="profile-modal-body" style="padding: 24px;">
-        <div style="text-align: center; padding: 40px 20px 20px;">
+      <div class="profile-modal-body" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
+        <!-- Upload Section (shown when no preview) -->
+        <div v-if="!bulkInsertPreview" style="text-align: center; padding: 40px 20px 20px;">
           <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
             <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
           </div>
@@ -9380,7 +9381,54 @@
             <span>Choose File</span>
           </label>
         </div>
-        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center;">
+        <!-- Preview Section (shown after file is parsed) -->
+        <div v-if="bulkInsertPreview">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div>
+              <p style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">[[ bulkInsertFileName ]]</p>
+              <p style="color: var(--text-muted); font-size: 0.8rem;">[[ bulkInsertPreview.total ]] record(s) found</p>
+            </div>
+            <button @click="bulkInsertPreview = null; bulkInsertFileName = ''" style="padding: 6px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--text-main);">Change File</button>
+          </div>
+          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 16px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+              <thead>
+                <tr style="background: var(--bg-secondary);">
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">#</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Name</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Item Code</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Brand</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Serial No</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Zone</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">State</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-main); white-space: nowrap;">Division</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, idx) in bulkInsertPreview.rows.slice(0, 10)" :key="idx" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 8px 10px; color: var(--text-muted);">[[ idx + 1 ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main);">[[ row.name || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main);">[[ row.item_code || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main);">[[ row.brand || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main);">[[ row.serial_no || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main); white-space: nowrap;">[[ row.Zone || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main); white-space: nowrap;">[[ row.State || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main); white-space: nowrap;">[[ row.Division || '' ]]</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="bulkInsertPreview.total > 10" style="color: var(--text-muted); font-size: 0.8rem; text-align: center; margin-bottom: 16px;">... and [[ bulkInsertPreview.total - 10 ]] more record(s)</p>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button @click="bulkInsertPreview = null; bulkInsertFileName = ''" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-main);">Cancel</button>
+            <button @click="confirmBulkInsert()" :disabled="bulkInsertCreating" style="padding: 10px 24px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fas fa-check" v-if="!bulkInsertCreating"></i>
+              <i class="fas fa-spinner fa-spin" v-if="bulkInsertCreating"></i>
+              <span>[[ bulkInsertCreating ? 'Creating...' : 'Create ' + bulkInsertPreview.total + ' Asset(s)' ]]</span>
+            </button>
+          </div>
+        </div>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; text-align: center; margin-top: 16px;">
           <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px;">Need the template format?</p>
           <button @click="downloadInsertTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #10b981; color: #10b981; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#10b981';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#10b981'">
             <i class="fas fa-download"></i>
@@ -13893,6 +13941,10 @@
       assignedAssetsList: [],
       showBulkAssetModal: false,
       showBulkAssetInsertModal: false,
+      bulkInsertPreview: null,
+      bulkInsertFileName: "",
+      bulkInsertFileUrl: "",
+      bulkInsertCreating: false,
       showBulkAssetUpdateModal: false,
 
       async getSerialWarehouseMap() {
@@ -16197,23 +16249,52 @@
       async handleBulkAssetInsertFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("is_private", 0);
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.xhr({
-            url: "/api/method/upload_file",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
+          const fileUrl = await new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("is_private", 0);
+            $.ajax({
+              type: "POST",
+              url: "/api/method/upload_file",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function(r) {
+                if (r.message && r.message.file_url) {
+                  resolve(r.message.file_url);
+                } else {
+                  reject(new Error("No file URL returned"));
+                }
+              },
+              error: function(r) {
+                reject(new Error(r.responseJSON ? r.responseJSON._server_messages : "Upload failed"));
+              }
+            });
           });
-          const fileUrl = uploadRes.message.file_url;
-          frappe.show_alert("Processing bulk insert...", 5);
+          this.bulkInsertFileUrl = fileUrl;
+          this.bulkInsertFileName = file.name;
+          frappe.show_alert("Parsing file...", 3);
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.asset_bulk_actions.preview_bulk_insert_assets",
+            args: { file_url: fileUrl },
+          });
+          this.bulkInsertPreview = res.message;
+        } catch (e) {
+          console.error("Bulk insert preview error:", e);
+          frappe.msgprint("Failed to parse file: " + (e.message || "Unknown error"));
+        }
+        event.target.value = "";
+      },
+      async confirmBulkInsert() {
+        if (!this.bulkInsertFileUrl) return;
+        this.bulkInsertCreating = true;
+        try {
+          frappe.show_alert("Creating assets...", 5);
           const res = await frappe.call({
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
-            args: { file_url: fileUrl },
+            args: { file_url: this.bulkInsertFileUrl },
           });
           const result = res.message;
           let msg = `${result.inserted} asset(s) inserted successfully`;
@@ -16222,29 +16303,44 @@
           }
           frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
           this.showBulkAssetInsertModal = false;
+          this.bulkInsertPreview = null;
+          this.bulkInsertFileName = "";
+          this.bulkInsertFileUrl = "";
           await this.fetchData("Asset");
         } catch (e) {
           console.error("Bulk insert assets error:", e);
           frappe.msgprint("Bulk insert failed: " + (e.message || "Unknown error"));
+        } finally {
+          this.bulkInsertCreating = false;
         }
-        event.target.value = "";
       },
       async handleBulkAssetUpdateFile(event) {
         const file = event.target.files[0];
         if (!file) return;
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("is_private", 0);
         try {
           frappe.show_alert("Uploading file...", 3);
-          const uploadRes = await frappe.xhr({
-            url: "/api/method/upload_file",
-            type: "POST",
-            data: formData,
-            processData: false,
-            contentType: false,
+          const fileUrl = await new Promise((resolve, reject) => {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("is_private", 0);
+            $.ajax({
+              type: "POST",
+              url: "/api/method/upload_file",
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function(r) {
+                if (r.message && r.message.file_url) {
+                  resolve(r.message.file_url);
+                } else {
+                  reject(new Error("No file URL returned"));
+                }
+              },
+              error: function(r) {
+                reject(new Error(r.responseJSON ? r.responseJSON._server_messages : "Upload failed"));
+              }
+            });
           });
-          const fileUrl = uploadRes.message.file_url;
           frappe.show_alert("Processing bulk update...", 5);
           const res = await frappe.call({
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_update_assets_from_file",
@@ -16264,9 +16360,22 @@
         }
         event.target.value = "";
       },
-      downloadInsertTemplate() {
-        const headers = ["name", "item_code", "custom_invoice_number", "brand", "serial_no", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date"];
-        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "SN-12345", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10"];
+      async downloadInsertTemplate() {
+        let configTypes = [];
+        let dropdowns = { brands: [], zones: [], divisions: [] };
+        try {
+          const [configRes, dropRes] = await Promise.all([
+            frappe.call({ method: "sahayog.procurement.api.asset_bulk_actions.get_serial_config_types" }),
+            frappe.call({ method: "sahayog.procurement.api.asset_bulk_actions.get_asset_template_dropdowns" }),
+          ]);
+          if (configRes.message) configTypes = configRes.message;
+          if (dropRes.message) dropdowns = dropRes.message;
+        } catch (e) { console.error("Failed to fetch template data:", e); }
+        const headers = ["name", "item_code", "custom_invoice_number", "brand", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date", "serial_no", ...configTypes];
+        const brand = dropdowns.brands[0] || "Samsung";
+        const zone = dropdowns.zones[0] || "ZS";
+        const division = dropdowns.divisions[0] || "01";
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", brand, zone, "", "", division, "50000", "2024-01-15", "2024-01-10", "SN-12345", ...configTypes.map(() => "")];
         const csv = headers.join(",") + "\n" + example.join(",") + "\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);

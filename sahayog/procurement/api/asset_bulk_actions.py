@@ -2,6 +2,7 @@ import frappe
 from frappe import _
 import csv
 import io
+import os
 
 
 def cancel_linked_docs(asset_name):
@@ -157,18 +158,80 @@ def create_asset_with_name(doc, custom_name=None):
 
 def _read_file_content(file_url):
     """Read file content from a file URL."""
-    if file_url.startswith("/files/"):
-        file_path = frappe.get_site_path("public", file_url)
+    file_name = file_url.split("/")[-1]
+    private_path = frappe.get_site_path("private", "files", file_name)
+    public_path = frappe.get_site_path("public", "files", file_name)
+    if os.path.exists(private_path):
+        file_path = private_path
+    elif os.path.exists(public_path):
+        file_path = public_path
     else:
-        file_path = frappe.get_site_path(file_url.lstrip("/"))
-    with open(file_path, "r") as f:
-        return f.read()
+        frappe.throw(f"File not found: {file_url}")
+
+    # If Excel file, read with openpyxl
+    if file_name.lower().endswith(('.xlsx', '.xls')):
+        import openpyxl
+        wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(values_only=True))
+        wb.close()
+        if not rows:
+            return ""
+        import io, csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        for row in rows:
+            writer.writerow([str(cell) if cell is not None else "" for cell in row])
+        return output.getvalue()
+
+    # For CSV, try UTF-8 first, then latin-1
+    for encoding in ['utf-8', 'latin-1', 'cp1252']:
+        try:
+            with open(file_path, "r", encoding=encoding) as f:
+                return f.read()
+        except UnicodeDecodeError:
+            continue
+    frappe.throw(f"Could not read file with any supported encoding: {file_name}")
 
 
 def _parse_csv(file_content):
     """Parse CSV content and return list of dicts."""
     reader = csv.DictReader(io.StringIO(file_content))
     return [row for row in reader]
+
+
+@frappe.whitelist()
+def get_serial_config_types():
+    """Get config_type options from Sahayog Serial Configuration child doctype."""
+    meta = frappe.get_meta("Sahayog Serial Configuration")
+    field = meta.get_field("config_type")
+    if field and field.options:
+        return [opt.strip() for opt in field.options.split("\n") if opt.strip()]
+    return []
+
+
+@frappe.whitelist()
+def get_asset_template_dropdowns():
+    """Get dropdown values for brand, zone, division from their doctypes."""
+    brands = [r[0] for r in frappe.db.get_all("Brand", fields=["name"], limit_page_length=5)]
+    zones = [r[0] for r in frappe.db.get_all("Zone", fields=["name"], limit_page_length=5)]
+    divisions = [r[0] for r in frappe.db.get_all("Division", fields=["name"], limit_page_length=5)]
+    return {"brands": brands, "zones": zones, "divisions": divisions}
+
+
+@frappe.whitelist()
+def preview_bulk_insert_assets(file_url):
+    """Parse CSV/Excel and return rows for preview without inserting."""
+    if not file_url:
+        frappe.throw(_("No file provided"))
+
+    content = _read_file_content(file_url)
+    rows = _parse_csv(content)
+
+    if not rows:
+        frappe.throw(_("No data found in file"))
+
+    return {"total": len(rows), "rows": rows}
 
 
 @frappe.whitelist()
@@ -187,6 +250,9 @@ def bulk_insert_assets(file_url):
     if not rows:
         frappe.throw(_("No data found in file"))
 
+    # Get config types dynamically from child doctype
+    config_types = get_serial_config_types()
+
     inserted = 0
     failed = []
     errors = {}
@@ -204,10 +270,16 @@ def bulk_insert_assets(file_url):
                 errors[asset_name] = "Asset already exists"
                 continue
 
+            # Get item_name from Item doctype for asset_name
+            item_code = row.get("item_code", "").strip()
+            item_name = asset_name
+            if item_code:
+                item_name = frappe.db.get_value("Item", item_code, "item_name") or asset_name
+
             doc_data = {
                 "doctype": "Asset",
-                "asset_name": asset_name,
-                "item_code": row.get("item_code", "").strip(),
+                "asset_name": item_name,
+                "item_code": item_code,
                 "custom_invoice_number": row.get("custom_invoice_number", "").strip() or None,
                 "brand": row.get("brand", "").strip() or None,
                 "serial_no": row.get("serial_no", "").strip() or None,
@@ -221,8 +293,33 @@ def bulk_insert_assets(file_url):
                 "company": frappe.defaults.get_global_default("company"),
             }
 
+            # Ensure Serial No exists before creating Asset
+            serial_no = doc_data.get("serial_no")
+            item_code = doc_data.get("item_code")
+            if serial_no and item_code:
+                if not frappe.db.exists("Serial No", serial_no):
+                    # Build configuration_table from CSV columns
+                    configuration_table = []
+                    for ct in config_types:
+                        val = row.get(ct, "").strip()
+                        if val:
+                            configuration_table.append({"config_type": ct, "config_value": val})
+
+                    sn = frappe.get_doc({
+                        "doctype": "Serial No",
+                        "serial_no": serial_no,
+                        "item_code": item_code,
+                        "configuration_table": configuration_table,
+                    })
+                    sn.insert(ignore_permissions=True)
+
             doc = frappe.get_doc(doc_data)
             doc.insert(ignore_permissions=True)
+
+            # Rename to the Excel name after insert (naming_series overrides name)
+            if doc.name != asset_name:
+                frappe.rename_doc("Asset", doc.name, asset_name, force=True)
+
             frappe.db.commit()
             inserted += 1
         except Exception as e:
