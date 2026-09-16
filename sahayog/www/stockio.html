@@ -9362,7 +9362,7 @@
     v-if="showBulkAssetInsertModal"
     @click.self="showBulkAssetInsertModal = false"
   >
-    <div class="profile-modal" style="max-width: 700px;">
+    <div class="profile-modal" style="max-width: 900px;">
       <div class="profile-modal-header">
         <h3>Bulk Insert Assets</h3>
         <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertFileName = ''">&times;</button>
@@ -9407,7 +9407,7 @@
               <tbody>
                 <tr v-for="(row, idx) in bulkInsertPreview.rows.slice(0, 10)" :key="idx" style="border-bottom: 1px solid var(--border-color);">
                   <td style="padding: 8px 10px; color: var(--text-muted);">[[ idx + 1 ]]</td>
-                  <td style="padding: 8px 10px; color: var(--text-main); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">[[ row.name || '' ]]</td>
+                  <td style="padding: 8px 10px; color: var(--text-main);">[[ row.name || '' ]]</td>
                   <td style="padding: 8px 10px; color: var(--text-main);">[[ row.item_code || '' ]]</td>
                   <td style="padding: 8px 10px; color: var(--text-main);">[[ row.brand || '' ]]</td>
                   <td style="padding: 8px 10px; color: var(--text-main);">[[ row.serial_no || '' ]]</td>
