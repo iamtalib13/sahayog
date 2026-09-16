@@ -38,6 +38,21 @@ class ApprovalRequest(Document):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
 
+        self.validate_attachments_not_modified()
+
+    def validate_attachments_not_modified(self):
+        creator_user = self.owner or frappe.session.user
+        current_user = frappe.session.user
+
+        # If current user is not the owner/creator, attachments table cannot be changed/deleted
+        if current_user != creator_user and current_user != "Administrator":
+            old_doc = self.get_doc_before_save()
+            if old_doc:
+                old_attachments = [(d.attachment, d.description) for d in old_doc.get("attachments", [])]
+                new_attachments = [(d.attachment, d.description) for d in self.get("attachments", [])]
+                if old_attachments != new_attachments:
+                    frappe.throw("Approvers are not allowed to add, edit, or remove attachments submitted by the requester.")
+
     def validate_approval_suggestion(self):
         if self.category:
             suggestion = frappe.db.get_value("Approval Category", self.category, "approval_suggestion")
