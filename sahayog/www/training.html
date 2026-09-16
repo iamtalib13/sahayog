@@ -6386,6 +6386,22 @@
             selectBranch(0, code);
           };
 
+          /* Auto-add a branch row from a participant's branch (manual add/remove untouched). */
+          dialogFn.autoAddBranch = function(code){
+            if (!code || state.dialogMode === "edit") return false;
+            var geos = state.selectedGeographies || [];
+            var dup = geos.some(function(g){ return g.branch === code; });
+            if (dup) return false;
+            var emptyIdx = -1;
+            geos.forEach(function(g, i){ if (!g.branch && emptyIdx === -1) emptyIdx = i; });
+            if (emptyIdx === -1) {
+              geos.push({});
+              emptyIdx = geos.length - 1;
+            }
+            selectBranch(emptyIdx, code);
+            return true;
+          };
+
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
@@ -6585,9 +6601,36 @@
               agent_employee: val,
               full_name: fullName,
             });
+            /* Auto-map participant's branch into geographies (manual rows untouched). */
+            var autoCode = participantBranchCode(type, val);
+            if (autoCode && dialogFn.autoAddBranch) {
+              if (dialogFn.autoAddBranch(autoCode)) showToast("Branch auto-added from participant");
+            }
             renderPChips();
             if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
+          }
+
+          /* Resolve a participant's Sahayog Branch code ("" if unknown). */
+          function participantBranchCode(type, val) {
+            var picks = state.branchPick || [];
+            function resolveBranch(codeOrName) {
+              if (!codeOrName) return "";
+              var want = String(codeOrName).trim().toLowerCase();
+              var hit = null;
+              picks.forEach(function(b){
+                if (hit) return;
+                if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                    (b.branch && String(b.branch).trim().toLowerCase() === want)) hit = b;
+              });
+              return hit ? hit.name : "";
+            }
+            if (type === "Agent") {
+              var ag = (state.allAgents || []).find(function(x){ return x.name === val; }) || {};
+              return resolveBranch(ag.branch_name);
+            }
+            var emp = (state.allEmployees || []).find(function(x){ return x.name === val; }) || {};
+            return resolveBranch(emp.sahayog_branch);
           }
 
           if (pAttendee) pAttendee.addEventListener("click", function() { openPop(); });
