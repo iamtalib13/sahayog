@@ -211,6 +211,15 @@ def get_serial_config_types():
 
 
 @frappe.whitelist()
+def get_asset_template_dropdowns():
+    """Get dropdown values for brand, zone, division from their doctypes."""
+    brands = [r[0] for r in frappe.db.get_all("Brand", fields=["name"], limit_page_length=5)]
+    zones = [r[0] for r in frappe.db.get_all("Zone", fields=["name"], limit_page_length=5)]
+    divisions = [r[0] for r in frappe.db.get_all("Division", fields=["name"], limit_page_length=5)]
+    return {"brands": brands, "zones": zones, "divisions": divisions}
+
+
+@frappe.whitelist()
 def bulk_insert_assets(file_url):
     """Insert assets from a CSV/Excel file.
     

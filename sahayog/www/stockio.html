@@ -16292,14 +16292,20 @@
       },
       async downloadInsertTemplate() {
         let configTypes = [];
+        let dropdowns = { brands: [], zones: [], divisions: [] };
         try {
-          const res = await frappe.call({
-            method: "sahayog.procurement.api.asset_bulk_actions.get_serial_config_types",
-          });
-          if (res.message) configTypes = res.message;
-        } catch (e) { console.error("Failed to fetch config types:", e); }
+          const [configRes, dropRes] = await Promise.all([
+            frappe.call({ method: "sahayog.procurement.api.asset_bulk_actions.get_serial_config_types" }),
+            frappe.call({ method: "sahayog.procurement.api.asset_bulk_actions.get_asset_template_dropdowns" }),
+          ]);
+          if (configRes.message) configTypes = configRes.message;
+          if (dropRes.message) dropdowns = dropRes.message;
+        } catch (e) { console.error("Failed to fetch template data:", e); }
         const headers = ["name", "item_code", "custom_invoice_number", "brand", "Zone", "State", "Location", "Division", "gross_purchase_amount", "available_for_use_date", "purchase_date", "serial_no", ...configTypes];
-        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", "Samsung", "ZS", "MH", "SOL-MH-001", "01", "50000", "2024-01-15", "2024-01-10", "SN-12345", ...configTypes.map(() => "")];
+        const brand = dropdowns.brands[0] || "Samsung";
+        const zone = dropdowns.zones[0] || "ZS";
+        const division = dropdowns.divisions[0] || "01";
+        const example = ["SMCCSL/ZS/MH/SOL/01/AST/BRAND/SERIAL/001", "ITM-001", "INV-12345", brand, zone, "", "", division, "50000", "2024-01-15", "2024-01-10", "SN-12345", ...configTypes.map(() => "")];
         const csv = headers.join(",") + "\n" + example.join(",") + "\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
