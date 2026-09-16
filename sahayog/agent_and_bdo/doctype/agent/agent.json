@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "field:agent_code",
  "creation": "2025-06-02 13:33:21.011932",
  "doctype": "DocType",
@@ -12,9 +13,6 @@
   "agent_status",
   "agent_type",
   "creation_date",
-  "cif",
-  "agent_operative_account",
-  "agent_saving_account",
   "column_break_dxwu",
   "branch_code",
   "branch_name",
@@ -22,6 +20,11 @@
   "auth_id",
   "status",
   "employee",
+  "section_break_khou",
+  "cif",
+  "agent_operative_account",
+  "agent_saving_account",
+  "column_break_kacp",
   "pan_card",
   "pan_status",
   "agent_security_account",
@@ -234,12 +237,20 @@
    "fieldname": "cif",
    "fieldtype": "Data",
    "label": "CIF"
+  },
+  {
+   "fieldname": "section_break_khou",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kacp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-12 12:43:22.981577",
+ "modified": "2026-09-16 16:51:22.556886",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
