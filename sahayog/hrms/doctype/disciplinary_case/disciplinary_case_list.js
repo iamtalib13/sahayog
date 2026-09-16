@@ -6,6 +6,12 @@
 frappe.listview_settings["Disciplinary Case"] = {
   refresh(listview) {
     const apply = () => {
+      // Remove sibling list's stale width style. SPA keeps <head> across
+      // navigation, and on production the two lists have Employee Name at
+      // different positions — the stale tag hits the wrong column (messy view).
+      document
+        .getElementById("unauthorized-absence-employee-name-width")
+        ?.remove();
       const head = document.querySelector(".frappe-list .list-row-head .level-left");
       if (!head) return false;
       const headers = Array.from(head.children);
