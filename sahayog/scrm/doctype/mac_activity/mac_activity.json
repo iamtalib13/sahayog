@@ -225,6 +225,13 @@
    "read": 1,
    "report": 1,
    "role": "MIS Executive"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

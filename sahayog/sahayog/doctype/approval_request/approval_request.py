@@ -26,6 +26,8 @@ class ApprovalRequest(Document):
             self.designation = emp.designation
 
     def validate(self):
+        self.validate_creator_not_approver()
+
         if self.is_new():
             return
 
@@ -34,6 +36,27 @@ class ApprovalRequest(Document):
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
+
+    def validate_creator_not_approver(self):
+        creator_user = self.owner or frappe.session.user
+        creator_emp = self.employee
+
+        if not creator_emp and creator_user:
+            creator_emp = frappe.db.get_value("Employee", {"user_id": creator_user}, "name")
+
+        for d in self.approvers:
+            if d.selection_type == "User" and d.approver:
+                if d.approver == creator_user:
+                    frappe.throw(
+                        f"Row #{d.idx}: You cannot select yourself ({d.approver}) as an approver."
+                    )
+                if creator_emp:
+                    approver_emp = frappe.db.get_value("Employee", {"user_id": d.approver}, "name")
+                    if approver_emp and approver_emp == creator_emp:
+                        frappe.throw(
+                            f"Row #{d.idx}: You cannot select your own Employee record ({d.approver_name or d.approver}) as an approver."
+                        )
+
 
 
 def ensure_docshare(doc, user):
@@ -102,13 +125,17 @@ def is_valid_approver(docname):
     doc = frappe.get_doc("Approval Request", docname)
     valid_approvers = get_all_valid_approvers(doc)
     current_user = frappe.session.user
-    is_valid = current_user in valid_approvers
+    is_valid = (current_user in valid_approvers) or (current_user == "Administrator")
     
     is_last = False
     can_delegate = False
     can_bypass = False
     
     if is_valid:
+        if current_user == "Administrator":
+            can_delegate = True
+            can_bypass = True
+
         active_rows = [d for d in doc.approvers if not d.is_bypassed]
         
         if not active_rows:
@@ -116,24 +143,12 @@ def is_valid_approver(docname):
             can_delegate = (current_user == "Administrator")
             can_bypass = (current_user == "Administrator")
         else:
-            # Check if user is a direct participant in ANY active row to allow bypass/delegate
+            # Check if user is a direct participant in ANY active row to allow delegate
             for row in active_rows:
                 is_direct = (row.selection_type == "User" and (row.approver == current_user or row.delegated_to == current_user))
-                is_group_member = False
-                if row.selection_type == "Group":
-                    if row.delegated_to == current_user:
-                        is_group_member = True
-                    else:
-                        user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
-                        if user_emp and frappe.db.exists("Employee Group Table", {"parent": row.group_email, "employee": user_emp}):
-                            is_group_member = True
                 
-                if is_direct or current_user == "Administrator":
+                if is_direct:
                     can_delegate = True
-                    can_bypass = True
-                
-                if is_group_member:
-                    can_bypass = True
                 
                 if can_delegate or can_bypass:
                     break
@@ -257,6 +272,8 @@ def delegate_approval(docname, delegate_user, remark):
     try:
         target_row.delegated_to = delegate_user
         target_row.approver_status = "Skipped"
+        target_row.remark = f"Delegated to {delegate_user}. Remark: {remark}"
+        target_row.action_date = frappe.utils.now_datetime()
         doc.add_comment("Comment", f"Approval delegated to {delegate_user} by {current_user}. Remark: {remark}")
         doc.save(ignore_permissions=True)
     finally:
@@ -282,6 +299,9 @@ def bypass_approval(docname, remark):
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
+    if current_user != "Administrator":
+        frappe.throw("Only Administrator is authorized to bypass approval levels.")
+
     if doc.approval_status != "Pending Approval":
         frappe.throw(f"Request must be in 'Pending Approval' status to bypass.")
 
@@ -290,14 +310,7 @@ def bypass_approval(docname, remark):
     for d in doc.approvers:
         if d.is_bypassed or d.approver_status == "Approved": continue
         
-        is_direct = (d.selection_type == "User" and (d.approver == current_user or d.delegated_to == current_user))
-        is_group_member = False
-        if d.selection_type == "Group" and d.group_email:
-            user_emp = frappe.db.get_value("Employee", {"user_id": current_user}, "name")
-            if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
-                is_group_member = True
-        
-        if is_direct or is_group_member or current_user == "Administrator":
+        if current_user == "Administrator":
             d.is_bypassed = 1
             d.approver_status = "Skipped"
             bypassed_any = True
@@ -459,26 +472,29 @@ def process_approval(docname, action, remark):
         doc.acted_by = user
         doc.approver_remark = remark
 
-        if action == "Approved":
-            for d in doc.approvers:
-                if d.is_bypassed: continue
-                
-                is_direct = (d.selection_type == "User" and (d.approver == user or d.delegated_to == user))
-                is_group_member = False
-                if d.selection_type == "Group" and d.group_email:
-                    user_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
-                    if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
-                        is_group_member = True
-                
-                is_manager = False
-                if d.selection_type == "User" and d.approver:
-                    reports_to = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
-                    if reports_to:
-                        mgr_user = frappe.db.get_value("Employee", reports_to, "user_id")
-                        if mgr_user == user: is_manager = True
-                
-                if is_direct or is_group_member or is_manager or user == "Administrator":
-                    d.approver_status = "Approved"
+        for d in doc.approvers:
+            if d.is_bypassed or d.approver_status in ["Approved", "Rejected"]:
+                continue
+            
+            is_direct = (d.selection_type == "User" and (d.approver == user or d.delegated_to == user))
+            is_group_member = False
+            if d.selection_type == "Group" and d.group_email:
+                user_emp = frappe.db.get_value("Employee", {"user_id": user}, "name")
+                if user_emp and frappe.db.exists("Employee Group Table", {"parent": d.group_email, "employee": user_emp}):
+                    is_group_member = True
+            
+            is_manager = False
+            if d.selection_type == "User" and d.approver:
+                reports_to = frappe.db.get_value("Employee", {"user_id": d.approver}, "reports_to")
+                if reports_to:
+                    mgr_user = frappe.db.get_value("Employee", reports_to, "user_id")
+                    if mgr_user == user: is_manager = True
+            
+            if is_direct or is_group_member or is_manager or user == "Administrator":
+                d.approver_status = action
+                d.remark = remark
+                d.action_date = frappe.utils.now_datetime()
+                break
 
         doc.save(ignore_permissions=True)
 
@@ -491,6 +507,33 @@ def process_approval(docname, action, remark):
             "document_type": doc.doctype,
             "document_name": doc.name
         }).insert(ignore_permissions=True)
+
+        # Send Email Notification to Creator
+        creator_email = None
+        if doc.employee:
+            creator_email = frappe.db.get_value("Employee", doc.employee, "company_email")
+        if not creator_email and doc.owner:
+            creator_email = frappe.db.get_value("Employee", {"user_id": doc.owner}, "company_email") or frappe.db.get_value("User", doc.owner, "email")
+
+        if creator_email:
+            acted_by_name = frappe.db.get_value("User", user, "full_name") or user
+            try:
+                site_url = frappe.utils.get_url()
+                subject = f"Your Approval Request '{doc.title}' has been {action}"
+                message = f"""
+                <p>Dear {doc.employee_name or 'User'},</p>
+                <p>Your approval request <b>{doc.title}</b> ({doc.name}) has been <b>{action}</b> by {acted_by_name}.</p>
+                <p><b>Remark:</b> {remark or 'N/A'}</p>
+                <p><a href="{site_url}/app/approval-request/{doc.name}">Click here to view the request</a></p>
+                """
+                frappe.sendmail(
+                    recipients=[creator_email],
+                    subject=subject,
+                    message=message,
+                    delayed=False
+                )
+            except Exception as e:
+                frappe.log_error(f"Failed to send approval status email to creator: {str(e)}")
     finally:
         frappe.flags.in_approval_action = False
 
