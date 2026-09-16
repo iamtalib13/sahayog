@@ -83,7 +83,10 @@ def get_dams_email_defaults(doctype, docname):
         case_docnames = [case_id]
         for dt in related_doctypes:
             try:
-                names = frappe.get_all(dt, filters={"case_id": case_id}, pluck="name")
+                # ignore_permissions: HR roles can't read Email Queue, but the
+                # history lookup is internal/read-only (remember past CCs).
+                names = frappe.get_all(dt, filters={"case_id": case_id}, pluck="name",
+                                       ignore_permissions=True)
                 case_docnames.extend(names)
             except Exception:
                 pass
@@ -93,7 +96,8 @@ def get_dams_email_defaults(doctype, docname):
                 "Email Queue",
                 filters={"reference_name": ["in", case_docnames]},
                 fields=["show_as_cc"],
-                order_by="creation asc"
+                order_by="creation asc",
+                ignore_permissions=True
             )
             for eq in email_queues:
                 if eq.show_as_cc:
