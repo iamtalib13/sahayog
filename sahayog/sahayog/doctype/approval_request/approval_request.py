@@ -26,6 +26,7 @@ class ApprovalRequest(Document):
             self.designation = emp.designation
 
     def validate(self):
+        self.validate_approval_suggestion()
         self.validate_creator_not_approver()
 
         if self.is_new():
@@ -36,6 +37,12 @@ class ApprovalRequest(Document):
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
+
+    def validate_approval_suggestion(self):
+        if self.category:
+            suggestion = frappe.db.get_value("Approval Category", self.category, "approval_suggestion")
+            if suggestion:
+                self.approval_suggestion = suggestion
 
     def validate_creator_not_approver(self):
         creator_user = self.owner or frappe.session.user
