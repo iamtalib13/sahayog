@@ -4,6 +4,10 @@
 frappe.listview_settings["Unauthorized Absence"] = {
   refresh(listview) {
     const apply = () => {
+      // Remove sibling list's stale width style (see disciplinary_case_list.js).
+      document
+        .getElementById("disciplinary-case-employee-name-width")
+        ?.remove();
       const head = document.querySelector(".frappe-list .list-row-head .level-left");
       if (!head) return false;
       const headers = Array.from(head.children);
