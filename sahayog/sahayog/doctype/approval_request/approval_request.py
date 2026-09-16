@@ -507,6 +507,33 @@ def process_approval(docname, action, remark):
             "document_type": doc.doctype,
             "document_name": doc.name
         }).insert(ignore_permissions=True)
+
+        # Send Email Notification to Creator
+        creator_email = None
+        if doc.employee:
+            creator_email = frappe.db.get_value("Employee", doc.employee, "company_email")
+        if not creator_email and doc.owner:
+            creator_email = frappe.db.get_value("Employee", {"user_id": doc.owner}, "company_email") or frappe.db.get_value("User", doc.owner, "email")
+
+        if creator_email:
+            acted_by_name = frappe.db.get_value("User", user, "full_name") or user
+            try:
+                site_url = frappe.utils.get_url()
+                subject = f"Your Approval Request '{doc.title}' has been {action}"
+                message = f"""
+                <p>Dear {doc.employee_name or 'User'},</p>
+                <p>Your approval request <b>{doc.title}</b> ({doc.name}) has been <b>{action}</b> by {acted_by_name}.</p>
+                <p><b>Remark:</b> {remark or 'N/A'}</p>
+                <p><a href="{site_url}/app/approval-request/{doc.name}">Click here to view the request</a></p>
+                """
+                frappe.sendmail(
+                    recipients=[creator_email],
+                    subject=subject,
+                    message=message,
+                    delayed=False
+                )
+            except Exception as e:
+                frappe.log_error(f"Failed to send approval status email to creator: {str(e)}")
     finally:
         frappe.flags.in_approval_action = False
 
