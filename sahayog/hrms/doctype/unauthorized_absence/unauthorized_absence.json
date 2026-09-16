@@ -101,6 +101,7 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "document_upload",
    "fieldtype": "Attach",
    "label": "Document Upload"
@@ -109,7 +110,8 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks",
-   "mandatory_depends_on": "doc.docstatus == 1"
+   "mandatory_depends_on": "doc.docstatus == 1",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "issue_in_details",
@@ -203,26 +205,31 @@
    "fieldtype": "Select",
    "label": "Status of Response",
    "mandatory_depends_on": "eval:doc.response_of_ua == 'Yes'",
-   "options": "\nSatisfactory\nNot Satisfactory"
+   "options": "\nSatisfactory\nNot Satisfactory",
+   "allow_on_submit": 1
   },
   {
    "fieldname": "response_of_ua",
    "fieldtype": "Select",
    "label": "Response of Unauthorized Absence",
    "mandatory_depends_on": "doc.docstatus == 1",
-   "options": "\nYes\nNo"
+   "options": "\nYes\nNo",
+   "allow_on_submit": 1
   },
-  {
-   "allow_on_submit": 1,
-   "fieldname": "employee_email",
-   "fieldtype": "Data",
-   "label": "Employee Email"
-  },
-  {
-   "fieldname": "personal_email",
-   "fieldtype": "Data",
-   "label": "Personal Email"
-  }
+   {
+    "allow_on_submit": 1,
+    "fetch_from": "employee_id.company_email",
+    "fieldname": "employee_email",
+    "fieldtype": "Data",
+    "label": "Employee Email"
+   },
+   {
+    "allow_on_submit": 1,
+    "fetch_from": "employee_id.personal_email",
+    "fieldname": "personal_email",
+    "fieldtype": "Data",
+    "label": "Personal Email"
+   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
