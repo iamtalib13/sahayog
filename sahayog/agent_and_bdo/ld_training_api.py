@@ -745,11 +745,47 @@ MIS_REPORT_COLUMNS = [
     {"key": "branch_name", "label": "Branch Name"},
     {"key": "state", "label": "State"},
     {"key": "zone", "label": "Zone"},
-    {"key": "training_date", "label": "Training Date"},
+    {"key": "training_start_date", "label": "Training Start Date"},
+    {"key": "training_end_date", "label": "Training End date"},
     {"key": "program_name", "label": "Program Name"},
+    {"key": "program_sub_type", "label": "Program Sub type"},
+    {"key": "training_type", "label": "Training Type"},
+    {"key": "no_of_days", "label": "No of Day"},
+    {"key": "duration_hours", "label": "Training duration (Hours)"},
+    {"key": "day_1", "label": "Day-1"},
+    {"key": "day_2", "label": "Day-2"},
+    {"key": "day_3", "label": "Day-3"},
+    {"key": "day_4", "label": "Day-4"},
+    {"key": "day_5", "label": "Day-5"},
+    {"key": "day_6", "label": "Day -6"},
+    {"key": "total_present", "label": "Total Present"},
+    {"key": "attendance_pct", "label": "Attendance  %"},
+    {"key": "pre_test_score", "label": "Pre Test score"},
+    {"key": "post_test_score", "label": "Post Test Score"},
+    {"key": "total_score", "label": "Total Score"},
+    {"key": "passing_pct", "label": "Passing  %"},
+    {"key": "certification_status", "label": "Certification status"},
     {"key": "trainer_name", "label": "Trainer Name"},
     {"key": "trainer_id", "label": "Trainer ID"},
+    {"key": "employee_status", "label": "Employee status"},
+    {"key": "remarks", "label": "Remarks"},
 ]
+
+
+def _training_hours(start_time, end_time, no_of_days):
+    """Total training hours = daily (end-start) x days. '' when times missing."""
+    try:
+        if not start_time or not end_time:
+            return ""
+        s = frappe.utils.get_time(start_time)
+        e = frappe.utils.get_time(end_time)
+        secs = (e.hour * 3600 + e.minute * 60 + e.second) - (s.hour * 3600 + s.minute * 60 + s.second)
+        if secs <= 0:
+            return ""
+        total = round(secs / 3600 * (no_of_days or 1), 1)
+        return int(total) if float(total).is_integer() else total
+    except Exception:
+        return ""
 
 
 def _employee_columns():
@@ -765,7 +801,7 @@ def _employee_master(emp_ids):
         return {}
     emp_cols = _employee_columns()
     fields = ["name", "employee_name", "department", "designation",
-              "date_of_joining", "reports_to", "branch"]
+              "date_of_joining", "reports_to", "branch", "status"]
     for extra in ("custom_division", "custom_zone", "sahayog_branch"):
         if extra in emp_cols:
             fields.append(extra)
@@ -887,7 +923,8 @@ def get_mis_report(
         page_params = dict(params, page_size=page_size, offset=offset)
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, p.idx, p.reference_doctype, p.agent_employee, p.full_name "
+            "t.trainer, t.is_adhoc, t.start_time, t.end_time, t.trainer_remarks, "
+            "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
             "LIMIT %(page_size)s OFFSET %(offset)s",
@@ -897,7 +934,8 @@ def get_mis_report(
     else:
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, p.idx, p.reference_doctype, p.agent_employee, p.full_name "
+            "t.trainer, t.is_adhoc, t.start_time, t.end_time, t.trainer_remarks, "
+            "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
             params,
@@ -926,9 +964,14 @@ def get_mis_report(
         e = emp_data.get(r.agent_employee) if is_emp and r.agent_employee else None
         emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
-        date_label = str(r.from_date or "")[:10]
-        if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
-            date_label += " to " + str(r.to_date)[:10]
+        from_str = str(r.from_date or "")[:10]
+        to_str = str(r.to_date or r.from_date or "")[:10]
+        try:
+            no_of_days = (frappe.utils.getdate(to_str) - frappe.utils.getdate(from_str)).days + 1
+            if no_of_days < 1:
+                no_of_days = 1
+        except Exception:
+            no_of_days = 1
         display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         out.append({
             "s_no": seq,
@@ -947,10 +990,30 @@ def get_mis_report(
             ),
             "state": (branch_meta_row.state or "") if branch_meta_row else "",
             "zone": (getattr(e, "custom_zone", "") or "") if e else "",
-            "training_date": date_label,
+            "training_start_date": from_str,
+            "training_end_date": to_str,
             "program_name": r.training_program or "",
+            "program_sub_type": "",
+            "training_type": "Ad-hoc" if r.is_adhoc else "Planned",
+            "no_of_days": no_of_days,
+            "duration_hours": _training_hours(r.start_time, r.end_time, no_of_days),
+            "day_1": "",
+            "day_2": "",
+            "day_3": "",
+            "day_4": "",
+            "day_5": "",
+            "day_6": "",
+            "total_present": "" if not r.agent_employee else (1 if (r.attendance_status or "Present") == "Present" else 0),
+            "attendance_pct": "",
+            "pre_test_score": "",
+            "post_test_score": "",
+            "total_score": "",
+            "passing_pct": "",
+            "certification_status": "",
             "trainer_name": r.trainer or "",
             "trainer_id": trainer_ids.get(r.trainer) or "",
+            "employee_status": (e.status or "") if e else "",
+            "remarks": r.trainer_remarks or "",
         })
     return {"columns": MIS_REPORT_COLUMNS, "rows": out, "total": total}
 
