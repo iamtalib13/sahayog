@@ -4930,7 +4930,7 @@
               var codeName = g.branch || "";
               var binfo = (state.branchPick || []).find(function(b){ return b.name === g.branch; });
               var disp = binfo && binfo.branch ? codeName + " - " + binfo.branch : codeName;
-              return esc(disp) + " (" + esc(g.zone||"—") + "/" + esc(g.district||"—") + ")";
+              return esc(disp) + " (" + esc(g.zone||"—") + " / " + esc(g.region||"—") + " / " + esc(g.district||"—") + ")";
             }).join("<br>");
           } else {
             geoSummary = (ev.zone||"—") + " / " + (ev.district||"—") + " — " + esc(ev.branch||"—");
@@ -4949,8 +4949,8 @@
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
             "</div>";
-          if (geos.length > 1) {
-            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>All Branches:</strong><br>' + geoSummary + '</div>';
+          if (geos.length) {
+            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>Branch Details:</strong><br>' + geoSummary + '</div>';
           }
           body += "</div>";
 
@@ -5048,29 +5048,13 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
-          var canDelete = state.role === "ld_admin";
-          var deleteBtn = canDelete
-            ? '<button class="btn" id="drawerDelete" style="color:#dc2626;border-color:#fecaca;">Delete</button>'
-            : "";
           var actions = editable
             ? '<button class="btn" id="drawerCancel">Cancel</button>' +
               '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
-            : deleteBtn + '<button class="btn btn-primary" id="drawerDone">Close</button>';
-          document.getElementById("drawerActions").innerHTML = actions;
-
-          if (canDelete && document.getElementById("drawerDelete")) {
-            document.getElementById("drawerDelete").onclick = function () {
-              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
-              api("delete_training", { name: ev.name })
-                .then(function () {
-                  closeDrawer();
-                  loadData(true);
-                  renderTrainings();
-                  showToast("Training deleted");
-                })
-                .catch(function (e) { showToast("Could not delete: " + e.message); });
-            };
-          }
+            : "";
+          var actionsEl = document.getElementById("drawerActions");
+          actionsEl.innerHTML = actions;
+          actionsEl.style.display = actions ? "" : "none";
 
           if (editable) {
             document.getElementById("drawerSave").onclick = saveDrawerChanges;
@@ -5082,8 +5066,6 @@
                   stageCheck(ev, inp.dataset.field, inp.checked);
                 };
               });
-          } else {
-            document.getElementById("drawerDone").onclick = closeDrawer;
           }
 
           state.drawerBase = {
