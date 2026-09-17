@@ -636,9 +636,16 @@ def has_permission(doc, ptype="read", user=None):
 
 
 @frappe.whitelist()
-def get_dashboard_summary():
+def get_dashboard_summary(limit=10, offset=0):
     """Returns analytics data for Approval Request Custom HTML Block Dashboard"""
     user = frappe.session.user
+    try:
+        limit = int(limit) or 10
+        offset = int(offset) or 0
+    except Exception:
+        limit, offset = 10, 0
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
     perm_cond = get_permission_query_conditions(user)
     where_clause = f"WHERE {perm_cond}" if perm_cond else ""
 
@@ -667,17 +674,31 @@ def get_dashboard_summary():
         LIMIT 5
     """, as_dict=True)
 
-    # 3. Recent 5 requests
+    # 3. Recent requests with pagination (10 per page)
     recent_requests = frappe.db.sql(f"""
         SELECT name, title, category, approval_status, creation, employee_name
         FROM `tabApproval Request`
         {where_clause}
         ORDER BY creation DESC
-        LIMIT 5
+        LIMIT {limit} OFFSET {offset}
     """, as_dict=True)
+
+    has_more = len(recent_requests) == limit and (offset + len(recent_requests)) < summary["Total"]
+
+    # 4. Personal cards (Draft comes from summary)
+    my_summary = {
+        "pending_from_me": frappe.db.count("Approval Request", {"owner": user, "approval_status": "Pending Approval"}),
+        "approved_by_me": frappe.db.count("Approval Request", {"acted_by": user, "approval_status": "Approved"}),
+        "rejected_by_me": frappe.db.count("Approval Request", {"acted_by": user, "approval_status": "Rejected"}),
+    }
 
     return {
         "summary": summary,
+        "my_summary": my_summary,
         "category_counts": category_counts,
-        "recent_requests": recent_requests
+        "recent_requests": recent_requests,
+        "has_more": has_more,
+        "limit": limit,
+        "offset": offset,
+        "total": summary["Total"]
     }
