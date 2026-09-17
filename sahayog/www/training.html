@@ -2542,6 +2542,52 @@
           display: none;
         }
       }
+      /* ---------- Team Training verification view ---------- */
+      .tr-stat-card.sc-week {
+        background: #f5f0ff;
+        border-color: #c4b5fd;
+      }
+      .tr-stat-card.sc-week .sc-num {
+        color: #7c3aed;
+      }
+      .tm-clickable {
+        cursor: pointer;
+      }
+      .tm-date-badge {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        padding: 4px 0;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        font-weight: 700;
+        line-height: 1.2;
+        flex-shrink: 0;
+      }
+      .tm-date-badge .d {
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .tm-date-badge .m {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .tm-date-badge.multi {
+        background: #f5f0ff;
+        color: #7c3aed;
+      }
+      .tm-date-badge.past {
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
+      #teamView .tr-toolbar .field-select {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+      }
       /* ---------- Mobile-friendly (minimal, CSS-only, no JS changes) ---------- */
       @media (max-width: 768px) {
         .app {
@@ -3393,13 +3439,34 @@
           <div class="tr-head-row">
             <div>
               <h2>Team Training</h2>
-              <p class="tr-sub" id="teamSub">Trainings of your team members</p>
             </div>
           </div>
 
-          <div class="participant-chips" id="teamChips"></div>
+          <div class="tr-stats" id="teamCards"></div>
 
           <div class="tr-toolbar">
+            <select class="field-select" id="team-member" title="Team member">
+              <option value="">All Team Members</option>
+            </select>
+            <select class="field-select" id="team-status" title="Status">
+              <option value="">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="inprogress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="draft">Draft</option>
+            </select>
+            <select class="field-select" id="team-preset" title="Date range">
+              <option value="month">This Month</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="upcoming">Upcoming (60 days)</option>
+              <option value="past">Past 30 Days</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input type="date" class="field-select" id="team-from" title="From date" />
+            <span class="report-dash">–</span>
+            <input type="date" class="field-select" id="team-to" title="To date" />
             <div class="tr-search">
               <svg
                 viewBox="0 0 24 24"
@@ -3414,13 +3481,10 @@
               </svg>
               <input
                 id="team-search"
-                placeholder="Search member name or ID..."
+                placeholder="Search employee or training..."
                 autocomplete="off"
               />
             </div>
-            <input type="date" class="field-select" id="team-from" title="From date" />
-            <span class="report-dash">–</span>
-            <input type="date" class="field-select" id="team-to" title="To date" />
             <button class="btn btn-primary" id="team-export" type="button">
               Export CSV
             </button>
@@ -3428,48 +3492,50 @@
             <span class="report-count" id="team-count"></span>
           </div>
 
-          <div class="report-scroll" id="teamBody">
-            <div style="padding: 20px; color: var(--ink-3)">
-              Loading team trainings…
+          <div id="teamListWrap" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div class="report-scroll" id="teamBody">
+              <div style="padding: 20px; color: var(--ink-3)">
+                Loading team trainings…
+              </div>
             </div>
-          </div>
 
-          <div class="tr-pagination" id="tmPagination">
-            <div class="pg-left">
-              <span class="pg-label">Rows per page:</span>
-              <select class="pg-size-select" id="tm-page-size">
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </div>
-            <div class="pg-right">
-              <span class="pg-info" id="tm-pg-info"></span>
-              <button class="pg-btn" id="tm-pg-prev" title="Previous page">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </button>
-              <div class="pg-nums" id="tm-pg-nums"></div>
-              <button class="pg-btn" id="tm-pg-next" title="Next page">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
+            <div class="tr-pagination" id="tmPagination">
+              <div class="pg-left">
+                <span class="pg-label">Rows per page:</span>
+                <select class="pg-size-select" id="tm-page-size">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+              <div class="pg-right">
+                <span class="pg-info" id="tm-pg-info"></span>
+                <button class="pg-btn" id="tm-pg-prev" title="Previous page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <div class="pg-nums" id="tm-pg-nums"></div>
+                <button class="pg-btn" id="tm-pg-next" title="Next page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -4099,6 +4165,8 @@
             if (statusSec) statusSec.style.display = "none";
             var hdrSearch = document.querySelector(".header .search");
             if (hdrSearch) hdrSearch.style.display = "none";
+            document.getElementById("headerSub").textContent =
+              "Team Training · View your team's training schedule";
           }
         }
 
@@ -7467,127 +7535,141 @@
            Reuses report-table / pg-* styles; existing code untouched.
            ============================================================ */
         state.teamMembers = [];
+        state.teamRows = [];
+        state.teamCols = [];
         state.teamPage = { current: 1, size: 10 };
         state.teamMemberFilter = "";
-        state.teamData = null;
+        state.teamStatusFilter = "";
+        state.teamPreset = "month";
+
+        var TEAM_MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+        function teamTodayIso() {
+          return isoOf(today);
+        }
+        function teamWeekEndIso() {
+          var d = new Date(today);
+          d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+          return isoOf(d);
+        }
+        function teamIsoOf(d) {
+          return (
+            d.getFullYear() +
+            "-" +
+            String(d.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(d.getDate()).padStart(2, "0")
+          );
+        }
 
         function loadTeamData() {
           loadTeamMembers();
-          var fromEl = document.getElementById("team-from");
-          var toEl = document.getElementById("team-to");
-          if (fromEl && !fromEl.value) {
-            var now = new Date();
-            fromEl.value =
-              now.getFullYear() +
-              "-" +
-              String(now.getMonth() + 1).padStart(2, "0") +
-              "-01";
+          var f = document.getElementById("team-from");
+          var t = document.getElementById("team-to");
+          if (!f.value || !t.value) {
+            var sel = document.getElementById("team-preset");
+            if (sel) sel.value = "month";
+            applyTeamPreset("month", true);
           }
-          if (toEl && !toEl.value) toEl.value = isoOf(today);
-          state.teamPage.current = 1;
-          loadTeamReport();
+          fetchTeamRows();
         }
 
         function loadTeamMembers() {
           api("get_my_team_members", {})
             .then(function (members) {
               state.teamMembers = Array.isArray(members) ? members : [];
-              var sub = document.getElementById("teamSub");
-              if (sub)
-                sub.textContent =
-                  "Trainings of your " +
-                  state.teamMembers.length +
-                  " team member" +
-                  (state.teamMembers.length === 1 ? "" : "s");
-              renderTeamChips();
+              buildTeamMemberSelect();
             })
             .catch(function () {
               state.teamMembers = [];
-              renderTeamChips();
+              buildTeamMemberSelect();
             });
         }
 
-        function teamChipHtml(val, label, count, active) {
-          return (
-            '<button type="button" class="participant-chip" data-team="' +
-            esc(val) +
-            '" style="cursor:pointer;border:none;' +
-            (active ? "background:var(--accent);color:#fff;" : "") +
-            '">' +
-            esc(label) +
-            " (" +
-            count +
-            ")</button>"
-          );
+        function buildTeamMemberSelect() {
+          var sel = document.getElementById("team-member");
+          if (!sel) return;
+          sel.innerHTML =
+            '<option value="">All Team Members</option>' +
+            (state.teamMembers || [])
+              .map(function (m) {
+                return (
+                  '<option value="' +
+                  esc(m.emp_id) +
+                  '">' +
+                  esc(m.employee_name || m.emp_id) +
+                  " (" +
+                  esc(m.emp_id) +
+                  ")</option>"
+                );
+              })
+              .join("");
+          sel.value = state.teamMemberFilter || "";
         }
 
-        function renderTeamChips() {
-          var box = document.getElementById("teamChips");
-          if (!box) return;
-          var total = 0;
-          (state.teamMembers || []).forEach(function (m) {
-            total += m.training_count || 0;
-          });
-          var html = teamChipHtml(
-            "__all",
-            "All members",
-            total,
-            !state.teamMemberFilter,
-          );
-          (state.teamMembers || []).forEach(function (m) {
-            html += teamChipHtml(
-              m.emp_id,
-              m.employee_name || m.emp_id,
-              m.training_count || 0,
-              state.teamMemberFilter === m.emp_id,
-            );
-          });
-          box.innerHTML = html;
-          box.querySelectorAll("[data-team]").forEach(function (ch) {
-            ch.addEventListener("click", function () {
-              var v = ch.dataset.team;
-              state.teamMemberFilter =
-                v === "__all" || state.teamMemberFilter === v ? "" : v;
-              state.teamPage.current = 1;
-              renderTeamChips();
-              loadTeamReport();
-            });
-          });
-        }
-
-        function teamReportParams(full) {
-          var q = document.getElementById("team-search");
-          var p = {
-            employee:
-              state.teamMemberFilter || (q ? q.value.trim() : "") || undefined,
-            from_date:
-              (document.getElementById("team-from") || {}).value || undefined,
-            to_date:
-              (document.getElementById("team-to") || {}).value || undefined,
-          };
-          if (full) {
-            p.page = state.teamPage.current;
-            p.page_size = state.teamPage.size;
-          } else {
-            p.page_size = 0;
+        /* ----- date presets ----- */
+        function applyTeamPreset(p, skipFetch) {
+          state.teamPreset = p;
+          var f = document.getElementById("team-from");
+          var t = document.getElementById("team-to");
+          var now = new Date(today);
+          if (f && t && p !== "custom") {
+            if (p === "today") {
+              f.value = teamIsoOf(now);
+              t.value = teamIsoOf(now);
+            } else if (p === "week") {
+              f.value = teamIsoOf(now);
+              var sun = new Date(now);
+              sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
+              t.value = teamIsoOf(sun);
+            } else if (p === "month") {
+              f.value = teamIsoOf(now);
+              var end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              t.value = teamIsoOf(end);
+            } else if (p === "past") {
+              var ago = new Date(now);
+              ago.setDate(ago.getDate() - 30);
+              f.value = teamIsoOf(ago);
+              t.value = teamIsoOf(now);
+            } else {
+              f.value = teamIsoOf(now);
+              var fut = new Date(now);
+              fut.setDate(fut.getDate() + 60);
+              t.value = teamIsoOf(fut);
+            }
           }
-          return p;
+          state.teamPage.current = 1;
+          if (!skipFetch) fetchTeamRows();
         }
 
-        function loadTeamReport() {
+        /* ----- fetch: member/search/dates server-side, full set ----- */
+        function fetchTeamRows() {
           var body = document.getElementById("teamBody");
           if (body)
             body.innerHTML =
               '<div style="padding:20px;color:var(--ink-3)">Loading team trainings…</div>';
           var cnt = document.getElementById("team-count");
           if (cnt) cnt.textContent = "";
-          api("get_team_training_report", teamReportParams(true))
+          var q = document.getElementById("team-search");
+          api("get_team_training_report", {
+            employee:
+              state.teamMemberFilter || (q ? q.value.trim() : "") || undefined,
+            from_date:
+              (document.getElementById("team-from") || {}).value || undefined,
+            to_date:
+              (document.getElementById("team-to") || {}).value || undefined,
+            page_size: 0,
+          })
             .then(function (res) {
-              state.teamData = res;
-              renderTeamTable(res);
+              state.teamRows = (res && res.rows) || [];
+              state.teamCols = (res && res.columns) || [];
+              renderTeamCards();
+              renderTeamList();
             })
             .catch(function (e) {
-              state.teamData = null;
+              state.teamRows = [];
+              state.teamCols = [];
+              renderTeamCards();
               if (body)
                 body.innerHTML =
                   '<div style="padding:20px;color:var(--ink-3)">' +
@@ -7596,75 +7678,246 @@
             });
         }
 
-        function renderTeamTable(res) {
-          var cols = (res && res.columns) || [];
-          var rows = (res && res.rows) || [];
-          var total = (res && res.total) || 0;
+        /* ----- client-side status filter ----- */
+        function teamVisibleRows() {
+          var st = state.teamStatusFilter;
+          if (!st) return state.teamRows || [];
+          return (state.teamRows || []).filter(function (r) {
+            return statusOf(r) === st;
+          });
+        }
+
+        /* ----- summary cards (distinct trainings, not participant rows) ----- */
+        function renderTeamCards() {
+          var box = document.getElementById("teamCards");
+          if (!box) return;
+          var rows = state.teamRows || [];
+          var t = teamTodayIso(),
+            we = teamWeekEndIso();
+          var up = 0,
+            ip = 0,
+            wk = 0,
+            done = 0;
+          var seenUp = {},
+            seenIp = {},
+            seenWk = {},
+            seenDone = {};
+          rows.forEach(function (r) {
+            var key = r.name || (r.program_name + "|" + r.from_date);
+            var s = statusOf(r);
+            if (s === "upcoming" && !seenUp[key]) {
+              seenUp[key] = 1;
+              up++;
+            }
+            if (s === "inprogress" && !seenIp[key]) {
+              seenIp[key] = 1;
+              ip++;
+            }
+            if (s === "completed" && !seenDone[key]) {
+              seenDone[key] = 1;
+              done++;
+            }
+            var f = r.from_date || "",
+              e = r.to_date || r.from_date || "";
+            if (f <= we && e >= t && !seenWk[key]) {
+              seenWk[key] = 1;
+              wk++;
+            }
+          });
+          var cards = [
+            { key: "upcoming", cls: "sc-upcoming", num: up, label: "Upcoming" },
+            { key: "week", cls: "sc-week", num: wk, label: "This Week" },
+            { key: "inprogress", cls: "sc-inprogress", num: ip, label: "In Progress" },
+            { key: "completed", cls: "sc-completed", num: done, label: "Completed" },
+            { key: "members", cls: "sc-members", num: (state.teamMembers || []).length, label: "Team Members" },
+          ];
+          box.innerHTML = cards
+            .map(function (c) {
+              return (
+                '<div class="tr-stat-card ' +
+                c.cls +
+                ' tm-clickable" data-card="' +
+                c.key +
+                '">' +
+                '<span class="sc-num">' +
+                c.num +
+                "</span>" +
+                '<span class="sc-label">' +
+                c.label +
+                "</span></div>"
+              );
+            })
+            .join("");
+          box.querySelectorAll("[data-card]").forEach(function (el) {
+            el.addEventListener("click", function () {
+              var k = el.dataset.card;
+              var stSel = document.getElementById("team-status");
+              var pSel = document.getElementById("team-preset");
+              if (k === "upcoming" || k === "inprogress") {
+                /* Status cards always run on the default month range so a
+                   previous preset (e.g. This Week) never leaks through. */
+                state.teamStatusFilter = k;
+                if (stSel) stSel.value = k;
+                if (pSel) pSel.value = "month";
+                applyTeamPreset("month");
+              } else if (k === "completed") {
+                state.teamStatusFilter = "completed";
+                if (stSel) stSel.value = "completed";
+                if (pSel) pSel.value = "past";
+                applyTeamPreset("past");
+              } else if (k === "week") {
+                if (pSel) pSel.value = "week";
+                applyTeamPreset("week");
+              } else {
+                state.teamStatusFilter = "";
+                if (stSel) stSel.value = "";
+                state.teamMemberFilter = "";
+                var mSel = document.getElementById("team-member");
+                if (mSel) mSel.value = "";
+                var qq = document.getElementById("team-search");
+                if (qq) qq.value = "";
+                fetchTeamRows();
+              }
+            });
+          });
+        }
+
+        /* ----- list ----- */
+        function teamDateBadge(r) {
+          var f = r.from_date || "",
+            t = r.to_date || f;
+          if (!f) return '<span style="color:var(--ink-3)">—</span>';
+          var fd = f.split("-"),
+            td = t.split("-");
+          var multi = f !== t;
+          var top = multi
+            ? parseInt(fd[2], 10) + "–" + parseInt(td[2], 10)
+            : String(parseInt(fd[2], 10));
+          var mon = TEAM_MON[parseInt(fd[1], 10) - 1] || "";
+          var cls =
+            "tm-date-badge" +
+            (multi ? " multi" : "") +
+            (t < teamTodayIso() ? " past" : "");
+          return (
+            '<span class="' +
+            cls +
+            '"><span class="d">' +
+            esc(top) +
+            '</span><span class="m">' +
+            mon +
+            "</span></span>"
+          );
+        }
+
+        function teamStatusPill(st) {
+          var meta = STATUS_META[st] || STATUS_META.pending;
+          var bg =
+            st === "completed"
+              ? "var(--green-soft)"
+              : st === "inprogress"
+                ? "var(--orange-soft)"
+                : st === "upcoming"
+                  ? "var(--accent-soft)"
+                  : "var(--gray-soft)";
+          var clr =
+            st === "completed"
+              ? "#15803d"
+              : st === "inprogress"
+                ? "#b45309"
+                : st === "upcoming"
+                  ? "var(--accent-ink)"
+                  : "var(--ink-3)";
+          return (
+            '<span class="tr-status-pill" style="background:' +
+            bg +
+            ";color:" +
+            clr +
+            '">' +
+            '<span class="sp-dot" style="background:' +
+            meta.color +
+            '"></span>' +
+            meta.label +
+            "</span>"
+          );
+        }
+
+        function renderTeamList() {
           var body = document.getElementById("teamBody");
           if (!body) return;
+          var rows = teamVisibleRows()
+            .slice()
+            .sort(function (a, b) {
+              var da = a.from_date || "",
+                db = b.from_date || "";
+              return da < db ? -1 : da > db ? 1 : 0;
+            });
+          var total = rows.length;
           var countEl = document.getElementById("team-count");
-          if (countEl)
-            countEl.textContent = total
-              ? rows.length + " rows shown"
-              : "0 rows";
-
           var pageSize = state.teamPage.size;
           var totalPages = Math.max(1, Math.ceil(total / pageSize));
           if (state.teamPage.current > totalPages) state.teamPage.current = 1;
-          var from = total ? (state.teamPage.current - 1) * pageSize + 1 : 0;
-          var to = Math.min(state.teamPage.current * pageSize, total);
-
-          var head =
-            "<thead><tr>" +
-            cols
-              .map(function (c) {
-                return "<th>" + esc(c.label) + "</th>";
-              })
-              .join("") +
-            "</tr></thead>";
-          var tbody;
-          if (!rows.length) {
-            tbody =
-              '<tr><td colspan="' +
-              cols.length +
-              '" style="padding:16px;color:var(--ink-3);text-align:center">' +
-              "No team trainings found." +
-              "</td></tr>";
-            renderTeamPagination(0, 0, 0, 1);
+          var start = (state.teamPage.current - 1) * pageSize;
+          var pageRows = rows.slice(start, start + pageSize);
+          if (countEl)
+            countEl.textContent = total
+              ? start + 1 + "–" + Math.min(start + pageSize, total) + " of " + total
+              : "0 rows";
+          var html =
+            '<table class="report-table"><thead><tr><th>Date</th><th>Employee</th><th>Training</th><th>Time</th><th>Location</th><th>Trainer</th><th>Status</th></tr></thead><tbody>';
+          if (!pageRows.length) {
+            html +=
+              '<tr><td colspan="7" style="padding:16px;color:var(--ink-3);text-align:center">No team trainings found.</td></tr>';
           } else {
-            tbody = rows
+            html += pageRows
               .map(function (r) {
                 return (
-                  "<tr>" +
-                  cols
-                    .map(function (c) {
-                      var v = r[c.key];
-                      return "<td>" + esc(v == null ? "" : v) + "</td>";
-                    })
-                    .join("") +
-                  "</tr>"
+                  '<tr data-tname="' +
+                  esc(r.name || "") +
+                  '" style="cursor:pointer">' +
+                  "<td>" +
+                  teamDateBadge(r) +
+                  "</td>" +
+                  '<td style="font-weight:600;white-space:normal;min-width:140px;">' +
+                  esc(r.employee_name || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:160px;">' +
+                  esc(r.program_name || "—") +
+                  "</td>" +
+                  '<td style="white-space:nowrap">' +
+                  esc(r.time_range || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:120px;">📍 ' +
+                  esc(r.location || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:120px;">' +
+                  esc(r.trainer_name || "—") +
+                  "</td>" +
+                  "<td>" +
+                  teamStatusPill(statusOf(r)) +
+                  "</td></tr>"
                 );
               })
               .join("");
-            renderTeamPagination(from, to, total, totalPages);
           }
-          body.innerHTML =
-            '<table class="report-table">' +
-            head +
-            "<tbody>" +
-            tbody +
-            "</tbody></table>";
+          body.innerHTML = html + "</tbody></table>";
+          renderTeamPagination(total, totalPages);
+          body.querySelectorAll("tr[data-tname]").forEach(function (tr) {
+            tr.addEventListener("click", function () {
+              openTeamDrawer(tr.dataset.tname);
+            });
+          });
         }
 
-        function renderTeamPagination(from, to, total, totalPages) {
+        function renderTeamPagination(total, totalPages) {
           var info = document.getElementById("tm-pg-info");
           var nums = document.getElementById("tm-pg-nums");
           var prevBtn = document.getElementById("tm-pg-prev");
           var nextBtn = document.getElementById("tm-pg-next");
           if (!info) return;
 
+          var start = (state.teamPage.current - 1) * state.teamPage.size;
           info.textContent = total
-            ? from + "–" + to + " of " + total
+            ? start + 1 + "–" + Math.min(start + state.teamPage.size, total) + " of " + total
             : "0 records";
           prevBtn.disabled = state.teamPage.current <= 1;
           nextBtn.disabled = state.teamPage.current >= totalPages;
@@ -7704,76 +7957,101 @@
           nums.querySelectorAll(".pg-num:not(.active)").forEach(function (btn) {
             btn.addEventListener("click", function () {
               state.teamPage.current = parseInt(btn.dataset.pg, 10);
-              loadTeamReport();
+              renderTeamList();
             });
           });
         }
 
-        function teamExportCsv() {
-          var tag =
-            (document.getElementById("team-to") || {}).value || "ytd";
-          api("get_team_training_report", teamReportParams(false))
-            .then(function (res) {
-              var cols = (res && res.columns) || [];
-              var rows = (res && res.rows) || [];
-              if (!rows.length) {
-                showToast("No data to export");
-                return;
-              }
-              var lines = [
-                cols
-                  .map(function (c) {
-                    return csvCell(c.label);
-                  })
-                  .join(","),
-              ];
-              rows.forEach(function (r) {
-                lines.push(
-                  cols
-                    .map(function (c) {
-                      return csvCell(r[c.key]);
-                    })
-                    .join(","),
-                );
-              });
-              var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
-                type: "text/csv;charset=utf-8;",
-              });
-              var a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = "Team_Training_" + tag + ".csv";
-              document.body.appendChild(a);
-              a.click();
-              setTimeout(function () {
-                URL.revokeObjectURL(a.href);
-                a.remove();
-              }, 100);
+        /* ----- read-only details drawer ----- */
+        function openTeamDrawer(name) {
+          if (!name) return;
+          api("get_training_details", { name: name })
+            .then(function (full) {
+              openDrawer(full, "view");
             })
             .catch(function (e) {
-              showToast((e && e.message) || "Could not export report");
+              showToast((e && e.message) || "Could not open training");
             });
         }
 
+        function teamExportCsv() {
+          var cols = state.teamCols && state.teamCols.length ? state.teamCols : [];
+          var rows = teamVisibleRows();
+          if (!cols.length || !rows.length) {
+            showToast("No data to export");
+            return;
+          }
+          var tag = (document.getElementById("team-to") || {}).value || "ytd";
+          var lines = [
+            cols
+              .map(function (c) {
+                return csvCell(c.label);
+              })
+              .join(","),
+          ];
+          rows.forEach(function (r) {
+            lines.push(
+              cols
+                .map(function (c) {
+                  return csvCell(r[c.key]);
+                })
+                .join(","),
+            );
+          });
+          var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
+            type: "text/csv;charset=utf-8;",
+          });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "Team_Training_" + tag + ".csv";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+          }, 100);
+        }
+
         function setupTeamFilters() {
+          var mSel = document.getElementById("team-member");
+          if (mSel)
+            mSel.addEventListener("change", function () {
+              state.teamMemberFilter = mSel.value;
+              state.teamPage.current = 1;
+              fetchTeamRows();
+            });
+          var stSel = document.getElementById("team-status");
+          if (stSel)
+            stSel.addEventListener("change", function () {
+              state.teamStatusFilter = stSel.value;
+              state.teamPage.current = 1;
+              renderTeamList();
+            });
+          var pSel = document.getElementById("team-preset");
+          if (pSel)
+            pSel.addEventListener("change", function () {
+              applyTeamPreset(pSel.value);
+            });
+          ["team-from", "team-to"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el)
+              el.addEventListener("change", function () {
+                state.teamPreset = "custom";
+                var ps = document.getElementById("team-preset");
+                if (ps) ps.value = "custom";
+                state.teamPage.current = 1;
+                fetchTeamRows();
+              });
+          });
           var searchEl = document.getElementById("team-search");
           if (searchEl)
             searchEl.addEventListener(
               "input",
               debounce(function () {
-                state.teamMemberFilter = "";
-                renderTeamChips();
                 state.teamPage.current = 1;
-                loadTeamReport();
+                fetchTeamRows();
               }, 350),
             );
-          ["team-from", "team-to"].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el)
-              el.addEventListener("change", function () {
-                state.teamPage.current = 1;
-                loadTeamReport();
-              });
-          });
           var expEl = document.getElementById("team-export");
           if (expEl) expEl.addEventListener("click", teamExportCsv);
           var prevBtn = document.getElementById("tm-pg-prev");
@@ -7781,21 +8059,21 @@
             prevBtn.addEventListener("click", function () {
               if (state.teamPage.current > 1) {
                 state.teamPage.current--;
-                loadTeamReport();
+                renderTeamList();
               }
             });
           var nextBtn = document.getElementById("tm-pg-next");
           if (nextBtn)
             nextBtn.addEventListener("click", function () {
               state.teamPage.current++;
-              loadTeamReport();
+              renderTeamList();
             });
           var sizeEl = document.getElementById("tm-page-size");
           if (sizeEl)
             sizeEl.addEventListener("change", function () {
               state.teamPage.size = parseInt(this.value, 10) || 10;
               state.teamPage.current = 1;
-              loadTeamReport();
+              renderTeamList();
             });
         }
         setupTeamFilters();
