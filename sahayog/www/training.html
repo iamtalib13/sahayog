@@ -2185,7 +2185,12 @@
         flex-wrap: nowrap;
         overflow-x: auto;
         padding-bottom: 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
         -webkit-overflow-scrolling: touch;
+      }
+      .tr-toolbar::-webkit-scrollbar {
+        display: none;
       }
       .tr-toolbar > * {
         flex-shrink: 0;
