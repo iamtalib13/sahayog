@@ -3224,7 +3224,6 @@
                   <th>Date</th>
                   <th>Time</th>
                   <th>Trainer</th>
-                  <th>Branch</th>
                   <th>Branch Name</th>
                   <th>Participants</th>
                   <th>Status</th>
@@ -7290,16 +7289,6 @@
                 "</td>" +
                 '<td class="td-meta">' +
                 (ev.trainer ? esc(ev.trainer) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
-                "</td>" +
-                '<td class="td-meta">' +
-                (function(){
-                  var geos = ev.geographies || [];
-                  if (geos.length > 1) {
-                    var first = geos[0].branch || ev.branch || "—";
-                    return esc(first) + ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:1px 5px;margin-left:3px">+' + (geos.length-1) + '</span>';
-                  }
-                  return esc(ev.branch || (geos[0]&&geos[0].branch) || "—");
-                })() +
                 "</td>" +
                 '<td class="td-meta">' +
                 (function(){
