@@ -736,6 +736,7 @@ fixtures = [
                     "IT Dashboard",
                     "Petty Cash Dashboard Widget",
                     "MAC Activity",
+                    "Approval Request",
                 ],
             ]
         ],
