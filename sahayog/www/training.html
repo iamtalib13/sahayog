@@ -7012,6 +7012,9 @@
 
         function switchTab(tab) {
           activeTab = tab;
+          try {
+            localStorage.setItem("ld_training_tab", tab);
+          } catch (e) {}
           var calView = document.getElementById("calView");
           var trView = document.getElementById("trainingsView");
           var repView = document.getElementById("reportsView");
@@ -8087,7 +8090,15 @@
             state.teamCount = info.team_count || 0;
             state.canSeeTeam = !!info.can_see_team;
             setupRoleUI();
+            /* Stay on the same tab after reload (if still permitted). */
+            var savedTab = null;
+            try {
+              savedTab = localStorage.getItem("ld_training_tab");
+            } catch (e) {}
             if (state.teamOnly) switchTab("team");
+            else if (savedTab === "trainings") switchTab("trainings");
+            else if (savedTab === "reports" && role().showMis) switchTab("reports");
+            else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
             return loadGeo();
           })
           .then(function () {
