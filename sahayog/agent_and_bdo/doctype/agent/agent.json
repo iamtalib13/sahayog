@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "autoname": "field:agent_code",
  "creation": "2025-06-02 13:33:21.011932",
  "doctype": "DocType",
@@ -19,6 +20,14 @@
   "auth_id",
   "status",
   "employee",
+  "section_break_khou",
+  "cif",
+  "agent_operative_account",
+  "agent_saving_account",
+  "column_break_kacp",
+  "pan_card",
+  "pan_status",
+  "agent_security_account",
   "bdo_details_section",
   "requested_by",
   "requested_on",
@@ -198,12 +207,50 @@
    "fieldname": "get_commission",
    "fieldtype": "Button",
    "label": "Get Commission"
+  },
+  {
+   "fieldname": "agent_operative_account",
+   "fieldtype": "Data",
+   "label": "Agent Operative Account"
+  },
+  {
+   "fieldname": "agent_security_account",
+   "fieldtype": "Data",
+   "label": "Agent Security Account"
+  },
+  {
+   "fieldname": "agent_saving_account",
+   "fieldtype": "Data",
+   "label": "Agent Saving Account"
+  },
+  {
+   "fieldname": "pan_card",
+   "fieldtype": "Data",
+   "label": "PAN Card"
+  },
+  {
+   "fieldname": "pan_status",
+   "fieldtype": "Data",
+   "label": "PAN Status"
+  },
+  {
+   "fieldname": "cif",
+   "fieldtype": "Data",
+   "label": "CIF"
+  },
+  {
+   "fieldname": "section_break_khou",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kacp",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-18 12:58:28.766388",
+ "modified": "2026-09-16 16:51:22.556886",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",

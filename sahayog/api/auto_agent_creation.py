@@ -25,7 +25,8 @@ def db_connection():
         )
         return conn
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "PostgreSQL Connection Failed")
+        frappe.log_error(frappe.get_traceback(),
+                         "PostgreSQL Connection Failed")
         frappe.throw(_("Database Connection Error: {0}").format(str(e)))
 
 
@@ -65,7 +66,7 @@ def execute_bulk_upsert(records: list, chunk_size: int = 5000) -> None:
     row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     for i in range(0, len(records), chunk_size):
-        chunk = records[i : i + chunk_size]
+        chunk = records[i: i + chunk_size]
         placeholders = ", ".join([row_placeholder] * len(chunk))
         flattened_params = [val for row in chunk for val in row]
 
@@ -113,6 +114,152 @@ def execute_bulk_upsert(records: list, chunk_size: int = 5000) -> None:
             frappe.db.sql(sql, flattened_params)
 
 
+# @frappe.whitelist()
+# def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
+#     """
+#     Fetch ALL active agents from PostgreSQL Finacle and sync to MariaDB tabAgent via direct raw SQL upsert.
+#     Bypasses in-memory GET queries for superfast DB-to-DB sync.
+#     """
+#     conn = None
+#     cursor = None
+#     target_user = user or getattr(frappe.session, "user", None)
+#     try:
+#         conn = db_connection()
+#         cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+#         # Query to fetch ALL active agents from Finacle (Filter RDDSA and DDDSA directly in PostgreSQL for maximum speed)
+#         sql = """
+#         SELECT
+#             d.lchg_time as agent_start_date,
+#             d.user_id AS agent_id,
+#             d.user_role_id AS agent_name,
+#             d.user_sol_id,
+#             d.auth_id,
+#             s.sol_desc
+#         FROM custom.dsaauth d
+#         JOIN tbaadm.sol s ON d.user_sol_id = s.sol_id
+#         WHERE d.ent_cre_flg = 'Y'
+#         AND d.del_flg = 'N'
+#         AND (d.user_id LIKE 'RDDSA%' OR d.user_id LIKE 'DDDSA%');
+#         """
+
+#         cursor.execute(sql)
+#         agents = cursor.fetchall()
+
+#         if not agents:
+#             logger.info("No agents found in Finacle.")
+#             return {"status": "success", "message": "No agents found", "processed": 0, "skipped": 0}
+
+#         total_agents = len(agents)
+#         now_str = now_datetime()
+#         session_user = (
+#             frappe.session.user
+#             if getattr(frappe, "session", None) and getattr(frappe.session, "user", None)
+#             else "Administrator"
+#         )
+
+#         records_to_upsert = []
+#         skipped = 0
+
+#         frappe.publish_progress(
+#             percent=20,
+#             title=_("Processing Finacle Agents..."),
+#             description=_("Formatting {0} records for direct DB upsert").format(total_agents),
+#         )
+
+#         for agent in agents:
+#             agent_code = agent.get("agent_id")
+
+#             # Filter: only RDDSA or DDDSA codes
+#             if not (
+#                 agent_code
+#                 and (
+#                     str(agent_code).startswith("RDDSA")
+#                     or str(agent_code).startswith("DDDSA")
+#                 )
+#             ):
+#                 skipped += 1
+#                 continue
+
+#             agent_values = prepare_agent_data(agent)
+#             role = agent_code[:2] if agent_code else None
+
+#             records_to_upsert.append(
+#                 (
+#                     agent_code,  # name
+#                     now_str,  # creation
+#                     now_str,  # modified
+#                     session_user,  # modified_by
+#                     session_user,  # owner
+#                     0,  # docstatus
+#                     0,  # idx
+#                     agent_code,  # agent_code
+#                     agent_values["agent_name"],
+#                     agent_values["branch_code"],
+#                     agent_values["branch_name"],
+#                     role,  # role
+#                     agent_values["auth_id"],
+#                     agent_values["employee"],
+#                     agent_values["status"],
+#                     agent_values.get("agent_type"),
+#                     agent_values["creation_date"],
+#                 )
+#             )
+
+#         processed_count = len(records_to_upsert)
+
+#         if records_to_upsert:
+#             frappe.publish_progress(
+#                 percent=60,
+#                 title=_("Direct MariaDB Upsert in Progress..."),
+#                 description=_("Upserting {0} agents directly into MariaDB...").format(processed_count),
+#             )
+#             execute_bulk_upsert(records_to_upsert, chunk_size=5000)
+
+#         frappe.db.commit()
+
+#         frappe.publish_progress(
+#             percent=100,
+#             title=_("Agent Sync Finished"),
+#             description=_("Direct DB-to-DB Sync completed successfully!"),
+#         )
+
+#         summary = f"⚡ Direct DB Sync Completed! Processed: {processed_count} | Skipped: {skipped}"
+#         logger.info(summary)
+
+#         if target_user:
+#             frappe.publish_realtime(
+#                 "msgprint",
+#                 {
+#                     "title": _("Agent Sync Completed"),
+#                     "message": summary,
+#                     "indicator": "green",
+#                 },
+#                 user=target_user,
+#             )
+
+#         return {
+#             "status": "success",
+#             "message": summary,
+#             "processed": processed_count,
+#             "skipped": skipped,
+#         }
+
+#     except Exception as e:
+#         frappe.log_error(frappe.get_traceback(), "Overall Agent Sync Error")
+#         return {"status": "error", "message": str(e)}
+#     finally:
+#         if cursor:
+#             try:
+#                 cursor.close()
+#             except Exception:
+#                 pass
+#         if conn:
+#             try:
+#                 conn.close()
+#             except Exception:
+#                 pass
+
 @frappe.whitelist()
 def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -126,20 +273,62 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Query to fetch ALL active agents from Finacle (Filter RDDSA and DDDSA directly in PostgreSQL for maximum speed)
+        # New query with CIF, accounts, PAN, security account
         sql = """
         SELECT
-            d.lchg_time as agent_start_date,
+            g.cif_id,
+            g.schm_code,
+            d.lchg_time AS agent_start_date,
             d.user_id AS agent_id,
             d.user_role_id AS agent_name,
             d.user_sol_id,
             d.auth_id,
+            d.operacc,
+            d.savingacc,
+            g.foracid AS "security_account",
+            e.docdescr,
+            e.referencenumber,
             s.sol_desc
         FROM custom.dsaauth d
-        JOIN tbaadm.sol s ON d.user_sol_id = s.sol_id
-        WHERE d.ent_cre_flg = 'Y' 
-        AND d.del_flg = 'N'
-        AND (d.user_id LIKE 'RDDSA%' OR d.user_id LIKE 'DDDSA%');
+        JOIN tbaadm.sol s
+            ON d.user_sol_id = s.sol_id
+        -- Saving Account
+        JOIN tbaadm.gam g_saving
+            ON g_saving.foracid = d.savingacc
+            AND g_saving.acct_cls_flg = 'N'
+        -- Security Account
+        LEFT JOIN tbaadm.gam g
+            ON g.cif_id = g_saving.cif_id
+            AND g.schm_code = '1107'
+            AND g.acct_cls_flg = 'N'
+        LEFT JOIN crmuser.entitydocument e
+            ON e.orgkey = g.cif_id
+            AND e.docdescr LIKE 'PAN%'
+        WHERE
+            d.ent_cre_flg = 'Y'
+            AND d.del_flg = 'N'
+            AND (
+                d.user_id LIKE 'RDDSA%'
+                OR d.user_id LIKE 'DDDSA%'
+            )
+            -- Particular Saving Account Scheme Codes
+            AND g_saving.schm_code IN (
+                '1001',
+                '1002',
+                '1003',
+                '1004',
+                '1005',
+                '1006',
+                '1008',
+                '1009',
+                '1010',
+                '1011',
+                '1012',
+                '1101',
+                '1102',
+                '1103',
+                '1104'
+            );
         """
 
         cursor.execute(sql)
@@ -163,7 +352,8 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
         frappe.publish_progress(
             percent=20,
             title=_("Processing Finacle Agents..."),
-            description=_("Formatting {0} records for direct DB upsert").format(total_agents),
+            description=_("Formatting {0} records for direct DB upsert").format(
+                total_agents),
         )
 
         for agent in agents:
@@ -202,6 +392,11 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
                     agent_values["status"],
                     agent_values.get("agent_type"),
                     agent_values["creation_date"],
+                    agent_values.get("cif"),
+                    agent_values.get("agent_operative_account"),
+                    agent_values.get("agent_saving_account"),
+                    agent_values.get("pan_card"),
+                    agent_values.get("agent_security_account"),
                 )
             )
 
@@ -211,9 +406,11 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
             frappe.publish_progress(
                 percent=60,
                 title=_("Direct MariaDB Upsert in Progress..."),
-                description=_("Upserting {0} agents directly into MariaDB...").format(processed_count),
+                description=_("Upserting {0} agents directly into MariaDB...").format(
+                    processed_count),
             )
-            execute_bulk_upsert(records_to_upsert, chunk_size=5000)
+            execute_bulk_upsert_with_new_fields(
+                records_to_upsert, chunk_size=5000)
 
         frappe.db.commit()
 
@@ -291,16 +488,65 @@ def convert_date_format(val: Any) -> str:
     return today()
 
 
+# def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
+#     """
+#     Extract and transform raw agent data from Finacle DB row into standard Frappe fields dictionary.
+#     Sets status to 'Allocated' if auth_id contains a numeric employee ID, else 'Unallocated'.
+
+#     Args:
+#         agent: Dictionary containing raw agent details fetched from Finacle DB.
+
+#     Returns:
+#         Dict containing mapped Frappe Agent field values.
+#     """
+#     agent = agent or {}
+#     auth_id = agent.get("auth_id") or ""
+
+#     # Parse numeric employee ID from auth_id
+#     auth_str = str(auth_id).strip()
+#     employee_raw = (
+#         auth_str.upper().replace("SAH0", "")
+#         if auth_str.upper().startswith("SAH0")
+#         else auth_str
+#     )
+#     digits = re.sub(r"\D", "", employee_raw).lstrip("0")
+
+#     # If numeric value exists in auth_id, it represents an employee -> Allocated
+#     if digits:
+#         employee = digits
+#         status = "Allocated"
+#     else:
+#         employee = None
+#         status = "Unallocated"
+
+#     # Date conversion
+#     creation_date = convert_date_format(agent.get("agent_start_date"))
+
+#     # Determine agent_type based on agent_id prefix
+#     agent_code_str = str(agent.get("agent_id") or "").upper()
+#     agent_type = None
+#     if agent_code_str.startswith("RDDSA"):
+#         agent_type = "RDDSA"
+#     elif agent_code_str.startswith("DDDSA"):
+#         agent_type = "DDDSA"
+
+#     return {
+#         "creation_date": creation_date,
+#         "agent_name": agent.get("agent_name"),
+#         "branch_code": agent.get("user_sol_id"),
+#         "branch_name": agent.get("sol_desc") or "Unknown",
+#         "auth_id": auth_id,
+#         "employee": employee,
+#         "status": status,
+#         "agent_type": agent_type,
+#     }
+
+
 def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract and transform raw agent data from Finacle DB row into standard Frappe fields dictionary.
     Sets status to 'Allocated' if auth_id contains a numeric employee ID, else 'Unallocated'.
-
-    Args:
-        agent: Dictionary containing raw agent details fetched from Finacle DB.
-
-    Returns:
-        Dict containing mapped Frappe Agent field values.
+    Also maps new fields: cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account.
     """
     agent = agent or {}
     auth_id = agent.get("auth_id") or ""
@@ -314,7 +560,6 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     )
     digits = re.sub(r"\D", "", employee_raw).lstrip("0")
 
-    # If numeric value exists in auth_id, it represents an employee -> Allocated
     if digits:
         employee = digits
         status = "Allocated"
@@ -333,6 +578,13 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     elif agent_code_str.startswith("DDDSA"):
         agent_type = "DDDSA"
 
+    # New field mappings
+    cif = agent.get("cif_id")
+    agent_operative_account = agent.get("operacc")
+    agent_saving_account = agent.get("savingacc")
+    pan_card = agent.get("referencenumber")
+    agent_security_account = agent.get("security_account")
+
     return {
         "creation_date": creation_date,
         "agent_name": agent.get("agent_name"),
@@ -342,7 +594,86 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
         "employee": employee,
         "status": status,
         "agent_type": agent_type,
+        # New fields
+        "cif": cif,
+        "agent_operative_account": agent_operative_account,
+        "agent_saving_account": agent_saving_account,
+        "pan_card": pan_card,
+        "agent_security_account": agent_security_account,
     }
+
+
+def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -> None:
+    """
+    Direct DB-to-DB bulk UPSERT into tabAgent table with new fields:
+    cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account.
+    """
+    if not records:
+        return
+
+    db_type = getattr(frappe.db, "db_type", "mariadb")
+    # 17 original + 5 new = 22 columns
+    row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+    for i in range(0, len(records), chunk_size):
+        chunk = records[i: i + chunk_size]
+        placeholders = ", ".join([row_placeholder] * len(chunk))
+        flattened_params = [val for row in chunk for val in row]
+
+        if db_type == "mariadb":
+            sql = f"""
+            INSERT INTO `tabAgent` (
+                `name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`,
+                `agent_code`, `agent_name`, `branch_code`, `branch_name`, `role`,
+                `auth_id`, `employee`, `status`, `agent_type`, `creation_date`,
+                `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`, `agent_security_account`
+            ) VALUES {placeholders}
+            ON DUPLICATE KEY UPDATE
+                `modified` = VALUES(`modified`),
+                `modified_by` = VALUES(`modified_by`),
+                `agent_name` = VALUES(`agent_name`),
+                `branch_code` = VALUES(`branch_code`),
+                `branch_name` = VALUES(`branch_name`),
+                `role` = VALUES(`role`),
+                `auth_id` = VALUES(`auth_id`),
+                `employee` = VALUES(`employee`),
+                `status` = VALUES(`status`),
+                `agent_type` = VALUES(`agent_type`),
+                `creation_date` = VALUES(`creation_date`),
+                `cif` = VALUES(`cif`),
+                `agent_operative_account` = VALUES(`agent_operative_account`),
+                `agent_saving_account` = VALUES(`agent_saving_account`),
+                `pan_card` = VALUES(`pan_card`),
+                `agent_security_account` = VALUES(`agent_security_account`);
+            """
+            frappe.db.sql(sql, flattened_params)
+        else:
+            sql = f"""
+            INSERT INTO "tabAgent" (
+                "name", "creation", "modified", "modified_by", "owner", "docstatus", "idx",
+                "agent_code", "agent_name", "branch_code", "branch_name", "role",
+                "auth_id", "employee", "status", "agent_type", "creation_date",
+                "cif", "agent_operative_account", "agent_saving_account", "pan_card", "agent_security_account"
+            ) VALUES {placeholders}
+            ON CONFLICT ("name") DO UPDATE SET
+                "modified" = EXCLUDED."modified",
+                "modified_by" = EXCLUDED."modified_by",
+                "agent_name" = EXCLUDED."agent_name",
+                "branch_code" = EXCLUDED."branch_code",
+                "branch_name" = EXCLUDED."branch_name",
+                "role" = EXCLUDED."role",
+                "auth_id" = EXCLUDED."auth_id",
+                "employee" = EXCLUDED."employee",
+                "status" = EXCLUDED."status",
+                "agent_type" = EXCLUDED."agent_type",
+                "creation_date" = EXCLUDED."creation_date",
+                "cif" = EXCLUDED."cif",
+                "agent_operative_account" = EXCLUDED."agent_operative_account",
+                "agent_saving_account" = EXCLUDED."agent_saving_account",
+                "pan_card" = EXCLUDED."pan_card",
+                "agent_security_account" = EXCLUDED."agent_security_account";
+            """
+            frappe.db.sql(sql, flattened_params)
 
 
 def fetch_and_sync_agents(start_date: str, end_date: str) -> Dict[str, Any]:
@@ -363,7 +694,8 @@ def fetch_and_sync_agents(start_date: str, end_date: str) -> Dict[str, Any]:
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         delta = (end_dt - start_dt).days
 
-        date_list = [(start_dt + timedelta(days=i)).strftime("%d-%m-%Y") for i in range(delta + 1)]
+        date_list = [(start_dt + timedelta(days=i)).strftime("%d-%m-%Y")
+                     for i in range(delta + 1)]
         if not date_list:
             return {"status": "success", "message": "No dates to sync", "created": 0, "updated": 0, "skipped": 0}
 
@@ -558,7 +890,8 @@ def update_agent_from_finacle(agent_code: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), f"Single Agent Update Failed: {agent_code}")
+        frappe.log_error(frappe.get_traceback(),
+                         f"Single Agent Update Failed: {agent_code}")
         return {"status": "error", "message": str(e)}
     finally:
         if cursor:
