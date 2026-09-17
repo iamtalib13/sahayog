@@ -38,13 +38,17 @@ def get_report_summary(data):
 def get_columns():
     return [
         {"label": _("Request ID"), "fieldname": "name", "fieldtype": "Link", "options": "Approval Request", "width": 200},
-        {"label": _("Requester Employee"), "fieldname": "employee_name", "fieldtype": "Data", "width": 220},
-        {"label": _("Requester Designation"), "fieldname": "designation", "fieldtype": "Data", "width": 220},
-        {"label": _("Status"), "fieldname": "approval_status", "fieldtype": "Data", "width": 160},
-        {"label": _("Title"), "fieldname": "title", "fieldtype": "Data", "width": 400},
-        {"label": _("Acted By Approver"), "fieldname": "acted_by", "fieldtype": "Data", "width": 200},
-        {"label": _("Creation Date"), "fieldname": "creation", "fieldtype": "Datetime", "width": 200},
-        {"label": _("Approver Remark"), "fieldname": "approver_remark", "fieldtype": "Small Text", "width": 400}
+        {"label": _("Employee ID"), "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 140},
+        {"label": _("Requester Employee"), "fieldname": "employee_name", "fieldtype": "Data", "width": 200},
+        {"label": _("Requester Designation"), "fieldname": "designation", "fieldtype": "Data", "width": 180},
+        {"label": _("Category"), "fieldname": "category", "fieldtype": "Link", "options": "Approval Category", "width": 220},
+        {"label": _("Approval Suggestion"), "fieldname": "approval_suggestion", "fieldtype": "Small Text", "width": 220},
+        {"label": _("Status"), "fieldname": "approval_status", "fieldtype": "Data", "width": 140},
+        {"label": _("Title"), "fieldname": "title", "fieldtype": "Data", "width": 250},
+        {"label": _("Acted By"), "fieldname": "acted_by", "fieldtype": "Link", "options": "User", "width": 180},
+        {"label": _("Creation Date"), "fieldname": "creation", "fieldtype": "Datetime", "width": 180},
+        {"label": _("Description"), "fieldname": "description", "fieldtype": "Text Editor", "width": 300},
+        {"label": _("Approver Remark"), "fieldname": "approver_remark", "fieldtype": "Small Text", "width": 300}
     ]
 
 # Data fetching logic for the Approval Request Report with permission checks and filters
@@ -85,12 +89,16 @@ def get_data(filters):
     query = f"""
         SELECT 
             ar.name,
+            ar.employee,
             ar.employee_name,
             ar.designation,
+            ar.category,
+            ar.approval_suggestion,
             ar.approval_status,
             ar.title,
             ar.acted_by,
             ar.creation,
+            ar.description,
             ar.approver_remark
         FROM 
             `tabApproval Request` ar
@@ -112,6 +120,8 @@ def get_conditions(filters):
         conditions.append("ar.creation <= %(to_date_end)s")
     if filters.get("employee"):
         conditions.append("ar.employee = %(employee)s")
+    if filters.get("category"):
+        conditions.append("ar.category = %(category)s")
     if filters.get("approval_status"):
         conditions.append("ar.approval_status = %(approval_status)s")
 
