@@ -1152,16 +1152,32 @@ def get_employee_training_report(
 # ─────────────────────────────────────────────────────────────────────────────
 
 TEAM_REPORT_COLUMNS = [
-    {"key": "s_no", "label": "S.No"},
-    {"key": "emp_id", "label": "Emp ID"},
-    {"key": "employee_name", "label": "Employee Name"},
-    {"key": "branch_name", "label": "Branch"},
-    {"key": "training_date", "label": "Training Date"},
-    {"key": "program_name", "label": "Training/Program Name"},
-    {"key": "trainer_name", "label": "Trainer Name"},
-    {"key": "status", "label": "Training Status"},
-    {"key": "attendance_marked", "label": "Attendance Marked"},
+    {"key": "training_date", "label": "Date"},
+    {"key": "employee_name", "label": "Employee"},
+    {"key": "program_name", "label": "Training/Program"},
+    {"key": "time_range", "label": "Time"},
+    {"key": "location", "label": "Location"},
+    {"key": "trainer_name", "label": "Trainer"},
+    {"key": "status", "label": "Status"},
 ]
+
+
+def _pretty_date_range(from_date, to_date):
+    """Leader-friendly range: '17 Sep 2026' or '15–17 Sep 2026'."""
+    try:
+        f = frappe.utils.getdate(from_date) if from_date else None
+        t = frappe.utils.getdate(to_date) if to_date else None
+    except Exception:
+        return str(from_date or "")[:10]
+    if not f:
+        return ""
+    if not t or t == f:
+        return f.strftime("%d %b %Y").lstrip("0")
+    if f.year == t.year and f.month == t.month:
+        return f"{f.day}–{t.day} {f.strftime('%b %Y')}"
+    if f.year == t.year:
+        return f"{f.strftime('%d %b')} – {t.strftime('%d %b %Y')}".replace(" 0", " ")
+    return f"{f.strftime('%d %b %Y').lstrip('0')} – {t.strftime('%d %b %Y').lstrip('0')}"
 
 
 @frappe.whitelist()
@@ -1250,7 +1266,8 @@ def get_team_training_report(
     page, page_size, offset = _paginate_args(page, page_size)
     select_fields = (
         "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-        "t.trainer, t.training_delivered, t.attendance_marked, "
+        "t.start_time, t.end_time, t.trainer, t.training_location, "
+        "t.training_delivered, t.attendance_marked, "
         "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
         "p.idx, p.reference_doctype, p.agent_employee, p.full_name "
     )
@@ -1286,25 +1303,40 @@ def get_team_training_report(
         e = emp_data.get(r.agent_employee) if r.agent_employee else None
         emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
-        date_label = str(r.from_date or "")[:10]
-        if r.to_date and str(r.to_date)[:10] != str(r.from_date or "")[:10]:
-            date_label += " to " + str(r.to_date)[:10]
+        from_str = str(r.from_date or "")[:10]
+        to_str = str(r.to_date or r.from_date or "")[:10]
         display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         status = r.status or get_training_status(_row_tag(r))
+        start_fmt = _format_time(r.start_time)
+        end_fmt = _format_time(r.end_time)
+        if start_fmt and end_fmt:
+            time_range = f"{start_fmt} – {end_fmt}"
+        else:
+            time_range = start_fmt or "—"
+        branch_fallback = (
+            (branch_meta_row.branch or branch_meta_row.name)
+            if branch_meta_row
+            else emp_branch_code or ((e.branch or "") if e else "")
+        )
         out.append({
             "s_no": seq,
+            "name": r.training_name,
             "emp_id": r.agent_employee or "",
             "employee_name": display_name,
-            "branch_name": (
-                (branch_meta_row.branch or branch_meta_row.name)
-                if branch_meta_row
-                else emp_branch_code or ((e.branch or "") if e else "")
-            ),
-            "training_date": date_label,
+            "from_date": from_str,
+            "to_date": to_str,
+            "training_date": _pretty_date_range(from_str, to_str),
             "program_name": r.training_program or "",
+            "time_range": time_range,
+            "location": r.training_location or branch_fallback or "—",
             "trainer_name": r.trainer or "",
             "status": status or "",
-            "attendance_marked": _yn(r.attendance_marked),
+            "docstatus": r.docstatus,
+            "training_delivered": r.training_delivered or 0,
+            "attendance_marked": r.attendance_marked or 0,
+            "pre_assessment_taken": r.pre_assessment_taken or 0,
+            "post_assessment_taken": r.post_assessment_taken or 0,
+            "feedback_taken": r.feedback_taken or 0,
         })
     return {"columns": TEAM_REPORT_COLUMNS, "rows": out, "total": total}
 
