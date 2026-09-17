@@ -2833,6 +2833,50 @@
         .report-cards {
           grid-template-columns: 1fr;
         }
+        /* Team Training: cards grid, wrapped toolbar, compact badge */
+        #teamView {
+          padding: 12px;
+          overflow-y: auto;
+        }
+        #teamCards {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        #teamCards .tr-stat-card {
+          min-width: 0;
+          max-width: none;
+          padding: 10px 12px;
+        }
+        #teamCards .tr-stat-card .sc-num {
+          font-size: 20px;
+        }
+        #teamView .tr-toolbar {
+          flex-wrap: wrap;
+          overflow: visible;
+        }
+        #teamView .tr-search {
+          flex: 1 1 100%;
+          order: -1;
+          max-width: none;
+        }
+        #teamView .tr-toolbar .field-select {
+          flex: 1 1 28%;
+          min-width: 0;
+          max-width: none;
+        }
+        #teamView .report-dash {
+          display: none;
+        }
+        #teamView #team-export {
+          flex: 1 1 100%;
+        }
+        .tm-date-badge {
+          width: 40px;
+        }
+        .tm-date-badge .d {
+          font-size: 12px;
+        }
         /* Drawer + modals: full-width sheets, same open/close logic */
         .drawer {
           width: 100vw;
