@@ -633,3 +633,51 @@ def has_permission(doc, ptype="read", user=None):
                 return doc.approval_status == "Pending Approval"
 
     return False
+
+
+@frappe.whitelist()
+def get_dashboard_summary():
+    """Returns analytics data for Approval Request Custom HTML Block Dashboard"""
+    user = frappe.session.user
+    perm_cond = get_permission_query_conditions(user)
+    where_clause = f"WHERE {perm_cond}" if perm_cond else ""
+
+    # 1. Total counts by status
+    status_counts = frappe.db.sql(f"""
+        SELECT approval_status, COUNT(*) as count
+        FROM `tabApproval Request`
+        {where_clause}
+        GROUP BY approval_status
+    """, as_dict=True)
+
+    summary = {"Draft": 0, "Pending Approval": 0, "Approved": 0, "Rejected": 0, "Total": 0}
+    for r in status_counts:
+        status = r.get("approval_status") or "Draft"
+        if status in summary:
+            summary[status] = r.get("count", 0)
+        summary["Total"] += r.get("count", 0)
+
+    # 2. Category-wise breakdown
+    category_counts = frappe.db.sql(f"""
+        SELECT IFNULL(category, 'Uncategorized') as category, COUNT(*) as count
+        FROM `tabApproval Request`
+        {where_clause}
+        GROUP BY category
+        ORDER BY count DESC
+        LIMIT 5
+    """, as_dict=True)
+
+    # 3. Recent 5 requests
+    recent_requests = frappe.db.sql(f"""
+        SELECT name, title, category, approval_status, creation, employee_name
+        FROM `tabApproval Request`
+        {where_clause}
+        ORDER BY creation DESC
+        LIMIT 5
+    """, as_dict=True)
+
+    return {
+        "summary": summary,
+        "category_counts": category_counts,
+        "recent_requests": recent_requests
+    }
