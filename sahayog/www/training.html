@@ -2833,10 +2833,18 @@
         .report-cards {
           grid-template-columns: 1fr;
         }
-        /* Team Training: cards grid, wrapped toolbar, compact badge */
+        /* Team Training: cards grid, wrapped toolbar, single-page scroll */
         #teamView {
+          display: block;
           padding: 12px;
           overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        #teamListWrap {
+          display: block !important;
+        }
+        #teamBody {
+          overflow: visible;
         }
         #teamCards {
           display: grid;
