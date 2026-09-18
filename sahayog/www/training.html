@@ -3893,27 +3893,6 @@
               <div class="nt-sched-hint" id="new-schedule-hint"></div>
             </div>
 
-            <!-- Location -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <input
-                class="nt-input"
-                id="new-location"
-                placeholder="Add training location"
-                autocomplete="off"
-              />
-            </div>
-
             <!-- Training Type -->
             <div class="nt-row">
               <svg
@@ -5797,8 +5776,6 @@
           document.getElementById("new-time").readOnly = false;
           document.getElementById("new-end-time").value = "";
           document.getElementById("new-end-time").readOnly = false;
-          document.getElementById("new-location").value = "";
-          document.getElementById("new-location").readOnly = false;
           var typeSel = document.getElementById("new-training-type");
           if (typeSel) {
             typeSel.value = "";
@@ -5894,7 +5871,6 @@
           f("new-to-date", ev.to_date || ev.from_date || "");
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
-          f("new-location", ev.training_location || "");
           f("new-training-type", ev.training_type || "");
           if (ev.geographies && ev.geographies.length) {
             state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
@@ -6048,9 +6024,8 @@
           var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
-          var location  = (document.getElementById("new-location") || {}).value.trim();
           var trainingType = (document.getElementById("new-training-type") || {}).value || "";
-          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"") || trainingType !== (ev.training_type||"");
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || trainingType !== (ev.training_type||"");
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
             if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -6077,10 +6052,9 @@
               to_date: toDate,
               start_time: startTime || null,
               end_time: endTime || null,
-              training_location: location || null,
               training_type: trainingType || null
             }).then(function(){
-              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location; ev.training_type = trainingType;
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_type = trainingType;
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
@@ -6126,7 +6100,7 @@
         }
 
         /* ---- Reschedule mode: unlock schedule fields in edit dialog ---- */
-        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-location"];
+        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time"];
 
         function enterRescheduleMode() {
           SCHEDULE_FIELDS.forEach(function (id) {
@@ -6157,7 +6131,6 @@
           var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
-          var location  = (document.getElementById("new-location") || {}).value.trim();
 
           if (!fromDate) { showToast("From Date is required"); return; }
           if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -6175,7 +6148,6 @@
             to_date: toDate,
             start_time: startTime || null,
             end_time: endTime || null,
-            training_location: location || null,
           })
             .then(function () {
               /* Update local event */
@@ -6184,7 +6156,6 @@
               ev.start_time = startTime;
               ev.end_time = endTime;
               ev.time = startTime;
-              ev.training_location = location;
               closeModal("addModal");
               loadData(true);
               renderTrainings();
@@ -6281,9 +6252,6 @@
             to_date: toDate,
             start_time: startTime,
             end_time: endTime,
-            training_location: document
-              .getElementById("new-location")
-              .value.trim(),
             training_type:
               (document.getElementById("new-training-type") || {}).value || null,
             trainer: trainerSel.value.trim() || null,
