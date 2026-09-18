@@ -3387,6 +3387,29 @@
                   <span class="report-card-link">View Report →</span>
                 </div>
               </div>
+
+              <div class="report-card" id="report-card-adh" role="button" tabindex="0">
+                <div class="report-card-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                </div>
+                <div class="report-card-body">
+                  <div class="report-card-title">Training Adherence &amp; Costing Report</div>
+                  <div class="report-card-desc">
+                    Training-wise adherence, attendance and costing for MIS/HO reporting.
+                  </div>
+                  <span class="report-card-link">View Report →</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3792,6 +3815,33 @@
                 placeholder="Add training location"
                 autocomplete="off"
               />
+            </div>
+
+            <!-- Training Type -->
+            <div class="nt-row">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M3 9h18M9 21V9" />
+              </svg>
+              <label class="nt-readonly">
+                <span class="nt-kicker">Training Type</span>
+                <select
+                  class="nt-input"
+                  id="new-training-type"
+                  style="cursor: pointer"
+                >
+                  <option value="">Select type</option>
+                  <option value="Classroom">Classroom</option>
+                  <option value="Virtual">Virtual</option>
+                </select>
+              </label>
             </div>
 
             <!-- Trainer (read-only, auto-filled) -->
@@ -5308,6 +5358,11 @@
           document.getElementById("new-end-time").readOnly = false;
           document.getElementById("new-location").value = "";
           document.getElementById("new-location").readOnly = false;
+          var typeSel = document.getElementById("new-training-type");
+          if (typeSel) {
+            typeSel.value = "";
+            typeSel.disabled = false;
+          }
           state.selectedGeographies = [];
           if (typeof renderGeoRows === "function") renderGeoRows();
           document.getElementById("new-branch").value = "";
@@ -5398,6 +5453,7 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-location", ev.training_location || "");
+          f("new-training-type", ev.training_type || "");
           if (ev.geographies && ev.geographies.length) {
             state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
           } else if (ev.branch) {
@@ -5550,7 +5606,8 @@
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
           var location  = (document.getElementById("new-location") || {}).value.trim();
-          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"");
+          var trainingType = (document.getElementById("new-training-type") || {}).value || "";
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"") || trainingType !== (ev.training_type||"");
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
             if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -5577,9 +5634,10 @@
               to_date: toDate,
               start_time: startTime || null,
               end_time: endTime || null,
-              training_location: location || null
+              training_location: location || null,
+              training_type: trainingType || null
             }).then(function(){
-              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location;
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location; ev.training_type = trainingType;
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
@@ -5783,6 +5841,8 @@
             training_location: document
               .getElementById("new-location")
               .value.trim(),
+            training_type:
+              (document.getElementById("new-training-type") || {}).value || null,
             trainer: trainerSel.value.trim() || null,
             zone: (state.selectedGeographies[0] && state.selectedGeographies[0].zone) || "",
             region: (state.selectedGeographies[0] && state.selectedGeographies[0].region) || "",
@@ -5841,6 +5901,13 @@
             api: "get_employee_training_report",
             file: "L&D_Employee_Training_Report_",
           },
+          adh: {
+            title: "Training Adherence & Costing Report",
+            sub: "Training-wise adherence, attendance and costing.",
+            empty: "Select a month to view data.",
+            api: "get_adherence_report",
+            file: "Training_Adherence_Costing_",
+          },
         };
 
         function showReportsHome() {
@@ -5864,24 +5931,24 @@
           document.getElementById("reportDetailTitle").textContent = def.title;
           document.getElementById("reportDetailSub").textContent = def.sub;
 
-          var isMis = type === "mis";
-          document.getElementById("misToolbar").style.display = isMis
-            ? "flex"
-            : "none";
-          document.getElementById("empToolbar").style.display = isMis
+          var isEmp = type === "emp";
+          document.getElementById("misToolbar").style.display = isEmp
             ? "none"
             : "flex";
+          document.getElementById("empToolbar").style.display = isEmp
+            ? "flex"
+            : "none";
 
           var body = document.getElementById("reportBody");
           body.innerHTML =
             '<div style="padding:20px;color:var(--ink-3)">' +
             def.empty +
             "</div>";
-          document.getElementById(type + "-count").textContent = "";
+          document.getElementById(isEmp ? "emp-count" : "mis-count").textContent = "";
           state.reportData = null;
           rpPage.current = 1;
 
-          if (isMis) {
+          if (!isEmp) {
             var mEl = document.getElementById("mis-month");
             if (mEl) {
               var d = state.viewDate || new Date(today);
@@ -5912,7 +5979,8 @@
           body.innerHTML =
             '<div style="padding:20px;color:var(--ink-3)">Loading report…</div>';
           document.getElementById("mis-count").textContent = "";
-          api("get_mis_report", {
+          var reportApi = (REPORT_DEFS[activeReport] || REPORT_DEFS.mis).api;
+          api(reportApi, {
             month: m,
             page: rpPage.current,
             page_size: rpPage.size,
@@ -6081,7 +6149,7 @@
         }
 
         function exportReportCsv() {
-          var key = activeReport === "emp" ? "emp" : "mis";
+          var key = REPORT_DEFS[activeReport] ? activeReport : "mis";
           var def = REPORT_DEFS[key];
           var params;
           var tag;
@@ -6195,7 +6263,12 @@
           .addEventListener("click", function () {
             openReportDetail("emp");
           });
-        ["report-card-mis", "report-card-emp"].forEach(function (id) {
+        document
+          .getElementById("report-card-adh")
+          .addEventListener("click", function () {
+            openReportDetail("adh");
+          });
+        ["report-card-mis", "report-card-emp", "report-card-adh"].forEach(function (id) {
           document.getElementById(id).addEventListener("keydown", function (e) {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
