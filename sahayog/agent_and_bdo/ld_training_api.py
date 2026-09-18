@@ -1150,7 +1150,7 @@ def get_adherence_report(
         "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
         "t.post_assessment_taken, t.feedback_taken, "
-        "t.trainer_remarks, t.budget_amount, t.closure_sent "
+        "t.trainer_remarks, t.actual_expense, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
     if page_size:
@@ -1235,7 +1235,7 @@ def get_adherence_report(
             "absentee_count": absent,
             "absentee_pct": round(absent * 100 / invited, 1) if invited else "",
             "training_remark": t.trainer_remarks or "",
-            "training_costing": t.budget_amount or "",
+            "training_costing": t.actual_expense or "",
             "costing_remark": "",
         })
     return {"columns": ADHERENCE_REPORT_COLUMNS, "rows": out, "total": total}
