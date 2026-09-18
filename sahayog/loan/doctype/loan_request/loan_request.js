@@ -9,6 +9,22 @@ function validateIndianPhone(phone) {
 
 frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
+		// Show fixed doc types before first save
+		if (frm.is_new() && (!frm.doc.document_checklist || !frm.doc.document_checklist.length)) {
+			["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"].forEach(function(t) {
+				frm.add_child("document_checklist", {document_type: t, status: "Pending"});
+			});
+			frm.refresh_field("document_checklist");
+		}
+		// Verification fields: readonly for Branch, editable for Credit/CPC
+		let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
+		let dgrid = frm.get_field("document_checklist");
+		if (dgrid && dgrid.grid) {
+			["status", "verified_by", "verification_date"].forEach(function(f) {
+				dgrid.grid.update_docfield_property(f, "read_only", can_verify ? 0 : 1);
+			});
+			frm.refresh_field("document_checklist");
+		}
 		frm.clear_custom_buttons();
 
 		// Hide Head Office Approval section when status is Draft
@@ -179,5 +195,32 @@ frappe.ui.form.on("Loan Request", {
 		} else {
 			frm.set_value("vintage_complete_days", 0);
 		}
+	}
+});
+
+frappe.ui.form.on("Loan Document", {
+	document_number(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		if (frm.doctype !== "Loan Request") return;
+		let val = row.document_number || "";
+		if (row.document_type === "Aadhaar Card") {
+			let filtered = val.replace(/\D/g, "").slice(0, 12);
+			if (/^[01]/.test(filtered)) filtered = filtered.slice(1);
+			if (val !== filtered) frappe.model.set_value(cdt, cdn, "document_number", filtered);
+		} else if (row.document_type === "PAN Card") {
+			let filtered = val.toUpperCase().slice(0, 10);
+			let correct = "";
+			for (let i = 0; i < filtered.length; i++) {
+				let ch = filtered[i];
+				if (i < 5) { if (/[A-Z]/.test(ch)) correct += ch; }
+				else if (i < 9) { if (/\d/.test(ch)) correct += ch; }
+				else { if (/[A-Z]/.test(ch)) correct += ch; }
+			}
+			if (val !== correct) frappe.model.set_value(cdt, cdn, "document_number", correct);
+		}
+	},
+	document_type(frm, cdt, cdn) {
+		if (frm.doctype !== "Loan Request") return;
+		frappe.model.set_value(cdt, cdn, "document_number", "");
 	}
 });
