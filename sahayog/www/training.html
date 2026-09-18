@@ -5058,6 +5058,7 @@
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
+            metaRow("Type", esc(ev.training_type || "—")) +
             "</div>";
           if (geos.length) {
             body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>Branch Details:</strong><br>' + geoSummary + '</div>';
