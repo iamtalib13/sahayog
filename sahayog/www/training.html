@@ -1002,6 +1002,86 @@
         color: var(--ink-2);
       }
 
+      /* ---------- Drawer attendance marking (compact, subtle) ---------- */
+      .att-list {
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .att-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        background: var(--surface);
+      }
+      .att-name {
+        flex: 1;
+        font-size: 13px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .att-btns {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .att-btn {
+        height: 26px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
+      .att-btn.on-present {
+        background: var(--green-soft);
+        border-color: #bbe7cf;
+        color: #15803d;
+      }
+      .att-btn.on-absent {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #b91c1c;
+      }
+      .att-btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      .att-summary {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--ink-2);
+        white-space: nowrap;
+      }
+      .att-tick-present {
+        color: #15803d;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .att-tick-absent {
+        color: #b91c1c;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .ev-type {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--ink-3);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 1px 6px;
+        margin-left: 4px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
       /* ---------- Overlays / drawer / modal ---------- */
       .overlay {
         position: fixed;
@@ -3751,6 +3831,23 @@
               </div>
             </div>
 
+            <!-- Attendance (edit mode only) -->
+            <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
+              <div class="nt-row" style="justify-content: flex-start;gap:10px;">
+                <span class="nt-kicker">Attendance</span>
+                <span id="nt-att-summary" style="flex:1;"></span>
+                <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
+              </div>
+              <div class="nt-pop" id="nt-attendance-pop" style="display: none">
+                <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
+                <div id="nt-attendance-list" class="nt-pop-list"></div>
+                <div class="nt-pop-foot">
+                  <span id="nt-attendance-count"></span>
+                  <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Date & Time: labeled fields -->
             <div class="nt-kicker-wrap">
               <span class="nt-kicker">Date &amp; Time</span>
@@ -4211,6 +4308,7 @@
                 ev.topic,
                 ev.trainer_name,
                 ev.training_location,
+                ev.training_type,
                 ev.zone,
                 ev.region,
                 ev.district,
@@ -4602,6 +4700,11 @@
             '<span class="event-chip-title">' +
             esc(ev.training_program || ev.topic || "Training") +
             "</span>" +
+            (ev.training_type
+              ? '<span class="ev-type" title="Training Type">' +
+                esc(ev.training_type) +
+                "</span>"
+              : "") +
             "</span>" +
             '<span class="event-chip-time">' +
             esc(ev.time || "") +
@@ -5065,6 +5168,8 @@
           }
           body += "</div>";
 
+          body += attendanceSectionHTML(ev, editable);
+
           body +=
             '<div class="drawer-section">' +
             '<div class="drawer-section-title" id="drw-completion-title">Completion ' +
@@ -5192,6 +5297,182 @@
           drawerOverlay.classList.add("open");
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
+          fillAttendanceSection(ev, editable);
+        }
+
+        /* ----- Calendar modal attendance (edit mode): summary + popover ----- */
+        var attPopDirty = {};
+        function refreshModalAttendanceRow(ev) {
+          var wrap = document.getElementById("nt-attendance-wrap");
+          if (!wrap) return;
+          var show = state.dialogMode === "edit" && role().canEdit && ev && ev.name;
+          wrap.style.display = show ? "" : "none";
+          closeAttPop();
+          if (!show) return;
+          var sumEl = document.getElementById("nt-att-summary");
+          var paint = function () {
+            if (sumEl)
+              sumEl.innerHTML = attendanceSummaryHTML(
+                attendanceSummary(ev.participant_list || []),
+              );
+          };
+          if (ev.participant_list) {
+            paint();
+            return;
+          }
+          if (sumEl) sumEl.innerHTML = '<span class="att-summary">Loading…</span>';
+          api("get_training_details", { name: ev.name })
+            .then(function (full) {
+              ev.participant_list = full.participant_list || [];
+              if (state.dialogMode === "edit" && state.currentEvent === ev) paint();
+            })
+            .catch(function () {
+              if (state.dialogMode === "edit" && state.currentEvent === ev && sumEl)
+                sumEl.innerHTML = "";
+            });
+        }
+        function closeAttPop() {
+          var pop = document.getElementById("nt-attendance-pop");
+          if (pop) pop.style.display = "none";
+        }
+        function openAttPop(ev, keepDirty) {
+          var pop = document.getElementById("nt-attendance-pop");
+          var listEl = document.getElementById("nt-attendance-list");
+          if (!pop || !listEl) return;
+          if (!keepDirty) attPopDirty = {};
+          var list = ev.participant_list || [];
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No participants added.</div>';
+          } else {
+            listEl.innerHTML = list
+              .map(function (p) {
+                var key = attRowKey(p);
+                var cur = key in attPopDirty ? attPopDirty[key] : attStatusOf(p);
+                return (
+                  '<div class="att-row" data-prow="' +
+                  esc(key) +
+                  '" style="margin:6px 8px;">' +
+                  '<span class="att-name">' +
+                  esc(p.full_name || p.agent_employee || "—") +
+                  "</span>" +
+                  '<span class="att-btns">' +
+                  '<button type="button" class="att-btn' +
+                  (cur === "Present" ? " on-present" : "") +
+                  '" data-att="Present">Present</button>' +
+                  '<button type="button" class="att-btn' +
+                  (cur === "Absent" ? " on-absent" : "") +
+                  '" data-att="Absent">Absent</button>' +
+                  "</span></div>"
+                );
+              })
+              .join("");
+          }
+          paintAttPopCount(ev);
+          listEl.querySelectorAll(".att-row").forEach(function (row) {
+            row.querySelectorAll(".att-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var key = row.dataset.prow;
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === key;
+                });
+                var base = p ? attStatusOf(p) : "";
+                var want = btn.dataset.att;
+                var cur = key in attPopDirty ? attPopDirty[key] : base;
+                if (cur === want) return;
+                if (want === base) delete attPopDirty[key];
+                else attPopDirty[key] = want;
+                var shown = key in attPopDirty ? attPopDirty[key] : base;
+                row.querySelectorAll(".att-btn").forEach(function (b) {
+                  var on = b.dataset.att === shown;
+                  b.classList.toggle("on-present", on && b.dataset.att === "Present");
+                  b.classList.toggle("on-absent", on && b.dataset.att === "Absent");
+                });
+                paintAttPopCount(ev);
+              });
+            });
+          });
+          pop.style.display = "block";
+        }
+        function paintAttPopCount(ev) {
+          var el = document.getElementById("nt-attendance-count");
+          if (!el) return;
+          var merged = (ev.participant_list || []).map(function (p) {
+            var key = attRowKey(p);
+            return {
+              attendance_status: key in attPopDirty ? attPopDirty[key] : attStatusOf(p),
+            };
+          });
+          el.innerHTML = attendanceSummaryHTML(attendanceSummary(merged));
+          var saveBtn = document.getElementById("btn-attendance-save");
+          if (saveBtn) saveBtn.disabled = Object.keys(attPopDirty).length === 0;
+        }
+        function saveAttPop(ev) {
+          var keys = Object.keys(attPopDirty);
+          if (!keys.length) {
+            closeAttPop();
+            return;
+          }
+          var wanted = {};
+          keys.forEach(function (k) {
+            wanted[k] = attPopDirty[k];
+          });
+          var saveBtn = document.getElementById("btn-attendance-save");
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Saving…";
+          }
+          var tasks = keys.map(function (key) {
+            var p = (ev.participant_list || []).find(function (x) {
+              return attRowKey(x) === key;
+            });
+            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            return api("update_participant_attendance", {
+              training_name: ev.name,
+              participant_name: p.name,
+              attendance_status: wanted[key],
+            })
+              .then(function () {
+                return { key: key, ok: true };
+              })
+              .catch(function (e) {
+                return { key: key, ok: false, error: (e && e.message) || "Failed" };
+              });
+          });
+          Promise.all(tasks).then(function (results) {
+            var failed = {};
+            results.forEach(function (r) {
+              if (r.ok) {
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === r.key;
+                });
+                if (p) p.attendance_status = wanted[r.key];
+              } else {
+                failed[r.key] = true;
+              }
+            });
+            var keep = {};
+            Object.keys(wanted).forEach(function (k) {
+              if (failed[k]) keep[k] = wanted[k];
+            });
+            attPopDirty = keep;
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = "Save Attendance";
+            }
+            var sumEl = document.getElementById("nt-att-summary");
+            if (sumEl)
+              sumEl.innerHTML = attendanceSummaryHTML(
+                attendanceSummary(ev.participant_list || []),
+              );
+            if (Object.keys(failed).length) {
+              showToast("Some updates failed — kept previous state for those");
+              openAttPop(ev, true);
+            } else {
+              showToast("Attendance saved");
+              closeAttPop();
+            }
+          });
         }
 
         function stageCheck(ev, field, checked) {
@@ -5225,6 +5506,165 @@
             v +
             "</div></div>"
           );
+        }
+
+        /* ----- Participant attendance (drawer section) ----- */
+        function attRowKey(p) {
+          return p.name || ((p.reference_doctype || "") + ":" + (p.agent_employee || ""));
+        }
+        function attStatusOf(p) {
+          return p.attendance_status === "Present"
+            ? "Present"
+            : p.attendance_status === "Absent"
+              ? "Absent"
+              : "";
+        }
+        function attendanceSummary(list) {
+          var s = { total: 0, present: 0, absent: 0, unmarked: 0 };
+          (list || []).forEach(function (p) {
+            s.total++;
+            var st = attStatusOf(p);
+            if (st === "Present") s.present++;
+            else if (st === "Absent") s.absent++;
+            else s.unmarked++;
+          });
+          return s;
+        }
+        function attendanceSummaryHTML(s) {
+          if (!s.total) return '<span class="att-summary">No participants</span>';
+          if (s.unmarked === s.total)
+            return '<span class="att-summary">⚪ Not Marked · 0/' + s.total + "</span>";
+          if (s.absent === 0 && s.unmarked === 0)
+            return '<span class="att-summary">🟢 All Present · ' + s.present + "/" + s.total + "</span>";
+          if (s.present === 0 && s.unmarked === 0)
+            return '<span class="att-summary">🔴 All Absent · 0/' + s.total + "</span>";
+          return '<span class="att-summary">🟠 Mixed · ' + s.present + "/" + s.total + " Present</span>";
+        }
+        function attendanceRowsHTML(ev, editable) {
+          var list = ev.participant_list || [];
+          if (!list.length)
+            return '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
+          return (
+            '<div class="att-list">' +
+            list
+              .map(function (p) {
+                var st = attStatusOf(p);
+                var name = esc(p.full_name || p.agent_employee || "—");
+                if (!editable) {
+                  return (
+                    '<div class="att-row"><span class="' +
+                    (st === "Present" ? "att-tick-present" : "att-tick-absent") +
+                    '">' +
+                    (st === "Present" ? "✓" : "✗") +
+                    '</span><span class="att-name">' +
+                    name +
+                    '</span><span class="ck-val">' +
+                    (st || "Not Marked") +
+                    "</span></div>"
+                  );
+                }
+                return (
+                  '<div class="att-row" data-prow="' +
+                  esc(attRowKey(p)) +
+                  '"><span class="att-name">' +
+                  name +
+                  '</span><span class="att-btns">' +
+                  '<button type="button" class="att-btn' +
+                  (st === "Present" ? " on-present" : "") +
+                  '" data-att="Present">Present</button>' +
+                  '<button type="button" class="att-btn' +
+                  (st === "Absent" ? " on-absent" : "") +
+                  '" data-att="Absent">Absent</button>' +
+                  "</span></div>"
+                );
+              })
+              .join("") +
+            "</div>"
+          );
+        }
+        function attendanceSectionHTML(ev, editable) {
+          var summary = '<span class="att-summary">Loading…</span>';
+          var inner = '<div style="font-size:13px;color:var(--ink-3)">Loading participants…</div>';
+          if (ev.participant_list) {
+            summary = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            inner = attendanceRowsHTML(ev, editable);
+          }
+          return (
+            '<div class="drawer-section"><div class="drawer-section-title">Participants ' +
+            '<span id="drw-att-summary" style="float:right;text-transform:none;letter-spacing:normal;">' +
+            summary +
+            "</span></div>" +
+            '<div id="drw-attendance">' +
+            inner +
+            "</div></div>"
+          );
+        }
+        function fillAttendanceSection(ev, editable) {
+          var box = document.getElementById("drw-attendance");
+          if (!box) return;
+          if (ev.participant_list) {
+            box.innerHTML = attendanceRowsHTML(ev, editable);
+            bindAttendanceButtons(ev);
+            var s0 = document.getElementById("drw-att-summary");
+            if (s0) s0.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            return;
+          }
+          api("get_training_details", { name: ev.name })
+            .then(function (full) {
+              ev.participant_list = full.participant_list || [];
+              if (full.participants != null) ev.participants = full.participants;
+              var b = document.getElementById("drw-attendance");
+              if (!b) return;
+              b.innerHTML = attendanceRowsHTML(ev, editable);
+              bindAttendanceButtons(ev);
+              var s = document.getElementById("drw-att-summary");
+              if (s) s.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            })
+            .catch(function () {
+              var b = document.getElementById("drw-attendance");
+              if (b)
+                b.innerHTML =
+                  '<div style="font-size:13px;color:var(--ink-3)">Could not load participants.</div>';
+            });
+        }
+        function bindAttendanceButtons(ev) {
+          document.querySelectorAll("#drw-attendance .att-row").forEach(function (row) {
+            var key = row.dataset.prow;
+            row.querySelectorAll(".att-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var want = btn.dataset.att;
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === key;
+                });
+                if (!p || attStatusOf(p) === want) return;
+                row.querySelectorAll(".att-btn").forEach(function (b) {
+                  b.disabled = true;
+                });
+                api("update_participant_attendance", {
+                  training_name: ev.name,
+                  participant_name: p.name,
+                  attendance_status: want,
+                })
+                  .then(function () {
+                    p.attendance_status = want;
+                    var btns = row.querySelectorAll(".att-btn");
+                    btns.forEach(function (b) {
+                      b.disabled = false;
+                      b.classList.toggle("on-present", b.dataset.att === "Present" && want === "Present");
+                      b.classList.toggle("on-absent", b.dataset.att === "Absent" && want === "Absent");
+                    });
+                    var s = document.getElementById("drw-att-summary");
+                    if (s) s.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+                  })
+                  .catch(function (e) {
+                    row.querySelectorAll(".att-btn").forEach(function (b) {
+                      b.disabled = false;
+                    });
+                    showToast((e && e.message) || "Could not update attendance");
+                  });
+              });
+            });
+          });
         }
 
         function toggleStatus(ev, field, value) {
@@ -5396,6 +5836,7 @@
             trainerInput.value = state.currentEmployeeName || "";
           }
           setDialogMode("add");
+          refreshModalAttendanceRow(null);
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
         }
@@ -5516,6 +5957,7 @@
             );
           }
           addModal.classList.add("open");
+          refreshModalAttendanceRow(ev);
         }
         function editExtraHTML(ev) {
           var r = role();
@@ -6464,6 +6906,22 @@
         document.querySelector(".header-right").appendChild(bulkBtn);
 
         document.getElementById("btn-save-training").onclick = saveTraining;
+        var markBtn = document.getElementById("btn-mark-attendance");
+        if (markBtn)
+          markBtn.addEventListener("click", function () {
+            if (state.currentEvent) openAttPop(state.currentEvent);
+          });
+        var saveAttBtn = document.getElementById("btn-attendance-save");
+        if (saveAttBtn)
+          saveAttBtn.addEventListener("click", function () {
+            if (state.currentEvent) saveAttPop(state.currentEvent);
+          });
+        document.addEventListener("click", function (e) {
+          var pop = document.getElementById("nt-attendance-pop");
+          var wrap = document.getElementById("nt-attendance-wrap");
+          if (pop && pop.style.display === "block" && wrap && !wrap.contains(e.target))
+            closeAttPop();
+        });
 
         /* ---------- Bulk Upload ---------- */
         (function(){
@@ -7271,6 +7729,7 @@
                 ev.training_program,
                 ev.trainer,
                 ev.training_location,
+                ev.training_type,
                 ev.zone,
                 ev.region,
                 ev.district,
