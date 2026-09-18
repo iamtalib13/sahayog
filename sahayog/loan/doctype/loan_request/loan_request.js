@@ -9,6 +9,13 @@ function validateIndianPhone(phone) {
 
 frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
+		// Show fixed doc types before first save
+		if (frm.is_new() && (!frm.doc.document_checklist || !frm.doc.document_checklist.length)) {
+			["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"].forEach(function(t) {
+				frm.add_child("document_checklist", {document_type: t, status: "Pending"});
+			});
+			frm.refresh_field("document_checklist");
+		}
 		frm.clear_custom_buttons();
 
 		// Hide Head Office Approval section when status is Draft
