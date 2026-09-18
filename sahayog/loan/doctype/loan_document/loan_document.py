@@ -11,38 +11,53 @@ class LoanDocument(Document):
         if not self.document_type:
             frappe.throw("Document Type is required")
 
-        if not self.document_number:
-            frappe.throw("Document Number is required")
+        dtype = (self.document_type or "").strip()
+        dnum = (self.document_number or "").strip()
 
-        # Aadhaar Validation
-        if self.document_type == "Aadhaar":
-            if not re.match(r"^\d{12}$", self.document_number):
-                frappe.throw("Aadhaar Number must be 12 digits")
+        # PAN normalize to uppercase (Indian rule: ABCDE1234F)
+        if dtype == "PAN Card" and dnum:
+            dnum = dnum.upper()
+            self.document_number = dnum
 
-        # PAN Validation
-        if self.document_type == "PAN":
-            if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", self.document_number):
-                frappe.throw("Invalid PAN Number format")
+        # Number mandatory only for Aadhaar & PAN (same as Loan Application JS)
+        if dtype in ("Aadhaar Card", "PAN Card") and not dnum:
+            frappe.throw(f"{dtype}: Document Number is required")
 
-        # Duplicate Document Check (same type + same number in system)
-        existing = frappe.db.exists(
-            "Loan Document",
-            {
-                "document_type": self.document_type,
-                "document_number": self.document_number,
-                "name": ["!=", self.name]
-            }
-        )
+        # Aadhaar Validation (Indian rule: 12 digits, first 2-9)
+        if dtype == "Aadhaar Card" and dnum:
+            if not re.match(r"^[2-9]\d{11}$", dnum):
+                frappe.throw("Aadhaar Number must be 12 digits starting with 2-9")
 
-        if existing:
-            frappe.throw(f"{self.document_type} Number already exists in the system")
+        # PAN Validation (Indian rule: 5 letters + 4 digits + 1 letter)
+        if dtype == "PAN Card" and dnum:
+            if not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", dnum):
+                frappe.throw("Invalid PAN Number format (e.g. ABCDE1234F)")
 
-        # Same Document Type only once in same Loan Application
-        if self.parent and self.parenttype == "Loan Application":
-            for row in self.parent.kyc_documents:
-                if row.name != self.name and row.document_type == self.document_type:
+        # Duplicate Document Check (only when number present)
+        if dnum:
+            existing = frappe.db.exists(
+                "Loan Document",
+                {
+                    "document_type": dtype,
+                    "document_number": dnum,
+                    "name": ["!=", self.name]
+                }
+            )
+
+            if existing:
+                frappe.throw(f"{dtype} Number already exists in the system")
+
+        # Same Document Type only once per parent (Loan Application + Loan Request)
+        if self.parent and self.parenttype in ("Loan Application", "Loan Request"):
+            rows = []
+            if self.parenttype == "Loan Application":
+                rows = getattr(self.parent, "kyc_documents", []) or []
+            else:
+                rows = getattr(self.parent, "document_checklist", []) or []
+            for row in rows:
+                if row.name != self.name and (row.document_type or "").strip() == dtype:
                     frappe.throw(
-                        f"{self.document_type} already added for this loan application"
+                        f"{dtype} already added for this {self.parenttype.lower()}"
                     )
 
         # Verified Status Validation
