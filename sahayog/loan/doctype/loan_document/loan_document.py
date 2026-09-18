@@ -60,6 +60,21 @@ class LoanDocument(Document):
                         f"{dtype} already added for this {self.parenttype.lower()}"
                     )
 
+        # Role guard: only Credit/CPC/Admin can change verification fields
+        verifier_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+        user_roles = set(frappe.get_roles(frappe.session.user) or [])
+        if not verifier_roles.intersection(user_roles):
+            old_status, old_verifier = "Pending", None
+            try:
+                if self.name and not self.is_new():
+                    old = frappe.db.get_value("Loan Document", self.name, ["status", "verified_by"], as_dict=True)
+                    if old:
+                        old_status, old_verifier = old.status, old.verified_by
+            except Exception:
+                pass
+            if self.status != old_status or (self.verified_by and self.verified_by != old_verifier):
+                frappe.throw("Only Credit / CPC team can verify documents.")
+
         # Verified Status Validation
         if self.status == "Verified":
 

@@ -653,6 +653,14 @@ frappe.ui.form.on("Loan Application", {
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
+    let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
+    let kgrid = frm.get_field("kyc_documents");
+    if (kgrid && kgrid.grid) {
+      ["status", "verified_by", "verification_date"].forEach(function(f) {
+        kgrid.grid.update_docfield_property(f, "read_only", can_verify ? 0 : 1);
+      });
+      frm.refresh_field("kyc_documents");
+    }
 
     if (!frm.custom_home_button_added) {
       frm.add_custom_button(__("Home"), function () {

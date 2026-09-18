@@ -16,6 +16,15 @@ frappe.ui.form.on("Loan Request", {
 			});
 			frm.refresh_field("document_checklist");
 		}
+		// Verification fields: readonly for Branch, editable for Credit/CPC
+		let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
+		let dgrid = frm.get_field("document_checklist");
+		if (dgrid && dgrid.grid) {
+			["status", "verified_by", "verification_date"].forEach(function(f) {
+				dgrid.grid.update_docfield_property(f, "read_only", can_verify ? 0 : 1);
+			});
+			frm.refresh_field("document_checklist");
+		}
 		frm.clear_custom_buttons();
 
 		// Hide Head Office Approval section when status is Draft
