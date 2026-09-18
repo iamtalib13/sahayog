@@ -197,3 +197,30 @@ frappe.ui.form.on("Loan Request", {
 		}
 	}
 });
+
+frappe.ui.form.on("Loan Document", {
+	document_number(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		if (frm.doctype !== "Loan Request") return;
+		let val = row.document_number || "";
+		if (row.document_type === "Aadhaar Card") {
+			let filtered = val.replace(/\D/g, "").slice(0, 12);
+			if (/^[01]/.test(filtered)) filtered = filtered.slice(1);
+			if (val !== filtered) frappe.model.set_value(cdt, cdn, "document_number", filtered);
+		} else if (row.document_type === "PAN Card") {
+			let filtered = val.toUpperCase().slice(0, 10);
+			let correct = "";
+			for (let i = 0; i < filtered.length; i++) {
+				let ch = filtered[i];
+				if (i < 5) { if (/[A-Z]/.test(ch)) correct += ch; }
+				else if (i < 9) { if (/\d/.test(ch)) correct += ch; }
+				else { if (/[A-Z]/.test(ch)) correct += ch; }
+			}
+			if (val !== correct) frappe.model.set_value(cdt, cdn, "document_number", correct);
+		}
+	},
+	document_type(frm, cdt, cdn) {
+		if (frm.doctype !== "Loan Request") return;
+		frappe.model.set_value(cdt, cdn, "document_number", "");
+	}
+});
