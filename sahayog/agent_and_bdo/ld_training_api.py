@@ -1031,16 +1031,18 @@ def get_mis_report(
 ADHERENCE_REPORT_COLUMNS = [
     {"key": "facilitator_name", "label": "Facilitator Name"},
     {"key": "program_name", "label": "Program Name"},
-    {"key": "training_verticle", "label": "Training Verticle"},
-    {"key": "training_type", "label": "Training Type ( Classroom/ Virtual)"},
+    # NOTE (no data source yet — re-enable when tracked):
+    # {"key": "training_verticle", "label": "Training Verticle"},
+    {"key": "training_type", "label": "Training Type"},
     {"key": "start_date", "label": "Start Date"},
     {"key": "end_date", "label": "End Date"},
     {"key": "zone", "label": "Zone"},
     {"key": "training_location", "label": "Training Location"},
-    {"key": "invitation_shared", "label": "Invitation Shared  ( Yes/No)"},
+    # NOTE (needs invitation tracking):
+    # {"key": "invitation_shared", "label": "Invitation Shared  ( Yes/No)"},
     {"key": "participants_invited", "label": "Number of participants invited"},
-    {"key": "additional_invitation", "label": "Additional Invitatation"},
-    {"key": "actual_invited", "label": "Actual Invited"},
+    # {"key": "additional_invitation", "label": "Additional Invitatation"},
+    # {"key": "actual_invited", "label": "Actual Invited"},
     {"key": "training_completed", "label": "Training Completed/ Not Completed"},
     {"key": "participants_attended", "label": "Number of participants  attended the session"},
     {"key": "closure_report_shared", "label": "Clouser Report Shared  ( Yes/No)"},
@@ -1048,7 +1050,8 @@ ADHERENCE_REPORT_COLUMNS = [
     {"key": "absentee_pct", "label": "Abseentee %"},
     {"key": "training_remark", "label": "Training Remark"},
     {"key": "training_costing", "label": "Training Costing"},
-    {"key": "costing_remark", "label": "Costing Remark"},
+    # NOTE (no budget-remark field on Training):
+    # {"key": "costing_remark", "label": "Costing Remark"},
 ]
 
 
@@ -1096,10 +1099,10 @@ def get_adherence_report(
     page, page_size, offset = _paginate_args(page, page_size)
     select_fields = (
         "SELECT t.name, t.training_program, t.training_type, t.from_date, t.to_date, "
-        "t.trainer, t.zone, t.training_location, t.status, t.docstatus, "
+        "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
         "t.post_assessment_taken, t.feedback_taken, "
-        "t.trainer_remarks, t.actual_expense, t.closure_sent "
+        "t.trainer_remarks, t.budget_amount, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
     if page_size:
@@ -1130,6 +1133,23 @@ def get_adherence_report(
 
     out = []
     seq = offset
+    geo_map = _get_geographies_map([t.name for t in trainings])
+    branch_codes = set()
+    for t in trainings:
+        for g in geo_map.get(t.name, []):
+            if g["branch"]:
+                branch_codes.add(g["branch"])
+        if t.branch:
+            branch_codes.add(t.branch)
+    branch_meta = _branch_meta(branch_codes)
+
+    def _branch_label(code):
+        if not code:
+            return ""
+        m = branch_meta.get(code)
+        disp = (m.branch or "") if m else ""
+        return f"{code} - {disp}" if disp else code
+
     for t in trainings:
         seq += 1
         c = counts.get(t.name, {"Present": 0, "Absent": 0})
@@ -1137,6 +1157,8 @@ def get_adherence_report(
         absent = c.get("Absent", 0)
         invited = present + absent
         status = t.status or get_training_status(_row_tag(t))
+        geos = geo_map.get(t.name, [])
+        codes = [g["branch"] for g in geos if g["branch"]] or ([t.branch] if t.branch else [])
         out.append({
             "s_no": seq,
             "facilitator_name": t.trainer or "",
@@ -1146,9 +1168,9 @@ def get_adherence_report(
             "start_date": str(t.from_date or "")[:10],
             "end_date": str(t.to_date or t.from_date or "")[:10],
             "zone": t.zone or "",
-            "training_location": t.training_location or "",
+            "training_location": "; ".join(_branch_label(x) for x in codes),
             "invitation_shared": "",
-            "participants_invited": "",
+            "participants_invited": invited,
             "additional_invitation": "",
             "actual_invited": "",
             "training_completed": "Completed" if status == "Completed" else "Not Completed",
@@ -1157,7 +1179,7 @@ def get_adherence_report(
             "absentee_count": absent,
             "absentee_pct": round(absent * 100 / invited, 1) if invited else "",
             "training_remark": t.trainer_remarks or "",
-            "training_costing": t.actual_expense or "",
+            "training_costing": t.budget_amount or "",
             "costing_remark": "",
         })
     return {"columns": ADHERENCE_REPORT_COLUMNS, "rows": out, "total": total}
