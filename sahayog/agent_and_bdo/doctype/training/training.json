@@ -15,6 +15,7 @@
    "start_time",
    "end_time",
    "training_location",
+   "training_type",
    "trainer",
    "section_break_geo",
    "branch",
@@ -101,11 +102,18 @@
    "fieldtype": "Data",
    "label": "Trainer"
   },
-  {
-   "fieldname": "training_location",
-   "fieldtype": "Data",
-   "label": "Training Location"
-  },
+   {
+    "fieldname": "training_location",
+    "fieldtype": "Data",
+    "label": "Training Location"
+   },
+   {
+    "description": "Classroom or Virtual (used in Adherence & Costing report)",
+    "fieldname": "training_type",
+    "fieldtype": "Select",
+    "label": "Training Type",
+    "options": "\nClassroom\nVirtual"
+   },
   {
    "fieldname": "section_break_geo",
    "fieldtype": "Section Break",
