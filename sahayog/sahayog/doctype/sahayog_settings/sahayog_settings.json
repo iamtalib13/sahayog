@@ -48,10 +48,12 @@
   "min_password_length",
   "require_uppercase",
   "require_lowercase",
-  "column_break_policy",
-  "require_number",
-  "allow_special_characters"
- ],
+   "column_break_policy",
+   "require_number",
+   "allow_special_characters",
+   "approval_system_tab",
+   "enable_approval_system"
+  ],
  "fields": [
   {
    "fieldname": "project_settings_section",
@@ -318,13 +320,25 @@
    "label": "Daily Cash Expense Limit",
    "reqd": 1
   },
-  {
-   "fieldname": "cash_limit_exempt_categories",
-   "fieldtype": "Table",
-   "label": "Cash Limit Exempt Categories",
-   "options": "Petty Cash Cash Limit Exempt Category"
-  }
- ],
+   {
+    "fieldname": "cash_limit_exempt_categories",
+    "fieldtype": "Table",
+    "label": "Cash Limit Exempt Categories",
+    "options": "Petty Cash Cash Limit Exempt Category"
+   },
+   {
+    "fieldname": "approval_system_tab",
+    "fieldtype": "Tab Break",
+    "label": "Approval System"
+   },
+   {
+    "default": "1",
+    "description": "When checked, Approval System stays ON. Uncheck to turn it OFF.",
+    "fieldname": "enable_approval_system",
+    "fieldtype": "Check",
+    "label": "Enable Approval System"
+   }
+  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,

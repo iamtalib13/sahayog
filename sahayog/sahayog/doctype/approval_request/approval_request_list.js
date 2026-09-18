@@ -1,5 +1,17 @@
 frappe.listview_settings['Approval Request'] = {
     add_fields: ["approval_status"],
+
+    onload: function(listview) {
+        frappe.call({
+            method: "sahayog.sahayog.doctype.approval_request.approval_request.is_approval_enabled",
+            callback: function(r) {
+                if (r.message === false) {
+                    frappe.msgprint(__("Approval System is OFF. Please enable it from Sahayog Settings."));
+                    frappe.set_route("home");
+                }
+            }
+        });
+    },
     
     // Stop Frappe from forcing "Draft" on docstatus 0
     has_indicator_for_draft: true,

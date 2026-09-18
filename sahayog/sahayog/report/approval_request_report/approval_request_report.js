@@ -21,6 +21,12 @@ frappe.query_reports["Approval Request Report"] = {
 			"options": "Employee"
 		},
 		{
+			"fieldname": "category",
+			"label": __("Category"),
+			"fieldtype": "Link",
+			"options": "Approval Category"
+		},
+		{
 			"fieldname": "approval_status",
 			"label": __("Status"),
 			"fieldtype": "Select",
@@ -52,6 +58,15 @@ frappe.query_reports["Approval Request Report"] = {
 		report.set_filter_value('from_date', "");
 		report.set_filter_value('to_date', "");
 
+		// Hide Frappe standard Actions dropdown button
+		let hide_actions_interval = setInterval(() => {
+			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
+			if ($actions.length) {
+				$actions.attr('style', 'display: none !important');
+			}
+		}, 50);
+		setTimeout(() => clearInterval(hide_actions_interval), 2000);
+
 		// Clear Filters Button
 		report.page.add_inner_button(__('Clear Filters'), function () {
 			report.filters.forEach(f => f.set_value(''));
@@ -60,9 +75,9 @@ frappe.query_reports["Approval Request Report"] = {
 
 		// Export Button - Beside Clear Filters
 		if (frappe.user.has_role("System Manager") || frappe.user.has_role("Administrator")) {
-		report.page.add_inner_button(__('Export'), function () {
-			frappe.query_report.export_report();
-		}).addClass('btn-primary');
-	 }
+			report.page.add_inner_button(__('Export'), function () {
+				frappe.query_report.export_report();
+			}).addClass('btn-primary');
+		}
 	}
 };

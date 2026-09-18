@@ -307,6 +307,17 @@ frappe.ui.form.on('Approval Request', {
     },
     
     refresh: function(frm) {
+        frappe.call({
+            method: "sahayog.sahayog.doctype.approval_request.approval_request.is_approval_enabled",
+            callback: function(r) {
+                if (r.message === false) {
+                    frappe.msgprint(__("Approval System is OFF. Please enable it from Sahayog Settings."));
+                    frm.disable_save();
+                    if (frm.page) frm.page.clear_primary_action();
+                    setTimeout(function() { frappe.set_route("home"); }, 1500);
+                }
+            }
+        });
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---
@@ -441,9 +452,14 @@ frappe.ui.form.on('Approval Request', {
     },
     category: function(frm) {
         if (frm.doc.category) {
-            frappe.db.get_value('Approval Category', frm.doc.category, 'category').then(r => {
-                if (r.message && r.message.category) frm.set_value('title', r.message.category);
+            frappe.db.get_value('Approval Category', frm.doc.category, ['category', 'approval_suggestion']).then(r => {
+                if (r.message) {
+                    if (r.message.category) frm.set_value('title', r.message.category);
+                    if (r.message.approval_suggestion) frm.set_value('approval_suggestion', r.message.approval_suggestion);
+                }
             });
+        } else {
+            frm.set_value('approval_suggestion', '');
         }
     },
 

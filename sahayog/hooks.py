@@ -234,6 +234,7 @@ permission_query_conditions = {
     "Employee Material Request": "sahayog.permissions.get_employee_material_request_permission",
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.get_permission_query_conditions",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.get_permission_query_conditions",
+    "Approval Category": "sahayog.sahayog.doctype.approval_category.approval_category.get_permission_query_conditions",
     "Item": "sahayog.permissions.get_item_permission",
     "Loan Application": "sahayog.permissions.get_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.get_permission_query_conditions",
@@ -249,6 +250,7 @@ has_permission = {
     "Petty Cash Transaction": "sahayog.petty_cash_management.permission_queries.has_transaction_permission",
     "EOD Tasks": "sahayog.sahayog.doctype.eod_tasks.eod_tasks.has_permission",
     "Approval Request": "sahayog.sahayog.doctype.approval_request.approval_request.has_permission",
+    "Approval Category": "sahayog.sahayog.doctype.approval_category.approval_category.has_permission",
     "Item": "sahayog.permissions.has_item_permission",
     "Loan Application": "sahayog.permissions.has_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.has_permission",
@@ -736,6 +738,7 @@ fixtures = [
                     "IT Dashboard",
                     "Petty Cash Dashboard Widget",
                     "MAC Activity",
+                    "Approval Request",
                 ],
             ]
         ],

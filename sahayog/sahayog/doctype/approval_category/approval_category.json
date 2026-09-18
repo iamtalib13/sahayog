@@ -6,19 +6,25 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "category"
+  "category",
+  "approval_suggestion"
  ],
  "fields": [
   {
    "fieldname": "category",
    "fieldtype": "Data",
    "label": "Category"
+  },
+  {
+   "fieldname": "approval_suggestion",
+   "fieldtype": "Small Text",
+   "label": "Approval Suggestion"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-17 12:08:55.257236",
+ "modified": "2026-09-16 15:15:00.000000",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Category",

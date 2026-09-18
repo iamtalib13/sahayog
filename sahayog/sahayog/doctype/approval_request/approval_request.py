@@ -4,12 +4,30 @@ from frappe.model.document import Document
 LOCKED_STATUSES = ("Pending Approval", "Approved")
 
 
+def _approval_system_enabled():
+    try:
+        return bool(frappe.db.get_single_value("Sahayog Settings", "enable_approval_system"))
+    except Exception:
+        return True
+
+
+def _throw_if_approval_disabled():
+    if not _approval_system_enabled():
+        frappe.throw("Approval System is OFF. Please enable it from Sahayog Settings.")
+
+
+@frappe.whitelist()
+def is_approval_enabled():
+    return _approval_system_enabled()
+
+
 class ApprovalRequest(Document):
     def autoname(self):
         from frappe.model.naming import make_autoname        
         self.name = make_autoname(f"APP-REQ.-.YYYY.-.#####")
 
     def before_validate(self):
+        _throw_if_approval_disabled()
         if not (self.employee and self.employee_name and self.designation):
             emp = frappe.db.get_value(
                 "Employee",
@@ -26,6 +44,8 @@ class ApprovalRequest(Document):
             self.designation = emp.designation
 
     def validate(self):
+        _throw_if_approval_disabled()
+        self.validate_approval_suggestion()
         self.validate_creator_not_approver()
 
         if self.is_new():
@@ -36,6 +56,27 @@ class ApprovalRequest(Document):
         if old_status in LOCKED_STATUSES and not getattr(frappe.flags, "in_approval_action", False):
             frappe.throw(
                 f"Document is locked in status '{old_status}' and cannot be edited.")
+
+        self.validate_attachments_not_modified()
+
+    def validate_attachments_not_modified(self):
+        creator_user = self.owner or frappe.session.user
+        current_user = frappe.session.user
+
+        # If current user is not the owner/creator, attachments table cannot be changed/deleted
+        if current_user != creator_user and current_user != "Administrator":
+            old_doc = self.get_doc_before_save()
+            if old_doc:
+                old_attachments = [(d.attachment, d.description) for d in old_doc.get("attachments", [])]
+                new_attachments = [(d.attachment, d.description) for d in self.get("attachments", [])]
+                if old_attachments != new_attachments:
+                    frappe.throw("Approvers are not allowed to add, edit, or remove attachments submitted by the requester.")
+
+    def validate_approval_suggestion(self):
+        if self.category:
+            suggestion = frappe.db.get_value("Approval Category", self.category, "approval_suggestion")
+            if suggestion:
+                self.approval_suggestion = suggestion
 
     def validate_creator_not_approver(self):
         creator_user = self.owner or frappe.session.user
@@ -119,6 +160,7 @@ def get_all_valid_approvers(doc):
 
 @frappe.whitelist()
 def is_valid_approver(docname):
+    _throw_if_approval_disabled()
     """Called by JS to see if current user is an approver or manager.
     Returns: { "is_valid": True/False, "is_last": True/False, "can_delegate": True/False }
     """
@@ -238,6 +280,7 @@ def send_approval_notification_email(doc, recipient_user_id):
 
 @frappe.whitelist()
 def delegate_approval(docname, delegate_user, remark):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
@@ -296,6 +339,7 @@ def delegate_approval(docname, delegate_user, remark):
 
 @frappe.whitelist()
 def bypass_approval(docname, remark):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
@@ -340,6 +384,7 @@ def bypass_approval(docname, remark):
 
 @frappe.whitelist()
 def submit_for_approval(docname):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
 
     if doc.approval_status not in ["Draft", "Rejected"]:
@@ -452,6 +497,7 @@ def submit_for_approval(docname):
 
 @frappe.whitelist()
 def process_approval(docname, action, remark):
+    _throw_if_approval_disabled()
     if action not in ["Approved", "Rejected"]:
         frappe.throw("Invalid action.")
 
@@ -547,6 +593,8 @@ def get_permission_query_conditions(user):
     Hybrid Approach: Pre-calculate allowed document names to ensure List View 
     matches complex Python permission logic (Managers/Delegates/Groups).
     """
+    if not _approval_system_enabled():
+        return "1=0"
     if not user:
         user = frappe.session.user
 
@@ -591,6 +639,8 @@ def has_permission(doc, ptype="read", user=None):
     """
     Form view permission sync with list view.
     """
+    if not _approval_system_enabled():
+        return False
     if not user:
         user = frappe.session.user
 
@@ -611,3 +661,73 @@ def has_permission(doc, ptype="read", user=None):
                 return doc.approval_status == "Pending Approval"
 
     return False
+
+
+@frappe.whitelist()
+def get_dashboard_summary(limit=10, offset=0):
+    """Returns analytics data for Approval Request Custom HTML Block Dashboard"""
+    _throw_if_approval_disabled()
+    user = frappe.session.user
+    try:
+        limit = int(limit) or 10
+        offset = int(offset) or 0
+    except Exception:
+        limit, offset = 10, 0
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
+    perm_cond = get_permission_query_conditions(user)
+    where_clause = f"WHERE {perm_cond}" if perm_cond else ""
+
+    # 1. Total counts by status
+    status_counts = frappe.db.sql(f"""
+        SELECT approval_status, COUNT(*) as count
+        FROM `tabApproval Request`
+        {where_clause}
+        GROUP BY approval_status
+    """, as_dict=True)
+
+    summary = {"Draft": 0, "Pending Approval": 0, "Approved": 0, "Rejected": 0, "Total": 0}
+    for r in status_counts:
+        status = r.get("approval_status") or "Draft"
+        if status in summary:
+            summary[status] = r.get("count", 0)
+        summary["Total"] += r.get("count", 0)
+
+    # 2. Category-wise breakdown
+    category_counts = frappe.db.sql(f"""
+        SELECT IFNULL(category, 'Uncategorized') as category, COUNT(*) as count
+        FROM `tabApproval Request`
+        {where_clause}
+        GROUP BY category
+        ORDER BY count DESC
+        LIMIT 5
+    """, as_dict=True)
+
+    # 3. Recent requests with pagination (10 per page)
+    recent_requests = frappe.db.sql(f"""
+        SELECT name, title, category, approval_status, creation, employee_name
+        FROM `tabApproval Request`
+        {where_clause}
+        ORDER BY creation DESC
+        LIMIT {limit} OFFSET {offset}
+    """, as_dict=True)
+
+    has_more = len(recent_requests) == limit and (offset + len(recent_requests)) < summary["Total"]
+
+    # 4. Personal cards (Draft comes from summary)
+    my_summary = {
+        "pending_from_me": frappe.db.count("Approval Request", {"owner": user, "approval_status": "Pending Approval"}),
+        "approved_by_me": frappe.db.count("Approval Request", {"acted_by": user, "approval_status": "Approved"}),
+        "rejected_by_me": frappe.db.count("Approval Request", {"acted_by": user, "approval_status": "Rejected"}),
+    }
+
+    return {
+        "summary": summary,
+        "my_summary": my_summary,
+        "category_counts": category_counts,
+        "recent_requests": recent_requests,
+        "has_more": has_more,
+        "limit": limit,
+        "offset": offset,
+        "total": summary["Total"]
+    }

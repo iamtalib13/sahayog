@@ -16,6 +16,9 @@
   "request_details_section",
   "category",
   "title",
+  "column_break_zubx",
+  "approval_suggestion",
+  "section_break_adgv",
   "description",
   "approvers_section",
   "approvers",
@@ -72,6 +75,13 @@
    "reqd": 1
   },
   {
+   "fetch_from": "category.approval_suggestion",
+   "fieldname": "approval_suggestion",
+   "fieldtype": "Small Text",
+   "label": "Approval Suggestion",
+   "read_only": 1
+  },
+  {
    "fieldname": "description",
    "fieldtype": "Text Editor",
    "in_list_view": 1,
@@ -82,7 +92,7 @@
    "description": "Important: If Selection Type is: 'User' then fill the 'Approver' field. and if Selection Type is: 'Group' then fill the 'Group Email' field.",
    "fieldname": "approvers_section",
    "fieldtype": "Section Break",
-   "label": "Approvers"
+   "label": "Select Approvers"
   },
   {
    "fieldname": "approvers",
@@ -130,12 +140,21 @@
    "label": "Status",
    "options": "Draft\nPending Approval\nApproved\nRejected",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_zubx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_adgv",
+   "fieldtype": "Section Break",
+   "label": "Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-04-25 15:14:17.792410",
+ "modified": "2026-09-16 16:07:12.655700",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Approval Request",
