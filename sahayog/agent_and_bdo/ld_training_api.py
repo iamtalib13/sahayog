@@ -21,7 +21,7 @@ TRAINER_ROLES = {"Trainer", "Trainer Head"}
 # Event payload fields expected by the calendar frontend
 CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
-    "trainer", "training_location", "zone", "region", "district", "branch",
+    "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
     "is_adhoc", "docstatus", "status", "trainer_remarks",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
@@ -315,6 +315,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "trainer": r.trainer,
             "trainer_name": r.trainer or "",
             "training_location": r.training_location or "",
+            "training_type": r.training_type or "",
             "zone": r.zone or "",
             "region": r.region or "",
             "district": r.district or "",
@@ -415,6 +416,7 @@ def get_training_list(
             "trainer": r.trainer or "",
             "trainer_name": r.trainer or "",
             "training_location": r.training_location or "",
+            "training_type": r.training_type or "",
             "zone": r.zone or "",
             "region": r.region or "",
             "district": r.district or "",
@@ -463,7 +465,7 @@ def get_training_details(name):
     participants_list = frappe.db.get_all(
         "Training Participant",
         filters={"parent": name},
-        fields=["reference_doctype", "agent_employee", "full_name", "attendance_status"],
+        fields=["name", "reference_doctype", "agent_employee", "full_name", "attendance_status"],
         order_by="idx asc",
     )
     r["participant_list"] = participants_list
@@ -660,6 +662,52 @@ def update_training_status(training_name, field, value):
     frappe.db.set_value("Training", training_name, "status", status)
     frappe.db.commit()
     return {"success": True, "status": status}
+
+
+@frappe.whitelist()
+def update_participant_attendance(training_name, participant_name, attendance_status):
+    """
+    Mark a single participant Present/Absent. Reuses the existing
+    Training Participant `attendance_status` field (no new field) and the
+    existing `_ensure_can_update` permission check.
+
+    `participant_name` is the child-table row name scoped to this Training,
+    so a row from another Training can never be updated through here.
+    Returns the updated attendance summary.
+    """
+    if attendance_status not in ("Present", "Absent"):
+        frappe.throw(_("Attendance status must be Present or Absent."))
+
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+
+    row = next((p for p in (doc.participants or []) if p.name == participant_name), None)
+    if not row:
+        frappe.throw(_("Participant not found in this training."))
+
+    # Direct set_value: avoids re-running full doc validations (e.g. the
+    # Sunday/holiday schedule check) for an attendance-only change.
+    frappe.db.set_value("Training Participant", row.name, "attendance_status", attendance_status)
+    frappe.db.commit()
+    return {"success": True, "summary": _attendance_summary(training_name)}
+
+
+def _attendance_summary(training_name):
+    """{total, present, absent, unmarked} for a training's participants."""
+    rows = frappe.db.get_all(
+        "Training Participant",
+        filters={"parent": training_name, "parenttype": "Training"},
+        fields=["attendance_status"],
+    )
+    summary = {"total": len(rows), "present": 0, "absent": 0, "unmarked": 0}
+    for r in rows:
+        if r.attendance_status == "Present":
+            summary["present"] += 1
+        elif r.attendance_status == "Absent":
+            summary["absent"] += 1
+        else:
+            summary["unmarked"] += 1
+    return summary
 
 
 @frappe.whitelist()
@@ -1128,8 +1176,16 @@ def get_adherence_report(
         f"GROUP BY parent, attendance_status",
         names,
     ):
-        counts.setdefault(parent, {"Present": 0, "Absent": 0})
-        counts[parent][status or "Present"] = cnt
+        # Strict buckets: only explicit Present/Absent count; anything else
+        # (e.g. blank historic rows) stays unmarked, never assumed Present.
+        bucket = {"Present": 0, "Absent": 0, "Unmarked": 0}
+        counts.setdefault(parent, dict(bucket))
+        if status == "Present":
+            counts[parent]["Present"] = cnt
+        elif status == "Absent":
+            counts[parent]["Absent"] = cnt
+        else:
+            counts[parent]["Unmarked"] = counts[parent].get("Unmarked", 0) + cnt
 
     out = []
     seq = offset
@@ -1152,10 +1208,10 @@ def get_adherence_report(
 
     for t in trainings:
         seq += 1
-        c = counts.get(t.name, {"Present": 0, "Absent": 0})
+        c = counts.get(t.name, {"Present": 0, "Absent": 0, "Unmarked": 0})
         present = c.get("Present", 0)
         absent = c.get("Absent", 0)
-        invited = present + absent
+        invited = present + absent + c.get("Unmarked", 0)
         status = t.status or get_training_status(_row_tag(t))
         geos = geo_map.get(t.name, [])
         codes = [g["branch"] for g in geos if g["branch"]] or ([t.branch] if t.branch else [])
