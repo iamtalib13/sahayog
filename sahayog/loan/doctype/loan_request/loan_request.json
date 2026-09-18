@@ -56,7 +56,8 @@
    "fieldname": "customer",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Customer Name"
+   "label": "Customer Name",
+   "reqd": 1
   },
   {
    "fieldname": "mobile_number",
@@ -128,12 +129,11 @@
    "fieldtype": "Data",
    "label": "Scheme Code"
   },
-   {
-    "default": "",
-    "fieldname": "approved_loan_amount",
-    "fieldtype": "Data",
-    "label": "Approved Loan Amount"
-   },
+  {
+   "fieldname": "approved_loan_amount",
+   "fieldtype": "Data",
+   "label": "Approved Loan Amount"
+  },
   {
    "fieldname": "column_break_ho",
    "fieldtype": "Column Break"
@@ -164,13 +164,14 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nPending Credit Review\nApproved\nRejected\nSent Back"
+   "options": "\nDraft\nPending Credit Review\nApproved\nRejected\nSent Back",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-09 17:22:59.879978",
+ "modified": "2026-09-18 13:31:07.445412",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Request",
