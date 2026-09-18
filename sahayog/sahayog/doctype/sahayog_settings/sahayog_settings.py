@@ -16,3 +16,10 @@ class SahayogSettings(Document):
 					_("Monthly Reset Day must be between 1 and 28 (to ensure safe recurring reset across all months)."),
 					title=_("Invalid Reset Day")
 				)
+
+
+def is_approval_system_enabled():
+	try:
+		return bool(frappe.db.get_single_value('Sahayog Settings', 'enable_approval_system'))
+	except Exception:
+		return True

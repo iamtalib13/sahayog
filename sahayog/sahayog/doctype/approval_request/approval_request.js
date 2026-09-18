@@ -307,6 +307,17 @@ frappe.ui.form.on('Approval Request', {
     },
     
     refresh: function(frm) {
+        frappe.call({
+            method: "sahayog.sahayog.doctype.approval_request.approval_request.is_approval_enabled",
+            callback: function(r) {
+                if (r.message === false) {
+                    frappe.msgprint(__("Approval System is OFF. Please enable it from Sahayog Settings."));
+                    frm.disable_save();
+                    if (frm.page) frm.page.clear_primary_action();
+                    setTimeout(function() { frappe.set_route("home"); }, 1500);
+                }
+            }
+        });
         frm.meta.is_submittable = 0;
 
         // --- OVERRIDE DOCUMENT STATUS BADGE ---

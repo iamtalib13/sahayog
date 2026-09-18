@@ -4,12 +4,30 @@ from frappe.model.document import Document
 LOCKED_STATUSES = ("Pending Approval", "Approved")
 
 
+def _approval_system_enabled():
+    try:
+        return bool(frappe.db.get_single_value("Sahayog Settings", "enable_approval_system"))
+    except Exception:
+        return True
+
+
+def _throw_if_approval_disabled():
+    if not _approval_system_enabled():
+        frappe.throw("Approval System is OFF. Please enable it from Sahayog Settings.")
+
+
+@frappe.whitelist()
+def is_approval_enabled():
+    return _approval_system_enabled()
+
+
 class ApprovalRequest(Document):
     def autoname(self):
         from frappe.model.naming import make_autoname        
         self.name = make_autoname(f"APP-REQ.-.YYYY.-.#####")
 
     def before_validate(self):
+        _throw_if_approval_disabled()
         if not (self.employee and self.employee_name and self.designation):
             emp = frappe.db.get_value(
                 "Employee",
@@ -26,6 +44,7 @@ class ApprovalRequest(Document):
             self.designation = emp.designation
 
     def validate(self):
+        _throw_if_approval_disabled()
         self.validate_approval_suggestion()
         self.validate_creator_not_approver()
 
@@ -141,6 +160,7 @@ def get_all_valid_approvers(doc):
 
 @frappe.whitelist()
 def is_valid_approver(docname):
+    _throw_if_approval_disabled()
     """Called by JS to see if current user is an approver or manager.
     Returns: { "is_valid": True/False, "is_last": True/False, "can_delegate": True/False }
     """
@@ -260,6 +280,7 @@ def send_approval_notification_email(doc, recipient_user_id):
 
 @frappe.whitelist()
 def delegate_approval(docname, delegate_user, remark):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
@@ -318,6 +339,7 @@ def delegate_approval(docname, delegate_user, remark):
 
 @frappe.whitelist()
 def bypass_approval(docname, remark):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
     current_user = frappe.session.user
 
@@ -362,6 +384,7 @@ def bypass_approval(docname, remark):
 
 @frappe.whitelist()
 def submit_for_approval(docname):
+    _throw_if_approval_disabled()
     doc = frappe.get_doc("Approval Request", docname)
 
     if doc.approval_status not in ["Draft", "Rejected"]:
@@ -474,6 +497,7 @@ def submit_for_approval(docname):
 
 @frappe.whitelist()
 def process_approval(docname, action, remark):
+    _throw_if_approval_disabled()
     if action not in ["Approved", "Rejected"]:
         frappe.throw("Invalid action.")
 
@@ -569,6 +593,8 @@ def get_permission_query_conditions(user):
     Hybrid Approach: Pre-calculate allowed document names to ensure List View 
     matches complex Python permission logic (Managers/Delegates/Groups).
     """
+    if not _approval_system_enabled():
+        return "1=0"
     if not user:
         user = frappe.session.user
 
@@ -613,6 +639,8 @@ def has_permission(doc, ptype="read", user=None):
     """
     Form view permission sync with list view.
     """
+    if not _approval_system_enabled():
+        return False
     if not user:
         user = frappe.session.user
 
@@ -638,6 +666,7 @@ def has_permission(doc, ptype="read", user=None):
 @frappe.whitelist()
 def get_dashboard_summary(limit=10, offset=0):
     """Returns analytics data for Approval Request Custom HTML Block Dashboard"""
+    _throw_if_approval_disabled()
     user = frappe.session.user
     try:
         limit = int(limit) or 10

@@ -4,6 +4,13 @@ from sahayog.sahayog.doctype.approval_request.approval_request import get_permis
 
 # Approval Request Report showing list of approval requests with filters and summary for dashboard
 def execute(filters=None):
+    try:
+        if not bool(frappe.db.get_single_value("Sahayog Settings", "enable_approval_system")):
+            frappe.throw("Approval System is OFF. Please enable it from Sahayog Settings.")
+    except frappe.ValidationError:
+        raise
+    except Exception:
+        pass
     if not filters:
         filters = frappe._dict({})
 
