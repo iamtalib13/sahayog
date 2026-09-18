@@ -561,7 +561,7 @@ def create_training(**kwargs):
 
     allowed = {
         "training_program", "is_adhoc", "from_date", "to_date", "start_time", "end_time",
-        "trainer", "training_location", "zone", "region", "district", "branch",
+        "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
         "trainer_remarks", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
     }
@@ -1021,6 +1021,148 @@ def get_mis_report(
     return {"columns": MIS_REPORT_COLUMNS, "rows": out, "total": total}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Training Adherence & Costing report (L&D Admin)
+# One row per training (not per participant). Column layout follows the
+# client-shared sheet. Fields with no data source yet (invitations,
+# verticle, scores, costing remark) return blank.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ADHERENCE_REPORT_COLUMNS = [
+    {"key": "facilitator_name", "label": "Facilitator Name"},
+    {"key": "program_name", "label": "Program Name"},
+    {"key": "training_verticle", "label": "Training Verticle"},
+    {"key": "training_type", "label": "Training Type ( Classroom/ Virtual)"},
+    {"key": "start_date", "label": "Start Date"},
+    {"key": "end_date", "label": "End Date"},
+    {"key": "zone", "label": "Zone"},
+    {"key": "training_location", "label": "Training Location"},
+    {"key": "invitation_shared", "label": "Invitation Shared  ( Yes/No)"},
+    {"key": "participants_invited", "label": "Number of participants invited"},
+    {"key": "additional_invitation", "label": "Additional Invitatation"},
+    {"key": "actual_invited", "label": "Actual Invited"},
+    {"key": "training_completed", "label": "Training Completed/ Not Completed"},
+    {"key": "participants_attended", "label": "Number of participants  attended the session"},
+    {"key": "closure_report_shared", "label": "Clouser Report Shared  ( Yes/No)"},
+    {"key": "absentee_count", "label": "Abseentee count"},
+    {"key": "absentee_pct", "label": "Abseentee %"},
+    {"key": "training_remark", "label": "Training Remark"},
+    {"key": "training_costing", "label": "Training Costing"},
+    {"key": "costing_remark", "label": "Costing Remark"},
+]
+
+
+@frappe.whitelist()
+def get_adherence_report(
+    month,
+    zone=None,
+    region=None,
+    district=None,
+    branch=None,
+    page=None,
+    page_size=None,
+):
+    """Training-level adherence & costing rows for a month (YYYY-MM)."""
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can generate this report."))
+    parts = str(month or "").split("-")
+    if len(parts) != 2:
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    try:
+        year, mm = int(parts[0]), int(parts[1])
+    except (TypeError, ValueError):
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    if mm < 1 or mm > 12:
+        frappe.throw(_("Month must be between 01 and 12."))
+    last_day = calendar.monthrange(year, mm)[1]
+    start = f"{year}-{mm:02d}-01"
+    end = f"{year}-{mm:02d}-{last_day}"
+
+    conds = [
+        "t.docstatus < 2",
+        "t.from_date <= %(end)s",
+        "COALESCE(t.to_date, t.from_date) >= %(start)s",
+    ]
+    params = {"start": start, "end": end}
+    for col in ("zone", "region", "district", "branch"):
+        val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
+        if val:
+            conds.append(_geo_sql(col, val, "val_" + col, params))
+    where = " AND ".join(conds)
+
+    base = "FROM `tabTraining` t WHERE {where}".format(where=where)
+    total = frappe.db.sql("SELECT COUNT(*) " + base, params)[0][0]
+
+    page, page_size, offset = _paginate_args(page, page_size)
+    select_fields = (
+        "SELECT t.name, t.training_program, t.training_type, t.from_date, t.to_date, "
+        "t.trainer, t.zone, t.training_location, t.status, t.docstatus, "
+        "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
+        "t.post_assessment_taken, t.feedback_taken, "
+        "t.trainer_remarks, t.actual_expense, t.closure_sent "
+    )
+    order = " ORDER BY t.from_date ASC, t.start_time ASC"
+    if page_size:
+        page_params = dict(params, page_size=page_size, offset=offset)
+        trainings = frappe.db.sql(
+            select_fields + base + order + " LIMIT %(page_size)s OFFSET %(offset)s",
+            page_params,
+            as_dict=True,
+        )
+    else:
+        trainings = frappe.db.sql(select_fields + base + order, params, as_dict=True)
+
+    if not trainings:
+        return {"columns": ADHERENCE_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    # Attendance + participant counts per training
+    names = [t.name for t in trainings]
+    placeholders = ", ".join(["%s"] * len(names))
+    counts = {}
+    for parent, status, cnt in frappe.db.sql(
+        f"SELECT parent, attendance_status, COUNT(*) FROM `tabTraining Participant` "
+        f"WHERE parenttype = 'Training' AND parent IN ({placeholders}) "
+        f"GROUP BY parent, attendance_status",
+        names,
+    ):
+        counts.setdefault(parent, {"Present": 0, "Absent": 0})
+        counts[parent][status or "Present"] = cnt
+
+    out = []
+    seq = offset
+    for t in trainings:
+        seq += 1
+        c = counts.get(t.name, {"Present": 0, "Absent": 0})
+        present = c.get("Present", 0)
+        absent = c.get("Absent", 0)
+        invited = present + absent
+        status = t.status or get_training_status(_row_tag(t))
+        out.append({
+            "s_no": seq,
+            "facilitator_name": t.trainer or "",
+            "program_name": t.training_program or "",
+            "training_verticle": "",
+            "training_type": t.training_type or "",
+            "start_date": str(t.from_date or "")[:10],
+            "end_date": str(t.to_date or t.from_date or "")[:10],
+            "zone": t.zone or "",
+            "training_location": t.training_location or "",
+            "invitation_shared": "",
+            "participants_invited": "",
+            "additional_invitation": "",
+            "actual_invited": "",
+            "training_completed": "Completed" if status == "Completed" else "Not Completed",
+            "participants_attended": present,
+            "closure_report_shared": "Yes" if t.closure_sent else "No",
+            "absentee_count": absent,
+            "absentee_pct": round(absent * 100 / invited, 1) if invited else "",
+            "training_remark": t.trainer_remarks or "",
+            "training_costing": t.actual_expense or "",
+            "costing_remark": "",
+        })
+    return {"columns": ADHERENCE_REPORT_COLUMNS, "rows": out, "total": total}
+
+
 class _RowTag(dict):
     """Minimal mapping so get_training_status / _trainer_ids accept a row."""
 
@@ -1461,7 +1603,7 @@ def _ensure_can_update(doc):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None):
     """
     Reschedule a training — L&D Admin only.
     Updates date/time/location directly via db.set_value (no cancel/amend needed).
@@ -1493,6 +1635,10 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
         updates["end_time"] = end_norm
     if training_location is not None:
         updates["training_location"] = training_location
+    if training_type is not None:
+        if training_type not in ("", "Classroom", "Virtual"):
+            frappe.throw(_("Training Type must be Classroom or Virtual."))
+        updates["training_type"] = training_type
 
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
