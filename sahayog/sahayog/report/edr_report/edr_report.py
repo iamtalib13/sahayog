@@ -1,4 +1,18 @@
 import frappe
+from frappe import _
+
+
+ALLOWED_ROLES = {"CBS Support Executive", "CBS Support Manager"}
+
+
+def _has_report_access(user):
+	roles = set(frappe.get_roles(user))
+	if user == "Administrator" or "System Manager" in roles:
+		return True
+	if roles & ALLOWED_ROLES:
+		return True
+	dept = frappe.db.get_value("Employee", {"user_id": user}, "department")
+	return dept == "Information Technology"
 
 
 def execute(filters=None):
@@ -27,6 +41,9 @@ def get_columns():
 
 
 def get_data(filters):
+	if not _has_report_access(frappe.session.user):
+		frappe.throw(_("You don't have permission to get a report on: Employee"))
+
 	conditions = ["IFNULL(e.designation, '') != 'Peon'", "IFNULL(e.status, '') NOT IN ('Inactive', 'Left', 'Suspended')"]
 
 	if filters.get("from_date"):
