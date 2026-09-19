@@ -7,6 +7,11 @@ frappe.query_reports["EDR Report"] = {
 		{"fieldname": "designation", "label": __("Designation"), "fieldtype": "Link", "options": "Designation"}
 	],
 	"onload": function(report) {
+		report.page.add_inner_button(__('Clear Filters'), function () {
+			report.filters.forEach(f => f.set_value(''));
+			report.refresh();
+		}).addClass('btn-secondary');
+
 		report.page.add_inner_button(__('Download CSV'), function () {
 			let filters = report.get_values();
 			frappe.call({
