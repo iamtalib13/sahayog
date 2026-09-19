@@ -1,0 +1,11 @@
+{
+ "add_total_row": 0,
+ "doctype": "Report",
+ "is_standard": "Yes",
+ "module": "Sahayog",
+ "name": "EDR Report",
+ "ref_doctype": "Employee",
+ "report_name": "EDR Report",
+ "report_type": "Script Report",
+ "roles": [{"role": "System Manager"}]
+}
