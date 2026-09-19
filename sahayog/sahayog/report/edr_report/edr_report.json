@@ -1,11 +1,34 @@
 {
  "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-09-19 13:18:28.329407",
+ "disabled": 0,
+ "docstatus": 0,
  "doctype": "Report",
+ "filters": [],
+ "idx": 0,
  "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-09-19 13:29:26.754024",
+ "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "EDR Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
  "ref_doctype": "Employee",
  "report_name": "EDR Report",
  "report_type": "Script Report",
- "roles": [{"role": "System Manager"}]
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "CBS Support Executive"
+  },
+  {
+   "role": "CBS Support Manager"
+  }
+ ],
+ "timeout": 0
 }
