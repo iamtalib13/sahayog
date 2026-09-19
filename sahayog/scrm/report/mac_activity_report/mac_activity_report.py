@@ -110,6 +110,16 @@ def get_columns():
 		}
 	]
 
+ZONAL_DESIGNATIONS = {"assistant zonal manager", "zonal channel manager", "sr. zonal manager", "asst. zonal manager", "zonal manager"}
+
+def _get_user_zone(user):
+	emp = frappe.db.get_value("Employee", {"user_id": user}, ["designation", "custom_zone"], as_dict=True)
+	if not emp or not emp.get("custom_zone"):
+		return None
+	if (emp.get("designation") or "").strip().lower() not in ZONAL_DESIGNATIONS:
+		return None
+	return emp.get("custom_zone")
+
 def get_data(filters):
 	conditions = []
 	values = {}
@@ -118,8 +128,13 @@ def get_data(filters):
 	user_roles = frappe.get_roles(frappe.session.user)
 	allowed_all_roles = ["System Manager", "MIS Admin", "MIS User", "MIS Executive"]
 	if not any(r in user_roles for r in allowed_all_roles):
-		conditions.append("owner = %(current_user)s")
-		values["current_user"] = frappe.session.user
+		user_zone = _get_user_zone(frappe.session.user)
+		if user_zone:
+			conditions.append("zone = %(user_zone)s")
+			values["user_zone"] = user_zone
+		else:
+			conditions.append("owner = %(current_user)s")
+			values["current_user"] = frappe.session.user
 
 	if filters.get("from_date"):
 		conditions.append("date >= %(from_date)s")
