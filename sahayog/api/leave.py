@@ -1,7 +1,7 @@
 import frappe
 from frappe import _
 from frappe.utils import flt, getdate
-from sahayog.api.attendance import get_cycle_bounds, can_override_cycle_lock
+from sahayog.api.attendance import get_cycle_bounds, can_override_cycle_lock, is_cycle_locked
 
 @frappe.whitelist(allow_guest=False)
 def get_leave_types(employee=None):
@@ -123,13 +123,11 @@ def apply_leave(employee, leave_type, from_date, to_date, reason=None, force=Fal
             overlap.leave_type, date_str, overlap.name
         ))
 
-    # Attendance cycle lock: block leave for finalized (past) cycles
-    if not can_override_cycle_lock():
-        cycle_start, _cycle_end = get_cycle_bounds()
-        if getdate(from_date) < cycle_start:
-            frappe.throw(_(
-                "Leave cannot be applied for dates before {0} as that attendance cycle is locked."
-            ).format(formatdate(cycle_start, "dd-MMM-yyyy")))
+    # Attendance cycle lock: block leave for locked cycles (manual lock or automatic rule)
+    if not can_override_cycle_lock() and is_cycle_locked(from_date):
+        frappe.throw(_(
+            "Leave cannot be applied for {0} as that attendance cycle is locked."
+        ).format(formatdate(getdate(from_date), "dd-MMM-yyyy")))
 
     # Get Holiday List
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
