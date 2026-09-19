@@ -1,0 +1,71 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "category",
+  "parameter_name",
+  "response_type",
+  "observation",
+  "rating_score",
+  "attachment"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Section / Category"
+  },
+  {
+   "columns": 4,
+   "fieldname": "parameter_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Evaluation Parameter / Question"
+  },
+  {
+   "columns": 2,
+   "fieldname": "response_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Response Type",
+   "options": "\nText Observation\nRating (1 to 5)\nYes / No\nNumber"
+  },
+  {
+   "columns": 3,
+   "fieldname": "observation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Observation"
+  },
+  {
+   "fieldname": "rating_score",
+   "fieldtype": "Data",
+   "label": "Rating / Value"
+  },
+  {
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Branch Visit Review",
+ "name": "Branch Visit Response",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,84 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-09-19 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "action_item",
+  "owner",
+  "priority",
+  "tat",
+  "status",
+  "resolution_notes",
+  "proof"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "action_item",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Action Item"
+  },
+  {
+   "columns": 2,
+   "fieldname": "owner",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Responsible"
+  },
+  {
+   "columns": 1,
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "\nHigh\nMedium\nLow"
+  },
+  {
+   "columns": 1,
+   "fieldname": "tat",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Target Date (TAT)"
+  },
+  {
+   "columns": 1,
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Open\nIn Progress\nResolved"
+  },
+  {
+   "columns": 3,
+   "fieldname": "resolution_notes",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Resolution Notes"
+  },
+  {
+   "fieldname": "proof",
+   "fieldtype": "Attach",
+   "label": "Proof"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-09-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Branch Visit Review",
+ "name": "Branch Visit Action Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
