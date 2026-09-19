@@ -75,6 +75,12 @@ def get_columns():
 			"width": 180
 		},
 		{
+			"label": _("Zone"),
+			"fieldname": "zone",
+			"fieldtype": "Data",
+			"width": 120
+		},
+		{
 			"label": _("Occupation"),
 			"fieldname": "occupation",
 			"fieldtype": "Data",
@@ -136,6 +142,16 @@ def get_columns():
 		}
 	]
 
+ZONAL_DESIGNATIONS = {"assistant zonal manager", "zonal channel manager", "sr. zonal manager", "asst. zonal manager", "zonal manager"}
+
+def _get_user_zone(user):
+	emp = frappe.db.get_value("Employee", {"user_id": user}, ["designation", "custom_zone"], as_dict=True)
+	if not emp or not emp.get("custom_zone"):
+		return None
+	if (emp.get("designation") or "").strip().lower() not in ZONAL_DESIGNATIONS:
+		return None
+	return emp.get("custom_zone")
+
 def get_data(filters):
 	conditions = []
 	values = {}
@@ -145,8 +161,13 @@ def get_data(filters):
 	is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
 
 	if not is_admin:
-		conditions.append("owner = %(user)s")
-		values["user"] = user
+		user_zone = _get_user_zone(user)
+		if user_zone:
+			conditions.append("zone = %(user_zone)s")
+			values["user_zone"] = user_zone
+		else:
+			conditions.append("owner = %(user)s")
+			values["user"] = user
 
 	if filters.get("from_date"):
 		conditions.append("DATE(creation) >= %(from_date)s")
@@ -163,6 +184,10 @@ def get_data(filters):
 	if filters.get("branch"):
 		conditions.append("branch = %(branch)s")
 		values["branch"] = filters.get("branch")
+
+	if filters.get("zone"):
+		conditions.append("zone = %(zone)s")
+		values["zone"] = filters.get("zone")
 
 	if filters.get("status"):
 		conditions.append("status = %(status)s")
@@ -188,6 +213,7 @@ def get_data(filters):
 			city_district,
 			pincode,
 			branch,
+			zone,
 			occupation,
 			resident_status,
 			age,
