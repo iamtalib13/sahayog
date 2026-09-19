@@ -1,5 +1,7 @@
 import frappe
 from frappe import _
+import csv
+import io
 
 
 ALLOWED_ROLES = {"CBS Support Executive", "CBS Support Manager"}
@@ -73,3 +75,22 @@ def get_data(filters):
 		filters,
 		as_dict=True,
 	)
+
+
+@frappe.whitelist()
+def download_csv(filters=None):
+	if not _has_report_access(frappe.session.user):
+		frappe.throw(_("You don't have permission to get a report on: Employee"))
+
+	filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	data = get_data(filters)
+	columns = [c["fieldname"] for c in get_columns()]
+	headers = [c["label"] for c in get_columns()]
+
+	output = io.StringIO()
+	writer = csv.writer(output)
+	writer.writerow(headers)
+	for row in data:
+		writer.writerow([row.get(col, "") for col in columns])
+
+	return output.getvalue()
