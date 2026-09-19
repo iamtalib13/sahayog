@@ -34,6 +34,7 @@ def ensure_qr_code():
             frappe.log_error(message=str(e), title="MAC QR Generation Failed")
 
 ZONAL_DESIGNATIONS = {"assistant zonal manager", "zonal channel manager", "sr. zonal manager", "asst. zonal manager", "zonal manager"}
+BRANCH_DESIGNATIONS = {"senior branch manager", "assistant branch manager", "branch channel manager", "branch operation manager", "sr. branch manager", "branch manager", "asst. branch manager"}
 
 def _get_user_zone(user):
     emp = frappe.db.get_value("Employee", {"user_id": user}, ["designation", "custom_zone"], as_dict=True)
@@ -43,6 +44,14 @@ def _get_user_zone(user):
         return None
     return emp.get("custom_zone")
 
+def _get_user_branch(user):
+    emp = frappe.db.get_value("Employee", {"user_id": user}, ["designation", "sahayog_branch"], as_dict=True)
+    if not emp or not emp.get("sahayog_branch"):
+        return None
+    if (emp.get("designation") or "").strip().lower() not in BRANCH_DESIGNATIONS:
+        return None
+    return emp.get("sahayog_branch")
+
 @frappe.whitelist()
 def get_dashboard_data(start=0, page_length=10):
     user = frappe.session.user
@@ -50,9 +59,12 @@ def get_dashboard_data(start=0, page_length=10):
     is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
     filters = {}
     user_zone = None if is_admin else _get_user_zone(user)
+    user_branch = None if (is_admin or user_zone) else _get_user_branch(user)
     if not is_admin:
         if user_zone:
             filters["zone"] = user_zone
+        elif user_branch:
+            filters["branch"] = user_branch
         else:
             filters["owner"] = user
 
@@ -73,6 +85,9 @@ def get_dashboard_data(start=0, page_length=10):
         if user_zone:
             where_conditions.append("zone = %(user_zone)s")
             values["user_zone"] = user_zone
+        elif user_branch:
+            where_conditions.append("branch = %(user_branch)s")
+            values["user_branch"] = user_branch
         else:
             where_conditions.append("owner = %(user)s")
             values["user"] = user
@@ -178,6 +193,10 @@ def get_permission_query_conditions(user=None):
 	if user_zone:
 		return f"`tabMAC Activity`.zone = {frappe.db.escape(user_zone)}"
 
+	user_branch = _get_user_branch(user)
+	if user_branch:
+		return f"`tabMAC Activity`.branch = {frappe.db.escape(user_branch)}"
+
 	return f"`tabMAC Activity`.owner = {frappe.db.escape(user)}"
 
 
@@ -193,7 +212,10 @@ def has_permission(doc, ptype="read", user=None):
 		if doc.owner == user:
 			return True
 		user_zone = _get_user_zone(user)
-		return bool(user_zone and doc.get("zone") and doc.get("zone") == user_zone)
+		if user_zone and doc.get("zone") and doc.get("zone") == user_zone:
+			return True
+		user_branch = _get_user_branch(user)
+		return bool(user_branch and doc.get("branch") and doc.get("branch") == user_branch)
 
 	return True
 
