@@ -5,7 +5,7 @@ Minimal payroll system for support staff
 
 import frappe
 from frappe import _, msgprint
-from frappe.utils import flt, nowdate, getdate
+from frappe.utils import flt, nowdate, getdate, add_days
 from frappe.utils.csvutils import build_csv_response
 
 
@@ -35,10 +35,11 @@ def _month_days(payroll_month):
 
 
 def _unmarked_days(employee, start, end, doj=None, lwd=None):
-    """Past service days in cycle with no Attendance record (info only).
+    """Past service days in cycle with no Attendance record.
 
-    Future days are excluded (not yet due). These days are paid-in-advance
-    and settle via arrears once actually marked.
+    Unmarked days count as ABSENT (LOP). Excluded: future days (not yet due),
+    Sundays (weekly off) and holidays (nobody is expected to mark those).
+    Approved leaves already have Attendance records, so they never land here.
     """
     today = getdate(nowdate())
     win_start = max(getdate(start), getdate(doj)) if doj else getdate(start)
@@ -47,12 +48,24 @@ def _unmarked_days(employee, start, end, doj=None, lwd=None):
         win_end = min(win_end, getdate(lwd))
     if win_end < win_start:
         return 0
-    window_days = (win_end - win_start).days + 1
-    recorded = frappe.db.sql(
-        """SELECT COUNT(DISTINCT attendance_date) AS c FROM `tabAttendance`
+    recorded_rows = frappe.db.sql(
+        """SELECT DISTINCT attendance_date AS d FROM `tabAttendance`
            WHERE employee=%s AND attendance_date BETWEEN %s AND %s AND docstatus != 2""",
-        (employee, win_start, win_end), as_dict=True)[0].c or 0
-    return max(window_days - recorded, 0)
+        (employee, win_start, win_end), as_dict=True)
+    recorded = {str(r.d) for r in recorded_rows}
+    try:
+        from sahayog.api.attendance import _get_employee_holiday_dates
+        holidays = set(_get_employee_holiday_dates(employee, win_start, win_end))
+    except Exception:
+        holidays = set()
+    n = 0
+    day = win_start
+    while day <= win_end:
+        ds = str(day)
+        if ds not in recorded and day.weekday() != 6 and ds not in holidays:
+            n += 1
+        day = add_days(day, 1)
+    return n
 
 
 def _attendance_counts(employee, start, end):
@@ -175,9 +188,11 @@ def generate_salary_register(payroll_run_id):
 
             # Attendance auto-fetch (26th→25th cycle); approved corrections/
             # leaves already flow in via submitted Attendance records.
+            # Unmarked days count as Absent (LOP); Sundays/holidays excluded.
             present_days, lop_days = _attendance_counts(emp.name, cycle_start, cycle_end)
             unmarked = _unmarked_days(emp.name, cycle_start, cycle_end,
                                       emp.get("date_of_joining"), emp.get("relieving_date"))
+            lop_days += unmarked
             # Arrear auto-adjustment: salary is processed before the cycle's
             # tail (26th–31st) finalizes, so days paid in advance are settled
             # here. Diff of prev paid LOP vs prev actual LOP → +/− days.
@@ -189,6 +204,9 @@ def generate_salary_register(payroll_run_id):
             if prev_lop is not None:
                 prev_start, prev_end = _payroll_attendance_cycle(prev_month)
                 _prev_present, lop_actual = _attendance_counts(emp.name, prev_start, prev_end)
+                # Same basis as stored lop_days (recorded absent + unmarked).
+                lop_actual += _unmarked_days(emp.name, prev_start, prev_end,
+                                             emp.get("date_of_joining"), emp.get("relieving_date"))
                 arrears_days = flt(prev_lop) - flt(lop_actual)
             # HR per-day rate = monthly / calendar days of payroll month
             per_day = monthly / _month_days(payroll.payroll_month)

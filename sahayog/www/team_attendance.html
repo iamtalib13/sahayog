@@ -1334,7 +1334,7 @@
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon" style="background: #fef3c7">⏳</div>
+            <div class="stat-icon" style="background: #fef3c7">🏖️</div>
             <div>
               <div
                 class="stat-val"
@@ -1343,7 +1343,7 @@
               >
                 0
               </div>
-              <div class="stat-lbl">Not Marked</div>
+              <div class="stat-lbl">On Leave</div>
             </div>
           </div>
         </div>
@@ -1445,6 +1445,22 @@
                 >
                   🛠 Fix Duplicate Code
                 </button>
+                <button
+                  id="btnCycleLock"
+                  class="btn-clear"
+                  style="
+                    display: none;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    background: #fef2f2;
+                    color: #b91c1c;
+                    border: 1px solid #fca5a5;
+                  "
+                  onclick="openCycleLockModal()"
+                >
+                  🔒 Cycle Lock
+                </button>
               </div>
             </div>
 
@@ -1479,7 +1495,6 @@
                 <option value="Absent">Absent</option>
                 <option value="Half Day">Half Day</option>
                 <option value="On Leave">On Leave</option>
-                <option value="Not Marked">Not Marked</option>
               </select>
             </div>
 
@@ -3524,6 +3539,7 @@
       let staff = [];
       let userRoles = [];
       let allowHrToMarkAttendance = false;
+      let cycleLockEnd = ""; // manual cycle lock end (YYYY-MM-DD); empty = nothing locked
 
       // ── ROLE CHECK HELPERS ────────────────────────────────
       function isHR() {
@@ -4282,11 +4298,8 @@
         "-" +
         String(d.getDate()).padStart(2, "0");
       const todayKey = fmtLocalDate(now);
-      // Attendance cycle start (26th of prev/curr month) — mirrors backend get_cycle_bounds()
-      const cycleStart = (now.getDate() >= 26)
-        ? new Date(now.getFullYear(), now.getMonth(), 26)
-        : new Date(now.getFullYear(), now.getMonth() - 1, 26);
-      const cycleStartKey = fmtLocalDate(cycleStart);
+      // Manual cycle lock only (backend is_cycle_locked) — no automatic 26th rule,
+      // so managers keep grace time until HR locks (e.g. on 28th).
 
       // ── API HELPERS ───────────────────────────────────────
       async function callAPI(method, params = {}, module = "attendance") {
@@ -4521,6 +4534,10 @@
                 userRoles.includes("HR Manager"))
                 ? "inline-block"
                 : "none";
+          const btnCycleLock = document.getElementById("btnCycleLock");
+          if (btnCycleLock)
+            btnCycleLock.style.display =
+              tab === "attendance" && isHR() ? "inline-block" : "none";
           if (tab === "attendance") {
             if (calPanel) calPanel.style.display = "block";
             if (mainGrid) mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
@@ -4938,7 +4955,7 @@
       }
 
       // ── CORE LOGIC ──────────────────────────────────────
-      let dashboardSummary = { total: 0, present: 0, absent: 0, pending: 0 };
+      let dashboardSummary = { total: 0, present: 0, absent: 0, pending: 0, on_leave: 0 };
 
       async function fetchTeamData() {
         document.getElementById("teamListLoading").style.display = "flex";
@@ -4952,6 +4969,7 @@
         if (data && data.team) {
           userRoles = data.roles || [];
           allowHrToMarkAttendance = !!data.allow_hr_to_mark_attendance;
+          cycleLockEnd = data.cycle_lock_end || "";
           staff = data.team.map((s, idx) => ({
             ...s,
             color: COLORS[idx % COLORS.length],
@@ -5038,6 +5056,10 @@
                 userRoles.includes("HR Manager"))
                 ? "inline-block"
                 : "none";
+          const btnCycleLock2 = document.getElementById("btnCycleLock");
+          if (btnCycleLock2)
+            btnCycleLock2.style.display =
+              currentTab === "attendance" && isHR() ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Approvals";
@@ -5207,8 +5229,8 @@
                     <div style="min-width:0;"><div class="stat-val" style="color:#b91c1c;">${data.attendance.summary.Absent}</div><div class="stat-lbl">${timeLabel} Absent</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #f8fafc; background: #fff;">
-                    <div class="stat-icon" style="background: #f8fafc; color: #64748b;">⏳</div>
-                    <div style="min-width:0;"><div class="stat-val">${data.attendance.summary["Not Marked"]}</div><div class="stat-lbl">Pending</div></div>
+                    <div class="stat-icon" style="background: #fef3c7; color: #d97706;">🏖️</div>
+                    <div style="min-width:0;"><div class="stat-val" style="color:#d97706;">${data.attendance.summary["On Leave"] || 0}</div><div class="stat-lbl">${timeLabel} On Leave</div></div>
                 </div>
                 <div class="stat-card" style="border: 1px solid #fdf4ff; background: #fff; cursor: pointer;" onclick="switchTab('leave', document.getElementById('tabLeaveRequests'))">
                     <div class="stat-icon" style="background: #fdf4ff; color: #a21caf;">📩</div>
@@ -5462,7 +5484,7 @@
         document.getElementById("statHalfDay").textContent =
           dashboardSummary.half_day || 0;
         document.getElementById("statPending").textContent =
-          dashboardSummary.pending;
+          dashboardSummary.on_leave || 0;
       }
 
       function renderEmpList() {
@@ -5472,7 +5494,7 @@
 
         staff.forEach((s) => {
           const isLeft = s.status === "Left";
-          const status = s.attendance_status || "Not Marked";
+          const status = s.attendance_status || "Absent";
 
           // Enterprise Filters
           if (f_vals.branch && s.sahayog_branch !== f_vals.branch) return;
@@ -5544,19 +5566,21 @@
             if (status === "Present")
               pillHtml = `<span class="status-pill pill-present">✓ Present</span>`;
             else if (status === "Absent")
-              pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
+              pillHtml = s.unmarked
+                ? `<span class="status-pill pill-absent">✗ Absent (Unmarked)</span>`
+                : `<span class="status-pill pill-absent">✗ Absent</span>`;
             else if (status === "Half Day")
               pillHtml = `<span class="status-pill pill-halfday">🕒 Half Day</span>`;
             else if (status === "On Leave")
               pillHtml = `<span class="status-pill pill-leave">On Leave</span>`;
             else
-              pillHtml = `<span class="status-pill pill-notmarked">— Pending</span>`;
+              pillHtml = `<span class="status-pill pill-absent">✗ Absent</span>`;
 
             if (isHR()) {
               if (allowHrToMarkAttendance) {
                 if (status === "On Leave" || status === "Half Day") {
                   actionsHtml = "";
-                } else if (!status || status === "Not Marked") {
+                } else if (status === "Absent" && s.unmarked) {
                   actionsHtml = `
                     <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
                     <button class="btn-out" style="background:#fff7ed;color:#c2410c;border-color:#c2410c;" onclick="event.stopPropagation();markAttendance('${s.name}','Half Day')">½ Day</button>
@@ -5572,7 +5596,7 @@
               if (canManage) {
                 if (status === "On Leave" || status === "Half Day") {
                   actionsHtml = `<button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>`;
-                } else if (!status || status === "Not Marked") {
+                } else if (status === "Absent" && s.unmarked) {
                   actionsHtml = `
                     <button class="btn-clear" style="font-size:11px; padding:5px 12px;" onclick="event.stopPropagation(); openEmployeeProfile('${s.name}')">👁 View</button>
                     <button class="btn-in" onclick="event.stopPropagation();markAttendance('${s.name}','Present','IN')">✓ In</button>
@@ -5746,7 +5770,7 @@
             histStatus !== "Holiday" &&
             (!histStatus || !histStatus.startsWith("Holiday"))
           ) {
-            const cycleLocked = key < cycleStartKey;
+            const cycleLocked = !!cycleLockEnd && key <= cycleLockEnd;
             const lockedApproved =
               histStatus &&
               (histStatus.includes("Regularization Approved") ||
@@ -5770,7 +5794,7 @@
               cell.onclick = () => confirmCancelCorrection(key);
             } else {
               cell.onclick = () =>
-                openCorrectionModal(key, histStatus || "Not Marked");
+                openCorrectionModal(key, histStatus || "Absent");
             }
             cell.style.cursor = "pointer";
           }
@@ -5871,6 +5895,105 @@
               <div style="background:var(--success);width:${pct}%;height:100%;border-radius:8px;transition:.5s;"></div>
           </div>
         `;
+      }
+
+      async function openCycleLockModal() {
+        const old = document.getElementById("cycleLockModal");
+        if (old) old.remove();
+        const info = (await callAPI(
+          "get_attendance_cycle_lock",
+          {},
+          "attendance",
+        )) || {};
+        const locked = !!info.lock_end;
+        const isAdminUser = userRoles.includes("Administrator");
+        const modal = document.createElement("div");
+        modal.id = "cycleLockModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; padding:24px; border-radius:20px; width:95%; max-width:480px;" class="custom-scroll">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid #f1f5f9;">
+              <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0;">🔒 Attendance Cycle Lock</h3>
+              <button onclick="document.getElementById('cycleLockModal').remove()" style="background:#f1f5f9; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; color:var(--muted);">✕</button>
+            </div>
+            ${
+              locked
+                ? `<div style="font-size:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:#b91c1c;">
+                    Locked: <strong>${info.lock_start} → ${info.lock_end}</strong>${info.locked_by ? ` by ${info.locked_by}` : ""}
+                  </div>`
+                : `<div style="font-size:12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:#15803d;">
+                    No manual lock — all dates are open.
+                  </div>`
+            }
+            <div style="font-size:11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; margin-bottom:12px; color:var(--muted);">
+              Everything up to the End date gets locked (no corrections / backdated leave). Defaults are prev-month 26th → current-month 25th — change only if locking late.
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+              <div><label style="font-size:11px; color:var(--muted); font-weight:600;">Lock Start</label>
+                <input id="cycleLockStart" type="date" class="member-select" value="${info.lock_start || info.default_start || ""}" /></div>
+              <div><label style="font-size:11px; color:var(--muted); font-weight:600;">Lock End</label>
+                <input id="cycleLockEnd" type="date" class="member-select" value="${info.lock_end || info.default_end || ""}" /></div>
+            </div>
+            <button onclick="submitCycleLock()" id="btnSubmitCycleLock" class="btn-in" style="width:100%; padding:10px; font-weight:700; background:#dc2626; border:none; color:#fff;">🔒 Lock Cycle</button>
+            ${
+              locked && isAdminUser
+                ? `<button onclick="submitCycleUnlock()" id="btnSubmitCycleUnlock" class="btn-clear" style="width:100%; padding:10px; font-weight:700; margin-top:8px;">🔓 Unlock (Admin only)</button>`
+                : ""
+            }
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      async function submitCycleLock() {
+        const s = document.getElementById("cycleLockStart").value;
+        const e = document.getElementById("cycleLockEnd").value;
+        if (!s || !e) {
+          showToast("Start and End dates are required");
+          return;
+        }
+        if (
+          !(await showConfirmDialog(
+            `Lock attendance cycle ${s} to ${e}?\n\nNo corrections or backdated leave will be allowed up to ${e}.`,
+            "Lock",
+          ))
+        )
+          return;
+        const btn = document.getElementById("btnSubmitCycleLock");
+        btn.disabled = true;
+        btn.textContent = "Locking...";
+        const res = await callAPI(
+          "set_attendance_cycle_lock",
+          { from_date: s, to_date: e },
+          "attendance",
+        );
+        btn.disabled = false;
+        btn.textContent = "🔒 Lock Cycle";
+        if (res && res.success) {
+          showToast(`✅ ${res.message}`);
+          document.getElementById("cycleLockModal").remove();
+        }
+      }
+
+      async function submitCycleUnlock() {
+        if (
+          !(await showConfirmDialog(
+            "Remove the manual cycle lock?\n\nAutomatic 26th–25th rule will apply again.",
+            "Unlock",
+          ))
+        )
+          return;
+        const res = await callAPI(
+          "unlock_attendance_cycle_lock",
+          {},
+          "attendance",
+        );
+        if (res && res.success) {
+          showToast(`✅ ${res.message}`);
+          document.getElementById("cycleLockModal").remove();
+        }
       }
 
       async function openLeaveModal() {
@@ -8107,7 +8230,8 @@
                   <th style="padding:12px; text-align:right;">LOP</th>
                   <th style="padding:12px; text-align:right;">Arrears</th>
                   <th style="padding:12px; text-align:right;">Unmarked</th>
-                  <th style="padding:12px; text-align:right;">Gross</th>
+                  <th style="padding:12px; text-align:right;">Monthly Gross</th>
+                  <th style="padding:12px; text-align:right;">Gross Salary</th>
                   <th style="padding:12px; text-align:right;">Medical</th>
                   <th style="padding:12px; text-align:right;">Loan EMI</th>
                   <th style="padding:12px; text-align:right;">Other</th>
@@ -8129,6 +8253,7 @@
                     <td style="padding:12px; text-align:right;">${row.lop_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right;">${row.arrears_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right; ${(row.unmarked_days || 0) > 0 ? "color:#d97706; font-weight:700;" : ""}">${row.unmarked_days ?? "-"}</td>
+                    <td style="padding:12px; text-align:right; color:var(--muted);">₹${Number(row.monthly_gross).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.staff_loan_emi).toLocaleString("en-IN")}</td>
@@ -8740,7 +8865,7 @@
         const unmarked = window._payrollUnmarked || 0;
         const warn =
           unmarked > 0
-            ? `\n\n⚠️ ${unmarked} past day(s) across staff have NO attendance marked — they will be treated as PAID. Ask managers to mark Absent where applicable before submitting.`
+            ? `\n\n⚠️ ${unmarked} past day(s) across staff have NO attendance marked — they are counted as ABSENT (LOP). Ask managers to mark Present where applicable before submitting.`
             : "";
         if (
           !(await showConfirmDialog(

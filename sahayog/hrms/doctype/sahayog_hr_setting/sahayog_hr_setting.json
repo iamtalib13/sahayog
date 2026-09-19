@@ -11,9 +11,15 @@
   "cc_settings_sb",
   "unauthorized_absence_cc",
   "disciplinary_case_cc",
-  "stamp_settings_sb",
-  "domestic_enquiry_stamp",
-  "common_hr_stamp",
+   "stamp_settings_sb",
+   "domestic_enquiry_stamp",
+   "common_hr_stamp",
+   "cycle_lock_sb",
+   "attendance_lock_start",
+   "attendance_lock_end",
+   "column_break_cycle_lock",
+   "attendance_locked_by",
+   "attendance_locked_on",
   "employee_master_section",
   "employee_master",
   "field_mapping_sb",
@@ -71,11 +77,42 @@
    "fieldtype": "Attach Image",
    "label": "Domestic Enquiry Stamp"
   },
-  {
-   "fieldname": "employee_master_section",
-   "fieldtype": "Section Break",
-   "label": "Employee Master"
-  },
+   {
+    "fieldname": "cycle_lock_sb",
+    "fieldtype": "Section Break",
+    "label": "Attendance Cycle Lock (Manual)"
+   },
+   {
+    "fieldname": "attendance_lock_start",
+    "fieldtype": "Date",
+    "label": "Locked Cycle Start"
+   },
+   {
+    "fieldname": "attendance_lock_end",
+    "fieldtype": "Date",
+    "label": "Locked Cycle End"
+   },
+   {
+    "fieldname": "column_break_cycle_lock",
+    "fieldtype": "Column Break"
+   },
+   {
+    "fieldname": "attendance_locked_by",
+    "fieldtype": "Data",
+    "label": "Locked By",
+    "read_only": 1
+   },
+   {
+    "fieldname": "attendance_locked_on",
+    "fieldtype": "Datetime",
+    "label": "Locked On",
+    "read_only": 1
+   },
+   {
+    "fieldname": "employee_master_section",
+    "fieldtype": "Section Break",
+    "label": "Employee Master"
+   },
   {
    "fieldname": "employee_master",
    "fieldtype": "Attach",
