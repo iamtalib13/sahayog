@@ -28,6 +28,11 @@ frappe.query_reports["Agent Lead Acquisition Report"] = {
 			"options": "Sahayog Branch"
 		},
 		{
+			"fieldname": "zone",
+			"label": __("Zone"),
+			"fieldtype": "Data"
+		},
+		{
 			"fieldname": "occupation",
 			"label": __("Occupation"),
 			"fieldtype": "Select",

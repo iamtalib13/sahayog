@@ -58,13 +58,14 @@ frappe.ui.form.on("Agent Lead", {
 		}
 	},
 
-	// 🏢 Auto-populate State and City/District when Sahayog Branch is selected
+	// 🏢 Auto-populate State, City/District and Zone when Sahayog Branch is selected
 	branch(frm) {
 		if (frm.doc.branch) {
 			frappe.db.get_doc("Sahayog Branch", frm.doc.branch).then(b => {
 				if (b) {
 					if (b.state) frm.set_value("state", b.state);
 					if (b.district) frm.set_value("city_district", b.district);
+					if (b.zone) frm.set_value("zone", b.zone);
 				}
 			});
 		}

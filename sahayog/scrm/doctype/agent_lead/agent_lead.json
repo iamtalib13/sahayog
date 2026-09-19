@@ -14,9 +14,10 @@
   "state",
   "city_district",
   "pincode",
-  "column_break_loc",
-  "branch",
-  "section_profile",
+   "column_break_loc",
+   "branch",
+   "zone",
+   "section_profile",
   "occupation",
   "resident_status",
   "column_break_demo",
@@ -89,15 +90,22 @@
    "fieldname": "column_break_loc",
    "fieldtype": "Column Break"
   },
-  {
-   "fieldname": "branch",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Assigned Sahayog Branch",
-   "options": "Sahayog Branch"
-  },
-  {
-   "fieldname": "section_profile",
+   {
+    "fieldname": "branch",
+    "fieldtype": "Link",
+    "in_list_view": 1,
+    "label": "Assigned Sahayog Branch",
+    "options": "Sahayog Branch"
+   },
+   {
+    "fetch_from": "branch.zone",
+    "fieldname": "zone",
+    "fieldtype": "Data",
+    "label": "Zone",
+    "read_only": 1
+   },
+   {
+    "fieldname": "section_profile",
    "fieldtype": "Section Break",
    "label": "Profile & Demographics"
   },
@@ -236,17 +244,24 @@
    "role": "MIS User",
    "write": 1
   },
-  {
-   "create": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Branch Manager",
-   "write": 1
-  }
- ],
+   {
+    "create": 1,
+    "email": 1,
+    "export": 1,
+    "print": 1,
+    "read": 1,
+    "report": 1,
+    "role": "Branch Manager",
+    "write": 1
+   },
+   {
+    "create": 1,
+    "read": 1,
+    "report": 1,
+    "role": "Employee",
+    "write": 1
+   }
+  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
