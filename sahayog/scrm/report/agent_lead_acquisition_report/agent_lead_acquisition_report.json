@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-08-10 17:27:52.286827",
+ "modified": "2026-09-19 11:17:26.483301",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Agent Lead Acquisition Report",
@@ -31,6 +31,9 @@
   },
   {
    "role": "MIS Executive"
+  },
+  {
+   "role": "Employee"
   }
  ],
  "timeout": 0
