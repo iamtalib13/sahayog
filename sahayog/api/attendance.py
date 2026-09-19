@@ -256,6 +256,7 @@ def get_team_attendance_data(employee_status="Active"):
     for emp in team:
         emp.reports_to_name = supervisor_map.get(emp.reports_to)
         emp.is_self = (emp.name == manager.name) if manager else False
+        emp.unmarked = False
         
         if emp.status == "Left":
             emp.attendance_status = None
@@ -274,7 +275,13 @@ def get_team_attendance_data(employee_status="Active"):
             
             if not status and emp.name in on_leave_emps:
                 status = "On Leave"
-                
+
+            # Unmarked = Absent (unmarked days are counted as absent everywhere).
+            # unmarked=True lets the portal still offer marking buttons.
+            if not status:
+                status = "Absent"
+                emp.unmarked = True
+                 
             emp.attendance_status = status
             
             if status == "Present": present_count += 1
@@ -356,7 +363,9 @@ def get_hr_dashboard_data(month=None):
                 
         total_marked = sum(raw_counts.values())
         not_marked = max(0, headcount - total_marked)
-        attendance_summary["Not Marked"] = not_marked
+        # Unmarked counts as Absent everywhere (kept key for UI compat).
+        attendance_summary["Absent"] += not_marked
+        attendance_summary["Not Marked"] = 0
         
         eff_present = raw_counts.get("Present", 0) + (raw_counts.get("Half Day", 0) * 0.5) + raw_counts.get("Work From Home", 0)
         att_percentage = round((eff_present / headcount * 100), 2) if headcount > 0 else 0
@@ -641,11 +650,14 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
         if leave:
             current_status = "On Leave"
 
+    # Unmarked dates count as Absent (labelled so the reason is identifiable).
+    current_status = current_status or "Absent (Unmarked)"
+
     doc = frappe.get_doc({
         "doctype": "Attendance Correction",
         "employee": employee,
         "attendance_date": attendance_date,
-        "current_status": current_status or "Not Marked",
+        "current_status": current_status,
         "requested_status": requested_status,
         "reason": reason,
         "requested_by": frappe.session.user,
@@ -834,7 +846,7 @@ def get_employee_calendar(employee, month, year):
     )
     for corr in approved_corrections:
         date_str = str(corr.attendance_date)
-        base = history.get(date_str) or "Not Marked"
+        base = (history.get(date_str) or "Absent").replace(" (Unmarked)", "")
         history[date_str] = f"{base} (Regularization Approved)"
     
     # Add leave days — append approved context so the calendar tooltip shows
@@ -886,7 +898,22 @@ def get_employee_calendar(employee, month, year):
         ds = str(hd)
         if ds not in history:
             history[ds] = f"Holiday: {desc}"
-            
+
+    # Unmarked past days count as Absent (never future days, holidays,
+    # Sundays, or pre-joining days). Labelled so the reason is identifiable.
+    doj = frappe.db.get_value("Employee", employee, "date_of_joining")
+    doj_str = str(doj) if doj else ""
+    today_str = str(getdate())
+    cal_day = getdate(first_day)
+    cal_end = getdate(last_day)
+    while cal_day <= cal_end:
+        ds = str(cal_day)
+        if (ds not in history and ds <= today_str
+                and cal_day.weekday() != 6
+                and (not doj_str or ds >= doj_str)):
+            history[ds] = "Absent (Unmarked)"
+        cal_day = add_days(cal_day, 1)
+
     return history
 
 @frappe.whitelist(allow_guest=False)
@@ -1019,6 +1046,9 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
         temp_curr = add_days(temp_curr, 1)
 
     missing_days = len(missing_dates)
+
+    # Unmarked past days count as Absent (missing list retained as action list).
+    absent_days += missing_days
 
     # Correction Requests
     corrections_data = frappe.get_all("Attendance Correction", filters={
