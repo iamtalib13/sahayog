@@ -1002,6 +1002,86 @@
         color: var(--ink-2);
       }
 
+      /* ---------- Drawer attendance marking (compact, subtle) ---------- */
+      .att-list {
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .att-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 6px;
+        background: var(--surface);
+      }
+      .att-name {
+        flex: 1;
+        font-size: 13px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .att-btns {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .att-btn {
+        height: 26px;
+        padding: 0 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
+      .att-btn.on-present {
+        background: var(--green-soft);
+        border-color: #bbe7cf;
+        color: #15803d;
+      }
+      .att-btn.on-absent {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #b91c1c;
+      }
+      .att-btn:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      .att-summary {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--ink-2);
+        white-space: nowrap;
+      }
+      .att-tick-present {
+        color: #15803d;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .att-tick-absent {
+        color: #b91c1c;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .ev-type {
+        font-size: 9px;
+        font-weight: 700;
+        color: var(--ink-3);
+        background: var(--surface-2);
+        border-radius: 999px;
+        padding: 1px 6px;
+        margin-left: 4px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
       /* ---------- Overlays / drawer / modal ---------- */
       .overlay {
         position: fixed;
@@ -2182,7 +2262,18 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tr-toolbar::-webkit-scrollbar {
+        display: none;
+      }
+      .tr-toolbar > * {
+        flex-shrink: 0;
       }
       .tr-search {
         display: flex;
@@ -2193,9 +2284,9 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius-sm);
-        min-width: 200px;
+        min-width: 140px;
         flex: 1;
-        max-width: 260px;
+        max-width: 200px;
         transition: border-color 0.12s;
       }
       .tr-search:focus-within {
@@ -2222,7 +2313,7 @@
         height: 30px;
         font-size: 12px;
         padding: 0 7px;
-        min-width: 100px;
+        min-width: 90px;
         max-width: 130px;
         background: #f8fafc;
         border-radius: 999px;
@@ -2542,6 +2633,52 @@
           display: none;
         }
       }
+      /* ---------- Team Training verification view ---------- */
+      .tr-stat-card.sc-week {
+        background: #f5f0ff;
+        border-color: #c4b5fd;
+      }
+      .tr-stat-card.sc-week .sc-num {
+        color: #7c3aed;
+      }
+      .tm-clickable {
+        cursor: pointer;
+      }
+      .tm-date-badge {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        padding: 4px 0;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
+        font-weight: 700;
+        line-height: 1.2;
+        flex-shrink: 0;
+      }
+      .tm-date-badge .d {
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .tm-date-badge .m {
+        font-size: 9.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .tm-date-badge.multi {
+        background: #f5f0ff;
+        color: #7c3aed;
+      }
+      .tm-date-badge.past {
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
+      #teamView .tr-toolbar .field-select {
+        background: var(--surface);
+        border-radius: var(--radius-sm);
+      }
       /* ---------- Mobile-friendly (minimal, CSS-only, no JS changes) ---------- */
       @media (max-width: 768px) {
         .app {
@@ -2776,6 +2913,58 @@
         .report-cards {
           grid-template-columns: 1fr;
         }
+        /* Team Training: cards grid, wrapped toolbar, single-page scroll */
+        #teamView {
+          display: block;
+          padding: 12px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        #teamListWrap {
+          display: block !important;
+        }
+        #teamBody {
+          overflow: visible;
+        }
+        #teamCards {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        #teamCards .tr-stat-card {
+          min-width: 0;
+          max-width: none;
+          padding: 10px 12px;
+        }
+        #teamCards .tr-stat-card .sc-num {
+          font-size: 20px;
+        }
+        #teamView .tr-toolbar {
+          flex-wrap: wrap;
+          overflow: visible;
+        }
+        #teamView .tr-search {
+          flex: 1 1 100%;
+          order: -1;
+          max-width: none;
+        }
+        #teamView .tr-toolbar .field-select {
+          flex: 1 1 28%;
+          min-width: 0;
+          max-width: none;
+        }
+        #teamView .report-dash {
+          display: none;
+        }
+        #teamView #team-export {
+          flex: 1 1 100%;
+        }
+        .tm-date-badge {
+          width: 40px;
+        }
+        .tm-date-badge .d {
+          font-size: 12px;
+        }
         /* Drawer + modals: full-width sheets, same open/close logic */
         .drawer {
           width: 100vw;
@@ -2912,9 +3101,30 @@
               </svg>
               <span class="item-label">Reports</span>
             </button>
+            <button
+              class="nav-item"
+              id="nav-team"
+              title="Team Training — trainings of your team members"
+              style="display: none"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              <span class="item-label">Team Training</span>
+            </button>
           </div>
 
-          <div class="sidebar-section">
+          <div class="sidebar-section" id="statusSection">
             <div class="sidebar-section-title">Training status</div>
             <button class="nav-item" data-status="draft" title="Draft">
               <span class="status-dot" style="background: var(--gray)"></span>
@@ -3072,7 +3282,6 @@
           <div class="tr-head-row">
             <div>
               <h2>Trainings</h2>
-              <p class="tr-sub">Manage and track all training programs</p>
             </div>
           </div>
 
@@ -3121,8 +3330,8 @@
               <option value="upcoming">Upcoming dates</option>
               <option value="past">Past dates</option>
             </select>
-            <input type="month" class="field-select" id="tr-month" title="Filter by month" style="min-width:140px;" />
-            <button class="btn btn-reset" id="tr-reset" title="Reset filters">
+            <input type="month" class="field-select" id="tr-month" title="Filter by month" style="min-width:120px;" />
+            <button class="btn btn-reset" id="tr-reset" title="Reset filters" aria-label="Reset filters" style="padding: 0 8px;">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -3134,7 +3343,6 @@
                 <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
               </svg>
-              Reset
             </button>
           </div>
 
@@ -3147,9 +3355,8 @@
                   <th>Training</th>
                   <th>Date</th>
                   <th>Time</th>
-                  <th>Location</th>
                   <th>Trainer</th>
-                  <th>Branch</th>
+                  <th>Branch Name</th>
                   <th>Participants</th>
                   <th>Status</th>
                   <th class="th-actions">Actions</th>
@@ -3260,6 +3467,29 @@
                   <span class="report-card-link">View Report →</span>
                 </div>
               </div>
+
+              <div class="report-card" id="report-card-adh" role="button" tabindex="0">
+                <div class="report-card-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                </div>
+                <div class="report-card-body">
+                  <div class="report-card-title">Training Adherence &amp; Costing Report</div>
+                  <div class="report-card-desc">
+                    Training-wise adherence, attendance and costing for MIS/HO reporting.
+                  </div>
+                  <span class="report-card-link">View Report →</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3351,6 +3581,112 @@
                 </button>
                 <div class="pg-nums" id="rp-pg-nums"></div>
                 <button class="pg-btn" id="rp-pg-next" title="Next page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Team Training view (team leaders only) ===== -->
+        <div class="trainings-view" id="teamView" style="display: none">
+          <div class="tr-head-row">
+            <div>
+              <h2>Team Training</h2>
+            </div>
+          </div>
+
+          <div class="tr-stats" id="teamCards"></div>
+
+          <div class="tr-toolbar">
+            <select class="field-select" id="team-member" title="Team member">
+              <option value="">All Team Members</option>
+            </select>
+            <select class="field-select" id="team-status" title="Status">
+              <option value="">All Status</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="inprogress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="draft">Draft</option>
+            </select>
+            <select class="field-select" id="team-preset" title="Date range">
+              <option value="month">This Month</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="upcoming">Upcoming (60 days)</option>
+              <option value="past">Past 30 Days</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <input type="date" class="field-select" id="team-from" title="From date" />
+            <span class="report-dash">–</span>
+            <input type="date" class="field-select" id="team-to" title="To date" />
+            <div class="tr-search">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M21 21l-4.3-4.3" />
+              </svg>
+              <input
+                id="team-search"
+                placeholder="Search employee or training..."
+                autocomplete="off"
+              />
+            </div>
+            <button class="btn btn-primary" id="team-export" type="button">
+              Export CSV
+            </button>
+            <span class="report-spacer"></span>
+            <span class="report-count" id="team-count"></span>
+          </div>
+
+          <div id="teamListWrap" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div class="report-scroll" id="teamBody">
+              <div style="padding: 20px; color: var(--ink-3)">
+                Loading team trainings…
+              </div>
+            </div>
+
+            <div class="tr-pagination" id="tmPagination">
+              <div class="pg-left">
+                <span class="pg-label">Rows per page:</span>
+                <select class="pg-size-select" id="tm-page-size">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+              <div class="pg-right">
+                <span class="pg-info" id="tm-pg-info"></span>
+                <button class="pg-btn" id="tm-pg-prev" title="Previous page">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
+                </button>
+                <div class="pg-nums" id="tm-pg-nums"></div>
+                <button class="pg-btn" id="tm-pg-next" title="Next page">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -3495,6 +3831,23 @@
               </div>
             </div>
 
+            <!-- Attendance (edit mode only) -->
+            <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
+              <div class="nt-row" style="justify-content: flex-start;gap:10px;">
+                <span class="nt-kicker">Attendance</span>
+                <span id="nt-att-summary" style="flex:1;"></span>
+                <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
+              </div>
+              <div class="nt-pop" id="nt-attendance-pop" style="display: none">
+                <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
+                <div id="nt-attendance-list" class="nt-pop-list"></div>
+                <div class="nt-pop-foot">
+                  <span id="nt-attendance-count"></span>
+                  <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
+                </div>
+              </div>
+            </div>
+
             <!-- Date & Time: labeled fields -->
             <div class="nt-kicker-wrap">
               <span class="nt-kicker">Date &amp; Time</span>
@@ -3540,7 +3893,7 @@
               <div class="nt-sched-hint" id="new-schedule-hint"></div>
             </div>
 
-            <!-- Location -->
+            <!-- Training Type -->
             <div class="nt-row">
               <svg
                 viewBox="0 0 24 24"
@@ -3550,15 +3903,21 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
-                <circle cx="12" cy="10" r="3" />
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M3 9h18M9 21V9" />
               </svg>
-              <input
-                class="nt-input"
-                id="new-location"
-                placeholder="Add training location"
-                autocomplete="off"
-              />
+              <label class="nt-readonly">
+                <span class="nt-kicker">Training Type</span>
+                <select
+                  class="nt-input"
+                  id="new-training-type"
+                  style="cursor: pointer"
+                >
+                  <option value="">Select type</option>
+                  <option value="Classroom">Classroom</option>
+                  <option value="Virtual">Virtual</option>
+                </select>
+              </label>
             </div>
 
             <!-- Trainer (read-only, auto-filled) -->
@@ -3928,6 +4287,7 @@
                 ev.topic,
                 ev.trainer_name,
                 ev.training_location,
+                ev.training_type,
                 ev.zone,
                 ev.region,
                 ev.district,
@@ -3976,6 +4336,25 @@
           if (bulkBtnEl) bulkBtnEl.style.display = r.showMis ? "inline-flex" : "none";
           var navRep = document.getElementById("nav-reports");
           if (navRep) navRep.style.display = r.showMis ? "" : "none";
+          /* Team Training tab: reportees + L&D role (L&D Viewer for leaders).
+             Pure verifiers (viewer/general + team) see ONLY this tab. */
+          var navTeam = document.getElementById("nav-team");
+          if (navTeam) navTeam.style.display = state.canSeeTeam ? "" : "none";
+          state.teamOnly =
+            !!state.canSeeTeam &&
+            (state.role === "viewer" || state.role === "general");
+          if (state.teamOnly) {
+            ["nav-calendar", "nav-trainings", "nav-reports"].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (el) el.style.display = "none";
+            });
+            var statusSec = document.getElementById("statusSection");
+            if (statusSec) statusSec.style.display = "none";
+            var hdrSearch = document.querySelector(".header .search");
+            if (hdrSearch) hdrSearch.style.display = "none";
+            document.getElementById("headerSub").textContent =
+              "Team Training · View your team's training schedule";
+          }
         }
 
         /* ---------- Filters ---------- */
@@ -4300,6 +4679,11 @@
             '<span class="event-chip-title">' +
             esc(ev.training_program || ev.topic || "Training") +
             "</span>" +
+            (ev.training_type
+              ? '<span class="ev-type" title="Training Type">' +
+                esc(ev.training_type) +
+                "</span>"
+              : "") +
             "</span>" +
             '<span class="event-chip-time">' +
             esc(ev.time || "") +
@@ -4738,7 +5122,7 @@
               var codeName = g.branch || "";
               var binfo = (state.branchPick || []).find(function(b){ return b.name === g.branch; });
               var disp = binfo && binfo.branch ? codeName + " - " + binfo.branch : codeName;
-              return esc(disp) + " (" + esc(g.zone||"—") + "/" + esc(g.district||"—") + ")";
+              return esc(disp) + " (" + esc(g.zone||"—") + " / " + esc(g.region||"—") + " / " + esc(g.district||"—") + ")";
             }).join("<br>");
           } else {
             geoSummary = (ev.zone||"—") + " / " + (ev.district||"—") + " — " + esc(ev.branch||"—");
@@ -4756,11 +5140,14 @@
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             metaRow("Venue", esc(ev.training_location || "—")) +
+            metaRow("Type", esc(ev.training_type || "—")) +
             "</div>";
-          if (geos.length > 1) {
-            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>All Branches:</strong><br>' + geoSummary + '</div>';
+          if (geos.length) {
+            body += '<div style="margin-top:10px;font-size:12px;color:var(--ink-2);"><strong>Branch Details:</strong><br>' + geoSummary + '</div>';
           }
           body += "</div>";
+
+          body += attendanceSectionHTML(ev, editable);
 
           body +=
             '<div class="drawer-section">' +
@@ -4856,29 +5243,13 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
-          var canDelete = state.role === "ld_admin";
-          var deleteBtn = canDelete
-            ? '<button class="btn" id="drawerDelete" style="color:#dc2626;border-color:#fecaca;">Delete</button>'
-            : "";
           var actions = editable
             ? '<button class="btn" id="drawerCancel">Cancel</button>' +
               '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
-            : deleteBtn + '<button class="btn btn-primary" id="drawerDone">Close</button>';
-          document.getElementById("drawerActions").innerHTML = actions;
-
-          if (canDelete && document.getElementById("drawerDelete")) {
-            document.getElementById("drawerDelete").onclick = function () {
-              if (!confirm('Delete "' + (ev.training_program || "this training") + '"? This cannot be undone.')) return;
-              api("delete_training", { name: ev.name })
-                .then(function () {
-                  closeDrawer();
-                  loadData(true);
-                  renderTrainings();
-                  showToast("Training deleted");
-                })
-                .catch(function (e) { showToast("Could not delete: " + e.message); });
-            };
-          }
+            : "";
+          var actionsEl = document.getElementById("drawerActions");
+          actionsEl.innerHTML = actions;
+          actionsEl.style.display = actions ? "" : "none";
 
           if (editable) {
             document.getElementById("drawerSave").onclick = saveDrawerChanges;
@@ -4890,8 +5261,6 @@
                   stageCheck(ev, inp.dataset.field, inp.checked);
                 };
               });
-          } else {
-            document.getElementById("drawerDone").onclick = closeDrawer;
           }
 
           state.drawerBase = {
@@ -4907,6 +5276,182 @@
           drawerOverlay.classList.add("open");
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
+          fillAttendanceSection(ev, editable);
+        }
+
+        /* ----- Calendar modal attendance (edit mode): summary + popover ----- */
+        var attPopDirty = {};
+        function refreshModalAttendanceRow(ev) {
+          var wrap = document.getElementById("nt-attendance-wrap");
+          if (!wrap) return;
+          var show = state.dialogMode === "edit" && role().canEdit && ev && ev.name;
+          wrap.style.display = show ? "" : "none";
+          closeAttPop();
+          if (!show) return;
+          var sumEl = document.getElementById("nt-att-summary");
+          var paint = function () {
+            if (sumEl)
+              sumEl.innerHTML = attendanceSummaryHTML(
+                attendanceSummary(ev.participant_list || []),
+              );
+          };
+          if (ev.participant_list) {
+            paint();
+            return;
+          }
+          if (sumEl) sumEl.innerHTML = '<span class="att-summary">Loading…</span>';
+          api("get_training_details", { name: ev.name })
+            .then(function (full) {
+              ev.participant_list = full.participant_list || [];
+              if (state.dialogMode === "edit" && state.currentEvent === ev) paint();
+            })
+            .catch(function () {
+              if (state.dialogMode === "edit" && state.currentEvent === ev && sumEl)
+                sumEl.innerHTML = "";
+            });
+        }
+        function closeAttPop() {
+          var pop = document.getElementById("nt-attendance-pop");
+          if (pop) pop.style.display = "none";
+        }
+        function openAttPop(ev, keepDirty) {
+          var pop = document.getElementById("nt-attendance-pop");
+          var listEl = document.getElementById("nt-attendance-list");
+          if (!pop || !listEl) return;
+          if (!keepDirty) attPopDirty = {};
+          var list = ev.participant_list || [];
+          if (!list.length) {
+            listEl.innerHTML =
+              '<div style="padding:10px 12px;font-size:13px;color:var(--ink-3)">No participants added.</div>';
+          } else {
+            listEl.innerHTML = list
+              .map(function (p) {
+                var key = attRowKey(p);
+                var cur = key in attPopDirty ? attPopDirty[key] : attStatusOf(p);
+                return (
+                  '<div class="att-row" data-prow="' +
+                  esc(key) +
+                  '" style="margin:6px 8px;">' +
+                  '<span class="att-name">' +
+                  esc(p.full_name || p.agent_employee || "—") +
+                  "</span>" +
+                  '<span class="att-btns">' +
+                  '<button type="button" class="att-btn' +
+                  (cur === "Present" ? " on-present" : "") +
+                  '" data-att="Present">Present</button>' +
+                  '<button type="button" class="att-btn' +
+                  (cur === "Absent" ? " on-absent" : "") +
+                  '" data-att="Absent">Absent</button>' +
+                  "</span></div>"
+                );
+              })
+              .join("");
+          }
+          paintAttPopCount(ev);
+          listEl.querySelectorAll(".att-row").forEach(function (row) {
+            row.querySelectorAll(".att-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var key = row.dataset.prow;
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === key;
+                });
+                var base = p ? attStatusOf(p) : "";
+                var want = btn.dataset.att;
+                var cur = key in attPopDirty ? attPopDirty[key] : base;
+                if (cur === want) return;
+                if (want === base) delete attPopDirty[key];
+                else attPopDirty[key] = want;
+                var shown = key in attPopDirty ? attPopDirty[key] : base;
+                row.querySelectorAll(".att-btn").forEach(function (b) {
+                  var on = b.dataset.att === shown;
+                  b.classList.toggle("on-present", on && b.dataset.att === "Present");
+                  b.classList.toggle("on-absent", on && b.dataset.att === "Absent");
+                });
+                paintAttPopCount(ev);
+              });
+            });
+          });
+          pop.style.display = "block";
+        }
+        function paintAttPopCount(ev) {
+          var el = document.getElementById("nt-attendance-count");
+          if (!el) return;
+          var merged = (ev.participant_list || []).map(function (p) {
+            var key = attRowKey(p);
+            return {
+              attendance_status: key in attPopDirty ? attPopDirty[key] : attStatusOf(p),
+            };
+          });
+          el.innerHTML = attendanceSummaryHTML(attendanceSummary(merged));
+          var saveBtn = document.getElementById("btn-attendance-save");
+          if (saveBtn) saveBtn.disabled = Object.keys(attPopDirty).length === 0;
+        }
+        function saveAttPop(ev) {
+          var keys = Object.keys(attPopDirty);
+          if (!keys.length) {
+            closeAttPop();
+            return;
+          }
+          var wanted = {};
+          keys.forEach(function (k) {
+            wanted[k] = attPopDirty[k];
+          });
+          var saveBtn = document.getElementById("btn-attendance-save");
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Saving…";
+          }
+          var tasks = keys.map(function (key) {
+            var p = (ev.participant_list || []).find(function (x) {
+              return attRowKey(x) === key;
+            });
+            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            return api("update_participant_attendance", {
+              training_name: ev.name,
+              participant_name: p.name,
+              attendance_status: wanted[key],
+            })
+              .then(function () {
+                return { key: key, ok: true };
+              })
+              .catch(function (e) {
+                return { key: key, ok: false, error: (e && e.message) || "Failed" };
+              });
+          });
+          Promise.all(tasks).then(function (results) {
+            var failed = {};
+            results.forEach(function (r) {
+              if (r.ok) {
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === r.key;
+                });
+                if (p) p.attendance_status = wanted[r.key];
+              } else {
+                failed[r.key] = true;
+              }
+            });
+            var keep = {};
+            Object.keys(wanted).forEach(function (k) {
+              if (failed[k]) keep[k] = wanted[k];
+            });
+            attPopDirty = keep;
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = "Save Attendance";
+            }
+            var sumEl = document.getElementById("nt-att-summary");
+            if (sumEl)
+              sumEl.innerHTML = attendanceSummaryHTML(
+                attendanceSummary(ev.participant_list || []),
+              );
+            if (Object.keys(failed).length) {
+              showToast("Some updates failed — kept previous state for those");
+              openAttPop(ev, true);
+            } else {
+              showToast("Attendance saved");
+              closeAttPop();
+            }
+          });
         }
 
         function stageCheck(ev, field, checked) {
@@ -4940,6 +5485,165 @@
             v +
             "</div></div>"
           );
+        }
+
+        /* ----- Participant attendance (drawer section) ----- */
+        function attRowKey(p) {
+          return p.name || ((p.reference_doctype || "") + ":" + (p.agent_employee || ""));
+        }
+        function attStatusOf(p) {
+          return p.attendance_status === "Present"
+            ? "Present"
+            : p.attendance_status === "Absent"
+              ? "Absent"
+              : "";
+        }
+        function attendanceSummary(list) {
+          var s = { total: 0, present: 0, absent: 0, unmarked: 0 };
+          (list || []).forEach(function (p) {
+            s.total++;
+            var st = attStatusOf(p);
+            if (st === "Present") s.present++;
+            else if (st === "Absent") s.absent++;
+            else s.unmarked++;
+          });
+          return s;
+        }
+        function attendanceSummaryHTML(s) {
+          if (!s.total) return '<span class="att-summary">No participants</span>';
+          if (s.unmarked === s.total)
+            return '<span class="att-summary">⚪ Not Marked · 0/' + s.total + "</span>";
+          if (s.absent === 0 && s.unmarked === 0)
+            return '<span class="att-summary">🟢 All Present · ' + s.present + "/" + s.total + "</span>";
+          if (s.present === 0 && s.unmarked === 0)
+            return '<span class="att-summary">🔴 All Absent · 0/' + s.total + "</span>";
+          return '<span class="att-summary">🟠 Mixed · ' + s.present + "/" + s.total + " Present</span>";
+        }
+        function attendanceRowsHTML(ev, editable) {
+          var list = ev.participant_list || [];
+          if (!list.length)
+            return '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
+          return (
+            '<div class="att-list">' +
+            list
+              .map(function (p) {
+                var st = attStatusOf(p);
+                var name = esc(p.full_name || p.agent_employee || "—");
+                if (!editable) {
+                  return (
+                    '<div class="att-row"><span class="' +
+                    (st === "Present" ? "att-tick-present" : "att-tick-absent") +
+                    '">' +
+                    (st === "Present" ? "✓" : "✗") +
+                    '</span><span class="att-name">' +
+                    name +
+                    '</span><span class="ck-val">' +
+                    (st || "Not Marked") +
+                    "</span></div>"
+                  );
+                }
+                return (
+                  '<div class="att-row" data-prow="' +
+                  esc(attRowKey(p)) +
+                  '"><span class="att-name">' +
+                  name +
+                  '</span><span class="att-btns">' +
+                  '<button type="button" class="att-btn' +
+                  (st === "Present" ? " on-present" : "") +
+                  '" data-att="Present">Present</button>' +
+                  '<button type="button" class="att-btn' +
+                  (st === "Absent" ? " on-absent" : "") +
+                  '" data-att="Absent">Absent</button>' +
+                  "</span></div>"
+                );
+              })
+              .join("") +
+            "</div>"
+          );
+        }
+        function attendanceSectionHTML(ev, editable) {
+          var summary = '<span class="att-summary">Loading…</span>';
+          var inner = '<div style="font-size:13px;color:var(--ink-3)">Loading participants…</div>';
+          if (ev.participant_list) {
+            summary = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            inner = attendanceRowsHTML(ev, editable);
+          }
+          return (
+            '<div class="drawer-section"><div class="drawer-section-title">Participants ' +
+            '<span id="drw-att-summary" style="float:right;text-transform:none;letter-spacing:normal;">' +
+            summary +
+            "</span></div>" +
+            '<div id="drw-attendance">' +
+            inner +
+            "</div></div>"
+          );
+        }
+        function fillAttendanceSection(ev, editable) {
+          var box = document.getElementById("drw-attendance");
+          if (!box) return;
+          if (ev.participant_list) {
+            box.innerHTML = attendanceRowsHTML(ev, editable);
+            bindAttendanceButtons(ev);
+            var s0 = document.getElementById("drw-att-summary");
+            if (s0) s0.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            return;
+          }
+          api("get_training_details", { name: ev.name })
+            .then(function (full) {
+              ev.participant_list = full.participant_list || [];
+              if (full.participants != null) ev.participants = full.participants;
+              var b = document.getElementById("drw-attendance");
+              if (!b) return;
+              b.innerHTML = attendanceRowsHTML(ev, editable);
+              bindAttendanceButtons(ev);
+              var s = document.getElementById("drw-att-summary");
+              if (s) s.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+            })
+            .catch(function () {
+              var b = document.getElementById("drw-attendance");
+              if (b)
+                b.innerHTML =
+                  '<div style="font-size:13px;color:var(--ink-3)">Could not load participants.</div>';
+            });
+        }
+        function bindAttendanceButtons(ev) {
+          document.querySelectorAll("#drw-attendance .att-row").forEach(function (row) {
+            var key = row.dataset.prow;
+            row.querySelectorAll(".att-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var want = btn.dataset.att;
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === key;
+                });
+                if (!p || attStatusOf(p) === want) return;
+                row.querySelectorAll(".att-btn").forEach(function (b) {
+                  b.disabled = true;
+                });
+                api("update_participant_attendance", {
+                  training_name: ev.name,
+                  participant_name: p.name,
+                  attendance_status: want,
+                })
+                  .then(function () {
+                    p.attendance_status = want;
+                    var btns = row.querySelectorAll(".att-btn");
+                    btns.forEach(function (b) {
+                      b.disabled = false;
+                      b.classList.toggle("on-present", b.dataset.att === "Present" && want === "Present");
+                      b.classList.toggle("on-absent", b.dataset.att === "Absent" && want === "Absent");
+                    });
+                    var s = document.getElementById("drw-att-summary");
+                    if (s) s.innerHTML = attendanceSummaryHTML(attendanceSummary(ev.participant_list));
+                  })
+                  .catch(function (e) {
+                    row.querySelectorAll(".att-btn").forEach(function (b) {
+                      b.disabled = false;
+                    });
+                    showToast((e && e.message) || "Could not update attendance");
+                  });
+              });
+            });
+          });
         }
 
         function toggleStatus(ev, field, value) {
@@ -5072,8 +5776,11 @@
           document.getElementById("new-time").readOnly = false;
           document.getElementById("new-end-time").value = "";
           document.getElementById("new-end-time").readOnly = false;
-          document.getElementById("new-location").value = "";
-          document.getElementById("new-location").readOnly = false;
+          var typeSel = document.getElementById("new-training-type");
+          if (typeSel) {
+            typeSel.value = "";
+            typeSel.disabled = false;
+          }
           state.selectedGeographies = [];
           if (typeof renderGeoRows === "function") renderGeoRows();
           document.getElementById("new-branch").value = "";
@@ -5106,6 +5813,7 @@
             trainerInput.value = state.currentEmployeeName || "";
           }
           setDialogMode("add");
+          refreshModalAttendanceRow(null);
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
         }
@@ -5163,7 +5871,7 @@
           f("new-to-date", ev.to_date || ev.from_date || "");
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
-          f("new-location", ev.training_location || "");
+          f("new-training-type", ev.training_type || "");
           if (ev.geographies && ev.geographies.length) {
             state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
           } else if (ev.branch) {
@@ -5225,6 +5933,7 @@
             );
           }
           addModal.classList.add("open");
+          refreshModalAttendanceRow(ev);
         }
         function editExtraHTML(ev) {
           var r = role();
@@ -5315,8 +6024,8 @@
           var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
-          var location  = (document.getElementById("new-location") || {}).value.trim();
-          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || location !== (ev.training_location||"");
+          var trainingType = (document.getElementById("new-training-type") || {}).value || "";
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || trainingType !== (ev.training_type||"");
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
             if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -5343,9 +6052,9 @@
               to_date: toDate,
               start_time: startTime || null,
               end_time: endTime || null,
-              training_location: location || null
+              training_type: trainingType || null
             }).then(function(){
-              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_location = location;
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_type = trainingType;
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
@@ -5391,7 +6100,7 @@
         }
 
         /* ---- Reschedule mode: unlock schedule fields in edit dialog ---- */
-        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-location"];
+        var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time"];
 
         function enterRescheduleMode() {
           SCHEDULE_FIELDS.forEach(function (id) {
@@ -5422,7 +6131,6 @@
           var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
-          var location  = (document.getElementById("new-location") || {}).value.trim();
 
           if (!fromDate) { showToast("From Date is required"); return; }
           if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -5440,7 +6148,6 @@
             to_date: toDate,
             start_time: startTime || null,
             end_time: endTime || null,
-            training_location: location || null,
           })
             .then(function () {
               /* Update local event */
@@ -5449,7 +6156,6 @@
               ev.start_time = startTime;
               ev.end_time = endTime;
               ev.time = startTime;
-              ev.training_location = location;
               closeModal("addModal");
               loadData(true);
               renderTrainings();
@@ -5546,9 +6252,8 @@
             to_date: toDate,
             start_time: startTime,
             end_time: endTime,
-            training_location: document
-              .getElementById("new-location")
-              .value.trim(),
+            training_type:
+              (document.getElementById("new-training-type") || {}).value || null,
             trainer: trainerSel.value.trim() || null,
             zone: (state.selectedGeographies[0] && state.selectedGeographies[0].zone) || "",
             region: (state.selectedGeographies[0] && state.selectedGeographies[0].region) || "",
@@ -5607,6 +6312,13 @@
             api: "get_employee_training_report",
             file: "L&D_Employee_Training_Report_",
           },
+          adh: {
+            title: "Training Adherence & Costing Report",
+            sub: "Training-wise adherence, attendance and costing.",
+            empty: "Select a month to view data.",
+            api: "get_adherence_report",
+            file: "Training_Adherence_Costing_",
+          },
         };
 
         function showReportsHome() {
@@ -5630,24 +6342,24 @@
           document.getElementById("reportDetailTitle").textContent = def.title;
           document.getElementById("reportDetailSub").textContent = def.sub;
 
-          var isMis = type === "mis";
-          document.getElementById("misToolbar").style.display = isMis
-            ? "flex"
-            : "none";
-          document.getElementById("empToolbar").style.display = isMis
+          var isEmp = type === "emp";
+          document.getElementById("misToolbar").style.display = isEmp
             ? "none"
             : "flex";
+          document.getElementById("empToolbar").style.display = isEmp
+            ? "flex"
+            : "none";
 
           var body = document.getElementById("reportBody");
           body.innerHTML =
             '<div style="padding:20px;color:var(--ink-3)">' +
             def.empty +
             "</div>";
-          document.getElementById(type + "-count").textContent = "";
+          document.getElementById(isEmp ? "emp-count" : "mis-count").textContent = "";
           state.reportData = null;
           rpPage.current = 1;
 
-          if (isMis) {
+          if (!isEmp) {
             var mEl = document.getElementById("mis-month");
             if (mEl) {
               var d = state.viewDate || new Date(today);
@@ -5678,7 +6390,8 @@
           body.innerHTML =
             '<div style="padding:20px;color:var(--ink-3)">Loading report…</div>';
           document.getElementById("mis-count").textContent = "";
-          api("get_mis_report", {
+          var reportApi = (REPORT_DEFS[activeReport] || REPORT_DEFS.mis).api;
+          api(reportApi, {
             month: m,
             page: rpPage.current,
             page_size: rpPage.size,
@@ -5847,7 +6560,7 @@
         }
 
         function exportReportCsv() {
-          var key = activeReport === "emp" ? "emp" : "mis";
+          var key = REPORT_DEFS[activeReport] ? activeReport : "mis";
           var def = REPORT_DEFS[key];
           var params;
           var tag;
@@ -5961,7 +6674,12 @@
           .addEventListener("click", function () {
             openReportDetail("emp");
           });
-        ["report-card-mis", "report-card-emp"].forEach(function (id) {
+        document
+          .getElementById("report-card-adh")
+          .addEventListener("click", function () {
+            openReportDetail("adh");
+          });
+        ["report-card-mis", "report-card-emp", "report-card-adh"].forEach(function (id) {
           document.getElementById(id).addEventListener("keydown", function (e) {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
@@ -6156,6 +6874,22 @@
         document.querySelector(".header-right").appendChild(bulkBtn);
 
         document.getElementById("btn-save-training").onclick = saveTraining;
+        var markBtn = document.getElementById("btn-mark-attendance");
+        if (markBtn)
+          markBtn.addEventListener("click", function () {
+            if (state.currentEvent) openAttPop(state.currentEvent);
+          });
+        var saveAttBtn = document.getElementById("btn-attendance-save");
+        if (saveAttBtn)
+          saveAttBtn.addEventListener("click", function () {
+            if (state.currentEvent) saveAttPop(state.currentEvent);
+          });
+        document.addEventListener("click", function (e) {
+          var pop = document.getElementById("nt-attendance-pop");
+          var wrap = document.getElementById("nt-attendance-wrap");
+          if (pop && pop.style.display === "block" && wrap && !wrap.contains(e.target))
+            closeAttPop();
+        });
 
         /* ---------- Bulk Upload ---------- */
         (function(){
@@ -6386,6 +7120,22 @@
             selectBranch(0, code);
           };
 
+          /* Auto-add a branch row from a participant's branch (manual add/remove untouched). */
+          dialogFn.autoAddBranch = function(code){
+            if (!code || state.dialogMode === "edit") return false;
+            var geos = state.selectedGeographies || [];
+            var dup = geos.some(function(g){ return g.branch === code; });
+            if (dup) return false;
+            var emptyIdx = -1;
+            geos.forEach(function(g, i){ if (!g.branch && emptyIdx === -1) emptyIdx = i; });
+            if (emptyIdx === -1) {
+              geos.push({});
+              emptyIdx = geos.length - 1;
+            }
+            selectBranch(emptyIdx, code);
+            return true;
+          };
+
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
@@ -6585,9 +7335,36 @@
               agent_employee: val,
               full_name: fullName,
             });
+            /* Auto-map participant's branch into geographies (manual rows untouched). */
+            var autoCode = participantBranchCode(type, val);
+            if (autoCode && dialogFn.autoAddBranch) {
+              if (dialogFn.autoAddBranch(autoCode)) showToast("Branch auto-added from participant");
+            }
             renderPChips();
             if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
+          }
+
+          /* Resolve a participant's Sahayog Branch code ("" if unknown). */
+          function participantBranchCode(type, val) {
+            var picks = state.branchPick || [];
+            function resolveBranch(codeOrName) {
+              if (!codeOrName) return "";
+              var want = String(codeOrName).trim().toLowerCase();
+              var hit = null;
+              picks.forEach(function(b){
+                if (hit) return;
+                if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                    (b.branch && String(b.branch).trim().toLowerCase() === want)) hit = b;
+              });
+              return hit ? hit.name : "";
+            }
+            if (type === "Agent") {
+              var ag = (state.allAgents || []).find(function(x){ return x.name === val; }) || {};
+              return resolveBranch(ag.branch_name);
+            }
+            var emp = (state.allEmployees || []).find(function(x){ return x.name === val; }) || {};
+            return resolveBranch(emp.sahayog_branch);
           }
 
           if (pAttendee) pAttendee.addEventListener("click", function() { openPop(); });
@@ -6782,27 +7559,35 @@
         state.trainingsList = [];
         state.trainingsLoaded = false;
 
-        /* --- nav switch: Calendar ↔ Trainings --- */
-        var activeTab = "calendar"; // "calendar" | "trainings"
+        /* --- nav switch: Calendar ↔ Trainings ↔ Reports ↔ Team --- */
+        var activeTab = "calendar"; // "calendar" | "trainings" | "reports" | "team"
 
         function switchTab(tab) {
           activeTab = tab;
+          try {
+            localStorage.setItem("ld_training_tab", tab);
+          } catch (e) {}
           var calView = document.getElementById("calView");
           var trView = document.getElementById("trainingsView");
           var repView = document.getElementById("reportsView");
+          var teamView = document.getElementById("teamView");
           var navCal = document.getElementById("nav-calendar");
           var navTr = document.getElementById("nav-trainings");
           var navRep = document.getElementById("nav-reports");
+          var navTeam = document.getElementById("nav-team");
 
           calView.style.display = tab === "calendar" ? "flex" : "none";
           trView.style.display = tab === "trainings" ? "flex" : "none";
           repView.style.display = tab === "reports" ? "flex" : "none";
+          if (teamView) teamView.style.display = tab === "team" ? "flex" : "none";
           if (navCal) navCal.classList.toggle("active", tab === "calendar");
           if (navTr) navTr.classList.toggle("active", tab === "trainings");
           if (navRep) navRep.classList.toggle("active", tab === "reports");
+          if (navTeam) navTeam.classList.toggle("active", tab === "team");
 
           if (tab === "trainings") { loadTrainingsList(); }
           if (tab === "reports") showReportsHome();
+          if (tab === "team") { loadTeamData(); }
         }
 
         document
@@ -6814,6 +7599,11 @@
           .getElementById("nav-trainings")
           .addEventListener("click", function () {
             switchTab("trainings");
+          });
+        document
+          .getElementById("nav-team")
+          .addEventListener("click", function () {
+            switchTab("team");
           });
 
         /* --- helpers --- */
@@ -6907,6 +7697,7 @@
                 ev.training_program,
                 ev.trainer,
                 ev.training_location,
+                ev.training_type,
                 ev.zone,
                 ev.region,
                 ev.district,
@@ -7053,19 +7844,18 @@
                 timeStr +
                 "</td>" +
                 '<td class="td-meta">' +
-                (ev.training_location ? esc(ev.training_location) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
-                "</td>" +
-                '<td class="td-meta">' +
                 (ev.trainer ? esc(ev.trainer) : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
                 "</td>" +
                 '<td class="td-meta">' +
                 (function(){
                   var geos = ev.geographies || [];
+                  var code = (geos[0] && geos[0].branch) || ev.branch || "";
+                  var binfo = (state.branchPick || []).find(function(b){ return b.name === code; });
+                  var disp = (binfo && binfo.branch) || "";
                   if (geos.length > 1) {
-                    var first = geos[0].branch || ev.branch || "—";
-                    return esc(first) + ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:1px 5px;margin-left:3px">+' + (geos.length-1) + '</span>';
+                    return esc(disp || "—") + ' <span style="font-size:10px;background:var(--accent-soft);color:var(--accent-ink);border-radius:999px;padding:1px 5px;margin-left:3px">+' + (geos.length-1) + '</span>';
                   }
-                  return esc(ev.branch || (geos[0]&&geos[0].branch) || "—");
+                  return esc(disp || "—");
                 })() +
                 "</td>" +
                 '<td class="td-meta" style="text-align:center">' +
@@ -7285,6 +8075,554 @@
             });
         });
 
+        /* ============================================================
+           TEAM TRAINING TAB — team leaders (read-only, team-scoped)
+           Reuses report-table / pg-* styles; existing code untouched.
+           ============================================================ */
+        state.teamMembers = [];
+        state.teamRows = [];
+        state.teamCols = [];
+        state.teamPage = { current: 1, size: 10 };
+        state.teamMemberFilter = "";
+        state.teamStatusFilter = "";
+        state.teamPreset = "month";
+
+        var TEAM_MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+
+        function teamTodayIso() {
+          return isoOf(today);
+        }
+        function teamWeekEndIso() {
+          var d = new Date(today);
+          d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+          return isoOf(d);
+        }
+        function teamIsoOf(d) {
+          return (
+            d.getFullYear() +
+            "-" +
+            String(d.getMonth() + 1).padStart(2, "0") +
+            "-" +
+            String(d.getDate()).padStart(2, "0")
+          );
+        }
+
+        function loadTeamData() {
+          loadTeamMembers();
+          var f = document.getElementById("team-from");
+          var t = document.getElementById("team-to");
+          if (!f.value || !t.value) {
+            var sel = document.getElementById("team-preset");
+            if (sel) sel.value = "month";
+            applyTeamPreset("month", true);
+          }
+          fetchTeamRows();
+        }
+
+        function loadTeamMembers() {
+          api("get_my_team_members", {})
+            .then(function (members) {
+              state.teamMembers = Array.isArray(members) ? members : [];
+              buildTeamMemberSelect();
+            })
+            .catch(function () {
+              state.teamMembers = [];
+              buildTeamMemberSelect();
+            });
+        }
+
+        function buildTeamMemberSelect() {
+          var sel = document.getElementById("team-member");
+          if (!sel) return;
+          sel.innerHTML =
+            '<option value="">All Team Members</option>' +
+            (state.teamMembers || [])
+              .map(function (m) {
+                return (
+                  '<option value="' +
+                  esc(m.emp_id) +
+                  '">' +
+                  esc(m.employee_name || m.emp_id) +
+                  " (" +
+                  esc(m.emp_id) +
+                  ")</option>"
+                );
+              })
+              .join("");
+          sel.value = state.teamMemberFilter || "";
+        }
+
+        /* ----- date presets ----- */
+        function applyTeamPreset(p, skipFetch) {
+          state.teamPreset = p;
+          var f = document.getElementById("team-from");
+          var t = document.getElementById("team-to");
+          var now = new Date(today);
+          if (f && t && p !== "custom") {
+            if (p === "today") {
+              f.value = teamIsoOf(now);
+              t.value = teamIsoOf(now);
+            } else if (p === "week") {
+              f.value = teamIsoOf(now);
+              var sun = new Date(now);
+              sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
+              t.value = teamIsoOf(sun);
+            } else if (p === "month") {
+              f.value = teamIsoOf(now);
+              var end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+              t.value = teamIsoOf(end);
+            } else if (p === "past") {
+              var ago = new Date(now);
+              ago.setDate(ago.getDate() - 30);
+              f.value = teamIsoOf(ago);
+              t.value = teamIsoOf(now);
+            } else {
+              f.value = teamIsoOf(now);
+              var fut = new Date(now);
+              fut.setDate(fut.getDate() + 60);
+              t.value = teamIsoOf(fut);
+            }
+          }
+          state.teamPage.current = 1;
+          if (!skipFetch) fetchTeamRows();
+        }
+
+        /* ----- fetch: member/search/dates server-side, full set ----- */
+        function fetchTeamRows() {
+          var body = document.getElementById("teamBody");
+          if (body)
+            body.innerHTML =
+              '<div style="padding:20px;color:var(--ink-3)">Loading team trainings…</div>';
+          var cnt = document.getElementById("team-count");
+          if (cnt) cnt.textContent = "";
+          var q = document.getElementById("team-search");
+          api("get_team_training_report", {
+            employee:
+              state.teamMemberFilter || (q ? q.value.trim() : "") || undefined,
+            from_date:
+              (document.getElementById("team-from") || {}).value || undefined,
+            to_date:
+              (document.getElementById("team-to") || {}).value || undefined,
+            page_size: 0,
+          })
+            .then(function (res) {
+              state.teamRows = (res && res.rows) || [];
+              state.teamCols = (res && res.columns) || [];
+              renderTeamCards();
+              renderTeamList();
+            })
+            .catch(function (e) {
+              state.teamRows = [];
+              state.teamCols = [];
+              renderTeamCards();
+              if (body)
+                body.innerHTML =
+                  '<div style="padding:20px;color:var(--ink-3)">' +
+                  esc((e && e.message) || "Could not load team trainings") +
+                  "</div>";
+            });
+        }
+
+        /* ----- client-side status filter ----- */
+        function teamVisibleRows() {
+          var st = state.teamStatusFilter;
+          if (!st) return state.teamRows || [];
+          return (state.teamRows || []).filter(function (r) {
+            return statusOf(r) === st;
+          });
+        }
+
+        /* ----- summary cards (distinct trainings, not participant rows) ----- */
+        function renderTeamCards() {
+          var box = document.getElementById("teamCards");
+          if (!box) return;
+          var rows = state.teamRows || [];
+          var t = teamTodayIso(),
+            we = teamWeekEndIso();
+          var up = 0,
+            ip = 0,
+            wk = 0,
+            done = 0;
+          var seenUp = {},
+            seenIp = {},
+            seenWk = {},
+            seenDone = {};
+          rows.forEach(function (r) {
+            var key = r.name || (r.program_name + "|" + r.from_date);
+            var s = statusOf(r);
+            if (s === "upcoming" && !seenUp[key]) {
+              seenUp[key] = 1;
+              up++;
+            }
+            if (s === "inprogress" && !seenIp[key]) {
+              seenIp[key] = 1;
+              ip++;
+            }
+            if (s === "completed" && !seenDone[key]) {
+              seenDone[key] = 1;
+              done++;
+            }
+            var f = r.from_date || "",
+              e = r.to_date || r.from_date || "";
+            if (f <= we && e >= t && !seenWk[key]) {
+              seenWk[key] = 1;
+              wk++;
+            }
+          });
+          var cards = [
+            { key: "upcoming", cls: "sc-upcoming", num: up, label: "Upcoming" },
+            { key: "week", cls: "sc-week", num: wk, label: "This Week" },
+            { key: "inprogress", cls: "sc-inprogress", num: ip, label: "In Progress" },
+            { key: "completed", cls: "sc-completed", num: done, label: "Completed" },
+            { key: "members", cls: "sc-members", num: (state.teamMembers || []).length, label: "Team Members" },
+          ];
+          box.innerHTML = cards
+            .map(function (c) {
+              return (
+                '<div class="tr-stat-card ' +
+                c.cls +
+                ' tm-clickable" data-card="' +
+                c.key +
+                '">' +
+                '<span class="sc-num">' +
+                c.num +
+                "</span>" +
+                '<span class="sc-label">' +
+                c.label +
+                "</span></div>"
+              );
+            })
+            .join("");
+          box.querySelectorAll("[data-card]").forEach(function (el) {
+            el.addEventListener("click", function () {
+              var k = el.dataset.card;
+              var stSel = document.getElementById("team-status");
+              var pSel = document.getElementById("team-preset");
+              if (k === "upcoming" || k === "inprogress") {
+                /* Status cards always run on the default month range so a
+                   previous preset (e.g. This Week) never leaks through. */
+                state.teamStatusFilter = k;
+                if (stSel) stSel.value = k;
+                if (pSel) pSel.value = "month";
+                applyTeamPreset("month");
+              } else if (k === "completed") {
+                state.teamStatusFilter = "completed";
+                if (stSel) stSel.value = "completed";
+                if (pSel) pSel.value = "past";
+                applyTeamPreset("past");
+              } else if (k === "week") {
+                if (pSel) pSel.value = "week";
+                applyTeamPreset("week");
+              } else {
+                state.teamStatusFilter = "";
+                if (stSel) stSel.value = "";
+                state.teamMemberFilter = "";
+                var mSel = document.getElementById("team-member");
+                if (mSel) mSel.value = "";
+                var qq = document.getElementById("team-search");
+                if (qq) qq.value = "";
+                fetchTeamRows();
+              }
+            });
+          });
+        }
+
+        /* ----- list ----- */
+        function teamDateBadge(r) {
+          var f = r.from_date || "",
+            t = r.to_date || f;
+          if (!f) return '<span style="color:var(--ink-3)">—</span>';
+          var fd = f.split("-"),
+            td = t.split("-");
+          var multi = f !== t;
+          var top = multi
+            ? parseInt(fd[2], 10) + "–" + parseInt(td[2], 10)
+            : String(parseInt(fd[2], 10));
+          var mon = TEAM_MON[parseInt(fd[1], 10) - 1] || "";
+          var cls =
+            "tm-date-badge" +
+            (multi ? " multi" : "") +
+            (t < teamTodayIso() ? " past" : "");
+          return (
+            '<span class="' +
+            cls +
+            '"><span class="d">' +
+            esc(top) +
+            '</span><span class="m">' +
+            mon +
+            "</span></span>"
+          );
+        }
+
+        function teamStatusPill(st) {
+          var meta = STATUS_META[st] || STATUS_META.pending;
+          var bg =
+            st === "completed"
+              ? "var(--green-soft)"
+              : st === "inprogress"
+                ? "var(--orange-soft)"
+                : st === "upcoming"
+                  ? "var(--accent-soft)"
+                  : "var(--gray-soft)";
+          var clr =
+            st === "completed"
+              ? "#15803d"
+              : st === "inprogress"
+                ? "#b45309"
+                : st === "upcoming"
+                  ? "var(--accent-ink)"
+                  : "var(--ink-3)";
+          return (
+            '<span class="tr-status-pill" style="background:' +
+            bg +
+            ";color:" +
+            clr +
+            '">' +
+            '<span class="sp-dot" style="background:' +
+            meta.color +
+            '"></span>' +
+            meta.label +
+            "</span>"
+          );
+        }
+
+        function renderTeamList() {
+          var body = document.getElementById("teamBody");
+          if (!body) return;
+          var rows = teamVisibleRows()
+            .slice()
+            .sort(function (a, b) {
+              var da = a.from_date || "",
+                db = b.from_date || "";
+              return da < db ? -1 : da > db ? 1 : 0;
+            });
+          var total = rows.length;
+          var countEl = document.getElementById("team-count");
+          var pageSize = state.teamPage.size;
+          var totalPages = Math.max(1, Math.ceil(total / pageSize));
+          if (state.teamPage.current > totalPages) state.teamPage.current = 1;
+          var start = (state.teamPage.current - 1) * pageSize;
+          var pageRows = rows.slice(start, start + pageSize);
+          if (countEl)
+            countEl.textContent = total
+              ? start + 1 + "–" + Math.min(start + pageSize, total) + " of " + total
+              : "0 rows";
+          var html =
+            '<table class="report-table"><thead><tr><th>Date</th><th>Employee</th><th>Training</th><th>Time</th><th>Location</th><th>Trainer</th><th>Status</th></tr></thead><tbody>';
+          if (!pageRows.length) {
+            html +=
+              '<tr><td colspan="7" style="padding:16px;color:var(--ink-3);text-align:center">No team trainings found.</td></tr>';
+          } else {
+            html += pageRows
+              .map(function (r) {
+                return (
+                  '<tr data-tname="' +
+                  esc(r.name || "") +
+                  '" style="cursor:pointer">' +
+                  "<td>" +
+                  teamDateBadge(r) +
+                  "</td>" +
+                  '<td style="font-weight:600;white-space:normal;min-width:140px;">' +
+                  esc(r.employee_name || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:160px;">' +
+                  esc(r.program_name || "—") +
+                  "</td>" +
+                  '<td style="white-space:nowrap">' +
+                  esc(r.time_range || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:120px;">📍 ' +
+                  esc(r.location || "—") +
+                  "</td>" +
+                  '<td style="white-space:normal;min-width:120px;">' +
+                  esc(r.trainer_name || "—") +
+                  "</td>" +
+                  "<td>" +
+                  teamStatusPill(statusOf(r)) +
+                  "</td></tr>"
+                );
+              })
+              .join("");
+          }
+          body.innerHTML = html + "</tbody></table>";
+          renderTeamPagination(total, totalPages);
+          body.querySelectorAll("tr[data-tname]").forEach(function (tr) {
+            tr.addEventListener("click", function () {
+              openTeamDrawer(tr.dataset.tname);
+            });
+          });
+        }
+
+        function renderTeamPagination(total, totalPages) {
+          var info = document.getElementById("tm-pg-info");
+          var nums = document.getElementById("tm-pg-nums");
+          var prevBtn = document.getElementById("tm-pg-prev");
+          var nextBtn = document.getElementById("tm-pg-next");
+          if (!info) return;
+
+          var start = (state.teamPage.current - 1) * state.teamPage.size;
+          info.textContent = total
+            ? start + 1 + "–" + Math.min(start + state.teamPage.size, total) + " of " + total
+            : "0 records";
+          prevBtn.disabled = state.teamPage.current <= 1;
+          nextBtn.disabled = state.teamPage.current >= totalPages;
+
+          var pages = [];
+          if (totalPages <= 7) {
+            for (var i = 1; i <= totalPages; i++) pages.push(i);
+          } else {
+            var cur = state.teamPage.current;
+            pages = [1];
+            if (cur > 3) pages.push("…");
+            for (
+              var p = Math.max(2, cur - 1);
+              p <= Math.min(totalPages - 1, cur + 1);
+              p++
+            )
+              pages.push(p);
+            if (cur < totalPages - 2) pages.push("…");
+            pages.push(totalPages);
+          }
+
+          nums.innerHTML = pages
+            .map(function (p) {
+              if (p === "…") return '<span class="pg-ellipsis">…</span>';
+              return (
+                '<button class="pg-num' +
+                (p === state.teamPage.current ? " active" : "") +
+                '" data-pg="' +
+                p +
+                '">' +
+                p +
+                "</button>"
+              );
+            })
+            .join("");
+
+          nums.querySelectorAll(".pg-num:not(.active)").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              state.teamPage.current = parseInt(btn.dataset.pg, 10);
+              renderTeamList();
+            });
+          });
+        }
+
+        /* ----- read-only details drawer ----- */
+        function openTeamDrawer(name) {
+          if (!name) return;
+          api("get_training_details", { name: name })
+            .then(function (full) {
+              openDrawer(full, "view");
+            })
+            .catch(function (e) {
+              showToast((e && e.message) || "Could not open training");
+            });
+        }
+
+        function teamExportCsv() {
+          var cols = state.teamCols && state.teamCols.length ? state.teamCols : [];
+          var rows = teamVisibleRows();
+          if (!cols.length || !rows.length) {
+            showToast("No data to export");
+            return;
+          }
+          var tag = (document.getElementById("team-to") || {}).value || "ytd";
+          var lines = [
+            cols
+              .map(function (c) {
+                return csvCell(c.label);
+              })
+              .join(","),
+          ];
+          rows.forEach(function (r) {
+            lines.push(
+              cols
+                .map(function (c) {
+                  return csvCell(r[c.key]);
+                })
+                .join(","),
+            );
+          });
+          var blob = new Blob(["\uFEFF" + lines.join("\r\n")], {
+            type: "text/csv;charset=utf-8;",
+          });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "Team_Training_" + tag + ".csv";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function () {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+          }, 100);
+        }
+
+        function setupTeamFilters() {
+          var mSel = document.getElementById("team-member");
+          if (mSel)
+            mSel.addEventListener("change", function () {
+              state.teamMemberFilter = mSel.value;
+              state.teamPage.current = 1;
+              fetchTeamRows();
+            });
+          var stSel = document.getElementById("team-status");
+          if (stSel)
+            stSel.addEventListener("change", function () {
+              state.teamStatusFilter = stSel.value;
+              state.teamPage.current = 1;
+              renderTeamList();
+            });
+          var pSel = document.getElementById("team-preset");
+          if (pSel)
+            pSel.addEventListener("change", function () {
+              applyTeamPreset(pSel.value);
+            });
+          ["team-from", "team-to"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el)
+              el.addEventListener("change", function () {
+                state.teamPreset = "custom";
+                var ps = document.getElementById("team-preset");
+                if (ps) ps.value = "custom";
+                state.teamPage.current = 1;
+                fetchTeamRows();
+              });
+          });
+          var searchEl = document.getElementById("team-search");
+          if (searchEl)
+            searchEl.addEventListener(
+              "input",
+              debounce(function () {
+                state.teamPage.current = 1;
+                fetchTeamRows();
+              }, 350),
+            );
+          var expEl = document.getElementById("team-export");
+          if (expEl) expEl.addEventListener("click", teamExportCsv);
+          var prevBtn = document.getElementById("tm-pg-prev");
+          if (prevBtn)
+            prevBtn.addEventListener("click", function () {
+              if (state.teamPage.current > 1) {
+                state.teamPage.current--;
+                renderTeamList();
+              }
+            });
+          var nextBtn = document.getElementById("tm-pg-next");
+          if (nextBtn)
+            nextBtn.addEventListener("click", function () {
+              state.teamPage.current++;
+              renderTeamList();
+            });
+          var sizeEl = document.getElementById("tm-page-size");
+          if (sizeEl)
+            sizeEl.addEventListener("change", function () {
+              state.teamPage.size = parseInt(this.value, 10) || 10;
+              state.teamPage.current = 1;
+              renderTeamList();
+            });
+        }
+        setupTeamFilters();
+
         /* ---------- Init ---------- */
         state.viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
         state.selectedDate = new Date(today);
@@ -7301,7 +8639,19 @@
               info.employee && info.employee.employee_name
                 ? info.employee.employee_name
                 : null;
+            state.hasTeam = !!info.has_team;
+            state.teamCount = info.team_count || 0;
+            state.canSeeTeam = !!info.can_see_team;
             setupRoleUI();
+            /* Stay on the same tab after reload (if still permitted). */
+            var savedTab = null;
+            try {
+              savedTab = localStorage.getItem("ld_training_tab");
+            } catch (e) {}
+            if (state.teamOnly) switchTab("team");
+            else if (savedTab === "trainings") switchTab("trainings");
+            else if (savedTab === "reports" && role().showMis) switchTab("reports");
+            else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
             return loadGeo();
           })
           .then(function () {
