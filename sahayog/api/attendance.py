@@ -25,9 +25,87 @@ def can_override_cycle_lock():
 
 
 def is_cycle_locked(date):
-    """True if `date` falls in a finalized (past) attendance cycle."""
-    start, _ = get_cycle_bounds()
-    return getdate(date) < start
+    """True if `date` falls in a manually locked attendance cycle.
+
+    ONLY the manual lock (set by HR via portal, stored in Sahayog HR Setting)
+    locks dates: everything up to the locked end date is locked. There is no
+    automatic locking — without a manual lock, all dates stay open so managers
+    get grace time (e.g. HR locks on 28th instead of 25th).
+    """
+    lock_end = frappe.db.get_single_value("Sahayog HR Setting", "attendance_lock_end")
+    if lock_end and getdate(date) <= getdate(lock_end):
+        return True
+    return False
+
+
+def get_manual_cycle_lock():
+    """Return current manual lock as dict (empty dates if never locked)."""
+    vals = frappe.db.get_value(
+        "Sahayog HR Setting", None,
+        ["attendance_lock_start", "attendance_lock_end",
+         "attendance_locked_by", "attendance_locked_on"],
+        as_dict=True,
+    ) or {}
+    return {
+        "lock_start": str(vals.get("attendance_lock_start") or ""),
+        "lock_end": str(vals.get("attendance_lock_end") or ""),
+        "locked_by": vals.get("attendance_locked_by") or "",
+        "locked_on": str(vals.get("attendance_locked_on") or ""),
+    }
+
+
+@frappe.whitelist()
+def get_attendance_cycle_lock():
+    """Current manual lock + default dates (prev-month 26th → current-month 25th)."""
+    today = getdate()
+    if today.day >= 26:
+        default_start = today.replace(day=26)
+        default_end = add_months(default_start, 1).replace(day=25)
+    else:
+        default_end = today.replace(day=25)
+        default_start = add_months(default_end, -1).replace(day=26)
+    data = get_manual_cycle_lock()
+    data["default_start"] = str(default_start)
+    data["default_end"] = str(default_end)
+    # Show employee name instead of login ID (e.g. 836@sahayog.com)
+    if data.get("locked_by"):
+        emp_name = frappe.db.get_value("Employee", {"user_id": data["locked_by"]}, "employee_name")
+        if emp_name:
+            data["locked_by"] = emp_name
+    return data
+
+
+@frappe.whitelist()
+def set_attendance_cycle_lock(from_date, to_date):
+    """Manually lock an attendance cycle (HR Manager / Administrator only)."""
+    roles = frappe.get_roles(frappe.session.user)
+    if not any(r in roles for r in ["HR Manager", "Administrator"]):
+        frappe.throw(_("Not authorized to lock attendance cycle"), frappe.PermissionError)
+    if not from_date or not to_date:
+        frappe.throw(_("Start and End dates are required"))
+    if getdate(from_date) > getdate(to_date):
+        frappe.throw(_("Lock Start date cannot be after Lock End date"))
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_lock_start", getdate(from_date))
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_lock_end", getdate(to_date))
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_locked_by", frappe.session.user)
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_locked_on", frappe.utils.now_datetime())
+    frappe.db.commit()
+    return {"success": True, "message": _("Attendance cycle locked till {0}").format(
+        formatdate(getdate(to_date), "dd-MMM-yyyy"))}
+
+
+@frappe.whitelist()
+def unlock_attendance_cycle_lock():
+    """Remove the manual cycle lock (Administrator only)."""
+    roles = frappe.get_roles(frappe.session.user)
+    if frappe.session.user != "Administrator" and "Administrator" not in roles:
+        frappe.throw(_("Only Administrator can unlock attendance cycle"), frappe.PermissionError)
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_lock_start", None)
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_lock_end", None)
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_locked_by", None)
+    frappe.db.set_single_value("Sahayog HR Setting", "attendance_locked_on", None)
+    frappe.db.commit()
+    return {"success": True, "message": _("Attendance cycle lock removed. All dates are open until locked again.")}
 
 @frappe.whitelist(allow_guest=False)
 def get_team_attendance_data(employee_status="Active"):
@@ -178,6 +256,7 @@ def get_team_attendance_data(employee_status="Active"):
     for emp in team:
         emp.reports_to_name = supervisor_map.get(emp.reports_to)
         emp.is_self = (emp.name == manager.name) if manager else False
+        emp.unmarked = False
         
         if emp.status == "Left":
             emp.attendance_status = None
@@ -196,7 +275,13 @@ def get_team_attendance_data(employee_status="Active"):
             
             if not status and emp.name in on_leave_emps:
                 status = "On Leave"
-                
+
+            # Unmarked = Absent (unmarked days are counted as absent everywhere).
+            # unmarked=True lets the portal still offer marking buttons.
+            if not status:
+                status = "Absent"
+                emp.unmarked = True
+                 
             emp.attendance_status = status
             
             if status == "Present": present_count += 1
@@ -206,6 +291,7 @@ def get_team_attendance_data(employee_status="Active"):
             else: pending_count += 1
 
     allow_hr_to_mark = frappe.db.get_single_value("Sahayog HR Setting", "allow_hr_to_mark_attendance") or 0
+    cycle_lock_end = frappe.db.get_single_value("Sahayog HR Setting", "attendance_lock_end") or ""
 
     return {
         "team": team,
@@ -220,7 +306,8 @@ def get_team_attendance_data(employee_status="Active"):
         "current_user": manager,
         "roles": roles,
         "status_counts": status_counts,
-        "allow_hr_to_mark_attendance": allow_hr_to_mark
+        "allow_hr_to_mark_attendance": allow_hr_to_mark,
+        "cycle_lock_end": str(cycle_lock_end)
     }
 
 @frappe.whitelist()
@@ -276,7 +363,9 @@ def get_hr_dashboard_data(month=None):
                 
         total_marked = sum(raw_counts.values())
         not_marked = max(0, headcount - total_marked)
-        attendance_summary["Not Marked"] = not_marked
+        # Unmarked counts as Absent everywhere (kept key for UI compat).
+        attendance_summary["Absent"] += not_marked
+        attendance_summary["Not Marked"] = 0
         
         eff_present = raw_counts.get("Present", 0) + (raw_counts.get("Half Day", 0) * 0.5) + raw_counts.get("Work From Home", 0)
         att_percentage = round((eff_present / headcount * 100), 2) if headcount > 0 else 0
@@ -561,11 +650,14 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
         if leave:
             current_status = "On Leave"
 
+    # Unmarked dates count as Absent (labelled so the reason is identifiable).
+    current_status = current_status or "Absent (Unmarked)"
+
     doc = frappe.get_doc({
         "doctype": "Attendance Correction",
         "employee": employee,
         "attendance_date": attendance_date,
-        "current_status": current_status or "Not Marked",
+        "current_status": current_status,
         "requested_status": requested_status,
         "reason": reason,
         "requested_by": frappe.session.user,
@@ -754,7 +846,7 @@ def get_employee_calendar(employee, month, year):
     )
     for corr in approved_corrections:
         date_str = str(corr.attendance_date)
-        base = history.get(date_str) or "Not Marked"
+        base = (history.get(date_str) or "Absent").replace(" (Unmarked)", "")
         history[date_str] = f"{base} (Regularization Approved)"
     
     # Add leave days — append approved context so the calendar tooltip shows
@@ -806,7 +898,22 @@ def get_employee_calendar(employee, month, year):
         ds = str(hd)
         if ds not in history:
             history[ds] = f"Holiday: {desc}"
-            
+
+    # Unmarked past days count as Absent (never future days, holidays,
+    # Sundays, or pre-joining days). Labelled so the reason is identifiable.
+    doj = frappe.db.get_value("Employee", employee, "date_of_joining")
+    doj_str = str(doj) if doj else ""
+    today_str = str(getdate())
+    cal_day = getdate(first_day)
+    cal_end = getdate(last_day)
+    while cal_day <= cal_end:
+        ds = str(cal_day)
+        if (ds not in history and ds <= today_str
+                and cal_day.weekday() != 6
+                and (not doj_str or ds >= doj_str)):
+            history[ds] = "Absent (Unmarked)"
+        cal_day = add_days(cal_day, 1)
+
     return history
 
 @frappe.whitelist(allow_guest=False)
@@ -939,6 +1046,9 @@ def get_attendance_dashboard(employee, from_date=None, to_date=None):
         temp_curr = add_days(temp_curr, 1)
 
     missing_days = len(missing_dates)
+
+    # Unmarked past days count as Absent (missing list retained as action list).
+    absent_days += missing_days
 
     # Correction Requests
     corrections_data = frappe.get_all("Attendance Correction", filters={
