@@ -3126,11 +3126,6 @@
 
           <div class="sidebar-section" id="statusSection">
             <div class="sidebar-section-title">Training status</div>
-            <button class="nav-item" data-status="draft" title="Draft">
-              <span class="status-dot" style="background: var(--gray)"></span>
-              <span class="item-label">Draft</span>
-              <span class="item-count" id="count-draft">0</span>
-            </button>
             <button class="nav-item" data-status="upcoming" title="Upcoming">
               <span class="status-dot" style="background: var(--accent)"></span>
               <span class="item-label">Upcoming</span>
@@ -3306,7 +3301,6 @@
             </div>
             <select class="field-select" id="tr-status">
               <option value="">All Status</option>
-              <option value="draft">Draft</option>
               <option value="upcoming">Upcoming</option>
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
@@ -3617,7 +3611,6 @@
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
-              <option value="draft">Draft</option>
             </select>
             <select class="field-select" id="team-preset" title="Date range">
               <option value="month">This Month</option>
@@ -4053,7 +4046,6 @@
 
         /* ---------- Status metadata (single source of truth) ---------- */
         var STATUS_ORDER = [
-          "draft",
           "upcoming",
           "inprogress",
           "completed",
