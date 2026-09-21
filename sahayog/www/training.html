@@ -7424,17 +7424,14 @@
           var fileInput  = document.getElementById("participant-csv-file");
           var statusEl   = document.getElementById("participant-csv-status");
 
-          /* Download sample template — column label based on current type */
+          /* Download sample template — two columns: Emp ID + Agent ID */
           if (templateBtn) {
             templateBtn.addEventListener("click", function () {
-              var type = state.participantPickType || "Employee";
-              var colLabel = type === "Agent" ? "Agent ID" : "Emp ID";
-              var samples  = type === "Agent" ? "AGT001\r\nAGT002\r\n" : "12565\r\n12664\r\n";
-              var csv = colLabel + "\r\n" + samples;
+              var csv = "Emp ID,Agent ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
               var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
               var a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = (type === "Agent" ? "Agent" : "Participant") + "_Import_Template.csv";
+              a.download = "Participant_Import_Template.csv";
               document.body.appendChild(a);
               a.click();
               setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
@@ -7457,57 +7454,73 @@
 
               var reader = new FileReader();
               reader.onload = function (e) {
-                var type = state.participantPickType || "Employee";
-                var sourceList = type === "Agent" ? (state.allAgents || []) : (state.allEmployees || []);
-
                 var lines = (e.target.result || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
                 if (!lines.length) {
                   if (statusEl) statusEl.textContent = "File is empty.";
                   return;
                 }
 
-                /* Skip header row if it contains non-numeric / non-ID text */
-                var dataLines = lines.filter(function (l) { return /^[A-Za-z0-9]/.test(l) && !/^(emp|agent|id)/i.test(l); });
-                if (!dataLines.length) {
-                  if (statusEl) statusEl.textContent = "No IDs found. Check template format.";
+                /* Parse header to find column indexes */
+                var header = lines[0].split(",").map(function (h) { return h.trim().toLowerCase(); });
+                var empCol   = header.indexOf("emp id");
+                var agentCol = header.indexOf("agent id");
+
+                if (empCol === -1 && agentCol === -1) {
+                  if (statusEl) statusEl.textContent = "Columns 'Emp ID' or 'Agent ID' not found. Download template first.";
                   return;
                 }
 
                 var added = 0, skipped = 0, notFound = [];
-                dataLines.forEach(function (id) {
-                  var item = sourceList.find(function (x) { return String(x.name).trim() === id; });
-                  if (!item) { notFound.push(id); return; }
 
-                  var key = type + ":" + id;
-                  var already = (state.selectedParticipants || []).some(function (p) {
-                    return (p.reference_doctype + ":" + p.agent_employee) === key;
-                  });
-                  if (already) { skipped++; return; }
+                lines.slice(1).forEach(function (line) {
+                  var cols = line.split(",").map(function (c) { return c.trim(); });
+                  var empId   = empCol   >= 0 ? (cols[empCol]   || "") : "";
+                  var agentId = agentCol >= 0 ? (cols[agentCol] || "") : "";
 
-                  var fullName = type === "Agent"
-                    ? (item.agent_name || id)
-                    : (item.employee_name || id);
+                  function tryAdd(type, id) {
+                    if (!id) return false;
+                    var sourceList = type === "Agent" ? (state.allAgents || []) : (state.allEmployees || []);
+                    var item = sourceList.find(function (x) { return String(x.name).trim() === id; });
+                    if (!item) { notFound.push(id); return false; }
 
-                  state.selectedParticipants.push({
-                    reference_doctype: type,
-                    agent_employee: id,
-                    full_name: fullName,
-                  });
+                    var key = type + ":" + id;
+                    var already = (state.selectedParticipants || []).some(function (p) {
+                      return (p.reference_doctype + ":" + p.agent_employee) === key;
+                    });
+                    if (already) { skipped++; return true; }
 
-                  /* Auto-add branch for employees */
-                  if (type === "Employee" && dialogFn.autoAddBranch && item.sahayog_branch) {
-                    dialogFn.autoAddBranch(item.sahayog_branch);
+                    var fullName = type === "Agent" ? (item.agent_name || id) : (item.employee_name || id);
+                    state.selectedParticipants.push({
+                      reference_doctype: type,
+                      agent_employee: id,
+                      full_name: fullName,
+                    });
+                    if (type === "Employee" && dialogFn.autoAddBranch && item.sahayog_branch) {
+                      dialogFn.autoAddBranch(item.sahayog_branch);
+                    }
+                    added++;
+                    return true;
                   }
-                  added++;
+
+                  /* Error if both filled in same row */
+                  if (empId && agentId) {
+                    notFound.push("Row has both Emp ID '" + empId + "' and Agent ID '" + agentId + "' — fill only one");
+                    return;
+                  }
+
+                  /* Emp ID or Agent ID */
+                  if (!tryAdd("Employee", empId)) {
+                    tryAdd("Agent", agentId);
+                  }
                 });
 
                 if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
 
-                var msg = added + " " + type.toLowerCase() + (added === 1 ? "" : "s") + " added";
+                var msg = added + " participant" + (added === 1 ? "" : "s") + " added";
                 if (skipped) msg += ", " + skipped + " already present";
                 if (notFound.length) msg += ", " + notFound.length + " not found: " + notFound.slice(0, 5).join(", ") + (notFound.length > 5 ? "…" : "");
                 if (statusEl) statusEl.textContent = msg;
-                if (added) showToast(added + " " + type.toLowerCase() + "(s) imported from CSV");
+                if (added) showToast(added + " participant(s) imported from CSV");
               };
               reader.readAsText(file);
             });
