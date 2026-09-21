@@ -3824,6 +3824,20 @@
               </div>
             </div>
 
+            <!-- Participant CSV import (hidden file input + action buttons) -->
+            <div id="participant-csv-bar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn" id="btn-import-participants-csv" style="height:26px;padding:0 10px;font-size:12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Import from CSV
+              </button>
+              <button type="button" class="btn" id="btn-download-participant-template" style="height:26px;padding:0 10px;font-size:12px;color:var(--ink-3);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Sample Template
+              </button>
+              <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
+              <span id="participant-csv-status" style="font-size:11.5px;color:var(--ink-3);"></span>
+            </div>
+
             <!-- Attendance (edit mode only) -->
             <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
               <div class="nt-row" style="justify-content: flex-start;gap:10px;">
@@ -7399,6 +7413,103 @@
                 });
                 renderPChips();
               }
+            });
+          }
+        })();
+
+        /* ---------- Participant CSV import ---------- */
+        (function () {
+          var importBtn  = document.getElementById("btn-import-participants-csv");
+          var templateBtn = document.getElementById("btn-download-participant-template");
+          var fileInput  = document.getElementById("participant-csv-file");
+          var statusEl   = document.getElementById("participant-csv-status");
+
+          /* Download sample template — column label based on current type */
+          if (templateBtn) {
+            templateBtn.addEventListener("click", function () {
+              var type = state.participantPickType || "Employee";
+              var colLabel = type === "Agent" ? "Agent ID" : "Emp ID";
+              var samples  = type === "Agent" ? "AGT001\r\nAGT002\r\n" : "12565\r\n12664\r\n";
+              var csv = colLabel + "\r\n" + samples;
+              var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              var a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = (type === "Agent" ? "Agent" : "Participant") + "_Import_Template.csv";
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+            });
+          }
+
+          /* Trigger file picker */
+          if (importBtn) {
+            importBtn.addEventListener("click", function () {
+              if (fileInput) { fileInput.value = ""; fileInput.click(); }
+            });
+          }
+
+          /* Parse CSV and add participants */
+          if (fileInput) {
+            fileInput.addEventListener("change", function () {
+              var file = fileInput.files[0];
+              if (!file) return;
+              if (statusEl) statusEl.textContent = "Reading…";
+
+              var reader = new FileReader();
+              reader.onload = function (e) {
+                var type = state.participantPickType || "Employee";
+                var sourceList = type === "Agent" ? (state.allAgents || []) : (state.allEmployees || []);
+
+                var lines = (e.target.result || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+                if (!lines.length) {
+                  if (statusEl) statusEl.textContent = "File is empty.";
+                  return;
+                }
+
+                /* Skip header row if it contains non-numeric / non-ID text */
+                var dataLines = lines.filter(function (l) { return /^[A-Za-z0-9]/.test(l) && !/^(emp|agent|id)/i.test(l); });
+                if (!dataLines.length) {
+                  if (statusEl) statusEl.textContent = "No IDs found. Check template format.";
+                  return;
+                }
+
+                var added = 0, skipped = 0, notFound = [];
+                dataLines.forEach(function (id) {
+                  var item = sourceList.find(function (x) { return String(x.name).trim() === id; });
+                  if (!item) { notFound.push(id); return; }
+
+                  var key = type + ":" + id;
+                  var already = (state.selectedParticipants || []).some(function (p) {
+                    return (p.reference_doctype + ":" + p.agent_employee) === key;
+                  });
+                  if (already) { skipped++; return; }
+
+                  var fullName = type === "Agent"
+                    ? (item.agent_name || id)
+                    : (item.employee_name || id);
+
+                  state.selectedParticipants.push({
+                    reference_doctype: type,
+                    agent_employee: id,
+                    full_name: fullName,
+                  });
+
+                  /* Auto-add branch for employees */
+                  if (type === "Employee" && dialogFn.autoAddBranch && item.sahayog_branch) {
+                    dialogFn.autoAddBranch(item.sahayog_branch);
+                  }
+                  added++;
+                });
+
+                if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
+
+                var msg = added + " " + type.toLowerCase() + (added === 1 ? "" : "s") + " added";
+                if (skipped) msg += ", " + skipped + " already present";
+                if (notFound.length) msg += ", " + notFound.length + " not found: " + notFound.slice(0, 5).join(", ") + (notFound.length > 5 ? "…" : "");
+                if (statusEl) statusEl.textContent = msg;
+                if (added) showToast(added + " " + type.toLowerCase() + "(s) imported from CSV");
+              };
+              reader.readAsText(file);
             });
           }
         })();
