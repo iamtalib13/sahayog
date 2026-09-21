@@ -46,9 +46,6 @@ frappe.ui.form.on("Training Participant", {
 		let row = locals[cdt][cdn];
 		if (!row.agent_employee || !row.reference_doctype) return;
 
-		// Default attendance to Present
-		frappe.model.set_value(cdt, cdn, "attendance_status", "Present");
-
 		if (row.reference_doctype === "Employee") {
 			frappe.db.get_value("Employee", row.agent_employee, "employee_name", (r) => {
 				if (r && r.employee_name) {
