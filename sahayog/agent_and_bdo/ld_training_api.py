@@ -1054,7 +1054,7 @@ def get_mis_report(
             "day_4": "",
             "day_5": "",
             "day_6": "",
-            "total_present": "" if not r.agent_employee else (1 if (r.attendance_status or "Present") == "Present" else 0),
+            "total_present": "" if not r.agent_employee else (1 if r.attendance_status == "Present" else 0),
             "attendance_pct": "",
             "pre_test_score": "",
             "post_test_score": "",
@@ -1914,7 +1914,7 @@ def bulk_upload_training():
                     doc.district = doc.geographies[0].district
                 for p in g["participants"]:
                     emp_name = frappe.db.get_value("Employee", p["emp_id"], "employee_name") or p["emp_id"]
-                    doc.append("participants", {"reference_doctype": "Employee", "agent_employee": p["emp_id"], "full_name": emp_name, "attendance_status": "Present"})
+                    doc.append("participants", {"reference_doctype": "Employee", "agent_employee": p["emp_id"], "full_name": emp_name})
                 doc.insert(ignore_permissions=True)
                 doc.submit()
                 created += 1
