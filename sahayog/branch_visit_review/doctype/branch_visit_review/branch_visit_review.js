@@ -84,12 +84,17 @@ frappe.ui.form.on("Branch Visit Review", {
 								$(this).css("color", v <= val ? "gold" : "gray");
 							});
 							let item = template_items[param_idx];
-							frm.add_child("responses", {
-								category: item.category,
-								parameter_name: item.parameter_name,
-								response_type: item.response_type,
-								rating_score: val,
-							});
+							let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+							if (existing) {
+								existing.rating_score = val;
+							} else {
+								frm.add_child("responses", {
+									category: item.category,
+									parameter_name: item.parameter_name,
+									response_type: item.response_type,
+									rating_score: val,
+								});
+							}
 							frm.refresh_field("responses");
 						});
 
@@ -99,12 +104,17 @@ frappe.ui.form.on("Branch Visit Review", {
 							let val = $this.val();
 							if (val) {
 								let item = template_items[param_idx];
-								frm.add_child("responses", {
-									category: item.category,
-									parameter_name: item.parameter_name,
-									response_type: item.response_type,
-									observation: val,
-								});
+								let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+								if (existing) {
+									existing.observation = val;
+								} else {
+									frm.add_child("responses", {
+										category: item.category,
+										parameter_name: item.parameter_name,
+										response_type: item.response_type,
+										observation: val,
+									});
+								}
 								frm.refresh_field("responses");
 							}
 						});
