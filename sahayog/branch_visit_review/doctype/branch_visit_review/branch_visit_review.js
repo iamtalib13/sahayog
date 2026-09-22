@@ -3,6 +3,9 @@
 
 frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
+		if (!frm.doc.visited_by) {
+			frm.set_value("visited_by", "3130");
+		}
 		if (!frm.doc.template) {
 			frappe.call({
 				method: "frappe.client.get_list",
