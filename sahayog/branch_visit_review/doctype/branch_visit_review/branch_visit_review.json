@@ -17,6 +17,8 @@
   "branch_head",
   "visit_duration",
   "template",
+  "section_break_gdxo",
+  "checklist",
   "review_section",
   "responses",
   "action_section",
@@ -68,10 +70,10 @@
    "label": "Visit Date"
   },
   {
-    "fieldname": "visited_by",
-    "fieldtype": "Link",
-    "label": "Visited By",
-    "options": "Employee"
+   "fieldname": "visited_by",
+   "fieldtype": "Link",
+   "label": "Visited By",
+   "options": "Employee"
   },
   {
    "fieldname": "branch_head",
@@ -196,12 +198,21 @@
    "fieldname": "region",
    "fieldtype": "Data",
    "label": "Region"
+  },
+  {
+   "fieldname": "section_break_gdxo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "checklist",
+   "fieldtype": "HTML",
+   "label": "Checklist"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-21 17:28:02.116864",
+ "modified": "2026-09-22 12:08:04.025398",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",
