@@ -59,14 +59,55 @@ frappe.ui.form.on("Branch Visit Review", {
 						r.message.forEach(function (row, i) {
 							let response_html = "";
 							if (row.response_type === "Rating (1 to 5)") {
-								response_html = '<span class="text-warning">&#9733;&#9733;&#9733;&#9733;&#9733;</span>';
+								response_html = '<span class="rating-stars" data-parameter="' + i + '">';
+								for (let s = 1; s <= 5; s++) {
+									response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:gray;">&#9733;</span>';
+								}
+								response_html += '</span>';
 							} else {
-								response_html = '<input type="text" class="form-control" placeholder="Enter the text">';
+								response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text">';
 							}
 							html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
 						});
 						html += "</tbody></table>";
 						frm.fields_dict.checklist.$wrapper.html(html);
+
+						let template_items = r.message;
+
+						frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
+							let $this = $(this);
+							let val = parseInt($this.data("value"));
+							let $container = $this.closest(".rating-stars");
+							let param_idx = $container.data("parameter");
+							$container.find(".star").each(function () {
+								let v = $(this).data("value");
+								$(this).css("color", v <= val ? "gold" : "gray");
+							});
+							let item = template_items[param_idx];
+							frm.add_child("responses", {
+								category: item.category,
+								parameter_name: item.parameter_name,
+								response_type: item.response_type,
+								rating_score: val,
+							});
+							frm.refresh_field("responses");
+						});
+
+						frm.fields_dict.checklist.$wrapper.find(".observation-input").on("blur", function () {
+							let $this = $(this);
+							let param_idx = $this.data("parameter");
+							let val = $this.val();
+							if (val) {
+								let item = template_items[param_idx];
+								frm.add_child("responses", {
+									category: item.category,
+									parameter_name: item.parameter_name,
+									response_type: item.response_type,
+									observation: val,
+								});
+								frm.refresh_field("responses");
+							}
+						});
 					}
 				},
 			});
