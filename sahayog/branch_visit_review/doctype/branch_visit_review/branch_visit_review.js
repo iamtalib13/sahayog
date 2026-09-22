@@ -2,6 +2,23 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Branch Visit Review", {
+	refresh(frm) {
+		if (!frm.doc.template) {
+			frappe.call({
+				method: "frappe.client.get_list",
+				args: {
+					doctype: "Branch Visit Template",
+					fields: ["name"],
+					limit_page_length: 2,
+				},
+				callback: function (r) {
+					if (r.message && r.message.length === 1) {
+						frm.set_value("template", r.message[0].name);
+					}
+				},
+			});
+		}
+	},
 	branch(frm) {
 		if (frm.doc.branch) {
 			frappe.call({
