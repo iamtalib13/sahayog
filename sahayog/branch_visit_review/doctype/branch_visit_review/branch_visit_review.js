@@ -55,9 +55,9 @@ frappe.ui.form.on("Branch Visit Review", {
 				args: { template: frm.doc.template },
 				callback: function (r) {
 					if (r.message && r.message.length > 0) {
-						let html = "<table class='table table-bordered'><thead><tr><th>Category</th><th>Parameter</th><th>Response Type</th><th>Mandatory</th></tr></thead><tbody>";
-						r.message.forEach(function (row) {
-							html += "<tr><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + (row.response_type || "") + "</td><td>" + (row.is_mandatory ? "Yes" : "No") + "</td></tr>";
+						let html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+						r.message.forEach(function (row, i) {
+							html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + (row.response_type || "") + "</td></tr>";
 						});
 						html += "</tbody></table>";
 						frm.fields_dict.checklist.$wrapper.html(html);
