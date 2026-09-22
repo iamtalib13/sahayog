@@ -1732,8 +1732,9 @@
       .nt-part-head .sub { font-size:11.5px; color:var(--ink-3); font-weight:500; }
       .nt-total { font-size:12px; font-weight:700; color:var(--accent-ink);
         background:var(--accent-soft); border-radius:999px; padding:3px 12px; white-space:nowrap; }
-      .nt-csv-mini { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+      .nt-csv-mini { display:flex; gap:6px; align-items:center; flex-wrap:wrap; flex-shrink:0; }
       .nt-csv-mini .btn { height:30px; padding:0 12px; font-size:12px; }
+      .nt-action-sep { width:1px; align-self:stretch; min-height:22px; background:var(--border); flex-shrink:0; }
       .nt-branch-add .btn-mini { border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
         border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
       .nt-branch-add .btn-mini:hover { background:var(--surface-2); color:var(--ink-1); }
@@ -1778,7 +1779,8 @@
         display:flex; flex-direction:column; min-height:0; background:var(--surface);
         flex:1 1 0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-ptable-head { display:flex; align-items:center; gap:8px; padding:10px 12px;
-        border-bottom:1px solid var(--border); background:#f8fafc; }
+        border-bottom:1px solid var(--border); background:#f8fafc;
+        position:sticky; top:0; z-index:5; }
       .nt-ptable-head .t { font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
       .nt-ptable-head .c { font-size:11.5px; font-weight:700; color:var(--accent-ink);
         background:#fff; border:1px solid var(--border); border-radius:999px; padding:2px 10px; white-space:nowrap; }
@@ -1797,7 +1799,7 @@
       .nt-ptable-search svg { width:13px; height:13px; color:var(--ink-3); flex-shrink:0; }
       .nt-ptable-search input { border:none; outline:none; background:transparent;
         font-size:12.5px; width:100%; color:var(--ink-1); }
-      .nt-ptable-scroll { overflow-y:auto; overflow-x:hidden; min-height:200px; max-height:300px; }
+      .nt-ptable-scroll { overflow-y:auto; overflow-x:hidden; flex:1 1 auto; min-height:320px; max-height:520px; }
       .nt-ptable table { width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed; }
       .nt-ptable thead th { position:sticky; top:0; background:var(--surface-2); z-index:1;
         font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-2);
@@ -1841,7 +1843,7 @@
         .nt-split { flex-direction:column; }
         .nt-part, .nt-details { flex:1 1 auto; }
         .nt-details { border-left:none; padding-left:0; border-top:1px solid var(--border); padding-top:12px; min-width:0; }
-        .nt-ptable-scroll { max-height:220px; min-height:160px; }
+        .nt-ptable-scroll { max-height:260px; min-height:200px; }
       }
 
       /* Ad-hoc + agenda */
@@ -3879,14 +3881,6 @@
             <!-- 70/30 split: participants (70%) + details (30%) -->
             <div class="nt-split">
               <div class="nt-part">
-                <div class="nt-part-head">
-                  <span class="nt-kicker">Participants</span>
-                  <span class="nt-total" id="nt-total-count">0 selected</span>
-                  <span class="nt-csv-mini">
-                    <button type="button" class="btn" id="btn-import-participants-csv-top" style="height:30px;padding:0 12px;font-size:12px;">Import CSV</button>
-                    <button type="button" class="btn" id="btn-download-participant-template-top" style="height:30px;padding:0 12px;font-size:12px;color:var(--ink-3);">Template</button>
-                  </span>
-                </div>
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
                   <span class="bs-label" id="branch-count">Branches</span>
                   <span id="branch-chips"><span class="muted">No branches yet — select participants or add a branch.</span></span>
@@ -3897,11 +3891,16 @@
                       <span class="opts" id="branch-add-list" style="display:block"></span>
                     </span>
                   </span>
+                  <span class="nt-csv-mini">
+                    <button type="button" class="btn" id="btn-import-participants-csv-top" style="height:30px;padding:0 12px;font-size:12px;">Import CSV</button>
+                    <button type="button" class="btn" id="btn-download-participant-template-top" style="height:30px;padding:0 12px;font-size:12px;color:var(--ink-3);">Template</button>
+                  </span>
                 </div>
 
                 <!-- Unified participants table (Type filter replaces separate tables) -->
                 <div class="nt-ptable" id="nt-part-panel">
                   <div class="nt-ptable-head">
+                    <span class="t">Select participants</span>
                     <select class="nt-type-filter" id="nt-part-type" title="Filter by type">
                       <option value="">All</option>
                       <option value="Employee">Employees</option>
