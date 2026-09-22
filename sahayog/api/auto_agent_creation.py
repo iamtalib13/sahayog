@@ -260,6 +260,7 @@ def execute_bulk_upsert(records: list, chunk_size: int = 5000) -> None:
 #             except Exception:
 #                 pass
 
+
 @frappe.whitelist()
 def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -273,7 +274,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # New query with CIF, accounts, PAN, security account
+        # New query with STATUS column
         sql = """
         SELECT
             g.cif_id,
@@ -288,7 +289,11 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
             g.foracid AS "security_account",
             e.docdescr,
             e.referencenumber,
-            s.sol_desc
+            s.sol_desc,
+            CASE
+                WHEN d.del_flg = 'Y' OR g_saving.acct_cls_flg = 'Y' THEN 'CLOSED IN FINACLE'
+                ELSE 'ACTIVE IN FINACLE'
+            END AS "STATUS"
         FROM custom.dsaauth d
         JOIN tbaadm.sol s
             ON d.user_sol_id = s.sol_id
@@ -306,7 +311,6 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
             AND e.docdescr LIKE 'PAN%'
         WHERE
             d.ent_cre_flg = 'Y'
-            AND d.del_flg = 'N'
             AND (
                 d.user_id LIKE 'RDDSA%'
                 OR d.user_id LIKE 'DDDSA%'
@@ -397,6 +401,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
                     agent_values.get("agent_saving_account"),
                     agent_values.get("pan_card"),
                     agent_values.get("agent_security_account"),
+                    agent_values.get("agent_status"),
                 )
             )
 
@@ -409,7 +414,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
                 description=_("Upserting {0} agents directly into MariaDB...").format(
                     processed_count),
             )
-            execute_bulk_upsert_with_new_fields(
+            execute_bulk_upsert_with_new_fields_and_status(
                 records_to_upsert, chunk_size=5000)
 
         frappe.db.commit()
@@ -546,7 +551,7 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     """
     Extract and transform raw agent data from Finacle DB row into standard Frappe fields dictionary.
     Sets status to 'Allocated' if auth_id contains a numeric employee ID, else 'Unallocated'.
-    Also maps new fields: cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account.
+    Also maps new fields: cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account, agent_status.
     """
     agent = agent or {}
     auth_id = agent.get("auth_id") or ""
@@ -585,6 +590,15 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     pan_card = agent.get("referencenumber")
     agent_security_account = agent.get("security_account")
 
+    # agent_status logic based on STATUS column
+    finacle_status = agent.get("STATUS") or ""
+    if finacle_status == "CLOSED IN FINACLE":
+        agent_status = "Closed"
+    elif finacle_status == "ACTIVE IN FINACLE":
+        agent_status = "Active"
+    else:
+        agent_status = None
+
     return {
         "creation_date": creation_date,
         "agent_name": agent.get("agent_name"),
@@ -600,20 +614,21 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
         "agent_saving_account": agent_saving_account,
         "pan_card": pan_card,
         "agent_security_account": agent_security_account,
+        "agent_status": agent_status,
     }
 
 
-def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -> None:
+def execute_bulk_upsert_with_new_fields_and_status(records: list, chunk_size: int = 5000) -> None:
     """
     Direct DB-to-DB bulk UPSERT into tabAgent table with new fields:
-    cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account.
+    cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account, agent_status.
     """
     if not records:
         return
 
     db_type = getattr(frappe.db, "db_type", "mariadb")
-    # 17 original + 5 new = 22 columns
-    row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    # 22 original + 1 new (agent_status) = 23 columns
+    row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     for i in range(0, len(records), chunk_size):
         chunk = records[i: i + chunk_size]
@@ -626,7 +641,8 @@ def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -
                 `name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`,
                 `agent_code`, `agent_name`, `branch_code`, `branch_name`, `role`,
                 `auth_id`, `employee`, `status`, `agent_type`, `creation_date`,
-                `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`, `agent_security_account`
+                `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`, `agent_security_account`,
+                `agent_status`
             ) VALUES {placeholders}
             ON DUPLICATE KEY UPDATE
                 `modified` = VALUES(`modified`),
@@ -644,7 +660,8 @@ def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -
                 `agent_operative_account` = VALUES(`agent_operative_account`),
                 `agent_saving_account` = VALUES(`agent_saving_account`),
                 `pan_card` = VALUES(`pan_card`),
-                `agent_security_account` = VALUES(`agent_security_account`);
+                `agent_security_account` = VALUES(`agent_security_account`),
+                `agent_status` = VALUES(`agent_status`);
             """
             frappe.db.sql(sql, flattened_params)
         else:
@@ -653,7 +670,8 @@ def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -
                 "name", "creation", "modified", "modified_by", "owner", "docstatus", "idx",
                 "agent_code", "agent_name", "branch_code", "branch_name", "role",
                 "auth_id", "employee", "status", "agent_type", "creation_date",
-                "cif", "agent_operative_account", "agent_saving_account", "pan_card", "agent_security_account"
+                "cif", "agent_operative_account", "agent_saving_account", "pan_card", "agent_security_account",
+                "agent_status"
             ) VALUES {placeholders}
             ON CONFLICT ("name") DO UPDATE SET
                 "modified" = EXCLUDED."modified",
@@ -671,9 +689,83 @@ def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -
                 "agent_operative_account" = EXCLUDED."agent_operative_account",
                 "agent_saving_account" = EXCLUDED."agent_saving_account",
                 "pan_card" = EXCLUDED."pan_card",
-                "agent_security_account" = EXCLUDED."agent_security_account";
+                "agent_security_account" = EXCLUDED."agent_security_account",
+                "agent_status" = EXCLUDED."agent_status";
             """
             frappe.db.sql(sql, flattened_params)
+
+
+# def execute_bulk_upsert_with_new_fields(records: list, chunk_size: int = 5000) -> None:
+#     """
+#     Direct DB-to-DB bulk UPSERT into tabAgent table with new fields:
+#     cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account.
+#     """
+#     if not records:
+#         return
+
+#     db_type = getattr(frappe.db, "db_type", "mariadb")
+#     # 17 original + 5 new = 22 columns
+#     row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+
+#     for i in range(0, len(records), chunk_size):
+#         chunk = records[i: i + chunk_size]
+#         placeholders = ", ".join([row_placeholder] * len(chunk))
+#         flattened_params = [val for row in chunk for val in row]
+
+#         if db_type == "mariadb":
+#             sql = f"""
+#             INSERT INTO `tabAgent` (
+#                 `name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`,
+#                 `agent_code`, `agent_name`, `branch_code`, `branch_name`, `role`,
+#                 `auth_id`, `employee`, `status`, `agent_type`, `creation_date`,
+#                 `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`, `agent_security_account`
+#             ) VALUES {placeholders}
+#             ON DUPLICATE KEY UPDATE
+#                 `modified` = VALUES(`modified`),
+#                 `modified_by` = VALUES(`modified_by`),
+#                 `agent_name` = VALUES(`agent_name`),
+#                 `branch_code` = VALUES(`branch_code`),
+#                 `branch_name` = VALUES(`branch_name`),
+#                 `role` = VALUES(`role`),
+#                 `auth_id` = VALUES(`auth_id`),
+#                 `employee` = VALUES(`employee`),
+#                 `status` = VALUES(`status`),
+#                 `agent_type` = VALUES(`agent_type`),
+#                 `creation_date` = VALUES(`creation_date`),
+#                 `cif` = VALUES(`cif`),
+#                 `agent_operative_account` = VALUES(`agent_operative_account`),
+#                 `agent_saving_account` = VALUES(`agent_saving_account`),
+#                 `pan_card` = VALUES(`pan_card`),
+#                 `agent_security_account` = VALUES(`agent_security_account`);
+#             """
+#             frappe.db.sql(sql, flattened_params)
+#         else:
+#             sql = f"""
+#             INSERT INTO "tabAgent" (
+#                 "name", "creation", "modified", "modified_by", "owner", "docstatus", "idx",
+#                 "agent_code", "agent_name", "branch_code", "branch_name", "role",
+#                 "auth_id", "employee", "status", "agent_type", "creation_date",
+#                 "cif", "agent_operative_account", "agent_saving_account", "pan_card", "agent_security_account"
+#             ) VALUES {placeholders}
+#             ON CONFLICT ("name") DO UPDATE SET
+#                 "modified" = EXCLUDED."modified",
+#                 "modified_by" = EXCLUDED."modified_by",
+#                 "agent_name" = EXCLUDED."agent_name",
+#                 "branch_code" = EXCLUDED."branch_code",
+#                 "branch_name" = EXCLUDED."branch_name",
+#                 "role" = EXCLUDED."role",
+#                 "auth_id" = EXCLUDED."auth_id",
+#                 "employee" = EXCLUDED."employee",
+#                 "status" = EXCLUDED."status",
+#                 "agent_type" = EXCLUDED."agent_type",
+#                 "creation_date" = EXCLUDED."creation_date",
+#                 "cif" = EXCLUDED."cif",
+#                 "agent_operative_account" = EXCLUDED."agent_operative_account",
+#                 "agent_saving_account" = EXCLUDED."agent_saving_account",
+#                 "pan_card" = EXCLUDED."pan_card",
+#                 "agent_security_account" = EXCLUDED."agent_security_account";
+#             """
+#             frappe.db.sql(sql, flattened_params)
 
 
 def fetch_and_sync_agents(start_date: str, end_date: str) -> Dict[str, Any]:
