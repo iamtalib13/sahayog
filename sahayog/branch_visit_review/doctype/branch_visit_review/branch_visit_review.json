@@ -26,14 +26,15 @@
   "summary_section",
   "key_strengths",
   "areas_requiring_attention",
-  "column_break_summary",
-  "overall_assessment",
   "signoff_section",
   "visitor_signoff",
   "visitor_signed_at",
   "column_break_signoff",
   "branch_head_signoff",
   "branch_head_signed_at",
+  "column_break_fpid",
+  "overall_assessment",
+  "section_break_mibr",
   "leadership_remarks",
   "amended_from"
  ],
@@ -130,10 +131,6 @@
    "label": "Areas Requiring Attention (Top 3)"
   },
   {
-   "fieldname": "column_break_summary",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "overall_assessment",
    "fieldtype": "Select",
    "label": "Overall Assessment",
@@ -207,12 +204,20 @@
    "fieldname": "checklist",
    "fieldtype": "HTML",
    "label": "Checklist"
+  },
+  {
+   "fieldname": "column_break_fpid",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_mibr",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-09-22 12:08:04.025398",
+ "modified": "2026-09-22 14:09:46.655437",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",
