@@ -57,7 +57,13 @@ frappe.ui.form.on("Branch Visit Review", {
 					if (r.message && r.message.length > 0) {
 						let html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
 						r.message.forEach(function (row, i) {
-							html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + (row.response_type || "") + "</td></tr>";
+							let response_html = "";
+							if (row.response_type === "Rating (1 to 5)") {
+								response_html = '<span class="text-warning">&#9733;&#9733;&#9733;&#9733;&#9733;</span>';
+							} else {
+								response_html = '<input type="text" class="form-control" placeholder="Enter the text">';
+							}
+							html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
 						});
 						html += "</tbody></table>";
 						frm.fields_dict.checklist.$wrapper.html(html);
