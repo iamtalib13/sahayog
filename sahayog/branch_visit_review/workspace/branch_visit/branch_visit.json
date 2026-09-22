@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"bvr-header-overview\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Branch Visit Review</b></span>\",\"col\":12}},{\"id\":\"bvr-shortcut-template\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Visit Template\",\"col\":6}},{\"id\":\"bvr-shortcut-review\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Visit Review\",\"col\":6}}]",
- "creation": "2026-09-19 00:00:00.000000",
+ "content": "[{\"id\":\"bvr-header-overview\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Branch Visit</b></span>\",\"col\":12}},{\"id\":\"bvr-shortcut-template\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Visit Template\",\"col\":6}},{\"id\":\"bvr-shortcut-review\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Branch Visit Review\",\"col\":6}}]",
+ "creation": "2026-09-19 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -9,14 +9,14 @@
  "hide_custom": 0,
  "icon": "clipboard",
  "idx": 0,
- "indicator_color": "blue",
+ "indicator_color": "",
  "is_hidden": 0,
- "label": "Branch Visit Review",
+ "label": "Branch Visit",
  "links": [],
- "modified": "2026-09-19 00:00:00.000000",
+ "modified": "2026-09-21 15:22:47.689045",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
- "name": "Branch Visit Review",
+ "name": "Branch Visit",
  "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
@@ -35,7 +35,6 @@
    "format": "{} Templates",
    "label": "Branch Visit Template",
    "link_to": "Branch Visit Template",
-   "stats_filter": "[]",
    "type": "DocType"
   },
   {
@@ -44,9 +43,8 @@
    "format": "{} Reviews",
    "label": "Branch Visit Review",
    "link_to": "Branch Visit Review",
-   "stats_filter": "[]",
    "type": "DocType"
   }
  ],
- "title": "Branch Visit Review"
+ "title": "Branch Visit"
 }
