@@ -55,7 +55,7 @@ frappe.ui.form.on("Branch Visit Review", {
 				args: { template: frm.doc.template },
 				callback: function (r) {
 					if (r.message && r.message.length > 0) {
-						let html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+						let html = "<h4>Review Checklist</h4><table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
 						r.message.forEach(function (row, i) {
 							let response_html = "";
 							if (row.response_type === "Rating (1 to 5)") {
