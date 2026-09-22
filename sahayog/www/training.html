@@ -3126,11 +3126,6 @@
 
           <div class="sidebar-section" id="statusSection">
             <div class="sidebar-section-title">Training status</div>
-            <button class="nav-item" data-status="draft" title="Draft">
-              <span class="status-dot" style="background: var(--gray)"></span>
-              <span class="item-label">Draft</span>
-              <span class="item-count" id="count-draft">0</span>
-            </button>
             <button class="nav-item" data-status="upcoming" title="Upcoming">
               <span class="status-dot" style="background: var(--accent)"></span>
               <span class="item-label">Upcoming</span>
@@ -3306,7 +3301,6 @@
             </div>
             <select class="field-select" id="tr-status">
               <option value="">All Status</option>
-              <option value="draft">Draft</option>
               <option value="upcoming">Upcoming</option>
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
@@ -3617,7 +3611,6 @@
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
-              <option value="draft">Draft</option>
             </select>
             <select class="field-select" id="team-preset" title="Date range">
               <option value="month">This Month</option>
@@ -3829,6 +3822,20 @@
                   <button class="btn" id="btn-participant-done">Done</button>
                 </div>
               </div>
+            </div>
+
+            <!-- Participant CSV import (hidden file input + action buttons) -->
+            <div id="participant-csv-bar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn" id="btn-import-participants-csv" style="height:26px;padding:0 10px;font-size:12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Import from CSV
+              </button>
+              <button type="button" class="btn" id="btn-download-participant-template" style="height:26px;padding:0 10px;font-size:12px;color:var(--ink-3);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Sample Template
+              </button>
+              <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
+              <span id="participant-csv-status" style="font-size:11.5px;color:var(--ink-3);"></span>
             </div>
 
             <!-- Attendance (edit mode only) -->
@@ -4053,7 +4060,6 @@
 
         /* ---------- Status metadata (single source of truth) ---------- */
         var STATUS_ORDER = [
-          "draft",
           "upcoming",
           "inprogress",
           "completed",
@@ -4679,11 +4685,7 @@
             '<span class="event-chip-title">' +
             esc(ev.training_program || ev.topic || "Training") +
             "</span>" +
-            (ev.training_type
-              ? '<span class="ev-type" title="Training Type">' +
-                esc(ev.training_type) +
-                "</span>"
-              : "") +
+
             "</span>" +
             '<span class="event-chip-time">' +
             esc(ev.time || "") +
@@ -7415,6 +7417,116 @@
           }
         })();
 
+        /* ---------- Participant CSV import ---------- */
+        (function () {
+          var importBtn  = document.getElementById("btn-import-participants-csv");
+          var templateBtn = document.getElementById("btn-download-participant-template");
+          var fileInput  = document.getElementById("participant-csv-file");
+          var statusEl   = document.getElementById("participant-csv-status");
+
+          /* Download sample template — two columns: Emp ID + Agent ID */
+          if (templateBtn) {
+            templateBtn.addEventListener("click", function () {
+              var csv = "Emp ID,Agent ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
+              var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              var a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = "Participant_Import_Template.csv";
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+            });
+          }
+
+          /* Trigger file picker */
+          if (importBtn) {
+            importBtn.addEventListener("click", function () {
+              if (fileInput) { fileInput.value = ""; fileInput.click(); }
+            });
+          }
+
+          /* Parse CSV and add participants */
+          if (fileInput) {
+            fileInput.addEventListener("change", function () {
+              var file = fileInput.files[0];
+              if (!file) return;
+              if (statusEl) statusEl.textContent = "Reading…";
+
+              var reader = new FileReader();
+              reader.onload = function (e) {
+                var lines = (e.target.result || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+                if (!lines.length) {
+                  if (statusEl) statusEl.textContent = "File is empty.";
+                  return;
+                }
+
+                /* Parse header to find column indexes */
+                var header = lines[0].split(",").map(function (h) { return h.trim().toLowerCase(); });
+                var empCol   = header.indexOf("emp id");
+                var agentCol = header.indexOf("agent id");
+
+                if (empCol === -1 && agentCol === -1) {
+                  if (statusEl) statusEl.textContent = "Columns 'Emp ID' or 'Agent ID' not found. Download template first.";
+                  return;
+                }
+
+                var added = 0, skipped = 0, notFound = [];
+
+                lines.slice(1).forEach(function (line) {
+                  var cols = line.split(",").map(function (c) { return c.trim(); });
+                  var empId   = empCol   >= 0 ? (cols[empCol]   || "") : "";
+                  var agentId = agentCol >= 0 ? (cols[agentCol] || "") : "";
+
+                  function tryAdd(type, id) {
+                    if (!id) return false;
+                    var sourceList = type === "Agent" ? (state.allAgents || []) : (state.allEmployees || []);
+                    var item = sourceList.find(function (x) { return String(x.name).trim() === id; });
+                    if (!item) { notFound.push(id); return false; }
+
+                    var key = type + ":" + id;
+                    var already = (state.selectedParticipants || []).some(function (p) {
+                      return (p.reference_doctype + ":" + p.agent_employee) === key;
+                    });
+                    if (already) { skipped++; return true; }
+
+                    var fullName = type === "Agent" ? (item.agent_name || id) : (item.employee_name || id);
+                    state.selectedParticipants.push({
+                      reference_doctype: type,
+                      agent_employee: id,
+                      full_name: fullName,
+                    });
+                    if (type === "Employee" && dialogFn.autoAddBranch && item.sahayog_branch) {
+                      dialogFn.autoAddBranch(item.sahayog_branch);
+                    }
+                    added++;
+                    return true;
+                  }
+
+                  /* Error if both filled in same row */
+                  if (empId && agentId) {
+                    notFound.push("Row has both Emp ID '" + empId + "' and Agent ID '" + agentId + "' — fill only one");
+                    return;
+                  }
+
+                  /* Emp ID or Agent ID */
+                  if (!tryAdd("Employee", empId)) {
+                    tryAdd("Agent", agentId);
+                  }
+                });
+
+                if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
+
+                var msg = added + " participant" + (added === 1 ? "" : "s") + " added";
+                if (skipped) msg += ", " + skipped + " already present";
+                if (notFound.length) msg += ", " + notFound.length + " not found: " + notFound.slice(0, 5).join(", ") + (notFound.length > 5 ? "…" : "");
+                if (statusEl) statusEl.textContent = msg;
+                if (added) showToast(added + " participant(s) imported from CSV");
+              };
+              reader.readAsText(file);
+            });
+          }
+        })();
+
         /* ---------- Schedule preview + scheduler (Add Training modal) ---------- */
         function fmtSchDate(iso) {
           if (!iso) return "";
@@ -7719,22 +7831,24 @@
           var el = document.getElementById("trStats");
           if (!el) return;
           var cards = [
-            { cls: "", num: total, label: "Total" },
-            { cls: "sc-upcoming", num: counts.upcoming, label: "Upcoming" },
+            { cls: "", num: total, label: "Total", statusKey: "" },
+            { cls: "sc-upcoming", num: counts.upcoming, label: "Upcoming", statusKey: "upcoming" },
             {
               cls: "sc-inprogress",
               num: counts.inprogress,
               label: "In Progress",
+              statusKey: "inprogress",
             },
-            { cls: "sc-completed", num: counts.completed, label: "Completed" },
-            { cls: "sc-pending", num: counts.pending, label: "Pending" },
+            { cls: "sc-completed", num: counts.completed, label: "Completed", statusKey: "completed" },
+            { cls: "sc-pending", num: counts.pending, label: "Pending", statusKey: "pending" },
           ];
           el.innerHTML = cards
             .map(function (c) {
+              var activeStyle = trFilters.status === (c.statusKey || "") ? "outline:2px solid currentColor;outline-offset:2px;" : "";
               return (
                 '<div class="tr-stat-card ' +
                 c.cls +
-                '">' +
+                '" data-status-key="' + (c.statusKey || "") + '" style="cursor:pointer;' + activeStyle + '">' +
                 '<span class="sc-num">' +
                 c.num +
                 "</span>" +
@@ -7745,6 +7859,16 @@
               );
             })
             .join("");
+          el.querySelectorAll(".tr-stat-card").forEach(function(card) {
+            card.addEventListener("click", function() {
+              var key = card.dataset.statusKey || "";
+              trFilters.status = trFilters.status === key ? "" : key;
+              var trStatusSel = document.getElementById("tr-status");
+              if (trStatusSel) trStatusSel.value = trFilters.status;
+              trPage.current = 1;
+              renderTrainings();
+            });
+          });
         }
 
         /* --- table rows with pagination --- */

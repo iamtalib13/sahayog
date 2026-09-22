@@ -41,7 +41,6 @@
   },
   {
    "columns": 2,
-   "default": "Present",
    "fieldname": "attendance_status",
    "fieldtype": "Select",
    "in_list_view": 1,
