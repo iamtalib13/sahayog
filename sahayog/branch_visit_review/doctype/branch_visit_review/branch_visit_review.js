@@ -64,6 +64,11 @@ frappe.ui.form.on("Branch Visit Review", {
 									response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:gray;">&#9733;</span>';
 								}
 								response_html += '</span>';
+							} else if (row.response_type === "Yes / No") {
+								response_html = '<span class="yesno-group" data-parameter="' + i + '">';
+								response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes"> Yes</label>';
+								response_html += '<label><input type="radio" name="yesno_' + i + '" value="No"> No</label>';
+								response_html += '</span>';
 							} else {
 								response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text">';
 							}
@@ -83,6 +88,25 @@ frappe.ui.form.on("Branch Visit Review", {
 								let v = $(this).data("value");
 								$(this).css("color", v <= val ? "gold" : "gray");
 							});
+							let item = template_items[param_idx];
+							let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+							if (existing) {
+								existing.response = val;
+							} else {
+								frm.add_child("responses", {
+									category: item.category,
+									parameter_name: item.parameter_name,
+									response: val,
+								});
+							}
+							frm.refresh_field("responses");
+						});
+
+						frm.fields_dict.checklist.$wrapper.find(".yesno-group input[type='radio']").on("change", function () {
+							let $this = $(this);
+							let val = $this.val();
+							let $container = $this.closest(".yesno-group");
+							let param_idx = $container.data("parameter");
 							let item = template_items[param_idx];
 							let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
 							if (existing) {
