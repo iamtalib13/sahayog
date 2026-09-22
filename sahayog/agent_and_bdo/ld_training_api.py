@@ -1629,14 +1629,23 @@ def get_team_training_report(
 
 @frappe.whitelist()
 def get_trainer_options(enabled_only=True):
-    """Active employees to pick as trainer in the Add Training form."""
+    """Active employees to pick as trainer / participants in the Add Training form."""
     filters = {}
     if enabled_only:
         filters["status"] = "Active"
+    fields = ["name", "employee_name", "sahayog_branch"]
+    # Optional enrichment for the 70/30 participant tables (backward-compatible:
+    # extra keys are ignored by old frontends).
+    for extra in ("department", "designation", "custom_division"):
+        try:
+            if frappe.db.has_column("Employee", extra):
+                fields.append(extra)
+        except Exception:
+            pass
     return frappe.db.get_all(
         "Employee",
         filters=filters,
-        fields=["name", "employee_name", "sahayog_branch"],
+        fields=fields,
         order_by="employee_name asc",
         limit_page_length=0,
     )
