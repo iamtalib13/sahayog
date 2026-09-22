@@ -1,15 +1,16 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:BVR-.YYYY.-.####",
- "creation": "2026-09-19 00:00:00.000000",
+ "autoname": "hash",
+ "creation": "2026-09-19 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "visit_details_section",
   "branch",
   "branch_code",
-  "region_zone",
+  "region",
+  "zone",
   "column_break_visit",
   "visit_date",
   "visited_by",
@@ -31,7 +32,8 @@
   "column_break_signoff",
   "branch_head_signoff",
   "branch_head_signed_at",
-  "leadership_remarks"
+  "leadership_remarks",
+  "amended_from"
  ],
  "fields": [
   {
@@ -45,18 +47,14 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Branch",
-   "options": "Branch",
+   "options": "Sahayog Branch",
    "reqd": 1
   },
   {
+   "fetch_from": "branch.sol_id",
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
-  },
-  {
-   "fieldname": "region_zone",
-   "fieldtype": "Data",
-   "label": "Region / Zone"
   },
   {
    "fieldname": "column_break_visit",
@@ -145,6 +143,7 @@
    "label": "Sign-Off"
   },
   {
+   "default": "0",
    "fieldname": "visitor_signoff",
    "fieldtype": "Check",
    "label": "Visitor Sign-Off"
@@ -160,6 +159,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "0",
    "fieldname": "branch_head_signoff",
    "fieldtype": "Check",
    "label": "Branch Head Sign-Off"
@@ -174,20 +174,41 @@
    "fieldname": "leadership_remarks",
    "fieldtype": "Text",
    "label": "Leadership Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Branch Visit Review",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "branch.zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone"
+  },
+  {
+   "fetch_from": "branch.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
   }
  ],
  "index_web_pages_for_search": 1,
- "is_submittable": 0,
+ "is_submittable": 1,
  "links": [],
- "modified": "2026-09-19 00:00:00.000000",
+ "modified": "2026-09-21 17:28:02.116864",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",
- "naming_rule": "Expression",
+ "naming_rule": "Random",
  "owner": "Administrator",
  "permissions": [
   {
-   "amend": 0,
    "cancel": 1,
    "create": 1,
    "delete": 1,
