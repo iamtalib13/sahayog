@@ -27,6 +27,15 @@ frappe.ui.form.on("Branch Visit Review", {
 			});
 		}
 	},
+	validate(frm) {
+		if (frm.doc.responses && frm.doc.responses.length > 0) {
+			let strengths = frm.doc.responses
+				.filter(function (r) { return r.response && parseInt(r.response) >= 3; })
+				.map(function (r) { return r.parameter_name; })
+				.join("\n");
+			frm.set_value("key_strengths", strengths);
+		}
+	},
 	branch(frm) {
 		if (frm.doc.branch) {
 			frappe.call({
