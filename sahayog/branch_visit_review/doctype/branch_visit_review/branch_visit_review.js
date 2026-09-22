@@ -87,6 +87,16 @@ function render_checklist(frm, template) {
 					}
 					html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
 				});
+				if (frm.doc.responses && frm.doc.responses.length > 0) {
+					frm.doc.responses.forEach(function (resp) {
+						let exists = r.message.find(function (t) { return t.parameter_name === resp.parameter_name; });
+						if (!exists) {
+							let count = r.message.length + 1;
+							html += "<tr><td>" + count + "</td><td>" + (resp.category || "") + "</td><td>" + (resp.parameter_name || "") + "</td><td><input type='text' class='form-control observation-input' placeholder='Enter the text' value='" + (resp.response || "") + "'></td></tr>";
+							r.message.push(resp);
+						}
+					});
+				}
 				html += "</tbody></table>";
 				html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
 				frm.fields_dict.checklist.$wrapper.html(html);
