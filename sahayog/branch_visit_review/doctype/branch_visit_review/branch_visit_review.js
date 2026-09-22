@@ -91,7 +91,7 @@ frappe.ui.form.on("Branch Visit Review", {
 								frm.add_child("responses", {
 									category: item.category,
 									parameter_name: item.parameter_name,
-									response_type: item.response_type,
+									response: item.response_type,
 									rating_score: val,
 								});
 							}
@@ -108,10 +108,10 @@ frappe.ui.form.on("Branch Visit Review", {
 								if (existing) {
 									existing.observation = val;
 								} else {
-									frm.add_child("responses", {
-										category: item.category,
-										parameter_name: item.parameter_name,
-										response_type: item.response_type,
+								frm.add_child("responses", {
+									category: item.category,
+									parameter_name: item.parameter_name,
+									response: item.response_type,
 										observation: val,
 									});
 								}
