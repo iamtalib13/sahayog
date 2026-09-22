@@ -1718,7 +1718,7 @@
       .geo-remove:hover { background:var(--surface-2); color:#b91c1c; border-color:#fecaca; }
 
       /* ===== Add Training 70/30 split (participants 70% / details 30%) ===== */
-      #addModal .modal { width:min(1600px,98vw); max-width:98vw; }
+      #addModal .modal { width:min(960px,96vw); max-width:96vw; }
       #addModal .nt-scroll { background:#f8fafc; }
       #addModal .nt-body { gap:14px; }
       .nt-split { display:flex; gap:16px; align-items:stretch; }
@@ -1836,6 +1836,127 @@
       .nt-foot-sticky .hint { font-size:11.5px; color:var(--ink-3); flex:1; }
       .nt-foot-sticky .btn-primary { height:34px; padding:0 22px; font-size:13.5px; }
       .nt-legacy-hidden { display:none !important; }
+
+      /* ===== Figma system: Schedule Training dialog (create phase) ===== */
+      #addModal {
+        --accent:#2563EB; --accent-soft:#EFF6FF; --accent-ink:#1D4ED8;
+        --ink-1:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+        --border:#E2E8F0; --surface-2:#F8FAFC; --danger:#DC2626;
+      }
+      #addModal .modal { width:min(960px,96vw); max-width:96vw; border-radius:20px; }
+      #addModal .nt-scroll { background:#fff; }
+      #addModal .nt-head { padding:24px 32px 20px; border-bottom:1px solid var(--border); }
+      #addModal .nt-head h3 { font-size:18px; font-weight:700; }
+      #addModal .modal-close { background:var(--surface-2); border-radius:8px; width:32px; height:32px; }
+      #addModal #btn-save-training { height:37px; padding:10px 22px; font-size:14px; border-radius:8px; }
+      #addModal #btn-reschedule-training { height:37px; font-size:14px; border-radius:8px; }
+      .fx-cols { display:flex; gap:32px; padding:32px; align-items:flex-start; }
+      .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
+      .fx-field { display:flex; flex-direction:column; gap:6px; }
+      .fx-label { font-size:12px; font-weight:600; text-transform:uppercase; color:var(--ink-2); }
+      .fx-label b { color:var(--danger); }
+      #addModal .fx-input, #addModal .fx-select {
+        height:41px; border:1px solid var(--border); border-radius:8px;
+        padding:12px 16px; font-size:14px; color:var(--ink-1); background:#fff; outline:none; width:100%;
+      }
+      #addModal .fx-input:focus, #addModal .fx-select:focus { border-color:var(--accent); }
+      #addModal #new-program.fx-input:focus { border-width:1.5px; }
+      #addModal #new-trainer.fx-input { background:var(--surface-2); cursor:default; }
+      .fx-row2 { display:flex; gap:16px; }
+      .fx-row2 .fx-field { flex:1; min-width:0; }
+      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; }
+      .fx-card-t { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:2px; }
+      #addModal .fx-card .nt-sched-date, #addModal .fx-card .nt-sched-time {
+        height:32px; border:1px solid var(--border); border-radius:8px; background:#fff;
+        padding:8px 12px; font-size:13px; color:var(--ink-1); outline:none; width:100%;
+      }
+      #addModal .fx-card .nt-sched-date:focus, #addModal .fx-card .nt-sched-time:focus { border-color:var(--accent); }
+      .fx-preview { font-size:12.5px; font-weight:600; color:var(--ink-2); }
+      .fx-alert { display:flex; gap:10px; align-items:flex-start; background:#FFF7ED;
+        border:1px solid #FFEDD5; border-radius:8px; padding:12px; }
+      .fx-alert svg { width:16px; height:16px; color:#C2410C; flex-shrink:0; margin-top:1px; }
+      .fx-alert b { display:block; font-size:13px; color:#C2410C; }
+      .fx-alert span { font-size:11.5px; color:#C2410C; }
+      .fx-check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); }
+      .fx-check input { width:15px; height:15px; accent-color:var(--accent); }
+      #addModal #new-agenda.fx-area {
+        border:1px solid var(--border); border-radius:8px; padding:12px; font-size:13px;
+        min-height:70px; resize:vertical; outline:none; width:100%; max-height:none;
+      }
+      #addModal #new-agenda.fx-area:focus { border-color:var(--accent); }
+      #addModal #new-agenda.fx-area::placeholder { color:var(--ink-3); }
+      /* search + suggestions */
+      .fx-type-toggle { display:flex; gap:6px; }
+      .fx-type-toggle .btn { height:28px; padding:0 14px; font-size:12px; }
+      #addModal .fx-search-wrap { position:relative; }
+      #addModal #new-participant-search.fx-search {
+        height:42px; border:1px solid var(--border); border-radius:8px; padding:12px 16px 12px 40px;
+        font-size:14px; width:100%; outline:none; background:#fff
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")
+          no-repeat 14px center/18px 18px;
+      }
+      #addModal #new-participant-search.fx-search:focus { border:2px solid var(--accent); padding:11px 15px 11px 39px; }
+      #addModal #nt-participant-pop {
+        top:calc(100% + 6px); left:0; right:0; border-radius:12px; padding:8px;
+        box-shadow:0 4px 12px rgba(0,0,0,.08);
+      }
+      #addModal #nt-participant-pop .nt-pop-search,
+      #addModal #nt-participant-pop .nt-pop-foot { display:none; }
+      #addModal #participant-dropdown { max-height:220px; }
+      #addModal #participant-dropdown .branch-opt {
+        display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px;
+        cursor:pointer; justify-content:flex-start;
+      }
+      #addModal #participant-dropdown .branch-opt:hover { background:var(--surface-2); }
+      #addModal .fx-ava {
+        width:28px; height:28px; border-radius:50%; flex-shrink:0;
+        background:var(--accent-soft); color:var(--accent-ink);
+        display:grid; place-items:center; font-size:11px; font-weight:700;
+      }
+      #addModal #participant-dropdown .branch-opt .fx-sug-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      #addModal #participant-dropdown .branch-opt .fx-sug-name { font-size:13px; font-weight:600; color:var(--ink-1); }
+      #addModal #participant-dropdown .branch-opt .fx-sug-sub { font-size:11px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #addModal #participant-dropdown .branch-opt .enter-hint { display:none; font-size:12px; font-weight:600; color:var(--accent); white-space:nowrap; }
+      #addModal #participant-dropdown .branch-opt:first-child .enter-hint { display:inline; }
+      /* selected list */
+      .fx-sel-head { display:flex; align-items:center; justify-content:space-between; }
+      .fx-sel-head .t { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-2); }
+      #btn-clear-sel { border:none; background:none; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+      #btn-clear-sel:hover { text-decoration:underline; }
+      #btn-clear-sel:disabled { opacity:.4; cursor:default; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; }
+      #sel-list .fx-empty { font-size:12.5px; color:var(--ink-3); padding:8px 0; }
+      .fx-sel-row { display:flex; align-items:center; gap:10px; background:var(--surface-2);
+        border:1px solid var(--border); border-radius:8px; padding:8px 12px; }
+      .fx-sel-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      .fx-sel-meta b { font-size:13px; color:var(--ink-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .fx-sel-meta i { font-style:normal; font-size:11px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .fx-sel-tag { font-size:10px; font-weight:700; border-radius:999px; padding:2px 8px; flex-shrink:0; }
+      .fx-sel-tag.emp { background:var(--accent-soft); color:var(--accent-ink); }
+      .fx-sel-tag.agent { background:#FFF7ED; color:#C2410C; }
+      .fx-sel-rm { border:none; background:#FEF2F2; color:var(--danger); width:24px; height:24px;
+        border-radius:4px; cursor:pointer; font-size:13px; line-height:1; flex-shrink:0; }
+      .fx-sel-rm:hover { background:#FECACA; }
+      .fx-sel-rm:disabled { opacity:.4; cursor:default; }
+      /* csv + branches compact */
+      .fx-csv-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      .fx-csv-row .btn { height:30px; padding:0 12px; font-size:12px; }
+      .fx-csv-row .muted { font-size:11.5px; color:var(--ink-3); }
+      #addModal .nt-branch-summary { font-size:11.5px; }
+      /* footer */
+      .fx-foot { display:flex; align-items:center; gap:8px; padding:20px 32px 24px;
+        border-top:1px solid var(--border); font-size:12px; color:var(--ink-2); }
+      .fx-foot svg { width:16px; height:16px; color:var(--ink-2); flex-shrink:0; }
+      /* two equal columns, form left, participants right */
+      #addModal .nt-body { padding:0; gap:0; }
+      #addModal .nt-split { gap:32px; padding:32px; align-items:flex-start; }
+      #addModal .nt-part, #addModal .nt-details { border:none; padding:0; min-width:0; }
+      #addModal .fx-left { order:1; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
+      #addModal .fx-right { order:2; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
+      @media (max-width: 700px) {
+        .fx-cols { flex-direction:column; padding:20px; gap:20px; }
+        #addModal .modal { border-radius:12px 12px 0 0; }
+      }
       @media (max-width: 1100px) {
         #addModal .modal { width:min(98vw,1600px); max-width:98vw; }
       }
@@ -2002,8 +2123,8 @@
         padding: 18px 20px 16px;
       }
       #addModal .modal {
-        width: min(1600px, 98vw);
-        max-width: 98vw;
+        width: min(960px, 96vw);
+        max-width: 96vw;
         padding: 0;
         border-radius: 12px;
         overflow: hidden;
@@ -3865,11 +3986,11 @@
         <div class="nt-head">
           <div>
             <h3>New Training</h3>
-            <div style="font-size:11.5px;color:var(--ink-3);margin-top:1px;" id="nt-head-sub">Pick participants on the left, fill schedule on the right</div>
+            <div style="font-size:13px;color:var(--ink-2);margin-top:4px;" id="nt-head-sub">Create an L&amp;D class, allocate a trainer, and assign branch employees</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-            <button class="btn" id="btn-reschedule-training" style="display:none;height:30px;padding:0 14px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
-            <button class="btn btn-primary" id="btn-save-training" style="height:30px;padding:0 14px;font-size:13px;">Save Training</button>
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:37px;padding:10px 18px;font-size:14px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="btn btn-primary" id="btn-save-training" style="height:37px;padding:10px 22px;font-size:14px;">Save Training</button>
             <button class="modal-close" data-close="addModal" title="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -3882,7 +4003,60 @@
           <div class="nt-body">
             <!-- 70/30 split: participants (70%) + details (30%) -->
             <div class="nt-split">
-              <div class="nt-part">
+              <div class="nt-part fx-right">
+                <!-- Search (legacy IDs — selection logic fully preserved) -->
+                <div class="fx-field">
+                  <span class="fx-label">Add Employee / Code <b>*</b></span>
+                  <div class="fx-type-toggle">
+                    <button type="button" id="p-type-employee" class="btn btn-primary">Employee</button>
+                    <button type="button" id="p-type-agent" class="btn">Agent</button>
+                  </div>
+                  <div class="nt-pop-wrap fx-search-wrap">
+                    <input
+                      id="new-participant-search"
+                      class="fx-search"
+                      placeholder="Search employees..."
+                      autocomplete="off"
+                    />
+                    <div class="nt-pop" id="nt-participant-pop" style="display: none">
+                      <div id="participant-dropdown" class="nt-pop-list"></div>
+                      <div class="nt-pop-more" id="participant-more" style="display: none">
+                        <span id="participant-range"></span>
+                        <button
+                          class="btn-mini"
+                          id="btn-participant-load"
+                          type="button"
+                        >
+                          Load more
+                        </button>
+                      </div>
+                      <div class="nt-pop-foot">
+                        <span id="participant-dropdown-count">0 selected</span>
+                        <button class="btn" id="btn-participant-done">Done</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Selected participants -->
+                <div class="fx-sel-head">
+                  <span class="t">Selected Participants (<span id="sel-count">0</span>)</span>
+                  <button type="button" id="btn-clear-sel">Clear All</button>
+                </div>
+                <div id="sel-list"></div>
+
+                <!-- CSV import -->
+                <div class="fx-csv-row">
+                  <button type="button" class="btn" id="btn-import-participants-csv">
+                    Import from CSV
+                  </button>
+                  <button type="button" class="btn" id="btn-download-participant-template">
+                    Sample Template
+                  </button>
+                  <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
+                  <span id="participant-csv-status" class="muted"></span>
+                </div>
+
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
                   <span class="bs-label" id="branch-count">Branches</span>
                   <span id="branch-chips"><span class="muted">No branches yet — select participants or add a branch.</span></span>
@@ -3893,303 +4067,155 @@
                       <span class="opts" id="branch-add-list" style="display:block"></span>
                     </span>
                   </span>
-                  <span class="nt-csv-mini">
-                    <button type="button" class="btn" id="btn-import-participants-csv-top" style="height:30px;padding:0 12px;font-size:12px;">Import CSV</button>
-                    <button type="button" class="btn" id="btn-download-participant-template-top" style="height:30px;padding:0 12px;font-size:12px;color:var(--ink-3);">Template</button>
-                  </span>
                 </div>
 
-                <!-- Unified participants table (Type filter replaces separate tables) -->
-                <div class="nt-ptable" id="nt-part-panel">
-                  <div class="nt-ptable-head">
-                    <span class="t">Select participants</span>
-                    <select class="nt-type-filter" id="nt-part-type" title="Filter by type">
-                      <option value="">All</option>
-                      <option value="Employee">Employees</option>
-                      <option value="Agent">Agents</option>
-                    </select>
-                    <span class="c none" id="emp-selected-count">0 emp</span>
-                    <span class="c none" id="agent-selected-count">0 agents</span>
-                    <label class="nt-ptable-search">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                      <input id="nt-part-search" placeholder="Search code, name, branch…" autocomplete="off" />
-                    </label>
+                <!-- Attendance (edit mode only) -->
+                <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
+                  <div class="nt-row" style="justify-content: flex-start;gap:10px;">
+                    <span class="nt-kicker">Attendance</span>
+                    <span id="nt-att-summary" style="flex:1;"></span>
+                    <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
                   </div>
-                  <div class="nt-ptable-scroll">
-                    <table>
-                      <colgroup><col style="width:36px" /><col style="width:82px" /><col /><col /><col /><col style="width:84px" /></colgroup>
-                      <thead><tr><th></th><th>Code</th><th>Name</th><th>Branch</th><th>Division</th><th>Type</th></tr></thead>
-                      <tbody id="part-table-body"></tbody>
-                    </table>
-                    <div class="nt-ptable-empty" id="part-empty" style="display:none">No participants found</div>
-                  </div>
-                  <div class="nt-ptable-foot">
-                    <span id="part-showing"></span>
-                    <span style="flex:1"></span>
-                    <button type="button" class="btn-mini" id="part-load-more">Load more</button>
+                  <div class="nt-pop" id="nt-attendance-pop" style="display: none">
+                    <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
+                    <div id="nt-attendance-list" class="nt-pop-list"></div>
+                    <div class="nt-pop-foot">
+                      <span id="nt-attendance-count"></span>
+                      <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Legacy attendee popover kept hidden for backward-compat (same IDs/logic) -->
+                <!-- Hidden compat: chips, attendee box, unified table (keeps all flows running) -->
                 <div class="nt-legacy-hidden" aria-hidden="true">
-            <!-- Participants: Teams-style attendee field -->
-            <div class="nt-pop-wrap">
-              <div
-                class="nt-attendee"
-                id="nt-attendee"
-                title="Add participants"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                <div class="nt-attendee-chips" id="participant-chips"></div>
-                <span class="nt-attendee-count" id="participant-count"
-                  >Add participants</span
-                >
-              </div>
+                  <div class="nt-attendee-chips" id="participant-chips"></div>
+                  <span class="nt-attendee-count" id="participant-count">Add participants</span>
+                  <div class="nt-attendee" id="nt-attendee" title="Add participants"></div>
+                  <div class="nt-ptable" id="nt-part-panel">
+                    <div class="nt-ptable-head">
+                      <span class="t">Select participants</span>
+                      <select class="nt-type-filter" id="nt-part-type" title="Filter by type">
+                        <option value="">All</option>
+                        <option value="Employee">Employees</option>
+                        <option value="Agent">Agents</option>
+                      </select>
+                      <span class="c none" id="emp-selected-count">0 emp</span>
+                      <span class="c none" id="agent-selected-count">0 agents</span>
+                      <label class="nt-ptable-search">
+                        <input id="nt-part-search" autocomplete="off" />
+                      </label>
+                    </div>
+                    <div class="nt-ptable-scroll">
+                      <table>
+                        <tbody id="part-table-body"></tbody>
+                      </table>
+                      <div class="nt-ptable-empty" id="part-empty" style="display:none"></div>
+                    </div>
+                    <div class="nt-ptable-foot">
+                      <span id="part-showing"></span>
+                      <span style="flex:1"></span>
+                      <button type="button" class="btn-mini" id="part-load-more">Load more</button>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /nt-part (participants, right) -->
 
-              <div class="nt-pop" id="nt-participant-pop" style="display: none">
-                <!-- Type toggle: Employee / Agent -->
-                <div style="display:flex;gap:6px;padding:8px 12px 0;border-bottom:1px solid var(--border);padding-bottom:8px;">
-                  <button type="button" id="p-type-employee" class="btn btn-primary" style="height:26px;padding:0 12px;font-size:12px;">Employee</button>
-                  <button type="button" id="p-type-agent" class="btn" style="height:26px;padding:0 12px;font-size:12px;">Agent</button>
-                </div>
-                <div class="nt-pop-search">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                  <input
-                    id="new-participant-search"
-                    placeholder="Search employees..."
-                    autocomplete="off"
-                  />
-                </div>
-                <div id="participant-dropdown" class="nt-pop-list"></div>
-                <div class="nt-pop-more" id="participant-more" style="display: none">
-                  <span id="participant-range"></span>
-                  <button
-                    class="btn-mini"
-                    id="btn-participant-load"
-                    type="button"
-                  >
-                    Load more
-                  </button>
-                </div>
-                <div class="nt-pop-foot">
-                  <span id="participant-dropdown-count">0 selected</span>
-                  <button class="btn" id="btn-participant-done">Done</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Participant CSV import (hidden file input + action buttons) -->
-            <div id="participant-csv-bar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="btn" id="btn-import-participants-csv" style="height:26px;padding:0 10px;font-size:12px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Import from CSV
-              </button>
-              <button type="button" class="btn" id="btn-download-participant-template" style="height:26px;padding:0 10px;font-size:12px;color:var(--ink-3);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Sample Template
-              </button>
-              <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
-              <span id="participant-csv-status" style="font-size:11.5px;color:var(--ink-3);"></span>
-            </div>
-            </div><!-- /nt-legacy-hidden: legacy popover IDs preserved, hidden -->
-
-            <!-- Attendance (edit mode only) — participant-related, stays in 70% column -->
-            <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
-              <div class="nt-row" style="justify-content: flex-start;gap:10px;">
-                <span class="nt-kicker">Attendance</span>
-                <span id="nt-att-summary" style="flex:1;"></span>
-                <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
-              </div>
-              <div class="nt-pop" id="nt-attendance-pop" style="display: none">
-                <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
-                <div id="nt-attendance-list" class="nt-pop-list"></div>
-                <div class="nt-pop-foot">
-                  <span id="nt-attendance-count"></span>
-                  <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
-                </div>
-              </div>
-            </div>
-            </div><!-- /nt-part (70% participants) -->
-
-            <div class="nt-details">
-            <div class="nt-card">
-              <span class="nt-kicker">Training Title</span>
+            <div class="nt-details fx-left">
+            <div class="fx-field">
+              <span class="fx-label">Training Title <b>*</b></span>
               <input
-                class="nt-title"
+                class="fx-input"
                 id="new-program"
-                placeholder="Add training title"
+                placeholder="Operational Excellence & Customer Relations"
                 autocomplete="off"
               />
             </div>
-            <div class="nt-card tint-blue">
-            <!-- Date & Time: labeled fields (30% column) -->
-            <div class="nt-kicker-wrap">
-              <span class="nt-kicker">Date &amp; Time</span>
-            </div>
-            <div class="nt-dt-grid">
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">Start date</span>
-                <input
-                  type="date"
-                  class="nt-sched-date"
-                  id="new-from-date"
-                />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">End date</span>
-                <input type="date" class="nt-sched-date" id="new-to-date" />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">Start time</span>
-                <input
-                  type="text"
-                  class="nt-sched-time"
-                  id="new-time"
-                  placeholder="e.g. 10:00 AM"
-                  autocomplete="off"
-                />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">End time</span>
-                <input
-                  type="text"
-                  class="nt-sched-time"
-                  id="new-end-time"
-                  placeholder="e.g. 11:00 AM"
-                  autocomplete="off"
-                />
-              </label>
-            </div>
-            <div class="nt-sched-summary">
-              <div class="nt-sched-preview" id="new-schedule-preview">
-                Select date and time
-              </div>
-              <div class="nt-sched-hint" id="new-schedule-hint"></div>
-            </div>
-            </div>
-
-            <div class="nt-card tint-purple">
-            <!-- Training Type -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M3 9h18M9 21V9" />
-              </svg>
-              <label class="nt-readonly">
-                <span class="nt-kicker">Training Type</span>
+            <div class="fx-row2">
+              <div class="fx-field">
+                <span class="fx-label">Training Type <b>*</b></span>
                 <select
-                  class="nt-input"
+                  class="fx-select"
                   id="new-training-type"
-                  style="cursor: pointer"
                 >
                   <option value="">Select type</option>
                   <option value="Classroom">Classroom</option>
                   <option value="Virtual">Virtual</option>
                 </select>
-              </label>
-            </div>
-            </div>
-
-            <div class="nt-card tint-green">
-            <!-- Trainer (read-only, auto-filled) -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <label class="nt-readonly">
-                <span class="nt-kicker">Trainer</span>
-                <input id="new-trainer" readonly placeholder="Not assigned" />
-              </label>
-            </div>
-            </div>
-
-            <div class="nt-card tint-orange" id="geo-card-legacy" style="display:none" aria-hidden="true">
-            <!-- Legacy branch rows kept hidden: branches are now managed via top chips (same state/IDs) -->
-            <div class="nt-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;color:var(--ink-3);flex-shrink:0;">
-                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
-                </svg>
-                <span class="nt-kicker" style="flex:1;">Additional Branches</span>
-                <button type="button" class="btn" id="btn-add-geo" style="height:26px;padding:0 10px;font-size:12px;">+ Add Branch</button>
               </div>
-              <div id="geo-rows"></div>
-              <div class="nt-geo-hint" id="geo-hint" style="font-size:11px;color:var(--ink-3);"></div>
+              <div class="fx-field">
+                <span class="fx-label">Assigned Trainer <b>*</b></span>
+                <input class="fx-input" id="new-trainer" readonly placeholder="Not assigned" />
+              </div>
             </div>
-            <!-- Hidden legacy fields kept for backward compat (not visible) -->
-            <input type="hidden" id="new-branch" />
-            <input type="hidden" id="new-zone" />
-            <input type="hidden" id="new-region" />
-            <input type="hidden" id="new-district" />
-            <div id="branch-dropdown" style="display:none"></div>
+            <div class="fx-card">
+              <div class="fx-card-t">Schedule Range</div>
+              <div class="fx-row2">
+                <div class="fx-field">
+                  <span class="fx-label">Start Date</span>
+                  <input
+                    type="date"
+                    class="nt-sched-date"
+                    id="new-from-date"
+                  />
+                </div>
+                <div class="fx-field">
+                  <span class="fx-label">End Date</span>
+                  <input type="date" class="nt-sched-date" id="new-to-date" />
+                </div>
+              </div>
+              <div class="fx-row2">
+                <div class="fx-field">
+                  <span class="fx-label">Start Time</span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-time"
+                    placeholder="10:00 AM"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="fx-field">
+                  <span class="fx-label">End Time</span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-end-time"
+                    placeholder="12:30 PM"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+              <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
+              <div class="fx-alert" id="sched-alert" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                <div><b>Potential scheduling conflict</b><span id="new-schedule-hint"></span></div>
+              </div>
             </div>
 
-            <div class="nt-card">
-            <label class="nt-check">
+            <label class="fx-check">
               <input type="checkbox" id="new-adhoc" />
-              Ad-hoc / Need-based training
+              Ad-hoc / need-based training
             </label>
-
-            <div class="nt-row nt-agenda-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
-              </svg>
+            <div class="fx-field">
+              <span class="fx-label">Optional Trainer Notes</span>
               <textarea
-                class="nt-input nt-agenda"
+                class="fx-area"
                 id="new-agenda"
-                placeholder="Add notes / trainer remarks"
-                rows="1"
+                rows="3"
+                placeholder="Add any specific prerequisites, materials, or classroom guidelines..."
               ></textarea>
             </div>
+            <div id="geo-card-legacy" style="display:none" aria-hidden="true">
+              <button type="button" id="btn-add-geo" style="display:none">+ Add Branch</button>
+              <div id="geo-rows"></div>
+              <div id="geo-hint" style="display:none"></div>
+              <input type="hidden" id="new-branch" />
+              <input type="hidden" id="new-zone" />
+              <input type="hidden" id="new-region" />
+              <input type="hidden" id="new-district" />
+              <div id="branch-dropdown" style="display:none"></div>
             </div>
-            </div><!-- /nt-details (30%) -->
+            </div><!-- /nt-details (form, left) -->
             </div><!-- /nt-split -->
           </div>
 
@@ -4197,6 +4223,10 @@
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
 
+        <div class="fx-foot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+          <span id="fx-branch-context">Select participants to auto-detect branches.</span>
+        </div>
       </div>
     </div>
 
@@ -6025,6 +6055,7 @@
           setDialogMode("add");
           refreshModalAttendanceRow(null);
           if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
+          if (dialogFn.renderSelList) dialogFn.renderSelList();
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
         }
@@ -7441,7 +7472,7 @@
               : (item.employee_name || item.name);
             var sub;
             if (type === "Agent") {
-              sub = item.name + (item.branch_name ? " - " + item.branch_name : "");
+              sub = item.name + (item.branch_name ? " • " + item.branch_name : "");
             } else {
               var brCode = item.sahayog_branch || "";
               var brName = "";
@@ -7449,12 +7480,18 @@
                 var binfo = (state.branchPick || []).find(function(b){ return b.name === brCode; });
                 brName = binfo && binfo.branch ? binfo.branch : "";
               }
-              sub = item.name + (brName ? " - " + brName : (brCode ? " - " + brCode : ""));
+              var div = item.custom_division || item.department || "";
+              sub = item.name + (brCode ? " • " + (brName || brCode) : "") + (div ? " • " + div : "");
             }
+            var initials = displayName.trim().split(/\s+/).slice(0, 2).map(function (w) {
+              return w.charAt(0).toUpperCase();
+            }).join("") || "?";
             return (
               '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
-              "<span>" + esc(displayName) + "</span>" +
-              '<span style="color:var(--ink-3);font-size:11px">' + esc(sub) + "</span>" +
+              '<span class="fx-ava">' + esc(initials) + "</span>" +
+              '<span class="fx-sug-meta"><span class="fx-sug-name">' + esc(displayName) + "</span>" +
+              '<span class="fx-sug-sub">' + esc(sub) + "</span></span>" +
+              '<span class="enter-hint">Press Enter to Add</span>' +
               "</div>"
             );
           }
@@ -7633,6 +7670,8 @@
           }
           document.addEventListener("click", function(e) {
             if (!pAttendee || pAttendee.contains(e.target)) return;
+            // Search input lives outside the popover (Figma layout) — don't close on it
+            if (pSearch && (e.target === pSearch || (pSearch.contains && pSearch.contains(e.target)))) return;
             if (pPop && !pPop.contains(e.target)) closePop();
           });
           if (pChips) {
@@ -7669,7 +7708,7 @@
           var branchAddPop = document.getElementById("branch-add-pop");
           var branchAddSearch = document.getElementById("branch-add-search");
           var branchAddList = document.getElementById("branch-add-list");
-          var footHint = document.getElementById("nt-head-sub");
+          var footHint = document.getElementById("fx-branch-context");
           var PAGE = 60, partLimit = PAGE, branchExpanded = false;
           if (!partBody) return;
 
@@ -7872,9 +7911,9 @@
             updateBranchSummary();
             if (footHint) {
               var nb = (state.selectedGeographies || []).filter(function (g) { return g.branch; }).length;
-              footHint.textContent = (ne + na) ?
-                ((ne + na) + " participants · " + nb + " branch" + (nb === 1 ? "" : "es") + " — verify schedule, then save.") :
-                "Select participants, verify branches, then save.";
+              footHint.textContent = nb ?
+                ("Targeting " + nb + " distinct branch" + (nb === 1 ? "" : "es") + " automatically based on participants.") :
+                "Select participants to auto-detect branches.";
             }
           }
           // Keep tables in sync with legacy flows (CSV import, popover, open/fill)
@@ -7951,6 +7990,76 @@
             if (e.key === "Escape") closeBranchAddPop();
           });
           refreshTables();
+        })();
+
+        /* ---------- Figma selected-participants list (create phase) ----------
+           Display-only layer over the SAME state.selectedParticipants. */
+        (function () {
+          var listEl = document.getElementById("sel-list");
+          var countEl = document.getElementById("sel-count");
+          var clearBtn = document.getElementById("btn-clear-sel");
+          if (!listEl) return;
+          function initialsOf(name) {
+            var parts = String(name || "").trim().split(/\s+/).slice(0, 2).map(function (w) {
+              return w.charAt(0).toUpperCase();
+            });
+            return parts.join("") || "?";
+          }
+          function branchLabelFor(code) {
+            if (!code) return "";
+            var b = (state.branchPick || []).find(function (x) { return x.name === code; });
+            return (b && b.branch) ? b.branch : code;
+          }
+          function renderSelList() {
+            var sel = state.selectedParticipants || [];
+            if (countEl) countEl.textContent = sel.length;
+            if (clearBtn) clearBtn.disabled = !sel.length || state.dialogMode === "edit";
+            if (!sel.length) {
+              listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
+              return;
+            }
+            listEl.innerHTML = sel.map(function (p) {
+              var isAgent = p.reference_doctype === "Agent";
+              var code = p.agent_employee || "";
+              var name = p.full_name || code, branch = "", div = "";
+              if (isAgent) {
+                var a = (state.allAgents || []).find(function (x) { return x.name === code; }) || {};
+                name = p.full_name || a.agent_name || code;
+                branch = a.branch_name || "";
+              } else {
+                var e = (state.allEmployees || []).find(function (x) { return x.name === code; }) || {};
+                name = p.full_name || e.employee_name || code;
+                branch = branchLabelFor(e.sahayog_branch || "");
+                div = e.custom_division || e.department || "";
+              }
+              var sub = code + (branch ? " • " + branch : "") + (div ? " • " + div : "");
+              var dis = state.dialogMode === "edit" ? " disabled" : "";
+              return '<div class="fx-sel-row"><span class="fx-ava">' + esc(initialsOf(name)) + "</span>" +
+                '<span class="fx-sel-meta"><b>' + esc(name) + "</b><i>" + esc(sub) + "</i></span>" +
+                '<span class="fx-sel-tag ' + (isAgent ? "agent" : "emp") + '">' + (isAgent ? "Agent" : "Employee") + "</span>" +
+                '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove"' + dis + ">×</button></div>";
+            }).join("");
+          }
+          dialogFn.renderSelList = renderSelList;
+          if (dialogFn.renderPChips) {
+            var _prevChips = dialogFn.renderPChips;
+            dialogFn.renderPChips = function () { _prevChips(); renderSelList(); };
+          }
+          listEl.addEventListener("click", function (e) {
+            var btn = e.target.closest("[data-rm-sel]");
+            if (!btn || btn.disabled) return;
+            var key = btn.dataset.rmSel;
+            state.selectedParticipants = (state.selectedParticipants || []).filter(function (p) {
+              return (p.reference_doctype + ":" + p.agent_employee) !== key;
+            });
+            dialogFn.renderPChips();
+          });
+          if (clearBtn) clearBtn.addEventListener("click", function () {
+            if (state.dialogMode === "edit") return;
+            state.selectedParticipants = [];
+            dialogFn.renderPChips();
+          });
+          renderSelList();
         })();
 
         /* ---------- Participant CSV import ---------- */
@@ -8154,6 +8263,9 @@
               hintEl.textContent = "";
               hintEl.className = "nt-sched-hint";
             }
+            // Figma conflict slot: show only when there is a real message
+            var alertBox = document.getElementById("sched-alert");
+            if (alertBox) alertBox.style.display = hintEl && hintEl.textContent ? "flex" : "none";
           }
         }
 
