@@ -3868,6 +3868,8 @@
             <div style="font-size:11.5px;color:var(--ink-3);margin-top:1px;" id="nt-head-sub">Pick participants on the left, fill schedule on the right</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:30px;padding:0 14px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="btn btn-primary" id="btn-save-training" style="height:30px;padding:0 14px;font-size:13px;">Save Training</button>
             <button class="modal-close" data-close="addModal" title="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -4193,13 +4195,6 @@
 
           <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
-        </div>
-
-        <div class="nt-foot-sticky">
-          <span class="hint" id="nt-foot-hint">Select participants, verify branches, then save.</span>
-          <button class="btn" data-close="addModal">Cancel</button>
-          <button class="btn" id="btn-reschedule-training" style="display:none;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
-          <button class="btn btn-primary" id="btn-save-training">Save Training</button>
         </div>
 
       </div>
@@ -7674,7 +7669,7 @@
           var branchAddPop = document.getElementById("branch-add-pop");
           var branchAddSearch = document.getElementById("branch-add-search");
           var branchAddList = document.getElementById("branch-add-list");
-          var footHint = document.getElementById("nt-foot-hint");
+          var footHint = document.getElementById("nt-head-sub");
           var PAGE = 60, partLimit = PAGE, branchExpanded = false;
           if (!partBody) return;
 
