@@ -13,7 +13,7 @@ def get_branch_manager(sol_id):
 
 @frappe.whitelist()
 def get_template_items(template):
-    return frappe.get_list(
+    return frappe.get_all(
         "Branch Visit Template Item",
         filters={"parent": template},
         fields=["category", "parameter_name", "response_type", "is_mandatory"],
