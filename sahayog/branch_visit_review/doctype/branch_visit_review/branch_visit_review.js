@@ -3,7 +3,6 @@
 
 frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
-		frm.fields_dict.checklist.$wrapper.html("hi ..............................");
 		if (!frm.doc.visited_by) {
 			frm.set_value("visited_by", "3130");
 		}
@@ -52,6 +51,30 @@ frappe.ui.form.on("Branch Visit Review", {
 								}
 							},
 						});
+					}
+				},
+			});
+		}
+	},
+	template(frm) {
+		if (frm.doc.template) {
+			frappe.call({
+				method: "frappe.client.get_list",
+				args: {
+					doctype: "Branch Visit Template Item",
+					filters: { parent: frm.doc.template },
+					fields: ["category", "parameter_name", "response_type", "is_mandatory"],
+					order_by: "idx asc",
+					limit_page_length: 0,
+				},
+				callback: function (r) {
+					if (r.message && r.message.length > 0) {
+						let html = "<table class='table table-bordered'><thead><tr><th>Category</th><th>Parameter</th><th>Response Type</th><th>Mandatory</th></tr></thead><tbody>";
+						r.message.forEach(function (row) {
+							html += "<tr><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + (row.response_type || "") + "</td><td>" + (row.is_mandatory ? "Yes" : "No") + "</td></tr>";
+						});
+						html += "</tbody></table>";
+						frm.fields_dict.checklist.$wrapper.html(html);
 					}
 				},
 			});
