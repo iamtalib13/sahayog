@@ -1726,31 +1726,42 @@
       .nt-details { flex:0 0 30%; min-width:280px; display:flex; flex-direction:column; gap:10px;
         border-left:1px solid var(--border); padding-left:16px; }
       .nt-part-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-        background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
+        background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+        position:sticky; top:0; z-index:6; box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-part-head .nt-kicker { flex:1; font-size:12px; }
       .nt-part-head .sub { font-size:11.5px; color:var(--ink-3); font-weight:500; }
       .nt-total { font-size:12px; font-weight:700; color:var(--accent-ink);
         background:var(--accent-soft); border-radius:999px; padding:3px 12px; white-space:nowrap; }
       .nt-csv-mini { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-      .nt-branch-summary { display:flex; flex-wrap:wrap; gap:6px; align-items:center;
-        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px;
-        padding:8px 10px; font-size:11.5px; color:#15803d; }
-      .nt-branch-summary .bchip { background:#fff; border:1px solid #bbf7d0; border-radius:999px;
-        padding:1px 8px; font-weight:600; white-space:nowrap; }
+      .nt-csv-mini .btn { height:30px; padding:0 12px; font-size:12px; }
+      .nt-branch-add .btn-mini { border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+        border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+      .nt-branch-add .btn-mini:hover { background:var(--surface-2); color:var(--ink-1); }
+      .nt-branch-summary { display:flex; gap:8px; align-items:center;
+        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;
+        padding:8px 12px; font-size:11.5px; color:#15803d;
+        box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-branch-summary .muted { color:var(--ink-3); }
       .nt-branch-summary .bs-label { font-weight:700; white-space:nowrap; }
-      .nt-branch-summary #branch-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; flex:1; min-width:0; }
+      .nt-branch-summary #branch-chips { display:flex; flex-wrap:nowrap; gap:6px; align-items:center; flex:1; min-width:0;
+        overflow:hidden; }
+      .nt-branch-summary #branch-chips.expanded { flex-wrap:wrap; overflow-y:auto; max-height:88px; }
+      .nt-branch-summary .bmore { border:none; background:var(--surface-2); color:var(--accent-ink);
+        border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:700; cursor:pointer;
+        white-space:nowrap; flex-shrink:0; }
+      .nt-branch-summary .bmore:hover { background:var(--accent-soft); }
       .nt-branch-summary .bchip { background:#fff; border:1px solid #bbf7d0; border-radius:999px;
         padding:2px 6px 2px 10px; font-weight:600; white-space:nowrap; display:inline-flex;
-        align-items:center; gap:6px; }
+        align-items:center; gap:6px; flex-shrink:0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-branch-summary .bchip button { border:none; background:var(--surface-2); color:var(--ink-3);
         width:18px; height:18px; border-radius:50%; font-size:12px; line-height:1; cursor:pointer;
         display:grid; place-items:center; padding:0; }
       .nt-branch-summary .bchip button:hover { background:#fecaca; color:#b91c1c; }
       .nt-branch-add { position:relative; flex-shrink:0; }
       .nt-branch-add .btn-mini { border:1px solid #86efac; background:#fff; color:#15803d;
-        border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
-      .nt-branch-add .btn-mini:hover { background:#dcfce7; }
+        border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600;
+        cursor:pointer; white-space:nowrap; }
+      .nt-branch-add .btn-mini:hover { background:#dcfce7; color:#15803d; }
       .nt-branch-add .btn-mini:disabled { opacity:.45; cursor:default; }
       .nt-branch-pop { position:absolute; z-index:300; right:0; top:calc(100% + 6px); width:280px;
         background:var(--surface); border:1px solid var(--border); border-radius:10px;
@@ -1767,17 +1778,18 @@
         display:flex; flex-direction:column; min-height:0; background:var(--surface);
         flex:1 1 0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-ptable-head { display:flex; align-items:center; gap:8px; padding:10px 12px;
-        border-bottom:1px solid var(--border); }
-      #nt-emp-panel .nt-ptable-head { background:linear-gradient(180deg,#eef2ff,#e0e7ff); }
-      #nt-agent-panel .nt-ptable-head { background:linear-gradient(180deg,#fff7ed,#ffedd5); }
+        border-bottom:1px solid var(--border); background:#f8fafc; }
       .nt-ptable-head .t { font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
-      .nt-ptable-head .t .dot { width:8px; height:8px; border-radius:50%; }
-      #nt-emp-panel .t .dot { background:var(--accent); }
-      #nt-agent-panel .t .dot { background:var(--orange); }
       .nt-ptable-head .c { font-size:11.5px; font-weight:700; color:var(--accent-ink);
         background:#fff; border:1px solid var(--border); border-radius:999px; padding:2px 10px; white-space:nowrap; }
-      #nt-agent-panel .nt-ptable-head .c { color:#b45309; }
       .nt-ptable-head .c.none { color:var(--ink-3); }
+      .nt-type-filter { height:30px; border:1px solid var(--border); border-radius:8px; background:var(--surface);
+        font-size:12px; font-weight:600; color:var(--ink-2); padding:0 8px; outline:none; cursor:pointer; flex-shrink:0; }
+      .nt-type-filter:focus { border-color:var(--accent); }
+      .role-tag { display:inline-block; font-size:10px; font-weight:700; border-radius:999px;
+        padding:2px 8px; white-space:nowrap; }
+      .role-tag.emp { background:var(--accent-soft); color:var(--accent-ink); }
+      .role-tag.agent { background:var(--orange-soft); color:#b45309; }
       .nt-ptable-search { margin-left:auto; display:flex; align-items:center; gap:6px;
         border:1px solid var(--border); border-radius:8px; background:var(--surface);
         padding:0 8px; height:30px; min-width:150px; flex:0 1 220px; }
@@ -1797,14 +1809,10 @@
       .nt-ptable tbody td.cell-code { white-space:nowrap; font-weight:600; color:var(--ink-2); }
       .nt-ptable tbody tr { cursor:pointer; }
       .nt-ptable tbody tr:hover { background:var(--surface-2); }
-      #nt-emp-panel tbody tr.sel { background:var(--accent-soft); }
-      #nt-emp-panel tbody tr.sel td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
-      #nt-emp-panel tbody tr.sel:hover { background:#e0e7ff; }
-      #nt-agent-panel tbody tr.sel { background:var(--orange-soft); }
-      #nt-agent-panel tbody tr.sel td:first-child { box-shadow:inset 3px 0 0 var(--orange); }
-      #nt-agent-panel tbody tr.sel:hover { background:#ffedd5; }
+      .nt-ptable tbody tr.sel { background:var(--accent-soft); }
+      .nt-ptable tbody tr.sel td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+      .nt-ptable tbody tr.sel:hover { background:#e0e7ff; }
       .nt-ptable input[type="checkbox"] { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; }
-      #nt-agent-panel input[type="checkbox"] { accent-color:var(--orange); }
       .nt-ptable-empty { padding:16px; font-size:12.5px; color:var(--ink-3); text-align:center; }
       .nt-ptable-foot { display:flex; align-items:center; gap:8px; padding:8px 12px;
         border-top:1px solid var(--border); background:#f8fafc; font-size:11.5px; color:var(--ink-3); }
@@ -1813,16 +1821,13 @@
       .nt-ptable-foot .btn-mini:hover { background:var(--accent-soft); }
       .nt-ptable-foot .btn-mini:disabled { opacity:.45; cursor:default; }
       .nt-details .nt-row { padding:9px 12px; }
+      .nt-details .nt-title { font-size:16px; padding:0; }
       .nt-details .nt-dt-grid { grid-template-columns:1fr 1fr; gap:8px; }
       .nt-details #geo-rows { grid-template-columns:1fr !important; }
       .nt-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
         padding:10px 12px; display:flex; flex-direction:column; gap:8px;
         box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-card > .nt-kicker { margin-bottom:0; }
-      .nt-card.tint-blue { border-left:3px solid var(--accent); }
-      .nt-card.tint-green { border-left:3px solid var(--green); }
-      .nt-card.tint-orange { border-left:3px solid var(--orange); }
-      .nt-card.tint-purple { border-left:3px solid #8b5cf6; }
       .nt-foot-sticky { position:sticky; bottom:0; z-index:5; display:flex; align-items:center; gap:10px;
         padding:12px 20px; border-top:1px solid var(--border); background:rgba(255,255,255,.96);
         backdrop-filter:blur(4px); }
@@ -3871,24 +3876,15 @@
 
         <div class="nt-scroll">
           <div class="nt-body">
-            <!-- Title -->
-            <input
-              class="nt-title"
-              id="new-program"
-              placeholder="Add training title"
-              autocomplete="off"
-            />
-
             <!-- 70/30 split: participants (70%) + details (30%) -->
             <div class="nt-split">
               <div class="nt-part">
                 <div class="nt-part-head">
                   <span class="nt-kicker">Participants</span>
-                  <span class="sub" id="nt-part-sub">Employees + Agents</span>
                   <span class="nt-total" id="nt-total-count">0 selected</span>
                   <span class="nt-csv-mini">
-                    <button type="button" class="btn" id="btn-import-participants-csv-top" style="height:28px;padding:0 12px;font-size:12px;">Import CSV</button>
-                    <button type="button" class="btn" id="btn-download-participant-template-top" style="height:28px;padding:0 12px;font-size:12px;color:var(--ink-3);">Template</button>
+                    <button type="button" class="btn" id="btn-import-participants-csv-top" style="height:30px;padding:0 12px;font-size:12px;">Import CSV</button>
+                    <button type="button" class="btn" id="btn-download-participant-template-top" style="height:30px;padding:0 12px;font-size:12px;color:var(--ink-3);">Template</button>
                   </span>
                 </div>
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
@@ -3903,53 +3899,33 @@
                   </span>
                 </div>
 
-                <!-- Employees: upper half -->
-                <div class="nt-ptable" id="nt-emp-panel">
+                <!-- Unified participants table (Type filter replaces separate tables) -->
+                <div class="nt-ptable" id="nt-part-panel">
                   <div class="nt-ptable-head">
-                    <span class="t"><span class="dot"></span>Employees</span>
-                    <span class="c none" id="emp-selected-count">0 selected</span>
+                    <select class="nt-type-filter" id="nt-part-type" title="Filter by type">
+                      <option value="">All</option>
+                      <option value="Employee">Employees</option>
+                      <option value="Agent">Agents</option>
+                    </select>
+                    <span class="c none" id="emp-selected-count">0 emp</span>
+                    <span class="c none" id="agent-selected-count">0 agents</span>
                     <label class="nt-ptable-search">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                      <input id="nt-emp-search" placeholder="Search employees…" autocomplete="off" />
+                      <input id="nt-part-search" placeholder="Search code, name, branch…" autocomplete="off" />
                     </label>
                   </div>
                   <div class="nt-ptable-scroll">
                     <table>
-                      <colgroup><col style="width:36px" /><col style="width:88px" /><col /><col /><col /></colgroup>
-                      <thead><tr><th></th><th>Code</th><th>Name</th><th>Branch</th><th>Division</th></tr></thead>
-                      <tbody id="emp-table-body"></tbody>
+                      <colgroup><col style="width:36px" /><col style="width:82px" /><col /><col /><col /><col style="width:84px" /></colgroup>
+                      <thead><tr><th></th><th>Code</th><th>Name</th><th>Branch</th><th>Division</th><th>Type</th></tr></thead>
+                      <tbody id="part-table-body"></tbody>
                     </table>
-                    <div class="nt-ptable-empty" id="emp-empty" style="display:none">No employees found</div>
+                    <div class="nt-ptable-empty" id="part-empty" style="display:none">No participants found</div>
                   </div>
                   <div class="nt-ptable-foot">
-                    <span id="emp-showing"></span>
+                    <span id="part-showing"></span>
                     <span style="flex:1"></span>
-                    <button type="button" class="btn-mini" id="emp-load-more">Load more</button>
-                  </div>
-                </div>
-
-                <!-- Agents: lower half -->
-                <div class="nt-ptable" id="nt-agent-panel">
-                  <div class="nt-ptable-head">
-                    <span class="t"><span class="dot"></span>Agents</span>
-                    <span class="c none" id="agent-selected-count">0 selected</span>
-                    <label class="nt-ptable-search">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-                      <input id="nt-agent-search" placeholder="Search agents…" autocomplete="off" />
-                    </label>
-                  </div>
-                  <div class="nt-ptable-scroll">
-                    <table>
-                      <colgroup><col style="width:36px" /><col style="width:88px" /><col /><col /></colgroup>
-                      <thead><tr><th></th><th>Code</th><th>Name</th><th>Branch</th></tr></thead>
-                      <tbody id="agent-table-body"></tbody>
-                    </table>
-                    <div class="nt-ptable-empty" id="agent-empty" style="display:none">No agents found</div>
-                  </div>
-                  <div class="nt-ptable-foot">
-                    <span id="agent-showing"></span>
-                    <span style="flex:1"></span>
-                    <button type="button" class="btn-mini" id="agent-load-more">Load more</button>
+                    <button type="button" class="btn-mini" id="part-load-more">Load more</button>
                   </div>
                 </div>
 
@@ -4057,6 +4033,15 @@
             </div><!-- /nt-part (70% participants) -->
 
             <div class="nt-details">
+            <div class="nt-card">
+              <span class="nt-kicker">Training Title</span>
+              <input
+                class="nt-title"
+                id="new-program"
+                placeholder="Add training title"
+                autocomplete="off"
+              />
+            </div>
             <div class="nt-card tint-blue">
             <!-- Date & Time: labeled fields (30% column) -->
             <div class="nt-kicker-wrap">
@@ -4150,20 +4135,6 @@
               <label class="nt-readonly">
                 <span class="nt-kicker">Trainer</span>
                 <input id="new-trainer" readonly placeholder="Not assigned" />
-              </label>
-            </div>
-            </div>
-
-            <div class="nt-card tint-blue">
-            <!-- Location (30% column; maps to training_location API field) -->
-            <div class="nt-row">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <label class="nt-readonly">
-                <span class="nt-kicker">Location</span>
-                <input class="nt-input" id="new-location" placeholder="e.g. Hall A / Virtual link" autocomplete="off" />
               </label>
             </div>
             </div>
@@ -6049,9 +6020,9 @@
           }
           var locInput = document.getElementById("new-location");
           if (locInput) { locInput.value = ""; locInput.readOnly = false; }
-          var esInput = document.getElementById("nt-emp-search");
+          var esInput = document.getElementById("nt-part-search");
           if (esInput) esInput.value = "";
-          var asInput = document.getElementById("nt-agent-search");
+          var asInput = document.getElementById("nt-part-type");
           if (asInput) asInput.value = "";
           var bsInput = document.getElementById("branch-add-search");
           if (bsInput) bsInput.value = "";
@@ -6157,8 +6128,8 @@
               };
             },
           );
-          var _es = document.getElementById("nt-emp-search"); if (_es) _es.value = "";
-          var _as = document.getElementById("nt-agent-search"); if (_as) _as.value = "";
+          var _es = document.getElementById("nt-part-search"); if (_es) _es.value = "";
+          var _as = document.getElementById("nt-part-type"); if (_as) _as.value = "";
           var _bs = document.getElementById("branch-add-search"); if (_bs) _bs.value = "";
           var _bp = document.getElementById("branch-add-pop"); if (_bp) _bp.style.display = "none";
           dialogFn.renderPChips();
@@ -7684,23 +7655,19 @@
           }
         })();
 
-        /* ---------- 70/30 participant tables (Employees upper / Agents lower) ----------
+        /* ---------- Unified participant table (Type filter) ----------
            Drives the SAME state.selectedParticipants + autoAddBranch + renderPChips
            logic as the legacy popover (kept hidden). No API/field changes. */
         (function () {
-          var empBody = document.getElementById("emp-table-body");
-          var agentBody = document.getElementById("agent-table-body");
-          var empSearch = document.getElementById("nt-emp-search");
-          var agentSearch = document.getElementById("nt-agent-search");
+          var partBody = document.getElementById("part-table-body");
+          var partSearch = document.getElementById("nt-part-search");
+          var partType = document.getElementById("nt-part-type");
           var empCount = document.getElementById("emp-selected-count");
           var agentCount = document.getElementById("agent-selected-count");
           var totalCount = document.getElementById("nt-total-count");
-          var empShowing = document.getElementById("emp-showing");
-          var agentShowing = document.getElementById("agent-showing");
-          var empEmpty = document.getElementById("emp-empty");
-          var agentEmpty = document.getElementById("agent-empty");
-          var empMore = document.getElementById("emp-load-more");
-          var agentMore = document.getElementById("agent-load-more");
+          var partShowing = document.getElementById("part-showing");
+          var partMore = document.getElementById("part-load-more");
+          var partEmpty = document.getElementById("part-empty");
           var branchSummary = document.getElementById("branch-summary");
           var branchChips = document.getElementById("branch-chips");
           var branchCount = document.getElementById("branch-count");
@@ -7709,8 +7676,8 @@
           var branchAddSearch = document.getElementById("branch-add-search");
           var branchAddList = document.getElementById("branch-add-list");
           var footHint = document.getElementById("nt-foot-hint");
-          var PAGE = 50, empLimit = PAGE, agentLimit = PAGE;
-          if (!empBody || !agentBody) return;
+          var PAGE = 60, partLimit = PAGE, branchExpanded = false;
+          if (!partBody) return;
 
           function selKeys() {
             var s = {};
@@ -7792,7 +7759,10 @@
             if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
             else refreshTables();
           }
-          function rowHtml(type, code, name, branch, extra, checked, disabled) {
+          function rowHtml(type, code, name, branch, division, checked, disabled) {
+            var tag = type === "Agent"
+              ? '<span class="role-tag agent">Agent</span>'
+              : '<span class="role-tag emp">Employee</span>';
             return '<tr data-type="' + type + '" data-id="' + esc(code) + '" class="' +
               (checked ? "sel" : "") + '">' +
               '<td><input type="checkbox" data-ck="' + type + ":" + esc(code) + '"' +
@@ -7800,7 +7770,8 @@
               '<td class="cell-code" title="' + esc(code) + '">' + esc(code) + "</td>" +
               '<td class="cell-wrap" title="' + esc(name) + '">' + esc(name) + "</td>" +
               '<td class="cell-wrap" title="' + esc(branch) + '">' + esc(branch) + "</td>" +
-              (extra !== null ? '<td class="cell-wrap" title="' + esc(extra) + '">' + esc(extra) + "</td>" : "") +
+              '<td class="cell-wrap" title="' + esc(division) + '">' + esc(division) + "</td>" +
+              "<td>" + tag + "</td>" +
               "</tr>";
           }
           function updateBranchSummary() {
@@ -7809,17 +7780,29 @@
               "Branches (" + geos.length + ")" : "Branches";
             if (!branchChips) return;
             if (!geos.length) {
+              branchChips.classList.remove("expanded");
               branchChips.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
               return;
             }
+            var MAX = 3;
             var disabled = state.dialogMode === "edit" ? " disabled" : "";
-            branchChips.innerHTML = geos.map(function (g) {
-              return '<span class="bchip" title="' + esc(g.zone || "") +
-                (g.zone || g.region || g.district ? " / " : "") + esc(g.region || "") + '">' +
+            var chip = function (g) {
+              return '<span class="bchip" title="' + esc(branchDisplay(g.branch)) + '">' +
                 esc(branchDisplay(g.branch)) +
                 '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' +
                 disabled + ">&times;</button></span>";
-            }).join("");
+            };
+            // Collapsed: one line (first 3 + more toggle) so 50+ branches never break the UX
+            if (!branchExpanded && geos.length > MAX) {
+              branchChips.classList.remove("expanded");
+              branchChips.innerHTML = geos.slice(0, MAX).map(chip).join("") +
+                '<button type="button" class="bmore" data-branch-toggle>+' +
+                (geos.length - MAX) + " more</button>";
+            } else {
+              branchChips.classList.toggle("expanded", geos.length > MAX);
+              branchChips.innerHTML = geos.map(chip).join("") +
+                (geos.length > MAX ? '<button type="button" class="bmore" data-branch-toggle>Show less</button>' : "");
+            }
             if (branchAddBtn) branchAddBtn.disabled = (state.dialogMode === "edit");
           }
           function renderBranchAddList() {
@@ -7843,52 +7826,51 @@
           }
           function closeBranchAddPop() { if (branchAddPop) branchAddPop.style.display = "none"; }
           function refreshTables(resetPage) {
-            if (resetPage) { empLimit = PAGE; agentLimit = PAGE; }
+            if (resetPage) { partLimit = PAGE; branchExpanded = false; }
             var keys = selKeys();
             var disabled = state.dialogMode === "edit";
-            var qe = (empSearch ? empSearch.value : "").trim().toLowerCase();
-            var qa = (agentSearch ? agentSearch.value : "").trim().toLowerCase();
-            // Selected-first (frozen at top), stable for the rest
-            var emps = (state.allEmployees || []).filter(function (e) { return matchEmp(e, qe); });
-            emps.sort(function (a, b) {
-              var sa = keys["Employee:" + a.name] ? 0 : 1, sb = keys["Employee:" + b.name] ? 0 : 1;
-              return sa - sb;
-            });
-            var agents = (state.allAgents || []).filter(function (a) { return matchAgent(a, qa); });
-            agents.sort(function (a, b) {
-              var sa = keys["Agent:" + a.name] ? 0 : 1, sb = keys["Agent:" + b.name] ? 0 : 1;
+            var q = (partSearch ? partSearch.value : "").trim().toLowerCase();
+            var tf = partType ? partType.value : "";
+            // Unified list: employees + agents, selected frozen at top (stable)
+            var rows = [];
+            if (!tf || tf === "Employee") {
+              (state.allEmployees || []).forEach(function (e) {
+                if (!matchEmp(e, q)) return;
+                rows.push({ type: "Employee", code: e.name, name: e.employee_name || e.name,
+                  branch: empBranch(e), division: empDivision(e) });
+              });
+            }
+            if (!tf || tf === "Agent") {
+              (state.allAgents || []).forEach(function (a) {
+                if (!matchAgent(a, q)) return;
+                rows.push({ type: "Agent", code: a.name, name: a.agent_name || a.name,
+                  branch: agentBranch(a), division: "—" });
+              });
+            }
+            rows.sort(function (a, b) {
+              var sa = keys[a.type + ":" + a.code] ? 0 : 1, sb = keys[b.type + ":" + b.code] ? 0 : 1;
               return sa - sb;
             });
             // Preserve scroll position across re-render (better UX on toggle)
-            var empScroll = empBody.closest ? empBody.closest(".nt-ptable-scroll") : null;
-            var agentScroll = agentBody.closest ? agentBody.closest(".nt-ptable-scroll") : null;
-            var empTop = empScroll ? empScroll.scrollTop : 0;
-            var agentTop = agentScroll ? agentScroll.scrollTop : 0;
-            var empShown = emps.slice(0, empLimit), agentShown = agents.slice(0, agentLimit);
-            empBody.innerHTML = empShown.map(function (e) {
-              return rowHtml("Employee", e.name, e.employee_name || e.name,
-                empBranch(e), empDivision(e), !!keys["Employee:" + e.name], disabled);
+            var scroller = partBody.closest ? partBody.closest(".nt-ptable-scroll") : null;
+            var sTop = scroller ? scroller.scrollTop : 0;
+            var shown = rows.slice(0, partLimit);
+            partBody.innerHTML = shown.map(function (r) {
+              return rowHtml(r.type, r.code, r.name, r.branch, r.division,
+                !!keys[r.type + ":" + r.code], disabled);
             }).join("");
-            agentBody.innerHTML = agentShown.map(function (a) {
-              return rowHtml("Agent", a.name, a.agent_name || a.name,
-                agentBranch(a), null, !!keys["Agent:" + a.name], disabled);
-            }).join("");
-            if (empScroll) empScroll.scrollTop = empTop;
-            if (agentScroll) agentScroll.scrollTop = agentTop;
-            if (empEmpty) empEmpty.style.display = emps.length ? "none" : "block";
-            if (agentEmpty) agentEmpty.style.display = agents.length ? "none" : "block";
-            if (empShowing) empShowing.textContent = "Showing " + empShown.length + " of " + emps.length;
-            if (agentShowing) agentShowing.textContent = "Showing " + agentShown.length + " of " + agents.length;
-            if (empMore) { empMore.disabled = empShown.length >= emps.length; empMore.textContent = empShown.length >= emps.length ? "All shown" : "Load more"; }
-            if (agentMore) { agentMore.disabled = agentShown.length >= agents.length; agentMore.textContent = agentShown.length >= agents.length ? "All shown" : "Load more"; }
+            if (scroller) scroller.scrollTop = sTop;
+            if (partEmpty) partEmpty.style.display = rows.length ? "none" : "block";
+            if (partShowing) partShowing.textContent = "Showing " + shown.length + " of " + rows.length;
+            if (partMore) { partMore.disabled = shown.length >= rows.length; partMore.textContent = shown.length >= rows.length ? "All shown" : "Load more"; }
             var ne = (state.selectedParticipants || []).filter(function (p) { return p.reference_doctype === "Employee"; }).length;
             var na = (state.selectedParticipants || []).filter(function (p) { return p.reference_doctype === "Agent"; }).length;
             if (empCount) {
-              empCount.textContent = ne ? ne + " selected" : "0 selected";
+              empCount.textContent = ne ? ne + " emp" : "0 emp";
               empCount.classList.toggle("none", !ne);
             }
             if (agentCount) {
-              agentCount.textContent = na ? na + " selected" : "0 selected";
+              agentCount.textContent = na ? na + " agents" : "0 agents";
               agentCount.classList.toggle("none", !na);
             }
             if (totalCount) totalCount.textContent = (ne + na) ?
@@ -7908,22 +7890,17 @@
           }
           dialogFn.refreshPartTables = refreshTables;
           dialogFn.refreshBranchSummary = updateBranchSummary;
-          [empBody, agentBody].forEach(function (tb) {
-            tb.addEventListener("click", function (e) {
-              var tr = e.target.closest("tr[data-id]");
-              if (!tr) return;
-              var tds = tr.querySelectorAll("td");
-              var branch = tds.length >= 4 ? tds[3].textContent : "";
-              toggleSel(tr.dataset.type, tr.dataset.id,
-                tr.dataset.type === "Agent" ? (tds[2] ? tds[2].textContent : tr.dataset.id) : (tds[2] ? tds[2].textContent : tr.dataset.id));
-              void branch;
-            });
-            tb.addEventListener("change", function (e) { e.stopPropagation(); });
+          partBody.addEventListener("click", function (e) {
+            var tr = e.target.closest("tr[data-id]");
+            if (!tr) return;
+            var tds = tr.querySelectorAll("td");
+            toggleSel(tr.dataset.type, tr.dataset.id,
+              tds[2] ? tds[2].textContent : tr.dataset.id);
           });
-          if (empSearch) empSearch.addEventListener("input", function () { refreshTables(true); });
-          if (agentSearch) agentSearch.addEventListener("input", function () { refreshTables(true); });
-          if (empMore) empMore.addEventListener("click", function () { empLimit += PAGE; refreshTables(); });
-          if (agentMore) agentMore.addEventListener("click", function () { agentLimit += PAGE; refreshTables(); });
+          partBody.addEventListener("change", function (e) { e.stopPropagation(); });
+          if (partSearch) partSearch.addEventListener("input", function () { refreshTables(true); });
+          if (partType) partType.addEventListener("change", function () { refreshTables(true); });
+          if (partMore) partMore.addEventListener("click", function () { partLimit += PAGE; refreshTables(); });
           // Compact header CSV buttons reuse the same hidden file input / template logic
           var topImport = document.getElementById("btn-import-participants-csv-top");
           var topTpl = document.getElementById("btn-download-participant-template-top");
@@ -7935,8 +7912,10 @@
             var b = document.getElementById("btn-download-participant-template");
             if (b) b.click();
           });
-          // Branch chips: remove branch (same state as legacy geo rows)
+          // Branch chips: expand/collapse + remove branch (same state as legacy geo rows)
           if (branchSummary) branchSummary.addEventListener("click", function (e) {
+            var tgl = e.target.closest("[data-branch-toggle]");
+            if (tgl) { branchExpanded = !branchExpanded; updateBranchSummary(); return; }
             var btn = e.target.closest("[data-rm-branch]");
             if (!btn || btn.disabled) return;
             if (dialogFn.removeBranch && dialogFn.removeBranch(btn.dataset.rmBranch)) {
