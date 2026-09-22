@@ -144,8 +144,22 @@ frappe.ui.form.on("Branch Visit Review", {
 
 						frm.fields_dict.checklist.$wrapper.find(".add-row-btn").on("click", function () {
 							let count = frm.fields_dict.checklist.$wrapper.find("tbody tr").length + 1;
-							let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control' placeholder='Section / Category'></td><td><input type='text' class='form-control' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control' placeholder='Enter the text'></td></tr>";
+							let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-category' placeholder='Section / Category'></td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
 							frm.fields_dict.checklist.$wrapper.find("tbody").append(new_row);
+							let $newRow = frm.fields_dict.checklist.$wrapper.find("tbody tr:last");
+							$newRow.find(".custom-response").on("blur", function () {
+								let category = $newRow.find(".custom-category").val() || "";
+								let parameter = $newRow.find(".custom-parameter").val() || "";
+								let response = $(this).val() || "";
+								if (category || parameter || response) {
+									frm.add_child("responses", {
+										category: category,
+										parameter_name: parameter,
+										response: response,
+									});
+									frm.refresh_field("responses");
+								}
+							});
 						});
 					}
 				},
