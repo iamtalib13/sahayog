@@ -74,8 +74,9 @@ function render_checklist(frm, template) {
 		method: "sahayog.branch_visit_review.api.get_template_items",
 		args: { template: template },
 		callback: function (r) {
+			let checklist_html = "";
 			if (r.message && r.message.length > 0) {
-				let html = "<h4>Review Checklist</h4><table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+				checklist_html += "<table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
 				r.message.forEach(function (row, i) {
 					let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
 					let saved_val = saved ? saved.response : "";
@@ -97,33 +98,102 @@ function render_checklist(frm, template) {
 					} else {
 						response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
 					}
-					html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+					checklist_html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
 				});
 				if (frm.doc.responses && frm.doc.responses.length > 0) {
 					frm.doc.responses.forEach(function (resp) {
 						let exists = r.message.find(function (t) { return t.parameter_name === resp.parameter_name; });
 						if (!exists) {
 							let count = r.message.length + 1;
-							html += "<tr><td>" + count + "</td><td>" + (resp.category || "") + "</td><td>" + (resp.parameter_name || "") + "</td><td><input type='text' class='form-control observation-input' placeholder='Enter the text' value='" + (resp.response || "") + "'></td></tr>";
+							checklist_html += "<tr><td>" + count + "</td><td>" + (resp.category || "") + "</td><td>" + (resp.parameter_name || "") + "</td><td><input type='text' class='form-control observation-input' placeholder='Enter the text' value='" + (resp.response || "") + "'></td></tr>";
 							r.message.push(resp);
 						}
 					});
 				}
-				html += "</tbody></table>";
-				html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
-				frm.fields_dict.checklist.$wrapper.html(html);
+				checklist_html += "</tbody></table>";
+				checklist_html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
+			}
 
-				let template_items = r.message;
+			let action_html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Action</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>";
+			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
+				frm.doc.action_items.forEach(function (item, i) {
+					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action || "") + "</td><td>" + (item.assigned_to || "") + "</td><td>" + (item.due_date || "") + "</td></tr>";
+				});
+			}
+			action_html += "</tbody></table>";
 
-				frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
-					let $this = $(this);
-					let val = parseInt($this.data("value"));
-					let $container = $this.closest(".rating-stars");
-					let param_idx = $container.data("parameter");
-					$container.find(".star").each(function () {
-						let v = $(this).data("value");
-						$(this).css("color", v <= val ? "gold" : "gray");
+			let tabs_html = "<ul class='nav nav-tabs' style='margin-bottom:15px;'>";
+			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
+			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
+			tabs_html += "</ul>";
+			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
+			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
+
+			frm.fields_dict.checklist.$wrapper.html(tabs_html);
+
+			let template_items = r.message || [];
+
+			frm.fields_dict.checklist.$wrapper.find(".tab-review").on("click", function () {
+				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
+				$(this).parent().addClass("active");
+				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").show();
+				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").hide();
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".tab-action").on("click", function () {
+				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
+				$(this).parent().addClass("active");
+				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").hide();
+				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").show();
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
+				let $this = $(this);
+				let val = parseInt($this.data("value"));
+				let $container = $this.closest(".rating-stars");
+				let param_idx = $container.data("parameter");
+				$container.find(".star").each(function () {
+					let v = $(this).data("value");
+					$(this).css("color", v <= val ? "gold" : "gray");
+				});
+				let item = template_items[param_idx];
+				let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+				if (existing) {
+					existing.response = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						response: val,
 					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".yesno-group input[type='radio']").on("change", function () {
+				let $this = $(this);
+				let val = $this.val();
+				let $container = $this.closest(".yesno-group");
+				let param_idx = $container.data("parameter");
+				let item = template_items[param_idx];
+				let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+				if (existing) {
+					existing.response = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						response: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".observation-input").on("blur", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				if (val) {
 					let item = template_items[param_idx];
 					let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
 					if (existing) {
@@ -136,67 +206,28 @@ function render_checklist(frm, template) {
 						});
 					}
 					frm.refresh_field("responses");
-				});
+				}
+			});
 
-				frm.fields_dict.checklist.$wrapper.find(".yesno-group input[type='radio']").on("change", function () {
-					let $this = $(this);
-					let val = $this.val();
-					let $container = $this.closest(".yesno-group");
-					let param_idx = $container.data("parameter");
-					let item = template_items[param_idx];
-					let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
-					if (existing) {
-						existing.response = val;
-					} else {
+			frm.fields_dict.checklist.$wrapper.find(".add-row-btn").on("click", function () {
+				let count = frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody tr").length + 1;
+				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-category' placeholder='Section / Category'></td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
+				frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody").append(new_row);
+				let $newRow = frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody tr:last");
+				$newRow.find(".custom-response").on("blur", function () {
+					let category = $newRow.find(".custom-category").val() || "";
+					let parameter = $newRow.find(".custom-parameter").val() || "";
+					let response = $(this).val() || "";
+					if (category || parameter || response) {
 						frm.add_child("responses", {
-							category: item.category,
-							parameter_name: item.parameter_name,
-							response: val,
+							category: category,
+							parameter_name: parameter,
+							response: response,
 						});
-					}
-					frm.refresh_field("responses");
-				});
-
-				frm.fields_dict.checklist.$wrapper.find(".observation-input").on("blur", function () {
-					let $this = $(this);
-					let param_idx = $this.data("parameter");
-					let val = $this.val();
-					if (val) {
-						let item = template_items[param_idx];
-						let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
-						if (existing) {
-							existing.response = val;
-						} else {
-							frm.add_child("responses", {
-								category: item.category,
-								parameter_name: item.parameter_name,
-								response: val,
-							});
-						}
 						frm.refresh_field("responses");
 					}
 				});
-
-				frm.fields_dict.checklist.$wrapper.find(".add-row-btn").on("click", function () {
-					let count = frm.fields_dict.checklist.$wrapper.find("tbody tr").length + 1;
-					let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-category' placeholder='Section / Category'></td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
-					frm.fields_dict.checklist.$wrapper.find("tbody").append(new_row);
-					let $newRow = frm.fields_dict.checklist.$wrapper.find("tbody tr:last");
-					$newRow.find(".custom-response").on("blur", function () {
-						let category = $newRow.find(".custom-category").val() || "";
-						let parameter = $newRow.find(".custom-parameter").val() || "";
-						let response = $(this).val() || "";
-						if (category || parameter || response) {
-							frm.add_child("responses", {
-								category: category,
-								parameter_name: parameter,
-								response: response,
-							});
-							frm.refresh_field("responses");
-						}
-					});
-				});
-			}
+			});
 		},
 	});
 }
