@@ -33,17 +33,9 @@ frappe.ui.form.on("Branch Visit Review", {
 				},
 				callback: function (r) {
 					if (r.message && r.message.sol_id) {
-						frappe.call({
-							method: "frappe.client.get_list",
-							args: {
-								doctype: "Employee",
-								filters: {
-									sol_id: r.message.sol_id,
-									designation: "BRANCH MANAGER",
-								},
-								fields: ["name", "employee_name", "sol_id", "designation"],
-								limit_page_length: 0,
-							},
+					frappe.call({
+						method: "sahayog.branch_visit_review.api.get_branch_manager",
+						args: { sol_id: r.message.sol_id },
 							callback: function (r) {
 								if (r.message && r.message.length > 0) {
 									console.log("Branch Manager:", r.message);
