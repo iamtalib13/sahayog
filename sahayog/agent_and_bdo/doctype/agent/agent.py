@@ -61,12 +61,14 @@ class Agent(Document):
     @frappe.whitelist()
     def approve_allocation(self) -> Dict[str, Union[bool, str]]:
         """Disabled method."""
-        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+        frappe.throw(
+            _("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
     def reject_allocation(self) -> Dict[str, Union[bool, str]]:
         """Disabled method."""
-        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+        frappe.throw(
+            _("Allocation and Unallocation functionality has been disabled."))
 
     def clear_allocation_fields(self) -> None:
         """Clear all allocation fields on agent without saving."""
@@ -80,14 +82,16 @@ class Agent(Document):
     @frappe.whitelist()
     def unallocate_agent(self) -> Dict[str, Union[bool, str]]:
         """Disabled method."""
-        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+        frappe.throw(
+            _("Allocation and Unallocation functionality has been disabled."))
 
     @frappe.whitelist()
     def allocation_request(
         self, approver_user_id: Optional[str] = None
     ) -> Dict[str, Union[bool, str]]:
         """Disabled method."""
-        frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+        frappe.throw(
+            _("Allocation and Unallocation functionality has been disabled."))
 
 
 @frappe.whitelist()
@@ -95,7 +99,8 @@ def bulk_unallocate(
     agent_names: Union[List[str], str, None] = None
 ) -> Dict[str, Any]:
     """Disabled method."""
-    frappe.throw(_("Allocation and Unallocation functionality has been disabled."))
+    frappe.throw(
+        _("Allocation and Unallocation functionality has been disabled."))
 
 
 @frappe.whitelist()
@@ -160,7 +165,8 @@ def get_branch_managers(branch_code: str) -> List[Dict[str, Any]]:
                 "user_id": ["!=", ""],
                 "designation": ["in", allowed_designations],
             },
-            fields=["name", "employee_name", "user_id", "designation", "sol_id"],
+            fields=["name", "employee_name",
+                    "user_id", "designation", "sol_id"],
             order_by="employee_name",
         )
 
@@ -330,7 +336,8 @@ def evaluate_agent_status_from_json(comm_dict: dict) -> str:
     for yr, mth in recent_4_months:
         if yr in comm_dict and isinstance(comm_dict[yr], dict):
             if mth in comm_dict[yr] and isinstance(comm_dict[yr][mth], dict):
-                mth_comm = float(comm_dict[yr][mth].get("total_commission", 0.0) or 0.0)
+                mth_comm = float(comm_dict[yr][mth].get(
+                    "total_commission", 0.0) or 0.0)
                 total_recent_commission += mth_comm
 
     return "Active" if total_recent_commission > 0 else "Inactive"
@@ -342,6 +349,7 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
     Scans tabSS and VS Report for the specified agent_code (rm_id).
     Builds and saves structured JSON hierarchy with Year-wise and Month-wise total commission,
     and updates agent_status (Active / Inactive) based on 4-month commission window.
+    Skips update if current agent_status in DB is 'Closed'.
     """
     if not agent_code:
         frappe.throw(_("Agent Code is required."))
@@ -351,6 +359,17 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
         {"agent_code": agent_code},
         "name"
     ) or agent_code
+
+    # Fetch current agent_status from DB
+    current_agent_status = frappe.db.get_value(
+        "Agent", agent_doc_name, "agent_status")
+
+    # If already Closed, skip commission & status update
+    if current_agent_status == "Closed":
+        return {
+            "status": "skipped",
+            "message": _("Agent {0} is Closed. Commission JSON & status update skipped.").format(agent_code),
+        }
 
     records = frappe.db.sql("""
         SELECT 
@@ -383,8 +402,12 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
             }
 
         result[year_str][month_str][report_type] = round(comm_val, 2)
-        result[year_str][month_str]["total_commission"] = round(result[year_str][month_str]["total_commission"] + comm_val, 2)
-        result[year_str]["total_commission"] = round(result[year_str]["total_commission"] + comm_val, 2)
+        result[year_str][month_str]["total_commission"] = round(
+            result[year_str][month_str]["total_commission"] + comm_val, 2
+        )
+        result[year_str]["total_commission"] = round(
+            result[year_str]["total_commission"] + comm_val, 2
+        )
         grand_total = round(grand_total + comm_val, 2)
 
     result["grand_total_commission"] = grand_total
@@ -408,7 +431,9 @@ def fetch_agent_commission(agent_code: str) -> Dict[str, Any]:
         "data": result,
         "agent_status": agent_status,
         "commission_json": commission_json_str,
-        "message": _("Commission JSON & Status ({0}) updated for Agent {1}").format(agent_status, agent_code),
+        "message": _("Commission JSON & Status ({0}) updated for Agent {1}").format(
+            agent_status, agent_code
+        ),
     }
 
 
@@ -418,7 +443,8 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
     Bulk Update of commission_json and agent_status for ALL agents in tabAgent.
     1. Single Grouped Raw SQL Scan from tabSS and VS Report for all agents.
     2. Evaluates agent_status (Active / Inactive) for 4-month window (current + 3 prior months).
-    3. Bulk updates tabAgent using direct SQL.
+    3. Skips agents whose current agent_status = 'Closed'.
+    4. Bulk updates tabAgent using direct SQL for non-Closed agents.
     """
     records = frappe.db.sql("""
         SELECT 
@@ -451,7 +477,8 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
         if month_str not in agent_data[rm_id][year_str]:
             agent_data[rm_id][year_str][month_str] = {"total_commission": 0.0}
 
-        agent_data[rm_id][year_str][month_str][report_type] = round(comm_val, 2)
+        agent_data[rm_id][year_str][month_str][report_type] = round(
+            comm_val, 2)
         agent_data[rm_id][year_str][month_str]["total_commission"] = round(
             agent_data[rm_id][year_str][month_str]["total_commission"] + comm_val, 2
         )
@@ -462,14 +489,27 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
             agent_data[rm_id]["grand_total_commission"] + comm_val, 2
         )
 
-    # Fetch all agents in tabAgent to update both active and inactive agents
-    all_agents = frappe.db.sql_list("SELECT name FROM `tabAgent` WHERE docstatus < 2")
+    # Fetch all agents with their current agent_status
+    all_agents = frappe.db.sql("""
+        SELECT name, agent_status
+        FROM `tabAgent`
+        WHERE docstatus < 2
+    """, as_dict=True)
 
     now_time = now_datetime()
     active_count = 0
     inactive_count = 0
+    skipped_count = 0
 
-    for agent_name in all_agents:
+    for agent_row in all_agents:
+        agent_name = agent_row["name"]
+        current_status = agent_row["agent_status"]
+
+        # Skip if agent is Closed
+        if current_status == "Closed":
+            skipped_count += 1
+            continue
+
         comm_dict = agent_data.get(agent_name, {})
         agent_status = evaluate_agent_status_from_json(comm_dict)
         comm_json_str = frappe.as_json(comm_dict) if comm_dict else None
@@ -487,14 +527,18 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
 
     frappe.db.commit()
 
-    msg = _("Successfully updated commission JSON & status for {0} agents ({1} Active, {2} Inactive).").format(
-        len(all_agents), active_count, inactive_count
-    )
+    msg = _(
+        "Successfully updated commission JSON & status for {0} agents "
+        "({1} Active, {2} Inactive, {3} Closed skipped)."
+    ).format(len(all_agents), active_count, inactive_count, skipped_count)
+
     frappe.logger("scheduler").info(msg)
+
     return {
         "status": "success",
-        "processed": len(all_agents),
+        "processed": active_count + inactive_count,
+        "skipped_closed": skipped_count,
         "active_count": active_count,
         "inactive_count": inactive_count,
-        "message": msg
+        "message": msg,
     }

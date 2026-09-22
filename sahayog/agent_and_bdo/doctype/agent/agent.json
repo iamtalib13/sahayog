@@ -128,7 +128,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Agent Status",
-   "options": "\nInactive\nActive",
+   "options": "\nInactive\nActive\nClosed",
    "read_only_depends_on": "eval:!frappe.user.has_role('MIS Admin')",
    "search_index": 1
   },
@@ -250,7 +250,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-16 16:51:22.556886",
+ "modified": "2026-09-19 13:08:57.208707",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
