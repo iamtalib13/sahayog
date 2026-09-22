@@ -33,9 +33,9 @@ frappe.ui.form.on("Branch Visit Review", {
 				},
 				callback: function (r) {
 					if (r.message && r.message.sol_id) {
-					frappe.call({
-						method: "sahayog.branch_visit_review.api.get_branch_manager",
-						args: { sol_id: r.message.sol_id },
+						frappe.call({
+							method: "sahayog.branch_visit_review.api.get_branch_manager",
+							args: { sol_id: r.message.sol_id },
 							callback: function (r) {
 								if (r.message && r.message.length > 0) {
 									console.log("Branch Manager:", r.message);
@@ -75,6 +75,7 @@ frappe.ui.form.on("Branch Visit Review", {
 							html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
 						});
 						html += "</tbody></table>";
+						html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
 						frm.fields_dict.checklist.$wrapper.html(html);
 
 						let template_items = r.message;
@@ -139,6 +140,12 @@ frappe.ui.form.on("Branch Visit Review", {
 								}
 								frm.refresh_field("responses");
 							}
+						});
+
+						frm.fields_dict.checklist.$wrapper.find(".add-row-btn").on("click", function () {
+							let count = frm.fields_dict.checklist.$wrapper.find("tbody tr").length + 1;
+							let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control' placeholder='Section / Category'></td><td><input type='text' class='form-control' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control' placeholder='Enter the text'></td></tr>";
+							frm.fields_dict.checklist.$wrapper.find("tbody").append(new_row);
 						});
 					}
 				},
