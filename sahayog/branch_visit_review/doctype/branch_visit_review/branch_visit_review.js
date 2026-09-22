@@ -86,13 +86,12 @@ frappe.ui.form.on("Branch Visit Review", {
 							let item = template_items[param_idx];
 							let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
 							if (existing) {
-								existing.rating_score = val;
+								existing.response = val;
 							} else {
 								frm.add_child("responses", {
 									category: item.category,
 									parameter_name: item.parameter_name,
-									response: item.response_type,
-									rating_score: val,
+									response: val,
 								});
 							}
 							frm.refresh_field("responses");
@@ -106,13 +105,12 @@ frappe.ui.form.on("Branch Visit Review", {
 								let item = template_items[param_idx];
 								let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
 								if (existing) {
-									existing.observation = val;
+									existing.response = val;
 								} else {
-								frm.add_child("responses", {
-									category: item.category,
-									parameter_name: item.parameter_name,
-									response: item.response_type,
-										observation: val,
+									frm.add_child("responses", {
+										category: item.category,
+										parameter_name: item.parameter_name,
+										response: val,
 									});
 								}
 								frm.refresh_field("responses");
