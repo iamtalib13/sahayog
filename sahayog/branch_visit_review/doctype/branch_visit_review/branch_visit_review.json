@@ -68,10 +68,10 @@
    "label": "Visit Date"
   },
   {
-   "fieldname": "visited_by",
-   "fieldtype": "Link",
-   "label": "Visited By",
-   "options": "User"
+    "fieldname": "visited_by",
+    "fieldtype": "Link",
+    "label": "Visited By",
+    "options": "User"
   },
   {
    "fieldname": "branch_head",
