@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
+		frm.fields_dict.checklist.$wrapper.html("hi ..............................");
 		if (!frm.doc.visited_by) {
 			frm.set_value("visited_by", "3130");
 		}
