@@ -25,8 +25,9 @@ frappe.ui.form.on("Branch Visit Review", {
 								limit_page_length: 0,
 							},
 							callback: function (r) {
-								if (r.message) {
+								if (r.message && r.message.length > 0) {
 									console.log("Branch Manager:", r.message);
+									frm.set_value("branch_head", r.message[0].employee_name + "(" + r.message[0].name + ")");
 								}
 							},
 						});
