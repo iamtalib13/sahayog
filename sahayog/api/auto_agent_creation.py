@@ -274,7 +274,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
         conn = db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        # New query with STATUS column
+        # New query with CIF, accounts, PAN, security account, employee details, STATUS
         sql = """
         SELECT
             g.cif_id,
@@ -286,14 +286,19 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
             d.auth_id,
             d.operacc,
             d.savingacc,
+            -- Employee Details
+            g2.emp_id AS "EMP ID",
+            g2.emp_name AS "EMP NAME",
+            g2.sol_id AS "SOL ID",
+            g2.emp_stat AS "EMP STATUS",
+            CASE
+                WHEN g2.emp_stat = '03' THEN 'CLOSED IN FINACLE'
+                ELSE 'ACTIVE IN FINACLE'
+            END AS "STATUS",
             g.foracid AS "security_account",
             e.docdescr,
             e.referencenumber,
-            s.sol_desc,
-            CASE
-                WHEN d.del_flg = 'Y' OR g_saving.acct_cls_flg = 'Y' THEN 'CLOSED IN FINACLE'
-                ELSE 'ACTIVE IN FINACLE'
-            END AS "STATUS"
+            s.sol_desc
         FROM custom.dsaauth d
         JOIN tbaadm.sol s
             ON d.user_sol_id = s.sol_id
@@ -301,6 +306,9 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
         JOIN tbaadm.gam g_saving
             ON g_saving.foracid = d.savingacc
             AND g_saving.acct_cls_flg = 'N'
+        -- Agent Employee Master
+        LEFT JOIN tbaadm.get g2
+            ON d.user_id = g2.emp_id    
         -- Security Account
         LEFT JOIN tbaadm.gam g
             ON g.cif_id = g_saving.cif_id
@@ -311,6 +319,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
             AND e.docdescr LIKE 'PAN%'
         WHERE
             d.ent_cre_flg = 'Y'
+            AND d.del_flg = 'N'
             AND (
                 d.user_id LIKE 'RDDSA%'
                 OR d.user_id LIKE 'DDDSA%'
@@ -401,7 +410,7 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
                     agent_values.get("agent_saving_account"),
                     agent_values.get("pan_card"),
                     agent_values.get("agent_security_account"),
-                    agent_values.get("agent_status"),
+                    agent_values.get("agent_status"),  # new field
                 )
             )
 
@@ -414,8 +423,9 @@ def sync_all_agents_overall(user: Optional[str] = None) -> Dict[str, Any]:
                 description=_("Upserting {0} agents directly into MariaDB...").format(
                     processed_count),
             )
-            execute_bulk_upsert_with_new_fields_and_status(
-                records_to_upsert, chunk_size=5000)
+            execute_bulk_upsert_with_new_fields_and_agent_status(
+                records_to_upsert, chunk_size=5000
+            )
 
         frappe.db.commit()
 
@@ -590,14 +600,15 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     pan_card = agent.get("referencenumber")
     agent_security_account = agent.get("security_account")
 
-    # agent_status logic based on STATUS column
+    # agent_status from "STATUS" column
     finacle_status = agent.get("STATUS") or ""
     if finacle_status == "CLOSED IN FINACLE":
         agent_status = "Closed"
     elif finacle_status == "ACTIVE IN FINACLE":
         agent_status = "Active"
     else:
-        agent_status = None
+        # Fallback; you can default to Active or leave None depending on your requirement
+        agent_status = "Active"
 
     return {
         "creation_date": creation_date,
@@ -618,7 +629,9 @@ def prepare_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def execute_bulk_upsert_with_new_fields_and_status(records: list, chunk_size: int = 5000) -> None:
+def execute_bulk_upsert_with_new_fields_and_agent_status(
+    records: list, chunk_size: int = 5000
+) -> None:
     """
     Direct DB-to-DB bulk UPSERT into tabAgent table with new fields:
     cif, agent_operative_account, agent_saving_account, pan_card, agent_security_account, agent_status.
@@ -627,7 +640,7 @@ def execute_bulk_upsert_with_new_fields_and_status(records: list, chunk_size: in
         return
 
     db_type = getattr(frappe.db, "db_type", "mariadb")
-    # 22 original + 1 new (agent_status) = 23 columns
+    # 22 previous + 1 new = 23 columns
     row_placeholder = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     for i in range(0, len(records), chunk_size):
@@ -641,8 +654,8 @@ def execute_bulk_upsert_with_new_fields_and_status(records: list, chunk_size: in
                 `name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`,
                 `agent_code`, `agent_name`, `branch_code`, `branch_name`, `role`,
                 `auth_id`, `employee`, `status`, `agent_type`, `creation_date`,
-                `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`, `agent_security_account`,
-                `agent_status`
+                `cif`, `agent_operative_account`, `agent_saving_account`, `pan_card`,
+                `agent_security_account`, `agent_status`
             ) VALUES {placeholders}
             ON DUPLICATE KEY UPDATE
                 `modified` = VALUES(`modified`),
@@ -670,8 +683,8 @@ def execute_bulk_upsert_with_new_fields_and_status(records: list, chunk_size: in
                 "name", "creation", "modified", "modified_by", "owner", "docstatus", "idx",
                 "agent_code", "agent_name", "branch_code", "branch_name", "role",
                 "auth_id", "employee", "status", "agent_type", "creation_date",
-                "cif", "agent_operative_account", "agent_saving_account", "pan_card", "agent_security_account",
-                "agent_status"
+                "cif", "agent_operative_account", "agent_saving_account", "pan_card",
+                "agent_security_account", "agent_status"
             ) VALUES {placeholders}
             ON CONFLICT ("name") DO UPDATE SET
                 "modified" = EXCLUDED."modified",
