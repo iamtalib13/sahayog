@@ -9,3 +9,14 @@ def get_branch_manager(sol_id):
         fields=["name", "employee_name", "sol_id", "designation"],
         limit_page_length=0,
     )
+
+
+@frappe.whitelist()
+def get_template_items(template):
+    return frappe.get_list(
+        "Branch Visit Template Item",
+        filters={"parent": template},
+        fields=["category", "parameter_name", "response_type", "is_mandatory"],
+        order_by="idx asc",
+        limit_page_length=0,
+    )
