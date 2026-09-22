@@ -71,7 +71,7 @@
     "fieldname": "visited_by",
     "fieldtype": "Link",
     "label": "Visited By",
-    "options": "Employee"
+    "options": "User"
   },
   {
    "fieldname": "branch_head",
