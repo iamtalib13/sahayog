@@ -198,13 +198,16 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Action</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>";
+			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action || "") + "</td><td>" + (item.assigned_to || "") + "</td><td>" + (item.due_date || "") + "</td></tr>";
 				});
 			}
+			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
+			action_html += "<tr><td>" + action_count + "</td><td><input type='text' class='form-control action-input' data-field='action' placeholder='Enter action'></td><td><input type='text' class='form-control action-input' data-field='assigned_to' placeholder='Enter assigned to'></td><td><input type='date' class='form-control action-input' data-field='due_date'></td></tr>";
 			action_html += "</tbody></table>";
+			action_html += "<button class='btn btn-sm btn-default add-action-row' style='margin-top:5px;'>Add</button>";
 
 			let tabs_html = "<ul class='nav nav-tabs' style='margin-bottom:15px;'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
@@ -229,6 +232,35 @@ function render_checklist(frm, template) {
 				$(this).parent().addClass("active");
 				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").hide();
 				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").show();
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur", function () {
+				let $row = $(this).closest("tr");
+				let action = $row.find("[data-field='action']").val() || "";
+				let assigned_to = $row.find("[data-field='assigned_to']").val() || "";
+				let due_date = $row.find("[data-field='due_date']").val() || "";
+				if (action) {
+					let idx = $row.index();
+					if (frm.doc.action_items && frm.doc.action_items[idx]) {
+						frm.doc.action_items[idx].action = action;
+						frm.doc.action_items[idx].assigned_to = assigned_to;
+						frm.doc.action_items[idx].due_date = due_date;
+					} else {
+						frm.add_child("action_items", {
+							action: action,
+							assigned_to: assigned_to,
+							due_date: due_date,
+						});
+					}
+					frm.refresh_field("action_items");
+				}
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".add-action-row").on("click", function () {
+				let $table = frm.fields_dict.checklist.$wrapper.find(".action-items-table");
+				let count = $table.find("tbody tr").length + 1;
+				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control action-input' data-field='action' placeholder='Enter action'></td><td><input type='text' class='form-control action-input' data-field='assigned_to' placeholder='Enter assigned to'></td><td><input type='date' class='form-control action-input' data-field='due_date'></td></tr>";
+				$table.find("tbody").append(new_row);
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
