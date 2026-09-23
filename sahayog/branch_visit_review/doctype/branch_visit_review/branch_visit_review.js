@@ -69,6 +69,65 @@ frappe.ui.form.on("Branch Visit Review", {
 	},
 });
 
+function bindCustomEvents(frm, $row, cat, $area) {
+	$area.find(".star").on("click", function () {
+		let val = parseInt($(this).data("value"));
+		$area.find(".star").each(function () {
+			$(this).css("color", parseInt($(this).data("value")) <= val ? "gold" : "gray");
+		});
+		let parameter = $row.find(".custom-parameter").val() || "";
+		if (parameter) {
+			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
+			if (existing) {
+				existing.response = val;
+			} else {
+				frm.add_child("responses", {
+					category: cat.replace(/_/g, " "),
+					parameter_name: parameter,
+					response: val,
+				});
+			}
+			frm.refresh_field("responses");
+		}
+	});
+
+	$area.find("input[type='radio']").on("change", function () {
+		let val = $(this).val();
+		let parameter = $row.find(".custom-parameter").val() || "";
+		if (parameter) {
+			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
+			if (existing) {
+				existing.response = val;
+			} else {
+				frm.add_child("responses", {
+					category: cat.replace(/_/g, " "),
+					parameter_name: parameter,
+					response: val,
+				});
+			}
+			frm.refresh_field("responses");
+		}
+	});
+
+	$area.find(".custom-response-input").on("blur", function () {
+		let val = $(this).val();
+		let parameter = $row.find(".custom-parameter").val() || "";
+		if (val && parameter) {
+			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
+			if (existing) {
+				existing.response = val;
+			} else {
+				frm.add_child("responses", {
+					category: cat.replace(/_/g, " "),
+					parameter_name: parameter,
+					response: val,
+				});
+			}
+			frm.refresh_field("responses");
+		}
+	});
+}
+
 function render_checklist(frm, template) {
 	frappe.call({
 		method: "sahayog.branch_visit_review.api.get_template_items",
@@ -238,20 +297,42 @@ function render_checklist(frm, template) {
 				let cat = $(this).data("category");
 				let $table = frm.fields_dict.checklist.$wrapper.find(".category-table[data-category='" + cat + "']");
 				let count = $table.find("tbody tr").length + 1;
-				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
+				let custom_idx = "custom_" + cat + "_" + count;
+				let select_html = "<select class='form-control custom-type-select' data-custom='" + custom_idx + "'>";
+				select_html += "<option value=''>Select response type</option>";
+				select_html += "<option value='Rating (1 to 5)'>Stars</option>";
+				select_html += "<option value='Yes / No'>Y/N</option>";
+				select_html += "<option value='Text'>Text</option>";
+				select_html += "</select>";
+				let response_html = "<div class='custom-response-area' data-custom='" + custom_idx + "'>" + select_html + "</div>";
+				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td>" + response_html + "</td></tr>";
 				$table.find("tbody").append(new_row);
 				let $newRow = $table.find("tbody tr:last");
-				$newRow.find(".custom-response").on("blur", function () {
-					let parameter = $newRow.find(".custom-parameter").val() || "";
-					let response = $(this).val() || "";
-					if (parameter || response) {
-						frm.add_child("responses", {
-							category: cat.replace(/_/g, " "),
-							parameter_name: parameter,
-							response: response,
-						});
-						frm.refresh_field("responses");
+
+				$newRow.find(".custom-type-select").on("change", function () {
+					let val = $(this).val();
+					let $area = $(this).closest(".custom-response-area");
+					let cidx = $(this).data("custom");
+					if (val === "Rating (1 to 5)") {
+						let stars = '<span class="rating-stars" data-custom="' + cidx + '">';
+						for (let s = 1; s <= 5; s++) {
+							stars += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:gray;">&#9733;</span>';
+						}
+						stars += '</span>';
+						$area.html(stars);
+					} else if (val === "Yes / No") {
+						let yn = '<span class="yesno-group" data-custom="' + cidx + '">';
+						yn += '<label style="margin-right:10px;"><input type="radio" name="custom_yn_' + cidx + '" value="Yes"> Yes</label>';
+						yn += '<label><input type="radio" name="custom_yn_' + cidx + '" value="No"> No</label>';
+						yn += '</span>';
+						$area.html(yn);
+					} else if (val === "Text") {
+						$area.html('<input type="text" class="form-control custom-response-input" placeholder="Enter the text">');
+					} else {
+						$area.html(select_html);
+						$area.find(".custom-type-select").data("custom", cidx);
 					}
+					bindCustomEvents(frm, $newRow, cat, $area);
 				});
 			});
 		},
