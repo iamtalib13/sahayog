@@ -198,14 +198,21 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>";
+			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action Item</th><th>Responsible</th><th>Priority</th><th>Target Date</th><th>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
-					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action || "") + "</td><td>" + (item.assigned_to || "") + "</td><td>" + (item.due_date || "") + "</td></tr>";
+					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td>" + (item.owner || "") + "</td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
-			action_html += "<tr><td>" + action_count + "</td><td><input type='text' class='form-control action-input' data-field='action' placeholder='Enter action'></td><td><input type='text' class='form-control action-input' data-field='assigned_to' placeholder='Enter assigned to'></td><td><input type='date' class='form-control action-input' data-field='due_date'></td></tr>";
+			action_html += "<tr><td>" + action_count + "</td>";
+			action_html += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
+			action_html += "<td><input type='text' class='form-control action-input' data-field='owner' placeholder='Enter responsible'></td>";
+			action_html += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
+			action_html += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
+			action_html += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
+			action_html += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
+			action_html += "</tr>";
 			action_html += "</tbody></table>";
 			action_html += "<button class='btn btn-sm btn-default add-action-row' style='margin-top:5px;'>Add</button>";
 
@@ -234,22 +241,32 @@ function render_checklist(frm, template) {
 				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").show();
 			});
 
-			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur", function () {
+			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur change", function () {
 				let $row = $(this).closest("tr");
-				let action = $row.find("[data-field='action']").val() || "";
-				let assigned_to = $row.find("[data-field='assigned_to']").val() || "";
-				let due_date = $row.find("[data-field='due_date']").val() || "";
-				if (action) {
+				let action_item = $row.find("[data-field='action_item']").val() || "";
+				let owner = $row.find("[data-field='owner']").val() || "";
+				let priority = $row.find("[data-field='priority']").val() || "Medium";
+				let tat = $row.find("[data-field='tat']").val() || "";
+				let status = $row.find("[data-field='status']").val() || "Open";
+				let resolution_notes = $row.find("[data-field='resolution_notes']").val() || "";
+				if (action_item) {
 					let idx = $row.index();
+					let last_row_idx = $row.closest("tbody").find("tr").length - 1;
 					if (frm.doc.action_items && frm.doc.action_items[idx]) {
-						frm.doc.action_items[idx].action = action;
-						frm.doc.action_items[idx].assigned_to = assigned_to;
-						frm.doc.action_items[idx].due_date = due_date;
+						frm.doc.action_items[idx].action_item = action_item;
+						frm.doc.action_items[idx].owner = owner;
+						frm.doc.action_items[idx].priority = priority;
+						frm.doc.action_items[idx].tat = tat;
+						frm.doc.action_items[idx].status = status;
+						frm.doc.action_items[idx].resolution_notes = resolution_notes;
 					} else {
 						frm.add_child("action_items", {
-							action: action,
-							assigned_to: assigned_to,
-							due_date: due_date,
+							action_item: action_item,
+							owner: owner,
+							priority: priority,
+							tat: tat,
+							status: status,
+							resolution_notes: resolution_notes,
 						});
 					}
 					frm.refresh_field("action_items");
@@ -259,7 +276,16 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.find(".add-action-row").on("click", function () {
 				let $table = frm.fields_dict.checklist.$wrapper.find(".action-items-table");
 				let count = $table.find("tbody tr").length + 1;
-				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control action-input' data-field='action' placeholder='Enter action'></td><td><input type='text' class='form-control action-input' data-field='assigned_to' placeholder='Enter assigned to'></td><td><input type='date' class='form-control action-input' data-field='due_date'></td></tr>";
+				let new_row = "<tr><td>" + count + "</td>";
+				new_row += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
+				new_row += "<td><input type='text' class='form-control action-input' data-field='owner' placeholder='Enter responsible'></td>";
+				new_row += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
+				new_row += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
+				new_row += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
+				new_row += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
+				new_row += "</tr>";
+				$table.find("tbody").append(new_row);
+			});
 				$table.find("tbody").append(new_row);
 			});
 
