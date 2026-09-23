@@ -286,8 +286,6 @@ function render_checklist(frm, template) {
 				new_row += "</tr>";
 				$table.find("tbody").append(new_row);
 			});
-				$table.find("tbody").append(new_row);
-			});
 
 			frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
 				let $this = $(this);
