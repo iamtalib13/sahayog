@@ -20,3 +20,13 @@ def get_template_items(template):
         order_by="idx asc",
         limit_page_length=0,
     )
+
+
+@frappe.whitelist()
+def get_employee_list():
+    return frappe.get_all(
+        "Employee",
+        fields=["name", "employee_name"],
+        order_by="employee_name asc",
+        limit_page_length=0,
+    )

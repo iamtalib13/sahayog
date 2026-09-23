@@ -130,11 +130,20 @@ function bindCustomEvents(frm, $row, cat, $area) {
 
 function render_checklist(frm, template) {
 	frappe.call({
-		method: "sahayog.branch_visit_review.api.get_template_items",
-		args: { template: template },
-		callback: function (r) {
-			let all_items = r.message || [];
-			let checklist_html = "";
+		method: "sahayog.branch_visit_review.api.get_employee_list",
+		callback: function (emp_r) {
+			let employees = emp_r.message || [];
+			let employee_options = "";
+			employees.forEach(function (emp) {
+				let label = emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name;
+				employee_options += "<option value='" + emp.name + "'>" + label + "</option>";
+			});
+			frappe.call({
+				method: "sahayog.branch_visit_review.api.get_template_items",
+				args: { template: template },
+				callback: function (r) {
+					let all_items = r.message || [];
+					let checklist_html = "";
 
 			if (all_items.length > 0) {
 				let grouped = {};
@@ -207,7 +216,7 @@ function render_checklist(frm, template) {
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
 			action_html += "<tr><td>" + action_count + "</td>";
 			action_html += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
-			action_html += "<td><input type='text' class='form-control action-input' data-field='owner' placeholder='Enter responsible'></td>";
+			action_html += "<td><select class='form-control action-input' data-field='owner'><option value=''>Select</option>" + employee_options + "</select></td>";
 			action_html += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
 			action_html += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 			action_html += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
@@ -278,7 +287,7 @@ function render_checklist(frm, template) {
 				let count = $table.find("tbody tr").length + 1;
 				let new_row = "<tr><td>" + count + "</td>";
 				new_row += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
-				new_row += "<td><input type='text' class='form-control action-input' data-field='owner' placeholder='Enter responsible'></td>";
+				new_row += "<td><select class='form-control action-input' data-field='owner'><option value=''>Select</option>" + employee_options + "</select></td>";
 				new_row += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
 				new_row += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 				new_row += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
@@ -391,6 +400,8 @@ function render_checklist(frm, template) {
 					bindCustomEvents(frm, $newRow, cat, $area);
 				});
 			});
+		},
+	});
 		},
 	});
 }
