@@ -74,43 +74,68 @@ function render_checklist(frm, template) {
 		method: "sahayog.branch_visit_review.api.get_template_items",
 		args: { template: template },
 		callback: function (r) {
+			let all_items = r.message || [];
 			let checklist_html = "";
-			if (r.message && r.message.length > 0) {
-				checklist_html += "<table class='table table-bordered'><thead><tr><th>No.</th><th>Section / Category</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
-				r.message.forEach(function (row, i) {
-					let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
-					let saved_val = saved ? saved.response : "";
-					let response_html = "";
-					if (row.response_type === "Rating (1 to 5)") {
-						response_html = '<span class="rating-stars" data-parameter="' + i + '">';
-						for (let s = 1; s <= 5; s++) {
-							let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
-							response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
-						}
-						response_html += '</span>';
-					} else if (row.response_type === "Yes / No") {
-						let yes_checked = saved_val === "Yes" ? "checked" : "";
-						let no_checked = saved_val === "No" ? "checked" : "";
-						response_html = '<span class="yesno-group" data-parameter="' + i + '">';
-						response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
-						response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
-						response_html += '</span>';
-					} else {
-						response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
-					}
-					checklist_html += "<tr><td>" + (i + 1) + "</td><td>" + (row.category || "") + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+
+			if (all_items.length > 0) {
+				let grouped = {};
+				all_items.forEach(function (row, i) {
+					let cat = row.category || "Uncategorized";
+					if (!grouped[cat]) grouped[cat] = [];
+					row._idx = i;
+					grouped[cat].push(row);
 				});
-				if (frm.doc.responses && frm.doc.responses.length > 0) {
-					frm.doc.responses.forEach(function (resp) {
-						let exists = r.message.find(function (t) { return t.parameter_name === resp.parameter_name; });
-						if (!exists) {
-							let count = r.message.length + 1;
-							checklist_html += "<tr><td>" + count + "</td><td>" + (resp.category || "") + "</td><td>" + (resp.parameter_name || "") + "</td><td><input type='text' class='form-control observation-input' placeholder='Enter the text' value='" + (resp.response || "") + "'></td></tr>";
-							r.message.push(resp);
+
+				let sr = 1;
+				Object.keys(grouped).forEach(function (cat) {
+					checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>" + cat + "</b></h5>";
+					checklist_html += "<table class='table table-bordered'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+					grouped[cat].forEach(function (row) {
+						let i = row._idx;
+						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
+						let saved_val = saved ? saved.response : "";
+						let response_html = "";
+						if (row.response_type === "Rating (1 to 5)") {
+							response_html = '<span class="rating-stars" data-parameter="' + i + '">';
+							for (let s = 1; s <= 5; s++) {
+								let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
+								response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
+							}
+							response_html += '</span>';
+						} else if (row.response_type === "Yes / No") {
+							let yes_checked = saved_val === "Yes" ? "checked" : "";
+							let no_checked = saved_val === "No" ? "checked" : "";
+							response_html = '<span class="yesno-group" data-parameter="' + i + '">';
+							response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
+							response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
+							response_html += '</span>';
+						} else {
+							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
 						}
+						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+						sr++;
 					});
+					checklist_html += "</tbody></table>";
+				});
+
+				if (frm.doc.responses && frm.doc.responses.length > 0) {
+					let custom_items = [];
+					frm.doc.responses.forEach(function (resp) {
+						let exists = all_items.find(function (t) { return t.parameter_name === resp.parameter_name; });
+						if (!exists) custom_items.push(resp);
+					});
+					if (custom_items.length > 0) {
+						checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>Additional Items</b></h5>";
+						checklist_html += "<table class='table table-bordered'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+						custom_items.forEach(function (resp) {
+							let response_html = '<input type="text" class="form-control observation-input" placeholder="Enter the text" value="' + (resp.response || "") + '">';
+							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+							sr++;
+							all_items.push(resp);
+						});
+						checklist_html += "</tbody></table>";
+					}
 				}
-				checklist_html += "</tbody></table>";
 				checklist_html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
 			}
 
