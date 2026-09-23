@@ -1744,20 +1744,27 @@
         box-shadow:0 1px 2px rgba(16,24,40,.05); }
       .nt-branch-summary .muted { color:var(--ink-3); }
       .nt-branch-summary .bs-label { font-weight:700; white-space:nowrap; }
-      .nt-branch-summary #branch-chips { display:flex; flex-wrap:nowrap; gap:6px; align-items:center; flex:1; min-width:0;
-        overflow:hidden; }
-      .nt-branch-summary #branch-chips.expanded { flex-wrap:wrap; overflow-y:auto; max-height:88px; }
-      .nt-branch-summary .bmore { border:none; background:var(--surface-2); color:var(--accent-ink);
-        border-radius:999px; padding:2px 10px; font-size:11.5px; font-weight:700; cursor:pointer;
-        white-space:nowrap; flex-shrink:0; }
-      .nt-branch-summary .bmore:hover { background:var(--accent-soft); }
-      .nt-branch-summary .bchip { background:#fff; border:1px solid #bbf7d0; border-radius:999px;
-        padding:2px 6px 2px 10px; font-weight:600; white-space:nowrap; display:inline-flex;
-        align-items:center; gap:6px; flex-shrink:0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
-      .nt-branch-summary .bchip button { border:none; background:var(--surface-2); color:var(--ink-3);
-        width:18px; height:18px; border-radius:50%; font-size:12px; line-height:1; cursor:pointer;
-        display:grid; place-items:center; padding:0; }
-      .nt-branch-summary .bchip button:hover { background:#fecaca; color:#b91c1c; }
+      .nt-branch-view { position:relative; flex:1; min-width:0; display:flex; }
+      #branch-view-btn { flex:1; min-width:0; display:flex; align-items:center; gap:8px;
+        border:none; background:transparent; cursor:pointer; padding:0;
+        font-size:11.5px; color:inherit; text-align:left; }
+      #branch-view-btn b { white-space:nowrap; }
+      #branch-names { flex:1; min-width:0; white-space:nowrap; overflow:hidden;
+        text-overflow:ellipsis; color:var(--ink-2); font-weight:500; }
+      #branch-view-btn svg { width:14px; height:14px; flex-shrink:0; }
+      #branch-view-pop { width:360px; }
+      #branch-view-pop .opts { max-height:260px; overflow-y:auto; padding:6px;
+        display:flex; flex-direction:column; gap:6px; }
+      .brow { display:flex; align-items:center; gap:8px; background:#fff;
+        border:1px solid var(--border); border-radius:8px; padding:6px 10px; flex-shrink:0; }
+      .brow-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      .brow-meta b { font-size:12px; color:var(--ink-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .brow-meta i { font-style:normal; font-size:10.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .brow button { border:none; background:var(--surface-2); color:var(--ink-3);
+        width:22px; height:22px; border-radius:50%; font-size:13px; line-height:1; cursor:pointer;
+        display:grid; place-items:center; padding:0; flex-shrink:0; }
+      .brow button:hover { background:#fecaca; color:#b91c1c; }
+      .nt-branch-summary .brow button:hover { background:#fecaca; color:#b91c1c; }
       .nt-branch-add { position:relative; flex-shrink:0; }
       .nt-branch-add .btn-mini { border:1px solid #86efac; background:#fff; color:#15803d;
         border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600;
@@ -4060,8 +4067,16 @@
                 </div>
 
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
-                  <span class="bs-label" id="branch-count">Branches</span>
-                  <span id="branch-chips"><span class="muted">No branches yet — select participants or add a branch.</span></span>
+                  <span class="nt-branch-view">
+                    <button type="button" id="branch-view-btn" title="View all branches">
+                      <b id="branch-count">Branches</b>
+                      <span id="branch-names"><span class="muted">No branches yet — select participants or add a branch.</span></span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </button>
+                    <span class="nt-branch-pop" id="branch-view-pop" style="display:none">
+                      <span class="opts" id="branch-view-list" style="display:block"></span>
+                    </span>
+                  </span>
                   <span class="nt-branch-add">
                     <button type="button" class="btn-mini" id="btn-add-branch-top">+ Add Branch</button>
                     <span class="nt-branch-pop" id="branch-add-pop" style="display:none">
@@ -6067,6 +6082,8 @@
           if (bsInput) bsInput.value = "";
           var bsPop = document.getElementById("branch-add-pop");
           if (bsPop) bsPop.style.display = "none";
+          var bvPop = document.getElementById("branch-view-pop");
+          if (bvPop) bvPop.style.display = "none";
           setDialogMode("add");
           refreshModalAttendanceRow(null);
           if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
@@ -6172,6 +6189,7 @@
           var _as = document.getElementById("nt-part-type"); if (_as) _as.value = "";
           var _bs = document.getElementById("branch-add-search"); if (_bs) _bs.value = "";
           var _bp = document.getElementById("branch-add-pop"); if (_bp) _bp.style.display = "none";
+          var _bvp = document.getElementById("branch-view-pop"); if (_bvp) _bvp.style.display = "none";
           dialogFn.renderPChips();
           if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
           updateSchedulePreview();
@@ -7733,14 +7751,13 @@
           var partMore = document.getElementById("part-load-more");
           var partEmpty = document.getElementById("part-empty");
           var branchSummary = document.getElementById("branch-summary");
-          var branchChips = document.getElementById("branch-chips");
           var branchCount = document.getElementById("branch-count");
           var branchAddBtn = document.getElementById("btn-add-branch-top");
           var branchAddPop = document.getElementById("branch-add-pop");
           var branchAddSearch = document.getElementById("branch-add-search");
           var branchAddList = document.getElementById("branch-add-list");
           var footHint = document.getElementById("fx-branch-context");
-          var PAGE = 60, partLimit = PAGE, branchExpanded = false;
+          var PAGE = 60, partLimit = PAGE;
           if (!partBody) return;
 
           function selKeys() {
@@ -7862,37 +7879,39 @@
               }
               if (code) autoSet[code] = true;
             });
+            var viewBtn = document.getElementById("branch-view-btn");
+            var namesEl = document.getElementById("branch-names");
+            var viewPop = document.getElementById("branch-view-pop");
+            var viewList = document.getElementById("branch-view-list");
             if (branchCount) branchCount.textContent = geos.length ?
               geos.length + " branches identified" : "Branches";
-            if (!branchChips) return;
-            if (!geos.length) {
-              branchChips.classList.remove("expanded");
-              branchChips.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
-              return;
-            }
-            var MAX = 3;
+            if (!namesEl || !viewList) return;
             var disabled = state.dialogMode === "edit" ? " disabled" : "";
-            var chip = function (g) {
-              var locked = !!autoSet[g.branch];
-              var inner = esc(branchDisplay(g.branch));
-              if (locked) {
-                inner += ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;opacity:.6;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
-              } else {
-                inner += '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' +
-                  disabled + ">&times;</button>";
-              }
-              return '<span class="bchip" title="' + (locked ? "Auto-added from selected participants" : esc(branchDisplay(g.branch))) + '">' + inner + "</span>";
-            };
-            // Collapsed: one line (first 3 + view toggle) so 50+ branches never break the UX
-            if (!branchExpanded && geos.length > MAX) {
-              branchChips.classList.remove("expanded");
-              branchChips.innerHTML = geos.slice(0, MAX).map(chip).join("") +
-                '<button type="button" class="bmore" data-branch-toggle>View Branches (' +
-                geos.length + ")</button>";
+            var lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;opacity:.55;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
+            if (!geos.length) {
+              namesEl.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
+              viewList.innerHTML = "";
+              if (viewPop) viewPop.style.display = "none";
+              if (viewBtn) viewBtn.disabled = true;
             } else {
-              branchChips.classList.toggle("expanded", geos.length > MAX);
-              branchChips.innerHTML = geos.map(chip).join("") +
-                (geos.length > MAX ? '<button type="button" class="bmore" data-branch-toggle>Show less</button>' : "");
+              // One slim line: first 3 names, rest counted — never breaks layout
+              var first3 = geos.slice(0, 3).map(function (g) {
+                var b = (state.branchPick || []).find(function (x) { return x.name === g.branch; });
+                return (b && b.branch) ? b.branch : g.branch;
+              });
+              namesEl.textContent = first3.join(", ") + (geos.length > 3 ? " +" + (geos.length - 3) + " more" : "");
+              if (viewBtn) viewBtn.disabled = false;
+              // Full detail rows live in the popover
+              viewList.innerHTML = geos.map(function (g) {
+                var locked = !!autoSet[g.branch];
+                var meta = [g.zone, g.region, g.district].filter(function (x) { return x; }).join(" • ") || "—";
+                var action = locked
+                  ? '<span title="Auto-added from selected participants" style="display:inline-flex;">' + lockSvg + "</span>"
+                  : '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' + disabled + ">&times;</button>";
+                return '<div class="brow" title="' + esc(branchDisplay(g.branch)) + '">' +
+                  '<span class="brow-meta"><b>' + esc(branchDisplay(g.branch)) + "</b><i>" + esc(meta) + "</i></span>" +
+                  action + "</div>";
+              }).join("");
             }
             if (branchAddBtn) branchAddBtn.disabled = (state.dialogMode === "edit");
           }
@@ -7917,7 +7936,7 @@
           }
           function closeBranchAddPop() { if (branchAddPop) branchAddPop.style.display = "none"; }
           function refreshTables(resetPage) {
-            if (resetPage) { partLimit = PAGE; branchExpanded = false; }
+            if (resetPage) { partLimit = PAGE; }
             var keys = selKeys();
             var disabled = state.dialogMode === "edit";
             var q = (partSearch ? partSearch.value : "").trim().toLowerCase();
@@ -8003,10 +8022,14 @@
             var b = document.getElementById("btn-download-participant-template");
             if (b) b.click();
           });
-          // Branch chips: expand/collapse + remove branch (same state as legacy geo rows)
+          // Branch view popover toggle + branch remove (same state as legacy geo rows)
           if (branchSummary) branchSummary.addEventListener("click", function (e) {
-            var tgl = e.target.closest("[data-branch-toggle]");
-            if (tgl) { branchExpanded = !branchExpanded; updateBranchSummary(); return; }
+            var viewBtn = e.target.closest("#branch-view-btn");
+            if (viewBtn && !viewBtn.disabled) {
+              var pop = document.getElementById("branch-view-pop");
+              if (pop) pop.style.display = pop.style.display === "block" ? "none" : "block";
+              return;
+            }
             var btn = e.target.closest("[data-rm-branch]");
             if (!btn || btn.disabled) return;
             if (dialogFn.removeBranch && dialogFn.removeBranch(btn.dataset.rmBranch)) {
@@ -8044,8 +8067,20 @@
             if (wrap && wrap.contains(e.target)) return;
             closeBranchAddPop();
           });
+          // View-branches popover: close on outside click / Escape
+          document.addEventListener("click", function (e) {
+            var pop = document.getElementById("branch-view-pop");
+            if (!pop || pop.style.display !== "block") return;
+            var wrap = e.target.closest ? e.target.closest(".nt-branch-view") : null;
+            if (wrap) return;
+            pop.style.display = "none";
+          });
           document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") closeBranchAddPop();
+            if (e.key === "Escape") {
+              var pop = document.getElementById("branch-view-pop");
+              if (pop) pop.style.display = "none";
+            }
           });
           refreshTables();
         })();
