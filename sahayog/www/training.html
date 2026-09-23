@@ -1975,7 +1975,10 @@
       #addModal .nt-branch-summary { font-size:11.5px; }
       /* two equal columns, form left, participants right */
       #addModal .nt-body { padding:0; gap:0; }
-      #addModal .nt-split { gap:32px; padding:32px; align-items:flex-start; }
+      #addModal .nt-split { gap:32px; padding:32px; align-items:stretch; }
+      /* Remarks textarea grows to fill leftover left-column space */
+      #addModal .fx-field.fx-grow { flex:1; }
+      #addModal .fx-field.fx-grow textarea { flex:1; }
       #addModal .nt-part, #addModal .nt-details { border:none; padding:0; min-width:0; }
       #addModal .fx-left { order:1; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
       #addModal .fx-right { order:2; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
@@ -2041,9 +2044,9 @@
 
       /* Edit mode */
       .nt-edit-extra {
-        padding: 14px 20px 18px;
-        border-top: 1px solid var(--border);
+        padding: 4px 20px 14px;
       }
+      .nt-edit-extra > .drawer-section:first-child { margin-bottom:10px; }
       /* Edit completion section: status + budget side-by-side cards */
       .ee-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
       .ee-grid .drawer-section { margin-bottom:0; }
@@ -4246,8 +4249,8 @@
               <input type="checkbox" id="new-adhoc" />
               Ad-hoc / need-based training
             </label>
-            <div class="fx-field">
-              <span class="fx-label">Optional Trainer Notes</span>
+            <div class="fx-field fx-grow">
+              <span class="fx-label">Remarks</span>
               <textarea
                 class="fx-area"
                 id="new-agenda"
