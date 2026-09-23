@@ -2,7 +2,6 @@ import json
 import frappe
 from frappe.utils import flt, add_days, nowdate, cint
 
-
 def check_rate_limit(action, max_calls=30, per_seconds=60):
     """Per-user rate limiter using frappe.cache().
     Returns True if allowed, False if rate limit exceeded."""
@@ -27,7 +26,7 @@ def get_crm_data(section: str, limit: int = 20, cursor: str = "0", search_term: 
     if not check_rate_limit("get_crm_data", max_calls=30, per_seconds=60):
         frappe.throw(title="Too Many Requests", msg="Rate limit exceeded. Please slow down.", http_status=429)
 
-    limit = frappe.parse_json(limit) or 20
+    limit = cint(limit) or 20
     offset = int(cursor) if cursor and str(cursor).isdigit() else 0
 
     # Incremental sync: skip cache jab since ho (fresh data chahiye)
@@ -88,20 +87,18 @@ def _get_lead_data(limit, offset, search_term, since=None):
             ["email_id", "like", term]
         ]
 
-    count_filters = list(filters)
-    if or_filters:
-        count_filters.insert(0, ["_or"] + or_filters)
-
     # Cache total_count separately (120s TTL) — only when no search/since for accurate count
     count_cache_key = None
     if not since and not search_term:
         count_cache_key = f"crm_count:{user}"
         total_count = frappe.cache().get_value(count_cache_key)
         if total_count is None:
-            total_count = frappe.db.count("Lead", filters=count_filters)
+            count_res = frappe.get_all("Lead", filters=filters, fields=["count(name) as count"])
+            total_count = count_res[0].count if count_res else 0
             frappe.cache().set_value(count_cache_key, total_count, expires_in_sec=120)
     else:
-        total_count = frappe.db.count("Lead", filters=count_filters)
+        count_res = frappe.get_all("Lead", filters=filters, or_filters=or_filters, fields=["count(name) as count"])
+        total_count = count_res[0].count if count_res else 0
 
     leads = frappe.get_list(
         "Lead",
@@ -118,7 +115,7 @@ def _get_lead_data(limit, offset, search_term, since=None):
         leads.pop()
 
     if not leads:
-        return [], None, 0
+        return [], None, total_count
 
     lead_names = [d.get("name") for d in leads]
 
@@ -151,19 +148,17 @@ def _get_appointment_data(limit, offset, search_term, since=None):
             ["customer_phone_number", "like", term]
         ]
 
-    count_filters = list(filters)
-    if or_filters:
-        count_filters.insert(0, ["_or"] + or_filters)
-
     # Cache total_count separately (120s TTL) — only when no search/since for accurate count
     if not since and not search_term:
         count_cache_key = f"crm_appt_count:{user}"
         total_count = frappe.cache().get_value(count_cache_key)
         if total_count is None:
-            total_count = frappe.db.count("Appointment", filters=count_filters)
+            count_res = frappe.get_all("Appointment", filters=filters, fields=["count(name) as count"])
+            total_count = count_res[0].count if count_res else 0
             frappe.cache().set_value(count_cache_key, total_count, expires_in_sec=120)
     else:
-        total_count = frappe.db.count("Appointment", filters=count_filters)
+        count_res = frappe.get_all("Appointment", filters=filters, or_filters=or_filters, fields=["count(name) as count"])
+        total_count = count_res[0].count if count_res else 0
 
     appointments = frappe.get_list(
         "Appointment",
@@ -186,7 +181,18 @@ def _get_appointment_data(limit, offset, search_term, since=None):
 def invalidate_crm_cache(user=None):
     """Invalidate all CRM data cache for a user."""
     user = user or frappe.session.user
-    for key in frappe.cache().get_keys(f"crm_data:{user}:*") or []:
-        frappe.cache().delete_key(key)
+    frappe.cache().delete_keys(f"crm_data:{user}:*")
     frappe.cache().delete_key(f"crm_count:{user}")
     frappe.cache().delete_key(f"crm_appt_count:{user}")
+
+def invalidate_crm_cache_for_lead(doc, method=None):
+    """DocType hook to clear CRM cache on save/trash."""
+    if hasattr(doc, "lead_owner") and doc.lead_owner:
+        invalidate_crm_cache(doc.lead_owner)
+    elif hasattr(doc, "owner") and doc.owner:
+        invalidate_crm_cache(doc.owner)
+
+def invalidate_crm_cache_for_appointment(doc, method=None):
+    """DocType hook to clear CRM cache for Appointments."""
+    if hasattr(doc, "owner") and doc.owner:
+        invalidate_crm_cache(doc.owner)

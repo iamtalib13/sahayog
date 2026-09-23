@@ -384,6 +384,8 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.validate_duplicate_lead",
             "sahayog.scrm.controller.lead.lead.validate_required_employee_fields",
         ],
+        "after_save": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_lead",
+        "on_trash": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_lead",
     },
     "Appointment": {
         "validate": [
@@ -392,6 +394,8 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.validate_appointment_time",
             "sahayog.scrm.controller.lead.lead.validate_duplicate_appointment",
         ],
+        "after_save": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_appointment",
+        "on_trash": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_appointment",
     },
     "Shareholder": {
         "before_insert": [

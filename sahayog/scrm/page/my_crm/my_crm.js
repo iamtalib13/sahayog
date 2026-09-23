@@ -9,7 +9,6 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
     single_column: true,
   });
   new MyCRM(wrapper);
-  src = "/assets/sahayog/js/petite-vue.iife.js";
 };
 
 let _freezeStartTime = null;
@@ -1371,7 +1370,7 @@ async fetchAssignedLeads() {
     const btn = d.get_primary_btn();
 
     // Mobile validation — freeze se pehle
-    if (input_mobile && !/^[6-9]\d{9}$/.test(input_mobile)) {
+    if (!input_mobile || !/^[6-9]\d{9}$/.test(input_mobile)) {
         return showError(__("Please enter a valid 10-digit mobile number starting with 6-9."));
     }
 
@@ -2004,11 +2003,15 @@ renderWhatsAppCard(item) {
 
       // Pehle localStorage se instant data dikhao
       const loaded = this.showLocalData();
-      // Sirf tab fetch karo jab localStorage mein data na ho — pehle load pe 50 records fetch karo
+      
       if (!loaded) {
         await this.fetchData(false, 100);
-        // Fetch ke baad sirf first page load karo — baaki localStorage mein hai
         this.showLocalData();
+      } else {
+        // Silent background fetch to ensure fresh data
+        this.fetchData(false, 100).then(() => {
+          this.showLocalData();
+        });
       }
     }
   }
