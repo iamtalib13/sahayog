@@ -269,6 +269,8 @@ function render_checklist(frm, template) {
 				.bvr-tabs .bvr-btn-add:hover { background: #4c53d0; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(94,100,255,0.35); }
 				.bvr-tabs .bvr-btn-add:active { transform: translateY(0); }
 				.bvr-tabs .bvr-btn-action { margin-top: 8px; }
+				.bvr-tabs .bvr-btn-remove { background: transparent; color: #e74c3c; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; line-height: 20px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; }
+				.bvr-tabs .bvr-btn-remove:hover { background: #fdecea; color: #c0392b; transform: scale(1.1); }
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 5px 8px; height: auto; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 2px rgba(94,100,255,0.15); }
 			</style>`;
@@ -462,9 +464,22 @@ function render_checklist(frm, template) {
 				select_html += "<option value='Text'>Text</option>";
 				select_html += "</select>";
 				let response_html = "<div class='custom-response-area' data-custom='" + custom_idx + "'>" + select_html + "</div>";
-				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td>" + response_html + "</td></tr>";
+				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td>" + response_html + "</td><td style='text-align:center;width:40px;'><button class='bvr-btn-remove remove-custom-row' title='Remove row'>&times;</button></td></tr>";
 				$table.find("tbody").append(new_row);
 				let $newRow = $table.find("tbody tr:last");
+
+				$newRow.find(".remove-custom-row").on("click", function () {
+					let $tr = $(this).closest("tr");
+					let parameter = $tr.find(".custom-parameter").val();
+					if (parameter && frm.doc.responses) {
+						let idx = frm.doc.responses.findIndex(function (r) { return r.parameter_name === parameter; });
+						if (idx > -1) {
+							frm.doc.responses.splice(idx, 1);
+							frm.refresh_field("responses");
+						}
+					}
+					$tr.remove();
+				});
 
 				$newRow.find(".custom-type-select").on("change", function () {
 					let val = $(this).val();
