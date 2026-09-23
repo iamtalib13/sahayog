@@ -88,8 +88,9 @@ function render_checklist(frm, template) {
 
 				let sr = 1;
 				Object.keys(grouped).forEach(function (cat) {
-					checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>" + cat + "</b></h5>";
-					checklist_html += "<table class='table table-bordered'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
+					checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>" + cat + "</b> <button class='btn btn-xs btn-default add-category-row' data-category='" + safe_cat + "' style='margin-left:5px;'>+</button></h5>";
+					checklist_html += "<table class='table table-bordered category-table' data-category='" + safe_cat + "'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
 					grouped[cat].forEach(function (row) {
 						let i = row._idx;
 						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
@@ -136,7 +137,6 @@ function render_checklist(frm, template) {
 						checklist_html += "</tbody></table>";
 					}
 				}
-				checklist_html += "<button class='btn btn-sm btn-default add-row-btn' style='margin-top:5px;'>Add</button>";
 			}
 
 			let action_html = "<table class='table table-bordered'><thead><tr><th>No.</th><th>Action</th><th>Assigned To</th><th>Due Date</th></tr></thead><tbody>";
@@ -234,18 +234,19 @@ function render_checklist(frm, template) {
 				}
 			});
 
-			frm.fields_dict.checklist.$wrapper.find(".add-row-btn").on("click", function () {
-				let count = frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody tr").length + 1;
-				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-category' placeholder='Section / Category'></td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody").append(new_row);
-				let $newRow = frm.fields_dict.checklist.$wrapper.find(".tab-content-review tbody tr:last");
+			frm.fields_dict.checklist.$wrapper.find(".add-category-row").on("click", function () {
+				let cat = $(this).data("category");
+				let $table = frm.fields_dict.checklist.$wrapper.find(".category-table[data-category='" + cat + "']");
+				let count = $table.find("tbody tr").length + 1;
+				let new_row = "<tr><td>" + count + "</td><td><input type='text' class='form-control custom-parameter' placeholder='Evaluation Parameter / Question'></td><td><input type='text' class='form-control custom-response' placeholder='Enter the text'></td></tr>";
+				$table.find("tbody").append(new_row);
+				let $newRow = $table.find("tbody tr:last");
 				$newRow.find(".custom-response").on("blur", function () {
-					let category = $newRow.find(".custom-category").val() || "";
 					let parameter = $newRow.find(".custom-parameter").val() || "";
 					let response = $(this).val() || "";
-					if (category || parameter || response) {
+					if (parameter || response) {
 						frm.add_child("responses", {
-							category: category,
+							category: cat.replace(/_/g, " "),
 							parameter_name: parameter,
 							response: response,
 						});
