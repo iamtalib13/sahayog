@@ -210,13 +210,13 @@ function render_checklist(frm, template) {
 			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action Item</th><th>Responsible</th><th>Priority</th><th>Target Date</th><th>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
-					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td>" + (item.owner || "") + "</td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
+					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + (item.owner || "") + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
 			action_html += "<tr><td>" + action_count + "</td>";
 			action_html += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
-			action_html += "<td><select class='form-control action-input' data-field='owner'><option value=''>Select</option>" + employee_options + "</select></td>";
+			action_html += "<td><div class='employee-search-wrapper' data-value=''><input type='text' class='form-control employee-search-input' placeholder='Search employee' value=''><div class='employee-dropdown' style='display:none;'></div></div></td>";
 			action_html += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
 			action_html += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 			action_html += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
@@ -253,7 +253,7 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur change", function () {
 				let $row = $(this).closest("tr");
 				let action_item = $row.find("[data-field='action_item']").val() || "";
-				let owner = $row.find("[data-field='owner']").val() || "";
+				let owner = $row.find(".employee-search-wrapper").data("value") || "";
 				let priority = $row.find("[data-field='priority']").val() || "Medium";
 				let tat = $row.find("[data-field='tat']").val() || "";
 				let status = $row.find("[data-field='status']").val() || "Open";
@@ -287,13 +287,58 @@ function render_checklist(frm, template) {
 				let count = $table.find("tbody tr").length + 1;
 				let new_row = "<tr><td>" + count + "</td>";
 				new_row += "<td><input type='text' class='form-control action-input' data-field='action_item' placeholder='Enter action item'></td>";
-				new_row += "<td><select class='form-control action-input' data-field='owner'><option value=''>Select</option>" + employee_options + "</select></td>";
+				new_row += "<td><div class='employee-search-wrapper' data-value=''><input type='text' class='form-control employee-search-input' placeholder='Search employee' value=''><div class='employee-dropdown' style='display:none;'></div></div></td>";
 				new_row += "<td><select class='form-control action-input' data-field='priority'><option value='Medium'>Medium</option><option value='High'>High</option><option value='Low'>Low</option></select></td>";
 				new_row += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 				new_row += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
 				new_row += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
 				new_row += "</tr>";
 				$table.find("tbody").append(new_row);
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".employee-search-input").on("focus keyup", function () {
+				let $wrapper = $(this).closest(".employee-search-wrapper");
+				let $dropdown = $wrapper.find(".employee-dropdown");
+				let query = $(this).val().toLowerCase();
+				let filtered = employees.filter(function (emp) {
+					let label = (emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name).toLowerCase();
+					return label.indexOf(query) > -1;
+				});
+				if (filtered.length > 0) {
+					let options_html = "";
+					filtered.forEach(function (emp) {
+						let label = emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name;
+						options_html += "<div class='employee-option' style='padding:5px 10px;cursor:pointer;' data-name='" + emp.name + "'>" + label + "</div>";
+					});
+					$dropdown.html(options_html).show();
+				} else {
+					$dropdown.html("<div style='padding:5px 10px;color:#999;'>No results</div>").show();
+				}
+			});
+
+			frm.fields_dict.checklist.$wrapper.on("click", ".employee-option", function () {
+				let $wrapper = $(this).closest(".employee-search-wrapper");
+				let $row = $wrapper.closest("tr");
+				let name = $(this).data("name");
+				$wrapper.find(".employee-search-input").val(name);
+				$wrapper.data("value", name);
+				$wrapper.find(".employee-dropdown").hide();
+				let idx = $row.index();
+				if (frm.doc.action_items && frm.doc.action_items[idx]) {
+					frm.doc.action_items[idx].owner = name;
+					frm.refresh_field("action_items");
+				}
+			});
+
+			frm.fields_dict.checklist.$wrapper.on("click", function (e) {
+				if (!$(e.target).closest(".employee-search-wrapper").length) {
+					frm.fields_dict.checklist.$wrapper.find(".employee-dropdown").hide();
+				}
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".employee-search-input").on("blur", function () {
+				let $wrapper = $(this).closest(".employee-search-wrapper");
+				$wrapper.data("value", $(this).val());
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
