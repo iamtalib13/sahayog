@@ -2044,6 +2044,19 @@
         padding: 14px 20px 18px;
         border-top: 1px solid var(--border);
       }
+      /* Edit completion section: status + budget side-by-side cards */
+      .ee-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+      .ee-grid .drawer-section { margin-bottom:0; }
+      .ee-card {
+        background:var(--surface); border:1px solid var(--border); border-radius:12px;
+        padding:16px; box-shadow:0 1px 2px rgba(16,24,40,.05);
+      }
+      .ee-card .drawer-section-title { margin-bottom:10px; }
+      .ee-card .check-item { padding:8px 10px; border-radius:8px; }
+      .ee-grid .budget-edit { grid-template-columns:1fr; }
+      @media (max-width: 700px) {
+        .ee-grid { grid-template-columns:1fr; }
+      }
       .budget-edit {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -6277,14 +6290,14 @@
               "</span></label>"
             );
           }).join("");
-          html +=
-            '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
+          var statusHtml =
+            '<div class="drawer-section ee-card"><div class="drawer-section-title">Training Status</div>' +
             checkList +
             "</div>";
           if (r.showBudget) {
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
-            html +=
-              '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+            var budgetHtml =
+              '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
               '<div class="budget-edit">' +
               '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
               (ev.budget_amount == null ? "" : ev.budget_amount) +
@@ -6299,6 +6312,9 @@
               "</strong></span>" +
               '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
+            html += '<div class="ee-grid">' + statusHtml + budgetHtml + "</div>";
+          } else {
+            html += statusHtml;
           }
           return html;
         }
