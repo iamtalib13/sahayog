@@ -8,7 +8,7 @@
  "field_order": [
   "category",
   "parameter_name",
-  "response_type",
+   "response",
   "observation",
   "rating_score",
   "attachment"
@@ -28,14 +28,13 @@
    "in_list_view": 1,
    "label": "Evaluation Parameter / Question"
   },
-  {
-   "columns": 2,
-   "fieldname": "response_type",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Response Type",
-   "options": "\nText Observation\nRating (1 to 5)\nYes / No\nNumber"
-  },
+   {
+    "columns": 2,
+    "fieldname": "response",
+    "fieldtype": "Data",
+    "in_list_view": 1,
+    "label": "Response"
+   },
   {
    "columns": 3,
    "fieldname": "observation",
