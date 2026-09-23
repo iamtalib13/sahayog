@@ -1717,6 +1717,285 @@
       }
       .geo-remove:hover { background:var(--surface-2); color:#b91c1c; border-color:#fecaca; }
 
+      /* ===== Add Training 70/30 split (participants 70% / details 30%) ===== */
+      #addModal .modal { width:min(960px,96vw); max-width:96vw; }
+      #addModal .nt-scroll { background:#f8fafc; }
+      #addModal .nt-body { gap:14px; }
+      .nt-split { display:flex; gap:16px; align-items:stretch; }
+      .nt-part { flex:0 0 70%; min-width:0; display:flex; flex-direction:column; gap:12px; }
+      .nt-details { flex:0 0 30%; min-width:280px; display:flex; flex-direction:column; gap:10px;
+        border-left:1px solid var(--border); padding-left:16px; }
+      .nt-part-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+        background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+        position:sticky; top:0; z-index:6; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+      .nt-part-head .nt-kicker { flex:1; font-size:12px; }
+      .nt-part-head .sub { font-size:11.5px; color:var(--ink-3); font-weight:500; }
+      .nt-total { font-size:12px; font-weight:700; color:var(--accent-ink);
+        background:var(--accent-soft); border-radius:999px; padding:3px 12px; white-space:nowrap; }
+      .nt-csv-mini { display:flex; gap:6px; align-items:center; flex-wrap:wrap; flex-shrink:0; }
+      .nt-csv-mini .btn { height:30px; padding:0 12px; font-size:12px; }
+      .nt-action-sep { width:1px; align-self:stretch; min-height:22px; background:var(--border); flex-shrink:0; }
+      .nt-branch-add .btn-mini { border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+        border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+      .nt-branch-add .btn-mini:hover { background:var(--surface-2); color:var(--ink-1); }
+      .nt-branch-summary { display:flex; gap:8px; align-items:center;
+        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;
+        padding:8px 12px; font-size:11.5px; color:#15803d;
+        box-shadow:0 1px 2px rgba(16,24,40,.05); }
+      .nt-branch-summary .muted { color:var(--ink-3); }
+      .nt-branch-summary .bs-label { font-weight:700; white-space:nowrap; }
+      .nt-branch-view { position:relative; flex:1; min-width:0; display:flex; }
+      #branch-view-btn { flex:1; min-width:0; display:flex; align-items:center; gap:8px;
+        border:none; background:transparent; cursor:pointer; padding:0;
+        font-size:11.5px; color:inherit; text-align:left; }
+      #branch-view-btn b { white-space:nowrap; }
+      #branch-names { flex:1; min-width:0; white-space:nowrap; overflow:hidden;
+        text-overflow:ellipsis; color:var(--ink-2); font-weight:500; }
+      #branch-view-btn svg { width:14px; height:14px; flex-shrink:0; }
+      #branch-view-pop { width:360px; }
+      #branch-view-pop .opts { max-height:260px; overflow-y:auto; padding:6px;
+        display:flex; flex-direction:column; gap:6px; }
+      .brow { display:flex; align-items:center; gap:8px; background:#fff;
+        border:1px solid var(--border); border-radius:8px; padding:6px 10px; flex-shrink:0; }
+      .brow-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      .brow-meta b { font-size:12px; color:var(--ink-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .brow-meta i { font-style:normal; font-size:10.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .brow button { border:none; background:var(--surface-2); color:var(--ink-3);
+        width:22px; height:22px; border-radius:50%; font-size:13px; line-height:1; cursor:pointer;
+        display:grid; place-items:center; padding:0; flex-shrink:0; }
+      .brow button:hover { background:#fecaca; color:#b91c1c; }
+      .nt-branch-summary .brow button:hover { background:#fecaca; color:#b91c1c; }
+      .nt-branch-add { position:relative; flex-shrink:0; }
+      .nt-branch-add .btn-mini { border:1px solid #86efac; background:#fff; color:#15803d;
+        border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600;
+        cursor:pointer; white-space:nowrap; }
+      .nt-branch-add .btn-mini:hover { background:#dcfce7; color:#15803d; }
+      .nt-branch-add .btn-mini:disabled { opacity:.45; cursor:default; }
+      .nt-branch-pop { position:absolute; z-index:300; right:0; top:calc(100% + 6px); width:280px;
+        background:var(--surface); border:1px solid var(--border); border-radius:10px;
+        box-shadow:0 16px 40px rgba(16,24,40,.18); overflow:hidden; }
+      .nt-branch-pop input { width:100%; border:none; border-bottom:1px solid var(--border);
+        outline:none; padding:9px 12px; font-size:12.5px; color:var(--ink-1); }
+      .nt-branch-pop .opts { max-height:220px; overflow-y:auto; }
+      .nt-branch-pop .branch-opt { padding:7px 12px; font-size:12.5px; cursor:pointer;
+        display:flex; justify-content:space-between; gap:8px; align-items:center; color:var(--ink-1); }
+      .nt-branch-pop .branch-opt:hover { background:var(--surface-2); }
+      .nt-branch-pop .empty { padding:10px 12px; font-size:12.5px; color:var(--ink-3); }
+      .nt-ptable tr.sel-first-sep td { border-bottom:2px solid var(--border); }
+      .nt-ptable { border:1px solid var(--border); border-radius:12px; overflow:hidden;
+        display:flex; flex-direction:column; min-height:0; background:var(--surface);
+        flex:1 1 0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+      .nt-ptable-head { display:flex; align-items:center; gap:8px; padding:10px 12px;
+        border-bottom:1px solid var(--border); background:#f8fafc;
+        position:sticky; top:0; z-index:5; }
+      .nt-ptable-head .t { font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:6px; }
+      .nt-ptable-head .c { font-size:11.5px; font-weight:700; color:var(--accent-ink);
+        background:#fff; border:1px solid var(--border); border-radius:999px; padding:2px 10px; white-space:nowrap; }
+      .nt-ptable-head .c.none { color:var(--ink-3); }
+      .nt-type-filter { height:30px; border:1px solid var(--border); border-radius:8px; background:var(--surface);
+        font-size:12px; font-weight:600; color:var(--ink-2); padding:0 8px; outline:none; cursor:pointer; flex-shrink:0; }
+      .nt-type-filter:focus { border-color:var(--accent); }
+      .role-tag { display:inline-block; font-size:10px; font-weight:700; border-radius:999px;
+        padding:2px 8px; white-space:nowrap; }
+      .role-tag.emp { background:var(--accent-soft); color:var(--accent-ink); }
+      .role-tag.agent { background:var(--orange-soft); color:#b45309; }
+      .nt-ptable-search { margin-left:auto; display:flex; align-items:center; gap:6px;
+        border:1px solid var(--border); border-radius:8px; background:var(--surface);
+        padding:0 8px; height:30px; min-width:150px; flex:0 1 220px; }
+      .nt-ptable-search:focus-within { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+      .nt-ptable-search svg { width:13px; height:13px; color:var(--ink-3); flex-shrink:0; }
+      .nt-ptable-search input { border:none; outline:none; background:transparent;
+        font-size:12.5px; width:100%; color:var(--ink-1); }
+      .nt-ptable-scroll { overflow-y:auto; overflow-x:hidden; flex:1 1 auto; min-height:320px; max-height:520px; }
+      .nt-ptable table { width:100%; border-collapse:collapse; font-size:12.5px; table-layout:fixed; }
+      .nt-ptable thead th { position:sticky; top:0; background:var(--surface-2); z-index:1;
+        font-size:10.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-2);
+        text-align:left; padding:8px 10px; border-bottom:1px solid var(--border); white-space:nowrap; }
+      .nt-ptable thead th:first-child, .nt-ptable tbody td:first-child { width:36px; }
+      .nt-ptable tbody td { padding:8px 10px; border-bottom:1px solid var(--border);
+        overflow:hidden; vertical-align:middle; }
+      .nt-ptable tbody td.cell-wrap { white-space:normal; word-break:break-word; line-height:1.35; }
+      .nt-ptable tbody td.cell-code { white-space:nowrap; font-weight:600; color:var(--ink-2); }
+      .nt-ptable tbody tr { cursor:pointer; }
+      .nt-ptable tbody tr:hover { background:var(--surface-2); }
+      .nt-ptable tbody tr.sel { background:var(--accent-soft); }
+      .nt-ptable tbody tr.sel td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+      .nt-ptable tbody tr.sel:hover { background:#e0e7ff; }
+      .nt-ptable input[type="checkbox"] { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; }
+      .nt-ptable-empty { padding:16px; font-size:12.5px; color:var(--ink-3); text-align:center; }
+      .nt-ptable-foot { display:flex; align-items:center; gap:8px; padding:8px 12px;
+        border-top:1px solid var(--border); background:#f8fafc; font-size:11.5px; color:var(--ink-3); }
+      .nt-ptable-foot .btn-mini { border:1px solid var(--border); background:var(--surface);
+        border-radius:6px; padding:4px 12px; font-size:12px; font-weight:600; color:var(--accent-ink); }
+      .nt-ptable-foot .btn-mini:hover { background:var(--accent-soft); }
+      .nt-ptable-foot .btn-mini:disabled { opacity:.45; cursor:default; }
+      .nt-details .nt-row { padding:9px 12px; }
+      .nt-details .nt-title { font-size:16px; padding:0; }
+      .nt-details .nt-dt-grid { grid-template-columns:1fr 1fr; gap:8px; }
+      .nt-details #geo-rows { grid-template-columns:1fr !important; }
+      .nt-card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+        padding:10px 12px; display:flex; flex-direction:column; gap:8px;
+        box-shadow:0 1px 2px rgba(16,24,40,.05); }
+      .nt-card > .nt-kicker { margin-bottom:0; }
+      .nt-foot-sticky { position:sticky; bottom:0; z-index:5; display:flex; align-items:center; gap:10px;
+        padding:12px 20px; border-top:1px solid var(--border); background:rgba(255,255,255,.96);
+        backdrop-filter:blur(4px); }
+      .nt-foot-sticky .hint { font-size:11.5px; color:var(--ink-3); flex:1; }
+      .nt-foot-sticky .btn-primary { height:34px; padding:0 22px; font-size:13.5px; }
+      .nt-legacy-hidden { display:none !important; }
+
+      /* ===== Figma system: Schedule Training dialog (create phase) ===== */
+      #addModal {
+        --accent:#2563EB; --accent-soft:#EFF6FF; --accent-ink:#1D4ED8;
+        --ink-1:#0F172A; --ink-2:#475569; --ink-3:#94A3B8;
+        --border:#E2E8F0; --surface-2:#F8FAFC; --danger:#DC2626;
+      }
+      #addModal .modal { width:min(960px,96vw); max-width:96vw; border-radius:20px; }
+      #addModal .nt-scroll { background:#fff; }
+      #addModal .nt-head { padding:14px 32px 12px; border-bottom:1px solid var(--border); }
+      #addModal .nt-head h3 { font-size:17px; font-weight:700; }
+      #addModal .modal-close { background:var(--surface-2); border-radius:8px; width:32px; height:32px; }
+      #addModal #btn-save-training { height:32px; padding:7px 18px; font-size:13px; border-radius:8px;
+        box-shadow:0 1px 2px rgba(37,99,235,.45); }
+      #addModal #btn-save-training:hover { filter:brightness(1.07); }
+      #addModal #btn-reschedule-training { height:32px; font-size:13px; border-radius:8px; }
+      .fx-cols { display:flex; gap:32px; padding:32px; align-items:flex-start; }
+      .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
+      .fx-field { display:flex; flex-direction:column; gap:6px; }
+      .fx-label { font-size:12px; font-weight:600; text-transform:uppercase; color:var(--ink-2); }
+      .fx-label b { color:var(--danger); }
+      #addModal .fx-input, #addModal .fx-select {
+        height:41px; border:1px solid var(--border); border-radius:8px;
+        padding:12px 16px; font-size:14px; color:var(--ink-1); background:#fff; outline:none; width:100%;
+      }
+      #addModal .fx-input:focus, #addModal .fx-select:focus { border-color:var(--accent); }
+      #addModal #new-program.fx-input:focus { border-width:1.5px; }
+      #addModal #new-trainer.fx-input { background:var(--surface-2); cursor:default; }
+      .fx-row2 { display:flex; gap:12px; align-items:flex-start; }
+      .fx-row2 .fx-field { flex:1; min-width:0; }
+      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px;
+        display:flex; flex-direction:column; gap:14px; }
+      .fx-card-t { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:2px; }
+      #addModal .fx-card .nt-sched-date, #addModal .fx-card .nt-sched-time {
+        height:36px; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; background:#fff;
+        padding:8px 12px; font-size:13px; line-height:1.4; color:var(--ink-1); outline:none; width:100%;
+      }
+      #addModal .fx-card .nt-sched-date:focus, #addModal .fx-card .nt-sched-time:focus { border-color:var(--accent); }
+      .fx-preview { font-size:12.5px; font-weight:600; color:var(--ink-2); }
+      .fx-alert { display:flex; gap:10px; align-items:flex-start; background:#FFFBEB;
+        border:1px solid #FDE68A; border-radius:8px; padding:12px; }
+      .fx-alert svg { width:16px; height:16px; color:#9A3412; flex-shrink:0; margin-top:1px; }
+      .fx-alert b { display:block; font-size:13px; color:#9A3412; }
+      .fx-alert span { font-size:11.5px; color:#9A3412; }
+      /* Count-only message is information, not a conflict: neutral + dark text */
+      .fx-alert.info { background:var(--surface-2); border-color:var(--border); }
+      .fx-alert.info svg { color:var(--ink-2); }
+      .fx-alert.info span { color:var(--ink-1); font-weight:600; font-size:12.5px; }
+      .fx-check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); }
+      .fx-check input { width:15px; height:15px; accent-color:var(--accent); }
+      #addModal #new-agenda.fx-area {
+        border:1px solid var(--border); border-radius:8px; padding:12px; font-size:13px;
+        min-height:70px; resize:vertical; outline:none; width:100%; max-height:none;
+      }
+      #addModal #new-agenda.fx-area:focus { border-color:var(--accent); }
+      #addModal #new-agenda.fx-area::placeholder { color:var(--ink-3); }
+      /* search + suggestions */
+      .fx-type-toggle { display:flex; gap:6px; }
+      .fx-type-toggle .btn { height:28px; padding:0 14px; font-size:12px; }
+      #addModal .fx-search-wrap { position:relative; }
+      #addModal #new-participant-search.fx-search {
+        height:42px; border:1px solid var(--border); border-radius:8px; padding:12px 16px 12px 40px;
+        font-size:14px; width:100%; outline:none; background:#fff
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E")
+          no-repeat 14px center/18px 18px;
+      }
+      #addModal #new-participant-search.fx-search:focus { border:2px solid var(--accent); padding:11px 15px 11px 39px; }
+      #addModal #nt-participant-pop {
+        top:calc(100% + 6px); left:0; right:0; border-radius:12px; padding:8px;
+        box-shadow:0 4px 12px rgba(0,0,0,.08);
+      }
+      #addModal #nt-participant-pop .nt-pop-search,
+      #addModal #nt-participant-pop .nt-pop-foot { display:none; }
+      #addModal #participant-dropdown { max-height:220px; }
+      #addModal #participant-dropdown .branch-opt {
+        display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px;
+        cursor:pointer; justify-content:flex-start;
+      }
+      #addModal #participant-dropdown .branch-opt:hover { background:var(--surface-2); }
+      #addModal .fx-ava {
+        width:28px; height:28px; border-radius:50%; flex-shrink:0;
+        background:var(--accent-soft); color:var(--accent-ink);
+        display:grid; place-items:center; font-size:11px; font-weight:700;
+      }
+      #addModal #participant-dropdown .branch-opt .fx-sug-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      #addModal #participant-dropdown .branch-opt .fx-sug-name { font-size:13px; font-weight:600; color:var(--ink-1); }
+      #addModal #participant-dropdown .branch-opt .fx-sug-sub { font-size:11px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #addModal #participant-dropdown .branch-opt .enter-hint { display:none; font-size:12px; font-weight:600; color:var(--accent); white-space:nowrap; }
+      #addModal #participant-dropdown .branch-opt:first-child .enter-hint { display:inline; }
+      /* selected list */
+      .fx-sel-head { display:flex; align-items:center; justify-content:space-between; }
+      .fx-sel-head .t { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-2); }
+      #btn-clear-sel { border:none; background:none; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; padding:0; }
+      #btn-clear-sel:hover { text-decoration:underline; }
+      #btn-clear-sel:disabled { opacity:.4; cursor:default; }
+      .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
+      /* Inline attendance (edit mode): staged Present/Absent per row */
+      #att-bar { display:flex; align-items:center; gap:8px; background:var(--surface-2);
+        border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; }
+      #att-counts { font-weight:600; color:var(--ink-2); white-space:nowrap; }
+      #att-bar .btn { height:28px; padding:0 12px; font-size:12px; flex-shrink:0; }
+      .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
+        overflow:hidden; flex-shrink:0; background:var(--surface); }
+      .fx-att-btn { border:none; background:transparent; padding:5px 11px; font-size:11px;
+        font-weight:700; cursor:pointer; color:var(--ink-3); }
+      .fx-att-btn + .fx-att-btn { border-left:1px solid var(--border); }
+      .fx-att-btn.on-p { background:var(--green-soft); color:#15803d; }
+      .fx-att-btn.on-a { background:#fef2f2; color:#b91c1c; }
+      .fx-att-btn:disabled { cursor:default; }
+      /* Legacy modal attendance popup retired in favour of inline toggles */
+      #nt-attendance-wrap { display:none !important; }
+      #sel-list .fx-empty { font-size:12.5px; color:var(--ink-3); padding:8px 0; }
+      .fx-sel-row { display:flex; align-items:center; gap:10px; background:var(--surface-2);
+        border:1px solid var(--border); border-radius:8px; padding:8px 12px; }
+      .fx-sel-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
+      .fx-sel-meta b { font-size:13px; color:var(--ink-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .fx-sel-meta i { font-style:normal; font-size:11px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .fx-sel-tag { font-size:10px; font-weight:700; border-radius:999px; padding:2px 8px; flex-shrink:0; }
+      .fx-sel-tag.emp { background:var(--accent-soft); color:var(--accent-ink); }
+      .fx-sel-tag.agent { background:#FFF7ED; color:#C2410C; }
+      .fx-sel-rm { border:none; background:#FEF2F2; color:var(--danger); width:24px; height:24px;
+        border-radius:4px; cursor:pointer; font-size:13px; line-height:1; flex-shrink:0; }
+      .fx-sel-rm:hover { background:#FECACA; }
+      .fx-sel-rm:disabled { opacity:.4; cursor:default; }
+      /* csv + branches compact */
+      .fx-csv-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+      .fx-csv-row .btn { height:30px; padding:0 12px; font-size:12px; }
+      .fx-csv-row .muted { font-size:11.5px; color:var(--ink-3); }
+      #addModal .nt-branch-summary { font-size:11.5px; }
+      /* two equal columns, form left, participants right */
+      #addModal .nt-body { padding:0; gap:0; }
+      #addModal .nt-split { gap:32px; padding:32px; align-items:stretch; }
+      /* Remarks textarea grows to fill leftover left-column space */
+      #addModal .fx-field.fx-grow { flex:1; }
+      #addModal .fx-field.fx-grow textarea { flex:1; }
+      #addModal .nt-part, #addModal .nt-details { border:none; padding:0; min-width:0; }
+      #addModal .fx-left { order:1; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
+      #addModal .fx-right { order:2; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
+      @media (max-width: 700px) {
+        .fx-cols { flex-direction:column; padding:20px; gap:20px; }
+        #addModal .modal { border-radius:12px 12px 0 0; }
+      }
+      @media (max-width: 1100px) {
+        #addModal .modal { width:min(98vw,1600px); max-width:98vw; }
+      }
+      @media (max-width: 900px) {
+        .nt-split { flex-direction:column; }
+        .nt-part, .nt-details { flex:1 1 auto; }
+        .nt-details { border-left:none; padding-left:0; border-top:1px solid var(--border); padding-top:12px; min-width:0; }
+        .nt-ptable-scroll { max-height:260px; min-height:200px; }
+      }
+
       /* Ad-hoc + agenda */
       .nt-check {
         display: flex;
@@ -1765,8 +2044,21 @@
 
       /* Edit mode */
       .nt-edit-extra {
-        padding: 14px 20px 18px;
-        border-top: 1px solid var(--border);
+        padding: 4px 20px 14px;
+      }
+      .nt-edit-extra > .drawer-section:first-child { margin-bottom:10px; }
+      /* Edit completion section: status + budget side-by-side cards */
+      .ee-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+      .ee-grid .drawer-section { margin-bottom:0; }
+      .ee-card {
+        background:var(--surface); border:1px solid var(--border); border-radius:12px;
+        padding:16px; box-shadow:0 1px 2px rgba(16,24,40,.05);
+      }
+      .ee-card .drawer-section-title { margin-bottom:10px; }
+      .ee-card .check-item { padding:8px 10px; border-radius:8px; }
+      .ee-grid .budget-edit { grid-template-columns:1fr; }
+      @media (max-width: 700px) {
+        .ee-grid { grid-template-columns:1fr; }
       }
       .budget-edit {
         display: grid;
@@ -1873,7 +2165,7 @@
         padding: 18px 20px 16px;
       }
       #addModal .modal {
-        width: min(760px, 96vw);
+        width: min(960px, 96vw);
         max-width: 96vw;
         padding: 0;
         border-radius: 12px;
@@ -1883,7 +2175,7 @@
           0 2px 8px rgba(16, 24, 40, 0.08);
         display: flex;
         flex-direction: column;
-        max-height: min(92vh, 900px);
+        max-height: min(94vh, 980px);
       }
       .modal-head {
         display: flex;
@@ -3734,10 +4026,13 @@
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
         <div class="nt-head">
-          <h3>New Training</h3>
+          <div>
+            <h3>New Training</h3>
+            <div style="font-size:12.5px;color:var(--ink-2);margin-top:2px;" id="nt-head-sub">Create an L&amp;D class, allocate a trainer, and assign branch employees</div>
+          </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-            <button class="btn btn-primary" id="btn-save-training" style="height:30px;padding:0 14px;font-size:13px;">Save Training</button>
-            <button class="btn" id="btn-reschedule-training" style="display:none;height:30px;padding:0 14px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:32px;padding:7px 18px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="btn btn-primary" id="btn-save-training" style="height:32px;padding:7px 18px;font-size:13px;">Save Training</button>
             <button class="modal-close" data-close="addModal" title="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -3748,257 +4043,238 @@
 
         <div class="nt-scroll">
           <div class="nt-body">
-            <!-- Title -->
-            <input
-              class="nt-title"
-              id="new-program"
-              placeholder="Add training title"
-              autocomplete="off"
-            />
-
-            <!-- Participants: Teams-style attendee field -->
-            <div class="nt-pop-wrap">
-              <div
-                class="nt-attendee"
-                id="nt-attendee"
-                title="Add participants"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                <div class="nt-attendee-chips" id="participant-chips"></div>
-                <span class="nt-attendee-count" id="participant-count"
-                  >Add participants</span
-                >
-              </div>
-
-              <div class="nt-pop" id="nt-participant-pop" style="display: none">
-                <!-- Type toggle: Employee / Agent -->
-                <div style="display:flex;gap:6px;padding:8px 12px 0;border-bottom:1px solid var(--border);padding-bottom:8px;">
-                  <button type="button" id="p-type-employee" class="btn btn-primary" style="height:26px;padding:0 12px;font-size:12px;">Employee</button>
-                  <button type="button" id="p-type-agent" class="btn" style="height:26px;padding:0 12px;font-size:12px;">Agent</button>
+            <!-- 70/30 split: participants (70%) + details (30%) -->
+            <div class="nt-split">
+              <div class="nt-part fx-right">
+                <!-- Search (legacy IDs — selection logic fully preserved) -->
+                <div class="fx-field">
+                  <span class="fx-label">Add Employee / Code <b>*</b></span>
+                  <div class="fx-type-toggle">
+                    <button type="button" id="p-type-employee" class="btn btn-primary">Employee</button>
+                    <button type="button" id="p-type-agent" class="btn">Agent</button>
+                  </div>
+                  <div class="nt-pop-wrap fx-search-wrap">
+                    <input
+                      id="new-participant-search"
+                      class="fx-search"
+                      placeholder="Search employees..."
+                      autocomplete="off"
+                    />
+                    <div class="nt-pop" id="nt-participant-pop" style="display: none">
+                      <div id="participant-dropdown" class="nt-pop-list"></div>
+                      <div class="nt-pop-more" id="participant-more" style="display: none">
+                        <span id="participant-range"></span>
+                        <button
+                          class="btn-mini"
+                          id="btn-participant-load"
+                          type="button"
+                        >
+                          Load more
+                        </button>
+                      </div>
+                      <div class="nt-pop-foot">
+                        <span id="participant-dropdown-count">0 selected</span>
+                        <button class="btn" id="btn-participant-done">Done</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="nt-pop-search">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                  <input
-                    id="new-participant-search"
-                    placeholder="Search employees..."
-                    autocomplete="off"
-                  />
+
+                <!-- Selected participants -->
+                <div class="fx-sel-head">
+                  <span class="t">Selected Participants (<span id="sel-count">0</span>) <span class="fx-sel-break" id="sel-break"></span></span>
+                  <button type="button" id="btn-clear-sel">Clear All</button>
                 </div>
-                <div id="participant-dropdown" class="nt-pop-list"></div>
-                <div class="nt-pop-more" id="participant-more" style="display: none">
-                  <span id="participant-range"></span>
-                  <button
-                    class="btn-mini"
-                    id="btn-participant-load"
-                    type="button"
-                  >
-                    Load more
+                <div id="sel-list"></div>
+                <!-- Inline attendance bar (edit mode only) -->
+                <div id="att-bar" style="display:none">
+                  <span id="att-counts"></span>
+                  <span style="flex:1"></span>
+                  <button type="button" class="btn" id="btn-att-all">Mark all present</button>
+                  <button type="button" class="btn btn-primary" id="btn-att-save" disabled>Save Attendance</button>
+                </div>
+
+                <!-- CSV import -->
+                <div class="fx-csv-row">
+                  <button type="button" class="btn" id="btn-import-participants-csv">
+                    Import from CSV
                   </button>
+                  <button type="button" class="btn" id="btn-download-participant-template">
+                    Sample Template
+                  </button>
+                  <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
+                  <span id="participant-csv-status" class="muted"></span>
                 </div>
-                <div class="nt-pop-foot">
-                  <span id="participant-dropdown-count">0 selected</span>
-                  <button class="btn" id="btn-participant-done">Done</button>
+
+                <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
+                  <span class="nt-branch-view">
+                    <button type="button" id="branch-view-btn" title="View all branches">
+                      <b id="branch-count">Branches</b>
+                      <span id="branch-names"><span class="muted">No branches yet — select participants or add a branch.</span></span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </button>
+                    <span class="nt-branch-pop" id="branch-view-pop" style="display:none">
+                      <span class="opts" id="branch-view-list" style="display:block"></span>
+                    </span>
+                  </span>
+                  <span class="nt-branch-add">
+                    <button type="button" class="btn-mini" id="btn-add-branch-top">+ Add Branch</button>
+                    <span class="nt-branch-pop" id="branch-add-pop" style="display:none">
+                      <input id="branch-add-search" placeholder="Search branches…" autocomplete="off" />
+                      <span class="opts" id="branch-add-list" style="display:block"></span>
+                    </span>
+                  </span>
                 </div>
-              </div>
-            </div>
 
-            <!-- Participant CSV import (hidden file input + action buttons) -->
-            <div id="participant-csv-bar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="btn" id="btn-import-participants-csv" style="height:26px;padding:0 10px;font-size:12px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Import from CSV
-              </button>
-              <button type="button" class="btn" id="btn-download-participant-template" style="height:26px;padding:0 10px;font-size:12px;color:var(--ink-3);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Sample Template
-              </button>
-              <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
-              <span id="participant-csv-status" style="font-size:11.5px;color:var(--ink-3);"></span>
-            </div>
-
-            <!-- Attendance (edit mode only) -->
-            <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
-              <div class="nt-row" style="justify-content: flex-start;gap:10px;">
-                <span class="nt-kicker">Attendance</span>
-                <span id="nt-att-summary" style="flex:1;"></span>
-                <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
-              </div>
-              <div class="nt-pop" id="nt-attendance-pop" style="display: none">
-                <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
-                <div id="nt-attendance-list" class="nt-pop-list"></div>
-                <div class="nt-pop-foot">
-                  <span id="nt-attendance-count"></span>
-                  <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
+                <!-- Attendance (edit mode only) -->
+                <div class="nt-pop-wrap" id="nt-attendance-wrap" style="display: none">
+                  <div class="nt-row" style="justify-content: flex-start;gap:10px;">
+                    <span class="nt-kicker">Attendance</span>
+                    <span id="nt-att-summary" style="flex:1;"></span>
+                    <button type="button" class="btn" id="btn-mark-attendance" style="height:26px;padding:0 12px;font-size:12px;">Mark Attendance</button>
+                  </div>
+                  <div class="nt-pop" id="nt-attendance-pop" style="display: none">
+                    <div class="nt-pop-search" style="font-size:13px;font-weight:600;color:var(--ink-1);">Mark Attendance</div>
+                    <div id="nt-attendance-list" class="nt-pop-list"></div>
+                    <div class="nt-pop-foot">
+                      <span id="nt-attendance-count"></span>
+                      <button class="btn btn-primary" id="btn-attendance-save">Save Attendance</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Date & Time: labeled fields -->
-            <div class="nt-kicker-wrap">
-              <span class="nt-kicker">Date &amp; Time</span>
-            </div>
-            <div class="nt-dt-grid">
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">Start date</span>
-                <input
-                  type="date"
-                  class="nt-sched-date"
-                  id="new-from-date"
-                />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">End date</span>
-                <input type="date" class="nt-sched-date" id="new-to-date" />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">Start time</span>
-                <input
-                  type="text"
-                  class="nt-sched-time"
-                  id="new-time"
-                  placeholder="e.g. 10:00 AM"
-                  autocomplete="off"
-                />
-              </label>
-              <label class="nt-dt-cell">
-                <span class="nt-field-label">End time</span>
-                <input
-                  type="text"
-                  class="nt-sched-time"
-                  id="new-end-time"
-                  placeholder="e.g. 11:00 AM"
-                  autocomplete="off"
-                />
-              </label>
-            </div>
-            <div class="nt-sched-summary">
-              <div class="nt-sched-preview" id="new-schedule-preview">
-                Select date and time
-              </div>
-              <div class="nt-sched-hint" id="new-schedule-hint"></div>
-            </div>
+                <!-- Hidden compat: chips, attendee box, unified table (keeps all flows running) -->
+                <div class="nt-legacy-hidden" aria-hidden="true">
+                  <div class="nt-attendee-chips" id="participant-chips"></div>
+                  <span class="nt-attendee-count" id="participant-count">Add participants</span>
+                  <div class="nt-attendee" id="nt-attendee" title="Add participants"></div>
+                  <div class="nt-ptable" id="nt-part-panel">
+                    <div class="nt-ptable-head">
+                      <span class="t">Select participants</span>
+                      <select class="nt-type-filter" id="nt-part-type" title="Filter by type">
+                        <option value="">All</option>
+                        <option value="Employee">Employees</option>
+                        <option value="Agent">Agents</option>
+                      </select>
+                      <span class="c none" id="emp-selected-count">0 emp</span>
+                      <span class="c none" id="agent-selected-count">0 agents</span>
+                      <label class="nt-ptable-search">
+                        <input id="nt-part-search" autocomplete="off" />
+                      </label>
+                    </div>
+                    <div class="nt-ptable-scroll">
+                      <table>
+                        <tbody id="part-table-body"></tbody>
+                      </table>
+                      <div class="nt-ptable-empty" id="part-empty" style="display:none"></div>
+                    </div>
+                    <div class="nt-ptable-foot">
+                      <span id="part-showing"></span>
+                      <span style="flex:1"></span>
+                      <button type="button" class="btn-mini" id="part-load-more">Load more</button>
+                    </div>
+                  </div>
+                </div>
+              </div><!-- /nt-part (participants, right) -->
 
-            <!-- Training Type -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M3 9h18M9 21V9" />
-              </svg>
-              <label class="nt-readonly">
-                <span class="nt-kicker">Training Type</span>
+            <div class="nt-details fx-left">
+            <div class="fx-field">
+              <span class="fx-label">Training Title <b>*</b></span>
+              <input
+                class="fx-input"
+                id="new-program"
+                placeholder="Operational Excellence & Customer Relations"
+                autocomplete="off"
+              />
+            </div>
+            <div class="fx-row2">
+              <div class="fx-field">
+                <span class="fx-label">Training Type <b>*</b></span>
                 <select
-                  class="nt-input"
+                  class="fx-select"
                   id="new-training-type"
-                  style="cursor: pointer"
                 >
                   <option value="">Select type</option>
                   <option value="Classroom">Classroom</option>
                   <option value="Virtual">Virtual</option>
                 </select>
-              </label>
-            </div>
-
-            <!-- Trainer (read-only, auto-filled) -->
-            <div class="nt-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <label class="nt-readonly">
-                <span class="nt-kicker">Trainer</span>
-                <input id="new-trainer" readonly placeholder="Not assigned" />
-              </label>
-            </div>
-
-            <!-- Geographies: Multiple branches (Code - Branch Name) -->
-            <div class="nt-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 12px;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px;color:var(--ink-3);flex-shrink:0;">
-                  <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6" />
-                </svg>
-                <span class="nt-kicker" style="flex:1;">Geographies — Branches</span>
-                <button type="button" class="btn" id="btn-add-geo" style="height:26px;padding:0 10px;font-size:12px;">+ Add Branch</button>
               </div>
-              <div id="geo-rows" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;"></div>
-              <div class="nt-geo-hint" id="geo-hint" style="font-size:11px;color:var(--ink-3);"></div>
+              <div class="fx-field">
+                <span class="fx-label">Assigned Trainer <b>*</b></span>
+                <input class="fx-input" id="new-trainer" readonly placeholder="Not assigned" />
+              </div>
             </div>
-            <!-- Hidden legacy fields kept for backward compat (not visible) -->
-            <input type="hidden" id="new-branch" />
-            <input type="hidden" id="new-zone" />
-            <input type="hidden" id="new-region" />
-            <input type="hidden" id="new-district" />
-            <div id="branch-dropdown" style="display:none"></div>
-          </div>
+            <div class="fx-card">
+              <div class="fx-card-t">Schedule Range</div>
+              <div class="fx-row2">
+                <div class="fx-field">
+                  <span class="fx-label">Start Date</span>
+                  <input type="text" class="nt-sched-date" id="new-from-date" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric" autocomplete="off" />
+                </div>
+                <div class="fx-field">
+                  <span class="fx-label">End Date</span>
+                  <input type="text" class="nt-sched-date" id="new-to-date" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric" autocomplete="off" />
+                </div>
+              </div>
+              <div class="fx-row2">
+                <div class="fx-field">
+                  <span class="fx-label">Start Time</span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-time"
+                    placeholder="10:00 AM"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="fx-field">
+                  <span class="fx-label">End Time</span>
+                  <input
+                    type="text"
+                    class="nt-sched-time"
+                    id="new-end-time"
+                    placeholder="12:30 PM"
+                    autocomplete="off"
+                  />
+                </div>
+              </div>
+              <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
+              <div class="fx-alert" id="sched-alert" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                <div><b id="sched-alert-title">Potential scheduling conflict</b><span id="new-schedule-hint"></span></div>
+              </div>
+            </div>
 
-          <div class="nt-body nt-body-foot">
-            <label class="nt-check">
+            <label class="fx-check">
               <input type="checkbox" id="new-adhoc" />
-              Ad-hoc / Need-based training
+              Ad-hoc / need-based training
             </label>
-
-            <div class="nt-row nt-agenda-row">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-                />
-                <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
-              </svg>
+            <div class="fx-field fx-grow">
+              <span class="fx-label">Remarks</span>
               <textarea
-                class="nt-input nt-agenda"
+                class="fx-area"
                 id="new-agenda"
-                placeholder="Add notes / trainer remarks"
-                rows="1"
+                rows="3"
+                placeholder="Add any specific prerequisites, materials, or classroom guidelines..."
               ></textarea>
             </div>
+            <div id="geo-card-legacy" style="display:none" aria-hidden="true">
+              <button type="button" id="btn-add-geo" style="display:none">+ Add Branch</button>
+              <div id="geo-rows"></div>
+              <div id="geo-hint" style="display:none"></div>
+              <input type="hidden" id="new-branch" />
+              <input type="hidden" id="new-zone" />
+              <input type="hidden" id="new-region" />
+              <input type="hidden" id="new-district" />
+              <div id="branch-dropdown" style="display:none"></div>
+            </div>
+            </div><!-- /nt-details (form, left) -->
+            </div><!-- /nt-split -->
           </div>
 
           <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
-
       </div>
     </div>
 
@@ -4216,6 +4492,23 @@
           var ap = h >= 12 ? "PM" : "AM";
           h = h % 12 || 12;
           return h + ":" + m + " " + ap;
+        }
+        /* Dialog date display is DD-MM-YYYY; backend/API stays ISO (YYYY-MM-DD). */
+        function fmtDMY(iso) {
+          if (!iso) return "";
+          var p = String(iso).slice(0, 10).split("-");
+          if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
+          return p[2] + "-" + p[1] + "-" + p[0];
+        }
+        function parseDMY(s) {
+          var m = String(s || "").trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+          if (!m) return null;
+          var dd = parseInt(m[1], 10), mm = parseInt(m[2], 10), yy = parseInt(m[3], 10);
+          if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+          var d = new Date(yy, mm - 1, dd);
+          if (!d || d.getFullYear() !== yy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+          var ms = String(mm).padStart(2, "0"), ds = String(dd).padStart(2, "0");
+          return yy + "-" + ms + "-" + ds;
         }
         function inr(n) {
           n = Number(n || 0);
@@ -5770,9 +6063,9 @@
           if (extra) extra.innerHTML = "";
           document.getElementById("new-program").value = "";
           document.getElementById("new-program").readOnly = false;
-          document.getElementById("new-from-date").value = todayIso();
+          document.getElementById("new-from-date").value = fmtDMY(todayIso());
           document.getElementById("new-from-date").readOnly = false;
-          document.getElementById("new-to-date").value = todayIso();
+          document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-to-date").readOnly = false;
           document.getElementById("new-time").value = "";
           document.getElementById("new-time").readOnly = false;
@@ -5814,8 +6107,22 @@
           if (trainerInput) {
             trainerInput.value = state.currentEmployeeName || "";
           }
+          var locInput = document.getElementById("new-location");
+          if (locInput) { locInput.value = ""; locInput.readOnly = false; }
+          var esInput = document.getElementById("nt-part-search");
+          if (esInput) esInput.value = "";
+          var asInput = document.getElementById("nt-part-type");
+          if (asInput) asInput.value = "";
+          var bsInput = document.getElementById("branch-add-search");
+          if (bsInput) bsInput.value = "";
+          var bsPop = document.getElementById("branch-add-pop");
+          if (bsPop) bsPop.style.display = "none";
+          var bvPop = document.getElementById("branch-view-pop");
+          if (bvPop) bvPop.style.display = "none";
           setDialogMode("add");
           refreshModalAttendanceRow(null);
+          if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
+          if (dialogFn.renderSelList) dialogFn.renderSelList();
           addModal.classList.add("open");
           document.getElementById("new-program").focus();
         }
@@ -5869,8 +6176,8 @@
             if (el) el.value = v == null ? "" : v;
           };
           f("new-program", ev.training_program || ev.topic || "");
-          f("new-from-date", ev.from_date || "");
-          f("new-to-date", ev.to_date || ev.from_date || "");
+          f("new-from-date", fmtDMY(ev.from_date || ""));
+          f("new-to-date", fmtDMY(ev.to_date || ev.from_date || ""));
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
@@ -5883,6 +6190,7 @@
           }
           if (typeof renderGeoRows === "function") renderGeoRows();
           f("new-trainer", ev.trainer || ev.trainer_name || "");
+          f("new-location", ev.training_location || "");
           var adhoc = document.getElementById("new-adhoc");
           adhoc.checked = !!ev.is_adhoc;
           adhoc.disabled = !r.canEdit;
@@ -5909,10 +6217,18 @@
                 reference_doctype: p.reference_doctype || "Employee",
                 agent_employee: p.agent_employee || p.employee || "",
                 full_name: p.full_name || p.employee_name || "",
+                row_name: p.name || "",
+                attendance_status: p.attendance_status || "",
               };
             },
           );
+          var _es = document.getElementById("nt-part-search"); if (_es) _es.value = "";
+          var _as = document.getElementById("nt-part-type"); if (_as) _as.value = "";
+          var _bs = document.getElementById("branch-add-search"); if (_bs) _bs.value = "";
+          var _bp = document.getElementById("branch-add-pop"); if (_bp) _bp.style.display = "none";
+          var _bvp = document.getElementById("branch-view-pop"); if (_bvp) _bvp.style.display = "none";
           dialogFn.renderPChips();
+          if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
           updateSchedulePreview();
           var extra = document.getElementById("nt-edit-extra");
           if (extra) {
@@ -5977,14 +6293,14 @@
               "</span></label>"
             );
           }).join("");
-          html +=
-            '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
+          var statusHtml =
+            '<div class="drawer-section ee-card"><div class="drawer-section-title">Training Status</div>' +
             checkList +
             "</div>";
           if (r.showBudget) {
             var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
-            html +=
-              '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+            var budgetHtml =
+              '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
               '<div class="budget-edit">' +
               '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
               (ev.budget_amount == null ? "" : ev.budget_amount) +
@@ -5999,6 +6315,9 @@
               "</strong></span>" +
               '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
+            html += '<div class="ee-grid">' + statusHtml + budgetHtml + "</div>";
+          } else {
+            html += statusHtml;
           }
           return html;
         }
@@ -6021,13 +6340,18 @@
             return;
           }
           var tasks = [];
-          // Schedule changes — single Save handles reschedule
-          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
-          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          // Schedule changes — single Save handles reschedule (dialog shows DD-MM-YYYY, API uses ISO)
+          var fromRaw = ((document.getElementById("new-from-date") || {}).value || "").trim();
+          var toRaw = ((document.getElementById("new-to-date") || {}).value || "").trim();
+          if (fromRaw && !parseDMY(fromRaw)) { showToast("Enter dates as DD-MM-YYYY"); return; }
+          if (toRaw && !parseDMY(toRaw)) { showToast("Enter dates as DD-MM-YYYY"); return; }
+          var fromDate = parseDMY(fromRaw) || "";
+          var toDate   = parseDMY(toRaw) || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
           var trainingType = (document.getElementById("new-training-type") || {}).value || "";
-          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || trainingType !== (ev.training_type||"");
+          var trainingLocation = ((document.getElementById("new-location") || {}).value || "").trim();
+          var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || trainingType !== (ev.training_type||"") || trainingLocation !== (ev.training_location||"");
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
             if (toDate < fromDate) { showToast("To Date cannot be before From Date"); return; }
@@ -6054,9 +6378,10 @@
               to_date: toDate,
               start_time: startTime || null,
               end_time: endTime || null,
-              training_type: trainingType || null
+              training_type: trainingType || null,
+              training_location: trainingLocation || null
             }).then(function(){
-              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_type = trainingType;
+              ev.from_date = fromDate; ev.to_date = toDate; ev.start_time = startTime; ev.end_time = endTime; ev.time = startTime; ev.training_type = trainingType; ev.training_location = trainingLocation;
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
@@ -6199,14 +6524,24 @@
           }
 
           var program = document.getElementById("new-program").value.trim();
-          var date = document.getElementById("new-from-date").value;
-          var toDate = document.getElementById("new-to-date").value || date;
+          var fromRaw = (document.getElementById("new-from-date") || {}).value || "";
+          var toRaw = (document.getElementById("new-to-date") || {}).value || "";
           if (!program) {
             showToast("Training program is required");
             return;
           }
-          if (!date) {
+          if (!fromRaw.trim()) {
             showToast("From Date is required");
+            return;
+          }
+          var date = parseDMY(fromRaw);
+          var toDate = parseDMY(toRaw) || date;
+          if (!date) {
+            showToast("Enter dates as DD-MM-YYYY");
+            return;
+          }
+          if (!toDate) {
+            showToast("Enter dates as DD-MM-YYYY");
             return;
           }
           if (toDate < date) {
@@ -6257,6 +6592,7 @@
             training_type:
               (document.getElementById("new-training-type") || {}).value || null,
             trainer: trainerSel.value.trim() || null,
+            training_location: ((document.getElementById("new-location") || {}).value || "").trim() || null,
             zone: (state.selectedGeographies[0] && state.selectedGeographies[0].zone) || "",
             region: (state.selectedGeographies[0] && state.selectedGeographies[0].region) || "",
             district: (state.selectedGeographies[0] && state.selectedGeographies[0].district) || "",
@@ -6996,6 +7332,7 @@
             });
             updateHint();
             bindRowEvents();
+            if (dialogFn.refreshBranchSummary) { try { dialogFn.refreshBranchSummary(); } catch (e) {} }
           };
 
           function bindRowEvents(){
@@ -7138,6 +7475,19 @@
             return true;
           };
 
+          /* Remove a branch row by code (used by top branch chips). */
+          dialogFn.removeBranch = function(code){
+            if (!code || state.dialogMode === "edit") return false;
+            var geos = state.selectedGeographies || [];
+            var idx = -1;
+            geos.forEach(function(g, i){ if (g.branch === code && idx === -1) idx = i; });
+            if (idx === -1) return false;
+            geos.splice(idx, 1);
+            if (!geos.length) geos.push({});
+            renderGeoRows();
+            return true;
+          };
+
         })();
 
         /* ---------- Participants (Add Training modal) ---------- */
@@ -7209,7 +7559,7 @@
               : (item.employee_name || item.name);
             var sub;
             if (type === "Agent") {
-              sub = item.name + (item.branch_name ? " - " + item.branch_name : "");
+              sub = item.name + (item.branch_name ? " • " + item.branch_name : "");
             } else {
               var brCode = item.sahayog_branch || "";
               var brName = "";
@@ -7217,12 +7567,18 @@
                 var binfo = (state.branchPick || []).find(function(b){ return b.name === brCode; });
                 brName = binfo && binfo.branch ? binfo.branch : "";
               }
-              sub = item.name + (brName ? " - " + brName : (brCode ? " - " + brCode : ""));
+              var div = item.custom_division || item.department || "";
+              sub = item.name + (brCode ? " • " + (brName || brCode) : "") + (div ? " • " + div : "");
             }
+            var initials = displayName.trim().split(/\s+/).slice(0, 2).map(function (w) {
+              return w.charAt(0).toUpperCase();
+            }).join("") || "?";
             return (
               '<div class="branch-opt" data-val="' + esc(item.name) + '">' +
-              "<span>" + esc(displayName) + "</span>" +
-              '<span style="color:var(--ink-3);font-size:11px">' + esc(sub) + "</span>" +
+              '<span class="fx-ava">' + esc(initials) + "</span>" +
+              '<span class="fx-sug-meta"><span class="fx-sug-name">' + esc(displayName) + "</span>" +
+              '<span class="fx-sug-sub">' + esc(sub) + "</span></span>" +
+              '<span class="enter-hint">Press Enter to Add</span>' +
               "</div>"
             );
           }
@@ -7342,7 +7698,8 @@
             if (autoCode && dialogFn.autoAddBranch) {
               if (dialogFn.autoAddBranch(autoCode)) showToast("Branch auto-added from participant");
             }
-            renderPChips();
+            // Route via dialogFn so ALL synced views (chips, table, selected list) refresh
+            dialogFn.renderPChips();
             if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
           }
@@ -7401,20 +7758,541 @@
           }
           document.addEventListener("click", function(e) {
             if (!pAttendee || pAttendee.contains(e.target)) return;
+            // Search input lives outside the popover (Figma layout) — don't close on it
+            if (pSearch && (e.target === pSearch || (pSearch.contains && pSearch.contains(e.target)))) return;
             if (pPop && !pPop.contains(e.target)) closePop();
           });
           if (pChips) {
-            pChips.addEventListener("click", function(e) {
-              var btn = e.target.closest("[data-remove]");
-              if (btn) {
-                var key = btn.dataset.remove;
-                state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
-                  return pKey(p) !== key;
-                });
-                renderPChips();
+          pChips.addEventListener("click", function(e) {
+            var btn = e.target.closest("[data-remove]");
+            if (btn) {
+              var key = btn.dataset.remove;
+              state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
+                return pKey(p) !== key;
+              });
+              // Route via dialogFn so ALL synced views refresh
+              dialogFn.renderPChips();
+            }
+          });
+          }
+        })();
+
+        /* ---------- Unified participant table (Type filter) ----------
+           Drives the SAME state.selectedParticipants + autoAddBranch + renderPChips
+           logic as the legacy popover (kept hidden). No API/field changes. */
+        (function () {
+          var partBody = document.getElementById("part-table-body");
+          var partSearch = document.getElementById("nt-part-search");
+          var partType = document.getElementById("nt-part-type");
+          var empCount = document.getElementById("emp-selected-count");
+          var agentCount = document.getElementById("agent-selected-count");
+          var totalCount = document.getElementById("nt-total-count");
+          var partShowing = document.getElementById("part-showing");
+          var partMore = document.getElementById("part-load-more");
+          var partEmpty = document.getElementById("part-empty");
+          var branchSummary = document.getElementById("branch-summary");
+          var branchCount = document.getElementById("branch-count");
+          var branchAddBtn = document.getElementById("btn-add-branch-top");
+          var branchAddPop = document.getElementById("branch-add-pop");
+          var branchAddSearch = document.getElementById("branch-add-search");
+          var branchAddList = document.getElementById("branch-add-list");
+          var footHint = document.getElementById("fx-branch-context");
+          var PAGE = 60, partLimit = PAGE;
+          if (!partBody) return;
+
+          function selKeys() {
+            var s = {};
+            (state.selectedParticipants || []).forEach(function (p) {
+              s[p.reference_doctype + ":" + p.agent_employee] = true;
+            });
+            return s;
+          }
+          function branchDisplay(code) {
+            if (!code) return "—";
+            var b = (state.branchPick || []).find(function (x) { return x.name === code; });
+            if (b) return code + (b.branch ? " - " + b.branch : "");
+            return code;
+          }
+          function empBranch(e) {
+            return branchDisplay(e.sahayog_branch || "");
+          }
+          function empDivision(e) {
+            return e.custom_division || e.department || "—";
+          }
+          function agentBranch(a) {
+            if (a.branch_name) {
+              var want = String(a.branch_name).trim().toLowerCase();
+              var hit = null;
+              (state.branchPick || []).forEach(function (b) {
+                if (hit) return;
+                if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                    (b.branch && String(b.branch).trim().toLowerCase() === want)) hit = b;
+              });
+              if (hit) return hit.name + (hit.branch ? " - " + hit.branch : "");
+              return a.branch_name;
+            }
+            return "—";
+          }
+          function matchEmp(e, q) {
+            if (!q) return true;
+            return ((e.employee_name || "") + " " + (e.name || "") + " " +
+              (e.sahayog_branch || "") + " " + (e.custom_division || "") + " " +
+              (e.department || "")).toLowerCase().indexOf(q) !== -1;
+          }
+          function matchAgent(a, q) {
+            if (!q) return true;
+            return ((a.agent_name || "") + " " + (a.name || "") + " " +
+              (a.branch_name || "")).toLowerCase().indexOf(q) !== -1;
+          }
+          function toggleSel(type, id, fullName) {
+            if (state.dialogMode === "edit") return;
+            var key = type + ":" + id;
+            var idx = (state.selectedParticipants || []).findIndex(function (p) {
+              return p.reference_doctype + ":" + p.agent_employee === key;
+            });
+            if (idx !== -1) {
+              state.selectedParticipants.splice(idx, 1);
+            } else {
+              state.selectedParticipants.push({
+                reference_doctype: type, agent_employee: id, full_name: fullName || id,
+              });
+              // Branch auto-fetch from master (same as legacy popover path)
+              var code = "";
+              if (type === "Agent") {
+                var ag = (state.allAgents || []).find(function (x) { return x.name === id; }) || {};
+                if (ag.branch_name) {
+                  var want = String(ag.branch_name).trim().toLowerCase();
+                  (state.branchPick || []).forEach(function (b) {
+                    if (code) return;
+                    if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                        (b.branch && String(b.branch).trim().toLowerCase() === want)) code = b.name;
+                  });
+                  if (!code) code = ag.branch_name;
+                }
+              } else {
+                var em = (state.allEmployees || []).find(function (x) { return x.name === id; }) || {};
+                code = em.sahayog_branch || "";
               }
+              if (code && dialogFn.autoAddBranch) {
+                if (dialogFn.autoAddBranch(code)) showToast("Branch auto-added from participant");
+              }
+            }
+            if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
+            else refreshTables();
+          }
+          function rowHtml(type, code, name, branch, division, checked, disabled) {
+            var tag = type === "Agent"
+              ? '<span class="role-tag agent">Agent</span>'
+              : '<span class="role-tag emp">Employee</span>';
+            return '<tr data-type="' + type + '" data-id="' + esc(code) + '" class="' +
+              (checked ? "sel" : "") + '">' +
+              '<td><input type="checkbox" data-ck="' + type + ":" + esc(code) + '"' +
+              (checked ? " checked" : "") + (disabled ? " disabled" : "") + " /></td>" +
+              '<td class="cell-code" title="' + esc(code) + '">' + esc(code) + "</td>" +
+              '<td class="cell-wrap" title="' + esc(name) + '">' + esc(name) + "</td>" +
+              '<td class="cell-wrap" title="' + esc(branch) + '">' + esc(branch) + "</td>" +
+              '<td class="cell-wrap" title="' + esc(division) + '">' + esc(division) + "</td>" +
+              "<td>" + tag + "</td>" +
+              "</tr>";
+          }
+          function updateBranchSummary() {
+            var geos = (state.selectedGeographies || []).filter(function (g) { return g.branch; });
+            // Branches derived from selected participants are auto-managed (locked);
+            // only manually added branches can be removed here.
+            var autoSet = {};
+            (state.selectedParticipants || []).forEach(function (p) {
+              var code = "";
+              if (p.reference_doctype === "Agent") {
+                var ag = (state.allAgents || []).find(function (x) { return x.name === p.agent_employee; }) || {};
+                if (ag.branch_name) {
+                  var want = String(ag.branch_name).trim().toLowerCase();
+                  (state.branchPick || []).forEach(function (b) {
+                    if (code) return;
+                    if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                        (b.branch && String(b.branch).trim().toLowerCase() === want)) code = b.name;
+                  });
+                  if (!code) code = ag.branch_name;
+                }
+              } else {
+                var em = (state.allEmployees || []).find(function (x) { return x.name === p.agent_employee; }) || {};
+                code = em.sahayog_branch || "";
+              }
+              if (code) autoSet[code] = true;
+            });
+            var viewBtn = document.getElementById("branch-view-btn");
+            var namesEl = document.getElementById("branch-names");
+            var viewPop = document.getElementById("branch-view-pop");
+            var viewList = document.getElementById("branch-view-list");
+            if (branchCount) branchCount.textContent = geos.length ?
+              geos.length + " branches identified" : "Branches";
+            if (!namesEl || !viewList) return;
+            var disabled = state.dialogMode === "edit" ? " disabled" : "";
+            var lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;opacity:.55;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
+            if (!geos.length) {
+              namesEl.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
+              viewList.innerHTML = "";
+              if (viewPop) viewPop.style.display = "none";
+              if (viewBtn) viewBtn.disabled = true;
+            } else {
+              // One slim line: first 3 names, rest counted — never breaks layout
+              var first3 = geos.slice(0, 3).map(function (g) {
+                var b = (state.branchPick || []).find(function (x) { return x.name === g.branch; });
+                return (b && b.branch) ? b.branch : g.branch;
+              });
+              namesEl.textContent = first3.join(", ") + (geos.length > 3 ? " +" + (geos.length - 3) + " more" : "");
+              if (viewBtn) viewBtn.disabled = false;
+              // Full detail rows live in the popover
+              viewList.innerHTML = geos.map(function (g) {
+                var locked = !!autoSet[g.branch];
+                var meta = [g.zone, g.region, g.district].filter(function (x) { return x; }).join(" • ") || "—";
+                var action = locked
+                  ? '<span title="Auto-added from selected participants" style="display:inline-flex;">' + lockSvg + "</span>"
+                  : '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' + disabled + ">&times;</button>";
+                return '<div class="brow" title="' + esc(branchDisplay(g.branch)) + '">' +
+                  '<span class="brow-meta"><b>' + esc(branchDisplay(g.branch)) + "</b><i>" + esc(meta) + "</i></span>" +
+                  action + "</div>";
+              }).join("");
+            }
+            if (branchAddBtn) branchAddBtn.disabled = (state.dialogMode === "edit");
+          }
+          function renderBranchAddList() {
+            if (!branchAddList) return;
+            var q = (branchAddSearch ? branchAddSearch.value : "").trim().toLowerCase();
+            var selected = {};
+            (state.selectedGeographies || []).forEach(function (g) { if (g.branch) selected[g.branch] = true; });
+            var opts = (state.branchPick || []).filter(function (b) {
+              if (selected[b.name]) return false;
+              if (!q) return true;
+              return ((b.name || "") + " " + (b.branch || "")).toLowerCase().indexOf(q) !== -1;
+            });
+            if (!opts.length) {
+              branchAddList.innerHTML = '<div class="empty">No branches found</div>';
+              return;
+            }
+            branchAddList.innerHTML = opts.slice(0, 50).map(function (b) {
+              return '<div class="branch-opt" data-val="' + esc(b.name) + '"><span>' +
+                esc(b.name) + (b.branch ? " - " + esc(b.branch) : "") + "</span></div>";
+            }).join("") + (opts.length > 50 ? '<div class="empty">Showing 50 of ' + opts.length + " — refine search</div>" : "");
+          }
+          function closeBranchAddPop() { if (branchAddPop) branchAddPop.style.display = "none"; }
+          function refreshTables(resetPage) {
+            if (resetPage) { partLimit = PAGE; }
+            var keys = selKeys();
+            var disabled = state.dialogMode === "edit";
+            var q = (partSearch ? partSearch.value : "").trim().toLowerCase();
+            var tf = partType ? partType.value : "";
+            // Unified list: employees + agents, selected frozen at top (stable)
+            var rows = [];
+            if (!tf || tf === "Employee") {
+              (state.allEmployees || []).forEach(function (e) {
+                if (!matchEmp(e, q)) return;
+                rows.push({ type: "Employee", code: e.name, name: e.employee_name || e.name,
+                  branch: empBranch(e), division: empDivision(e) });
+              });
+            }
+            if (!tf || tf === "Agent") {
+              (state.allAgents || []).forEach(function (a) {
+                if (!matchAgent(a, q)) return;
+                rows.push({ type: "Agent", code: a.name, name: a.agent_name || a.name,
+                  branch: agentBranch(a), division: "—" });
+              });
+            }
+            rows.sort(function (a, b) {
+              var sa = keys[a.type + ":" + a.code] ? 0 : 1, sb = keys[b.type + ":" + b.code] ? 0 : 1;
+              return sa - sb;
+            });
+            // Preserve scroll position across re-render (better UX on toggle)
+            var scroller = partBody.closest ? partBody.closest(".nt-ptable-scroll") : null;
+            var sTop = scroller ? scroller.scrollTop : 0;
+            var shown = rows.slice(0, partLimit);
+            partBody.innerHTML = shown.map(function (r) {
+              return rowHtml(r.type, r.code, r.name, r.branch, r.division,
+                !!keys[r.type + ":" + r.code], disabled);
+            }).join("");
+            if (scroller) scroller.scrollTop = sTop;
+            if (partEmpty) partEmpty.style.display = rows.length ? "none" : "block";
+            if (partShowing) partShowing.textContent = "Showing " + shown.length + " of " + rows.length;
+            if (partMore) { partMore.disabled = shown.length >= rows.length; partMore.textContent = shown.length >= rows.length ? "All shown" : "Load more"; }
+            var ne = (state.selectedParticipants || []).filter(function (p) { return p.reference_doctype === "Employee"; }).length;
+            var na = (state.selectedParticipants || []).filter(function (p) { return p.reference_doctype === "Agent"; }).length;
+            if (empCount) {
+              empCount.textContent = ne ? ne + " emp" : "0 emp";
+              empCount.classList.toggle("none", !ne);
+            }
+            if (agentCount) {
+              agentCount.textContent = na ? na + " agents" : "0 agents";
+              agentCount.classList.toggle("none", !na);
+            }
+            if (totalCount) totalCount.textContent = (ne + na) ?
+              (ne + na) + " selected (" + ne + " emp + " + na + " agent)" : "0 selected";
+            updateBranchSummary();
+            if (footHint) {
+              var nb = (state.selectedGeographies || []).filter(function (g) { return g.branch; }).length;
+              footHint.textContent = nb ?
+                ("Targeting " + nb + " distinct branch" + (nb === 1 ? "" : "es") + " automatically based on participants.") :
+                "Select participants to auto-detect branches.";
+            }
+          }
+          // Keep tables in sync with legacy flows (CSV import, popover, open/fill)
+          if (dialogFn.renderPChips) {
+            var _origChips = dialogFn.renderPChips;
+            dialogFn.renderPChips = function () { _origChips(); refreshTables(); };
+          }
+          dialogFn.refreshPartTables = refreshTables;
+          dialogFn.refreshBranchSummary = updateBranchSummary;
+          partBody.addEventListener("click", function (e) {
+            var tr = e.target.closest("tr[data-id]");
+            if (!tr) return;
+            var tds = tr.querySelectorAll("td");
+            toggleSel(tr.dataset.type, tr.dataset.id,
+              tds[2] ? tds[2].textContent : tr.dataset.id);
+          });
+          partBody.addEventListener("change", function (e) { e.stopPropagation(); });
+          if (partSearch) partSearch.addEventListener("input", function () { refreshTables(true); });
+          if (partType) partType.addEventListener("change", function () { refreshTables(true); });
+          if (partMore) partMore.addEventListener("click", function () { partLimit += PAGE; refreshTables(); });
+          // Compact header CSV buttons reuse the same hidden file input / template logic
+          var topImport = document.getElementById("btn-import-participants-csv-top");
+          var topTpl = document.getElementById("btn-download-participant-template-top");
+          if (topImport) topImport.addEventListener("click", function () {
+            var b = document.getElementById("btn-import-participants-csv");
+            if (b) b.click();
+          });
+          if (topTpl) topTpl.addEventListener("click", function () {
+            var b = document.getElementById("btn-download-participant-template");
+            if (b) b.click();
+          });
+          // Branch view popover toggle + branch remove (same state as legacy geo rows)
+          if (branchSummary) branchSummary.addEventListener("click", function (e) {
+            var viewBtn = e.target.closest("#branch-view-btn");
+            if (viewBtn && !viewBtn.disabled) {
+              var pop = document.getElementById("branch-view-pop");
+              if (pop) pop.style.display = pop.style.display === "block" ? "none" : "block";
+              return;
+            }
+            var btn = e.target.closest("[data-rm-branch]");
+            if (!btn || btn.disabled) return;
+            if (dialogFn.removeBranch && dialogFn.removeBranch(btn.dataset.rmBranch)) {
+              refreshTables();
+            }
+          });
+          // + Add Branch picker (manual branches without participants)
+          if (branchAddBtn) branchAddBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            if (state.dialogMode === "edit") return;
+            if (!branchAddPop) return;
+            var open = branchAddPop.style.display === "block";
+            if (open) { closeBranchAddPop(); return; }
+            renderBranchAddList();
+            branchAddPop.style.display = "block";
+            if (branchAddSearch) { branchAddSearch.value = ""; renderBranchAddList(); branchAddSearch.focus(); }
+          });
+          if (branchAddSearch) branchAddSearch.addEventListener("input", renderBranchAddList);
+          if (branchAddList) branchAddList.addEventListener("mousedown", function (e) {
+            var opt = e.target.closest(".branch-opt");
+            if (!opt) return;
+            e.preventDefault();
+            var code = opt.dataset.val;
+            if (dialogFn.autoAddBranch && dialogFn.autoAddBranch(code)) {
+              showToast("Branch added");
+              closeBranchAddPop();
+              refreshTables();
+            } else {
+              showToast("Branch already selected");
+            }
+          });
+          document.addEventListener("click", function (e) {
+            if (!branchAddPop || branchAddPop.style.display !== "block") return;
+            var wrap = branchAddBtn ? branchAddBtn.closest(".nt-branch-add") : null;
+            if (wrap && wrap.contains(e.target)) return;
+            closeBranchAddPop();
+          });
+          // View-branches popover: close on outside click / Escape
+          document.addEventListener("click", function (e) {
+            var pop = document.getElementById("branch-view-pop");
+            if (!pop || pop.style.display !== "block") return;
+            var wrap = e.target.closest ? e.target.closest(".nt-branch-view") : null;
+            if (wrap) return;
+            pop.style.display = "none";
+          });
+          document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeBranchAddPop();
+            if (e.key === "Escape") {
+              var pop = document.getElementById("branch-view-pop");
+              if (pop) pop.style.display = "none";
+            }
+          });
+          refreshTables();
+        })();
+
+        /* ---------- Figma selected-participants list (create phase) ----------
+           Display-only layer over the SAME state.selectedParticipants. */
+        (function () {
+          var listEl = document.getElementById("sel-list");
+          var countEl = document.getElementById("sel-count");
+          var clearBtn = document.getElementById("btn-clear-sel");
+          var attBar = document.getElementById("att-bar");
+          var attCounts = document.getElementById("att-counts");
+          var attAllBtn = document.getElementById("btn-att-all");
+          var attSaveBtn = document.getElementById("btn-att-save");
+          var attSaving = false;
+          if (!listEl) return;
+          function initialsOf(name) {
+            var parts = String(name || "").trim().split(/\s+/).slice(0, 2).map(function (w) {
+              return w.charAt(0).toUpperCase();
+            });
+            return parts.join("") || "?";
+          }
+          function branchLabelFor(code) {
+            if (!code) return "";
+            var b = (state.branchPick || []).find(function (x) { return x.name === code; });
+            return (b && b.branch) ? b.branch : code;
+          }
+          function effAtt(p) {
+            if (p._att !== undefined) return p._att;
+            return p.attendance_status || "";
+          }
+          function renderSelList() {
+            var sel = state.selectedParticipants || [];
+            var isEdit = state.dialogMode === "edit";
+            var ne = sel.filter(function (p) { return p.reference_doctype === "Employee"; }).length;
+            var na = sel.length - ne;
+            if (countEl) countEl.textContent = sel.length;
+            var brk = document.getElementById("sel-break");
+            if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
+            if (clearBtn) clearBtn.disabled = !sel.length || isEdit;
+            if (!sel.length) {
+              listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
+              if (attBar) attBar.style.display = "none";
+              return;
+            }
+            listEl.innerHTML = sel.map(function (p) {
+              var isAgent = p.reference_doctype === "Agent";
+              var code = p.agent_employee || "";
+              var name = p.full_name || code, branch = "", div = "";
+              if (isAgent) {
+                var a = (state.allAgents || []).find(function (x) { return x.name === code; }) || {};
+                name = p.full_name || a.agent_name || code;
+                branch = a.branch_name || "";
+              } else {
+                var e = (state.allEmployees || []).find(function (x) { return x.name === code; }) || {};
+                name = p.full_name || e.employee_name || code;
+                branch = branchLabelFor(e.sahayog_branch || "");
+                div = e.custom_division || e.department || "";
+              }
+              var sub = code + (branch ? " • " + branch : "") + (div ? " • " + div : "");
+              var tail;
+              if (isEdit) {
+                var cur = effAtt(p);
+                var dis = attSaving || !p.row_name ? " disabled" : "";
+                tail = '<span class="fx-att-seg">' +
+                  '<button type="button" class="fx-att-btn' + (cur === "Present" ? " on-p" : "") + '" data-att="Present" data-row="' + esc(p.row_name || "") + '" title="Mark present"' + dis + ">Present</button>" +
+                  '<button type="button" class="fx-att-btn' + (cur === "Absent" ? " on-a" : "") + '" data-att="Absent" data-row="' + esc(p.row_name || "") + '" title="Mark absent"' + dis + ">Absent</button></span>";
+              } else {
+                tail = '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove">×</button>';
+              }
+              return '<div class="fx-sel-row"><span class="fx-ava">' + esc(initialsOf(name)) + "</span>" +
+                '<span class="fx-sel-meta"><b>' + esc(name) + "</b><i>" + esc(sub) + "</i></span>" +
+                '<span class="fx-sel-tag ' + (isAgent ? "agent" : "emp") + '">' + (isAgent ? "Agent" : "Employee") + "</span>" +
+                tail + "</div>";
+            }).join("");
+            syncAttBar(sel);
+          }
+          function attDirtyList(sel) {
+            return (sel || []).filter(function (p) {
+              return p.row_name && p._att !== undefined && p._att !== (p.attendance_status || "");
             });
           }
+          function syncAttBar(sel) {
+            if (!attBar) return;
+            if (state.dialogMode !== "edit" || !sel.length) { attBar.style.display = "none"; return; }
+            attBar.style.display = "flex";
+            var np = 0, na = 0, pend = 0;
+            sel.forEach(function (p) {
+              var s = effAtt(p);
+              if (s === "Present") np++;
+              else if (s === "Absent") na++;
+              else pend++;
+            });
+            if (attCounts) attCounts.textContent = np + " Present · " + na + " Absent · " + pend + " Pending";
+            var dirty = attDirtyList(sel).length;
+            if (attAllBtn) attAllBtn.disabled = attSaving || !pend;
+            if (attSaveBtn) {
+              attSaveBtn.disabled = attSaving || !dirty;
+              attSaveBtn.textContent = attSaving ? "Saving…" : ("Save Attendance" + (dirty ? " (" + dirty + ")" : ""));
+            }
+          }
+          dialogFn.renderSelList = renderSelList;
+          if (dialogFn.renderPChips) {
+            var _prevChips = dialogFn.renderPChips;
+            dialogFn.renderPChips = function () { _prevChips(); renderSelList(); };
+          }
+          listEl.addEventListener("click", function (e) {
+            var abtn = e.target.closest("[data-att]");
+            if (abtn && !abtn.disabled && state.dialogMode === "edit" && !attSaving) {
+              var row = abtn.dataset.row, val = abtn.dataset.att;
+              (state.selectedParticipants || []).forEach(function (p) {
+                if ((p.row_name || "") !== row) return;
+                // Clicking the active value again reverts to the saved status
+                if (effAtt(p) === val && p._att !== undefined) delete p._att;
+                else p._att = val;
+              });
+              renderSelList();
+              return;
+            }
+            var btn = e.target.closest("[data-rm-sel]");
+            if (!btn || btn.disabled) return;
+            var key = btn.dataset.rmSel;
+            state.selectedParticipants = (state.selectedParticipants || []).filter(function (p) {
+              return (p.reference_doctype + ":" + p.agent_employee) !== key;
+            });
+            dialogFn.renderPChips();
+          });
+          if (attAllBtn) attAllBtn.addEventListener("click", function () {
+            if (state.dialogMode !== "edit" || attSaving) return;
+            var n = 0;
+            (state.selectedParticipants || []).forEach(function (p) {
+              if (!effAtt(p)) { p._att = "Present"; n++; }
+            });
+            if (n) renderSelList();
+            else showToast("Everyone is already marked");
+          });
+          if (attSaveBtn) attSaveBtn.addEventListener("click", function () {
+            var ev = state.currentEvent;
+            var dirty = attDirtyList(state.selectedParticipants);
+            if (!ev || !dirty.length || attSaving) return;
+            attSaving = true;
+            renderSelList();
+            var tasks = dirty.map(function (p) {
+              return api("update_participant_attendance", {
+                training_name: ev.name,
+                participant_name: p.row_name,
+                attendance_status: p._att,
+              });
+            });
+            Promise.all(tasks).then(function () {
+              dirty.forEach(function (p) {
+                p.attendance_status = p._att;
+                delete p._att;
+                (ev.participant_list || []).forEach(function (lp) {
+                  if (lp.name === p.row_name) lp.attendance_status = p.attendance_status;
+                });
+              });
+              attSaving = false;
+              renderSelList();
+              showToast("Attendance saved");
+            }).catch(function (err) {
+              attSaving = false;
+              renderSelList();
+              showToast("Could not save attendance: " + (err.message || err));
+            });
+          });
+          if (clearBtn) clearBtn.addEventListener("click", function () {
+            if (state.dialogMode === "edit") return;
+            state.selectedParticipants = [];
+            dialogFn.renderPChips();
+          });
+          renderSelList();
         })();
 
         /* ---------- Participant CSV import ---------- */
@@ -7567,8 +8445,9 @@
           var eEl      = document.getElementById("new-end-time");
           var pvEl     = document.getElementById("new-schedule-preview");
           var hintEl   = document.getElementById("new-schedule-hint");
-          var f  = fEl ? fEl.value : "";
-          var t  = tEl ? tEl.value : "";
+          // Dialog shows DD-MM-YYYY; normalize to ISO for preview/overlap checks
+          var f  = parseDMY(fEl ? fEl.value : "") || "";
+          var t  = parseDMY(tEl ? tEl.value : "") || "";
           var st = sEl ? sEl.value.trim() : "";
           var et = eEl ? eEl.value.trim() : "";
 
@@ -7617,6 +8496,16 @@
             } else {
               hintEl.textContent = "";
               hintEl.className = "nt-sched-hint";
+            }
+            // Figma conflict slot: warnings in orange, plain counts as neutral info
+            var alertBox = document.getElementById("sched-alert");
+            var alertTitle = document.getElementById("sched-alert-title");
+            if (alertBox) {
+              var hasText = !!(hintEl && hintEl.textContent);
+              var isWarn = !!(hintEl && hintEl.className.indexOf("overlap") !== -1);
+              alertBox.style.display = hasText ? "flex" : "none";
+              alertBox.classList.toggle("info", hasText && !isWarn);
+              if (alertTitle) alertTitle.style.display = isWarn ? "" : "none";
             }
           }
         }

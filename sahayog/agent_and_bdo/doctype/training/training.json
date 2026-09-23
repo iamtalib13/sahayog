@@ -5,36 +5,37 @@
  "creation": "2026-08-11 12:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
-  "field_order": [
-   "section_break_details",
-   "training_program",
-   "is_adhoc",
-   "from_date",
-   "to_date",
-   "column_break_details",
-   "start_time",
-   "end_time",
-   "training_location",
-   "training_type",
-   "trainer",
-   "section_break_geo",
-   "branch",
-   "zone",
-   "column_break_geo",
-   "region",
-   "district",
-   "geographies",
+ "field_order": [
+  "section_break_details",
+  "training_program",
+  "is_adhoc",
+  "from_date",
+  "to_date",
+  "column_break_details",
+  "start_time",
+  "end_time",
+  "training_location",
+  "training_type",
+  "trainer",
+  "section_break_geo",
+  "zone",
+  "region",
+  "district",
+  "branch",
+  "column_break_geo",
+  "geographies",
   "section_break_participants",
   "participants",
   "section_break_status",
-  "status",
-  "training_delivered",
-  "attendance_marked",
   "column_break_status",
-  "pre_assessment_taken",
-  "post_assessment_taken",
-  "feedback_taken",
+  "status",
   "trainer_remarks",
+  "column_break_kvin",
+  "training_delivered",
+  "pre_assessment_taken",
+  "attendance_marked",
+  "feedback_taken",
+  "post_assessment_taken",
   "notifications_section",
   "pre_reminder_sent",
   "closure_sent",
@@ -102,18 +103,18 @@
    "fieldtype": "Data",
    "label": "Trainer"
   },
-   {
-    "fieldname": "training_location",
-    "fieldtype": "Data",
-    "label": "Training Location"
-   },
-   {
-    "description": "Classroom or Virtual (used in Adherence & Costing report)",
-    "fieldname": "training_type",
-    "fieldtype": "Select",
-    "label": "Training Type",
-    "options": "\nClassroom\nVirtual"
-   },
+  {
+   "fieldname": "training_location",
+   "fieldtype": "Data",
+   "label": "Training Location"
+  },
+  {
+   "description": "Classroom or Virtual (used in Adherence & Costing report)",
+   "fieldname": "training_type",
+   "fieldtype": "Select",
+   "label": "Training Type",
+   "options": "\nClassroom\nVirtual"
+  },
   {
    "fieldname": "section_break_geo",
    "fieldtype": "Section Break",
@@ -142,22 +143,22 @@
    "in_standard_filter": 1,
    "label": "District"
   },
-   {
-    "fieldname": "branch",
-    "fieldtype": "Link",
-    "in_standard_filter": 1,
-    "label": "Branch",
-    "options": "Sahayog Branch"
-   },
-   {
-    "description": "Select multiple branches — Zone/Region/District auto-filled from branch (Code - Branch Name)",
-    "fieldname": "geographies",
-    "fieldtype": "Table",
-    "label": "Geographies",
-    "options": "Training Geography"
-   },
-   {
-    "fieldname": "section_break_participants",
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Branch",
+   "options": "Sahayog Branch"
+  },
+  {
+   "description": "Select multiple branches \u2014 Zone/Region/District auto-filled from branch (Code - Branch Name)",
+   "fieldname": "geographies",
+   "fieldtype": "Table",
+   "label": "Geographies",
+   "options": "Training Geography"
+  },
+  {
+   "fieldname": "section_break_participants",
    "fieldtype": "Section Break",
    "label": "Participants"
   },
@@ -272,12 +273,16 @@
    "fieldtype": "Section Break",
    "hidden": 1,
    "label": "Notifications"
+  },
+  {
+   "fieldname": "column_break_kvin",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-11 15:25:19.126736",
+ "modified": "2026-09-22 11:46:08.251763",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Training",
