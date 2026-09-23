@@ -1852,11 +1852,13 @@
       }
       #addModal .modal { width:min(960px,96vw); max-width:96vw; border-radius:20px; }
       #addModal .nt-scroll { background:#fff; }
-      #addModal .nt-head { padding:24px 32px 20px; border-bottom:1px solid var(--border); }
-      #addModal .nt-head h3 { font-size:18px; font-weight:700; }
+      #addModal .nt-head { padding:14px 32px 12px; border-bottom:1px solid var(--border); }
+      #addModal .nt-head h3 { font-size:17px; font-weight:700; }
       #addModal .modal-close { background:var(--surface-2); border-radius:8px; width:32px; height:32px; }
-      #addModal #btn-save-training { height:37px; padding:10px 22px; font-size:14px; border-radius:8px; }
-      #addModal #btn-reschedule-training { height:37px; font-size:14px; border-radius:8px; }
+      #addModal #btn-save-training { height:32px; padding:7px 18px; font-size:13px; border-radius:8px;
+        box-shadow:0 1px 2px rgba(37,99,235,.45); }
+      #addModal #btn-save-training:hover { filter:brightness(1.07); }
+      #addModal #btn-reschedule-training { height:32px; font-size:13px; border-radius:8px; }
       .fx-cols { display:flex; gap:32px; padding:32px; align-items:flex-start; }
       .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
       .fx-field { display:flex; flex-direction:column; gap:6px; }
@@ -1938,6 +1940,21 @@
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
       .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
       #sel-list { display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
+      /* Inline attendance (edit mode): staged Present/Absent per row */
+      #att-bar { display:flex; align-items:center; gap:8px; background:var(--surface-2);
+        border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; }
+      #att-counts { font-weight:600; color:var(--ink-2); white-space:nowrap; }
+      #att-bar .btn { height:28px; padding:0 12px; font-size:12px; flex-shrink:0; }
+      .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
+        overflow:hidden; flex-shrink:0; background:var(--surface); }
+      .fx-att-btn { border:none; background:transparent; padding:5px 11px; font-size:11px;
+        font-weight:700; cursor:pointer; color:var(--ink-3); }
+      .fx-att-btn + .fx-att-btn { border-left:1px solid var(--border); }
+      .fx-att-btn.on-p { background:var(--green-soft); color:#15803d; }
+      .fx-att-btn.on-a { background:#fef2f2; color:#b91c1c; }
+      .fx-att-btn:disabled { cursor:default; }
+      /* Legacy modal attendance popup retired in favour of inline toggles */
+      #nt-attendance-wrap { display:none !important; }
       #sel-list .fx-empty { font-size:12.5px; color:var(--ink-3); padding:8px 0; }
       .fx-sel-row { display:flex; align-items:center; gap:10px; background:var(--surface-2);
         border:1px solid var(--border); border-radius:8px; padding:8px 12px; }
@@ -1956,10 +1973,6 @@
       .fx-csv-row .btn { height:30px; padding:0 12px; font-size:12px; }
       .fx-csv-row .muted { font-size:11.5px; color:var(--ink-3); }
       #addModal .nt-branch-summary { font-size:11.5px; }
-      /* footer */
-      .fx-foot { display:flex; align-items:center; gap:8px; padding:20px 32px 24px;
-        border-top:1px solid var(--border); font-size:12px; color:var(--ink-2); }
-      .fx-foot svg { width:16px; height:16px; color:var(--ink-2); flex-shrink:0; }
       /* two equal columns, form left, participants right */
       #addModal .nt-body { padding:0; gap:0; }
       #addModal .nt-split { gap:32px; padding:32px; align-items:flex-start; }
@@ -3999,11 +4012,11 @@
         <div class="nt-head">
           <div>
             <h3>New Training</h3>
-            <div style="font-size:13px;color:var(--ink-2);margin-top:4px;" id="nt-head-sub">Create an L&amp;D class, allocate a trainer, and assign branch employees</div>
+            <div style="font-size:12.5px;color:var(--ink-2);margin-top:2px;" id="nt-head-sub">Create an L&amp;D class, allocate a trainer, and assign branch employees</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-            <button class="btn" id="btn-reschedule-training" style="display:none;height:37px;padding:10px 18px;font-size:14px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
-            <button class="btn btn-primary" id="btn-save-training" style="height:37px;padding:10px 22px;font-size:14px;">Save Training</button>
+            <button class="btn" id="btn-reschedule-training" style="display:none;height:32px;padding:7px 18px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            <button class="btn btn-primary" id="btn-save-training" style="height:32px;padding:7px 18px;font-size:13px;">Save Training</button>
             <button class="modal-close" data-close="addModal" title="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -4057,6 +4070,13 @@
                   <button type="button" id="btn-clear-sel">Clear All</button>
                 </div>
                 <div id="sel-list"></div>
+                <!-- Inline attendance bar (edit mode only) -->
+                <div id="att-bar" style="display:none">
+                  <span id="att-counts"></span>
+                  <span style="flex:1"></span>
+                  <button type="button" class="btn" id="btn-att-all">Mark all present</button>
+                  <button type="button" class="btn btn-primary" id="btn-att-save" disabled>Save Attendance</button>
+                </div>
 
                 <!-- CSV import -->
                 <div class="fx-csv-row">
@@ -4238,11 +4258,6 @@
 
           <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
           <div class="nt-edit-extra" id="nt-edit-extra"></div>
-        </div>
-
-        <div class="fx-foot">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-          <span id="fx-branch-context">Select participants to auto-detect branches.</span>
         </div>
       </div>
     </div>
@@ -6186,6 +6201,8 @@
                 reference_doctype: p.reference_doctype || "Employee",
                 agent_employee: p.agent_employee || p.employee || "",
                 full_name: p.full_name || p.employee_name || "",
+                row_name: p.name || "",
+                attendance_status: p.attendance_status || "",
               };
             },
           );
@@ -8095,6 +8112,11 @@
           var listEl = document.getElementById("sel-list");
           var countEl = document.getElementById("sel-count");
           var clearBtn = document.getElementById("btn-clear-sel");
+          var attBar = document.getElementById("att-bar");
+          var attCounts = document.getElementById("att-counts");
+          var attAllBtn = document.getElementById("btn-att-all");
+          var attSaveBtn = document.getElementById("btn-att-save");
+          var attSaving = false;
           if (!listEl) return;
           function initialsOf(name) {
             var parts = String(name || "").trim().split(/\s+/).slice(0, 2).map(function (w) {
@@ -8107,16 +8129,22 @@
             var b = (state.branchPick || []).find(function (x) { return x.name === code; });
             return (b && b.branch) ? b.branch : code;
           }
+          function effAtt(p) {
+            if (p._att !== undefined) return p._att;
+            return p.attendance_status || "";
+          }
           function renderSelList() {
             var sel = state.selectedParticipants || [];
+            var isEdit = state.dialogMode === "edit";
             var ne = sel.filter(function (p) { return p.reference_doctype === "Employee"; }).length;
             var na = sel.length - ne;
             if (countEl) countEl.textContent = sel.length;
             var brk = document.getElementById("sel-break");
             if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
-            if (clearBtn) clearBtn.disabled = !sel.length || state.dialogMode === "edit";
+            if (clearBtn) clearBtn.disabled = !sel.length || isEdit;
             if (!sel.length) {
               listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
+              if (attBar) attBar.style.display = "none";
               return;
             }
             listEl.innerHTML = sel.map(function (p) {
@@ -8134,12 +8162,46 @@
                 div = e.custom_division || e.department || "";
               }
               var sub = code + (branch ? " • " + branch : "") + (div ? " • " + div : "");
-              var dis = state.dialogMode === "edit" ? " disabled" : "";
+              var tail;
+              if (isEdit) {
+                var cur = effAtt(p);
+                var dis = attSaving || !p.row_name ? " disabled" : "";
+                tail = '<span class="fx-att-seg">' +
+                  '<button type="button" class="fx-att-btn' + (cur === "Present" ? " on-p" : "") + '" data-att="Present" data-row="' + esc(p.row_name || "") + '" title="Mark present"' + dis + ">Present</button>" +
+                  '<button type="button" class="fx-att-btn' + (cur === "Absent" ? " on-a" : "") + '" data-att="Absent" data-row="' + esc(p.row_name || "") + '" title="Mark absent"' + dis + ">Absent</button></span>";
+              } else {
+                tail = '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove">×</button>';
+              }
               return '<div class="fx-sel-row"><span class="fx-ava">' + esc(initialsOf(name)) + "</span>" +
                 '<span class="fx-sel-meta"><b>' + esc(name) + "</b><i>" + esc(sub) + "</i></span>" +
                 '<span class="fx-sel-tag ' + (isAgent ? "agent" : "emp") + '">' + (isAgent ? "Agent" : "Employee") + "</span>" +
-                '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove"' + dis + ">×</button></div>";
+                tail + "</div>";
             }).join("");
+            syncAttBar(sel);
+          }
+          function attDirtyList(sel) {
+            return (sel || []).filter(function (p) {
+              return p.row_name && p._att !== undefined && p._att !== (p.attendance_status || "");
+            });
+          }
+          function syncAttBar(sel) {
+            if (!attBar) return;
+            if (state.dialogMode !== "edit" || !sel.length) { attBar.style.display = "none"; return; }
+            attBar.style.display = "flex";
+            var np = 0, na = 0, pend = 0;
+            sel.forEach(function (p) {
+              var s = effAtt(p);
+              if (s === "Present") np++;
+              else if (s === "Absent") na++;
+              else pend++;
+            });
+            if (attCounts) attCounts.textContent = np + " Present · " + na + " Absent · " + pend + " Pending";
+            var dirty = attDirtyList(sel).length;
+            if (attAllBtn) attAllBtn.disabled = attSaving || !pend;
+            if (attSaveBtn) {
+              attSaveBtn.disabled = attSaving || !dirty;
+              attSaveBtn.textContent = attSaving ? "Saving…" : ("Save Attendance" + (dirty ? " (" + dirty + ")" : ""));
+            }
           }
           dialogFn.renderSelList = renderSelList;
           if (dialogFn.renderPChips) {
@@ -8147,6 +8209,18 @@
             dialogFn.renderPChips = function () { _prevChips(); renderSelList(); };
           }
           listEl.addEventListener("click", function (e) {
+            var abtn = e.target.closest("[data-att]");
+            if (abtn && !abtn.disabled && state.dialogMode === "edit" && !attSaving) {
+              var row = abtn.dataset.row, val = abtn.dataset.att;
+              (state.selectedParticipants || []).forEach(function (p) {
+                if ((p.row_name || "") !== row) return;
+                // Clicking the active value again reverts to the saved status
+                if (effAtt(p) === val && p._att !== undefined) delete p._att;
+                else p._att = val;
+              });
+              renderSelList();
+              return;
+            }
             var btn = e.target.closest("[data-rm-sel]");
             if (!btn || btn.disabled) return;
             var key = btn.dataset.rmSel;
@@ -8154,6 +8228,45 @@
               return (p.reference_doctype + ":" + p.agent_employee) !== key;
             });
             dialogFn.renderPChips();
+          });
+          if (attAllBtn) attAllBtn.addEventListener("click", function () {
+            if (state.dialogMode !== "edit" || attSaving) return;
+            var n = 0;
+            (state.selectedParticipants || []).forEach(function (p) {
+              if (!effAtt(p)) { p._att = "Present"; n++; }
+            });
+            if (n) renderSelList();
+            else showToast("Everyone is already marked");
+          });
+          if (attSaveBtn) attSaveBtn.addEventListener("click", function () {
+            var ev = state.currentEvent;
+            var dirty = attDirtyList(state.selectedParticipants);
+            if (!ev || !dirty.length || attSaving) return;
+            attSaving = true;
+            renderSelList();
+            var tasks = dirty.map(function (p) {
+              return api("update_participant_attendance", {
+                training_name: ev.name,
+                participant_name: p.row_name,
+                attendance_status: p._att,
+              });
+            });
+            Promise.all(tasks).then(function () {
+              dirty.forEach(function (p) {
+                p.attendance_status = p._att;
+                delete p._att;
+                (ev.participant_list || []).forEach(function (lp) {
+                  if (lp.name === p.row_name) lp.attendance_status = p.attendance_status;
+                });
+              });
+              attSaving = false;
+              renderSelList();
+              showToast("Attendance saved");
+            }).catch(function (err) {
+              attSaving = false;
+              renderSelList();
+              showToast("Could not save attendance: " + (err.message || err));
+            });
           });
           if (clearBtn) clearBtn.addEventListener("click", function () {
             if (state.dialogMode === "edit") return;
