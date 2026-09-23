@@ -1862,13 +1862,14 @@
       #addModal .fx-input:focus, #addModal .fx-select:focus { border-color:var(--accent); }
       #addModal #new-program.fx-input:focus { border-width:1.5px; }
       #addModal #new-trainer.fx-input { background:var(--surface-2); cursor:default; }
-      .fx-row2 { display:flex; gap:16px; }
+      .fx-row2 { display:flex; gap:12px; align-items:flex-start; }
       .fx-row2 .fx-field { flex:1; min-width:0; }
-      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; }
+      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px;
+        display:flex; flex-direction:column; gap:14px; }
       .fx-card-t { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:2px; }
       #addModal .fx-card .nt-sched-date, #addModal .fx-card .nt-sched-time {
-        height:32px; border:1px solid var(--border); border-radius:8px; background:#fff;
-        padding:8px 12px; font-size:13px; color:var(--ink-1); outline:none; width:100%;
+        height:36px; box-sizing:border-box; border:1px solid var(--border); border-radius:8px; background:#fff;
+        padding:8px 12px; font-size:13px; line-height:1.4; color:var(--ink-1); outline:none; width:100%;
       }
       #addModal .fx-card .nt-sched-date:focus, #addModal .fx-card .nt-sched-time:focus { border-color:var(--accent); }
       .fx-preview { font-size:12.5px; font-weight:600; color:var(--ink-2); }
@@ -1924,7 +1925,8 @@
       #btn-clear-sel { border:none; background:none; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; padding:0; }
       #btn-clear-sel:hover { text-decoration:underline; }
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
-      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; }
+      .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
       #sel-list .fx-empty { font-size:12.5px; color:var(--ink-3); padding:8px 0; }
       .fx-sel-row { display:flex; align-items:center; gap:10px; background:var(--surface-2);
         border:1px solid var(--border); border-radius:8px; padding:8px 12px; }
@@ -4040,7 +4042,7 @@
 
                 <!-- Selected participants -->
                 <div class="fx-sel-head">
-                  <span class="t">Selected Participants (<span id="sel-count">0</span>)</span>
+                  <span class="t">Selected Participants (<span id="sel-count">0</span>) <span class="fx-sel-break" id="sel-break"></span></span>
                   <button type="button" id="btn-clear-sel">Clear All</button>
                 </div>
                 <div id="sel-list"></div>
@@ -4152,15 +4154,11 @@
               <div class="fx-row2">
                 <div class="fx-field">
                   <span class="fx-label">Start Date</span>
-                  <input
-                    type="date"
-                    class="nt-sched-date"
-                    id="new-from-date"
-                  />
+                  <input type="text" class="nt-sched-date" id="new-from-date" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric" autocomplete="off" />
                 </div>
                 <div class="fx-field">
                   <span class="fx-label">End Date</span>
-                  <input type="date" class="nt-sched-date" id="new-to-date" />
+                  <input type="text" class="nt-sched-date" id="new-to-date" placeholder="DD-MM-YYYY" maxlength="10" inputmode="numeric" autocomplete="off" />
                 </div>
               </div>
               <div class="fx-row2">
@@ -4444,6 +4442,23 @@
           var ap = h >= 12 ? "PM" : "AM";
           h = h % 12 || 12;
           return h + ":" + m + " " + ap;
+        }
+        /* Dialog date display is DD-MM-YYYY; backend/API stays ISO (YYYY-MM-DD). */
+        function fmtDMY(iso) {
+          if (!iso) return "";
+          var p = String(iso).slice(0, 10).split("-");
+          if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
+          return p[2] + "-" + p[1] + "-" + p[0];
+        }
+        function parseDMY(s) {
+          var m = String(s || "").trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+          if (!m) return null;
+          var dd = parseInt(m[1], 10), mm = parseInt(m[2], 10), yy = parseInt(m[3], 10);
+          if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+          var d = new Date(yy, mm - 1, dd);
+          if (!d || d.getFullYear() !== yy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+          var ms = String(mm).padStart(2, "0"), ds = String(dd).padStart(2, "0");
+          return yy + "-" + ms + "-" + ds;
         }
         function inr(n) {
           n = Number(n || 0);
@@ -5998,9 +6013,9 @@
           if (extra) extra.innerHTML = "";
           document.getElementById("new-program").value = "";
           document.getElementById("new-program").readOnly = false;
-          document.getElementById("new-from-date").value = todayIso();
+          document.getElementById("new-from-date").value = fmtDMY(todayIso());
           document.getElementById("new-from-date").readOnly = false;
-          document.getElementById("new-to-date").value = todayIso();
+          document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-to-date").readOnly = false;
           document.getElementById("new-time").value = "";
           document.getElementById("new-time").readOnly = false;
@@ -6109,8 +6124,8 @@
             if (el) el.value = v == null ? "" : v;
           };
           f("new-program", ev.training_program || ev.topic || "");
-          f("new-from-date", ev.from_date || "");
-          f("new-to-date", ev.to_date || ev.from_date || "");
+          f("new-from-date", fmtDMY(ev.from_date || ""));
+          f("new-to-date", fmtDMY(ev.to_date || ev.from_date || ""));
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
@@ -6267,9 +6282,13 @@
             return;
           }
           var tasks = [];
-          // Schedule changes — single Save handles reschedule
-          var fromDate = (document.getElementById("new-from-date") || {}).value || "";
-          var toDate   = (document.getElementById("new-to-date") || {}).value || fromDate;
+          // Schedule changes — single Save handles reschedule (dialog shows DD-MM-YYYY, API uses ISO)
+          var fromRaw = ((document.getElementById("new-from-date") || {}).value || "").trim();
+          var toRaw = ((document.getElementById("new-to-date") || {}).value || "").trim();
+          if (fromRaw && !parseDMY(fromRaw)) { showToast("Enter dates as DD-MM-YYYY"); return; }
+          if (toRaw && !parseDMY(toRaw)) { showToast("Enter dates as DD-MM-YYYY"); return; }
+          var fromDate = parseDMY(fromRaw) || "";
+          var toDate   = parseDMY(toRaw) || fromDate;
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
           var trainingType = (document.getElementById("new-training-type") || {}).value || "";
@@ -6447,14 +6466,24 @@
           }
 
           var program = document.getElementById("new-program").value.trim();
-          var date = document.getElementById("new-from-date").value;
-          var toDate = document.getElementById("new-to-date").value || date;
+          var fromRaw = (document.getElementById("new-from-date") || {}).value || "";
+          var toRaw = (document.getElementById("new-to-date") || {}).value || "";
           if (!program) {
             showToast("Training program is required");
             return;
           }
-          if (!date) {
+          if (!fromRaw.trim()) {
             showToast("From Date is required");
+            return;
+          }
+          var date = parseDMY(fromRaw);
+          var toDate = parseDMY(toRaw) || date;
+          if (!date) {
+            showToast("Enter dates as DD-MM-YYYY");
+            return;
+          }
+          if (!toDate) {
+            showToast("Enter dates as DD-MM-YYYY");
             return;
           }
           if (toDate < date) {
@@ -7611,7 +7640,8 @@
             if (autoCode && dialogFn.autoAddBranch) {
               if (dialogFn.autoAddBranch(autoCode)) showToast("Branch auto-added from participant");
             }
-            renderPChips();
+            // Route via dialogFn so ALL synced views (chips, table, selected list) refresh
+            dialogFn.renderPChips();
             if (pSearch) { pSearch.value = ""; pSearch.focus(); }
             if (pPop && pPop.style.display === "block") renderPDd("");
           }
@@ -7675,16 +7705,17 @@
             if (pPop && !pPop.contains(e.target)) closePop();
           });
           if (pChips) {
-            pChips.addEventListener("click", function(e) {
-              var btn = e.target.closest("[data-remove]");
-              if (btn) {
-                var key = btn.dataset.remove;
-                state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
-                  return pKey(p) !== key;
-                });
-                renderPChips();
-              }
-            });
+          pChips.addEventListener("click", function(e) {
+            var btn = e.target.closest("[data-remove]");
+            if (btn) {
+              var key = btn.dataset.remove;
+              state.selectedParticipants = (state.selectedParticipants || []).filter(function(p) {
+                return pKey(p) !== key;
+              });
+              // Route via dialogFn so ALL synced views refresh
+              dialogFn.renderPChips();
+            }
+          });
           }
         })();
 
@@ -7809,8 +7840,30 @@
           }
           function updateBranchSummary() {
             var geos = (state.selectedGeographies || []).filter(function (g) { return g.branch; });
+            // Branches derived from selected participants are auto-managed (locked);
+            // only manually added branches can be removed here.
+            var autoSet = {};
+            (state.selectedParticipants || []).forEach(function (p) {
+              var code = "";
+              if (p.reference_doctype === "Agent") {
+                var ag = (state.allAgents || []).find(function (x) { return x.name === p.agent_employee; }) || {};
+                if (ag.branch_name) {
+                  var want = String(ag.branch_name).trim().toLowerCase();
+                  (state.branchPick || []).forEach(function (b) {
+                    if (code) return;
+                    if ((b.name && String(b.name).trim().toLowerCase() === want) ||
+                        (b.branch && String(b.branch).trim().toLowerCase() === want)) code = b.name;
+                  });
+                  if (!code) code = ag.branch_name;
+                }
+              } else {
+                var em = (state.allEmployees || []).find(function (x) { return x.name === p.agent_employee; }) || {};
+                code = em.sahayog_branch || "";
+              }
+              if (code) autoSet[code] = true;
+            });
             if (branchCount) branchCount.textContent = geos.length ?
-              "Branches (" + geos.length + ")" : "Branches";
+              geos.length + " branches identified" : "Branches";
             if (!branchChips) return;
             if (!geos.length) {
               branchChips.classList.remove("expanded");
@@ -7820,17 +7873,22 @@
             var MAX = 3;
             var disabled = state.dialogMode === "edit" ? " disabled" : "";
             var chip = function (g) {
-              return '<span class="bchip" title="' + esc(branchDisplay(g.branch)) + '">' +
-                esc(branchDisplay(g.branch)) +
-                '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' +
-                disabled + ">&times;</button></span>";
+              var locked = !!autoSet[g.branch];
+              var inner = esc(branchDisplay(g.branch));
+              if (locked) {
+                inner += ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;opacity:.6;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
+              } else {
+                inner += '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' +
+                  disabled + ">&times;</button>";
+              }
+              return '<span class="bchip" title="' + (locked ? "Auto-added from selected participants" : esc(branchDisplay(g.branch))) + '">' + inner + "</span>";
             };
-            // Collapsed: one line (first 3 + more toggle) so 50+ branches never break the UX
+            // Collapsed: one line (first 3 + view toggle) so 50+ branches never break the UX
             if (!branchExpanded && geos.length > MAX) {
               branchChips.classList.remove("expanded");
               branchChips.innerHTML = geos.slice(0, MAX).map(chip).join("") +
-                '<button type="button" class="bmore" data-branch-toggle>+' +
-                (geos.length - MAX) + " more</button>";
+                '<button type="button" class="bmore" data-branch-toggle>View Branches (' +
+                geos.length + ")</button>";
             } else {
               branchChips.classList.toggle("expanded", geos.length > MAX);
               branchChips.innerHTML = geos.map(chip).join("") +
@@ -8012,7 +8070,11 @@
           }
           function renderSelList() {
             var sel = state.selectedParticipants || [];
+            var ne = sel.filter(function (p) { return p.reference_doctype === "Employee"; }).length;
+            var na = sel.length - ne;
             if (countEl) countEl.textContent = sel.length;
+            var brk = document.getElementById("sel-break");
+            if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
             if (clearBtn) clearBtn.disabled = !sel.length || state.dialogMode === "edit";
             if (!sel.length) {
               listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
@@ -8212,8 +8274,9 @@
           var eEl      = document.getElementById("new-end-time");
           var pvEl     = document.getElementById("new-schedule-preview");
           var hintEl   = document.getElementById("new-schedule-hint");
-          var f  = fEl ? fEl.value : "";
-          var t  = tEl ? tEl.value : "";
+          // Dialog shows DD-MM-YYYY; normalize to ISO for preview/overlap checks
+          var f  = parseDMY(fEl ? fEl.value : "") || "";
+          var t  = parseDMY(tEl ? tEl.value : "") || "";
           var st = sEl ? sEl.value.trim() : "";
           var et = eEl ? eEl.value.trim() : "";
 
