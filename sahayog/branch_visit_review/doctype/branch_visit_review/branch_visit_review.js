@@ -157,8 +157,8 @@ function render_checklist(frm, template) {
 				let sr = 1;
 				Object.keys(grouped).forEach(function (cat) {
 					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
-					checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>" + cat + "</b> <button class='btn btn-xs btn-default add-category-row' data-category='" + safe_cat + "' style='margin-left:5px;'>+</button></h5>";
-					checklist_html += "<table class='table table-bordered category-table' data-category='" + safe_cat + "'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='add-category-row' data-category='" + safe_cat + "'>+</button></div>";
+					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
 					grouped[cat].forEach(function (row) {
 						let i = row._idx;
 						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
@@ -194,8 +194,8 @@ function render_checklist(frm, template) {
 						if (!exists) custom_items.push(resp);
 					});
 					if (custom_items.length > 0) {
-						checklist_html += "<h5 style='margin-top:15px;margin-bottom:5px;'><b>Additional Items</b></h5>";
-						checklist_html += "<table class='table table-bordered'><thead><tr><th>Sr</th><th>Evaluation Parameter / Question</th><th>Response Type</th></tr></thead><tbody>";
+						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
+						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
 							let response_html = '<input type="text" class="form-control observation-input" placeholder="Enter the text" value="' + (resp.response || "") + '">';
 							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
@@ -207,7 +207,7 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action Item</th><th>Responsible</th><th>Priority</th><th>Target Date</th><th>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
+			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					let owner_display = item.owner || "";
@@ -228,16 +228,49 @@ function render_checklist(frm, template) {
 			action_html += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
-			action_html += "<button class='btn btn-sm btn-default add-action-row' style='margin-top:5px;'>Add</button>";
+			action_html += "<button class='btn-add-action add-action-row'>+ Add Action Item</button>";
 
-			let tabs_html = "<ul class='nav nav-tabs' style='margin-bottom:15px;'>";
+			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
 			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
 			tabs_html += "</ul>";
 			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
-			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
+			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
+
+			let style = `<style>
+				.bvr-tabs .nav-tabs { border-bottom: 2px solid #d1d8dd; margin-bottom: 12px; }
+				.bvr-tabs .tab-content-review { width: 100%; }
+				.bvr-tabs .nav-tabs > li > a { border: none; color: #6c7680; font-weight: 600; padding: 8px 16px; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+				.bvr-tabs .nav-tabs > li.active > a, .bvr-tabs .nav-tabs > li > a:hover { border: none; color: #16181d; border-bottom: 2px solid #5e64ff; background: none; }
+				.bvr-tabs .category-header { background: linear-gradient(135deg, #f5f7fa 0%, #eef1f5 100%); padding: 8px 12px; border-radius: 6px; margin: 12px 0 6px 0; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #5e64ff; box-sizing: border-box; }
+				.bvr-tabs .category-header + table, .bvr-tabs .category-header + .category-table { width: 100%; }
+				.bvr-tabs .category-header h5 { margin: 0; font-size: 13px; font-weight: 600; color: #16181d; }
+				.bvr-tabs .category-header .add-row-btn { background: #5e64ff; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 20px; text-align: center; cursor: pointer; padding: 0; transition: background 0.2s; }
+				.bvr-tabs .category-header .add-row-btn:hover { background: #4c53d0; }
+				.bvr-tabs table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 6px; }
+				.bvr-tabs table thead th { background: #f8f9fb; color: #4a5568; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 7px 10px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+				.bvr-tabs table tbody td { padding: 7px 10px; border-bottom: 1px solid #edf0f4; vertical-align: middle; font-size: 13px; }
+				.bvr-tabs table tbody tr:last-child td { border-bottom: none; }
+				.bvr-tabs table tbody tr:hover { background: #f7f8fc; }
+				.bvr-tabs .rating-stars .star { display: inline-block; font-size: 20px; transition: all 0.15s; margin: 0; }
+				.bvr-tabs .rating-stars .star:hover { transform: scale(1.25); }
+				.bvr-tabs .yesno-group label { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; padding: 4px 10px; border-radius: 16px; font-size: 12px; font-weight: 500; transition: all 0.2s; margin-right: 4px; }
+				.bvr-tabs .yesno-group input[type='radio'] { accent-color: #5e64ff; }
+				.bvr-tabs .employee-search-wrapper { position: relative; min-width: 160px; }
+				.bvr-tabs .employee-search-input { width: 100%; }
+				.bvr-tabs .employee-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-height: 200px; overflow-y: auto; margin-top: 2px; }
+				.bvr-tabs .employee-dropdown .employee-option { padding: 6px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #f5f5f5; transition: background 0.15s; }
+				.bvr-tabs .employee-dropdown .employee-option:last-child { border-bottom: none; }
+				.bvr-tabs .employee-dropdown .employee-option:hover { background: #f0f1ff; color: #5e64ff; }
+				.bvr-tabs .btn-add-action { background: #5e64ff; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 12px; transition: background 0.2s; margin-top: 6px; }
+				.bvr-tabs .btn-add-action:hover { background: #4c53d0; }
+				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 5px 8px; height: auto; }
+				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 2px rgba(94,100,255,0.15); }
+			</style>`;
+			frm.fields_dict.checklist.$wrapper.find("style").remove();
+			frm.fields_dict.checklist.$wrapper.prepend(style);
 
 			let template_items = r.message || [];
 
