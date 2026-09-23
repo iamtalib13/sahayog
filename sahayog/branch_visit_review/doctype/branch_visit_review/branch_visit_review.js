@@ -157,7 +157,7 @@ function render_checklist(frm, template) {
 				let sr = 1;
 				Object.keys(grouped).forEach(function (cat) {
 					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
-					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='add-category-row' data-category='" + safe_cat + "'>+</button></div>";
+					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
 					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
 					grouped[cat].forEach(function (row) {
 						let i = row._idx;
@@ -228,7 +228,7 @@ function render_checklist(frm, template) {
 			action_html += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
-			action_html += "<button class='btn-add-action add-action-row'>+ Add Action Item</button>";
+			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
 			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
@@ -247,8 +247,9 @@ function render_checklist(frm, template) {
 				.bvr-tabs .category-header { background: linear-gradient(135deg, #f5f7fa 0%, #eef1f5 100%); padding: 8px 12px; border-radius: 6px; margin: 12px 0 6px 0; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #5e64ff; box-sizing: border-box; }
 				.bvr-tabs .category-header + table, .bvr-tabs .category-header + .category-table { width: 100%; }
 				.bvr-tabs .category-header h5 { margin: 0; font-size: 13px; font-weight: 600; color: #16181d; }
-				.bvr-tabs .category-header .add-row-btn { background: #5e64ff; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 20px; text-align: center; cursor: pointer; padding: 0; transition: background 0.2s; }
-				.bvr-tabs .category-header .add-row-btn:hover { background: #4c53d0; }
+				.bvr-tabs .category-header .bvr-btn-add { background: #5e64ff; color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 16px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; box-shadow: 0 2px 4px rgba(94,100,255,0.3); flex-shrink: 0; }
+				.bvr-tabs .category-header .bvr-btn-add:hover { background: #4c53d0; transform: scale(1.1); box-shadow: 0 3px 8px rgba(94,100,255,0.4); }
+				.bvr-tabs .category-header .bvr-btn-add:active { transform: scale(0.95); }
 				.bvr-tabs table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 6px; }
 				.bvr-tabs table thead th { background: #f8f9fb; color: #4a5568; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 7px 10px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
 				.bvr-tabs table tbody td { padding: 7px 10px; border-bottom: 1px solid #edf0f4; vertical-align: middle; font-size: 13px; }
@@ -264,8 +265,10 @@ function render_checklist(frm, template) {
 				.bvr-tabs .employee-dropdown .employee-option { padding: 6px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #f5f5f5; transition: background 0.15s; }
 				.bvr-tabs .employee-dropdown .employee-option:last-child { border-bottom: none; }
 				.bvr-tabs .employee-dropdown .employee-option:hover { background: #f0f1ff; color: #5e64ff; }
-				.bvr-tabs .btn-add-action { background: #5e64ff; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-weight: 600; font-size: 12px; transition: background 0.2s; margin-top: 6px; }
-				.bvr-tabs .btn-add-action:hover { background: #4c53d0; }
+				.bvr-tabs .bvr-btn-add { background: #5e64ff; color: #fff; border: none; border-radius: 6px; padding: 7px 16px; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(94,100,255,0.3); }
+				.bvr-tabs .bvr-btn-add:hover { background: #4c53d0; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(94,100,255,0.35); }
+				.bvr-tabs .bvr-btn-add:active { transform: translateY(0); }
+				.bvr-tabs .bvr-btn-action { margin-top: 8px; }
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 5px 8px; height: auto; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 2px rgba(94,100,255,0.15); }
 			</style>`;
