@@ -210,7 +210,12 @@ function render_checklist(frm, template) {
 			let action_html = "<table class='table table-bordered action-items-table'><thead><tr><th>No.</th><th>Action Item</th><th>Responsible</th><th>Priority</th><th>Target Date</th><th>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
-					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + (item.owner || "") + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
+					let owner_display = item.owner || "";
+					if (item.owner) {
+						let emp = employees.find(function (e) { return e.name === item.owner; });
+						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
+					}
+					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
@@ -320,7 +325,8 @@ function render_checklist(frm, template) {
 				let $wrapper = $(this).closest(".employee-search-wrapper");
 				let $row = $wrapper.closest("tr");
 				let name = $(this).data("name");
-				$wrapper.find(".employee-search-input").val(name);
+				let label = $(this).text();
+				$wrapper.find(".employee-search-input").val(label);
 				$wrapper.data("value", name);
 				$wrapper.find(".employee-dropdown").hide();
 				let idx = $row.index();
@@ -338,7 +344,12 @@ function render_checklist(frm, template) {
 
 			frm.fields_dict.checklist.$wrapper.find(".employee-search-input").on("blur", function () {
 				let $wrapper = $(this).closest(".employee-search-wrapper");
-				$wrapper.data("value", $(this).val());
+				let val = $(this).val();
+				let emp = employees.find(function (e) {
+					let label = e.employee_name ? e.employee_name + "(" + e.name + ")" : e.name;
+					return label === val || e.name === val;
+				});
+				$wrapper.data("value", emp ? emp.name : val);
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".star").on("click", function () {
