@@ -1880,11 +1880,15 @@
       }
       #addModal .fx-card .nt-sched-date:focus, #addModal .fx-card .nt-sched-time:focus { border-color:var(--accent); }
       .fx-preview { font-size:12.5px; font-weight:600; color:var(--ink-2); }
-      .fx-alert { display:flex; gap:10px; align-items:flex-start; background:#FFF7ED;
-        border:1px solid #FFEDD5; border-radius:8px; padding:12px; }
-      .fx-alert svg { width:16px; height:16px; color:#C2410C; flex-shrink:0; margin-top:1px; }
-      .fx-alert b { display:block; font-size:13px; color:#C2410C; }
-      .fx-alert span { font-size:11.5px; color:#C2410C; }
+      .fx-alert { display:flex; gap:10px; align-items:flex-start; background:#FFFBEB;
+        border:1px solid #FDE68A; border-radius:8px; padding:12px; }
+      .fx-alert svg { width:16px; height:16px; color:#9A3412; flex-shrink:0; margin-top:1px; }
+      .fx-alert b { display:block; font-size:13px; color:#9A3412; }
+      .fx-alert span { font-size:11.5px; color:#9A3412; }
+      /* Count-only message is information, not a conflict: neutral + dark text */
+      .fx-alert.info { background:var(--surface-2); border-color:var(--border); }
+      .fx-alert.info svg { color:var(--ink-2); }
+      .fx-alert.info span { color:var(--ink-1); font-weight:600; font-size:12.5px; }
       .fx-check { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2); }
       .fx-check input { width:15px; height:15px; accent-color:var(--accent); }
       #addModal #new-agenda.fx-area {
@@ -4201,7 +4205,7 @@
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
               <div class="fx-alert" id="sched-alert" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                <div><b>Potential scheduling conflict</b><span id="new-schedule-hint"></span></div>
+                <div><b id="sched-alert-title">Potential scheduling conflict</b><span id="new-schedule-hint"></span></div>
               </div>
             </div>
 
@@ -8361,9 +8365,16 @@
               hintEl.textContent = "";
               hintEl.className = "nt-sched-hint";
             }
-            // Figma conflict slot: show only when there is a real message
+            // Figma conflict slot: warnings in orange, plain counts as neutral info
             var alertBox = document.getElementById("sched-alert");
-            if (alertBox) alertBox.style.display = hintEl && hintEl.textContent ? "flex" : "none";
+            var alertTitle = document.getElementById("sched-alert-title");
+            if (alertBox) {
+              var hasText = !!(hintEl && hintEl.textContent);
+              var isWarn = !!(hintEl && hintEl.className.indexOf("overlap") !== -1);
+              alertBox.style.display = hasText ? "flex" : "none";
+              alertBox.classList.toggle("info", hasText && !isWarn);
+              if (alertTitle) alertTitle.style.display = isWarn ? "" : "none";
+            }
           }
         }
 
