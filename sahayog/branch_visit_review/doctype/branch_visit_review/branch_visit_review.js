@@ -207,7 +207,7 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th></tr></thead><tbody>";
+			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:40px;'></th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					let owner_display = item.owner || "";
@@ -215,7 +215,7 @@ function render_checklist(frm, template) {
 						let emp = employees.find(function (e) { return e.name === item.owner; });
 						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
 					}
-					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td></tr>";
+					action_html += "<tr><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
@@ -226,6 +226,7 @@ function render_checklist(frm, template) {
 			action_html += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 			action_html += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
 			action_html += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
+			action_html += "<td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
@@ -335,8 +336,19 @@ function render_checklist(frm, template) {
 				new_row += "<td><input type='date' class='form-control action-input' data-field='tat'></td>";
 				new_row += "<td><select class='form-control action-input' data-field='status'><option value='Open'>Open</option><option value='In Progress'>In Progress</option><option value='Resolved'>Resolved</option></select></td>";
 				new_row += "<td><input type='text' class='form-control action-input' data-field='resolution_notes' placeholder='Enter notes'></td>";
+				new_row += "<td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td>";
 				new_row += "</tr>";
 				$table.find("tbody").append(new_row);
+			});
+
+			frm.fields_dict.checklist.$wrapper.on("click", ".remove-action-row", function () {
+				let $row = $(this).closest("tr");
+				let idx = $row.index();
+				if (frm.doc.action_items && frm.doc.action_items[idx]) {
+					frm.doc.action_items.splice(idx, 1);
+					frm.refresh_field("action_items");
+				}
+				$row.remove();
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".employee-search-input").on("focus keyup", function () {
