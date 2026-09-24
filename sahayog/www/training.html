@@ -1853,7 +1853,8 @@
       #addModal .modal { width:min(960px,96vw); max-width:96vw; border-radius:20px; }
       #addModal .nt-scroll { background:#fff; }
       #addModal .nt-head { padding:14px 32px 12px; border-bottom:1px solid var(--border); }
-      #addModal .nt-head h3 { font-size:17px; font-weight:700; }
+      #addModal .nt-head h3 { font-size:17px; font-weight:700; margin:0; }
+      #dlg-doc-chip { font-size:11px; }
       #addModal .modal-close { background:var(--surface-2); border-radius:8px; width:32px; height:32px; }
       #addModal #btn-save-training { height:32px; padding:7px 18px; font-size:13px; border-radius:8px;
         box-shadow:0 1px 2px rgba(37,99,235,.45); }
@@ -1949,7 +1950,7 @@
       #btn-clear-sel:hover { text-decoration:underline; }
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
       .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
-      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(200px,32vh,320px); overflow-y:auto; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(220px,36vh,420px); overflow-y:auto; }
       /* Inline attendance (edit mode): staged Present/Absent per row, capsules on top */
       .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
         overflow:hidden; flex-shrink:0; background:var(--surface); }
@@ -2213,7 +2214,7 @@
           0 2px 8px rgba(16, 24, 40, 0.08);
         display: flex;
         flex-direction: column;
-        max-height: min(94vh, 980px);
+        max-height: min(96vh, 1080px);
       }
       .modal-head {
         display: flex;
@@ -4078,8 +4079,9 @@
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
         <div class="nt-head">
-          <div>
+          <div style="display:flex;align-items:center;gap:8px;">
             <h3>New Training</h3>
+            <span id="dlg-doc-chip" style="display:none"></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
             <!-- Reschedule (temporarily disabled — Save already handles schedule changes)
@@ -4675,6 +4677,12 @@
         /* ---------- Role UI ---------- */
         function role() {
           return ROLES[state.role];
+        }
+        /* Participants are locked in edit mode once submitted; drafts stay editable. */
+        function participantsLocked() {
+          if (state.dialogMode !== "edit") return false;
+          var ev = state.currentEvent;
+          return !ev || (ev.docstatus || 0) !== 0;
         }
 
         function setupRoleUI() {
@@ -6194,6 +6202,17 @@
           var h = document.querySelector("#addModal .nt-head h3");
           if (h)
             h.textContent = mode === "edit" ? "Edit Training" : "New Training";
+          var docChip = document.getElementById("dlg-doc-chip");
+          if (docChip) {
+            if (mode === "edit" && ev && ev.name) {
+              var dst = (ev.docstatus || 0) === 0 ? "Draft" : "Submitted";
+              docChip.style.display = "";
+              docChip.className = "chip " + ((ev.docstatus || 0) === 0 ? "chip-gray" : "chip-blue");
+              docChip.textContent = ev.name + " · " + dst;
+            } else {
+              docChip.style.display = "none";
+            }
+          }
           var saveBtn = document.getElementById("btn-save-training");
           // Reschedule flow temporarily disabled — Save already handles schedule changes
           // var reschedBtn = document.getElementById("btn-reschedule-training");
@@ -6470,6 +6489,28 @@
                 ev.trainer_remarks = val;
               }),
             );
+          }
+          // Draft only: sync added/removed participants (submitted stays locked)
+          if ((ev.docstatus || 0) === 0) {
+            var beforePairs = {};
+            (ev.participant_list || []).forEach(function (p) {
+              beforePairs[(p.reference_doctype || "Employee") + ":" + (p.agent_employee || "")] = true;
+            });
+            var afterPairs = {};
+            (state.selectedParticipants || []).forEach(function (p) {
+              if (p.agent_employee) afterPairs[(p.reference_doctype || "Employee") + ":" + p.agent_employee] = true;
+            });
+            var pChanged = false;
+            Object.keys(afterPairs).forEach(function (k) { if (!beforePairs[k]) pChanged = true; });
+            Object.keys(beforePairs).forEach(function (k) { if (!afterPairs[k]) pChanged = true; });
+            if (pChanged) {
+              tasks.push(
+                api("sync_draft_participants", {
+                  training_name: ev.name,
+                  participants: JSON.stringify(state.selectedParticipants),
+                }),
+              );
+            }
           }
           if (role().showBudget) {
             var b = document.getElementById("edit-budget-amount");
@@ -7381,7 +7422,7 @@
 
           renderGeoRows = function() {
             if (!geoContainer) return;
-            var isEdit = state.dialogMode === "edit";
+            var isEdit = participantsLocked();
             geoContainer.innerHTML = "";
             if (!state.selectedGeographies || !state.selectedGeographies.length) {
               state.selectedGeographies = [{}];
@@ -7414,7 +7455,7 @@
           };
 
           function bindRowEvents(){
-            var isEdit = state.dialogMode === "edit";
+            var isEdit = participantsLocked();
             if (isEdit) return;
             geoContainer.querySelectorAll(".geo-branch-input").forEach(function(inp){
               var idx = parseInt(inp.dataset.idx,10);
@@ -7539,7 +7580,7 @@
 
           /* Auto-add a branch row from a participant's branch (manual add/remove untouched). */
           dialogFn.autoAddBranch = function(code){
-            if (!code || state.dialogMode === "edit") return false;
+            if (!code || participantsLocked()) return false;
             var geos = state.selectedGeographies || [];
             var dup = geos.some(function(g){ return g.branch === code; });
             if (dup) return false;
@@ -7555,7 +7596,7 @@
 
           /* Remove a branch row by code (used by top branch chips). */
           dialogFn.removeBranch = function(code){
-            if (!code || state.dialogMode === "edit") return false;
+            if (!code || participantsLocked()) return false;
             var geos = state.selectedGeographies || [];
             var idx = -1;
             geos.forEach(function(g, i){ if (g.branch === code && idx === -1) idx = i; });
@@ -7706,7 +7747,7 @@
             var empById = {}, agentById = {};
             (state.allEmployees || []).forEach(function(e) { empById[e.name] = e; });
             (state.allAgents || []).forEach(function(a) { agentById[a.name] = a; });
-            var removable = state.dialogMode !== "edit";
+            var removable = !participantsLocked();
             pChips.innerHTML = (state.selectedParticipants || []).map(function(p) {
               var isAgent = p.reference_doctype === "Agent";
               var displayName = p.full_name || p.agent_employee;
@@ -7736,7 +7777,7 @@
           }
 
           function openPop() {
-            if (state.dialogMode === "edit") return;
+            if (participantsLocked()) return;
             if (!pPop || !pDd) return;
             setPickType(state.participantPickType || "Employee");
             pPop.style.display = "block";
@@ -8004,7 +8045,7 @@
             if (branchCount) branchCount.textContent = geos.length ?
               geos.length + " branches identified" : "Branches";
             if (!namesEl || !viewList) return;
-            var disabled = state.dialogMode === "edit" ? " disabled" : "";
+            var disabled = participantsLocked() ? " disabled" : "";
             var lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;opacity:.55;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
             if (!geos.length) {
               namesEl.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
@@ -8031,7 +8072,7 @@
                   action + "</div>";
               }).join("");
             }
-            if (branchAddBtn) branchAddBtn.disabled = (state.dialogMode === "edit");
+            if (branchAddBtn) branchAddBtn.disabled = participantsLocked();
           }
           function renderBranchAddList() {
             if (!branchAddList) return;
@@ -8157,7 +8198,7 @@
           // + Add Branch picker (manual branches without participants)
           if (branchAddBtn) branchAddBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            if (state.dialogMode === "edit") return;
+            if (participantsLocked()) return;
             if (!branchAddPop) return;
             var open = branchAddPop.style.display === "block";
             if (open) { closeBranchAddPop(); return; }
@@ -8257,8 +8298,9 @@
                 div = e.custom_division || e.department || "";
               }
               var sub = code + (branch ? " • " + branch : "") + (div ? " • " + div : "");
+              var locked = isEdit && participantsLocked();
               var tail;
-              if (isEdit) {
+              if (locked) {
                 var cur = effAtt(p);
                 var dis = attSaving || !p.row_name ? " disabled" : "";
                 tail = '<span class="fx-att-seg">' +
@@ -8280,8 +8322,8 @@
             });
           }
           function syncAttBar(sel) {
-            // Top capsules (edit mode) + Mark-all visibility; saving happens via dialog Save
-            var show = state.dialogMode === "edit" && sel.length > 0;
+            // Top capsules (submitted edit only) + Mark-all visibility; saving happens via dialog Save
+            var show = state.dialogMode === "edit" && participantsLocked() && sel.length > 0;
             if (attTop) attTop.style.display = show ? "flex" : "none";
             if (attAllBtn) attAllBtn.style.display = show ? "" : "none";
             if (!show) return;
@@ -8416,6 +8458,12 @@
             fileInput.addEventListener("change", function () {
               var file = fileInput.files[0];
               if (!file) return;
+              if (participantsLocked()) {
+                if (statusEl) statusEl.textContent = "Participants can't be changed after submit.";
+                showToast("Participants can't be changed after submit");
+                fileInput.value = "";
+                return;
+              }
               if (statusEl) statusEl.textContent = "Reading…";
 
               var reader = new FileReader();
