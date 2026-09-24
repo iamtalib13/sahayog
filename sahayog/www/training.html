@@ -1945,6 +1945,7 @@
         border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; }
       #att-counts { font-weight:600; color:var(--ink-2); white-space:nowrap; }
       #att-bar .btn { height:28px; padding:0 12px; font-size:12px; flex-shrink:0; }
+      #att-bar #btn-att-save { height:26px; padding:0 10px; font-size:11.5px; }
       .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
         overflow:hidden; flex-shrink:0; background:var(--surface); }
       .fx-att-btn { border:none; background:transparent; padding:5px 11px; font-size:11px;
@@ -2057,6 +2058,12 @@
       .ee-card .drawer-section-title { margin-bottom:10px; }
       .ee-card .check-item { padding:8px 10px; border-radius:8px; }
       .ee-grid .budget-edit { grid-template-columns:1fr; }
+      /* Edit completion toggle (header + progress always visible) */
+      .ee-toggle { display:flex; align-items:center; gap:6px; border:none; background:none;
+        cursor:pointer; padding:0; margin-bottom:8px; }
+      .ee-toggle svg { width:14px; height:14px; color:var(--ink-2); transition:transform .15s ease; }
+      .ee-toggle.collapsed svg { transform:rotate(-90deg); }
+      .ee-toggle .drawer-section-title { font-size:11px; }
       @media (max-width: 700px) {
         .ee-grid { grid-template-columns:1fr; }
       }
@@ -6244,6 +6251,14 @@
           var extra = document.getElementById("nt-edit-extra");
           if (extra) {
             extra.innerHTML = editExtraHTML(ev);
+            var eeToggle = document.getElementById("ee-toggle");
+            if (eeToggle) eeToggle.addEventListener("click", function () {
+              var body = document.getElementById("ee-body");
+              if (!body) return;
+              var hidden = body.style.display === "none";
+              body.style.display = hidden ? "" : "none";
+              eeToggle.classList.toggle("collapsed", !hidden);
+            });
             if (r.canEdit) {
               extra
                 .querySelectorAll(".check-item input")
@@ -6270,9 +6285,11 @@
           var pct = Math.round((score / 5) * 100);
           var html =
             '<div class="drawer-section">' +
-            '<div class="drawer-section-title">Training Completion &middot; ' +
+            '<button type="button" class="ee-toggle" id="ee-toggle" title="Show/hide details">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>' +
+            '<span class="drawer-section-title" style="margin:0;">Training Completion &middot; ' +
             score +
-            "/5</div>" +
+            "/5</span></button>" +
             '<div class="progress-row">' +
             '<div class="progress-track"><div class="progress-fill' +
             (pct === 100 ? " complete" : "") +
@@ -6326,9 +6343,9 @@
               "</strong></span>" +
               '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
-            html += '<div class="ee-grid">' + statusHtml + budgetHtml + "</div>";
+            html += '<div class="ee-grid" id="ee-body">' + statusHtml + budgetHtml + "</div>";
           } else {
-            html += statusHtml;
+            html += '<div id="ee-body">' + statusHtml + "</div>";
           }
           return html;
         }
