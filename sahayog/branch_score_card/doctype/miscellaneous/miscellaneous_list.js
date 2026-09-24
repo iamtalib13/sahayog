@@ -94,7 +94,7 @@ frappe.listview_settings['Miscellaneous'] = {
                 window.location.href = `/api/method/sahayog.branch_score_card.doctype.miscellaneous.miscellaneous.download_miscellaneous_template?type_name=${encodeURIComponent(type_name)}`;
             });
 
-        }, __('Actions'));
+        }, __('Excel Upload'));
 
         // -----------------------------------------------------------
         // 2. ACTION: Upload Excel for Bank Reconciliation Discrepancy
@@ -189,16 +189,16 @@ frappe.listview_settings['Miscellaneous'] = {
                 window.location.href = `/api/method/sahayog.branch_score_card.doctype.miscellaneous.miscellaneous.download_miscellaneous_template?type_name=${encodeURIComponent(type_name)}`;
             });
 
-        }, __('Actions'));
+        }, __('Excel Upload'));
 
     },
 
     refresh: function(listview) {
         setTimeout(() => {
-            let actions_btn = listview.page.wrapper.find('.inner-group-button[data-label="Actions"] button, .btn-group:contains("Actions") button').first();
+            let actions_btn = listview.page.wrapper.find('.inner-group-button[data-label="Excel Upload"] button, .btn-group:contains("Excel Upload") button').first();
 
             if (!actions_btn.length) {
-                actions_btn = listview.page.wrapper.find('button:contains("Actions")');
+                actions_btn = listview.page.wrapper.find('button:contains("Excel Upload")');
             }
 
             actions_btn.css({

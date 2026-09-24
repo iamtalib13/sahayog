@@ -14,6 +14,8 @@
   "account_opening_error_count",
   "column_break_bgsg",
   "reconciliation_discrepancy_count",
+  "section_break_vwnd",
+  "score_card_html",
   "section_break_qccm",
   "table_select_miscellaneous",
   "section_break_xcsu",
@@ -101,12 +103,21 @@
   {
    "fieldname": "table_select_miscellaneous",
    "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "section_break_vwnd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "score_card_html",
+   "fieldtype": "HTML",
+   "label": "Score Card"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-09 11:10:10.845738",
+ "modified": "2026-09-16 13:30:05.812642",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Miscellaneous",

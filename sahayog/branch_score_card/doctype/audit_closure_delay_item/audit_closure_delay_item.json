@@ -10,7 +10,8 @@
   "report_published_date",
   "compliance_report",
   "recived_date",
-  "delay_in_closure"
+  "delay_in_closure",
+  "score_obtain"
  ],
  "fields": [
   {
@@ -43,13 +44,19 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Delay in Closure"
+  },
+  {
+   "fieldname": "score_obtain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Score Obtain"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-07 11:00:19.848745",
+ "modified": "2026-09-15 13:00:06.141777",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Audit Closure Delay Item",

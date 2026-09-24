@@ -44,7 +44,7 @@
   },
   {
    "fieldname": "year",
-   "fieldtype": "Data",
+   "fieldtype": "Int",
    "label": "Year"
   },
   {
@@ -73,7 +73,8 @@
   },
   {
    "fieldname": "table_selector_html",
-   "fieldtype": "HTML"
+   "fieldtype": "HTML",
+   "label": "Button"
   },
   {
    "fieldname": "com_visit",
@@ -99,7 +100,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-09 11:44:50.529519",
+ "modified": "2026-09-16 15:31:03.386210",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Audit and Compliance",

@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "prompt",
+ "autoname": "field:function",
  "creation": "2026-07-28 22:04:51.997594",
  "doctype": "DocType",
  "engine": "InnoDB",

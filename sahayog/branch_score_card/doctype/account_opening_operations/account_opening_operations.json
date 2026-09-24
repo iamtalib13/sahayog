@@ -20,9 +20,11 @@
   "ftr_percentage",
   "column_break_pmjf",
   "ftnr_percentage",
-  "section_break_kpsh",
+  "column_break_nsio",
   "zero_ip_funding_count",
   "section_break_aiff",
+  "score_obtain_html",
+  "section_break_uhao",
   "account_opening_html_table_select",
   "section_break_iwri",
   "table_dllf",
@@ -107,10 +109,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_break_kpsh",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "section_break_hgdr",
    "fieldtype": "Section Break",
    "label": "Zero IP Funding"
@@ -143,12 +141,25 @@
   {
    "fieldname": "account_opening_html_table_select",
    "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "score_obtain_html",
+   "fieldtype": "HTML",
+   "label": "Score Card"
+  },
+  {
+   "fieldname": "column_break_nsio",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_uhao",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-09 10:44:40.292065",
+ "modified": "2026-09-16 13:28:19.716605",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Account Opening Operations",

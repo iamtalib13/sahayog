@@ -21,7 +21,7 @@ class AuditandCompliance(Document):
         if self.audit_closure_table:
             for row in self.audit_closure_table:
                 if not row.recived_date:
-                    row.delay_in_closure = "Awaiting Receipt Date"
+                    row.delay_in_closure = "Awaiting Receive Date"
                     row.compliance_report = "Pending"
                 elif row.report_published_date and row.recived_date:
                     if getdate(row.recived_date) < getdate(row.report_published_date):
@@ -226,7 +226,7 @@ def process_audit_closure_excel(file_url):
             compliance_report_status = "Received"
         else:
             compliance_report_status = "Pending"
-            delay_in_closure = "Awaiting Receipt Date"
+            delay_in_closure = "Awaiting Receive Date"
 
         branch_name = frappe.db.get_value("Sahayog Branch", sol_id, "branch") or "Unknown"
         parent_name = f"{sol_id} - {branch_name} - {financial_year}"

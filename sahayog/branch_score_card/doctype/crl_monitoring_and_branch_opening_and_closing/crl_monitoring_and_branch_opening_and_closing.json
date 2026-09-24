@@ -23,6 +23,8 @@
   "branch_opening_actual_value",
   "column_break_xlnl",
   "branch_closing_actual_value",
+  "section_break_xmdl",
+  "score_card_html",
   "section_break_mzqy",
   "column_break_qfhf",
   "table_nzzy",
@@ -163,12 +165,21 @@
    "fieldname": "branch",
    "fieldtype": "Data",
    "label": "Branch"
+  },
+  {
+   "fieldname": "section_break_xmdl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "score_card_html",
+   "fieldtype": "HTML",
+   "label": "Score Obtained"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-08 11:58:01.543444",
+ "modified": "2026-09-22 10:25:53.479498",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "CRL Monitoring and Branch Opening and Closing",

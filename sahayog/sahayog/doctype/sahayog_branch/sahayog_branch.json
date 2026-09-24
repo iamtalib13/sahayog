@@ -25,6 +25,10 @@
   "branch_type",
   "section_break_ztqb",
   "br_cash_retention_limit_crl",
+  "regional__zonal_head",
+  "ch_dh_adh",
+  "regional_operations_manager",
+  "cluster_operations_manager",
   "column_break_equn",
   "entity_id",
   "entity_type",
@@ -176,13 +180,32 @@
    "label": "Entity Type",
    "mandatory_depends_on": "eval:doc.branch_type === \"Zonal\"",
    "options": "\nRRCDM"
+  },
+  {
+   "fieldname": "regional__zonal_head",
+   "fieldtype": "Data",
+   "label": "Regional / Zonal Head"
+  },
+  {
+   "fieldname": "ch_dh_adh",
+   "fieldtype": "Data",
+   "label": "CH/DH/ADH"
+  },
+  {
+   "fieldname": "regional_operations_manager",
+   "fieldtype": "Data",
+   "label": "Regional Operations Manager"
+  },
+  {
+   "fieldname": "cluster_operations_manager",
+   "fieldtype": "Data",
+   "label": "Cluster Operations Manager"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-30 13:22:57.642616",
- "modified": "2026-08-03 17:21:18.192008",
+ "modified": "2026-09-22 12:50:38.487263",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Branch",
