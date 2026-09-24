@@ -1861,8 +1861,6 @@
       /* Reschedule button styling (button currently commented out)
       #addModal #btn-reschedule-training { height:32px; font-size:13px; border-radius:8px; }
       */
-      .fx-cols { display:flex; gap:16px; padding:20px; align-items:flex-start; }
-      .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:12px; }
       .fx-field { display:flex; flex-direction:column; gap:6px; }
       .fx-label { font-size:12px; font-weight:600; text-transform:uppercase; color:var(--ink-2); }
       .fx-label b { color:var(--danger); }
@@ -1906,6 +1904,14 @@
       /* search + suggestions */
       .fx-type-toggle { display:flex; gap:6px; }
       .fx-type-toggle .btn { height:28px; padding:0 14px; font-size:12px; }
+      .fx-label-row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+      .fx-label-row .fx-csv-mini .btn { height:28px; padding:0 10px; font-size:11.5px; }
+      .fx-search-row { display:flex; gap:8px; align-items:center; }
+      .fx-search-row .fx-type-toggle { flex-direction:row; flex-shrink:0; }
+      .fx-search-row .fx-type-toggle .btn { height:42px; flex:none; }
+      .fx-search-row .fx-search-wrap { flex:1; min-width:0; }
+      .fx-sel-actions { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+      .fx-sel-actions .btn { height:28px; padding:0 10px; font-size:11.5px; }
       #addModal .fx-search-wrap { position:relative; }
       #addModal #new-participant-search.fx-search {
         height:42px; border:1px solid var(--border); border-radius:8px; padding:12px 16px 12px 40px;
@@ -1943,13 +1949,8 @@
       #btn-clear-sel:hover { text-decoration:underline; }
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
       .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
-      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
-      /* Inline attendance (edit mode): staged Present/Absent per row */
-      #att-bar { display:flex; align-items:center; gap:8px; background:var(--surface-2);
-        border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; }
-      #att-counts { font-weight:600; color:var(--ink-2); white-space:nowrap; }
-      #att-bar .btn { height:28px; padding:0 12px; font-size:12px; flex-shrink:0; }
-      #att-bar #btn-att-save { height:26px; padding:0 10px; font-size:11.5px; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(200px,32vh,320px); overflow-y:auto; }
+      /* Inline attendance (edit mode): staged Present/Absent per row, capsules on top */
       .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
         overflow:hidden; flex-shrink:0; background:var(--surface); }
       .fx-att-btn { border:none; background:transparent; padding:5px 11px; font-size:11px;
@@ -1980,15 +1981,15 @@
       #addModal .nt-branch-summary { font-size:11.5px; }
       /* two equal columns, form left, participants right */
       #addModal .nt-body { padding:0; gap:0; }
-      #addModal .nt-split { gap:32px; padding:32px; align-items:stretch; }
+      #addModal .nt-split { gap:20px; padding:20px; align-items:stretch; }
       /* Remarks textarea grows to fill leftover left-column space */
       #addModal .fx-field.fx-grow { flex:1; }
       #addModal .fx-field.fx-grow textarea { flex:1; }
       #addModal .nt-part, #addModal .nt-details { border:none; padding:0; min-width:0; }
-      #addModal .fx-left { order:1; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
-      #addModal .fx-right { order:2; flex:1 1 0; display:flex; flex-direction:column; gap:20px; }
+      #addModal .fx-left { order:1; flex:1 1 0; display:flex; flex-direction:column; gap:12px; }
+      #addModal .fx-right { order:2; flex:1 1 0; display:flex; flex-direction:column; gap:12px; }
       @media (max-width: 700px) {
-        .fx-cols { flex-direction:column; padding:20px; gap:20px; }
+        #addModal .nt-split { grid-template-columns:1fr; padding:20px; }
         #addModal .modal { border-radius:12px 12px 0 0; }
       }
       @media (max-width: 1100px) {
@@ -2051,7 +2052,33 @@
       .nt-edit-extra {
         padding: 4px 20px 14px;
       }
+      .nt-edit-extra:empty { display:none; }
       .nt-edit-extra > .drawer-section:first-child { margin-bottom:10px; }
+      /* Modal backdrop blur (create + edit) */
+      #addModal.modal-wrap.open { background:rgba(15,23,42,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+      /* Edit mode: 3-column full-width — 3rd column is completion/budget */
+      #addModal.editing .modal { width:min(1600px,98vw); max-width:98vw; }
+      #addModal.editing .nt-split { display:grid; grid-template-columns:0.8fr 1.3fr 0.9fr; }
+      /* Column dividers (edit 3-col) */
+      #addModal.editing .nt-split > * + * { border-left:1px solid #CBD5E1; padding-left:20px; }
+      /* Never allow horizontal scrolling — vertical stays safe for small screens */
+      #addModal .nt-scroll { overflow-x:clip; }
+      /* Inputs must never force horizontal overflow */
+      #addModal input, #addModal select, #addModal textarea { min-width:0; }
+      /* Compact 3rd column */
+      #addModal.editing .ee-card { padding:12px; }
+      #addModal.editing .nt-edit-extra { padding:0; min-width:0; order:3; }
+      #addModal.editing .ee-grid { grid-template-columns:1fr; }
+      #addModal.editing .ee-grid .budget-edit { grid-template-columns:1fr 1fr; }
+      /* Attendance capsules live inside column 2 (no outer padding) */
+      #addModal #att-top { display:flex; gap:8px; padding:0; }
+      .att-cap { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px;
+        border-radius:10px; padding:6px; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
+      .att-cap b { font-size:14px; }
+      .att-cap i { font-style:normal; font-weight:500; opacity:.75; font-size:11.5px; }
+      .att-cap.p { background:var(--green-soft); color:#15803d; }
+      .att-cap.a { background:#fef2f2; color:#b91c1c; }
+      .att-cap.n { background:var(--surface-2); color:var(--ink-2); border:1px solid var(--border); }
       /* Edit completion section: status + budget side-by-side cards */
       .ee-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
       .ee-grid .drawer-section { margin-bottom:0; }
@@ -4072,14 +4099,29 @@
             <!-- 70/30 split: participants (70%) + details (30%) -->
             <div class="nt-split">
               <div class="nt-part fx-right">
+                <!-- Attendance capsules (edit mode only) -->
+                <div id="att-top" style="display:none">
+                  <span class="att-cap p">Present <b id="att-cap-p">0</b> <i id="att-cap-pp"></i></span>
+                  <span class="att-cap a">Absent <b id="att-cap-a">0</b> <i id="att-cap-ap"></i></span>
+                  <span class="att-cap n">Pending <b id="att-cap-n">0</b> <i id="att-cap-np"></i></span>
+                </div>
                 <!-- Search (legacy IDs — selection logic fully preserved) -->
                 <div class="fx-field">
-                  <span class="fx-label">Add Employee / Code <b>*</b></span>
-                  <div class="fx-type-toggle">
-                    <button type="button" id="p-type-employee" class="btn btn-primary">Employee</button>
-                    <button type="button" id="p-type-agent" class="btn">Agent</button>
+                  <div class="fx-label-row">
+                    <span class="fx-label">Add Employee / Code <b>*</b></span>
+                    <span class="fx-csv-mini">
+                      <button type="button" class="btn" id="btn-import-participants-csv">Import CSV</button>
+                      <button type="button" class="btn" id="btn-download-participant-template">Template</button>
+                    </span>
+                    <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
                   </div>
-                  <div class="nt-pop-wrap fx-search-wrap">
+                  <span id="participant-csv-status" class="muted"></span>
+                  <div class="fx-search-row">
+                    <div class="fx-type-toggle">
+                      <button type="button" id="p-type-employee" class="btn btn-primary">Employee</button>
+                      <button type="button" id="p-type-agent" class="btn">Agent</button>
+                    </div>
+                    <div class="nt-pop-wrap fx-search-wrap">
                     <input
                       id="new-participant-search"
                       class="fx-search"
@@ -4104,33 +4146,18 @@
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <!-- CSV import (bulk add, right under search) -->
-                <div class="fx-csv-row">
-                  <button type="button" class="btn" id="btn-import-participants-csv">
-                    Import from CSV
-                  </button>
-                  <button type="button" class="btn" id="btn-download-participant-template">
-                    Sample Template
-                  </button>
-                  <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
-                  <span id="participant-csv-status" class="muted"></span>
+                  </div>
                 </div>
 
                 <!-- Selected participants -->
                 <div class="fx-sel-head">
                   <span class="t">Selected Participants (<span id="sel-count">0</span>) <span class="fx-sel-break" id="sel-break"></span></span>
-                  <button type="button" id="btn-clear-sel">Clear All</button>
+                  <span class="fx-sel-actions">
+                    <button type="button" class="btn" id="btn-att-all" style="display:none">Mark all present</button>
+                    <button type="button" id="btn-clear-sel">Clear All</button>
+                  </span>
                 </div>
                 <div id="sel-list"></div>
-                <!-- Inline attendance bar (edit mode only) -->
-                <div id="att-bar" style="display:none">
-                  <span id="att-counts"></span>
-                  <span style="flex:1"></span>
-                  <button type="button" class="btn" id="btn-att-all">Mark all present</button>
-                  <button type="button" class="btn btn-primary" id="btn-att-save" disabled>Save Attendance</button>
-                </div>
 
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
                   <span class="nt-branch-view">
@@ -4264,11 +4291,13 @@
                   />
                 </div>
               </div>
+              <!-- Schedule preview + conflict hint: hidden for now (validation toasts still active)
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
               <div class="fx-alert" id="sched-alert" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                 <div><b id="sched-alert-title">Potential scheduling conflict</b><span id="new-schedule-hint"></span></div>
               </div>
+              -->
             </div>
 
             <label class="fx-check">
@@ -4295,16 +4324,15 @@
               <div id="branch-dropdown" style="display:none"></div>
             </div>
             </div><!-- /nt-details (form, left) -->
+            <!-- Edit-only 3rd column (hidden in create: empty) -->
+            <div class="nt-edit-extra" id="nt-edit-extra"></div>
             </div><!-- /nt-split -->
           </div>
-
-          <!-- Edit-only section: completion checklist + budget (existing drawer functionality) -->
-          <div class="nt-edit-extra" id="nt-edit-extra"></div>
         </div>
       </div>
     </div>
 
-    <!-- Bulk Upload Modal -->
+    <!-- Bulk Upload Modal — FEATURE DISABLED (commented out, keep for later)
     <div class="modal-wrap" id="bulkUploadModal">
       <div class="modal" style="width:min(640px,96vw);max-height:90vh;overflow:auto;">
         <div class="modal-head">
@@ -4327,6 +4355,7 @@
         </div>
       </div>
     </div>
+    End disabled Bulk Upload Modal -->
 
     <div class="toast" id="toast"></div>
 
@@ -6429,6 +6458,8 @@
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
+          // Staged inline attendance flushes through the same Save (edit mode)
+          if (dialogFn.flushAttStaged) tasks.push(dialogFn.flushAttStaged());
           if ((ev.trainer_remarks || "") !== val) {
             tasks.push(
               api("update_training_status", {
@@ -7242,6 +7273,7 @@
         addTrainingBtn.onclick = openAddModal;
         document.querySelector(".header-right").appendChild(addTrainingBtn);
 
+        /* BULK UPLOAD HEADER BUTTON DISABLED (commented out — keep for later)
         var bulkBtn = document.createElement("button");
         bulkBtn.className = "btn";
         bulkBtn.id = "btn-bulk-upload";
@@ -7254,6 +7286,7 @@
         bulkBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Bulk Upload';
         bulkBtn.onclick = function(){ document.getElementById("bulkUploadModal").classList.add("open"); document.getElementById("bulkResult").innerHTML=""; document.getElementById("bulkFile").value=""; };
         document.querySelector(".header-right").appendChild(bulkBtn);
+        END DISABLED */
 
         document.getElementById("btn-save-training").onclick = saveTraining;
         var markBtn = document.getElementById("btn-mark-attendance");
@@ -7273,7 +7306,7 @@
             closeAttPop();
         });
 
-        /* ---------- Bulk Upload ---------- */
+        /* BULK UPLOAD LOGIC DISABLED (commented out — keep for later)
         (function(){
           var dlBtn = document.getElementById("btn-download-template");
           if (dlBtn) dlBtn.addEventListener("click", function(){
@@ -7310,6 +7343,7 @@
             }).finally(function(){ upBtn.disabled=false; upBtn.textContent="Upload"; });
           });
         })();
+        END DISABLED BULK UPLOAD LOGIC */
 
         /* ---------- Multi-Geography Branch picker (Add Training modal) — 2 per row ---------- */
         var dialogFn = {
@@ -7563,11 +7597,11 @@
             state.participantPickType = type;
             if (pBtnEmp) {
               pBtnEmp.className = type === "Employee" ? "btn btn-primary" : "btn";
-              pBtnEmp.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+              pBtnEmp.style.cssText = "padding:0 12px;font-size:12px;";
             }
             if (pBtnAgent) {
               pBtnAgent.className = type === "Agent" ? "btn btn-primary" : "btn";
-              pBtnAgent.style.cssText = "height:26px;padding:0 12px;font-size:12px;";
+              pBtnAgent.style.cssText = "padding:0 12px;font-size:12px;";
             }
             if (pSearch) {
               pSearch.placeholder = type === "Agent" ? "Search agents..." : "Search employees...";
@@ -8175,10 +8209,8 @@
           var listEl = document.getElementById("sel-list");
           var countEl = document.getElementById("sel-count");
           var clearBtn = document.getElementById("btn-clear-sel");
-          var attBar = document.getElementById("att-bar");
-          var attCounts = document.getElementById("att-counts");
+          var attTop = document.getElementById("att-top");
           var attAllBtn = document.getElementById("btn-att-all");
-          var attSaveBtn = document.getElementById("btn-att-save");
           var attSaving = false;
           if (!listEl) return;
           function initialsOf(name) {
@@ -8204,10 +8236,10 @@
             if (countEl) countEl.textContent = sel.length;
             var brk = document.getElementById("sel-break");
             if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
-            if (clearBtn) clearBtn.disabled = !sel.length || isEdit;
+            if (clearBtn) { clearBtn.disabled = !sel.length || isEdit; clearBtn.style.display = isEdit ? "none" : ""; }
             if (!sel.length) {
               listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
-              if (attBar) attBar.style.display = "none";
+              if (attTop) attTop.style.display = "none";
               return;
             }
             listEl.innerHTML = sel.map(function (p) {
@@ -8248,24 +8280,66 @@
             });
           }
           function syncAttBar(sel) {
-            if (!attBar) return;
-            if (state.dialogMode !== "edit" || !sel.length) { attBar.style.display = "none"; return; }
-            attBar.style.display = "flex";
-            var np = 0, na = 0, pend = 0;
+            // Top capsules (edit mode) + Mark-all visibility; saving happens via dialog Save
+            var show = state.dialogMode === "edit" && sel.length > 0;
+            if (attTop) attTop.style.display = show ? "flex" : "none";
+            if (attAllBtn) attAllBtn.style.display = show ? "" : "none";
+            if (!show) return;
+            var np = 0, na = 0;
             sel.forEach(function (p) {
               var s = effAtt(p);
               if (s === "Present") np++;
               else if (s === "Absent") na++;
-              else pend++;
             });
-            if (attCounts) attCounts.textContent = np + " Present · " + na + " Absent · " + pend + " Pending";
+            var pend = sel.length - np - na;
+            var total = sel.length;
+            var pct = function (n) { return total ? Math.round(n * 100 / total) + "%" : ""; };
+            var setCap = function (id, n) {
+              var b = document.getElementById(id);
+              if (b) b.textContent = n;
+              var ip = document.getElementById(id + "p");
+              if (ip) ip.textContent = total ? pct(n) : "";
+            };
+            setCap("att-cap-p", np); setCap("att-cap-a", na); setCap("att-cap-n", pend);
             var dirty = attDirtyList(sel).length;
             if (attAllBtn) attAllBtn.disabled = attSaving || !pend;
-            if (attSaveBtn) {
-              attSaveBtn.disabled = attSaving || !dirty;
-              attSaveBtn.textContent = attSaving ? "Saving…" : ("Save Attendance" + (dirty ? " (" + dirty + ")" : ""));
+            var saveBtn = document.getElementById("btn-save-training");
+            if (saveBtn && state.dialogMode === "edit") {
+              saveBtn.textContent = attSaving ? "Saving…" : ("Save" + (dirty ? " (" + dirty + " attendance)" : ""));
             }
           }
+          // Flush staged attendance (called by dialog Save in edit mode)
+          dialogFn.flushAttStaged = function () {
+            var ev = state.currentEvent;
+            var dirty = attDirtyList(state.selectedParticipants);
+            if (!ev || !dirty.length || attSaving) return Promise.resolve(true);
+            attSaving = true;
+            renderSelList();
+            var tasks = dirty.map(function (p) {
+              return api("update_participant_attendance", {
+                training_name: ev.name,
+                participant_name: p.row_name,
+                attendance_status: p._att,
+              });
+            });
+            return Promise.all(tasks).then(function () {
+              dirty.forEach(function (p) {
+                p.attendance_status = p._att;
+                delete p._att;
+                (ev.participant_list || []).forEach(function (lp) {
+                  if (lp.name === p.row_name) lp.attendance_status = p.attendance_status;
+                });
+              });
+              attSaving = false;
+              renderSelList();
+              return true;
+            }).catch(function (err) {
+              attSaving = false;
+              renderSelList();
+              showToast("Could not save attendance: " + (err.message || err));
+              return false;
+            });
+          };
           dialogFn.renderSelList = renderSelList;
           if (dialogFn.renderPChips) {
             var _prevChips = dialogFn.renderPChips;
@@ -8300,36 +8374,6 @@
             });
             if (n) renderSelList();
             else showToast("Everyone is already marked");
-          });
-          if (attSaveBtn) attSaveBtn.addEventListener("click", function () {
-            var ev = state.currentEvent;
-            var dirty = attDirtyList(state.selectedParticipants);
-            if (!ev || !dirty.length || attSaving) return;
-            attSaving = true;
-            renderSelList();
-            var tasks = dirty.map(function (p) {
-              return api("update_participant_attendance", {
-                training_name: ev.name,
-                participant_name: p.row_name,
-                attendance_status: p._att,
-              });
-            });
-            Promise.all(tasks).then(function () {
-              dirty.forEach(function (p) {
-                p.attendance_status = p._att;
-                delete p._att;
-                (ev.participant_list || []).forEach(function (lp) {
-                  if (lp.name === p.row_name) lp.attendance_status = p.attendance_status;
-                });
-              });
-              attSaving = false;
-              renderSelList();
-              showToast("Attendance saved");
-            }).catch(function (err) {
-              attSaving = false;
-              renderSelList();
-              showToast("Could not save attendance: " + (err.message || err));
-            });
           });
           if (clearBtn) clearBtn.addEventListener("click", function () {
             if (state.dialogMode === "edit") return;
