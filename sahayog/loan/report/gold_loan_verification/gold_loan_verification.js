@@ -30,6 +30,14 @@ frappe.query_reports["Gold Loan Verification"] = {
 			report.filters.forEach(f => f.set_value(''));
 			report.refresh();
 		}).addClass('btn-secondary');
-
+		
+			// Hide Frappe standard Actions dropdown button
+		let hide_actions_interval = setInterval(() => {
+			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
+			if ($actions.length) {
+				$actions.attr('style', 'display: none !important');
+			}
+		}, 50);
+		setTimeout(() => clearInterval(hide_actions_interval), 2000);
 	}
 };
