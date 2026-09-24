@@ -30,7 +30,7 @@ frappe.query_reports["Gold Loan Verification"] = {
 			report.filters.forEach(f => f.set_value(''));
 			report.refresh();
 		}).addClass('btn-secondary');
-		
+
 			// Hide Frappe standard Actions dropdown button
 		let hide_actions_interval = setInterval(() => {
 			let $actions = report.page.wrapper.find('.actions-btn-group, [data-label="Actions"]');
@@ -39,5 +39,25 @@ frappe.query_reports["Gold Loan Verification"] = {
 			}
 		}, 50);
 		setTimeout(() => clearInterval(hide_actions_interval), 2000);
+
+		report.page.add_inner_button(__('Download CSV'), function () {
+			let filters = report.get_values();
+			frappe.call({
+				method: "sahayog.loan.report.gold_loan_verification.gold_loan_verification.download_csv",
+				args: { filters: JSON.stringify(filters) },
+				freeze: true,
+				callback: function(r) {
+					if (r.message) {
+						let blob = new Blob([r.message], { type: "text/csv" });
+						let url = window.URL.createObjectURL(blob);
+						let a = document.createElement("a");
+						a.href = url;
+						a.download = "Gold Loan Verification.csv";
+						a.click();
+						window.URL.revokeObjectURL(url);
+					}
+				}
+			});
+		}).addClass('btn-primary');
 	}
 };

@@ -1,5 +1,8 @@
 import frappe
 from frappe import _
+import csv
+import io
+
 
 
 def execute(filters=None):
@@ -103,3 +106,18 @@ def get_data(filters):
 		sr += 1
 
 	return data
+
+@frappe.whitelist()
+def download_csv(filters=None):
+	filters = frappe.parse_json(filters) if isinstance(filters, str) else (filters or {})
+	data = get_data(filters)
+	columns = [c["fieldname"] for c in get_columns()]
+	headers = [c["label"] for c in get_columns()]
+
+	output = io.StringIO()
+	writer = csv.writer(output)
+	writer.writerow(headers)
+	for row in data:
+		writer.writerow([row.get(col, "") for col in columns])
+
+	return output.getvalue()
