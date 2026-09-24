@@ -4080,6 +4080,18 @@
                   </div>
                 </div>
 
+                <!-- CSV import (bulk add, right under search) -->
+                <div class="fx-csv-row">
+                  <button type="button" class="btn" id="btn-import-participants-csv">
+                    Import from CSV
+                  </button>
+                  <button type="button" class="btn" id="btn-download-participant-template">
+                    Sample Template
+                  </button>
+                  <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
+                  <span id="participant-csv-status" class="muted"></span>
+                </div>
+
                 <!-- Selected participants -->
                 <div class="fx-sel-head">
                   <span class="t">Selected Participants (<span id="sel-count">0</span>) <span class="fx-sel-break" id="sel-break"></span></span>
@@ -4092,18 +4104,6 @@
                   <span style="flex:1"></span>
                   <button type="button" class="btn" id="btn-att-all">Mark all present</button>
                   <button type="button" class="btn btn-primary" id="btn-att-save" disabled>Save Attendance</button>
-                </div>
-
-                <!-- CSV import -->
-                <div class="fx-csv-row">
-                  <button type="button" class="btn" id="btn-import-participants-csv">
-                    Import from CSV
-                  </button>
-                  <button type="button" class="btn" id="btn-download-participant-template">
-                    Sample Template
-                  </button>
-                  <input type="file" id="participant-csv-file" accept=".csv" style="display:none;" />
-                  <span id="participant-csv-status" class="muted"></span>
                 </div>
 
                 <div class="nt-branch-summary" id="branch-summary" title="Branches for this training — auto-added from participants, or add manually">
