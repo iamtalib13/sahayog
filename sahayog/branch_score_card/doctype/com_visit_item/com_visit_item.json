@@ -9,8 +9,8 @@
   "month",
   "date_of_visit",
   "visit_score_i",
-  "visit_score_ii",
-  "performance_rating"
+  "performance_rating",
+  "score_obtain"
  ],
  "fields": [
   {
@@ -29,13 +29,7 @@
    "fieldname": "visit_score_i",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Visit Score I"
-  },
-  {
-   "fieldname": "visit_score_ii",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Visit Score II"
+   "label": "Visit Score"
   },
   {
    "fieldname": "performance_rating",
@@ -43,13 +37,19 @@
    "in_list_view": 1,
    "label": "Performance Rating",
    "options": "Excellent\nGood\nSatisfactory\nNeeds Improvement"
+  },
+  {
+   "fieldname": "score_obtain",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Score Obtain"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-09 14:04:24.188471",
+ "modified": "2026-09-15 12:59:58.275829",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "COM Visit Item",

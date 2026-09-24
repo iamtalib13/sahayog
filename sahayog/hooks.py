@@ -442,6 +442,14 @@ doc_events = {
     "Audit and Compliance": {
         "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
         "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
+    },
+    "Branch Score Card Deductions": {
+        "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
+        "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
+    },
+    "Unfrozen Security Deposit Account Opening": {
+        "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
+        "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
     }
 }
 

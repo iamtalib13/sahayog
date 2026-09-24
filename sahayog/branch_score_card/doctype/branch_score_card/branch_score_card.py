@@ -278,6 +278,44 @@ class BranchScoreCard(Document):
                         com_visit_closure_days = str(row.turnaround_time_days).strip() if row.turnaround_time_days is not None else None
                         break
                     
+                    
+        # -----------------------------------------------------
+        # 7.7. READ BRANCH SCORE CARD DEDUCTIONS (KYC Deviations)
+        # -----------------------------------------------------
+        kyc_deviation_days = 0
+
+        if clean_month and year_val and sol_id:
+            deduction_doc_name = frappe.db.get_value(
+                "Branch Score Card Deductions",
+                {"sol_id": sol_id, "year": year_val},
+                "name"
+            )
+            if deduction_doc_name:
+                deduction_doc = frappe.get_doc("Branch Score Card Deductions", deduction_doc_name)
+                for row in getattr(deduction_doc, "kyc_deviation", []) or []:
+                    if str(row.month).strip().capitalize() == clean_month:
+                        kyc_deviation_days = flt(row.deviation_days)
+                        break
+                    
+                    
+        #-----------------------------------------------------
+        # READ UNFROZEN SECURITY DEPOSIT ACCOUNT OPENING DATA
+        # -----------------------------------------------------
+        unfrozen_deduction_val = 0
+
+        if clean_month and year_val and sol_id:
+            unfrozen_records = frappe.get_all(
+                "Unfrozen Security Deposit Account Opening",
+                filters={"sol_id": sol_id, "month": clean_month},
+                fields=["date"]
+            )
+            for row in unfrozen_records:
+                if row.date:
+                    record_year = getdate(row.date).year
+                    if cint(record_year) == cint(year_val):
+                        unfrozen_deduction_val = -2
+                        break
+                    
 
         # -----------------------------------------------------
         # 8. UNIVERSAL DYNAMIC SCORING (Evaluates 0 Values directly)
@@ -309,6 +347,9 @@ class BranchScoreCard(Document):
                     "iad_closure_days": iad_closure_days,
                     "com_visit_rating": com_visit_rating,
                     "com_visit_closure_days": com_visit_closure_days,
+                    "kyc_deviation_days": kyc_deviation_days,
+                    "deviation_days": kyc_deviation_days,
+                    "unfrozen_deduction": unfrozen_deduction_val,
                 }
                 try:
                     rendered = frappe.render_template(
@@ -465,6 +506,74 @@ def trigger_score_card_creation(doc, method=None):
         
         return
     
+    # -------------------------------------------------------------------------
+    # Branch Score Card Deductions
+    # -------------------------------------------------------------------------
+    if doc.doctype == "Branch Score Card Deductions":
+        clean_branch = str(branch).strip() if branch else ""
+        sol_id = (
+            frappe.db.get_value("Sahayog Branch", {"branch": clean_branch}, "sol_id")
+            or frappe.db.get_value("Sahayog Branch", clean_branch, "sol_id")
+            or clean_branch
+        )
+        year_val = getattr(doc, "year", None)
+        
+        if not sol_id or not year_val:
+            return
+
+        months_to_trigger = set()
+        for row in getattr(doc, "kyc_deviation", []) or []:
+            if row.month:
+                months_to_trigger.add(str(row.month).strip().capitalize())
+
+        try:
+            frappe.flags.in_score_card_trigger = True
+            clean_year = str(year_val).strip()
+            for clean_month in months_to_trigger:
+                fetch_score_card_data(branch=sol_id, month=clean_month, year=clean_year)
+        except Exception as e:
+            frappe.log_error(
+                title=f"Auto Score Card Creation Failed [{doc.doctype} : {doc.name}]",
+                message=f"Branch SOL: {sol_id}, Year: {year_val}\nError: {str(e)}",
+            )
+        finally:
+            frappe.flags.in_score_card_trigger = False
+        
+        return
+
+    # -------------------------------------------------------------------------
+    # Unfrozen Security Deposit Account Opening
+    # -------------------------------------------------------------------------
+    if doc.doctype == "Unfrozen Security Deposit Account Opening":
+        clean_branch = str(branch).strip() if branch else ""
+        sol_id = (
+            frappe.db.get_value("Sahayog Branch", {"branch": clean_branch}, "sol_id")
+            or frappe.db.get_value("Sahayog Branch", clean_branch, "sol_id")
+            or clean_branch
+        )
+        month_val = getattr(doc, "month", None)
+        date_val = getattr(doc, "date", None)
+
+        if not sol_id or not month_val or not date_val:
+            return
+
+        year_val = getdate(date_val).year
+        clean_month = str(month_val).strip().capitalize()
+        clean_year = str(year_val).strip()
+
+        try:
+            frappe.flags.in_score_card_trigger = True
+            fetch_score_card_data(branch=sol_id, month=clean_month, year=clean_year)
+        except Exception as e:
+            frappe.log_error(
+                title=f"Auto Score Card Creation Failed [{doc.doctype} : {doc.name}]",
+                message=f"Branch SOL: {sol_id}, Month: {clean_month}, Year: {clean_year}\nError: {str(e)}",
+            )
+        finally:
+            frappe.flags.in_score_card_trigger = False
+        
+        return
+
     month = getattr(doc, "month", None)
     year = getattr(doc, "year", None)
 

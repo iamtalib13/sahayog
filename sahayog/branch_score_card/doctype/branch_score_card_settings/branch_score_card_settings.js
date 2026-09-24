@@ -932,11 +932,12 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		function apiCreateFunction(val) {
 			frappe.call({
 				method: "frappe.client.insert",
-				args: { doc: { doctype: "Function", function: val } },
+				args: { doc: { doctype: "Function", name: val, function: val } },
 				callback(r) {
 					if (!r.exc) {
 						frappe.show_alert({ message: `Function <b>${val}</b> created.`, indicator: "green" });
 						loadAll();
+						frm.reload_doc(); // Syncs Settings child table
 					}
 				},
 			});
@@ -948,7 +949,9 @@ frappe.ui.form.on("Branch Score Card Settings", {
 				callback(r) {
 					if (!r.exc) {
 						frappe.show_alert({ message: "Function renamed successfully.", indicator: "green" });
-						frm.reload_doc();
+						frm.reload_doc().then(() => {
+							loadAll();
+						});
 					}
 				},
 			});
@@ -979,9 +982,13 @@ frappe.ui.form.on("Branch Score Card Settings", {
 		function apiCreateParameter(funcName, val) {
 			frappe.call({
 				method: "frappe.client.insert",
-				args: { doc: { doctype: "Parameter", function: funcName, parameter: val } },
+				args: { doc: { doctype: "Parameter", name: val, function: funcName, parameter: val } },
 				callback(r) {
-					if (!r.exc) { frappe.show_alert({ message: `Parameter <b>${val}</b> added.`, indicator: "green" }); loadAll(); }
+					if (!r.exc) {
+						frappe.show_alert({ message: `Parameter <b>${val}</b> added.`, indicator: "green" });
+						loadAll();
+						frm.reload_doc(); // Syncs Settings child table
+					}
 				},
 			});
 		}
@@ -992,7 +999,9 @@ frappe.ui.form.on("Branch Score Card Settings", {
 				callback(r) {
 					if (!r.exc) {
 						frappe.show_alert({ message: "Parameter renamed successfully.", indicator: "green" });
-						frm.reload_doc();
+						frm.reload_doc().then(() => {
+							loadAll();
+						});
 					}
 				},
 			});

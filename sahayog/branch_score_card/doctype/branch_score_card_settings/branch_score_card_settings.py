@@ -53,25 +53,6 @@ class BranchScoreCardSettings(Document):
                 )
             seen_parameters.add(param_key)
 
-            # 5. Weightage Mandatory Check
-            if row.weightage is None or row.weightage == "":
-                frappe.throw(
-                    _("<b>{0}</b>: Weightage is mandatory for Parameter: <b>{1}</b>").format(
-                        row_label, row.parameter
-                    ),
-                    title=_("Missing Field")
-                )
-
-            # 6. Weightage Numeric & Positive Check
-            weightage = flt(row.weightage)
-            if weightage <= 0:
-                frappe.throw(
-                    _("<b>{0}</b>: Weightage must be greater than 0 for Parameter: <b>{1}</b>").format(
-                        row_label, row.parameter
-                    ),
-                    title=_("Invalid Weightage")
-                )
-
             # 7. Scoring Rule Mandatory Check (Spaces/Blank disallowed)
             rule = (row.scoring_rule or "").strip()
             if not rule:
@@ -99,15 +80,35 @@ class BranchScoreCardSettings(Document):
 def rename_function_doc(old_name, new_name):
     if old_name == new_name:
         return
+    
+    # 1. Primary key rename
     frappe.rename_doc("Function", old_name, new_name, force=True)
+    
+    # 2. Inner field update
+    frappe.db.set_value("Function", new_name, "function", new_name)
+    
+    # 3. Linked tables update
     frappe.db.sql("UPDATE `tabParameter` SET `function` = %s WHERE `function` = %s", (new_name, old_name))
     frappe.db.sql("UPDATE `tabBranch Score Card Item` SET `function` = %s WHERE `function` = %s", (new_name, old_name))
+    
     frappe.db.commit()
+    frappe.clear_cache(doctype="Function")
+    frappe.clear_cache(doctype="Branch Score Card Settings")
 
 @frappe.whitelist()
 def rename_parameter_doc(old_name, new_name):
     if old_name == new_name:
         return
+    
+    # 1. Primary key rename
     frappe.rename_doc("Parameter", old_name, new_name, force=True)
+    
+    # 2. Inner field update
+    frappe.db.set_value("Parameter", new_name, "parameter", new_name)
+    
+    # 3. Linked tables update
     frappe.db.sql("UPDATE `tabBranch Score Card Item` SET `parameter` = %s WHERE `parameter` = %s", (new_name, old_name))
+    
     frappe.db.commit()
+    frappe.clear_cache(doctype="Parameter")
+    frappe.clear_cache(doctype="Branch Score Card Settings")

@@ -18,10 +18,12 @@
   "zone",
   "regional_operations_manager",
   "regional__zonal_head",
+  "region",
   "column_break_vsqk",
   "branch_opening_date",
   "cluster_operations_manager",
   "ch_dh_adh",
+  "district",
   "section_break_sscj",
   "month_selector_html",
   "branch_score_section",
@@ -133,24 +135,28 @@
    "read_only": 1
   },
   {
+   "fetch_from": "branch.regional_operations_manager",
    "fieldname": "regional_operations_manager",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Regional Operations Manager"
   },
   {
+   "fetch_from": "branch.cluster_operations_manager",
    "fieldname": "cluster_operations_manager",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Cluster Operations Manager"
   },
   {
+   "fetch_from": "branch.regional__zonal_head",
    "fieldname": "regional__zonal_head",
    "fieldtype": "Data",
    "hidden": 1,
    "label": "Regional / Zonal Head"
   },
   {
+   "fetch_from": "branch.ch_dh_adh",
    "fieldname": "ch_dh_adh",
    "fieldtype": "Data",
    "hidden": 1,
@@ -164,13 +170,25 @@
    "fieldname": "section_break_sscj",
    "fieldtype": "Section Break",
    "label": "Select Month for Scorecard"
+  },
+  {
+   "fetch_from": "branch.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region"
+  },
+  {
+   "fetch_from": "branch.district",
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District"
   }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-07 17:33:08.599587",
+ "modified": "2026-09-22 13:57:29.190571",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Branch Score Card",
