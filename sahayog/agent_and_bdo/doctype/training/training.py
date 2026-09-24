@@ -137,7 +137,9 @@ class Training(Document):
                 for r in rows:
                     d = frappe.utils.getdate(r.holiday_date)
                     if from_d <= d <= to_d:
-                        holiday_map[str(d)] = r.description or "Holiday"
+                        # Descriptions may contain rich-text HTML — keep validation messages readable
+                        desc = frappe.utils.strip_html_tags(r.description or "") if r.description else ""
+                        holiday_map[str(d)] = " ".join(desc.split()) or "Holiday"
         # Check each date in range
         curr = from_d
         while curr <= to_d:
