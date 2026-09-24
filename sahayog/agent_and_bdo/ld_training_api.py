@@ -711,6 +711,53 @@ def _attendance_summary(training_name):
 
 
 @frappe.whitelist()
+def sync_draft_participants(training_name, participants=None):
+    """Add/remove participants on a DRAFT training (docstatus 0 only).
+
+    `participants`: JSON list of {reference_doctype, agent_employee}.
+    Sent as the full current list: missing pairs are appended, pairs absent
+    from the list are removed. Kept rows (incl. attendance) are untouched.
+    Submitted trainings are rejected — use cancel/amend for those.
+    """
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    if doc.docstatus != 0:
+        frappe.throw(_("Participants can only be changed while the training is in Draft."))
+
+    wanted = frappe.parse_json(participants or "[]") or []
+    seen = set()
+    for p in wanted:
+        ref_type = (p.get("reference_doctype") or "Employee") if isinstance(p, dict) else "Employee"
+        ref_id = (p.get("agent_employee") or p.get("employee") or "") if isinstance(p, dict) else ""
+        if ref_id:
+            seen.add((ref_type, ref_id))
+
+    existing = {(r.reference_doctype, r.agent_employee): r for r in (doc.participants or [])}
+    for ref_type, ref_id in seen:
+        if (ref_type, ref_id) in existing:
+            continue
+        full_name = frappe.db.get_value(
+            "Agent" if ref_type == "Agent" else "Employee",
+            ref_id,
+            "agent_name" if ref_type == "Agent" else "employee_name",
+        ) or ref_id
+        doc.append("participants", {
+            "reference_doctype": ref_type,
+            "agent_employee": ref_id,
+            "full_name": full_name,
+        })
+    doc.save(ignore_permissions=True)
+
+    # Drop rows removed in the dialog (kept rows — incl. attendance — are untouched)
+    for (ref_type, ref_id), row in existing.items():
+        if (ref_type, ref_id) not in seen:
+            frappe.db.delete("Training Participant", row.name)
+
+    frappe.db.commit()
+    return {"success": True, "summary": _attendance_summary(training_name)}
+
+
+@frappe.whitelist()
 def update_budget(training_name, budget_amount=None, actual_expense=None):
     """L&D Admin only — budget/expense capture."""
     if not _is_admin():
