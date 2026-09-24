@@ -2632,12 +2632,26 @@
         padding: 0 8px;
         white-space: nowrap;
       }
-      /* Actions column */
+      /* Actions column — pinned right so it is never cut off by horizontal overflow */
       .tr-table th.th-actions,
       .tr-table td.td-actions {
         width: 80px;
         text-align: center;
         white-space: nowrap;
+        position: sticky;
+        right: 0;
+        z-index: 1;
+      }
+      .tr-table th.th-actions {
+        background: #f8fafc;
+        box-shadow: -1px 0 0 var(--border);
+      }
+      .tr-table td.td-actions {
+        background: var(--surface);
+        box-shadow: -1px 0 0 var(--border);
+      }
+      .tr-table tbody tr:hover td.td-actions {
+        background: var(--surface-2);
       }
       .td-actions-wrap {
         display: inline-flex;
