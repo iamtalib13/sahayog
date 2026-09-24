@@ -4882,8 +4882,13 @@
           var start = new Date(first);
           start.setDate(start.getDate() - first.getDay());
 
+          // Render only the weeks this month needs (28/35/42 cells) — no cut-off filler row
+          var daysInMonth = new Date(yearOf(state.viewDate), monthOf(state.viewDate) + 1, 0).getDate();
+          var need = first.getDay() + daysInMonth;
+          var totalCells = need <= 28 ? 28 : need <= 35 ? 35 : 42;
+
           var isFiltered = state.statusFilter !== null;
-          for (var i = 0; i < 42; i++) {
+          for (var i = 0; i < totalCells; i++) {
             var cellDate = new Date(start);
             cellDate.setDate(start.getDate() + i);
             var dateIso = isoOf(cellDate);
