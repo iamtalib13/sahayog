@@ -4734,7 +4734,13 @@
           ])
             .then(function (res) {
               state.calEvents = Array.isArray(res[0]) ? res[0] : [];
-              state.holidays = res[1] && typeof res[1]==="object" ? res[1] : {};
+              // Holiday descriptions may contain rich-text HTML (quill) — strip to plain text once
+              var rawH = res[1] && typeof res[1]==="object" ? res[1] : {};
+              var cleanH = {};
+              Object.keys(rawH).forEach(function (k) {
+                cleanH[k] = String(rawH[k] || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || "Holiday";
+              });
+              state.holidays = cleanH;
               render();
               updateSchedulePreview();
             })
