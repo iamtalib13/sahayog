@@ -24,5 +24,12 @@ frappe.query_reports["Gold Loan Verification"] = {
 			"fieldtype": "Select",
 			"options": "\nDraft\nPending\nApproved\nRejected\nDisbursed\nCancelled"
 		}
-	]
+	],
+	"onload": function(report) {
+		report.page.add_inner_button(__('Clear Filters'), function () {
+			report.filters.forEach(f => f.set_value(''));
+			report.refresh();
+		}).addClass('btn-secondary');
+
+	}
 };
