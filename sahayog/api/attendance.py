@@ -650,8 +650,10 @@ def request_attendance_correction(employee, attendance_date, requested_status, r
         if leave:
             current_status = "On Leave"
 
-    # Unmarked dates count as Absent (labelled so the reason is identifiable).
-    current_status = current_status or "Absent (Unmarked)"
+    # Unmarked dates count as "Not Marked" (valid Select option in Attendance Correction)
+    current_status = current_status or "Not Marked"
+    if current_status not in ["Present", "Absent", "Half Day", "On Leave", "Work From Home", "Not Marked"]:
+        current_status = "Not Marked"
 
     doc = frappe.get_doc({
         "doctype": "Attendance Correction",
