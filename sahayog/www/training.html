@@ -1859,8 +1859,8 @@
         box-shadow:0 1px 2px rgba(37,99,235,.45); }
       #addModal #btn-save-training:hover { filter:brightness(1.07); }
       #addModal #btn-reschedule-training { height:32px; font-size:13px; border-radius:8px; }
-      .fx-cols { display:flex; gap:32px; padding:32px; align-items:flex-start; }
-      .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:20px; }
+      .fx-cols { display:flex; gap:16px; padding:20px; align-items:flex-start; }
+      .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:12px; }
       .fx-field { display:flex; flex-direction:column; gap:6px; }
       .fx-label { font-size:12px; font-weight:600; text-transform:uppercase; color:var(--ink-2); }
       .fx-label b { color:var(--danger); }
@@ -1873,7 +1873,9 @@
       #addModal #new-trainer.fx-input { background:var(--surface-2); cursor:default; }
       .fx-row2 { display:flex; gap:12px; align-items:flex-start; }
       .fx-row2 .fx-field { flex:1; min-width:0; }
-      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px;
+      /* Type options are short — give the width to the trainer name */
+      .fx-row2.tt-row > .fx-field:first-child { flex:0 0 132px; }
+      .fx-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
         display:flex; flex-direction:column; gap:14px; }
       .fx-card-t { font-size:13px; font-weight:700; color:var(--ink-1); margin-bottom:2px; }
       #addModal .fx-card .nt-sched-date, #addModal .fx-card .nt-sched-time {
@@ -4035,7 +4037,6 @@
         <div class="nt-head">
           <div>
             <h3>New Training</h3>
-            <div style="font-size:12.5px;color:var(--ink-2);margin-top:2px;" id="nt-head-sub">Create an L&amp;D class, allocate a trainer, and assign branch employees</div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
             <button class="btn" id="btn-reschedule-training" style="display:none;height:32px;padding:7px 18px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
@@ -4194,7 +4195,7 @@
                 autocomplete="off"
               />
             </div>
-            <div class="fx-row2">
+            <div class="fx-row2 tt-row">
               <div class="fx-field">
                 <span class="fx-label">Training Type <b>*</b></span>
                 <select
