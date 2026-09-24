@@ -68,6 +68,9 @@
                             Calendar
                         </button>
                     </div>
+                    <button class="lw-chip lw-chip-secondary" type="button" @click="openVerificationReport()">
+                        Report
+                    </button>
                     <button class="lw-chip lw-chip-primary" type="button" v-if="canCreate" @click="openNewApplication()">
                         + New Loan Request
                     </button>
@@ -2852,6 +2855,15 @@
 
             openNewApplication() {
                 this.navigateTo("/app/loan-request/new");
+            },
+
+            openVerificationReport() {
+                const now = new Date();
+                const toDate = now.toISOString().split('T')[0];
+                const fromDateObj = new Date(now);
+                fromDateObj.setMonth(fromDateObj.getMonth() - 1);
+                const fromDate = fromDateObj.toISOString().split('T')[0];
+                this.navigateTo(`/app/query-report/Gold%20Loan%20Verification?from_date=${fromDate}&to_date=${toDate}`);
             },
 
             openApplication(app) {
