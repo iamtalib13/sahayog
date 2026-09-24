@@ -1858,7 +1858,9 @@
       #addModal #btn-save-training { height:32px; padding:7px 18px; font-size:13px; border-radius:8px;
         box-shadow:0 1px 2px rgba(37,99,235,.45); }
       #addModal #btn-save-training:hover { filter:brightness(1.07); }
+      /* Reschedule button styling (button currently commented out)
       #addModal #btn-reschedule-training { height:32px; font-size:13px; border-radius:8px; }
+      */
       .fx-cols { display:flex; gap:16px; padding:20px; align-items:flex-start; }
       .fx-col { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:12px; }
       .fx-field { display:flex; flex-direction:column; gap:6px; }
@@ -4039,7 +4041,9 @@
             <h3>New Training</h3>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+            <!-- Reschedule (temporarily disabled — Save already handles schedule changes)
             <button class="btn" id="btn-reschedule-training" style="display:none;height:32px;padding:7px 18px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
+            -->
             <button class="btn btn-primary" id="btn-save-training" style="height:32px;padding:7px 18px;font-size:13px;">Save Training</button>
             <button class="modal-close" data-close="addModal" title="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
@@ -6152,19 +6156,20 @@
           if (h)
             h.textContent = mode === "edit" ? "Edit Training" : "New Training";
           var saveBtn = document.getElementById("btn-save-training");
-          var reschedBtn = document.getElementById("btn-reschedule-training");
+          // Reschedule flow temporarily disabled — Save already handles schedule changes
+          // var reschedBtn = document.getElementById("btn-reschedule-training");
           if (mode === "edit") {
             saveBtn.textContent = "Save";
             saveBtn.onclick = saveTrainingChanges;
-            if (reschedBtn) {
-              reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
-              reschedBtn.textContent = "Reschedule";
-              reschedBtn.onclick = enterRescheduleMode;
-            }
+            // if (reschedBtn) {
+            //   reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
+            //   reschedBtn.textContent = "Reschedule";
+            //   reschedBtn.onclick = enterRescheduleMode;
+            // }
           } else {
             saveBtn.textContent = "Save";
             saveBtn.onclick = saveTraining;
-            if (reschedBtn) reschedBtn.style.display = "none";
+            // if (reschedBtn) reschedBtn.style.display = "none";
           }
         }
         function openTrainingDialog(ev) {
@@ -6455,7 +6460,7 @@
           document.getElementById(id).classList.remove("open");
         }
 
-        /* ---- Reschedule mode: unlock schedule fields in edit dialog ---- */
+        /* ---- Reschedule mode (temporarily disabled — Save already handles schedule changes)
         var SCHEDULE_FIELDS = ["new-from-date", "new-to-date", "new-time", "new-end-time"];
 
         function enterRescheduleMode() {
@@ -6506,7 +6511,6 @@
             end_time: endTime || null,
           })
             .then(function () {
-              /* Update local event */
               ev.from_date = fromDate;
               ev.to_date = toDate;
               ev.start_time = startTime;
@@ -6521,6 +6525,7 @@
               showToast("Could not reschedule: " + e.message);
             });
         }
+        ---- End disabled reschedule block ---- */
         /* Parse flexible time input into minutes-since-midnight (returns -1 if invalid) */
         function parseTime(t) {
           if (!t) return -1;
