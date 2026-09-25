@@ -4603,17 +4603,13 @@
         function evEnd(ev) {
           return ev.to_date || ev.from_date || ev.date || "";
         }
-        function formStatusOf(ev) {
-          if (!ev) return "Draft";
-          if (ev.form_status === "Draft" || ev.form_status === "Submitted") return ev.form_status;
-          return (ev.docstatus || 0) !== 0 ? "Submitted" : "Draft";
-        }
         function statusOf(ev) {
-          if (formStatusOf(ev) === "Draft") return "draft";
           var s = completionScore(ev);
           if (s === 5) return "completed";
           if (s > 0) return "inprogress";
-          return evEnd(ev) >= todayIso() ? "upcoming" : "pending";
+          var end = evEnd(ev);
+          if (!end) return "draft";
+          return end >= todayIso() ? "upcoming" : "pending";
         }
         function monthOf(d) {
           return d.getMonth();
@@ -4701,12 +4697,6 @@
         function role() {
           return ROLES[state.role];
         }
-        /* Participants are locked in edit mode once submitted; drafts stay editable. */
-        function participantsLocked() {
-          if (state.dialogMode !== "edit") return false;
-          return formStatusOf(state.currentEvent) !== "Draft";
-        }
-
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -6229,10 +6219,14 @@
           var docChip = document.getElementById("dlg-doc-chip");
           if (docChip) {
             if (mode === "edit" && ev && ev.name) {
-              var dst = formStatusOf(ev);
+              var st = statusOf(ev);
+              var meta = STATUS_META[st] || STATUS_META.draft;
+              var chipCls = st === "completed" ? "chip-green"
+                : st === "inprogress" ? "chip-orange"
+                : st === "upcoming" ? "chip-blue" : "chip-gray";
               docChip.style.display = "";
-              docChip.className = "chip " + (dst === "Draft" ? "chip-gray" : "chip-blue");
-              docChip.textContent = ev.name + " · " + dst;
+              docChip.className = "chip " + chipCls;
+              docChip.textContent = ev.name + " · " + meta.label;
             } else {
               docChip.style.display = "none";
             }
@@ -6456,6 +6450,8 @@
             closeModal("addModal");
             return;
           }
+          // In-flight guard: double-clicks would race parallel writers on the same doc
+          if (state.savingTraining) return;
           var tasks = [];
           // Schedule changes — single Save handles reschedule (dialog shows DD-MM-YYYY, API uses ISO)
           var fromRaw = ((document.getElementById("new-from-date") || {}).value || "").trim();
@@ -6502,8 +6498,6 @@
             }));
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
-          // Staged inline attendance flushes through the same Save (edit mode)
-          if (dialogFn.flushAttStaged) tasks.push(dialogFn.flushAttStaged());
           if ((ev.trainer_remarks || "") !== val) {
             tasks.push(
               api("update_training_status", {
@@ -6515,8 +6509,9 @@
               }),
             );
           }
-          // Draft only: sync added/removed participants (submitted stays locked)
-          if (formStatusOf(ev) === "Draft") {
+          // Sync added/removed participants on Save (no locks)
+          var doSync = null;
+          {
             var beforePairs = {};
             (ev.participant_list || []).forEach(function (p) {
               beforePairs[(p.reference_doctype || "Employee") + ":" + (p.agent_employee || "")] = true;
@@ -6529,12 +6524,12 @@
             Object.keys(afterPairs).forEach(function (k) { if (!beforePairs[k]) pChanged = true; });
             Object.keys(beforePairs).forEach(function (k) { if (!afterPairs[k]) pChanged = true; });
             if (pChanged) {
-              tasks.push(
-                api("sync_draft_participants", {
+              doSync = function () {
+                return api("sync_participants", {
                   training_name: ev.name,
                   participants: JSON.stringify(state.selectedParticipants),
-                }),
-              );
+                });
+              };
             }
           }
           if (role().showBudget) {
@@ -6553,13 +6548,25 @@
               }),
             );
           }
-          Promise.all(tasks)
+          // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
+          // if parallel set_value calls bump `modified` first. Order: flush, sync, rest.
+          state.savingTraining = true;
+          var flushP = dialogFn.flushAttStaged ? dialogFn.flushAttStaged() : Promise.resolve(true);
+          flushP
             .then(function () {
+              return doSync ? doSync() : true;
+            })
+            .then(function () {
+              return Promise.all(tasks);
+            })
+            .then(function () {
+              state.savingTraining = false;
               closeModal("addModal");
               loadData(true);
               showToast("Training updated");
             })
             .catch(function (e) {
+              state.savingTraining = false;
               showToast("Could not save changes: " + e.message);
             });
         }
@@ -7447,7 +7454,7 @@
 
           renderGeoRows = function() {
             if (!geoContainer) return;
-            var isEdit = participantsLocked();
+            var isEdit = false;
             geoContainer.innerHTML = "";
             if (!state.selectedGeographies || !state.selectedGeographies.length) {
               state.selectedGeographies = [{}];
@@ -7480,8 +7487,6 @@
           };
 
           function bindRowEvents(){
-            var isEdit = participantsLocked();
-            if (isEdit) return;
             geoContainer.querySelectorAll(".geo-branch-input").forEach(function(inp){
               var idx = parseInt(inp.dataset.idx,10);
               inp.addEventListener("focus", function(){ renderDropdown(idx, this.value); });
@@ -7605,7 +7610,7 @@
 
           /* Auto-add a branch row from a participant's branch (manual add/remove untouched). */
           dialogFn.autoAddBranch = function(code){
-            if (!code || participantsLocked()) return false;
+            if (!code) return false;
             var geos = state.selectedGeographies || [];
             var dup = geos.some(function(g){ return g.branch === code; });
             if (dup) return false;
@@ -7621,7 +7626,7 @@
 
           /* Remove a branch row by code (used by top branch chips). */
           dialogFn.removeBranch = function(code){
-            if (!code || participantsLocked()) return false;
+            if (!code) return false;
             var geos = state.selectedGeographies || [];
             var idx = -1;
             geos.forEach(function(g, i){ if (g.branch === code && idx === -1) idx = i; });
@@ -7774,7 +7779,7 @@
             var empById = {}, agentById = {};
             (state.allEmployees || []).forEach(function(e) { empById[e.name] = e; });
             (state.allAgents || []).forEach(function(a) { agentById[a.name] = a; });
-            var removable = !participantsLocked();
+            var removable = true;
             pChips.innerHTML = (state.selectedParticipants || []).map(function(p) {
               var isAgent = p.reference_doctype === "Agent";
               var displayName = p.full_name || p.agent_employee;
@@ -7804,7 +7809,6 @@
           }
 
           function openPop() {
-            if (participantsLocked()) return;
             if (!pPop || !pDd) return;
             setPickType(state.participantPickType || "Employee");
             pPop.style.display = "block";
@@ -8043,28 +8047,6 @@
           }
           function updateBranchSummary() {
             var geos = (state.selectedGeographies || []).filter(function (g) { return g.branch; });
-            // Branches derived from selected participants are auto-managed (locked);
-            // only manually added branches can be removed here.
-            var autoSet = {};
-            (state.selectedParticipants || []).forEach(function (p) {
-              var code = "";
-              if (p.reference_doctype === "Agent") {
-                var ag = (state.allAgents || []).find(function (x) { return x.name === p.agent_employee; }) || {};
-                if (ag.branch_name) {
-                  var want = String(ag.branch_name).trim().toLowerCase();
-                  (state.branchPick || []).forEach(function (b) {
-                    if (code) return;
-                    if ((b.name && String(b.name).trim().toLowerCase() === want) ||
-                        (b.branch && String(b.branch).trim().toLowerCase() === want)) code = b.name;
-                  });
-                  if (!code) code = ag.branch_name;
-                }
-              } else {
-                var em = (state.allEmployees || []).find(function (x) { return x.name === p.agent_employee; }) || {};
-                code = em.sahayog_branch || "";
-              }
-              if (code) autoSet[code] = true;
-            });
             var viewBtn = document.getElementById("branch-view-btn");
             var namesEl = document.getElementById("branch-names");
             var viewPop = document.getElementById("branch-view-pop");
@@ -8074,8 +8056,7 @@
             var viewTitle = document.getElementById("branch-view-title");
             if (viewTitle) viewTitle.textContent = geos.length ? ("Branches (" + geos.length + ")") : "Branches";
             if (!namesEl || !viewList) return;
-            var disabled = participantsLocked() ? " disabled" : "";
-            var lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;opacity:.55;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
+            var disabled = "";
             if (!geos.length) {
               namesEl.innerHTML = '<span class="muted">No branches yet — select participants or add a branch.</span>';
               viewList.innerHTML = "";
@@ -8091,17 +8072,14 @@
               if (viewBtn) viewBtn.disabled = false;
               // Full detail rows live in the popover
               viewList.innerHTML = geos.map(function (g) {
-                var locked = !!autoSet[g.branch];
                 var meta = [g.zone, g.region, g.district].filter(function (x) { return x; }).join(" • ") || "—";
-                var action = locked
-                  ? '<span title="Auto-added from selected participants" style="display:inline-flex;">' + lockSvg + "</span>"
-                  : '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' + disabled + ">&times;</button>";
+                var action = '<button type="button" data-rm-branch="' + esc(g.branch) + '" title="Remove branch"' + disabled + ">&times;</button>";
                 return '<div class="brow" title="' + esc(branchDisplay(g.branch)) + '">' +
                   '<span class="brow-meta"><b>' + esc(branchDisplay(g.branch)) + "</b><i>" + esc(meta) + "</i></span>" +
                   action + "</div>";
               }).join("");
             }
-            if (branchAddBtn) branchAddBtn.disabled = participantsLocked();
+            if (branchAddBtn) branchAddBtn.disabled = false;
           }
           function renderBranchAddList() {
             if (!branchAddList) return;
@@ -8234,7 +8212,6 @@
           // + Add Branch picker (manual branches without participants)
           if (branchAddBtn) branchAddBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            if (participantsLocked()) return;
             if (!branchAddPop) return;
             var open = branchAddPop.style.display === "block";
             if (open) { closeBranchAddPop(); return; }
@@ -8314,7 +8291,7 @@
             if (countEl) countEl.textContent = sel.length;
             var brk = document.getElementById("sel-break");
             if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
-            if (clearBtn) { clearBtn.disabled = !sel.length || isEdit; clearBtn.style.display = isEdit ? "none" : ""; }
+            if (clearBtn) { clearBtn.disabled = !sel.length; clearBtn.style.display = ""; }
             if (!sel.length) {
               listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
               if (attTop) attTop.style.display = "none";
@@ -8335,14 +8312,14 @@
                 div = e.custom_division || e.department || "";
               }
               var sub = code + (branch ? " • " + branch : "") + (div ? " • " + div : "");
-              var locked = isEdit && participantsLocked();
               var tail;
-              if (locked) {
+              if (isEdit) {
                 var cur = effAtt(p);
                 var dis = attSaving || !p.row_name ? " disabled" : "";
                 tail = '<span class="fx-att-seg">' +
                   '<button type="button" class="fx-att-btn' + (cur === "Present" ? " on-p" : "") + '" data-att="Present" data-row="' + esc(p.row_name || "") + '" title="Mark present"' + dis + ">Present</button>" +
-                  '<button type="button" class="fx-att-btn' + (cur === "Absent" ? " on-a" : "") + '" data-att="Absent" data-row="' + esc(p.row_name || "") + '" title="Mark absent"' + dis + ">Absent</button></span>";
+                  '<button type="button" class="fx-att-btn' + (cur === "Absent" ? " on-a" : "") + '" data-att="Absent" data-row="' + esc(p.row_name || "") + '" title="Mark absent"' + dis + ">Absent</button></span>" +
+                  '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove">×</button>';
               } else {
                 tail = '<button type="button" class="fx-sel-rm" data-rm-sel="' + esc(p.reference_doctype + ":" + code) + '" title="Remove">×</button>';
               }
@@ -8359,8 +8336,8 @@
             });
           }
           function syncAttBar(sel) {
-            // Top capsules (submitted edit only) + Mark-all visibility; saving happens via dialog Save
-            var show = state.dialogMode === "edit" && participantsLocked() && sel.length > 0;
+            // Top capsules (edit mode) + Mark-all visibility; saving happens via dialog Save
+            var show = state.dialogMode === "edit" && sel.length > 0;
             if (attTop) attTop.style.display = show ? "flex" : "none";
             if (attAllBtn) attAllBtn.style.display = show ? "" : "none";
             if (!show) return;
@@ -8455,7 +8432,7 @@
             else showToast("Everyone is already marked");
           });
           if (clearBtn) clearBtn.addEventListener("click", function () {
-            if (state.dialogMode === "edit") return;
+            if (!state.selectedParticipants.length) return;
             state.selectedParticipants = [];
             dialogFn.renderPChips();
           });
@@ -8495,12 +8472,6 @@
             fileInput.addEventListener("change", function () {
               var file = fileInput.files[0];
               if (!file) return;
-              if (participantsLocked()) {
-                if (statusEl) statusEl.textContent = "Participants can't be changed after submit.";
-                showToast("Participants can't be changed after submit");
-                fileInput.value = "";
-                return;
-              }
               if (statusEl) statusEl.textContent = "Reading…";
 
               var reader = new FileReader();
