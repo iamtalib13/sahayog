@@ -14,17 +14,25 @@ COMPLETION_FIELDS = [
 ]
 
 
+def get_form_status(doc):
+    """Form lifecycle state. Legacy rows without the field fall back to docstatus."""
+    fs = doc.get("form_status")
+    if fs in ("Draft", "Submitted"):
+        return fs
+    return "Submitted" if (doc.get("docstatus") or 0) != 0 else "Draft"
+
+
 def get_training_status(doc, for_date=None):
     """
     Derive the calendar status of a Training.
 
-    Draft          -> not yet submitted (docstatus 0)
-    Completed      -> submitted and all 5 completion checks ticked
-    In Progress    -> submitted and 1-4 completion checks ticked
-    Upcoming       -> submitted, 0 checks, on/after today
-    Pending        -> submitted, 0 checks, before today
+    Draft          -> form is still in Draft
+    Completed      -> all 5 completion checks ticked
+    In Progress    -> 1-4 completion checks ticked
+    Upcoming       -> 0 checks, on/after today
+    Pending        -> 0 checks, before today
     """
-    if doc.docstatus == 0:
+    if get_form_status(doc) == "Draft":
         return "Draft"
 
     score = sum(1 for f in COMPLETION_FIELDS if doc.get(f))
@@ -47,6 +55,8 @@ class Training(Document):
             self.set_trainer_from_user()
 
     def before_save(self):
+        if not self.get("form_status"):
+            self.form_status = "Submitted" if (self.docstatus or 0) != 0 else "Draft"
         self.status = get_training_status(self)
         self._sync_geographies()
 
@@ -151,6 +161,7 @@ class Training(Document):
             curr = frappe.utils.add_days(curr, 1)
 
     def on_submit(self):
+        # Kept for legacy rows; new docs use form_status (non-submittable form).
         status = get_training_status(self)
         if status != self.status:
             frappe.db.set_value("Training", self.name, "status", status)
