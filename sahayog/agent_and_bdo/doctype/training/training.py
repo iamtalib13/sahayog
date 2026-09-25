@@ -14,27 +14,16 @@ COMPLETION_FIELDS = [
 ]
 
 
-def get_form_status(doc):
-    """Form lifecycle state. Legacy rows without the field fall back to docstatus."""
-    fs = doc.get("form_status")
-    if fs in ("Draft", "Submitted"):
-        return fs
-    return "Submitted" if (doc.get("docstatus") or 0) != 0 else "Draft"
-
-
 def get_training_status(doc, for_date=None):
     """
-    Derive the calendar status of a Training.
+    Derive the calendar status of a Training (plain, non-submittable form).
 
-    Draft          -> form is still in Draft
+    Draft          -> no schedule yet (dates missing)
     Completed      -> all 5 completion checks ticked
     In Progress    -> 1-4 completion checks ticked
     Upcoming       -> 0 checks, on/after today
     Pending        -> 0 checks, before today
     """
-    if get_form_status(doc) == "Draft":
-        return "Draft"
-
     score = sum(1 for f in COMPLETION_FIELDS if doc.get(f))
     if score == len(COMPLETION_FIELDS):
         return "Completed"
@@ -42,8 +31,10 @@ def get_training_status(doc, for_date=None):
         return "In Progress"
 
     ref = for_date or frappe.utils.getdate()
-    end = doc.to_date or doc.from_date
-    training_date = frappe.utils.getdate(end) if end else None
+    end = doc.get("to_date") or doc.get("from_date")
+    if not end:
+        return "Draft"
+    training_date = frappe.utils.getdate(end)
     if training_date and training_date >= ref:
         return "Upcoming"
     return "Pending"
@@ -55,8 +46,6 @@ class Training(Document):
             self.set_trainer_from_user()
 
     def before_save(self):
-        if not self.get("form_status"):
-            self.form_status = "Submitted" if (self.docstatus or 0) != 0 else "Draft"
         self.status = get_training_status(self)
         self._sync_geographies()
 
@@ -159,12 +148,6 @@ class Training(Document):
             if d_str in holiday_map:
                 frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_str))
             curr = frappe.utils.add_days(curr, 1)
-
-    def on_submit(self):
-        # Kept for legacy rows; new docs use form_status (non-submittable form).
-        status = get_training_status(self)
-        if status != self.status:
-            frappe.db.set_value("Training", self.name, "status", status)
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee
