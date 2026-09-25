@@ -120,7 +120,7 @@ function show_zinghr_sync_dialog(listview) {
 				fieldname: "from_date",
 				fieldtype: "Date",
 				label: __("From Date"),
-				description: __("Filter records updated from this date (leave blank for all)"),
+				description: __("Sync attribute changes from this date (leave blank for all). If only From is set, To defaults to today."),
 			},
 			{
 				fieldname: "col_break_2",
@@ -130,7 +130,7 @@ function show_zinghr_sync_dialog(listview) {
 				fieldname: "to_date",
 				fieldtype: "Date",
 				label: __("To Date"),
-				description: __("Filter records updated to this date (leave blank for all)"),
+				description: __("Sync attribute changes until this date (leave blank for all). ZingHR needs both dates together."),
 			},
 		],
 		primary_action_label: __("Start Sync"),
@@ -141,10 +141,18 @@ function show_zinghr_sync_dialog(listview) {
 			const sync_mode = values.sync_mode || "all";
 			const batch_choice = values.batch_selection || "1";
 			const execution_type = values.execution_type || "live";
-			const from_date = values.from_date || null;
-			const to_date = values.to_date || null;
+			let from_date = values.from_date || null;
+			let to_date = values.to_date || null;
 			const max_batches = batch_choice === "all" ? 0 : parseInt(batch_choice, 10);
 			const page_size = 100;
+
+			// ZingHR API returns HTTP 400 "Validation Error" when only one date is
+			// sent (Todate is mandatory with Fromdate) - always complete the pair.
+			if (from_date && !to_date) {
+				to_date = frappe.datetime.get_today();
+			} else if (to_date && !from_date) {
+				from_date = to_date;
+			}
 
 			dialog.hide();
 
@@ -283,7 +291,12 @@ function show_zinghr_sync_dialog(listview) {
 						break;
 					}
 
-					if (batch_resp.fetched < page_size || total_fetched >= total_records_available) {
+					// Stop on short page; only trust total_records when known (> 0)
+					// because the server sends null for unknown totals.
+					if (
+						batch_resp.fetched < page_size ||
+						(total_records_available > 0 && total_fetched >= total_records_available)
+					) {
 						break;
 					}
 

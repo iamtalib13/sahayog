@@ -1,6 +1,10 @@
 frappe.ui.form.on("Employee", {
 	refresh: function (frm) {
-		if (!frm.is_new() && (frm.doc.employee_number || frm.doc.name)) {
+		if (
+			!frm.is_new() &&
+			(frm.doc.employee_number || frm.doc.name) &&
+			frappe.user.has_role("System Manager")
+		) {
 			frm.add_custom_button(
 				__("Update from ZingHR"),
 				function () {

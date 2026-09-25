@@ -1,8 +1,7 @@
 import base64
-from datetime import timedelta
 import frappe
 from frappe import _
-from frappe.utils import getdate, now_datetime, today, cint, add_days
+from frappe.utils import getdate, now_datetime, today, cint
 import requests
 from typing import Dict, Any, Optional, List, Tuple, Set
 
@@ -93,15 +92,29 @@ class ZingHRClient:
             headers["Authorization"] = f"Bearer {token}"
             res = requests.post(self.emp_url, headers=headers, json=payload, timeout=timeout)
 
-        res.raise_for_status()
-        return res.json().get("data", {})
+        if res.status_code >= 400:
+            # Surface ZingHR's validation detail (e.g. which date field is wrong)
+            # instead of a bare "400 Client Error".
+            detail = res.text[:300]
+            try:
+                body = res.json()
+                if isinstance(body, dict):
+                    detail = body.get("message") or detail
+                    if isinstance(body.get("data"), dict):
+                        detail = f"{detail} | {frappe.as_unicode(body['data'])}"
+            except Exception:
+                pass
+            frappe.throw(_("ZingHR API error ({0}): {1}").format(res.status_code, detail))
+
+        data = res.json()
+        return data.get("data", {}) if isinstance(data, dict) else data
 
     def fetch_single(self, employee_code: str) -> Optional[Dict[str, Any]]:
         data = self._request({"employeeCode": str(employee_code).strip()})
         employees = data.get("employees", []) if isinstance(data, dict) else data
         return employees[0] if employees else None
 
-    def fetch_batch(self, page_size: int, page_number: int, from_date: Optional[str] = None, to_date: Optional[str] = None) -> Tuple[List[Dict[str, Any]], int]:
+    def fetch_batch(self, page_size: int, page_number: int, from_date: Optional[str] = None, to_date: Optional[str] = None) -> Tuple[List[Dict[str, Any]], Optional[int]]:
         def _fmt_date(d):
             if not d:
                 return None
@@ -110,19 +123,34 @@ class ZingHRClient:
             except Exception:
                 return str(d).strip()
 
+        from_d = _fmt_date(from_date)
+        to_d = _fmt_date(to_date)
+        # ZingHR API rule: Fromdate requires Todate (otherwise HTTP 400
+        # "Validation Error"). Complete the pair so a lone date never fails:
+        #   from only  -> window ends today
+        #   to only    -> window starts on that day
+        if from_d and not to_d:
+            to_d = _fmt_date(today())
+        elif to_d and not from_d:
+            from_d = to_d
+
         payload = {"pageSize": page_size, "pageNumber": page_number}
-        if from_date:
-            f_date = _fmt_date(from_date)
-            payload["FromDate"] = f_date
-            payload["Fromdate"] = f_date
-        if to_date:
-            t_date = _fmt_date(to_date)
-            payload["ToDate"] = t_date
-            payload["Todate"] = t_date
+        if from_d:
+            payload["Fromdate"] = from_d
+            payload["Todate"] = to_d
 
         data = self._request(payload, timeout=60)
         if isinstance(data, dict):
-            return data.get("employees", []), int(data.get("totalEmployeeCount") or len(data.get("employees", [])))
+            # Return None when total is unknown (missing/0/invalid) so callers
+            # paginate until a short page instead of stopping after page 1.
+            raw_total = data.get("totalEmployeeCount")
+            total = None
+            if raw_total not in (None, ""):
+                try:
+                    total = int(raw_total) or None
+                except (TypeError, ValueError):
+                    total = None
+            return data.get("employees", []) or [], total
         return data, len(data)
 
 
@@ -138,11 +166,12 @@ class MasterResolver:
         self.zones: Dict[str, str] = {z.lower(): z for z in frappe.get_all("Zone", pluck="name")}
         self.regions: Dict[str, str] = {r.lower(): r for r in frappe.get_all("Region", pluck="name")}
         self.designations: Dict[str, str] = {d.lower(): d for d in frappe.get_all("Designation", pluck="name")}
-        self.departments: Dict[str, str] = {
-            d.department_name.lower(): d.name
-            for d in frappe.get_all("Department", fields=["name", "department_name"])
-            if d.department_name
-        }
+        self.departments: Dict[str, str] = {}
+        for d in frappe.get_all("Department", fields=["name", "department_name"]):
+            if d.name:
+                self.departments[d.name.lower()] = d.name
+            if d.department_name:
+                self.departments[d.department_name.lower()] = d.name
         # Map Sahayog Branch by name (SOL ID), sol_id, branch_code, and branch label
         self.sahayog_branches: Dict[str, str] = {}
         self.sahayog_branches_by_label: Dict[str, str] = {}
@@ -183,10 +212,13 @@ class MasterResolver:
         raw = val.strip()
         clean = raw.replace(" ", "").upper().replace("-", "").replace("_", "")
         if clean in ["HEADOFFICE", "HO"]:
-            if "head office" not in self.regions:
-                doc = frappe.get_doc({"doctype": "Region", "region": "HEAD OFFICE"}).insert(ignore_permissions=True)
-                self.regions["head office"] = doc.name
-            return self.regions.get("head office", "HEAD OFFICE")
+            for ho_key in ["head office", "headoffice", "ho", "region-headoffice"]:
+                if ho_key in self.regions:
+                    return self.regions[ho_key]
+            doc = frappe.get_doc({"doctype": "Region", "region": "HEAD OFFICE"}).insert(ignore_permissions=True)
+            self.regions["head office"] = doc.name
+            self.regions["headoffice"] = doc.name
+            return doc.name
 
         key = raw.lower()
         if key in self.regions:
@@ -223,6 +255,7 @@ class MasterResolver:
             return self.departments[key]
         doc = frappe.get_doc({"doctype": "Department", "department_name": clean, "company": self.company}).insert(ignore_permissions=True)
         self.departments[key] = doc.name
+        self.departments[doc.name.lower()] = doc.name
         return doc.name
 
     def resolve_sahayog_branch(
@@ -467,7 +500,7 @@ def fast_upsert_employees(
     High-performance batch upsert using bulk pre-fetching and direct diff updates.
     """
     if not raw_employees:
-        return {"inserted": 0, "updated": 0, "skipped": 0, "errors": []}
+        return {"inserted": 0, "updated": 0, "skipped": 0, "errors": [], "inserted_codes": [], "updated_codes": []}
 
     # Ensure silent bulk processing without rate-limiting or leaked UI popups
     frappe.flags.in_import = True
@@ -481,15 +514,17 @@ def fast_upsert_employees(
     parsed_records = [parse_employee_payload(e, resolver) for e in raw_employees if e.get("employeeCode")]
     emp_codes = [p["employee_number"] for p in parsed_records]
 
-    # Bulk fetch existing employees in 1 query
-    existing_records = {
-        (e.employee_number or e.name): e
-        for e in frappe.get_all(
-            "Employee",
-            filters={"employee_number": ["in", emp_codes]},
-            fields=["name", "employee_number", "status", "exclude_zinghr"],
-        )
-    }
+    # Bulk fetch existing employees in 1 query (by employee_number and name)
+    existing_records = {}
+    for e in frappe.get_all(
+        "Employee",
+        or_filters=[{"employee_number": ["in", emp_codes]}, {"name": ["in", emp_codes]}],
+        fields=["name", "employee_number", "status", "exclude_zinghr", "user_id"],
+    ):
+        if e.name:
+            existing_records[e.name] = e
+        if e.employee_number:
+            existing_records[e.employee_number] = e
 
     # Bulk fetch reporting managers
     mgr_codes = list({p["reporting_manager_code"] for p in parsed_records if p["reporting_manager_code"]})
@@ -501,12 +536,15 @@ def fast_upsert_employees(
         }
 
     now = now_datetime()
+    has_last_synced_field = frappe.db.has_column("Employee", "custom_zinghr_last_synced")
     inserted, updated, skipped, errors = 0, 0, 0, []
+    inserted_codes: List[str] = []
+    updated_codes: List[str] = []
 
     for item in parsed_records:
         code = item["employee_number"]
-        existing = existing_records.get(code) or (code if frappe.db.exists("Employee", code) else None)
-        emp_name = existing.name if hasattr(existing, "name") else existing
+        existing = existing_records.get(code)
+        emp_name = existing.name if hasattr(existing, "name") else (existing.get("name") if isinstance(existing, dict) else existing)
 
         is_past_leaving = item.pop("_is_past_leaving", False)
         is_exited = item.pop("_is_exited", False)
@@ -522,9 +560,7 @@ def fast_upsert_employees(
 
         # Skip update if exclude_zinghr is checked
         if emp_name:
-            is_excluded = getattr(existing, "exclude_zinghr", None)
-            if is_excluded is None:
-                is_excluded = frappe.db.get_value("Employee", emp_name, "exclude_zinghr")
+            is_excluded = existing.get("exclude_zinghr") if isinstance(existing, dict) else getattr(existing, "exclude_zinghr", None)
             if is_excluded:
                 skipped += 1
                 continue
@@ -533,7 +569,8 @@ def fast_upsert_employees(
         if rep_code and mgr_map.get(rep_code):
             item["reports_to"] = mgr_map[rep_code]
 
-        item["custom_zinghr_last_synced"] = now
+        if has_last_synced_field:
+            item["custom_zinghr_last_synced"] = now
 
         try:
             if emp_name:
@@ -551,29 +588,24 @@ def fast_upsert_employees(
                             continue
                     update_fields[k] = v
 
-                # Fast direct update: Status is Left if past/resigned, else Active
-                frappe.db.set_value("Employee", emp_name, update_fields, update_modified=False)
-                if update_fields.get("status") == "Left":
-                    user_id = frappe.db.get_value("Employee", emp_name, "user_id")
-                    if not user_id:
-                        user_id = (
-                            frappe.db.get_value("User", {"email": f"{code}@sahayog.com"}, "name")
-                            or frappe.db.get_value("User", {"username": code}, "name")
-                        )
-                    if user_id and frappe.db.exists("User", user_id):
-                        frappe.db.set_value("User", user_id, "enabled", 0, update_modified=False)
-                elif update_fields.get("status") == "Active":
-                    user_id = frappe.db.get_value("Employee", emp_name, "user_id")
-                    if not user_id:
-                        user_id = (
-                            frappe.db.get_value("User", {"email": f"{code}@sahayog.com"}, "name")
-                            or frappe.db.get_value("User", {"username": code}, "name")
-                        )
-                    if user_id and frappe.db.exists("User", user_id):
+                # Fast direct update: Status is Left if past/resigned, else Active.
+                # update_modified=True ensures modified timestamp on Employee is properly updated.
+                frappe.db.set_value("Employee", emp_name, update_fields, update_modified=True)
+                user_id = existing.get("user_id") if isinstance(existing, dict) else getattr(existing, "user_id", None)
+                if not user_id:
+                    user_id = (
+                        frappe.db.get_value("User", {"email": f"{code}@sahayog.com"}, "name")
+                        or frappe.db.get_value("User", {"username": code}, "name")
+                    )
+                if user_id and frappe.db.exists("User", user_id):
+                    if update_fields.get("status") == "Left":
+                        frappe.db.set_value("User", user_id, "enabled", 0, update_modified=True)
+                    elif update_fields.get("status") == "Active":
                         if not frappe.db.get_value("User", user_id, "enabled"):
-                            frappe.db.set_value("User", user_id, "enabled", 1, update_modified=False)
+                            frappe.db.set_value("User", user_id, "enabled", 1, update_modified=True)
 
                 updated += 1
+                updated_codes.append(str(code))
             else:
                 # New Employee creation:
                 # Skip insertion if leaving date is in the past or already exited!
@@ -593,6 +625,7 @@ def fast_upsert_employees(
                 doc.insert(ignore_permissions=True)
                 existing_records[code] = doc
                 inserted += 1
+                inserted_codes.append(str(code))
         except Exception as ex:
             err_msg = f"Failed {code}: {str(ex)}"
             logger.error(err_msg)
@@ -604,18 +637,61 @@ def fast_upsert_employees(
                     if "Throttled" not in str(m) and "not found" not in str(m)
                 ]
 
-    return {"inserted": inserted, "updated": updated, "skipped": skipped, "errors": errors}
+    return {
+        "inserted": inserted,
+        "updated": updated,
+        "skipped": skipped,
+        "errors": errors,
+        "inserted_codes": inserted_codes,
+        "updated_codes": updated_codes,
+    }
 
 
 # ==============================================================================
 # Whitelisted RPC Methods
 # ==============================================================================
 
+def _log_sync_result(title: str, message: str) -> None:
+    """Write a sync summary to Error Log (audit trail for daily & manual runs).
+
+    Logging must never break the sync itself, hence the guard.
+    """
+    try:
+        frappe.log_error(title=title, message=message)
+    except Exception as e:
+        logger.warning(f"Failed to write ZingHR sync Error Log '{title}': {e}")
+
+
+def _format_sync_codes(
+    inserted_codes: Optional[List[str]],
+    updated_codes: Optional[List[str]],
+    per_list_limit: int = 200,
+) -> str:
+    """Option B audit trail: inserted + updated employee codes (ascending, numeric-aware).
+
+    Both lists are deduped, sorted and capped at `per_list_limit` (with an
+    "+N more" note) so Error Log stays readable after a 13k-record full sync.
+    """
+    def _fmt(label: str, codes: Optional[List[str]]) -> str:
+        uniq = sorted(
+            {str(c).strip() for c in (codes or []) if c},
+            key=lambda c: (0, int(c)) if c.isdigit() else (1, c),
+        )
+        if not uniq:
+            return ""
+        shown = ", ".join(uniq[:per_list_limit])
+        more = f" ... (+{len(uniq) - per_list_limit} more)" if len(uniq) > per_list_limit else ""
+        return f"\n{label} ({len(uniq)}): {shown}{more}"
+
+    return _fmt("Inserted codes", inserted_codes) + _fmt("Updated codes", updated_codes)
+
+
 @frappe.whitelist()
 def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
     """Single employee fast update."""
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+    frappe.only_for("System Manager")
 
     if frappe.db.get_value("Employee", employee_name, "exclude_zinghr"):
         return {
@@ -639,6 +715,14 @@ def sync_employee_from_zinghr(employee_name: str) -> Dict[str, Any]:
 
     if getattr(frappe.local, "message_log", None):
         frappe.local.message_log = []
+
+    _log_sync_result(
+        "ZingHR Single Employee Sync",
+        f"Employee: {employee_name} ({emp_number}) | Inserted: {res['inserted']} | "
+        f"Updated: {res['updated']} | Skipped: {res['skipped']} | Errors: {len(res['errors'])}"
+        + _format_sync_codes(res["inserted_codes"], res["updated_codes"])
+        + (f"\n{chr(10).join(res['errors'][:5])}" if res["errors"] else ""),
+    )
 
     return {"status": "success", "message": _("Employee {0} updated from ZingHR!").format(employee_name), "details": res}
 
@@ -673,6 +757,7 @@ def sync_zinghr_batch(
     """Sync a single page batch synchronously and return results."""
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+    frappe.only_for("System Manager")
 
     frappe.flags.in_import = True
     frappe.flags.mute_messages = True
@@ -706,6 +791,15 @@ def sync_zinghr_batch(
     if getattr(frappe.local, "message_log", None):
         frappe.local.message_log = []
 
+    _log_sync_result(
+        "ZingHR Manual Sync",
+        f"Mode: {sync_mode} | Page: {page_number} | Window: {from_date or 'all'} to {to_date or 'all'} | "
+        f"Fetched: {len(employees)} (total available: {total_records}) | Inserted: {res['inserted']} | "
+        f"Updated: {res['updated']} | Skipped: {res['skipped']} | Errors: {len(res['errors'])}"
+        + _format_sync_codes(res["inserted_codes"], res["updated_codes"])
+        + (f"\n{chr(10).join(res['errors'][:5])}" if res["errors"] else ""),
+    )
+
     return {
         "status": "success",
         "page_number": page_number,
@@ -731,6 +825,7 @@ def bulk_sync_from_zinghr(
     """Bulk sync with background queue support."""
     if frappe.session.user == "Guest":
         frappe.throw(_("Please log in to perform this action."), frappe.PermissionError)
+    frappe.only_for("System Manager")
 
     page_size = _clean_int(page_size, default=100)
     page_number = _clean_int(page_number, default=1)
@@ -751,7 +846,8 @@ def bulk_sync_from_zinghr(
                 sync_mode=sync_mode,
                 page_size=page_size,
                 page_number=page_number,
-                max_pages=max_pages
+                max_pages=max_pages,
+                source="manual",
             )
             frappe.db.commit()
             return {
@@ -766,7 +862,7 @@ def bulk_sync_from_zinghr(
                 "message": f"Failed to start background sync: {str(e)}"
             }
 
-    return run_bulk_sync_job(from_date, to_date, sync_mode, page_size, page_number, max_pages)
+    return run_bulk_sync_job(from_date, to_date, sync_mode, page_size, page_number, max_pages, source="manual")
 
 
 def get_system_manager_users() -> list[str]:
@@ -819,9 +915,14 @@ def run_bulk_sync_job(
     sync_mode: str = "all",
     page_size: int = 100,
     page_number: int = 1,
-    max_pages: Optional[int] = None
+    max_pages: Optional[int] = None,
+    source: str = "manual",
 ) -> Dict[str, Any]:
-    """Optimized bulk sync runner."""
+    """Optimized bulk sync runner.
+
+    `source` is "daily" for the scheduled full sync and "manual" for
+    dialog-triggered runs; it only controls the Error Log title.
+    """
     frappe.flags.in_import = True
     frappe.flags.mute_messages = True
 
@@ -831,46 +932,74 @@ def run_bulk_sync_job(
     from_date = _clean_param(from_date)
     to_date = _clean_param(to_date)
     sync_mode = _clean_param(sync_mode) or "all"
+    log_title = "ZingHR Daily Sync" if source == "daily" else "ZingHR Manual Bulk Sync"
+    date_info = f"({from_date} to {to_date})" if from_date or to_date else "(Full Sync)"
 
     client = ZingHRClient()
     resolver = MasterResolver()
     sm_users = get_system_manager_users()
     pages_processed, total_fetched, total_inserted, total_updated, total_skipped = 0, 0, 0, 0, 0
     all_errors = []
+    all_inserted_codes: List[str] = []
+    all_updated_codes: List[str] = []
+    prev_codes = None
 
     logger.info(f"Starting ZingHR fast sync in batches of {page_size}. Mode: {sync_mode}")
 
-    while True:
-        employees, total_records = client.fetch_batch(page_size, current_page, from_date, to_date)
-        if not employees:
-            break
+    try:
+        while True:
+            employees, total_records = client.fetch_batch(page_size, current_page, from_date, to_date)
+            if not employees:
+                break
 
-        total_fetched += len(employees)
-        pages_processed += 1
+            # Stuck-page guard: if API repeats the same page, stop instead of looping forever
+            page_codes = {str(e.get("employeeCode") or "").strip() for e in employees}
+            if prev_codes is not None and page_codes == prev_codes:
+                break
+            prev_codes = page_codes
 
-        res = fast_upsert_employees(employees, sync_mode=sync_mode, resolver=resolver)
-        total_inserted += res["inserted"]
-        total_updated += res["updated"]
-        total_skipped += res["skipped"]
-        all_errors.extend(res["errors"])
+            total_fetched += len(employees)
+            pages_processed += 1
 
-        frappe.db.commit()
+            res = fast_upsert_employees(employees, sync_mode=sync_mode, resolver=resolver)
+            total_inserted += res["inserted"]
+            total_updated += res["updated"]
+            total_skipped += res["skipped"]
+            all_errors.extend(res["errors"])
+            all_inserted_codes.extend(res["inserted_codes"])
+            all_updated_codes.extend(res["updated_codes"])
 
-        # Emit Desk Progress only to System Managers (custom event, scoped to Employee list)
-        percent = min(int((total_fetched / total_records) * 100), 100) if total_records else 0
-        emit_zinghr_progress(
-            percent=percent,
-            title=_("Syncing Employees from ZingHR"),
-            description=_("Batch {0}: {1}/{2} records (Updated: {3}, Inserted: {4})").format(
-                current_page, total_fetched, total_records, total_updated, total_inserted
-            ),
-            users=sm_users,
+            frappe.db.commit()
+
+            # Emit Desk Progress only to System Managers (custom event, scoped to Employee list)
+            percent = min(int((total_fetched / total_records) * 100), 100) if total_records else 0
+            emit_zinghr_progress(
+                percent=percent,
+                title=_("Syncing Employees from ZingHR"),
+                description=_("Batch {0}: {1}/{2} records (Updated: {3}, Inserted: {4})").format(
+                    current_page, total_fetched, total_records if total_records is not None else "?",
+                    total_updated, total_inserted
+                ),
+                users=sm_users,
+            )
+
+            if (max_pages and pages_processed >= max_pages) or len(employees) < page_size or (
+                total_records is not None and total_fetched >= total_records
+            ):
+                break
+
+            current_page += 1
+    except Exception as ex:
+        # Never fail silently: record partial counts so the run is visible in Error Log
+        _log_sync_result(
+            log_title,
+            f"FAILED mid-sync {date_info} | Mode: {sync_mode} | Pages: {pages_processed} | "
+            f"Fetched: {total_fetched} | Inserted (new): {total_inserted} | Updated: {total_updated} | "
+            f"Errors so far: {len(all_errors)}"
+            + _format_sync_codes(all_inserted_codes, all_updated_codes)
+            + f"\n{type(ex).__name__}: {ex}",
         )
-
-        if (max_pages and pages_processed >= max_pages) or len(employees) < page_size or total_fetched >= total_records:
-            break
-
-        current_page += 1
+        raise
 
     emit_zinghr_progress(
         percent=100,
@@ -892,9 +1021,18 @@ def run_bulk_sync_job(
     }
     logger.info(f"ZingHR sync completed: {summary}")
 
+    # Audit trail in Error Log: always written for daily AND manual bulk runs
+    _log_sync_result(
+        log_title,
+        f"{date_info} at {now_datetime().strftime('%Y-%m-%d %H:%M:%S')} | Mode: {sync_mode} | "
+        f"Pages: {pages_processed} | Fetched: {total_fetched} | Inserted (new): {total_inserted} | "
+        f"Updated: {total_updated} | Skipped: {total_skipped} | Errors: {len(all_errors)}"
+        + _format_sync_codes(all_inserted_codes, all_updated_codes)
+        + (f"\n{chr(10).join(all_errors[:10])}" if all_errors else ""),
+    )
+
     # Track last sync in Sahayog HR Setting
     try:
-        date_info = f"({from_date} to {to_date})" if from_date or to_date else "(Full Sync)"
         frappe.db.set_value(
             "Sahayog HR Setting",
             None,
@@ -907,7 +1045,7 @@ def run_bulk_sync_job(
                     f"Errors: {summary.get('error_count')}"
                 ),
             },
-            update_modified=False,
+            update_modified=True,
         )
         frappe.db.commit()
     except Exception as e:
@@ -918,50 +1056,43 @@ def run_bulk_sync_job(
 
 def auto_daily_delta_sync() -> Dict[str, Any]:
     """
-    Scheduled Daily Delta Sync:
-    Runs automatically (e.g. at 2:30 AM via Frappe scheduler).
-    Fetches only changed/added records between (last_sync - buffer) and today.
-    Takes 5-15 seconds instead of doing a full 13,400+ record sweep.
+    Scheduled Daily FULL Sync (All Records) at 2:30 AM.
+
+    Queues run_bulk_sync_job on the RQ "long" queue (7200s budget) because the
+    scheduler's own "default" queue would kill a multi-minute 13k-record sweep
+    at its 300s timeout. Its defaults already mean a full sweep: no date filter,
+    all pages, upsert (insert new + update existing).
+
+    Relieved-employee processing has its own 2:00 AM schedule in hooks.py,
+    so it is intentionally NOT chained here.
+
+    Every run (success or failure) is recorded in Error Log with insert counts.
     """
     try:
-        settings = frappe.get_single("Sahayog HR Setting")
-    except Exception:
-        settings = frappe.get_cached_doc("Sahayog HR Setting")
+        try:
+            settings = frappe.get_cached_doc("Sahayog HR Setting")
+        except Exception:
+            settings = frappe.get_single("Sahayog HR Setting")
 
-    if not cint(settings.get("zinghr_enable_auto_sync", 1)):
-        logger.info("ZingHR Daily Auto Delta Sync is disabled in Sahayog HR Setting.")
-        return {"status": "skipped", "message": "Auto sync disabled in Sahayog HR Setting"}
+        if not cint(settings.get("zinghr_enable_auto_sync", 1)):
+            logger.info("ZingHR Daily Auto Sync is disabled in Sahayog HR Setting.")
+            return {"status": "skipped", "message": "Auto sync disabled in Sahayog HR Setting"}
 
-    lookback_days = cint(settings.get("zinghr_sync_lookback_days") or 1)
-    last_sync = settings.get("zinghr_last_sync_datetime")
-
-    today_date = getdate(today())
-
-    if last_sync:
-        from_date = (getdate(last_sync) - timedelta(days=lookback_days)).strftime("%Y-%m-%d")
-    else:
-        from_date = (today_date - timedelta(days=max(lookback_days, 1))).strftime("%Y-%m-%d")
-
-    to_date = today_date.strftime("%Y-%m-%d")
-
-    logger.info(f"Starting ZingHR Auto Daily Delta Sync: from {from_date} to {to_date} (lookback={lookback_days}d)")
-
-    summary = run_bulk_sync_job(
-        from_date=from_date,
-        to_date=to_date,
-        sync_mode="all",
-        page_size=100,
-        page_number=1,
-        max_pages=None,
-    )
-
-    # Automatically process any active employees whose relieving_date has arrived or passed
-    try:
-        from sahayog.tasks import auto_process_relieved_employees
-        auto_process_relieved_employees()
+        logger.info("Queuing ZingHR Daily FULL Sync (all records, no date filter)")
+        frappe.enqueue(
+            "sahayog.integration_zinghr.run_bulk_sync_job",
+            queue="long",
+            timeout=7200,
+            source="daily",
+        )
+        frappe.db.commit()
+        return {"status": "queued", "message": "Daily full sync queued on long queue"}
     except Exception as ex:
-        logger.warning(f"Error during auto_process_relieved_employees in daily sync: {ex}")
-
-    return summary
+        # Scheduler failures are otherwise invisible - always leave an Error Log trace
+        _log_sync_result(
+            "ZingHR Daily Sync Failed",
+            f"{now_datetime().strftime('%Y-%m-%d %H:%M:%S')} - {type(ex).__name__}: {ex}",
+        )
+        return {"status": "error", "message": str(ex)}
 
 
