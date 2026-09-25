@@ -1752,7 +1752,24 @@
       #branch-names { flex:1; min-width:0; white-space:nowrap; overflow:hidden;
         text-overflow:ellipsis; color:var(--ink-2); font-weight:500; }
       #branch-view-btn svg { width:14px; height:14px; flex-shrink:0; }
-      #branch-view-pop { width:360px; }
+      #branch-view-pop.bv-modal .opts { max-height:min(52vh,400px); }
+      /* Branches as a centered popup (not a cramped dropdown) */
+      #branch-view-pop.bv-modal {
+        position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+        width:min(480px,92vw); max-height:min(70vh,520px); overflow-y:auto;
+        z-index:1102; border-radius:14px; padding:0;
+      }
+      #branch-view-pop .bv-head {
+        position:sticky; top:0; display:flex; align-items:center; justify-content:space-between;
+        padding:12px 16px; border-bottom:1px solid var(--border); background:var(--surface); z-index:1;
+      }
+      #branch-view-pop .bv-head b { font-size:14px; }
+      #branch-view-close { border:none; background:var(--surface-2); color:var(--ink-2);
+        width:26px; height:26px; border-radius:50%; font-size:15px; line-height:1; cursor:pointer; }
+      #branch-view-close:hover { background:var(--surface-3); color:var(--ink-1); }
+      #branch-view-overlay {
+        position:fixed; inset:0; z-index:1101; background:rgba(15,23,42,.45);
+      }
       #branch-view-pop .opts { max-height:260px; overflow-y:auto; padding:6px;
         display:flex; flex-direction:column; gap:6px; }
       .brow { display:flex; align-items:center; gap:8px; background:#fff;
@@ -1950,7 +1967,7 @@
       #btn-clear-sel:hover { text-decoration:underline; }
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
       .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
-      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(220px,36vh,420px); overflow-y:auto; }
+      #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(240px,44vh,560px); overflow-y:auto; }
       /* Inline attendance (edit mode): staged Present/Absent per row, capsules on top */
       .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
         overflow:hidden; flex-shrink:0; background:var(--surface); }
@@ -2214,7 +2231,7 @@
           0 2px 8px rgba(16, 24, 40, 0.08);
         display: flex;
         flex-direction: column;
-        max-height: min(96vh, 1080px);
+        max-height: min(98vh, 1200px);
       }
       .modal-head {
         display: flex;
@@ -4168,9 +4185,11 @@
                       <span id="branch-names"><span class="muted">No branches yet — select participants or add a branch.</span></span>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                     </button>
-                    <span class="nt-branch-pop" id="branch-view-pop" style="display:none">
+                    <span class="nt-branch-pop bv-modal" id="branch-view-pop" style="display:none">
+                      <span class="bv-head"><b id="branch-view-title">Branches</b><button type="button" id="branch-view-close" title="Close">×</button></span>
                       <span class="opts" id="branch-view-list" style="display:block"></span>
                     </span>
+                    <div id="branch-view-overlay" style="display:none"></div>
                   </span>
                   <span class="nt-branch-add">
                     <button type="button" class="btn-mini" id="btn-add-branch-top">+ Add Branch</button>
@@ -6189,6 +6208,8 @@
           if (bsPop) bsPop.style.display = "none";
           var bvPop = document.getElementById("branch-view-pop");
           if (bvPop) bvPop.style.display = "none";
+          var bvOv = document.getElementById("branch-view-overlay");
+          if (bvOv) bvOv.style.display = "none";
           setDialogMode("add");
           refreshModalAttendanceRow(null);
           if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
@@ -6309,6 +6330,7 @@
           var _bs = document.getElementById("branch-add-search"); if (_bs) _bs.value = "";
           var _bp = document.getElementById("branch-add-pop"); if (_bp) _bp.style.display = "none";
           var _bvp = document.getElementById("branch-view-pop"); if (_bvp) _bvp.style.display = "none";
+          var _bvo = document.getElementById("branch-view-overlay"); if (_bvo) _bvo.style.display = "none";
           dialogFn.renderPChips();
           if (dialogFn.refreshPartTables) dialogFn.refreshPartTables(true);
           updateSchedulePreview();
@@ -8044,6 +8066,8 @@
             var viewList = document.getElementById("branch-view-list");
             if (branchCount) branchCount.textContent = geos.length ?
               geos.length + " branches identified" : "Branches";
+            var viewTitle = document.getElementById("branch-view-title");
+            if (viewTitle) viewTitle.textContent = geos.length ? ("Branches (" + geos.length + ")") : "Branches";
             if (!namesEl || !viewList) return;
             var disabled = participantsLocked() ? " disabled" : "";
             var lockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;opacity:.55;flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>';
@@ -8181,12 +8205,19 @@
             var b = document.getElementById("btn-download-participant-template");
             if (b) b.click();
           });
-          // Branch view popover toggle + branch remove (same state as legacy geo rows)
+          // Branch view popup (centered modal) + branch remove (same state as legacy geo rows)
+          function setBranchViewPop(open) {
+            var pop = document.getElementById("branch-view-pop");
+            var ov = document.getElementById("branch-view-overlay");
+            if (pop) pop.style.display = open ? "block" : "none";
+            if (ov) ov.style.display = open ? "block" : "none";
+          }
+          dialogFn.setBranchViewPop = setBranchViewPop;
           if (branchSummary) branchSummary.addEventListener("click", function (e) {
             var viewBtn = e.target.closest("#branch-view-btn");
             if (viewBtn && !viewBtn.disabled) {
               var pop = document.getElementById("branch-view-pop");
-              if (pop) pop.style.display = pop.style.display === "block" ? "none" : "block";
+              setBranchViewPop(!pop || pop.style.display !== "block");
               return;
             }
             var btn = e.target.closest("[data-rm-branch]");
@@ -8226,20 +8257,21 @@
             if (wrap && wrap.contains(e.target)) return;
             closeBranchAddPop();
           });
-          // View-branches popover: close on outside click / Escape
+          var bvClose = document.getElementById("branch-view-close");
+          if (bvClose) bvClose.addEventListener("click", function () { setBranchViewPop(false); });
+          var bvOv = document.getElementById("branch-view-overlay");
+          if (bvOv) bvOv.addEventListener("click", function () { setBranchViewPop(false); });
+          // View-branches popup: close on outside click / Escape
           document.addEventListener("click", function (e) {
             var pop = document.getElementById("branch-view-pop");
             if (!pop || pop.style.display !== "block") return;
             var wrap = e.target.closest ? e.target.closest(".nt-branch-view") : null;
             if (wrap) return;
-            pop.style.display = "none";
+            setBranchViewPop(false);
           });
           document.addEventListener("keydown", function (e) {
             if (e.key === "Escape") closeBranchAddPop();
-            if (e.key === "Escape") {
-              var pop = document.getElementById("branch-view-pop");
-              if (pop) pop.style.display = "none";
-            }
+            if (e.key === "Escape") setBranchViewPop(false);
           });
           refreshTables();
         })();
