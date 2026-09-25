@@ -12,6 +12,7 @@ from frappe import _
 
 from sahayog.agent_and_bdo.doctype.training.training import (
     COMPLETION_FIELDS,
+    get_form_status,
     get_training_status,
 )
 
@@ -22,7 +23,7 @@ TRAINER_ROLES = {"Trainer", "Trainer Head"}
 CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
-    "is_adhoc", "docstatus", "status", "trainer_remarks",
+    "is_adhoc", "docstatus", "form_status", "status", "trainer_remarks",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
 ]
@@ -553,7 +554,8 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
 def create_training(**kwargs):
     """
     Schedule a training (L&D Admin / Trainer).
-    Pass `submit=1` to submit it immediately so it shows on the calendar.
+    The form is non-submittable: created trainings are Submitted right away
+    (the legacy `submit` flag is accepted but ignored).
 
     Geography: accepts either single legacy fields (branch/zone/region/district)
     or new `geographies` param (JSON list of {branch} or branch codes). When
@@ -567,11 +569,10 @@ def create_training(**kwargs):
         "trainer_remarks", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
     }
-    submit = int(kwargs.get("submit") or 1) == 1
+    doc = frappe.new_doc("Training")
+    doc.form_status = "Submitted"
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
     geographies = frappe.parse_json(kwargs.get("geographies") or "[]")
-
-    doc = frappe.new_doc("Training")
     for field in allowed:
         if kwargs.get(field) not in (None, ""):
             doc.set(field, kwargs[field])
@@ -634,8 +635,6 @@ def create_training(**kwargs):
                 })
 
     doc.insert()
-    if submit:
-        doc.submit()
     return get_training_details(doc.name)
 
 
@@ -721,7 +720,7 @@ def sync_draft_participants(training_name, participants=None):
     """
     doc = frappe.get_doc("Training", training_name)
     _ensure_can_update(doc)
-    if doc.docstatus != 0:
+    if get_form_status(doc) != "Draft":
         frappe.throw(_("Participants can only be changed while the training is in Draft."))
 
     wanted = frappe.parse_json(participants or "[]") or []
@@ -1952,6 +1951,7 @@ def bulk_upload_training():
                     skipped += 1
                     continue
                 doc = frappe.new_doc("Training")
+                doc.form_status = "Submitted"
                 doc.training_program = g["program"]
                 doc.from_date = from_date
                 doc.to_date = to_date
@@ -1972,7 +1972,6 @@ def bulk_upload_training():
                     emp_name = frappe.db.get_value("Employee", p["emp_id"], "employee_name") or p["emp_id"]
                     doc.append("participants", {"reference_doctype": "Employee", "agent_employee": p["emp_id"], "full_name": emp_name})
                 doc.insert(ignore_permissions=True)
-                doc.submit()
                 created += 1
             except Exception as e:
                 import traceback
