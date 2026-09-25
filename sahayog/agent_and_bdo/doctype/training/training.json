@@ -29,7 +29,6 @@
   "section_break_status",
   "column_break_status",
   "status",
-  "form_status",
   "trainer_remarks",
   "column_break_kvin",
   "training_delivered",
@@ -182,16 +181,6 @@
    "label": "Status",
    "options": "\nDraft\nUpcoming\nIn Progress\nCompleted\nPending",
    "read_only": 1
-  },
-  {
-   "default": "Submitted",
-   "description": "Form lifecycle state (no submit workflow on this form)",
-   "fieldname": "form_status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Form Status",
-   "options": "Draft\nSubmitted"
   },
   {
    "default": "0",
