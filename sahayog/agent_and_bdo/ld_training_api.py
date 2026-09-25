@@ -12,7 +12,6 @@ from frappe import _
 
 from sahayog.agent_and_bdo.doctype.training.training import (
     COMPLETION_FIELDS,
-    get_form_status,
     get_training_status,
 )
 
@@ -23,7 +22,7 @@ TRAINER_ROLES = {"Trainer", "Trainer Head"}
 CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
-    "is_adhoc", "docstatus", "form_status", "status", "trainer_remarks",
+    "is_adhoc", "docstatus", "status", "trainer_remarks",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
 ]
@@ -88,11 +87,20 @@ def _is_trainer():
     return bool(TRAINER_ROLES & set(frappe.get_roles(frappe.session.user)))
 
 
+def _my_trainer_name():
+    """Employee name linked to the current user (trainer identity for scoping)."""
+    return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "employee_name")
+
+
 def _owner_scope():
-    """Non-admin trainers only see trainings they created (all others see all)."""
+    """Non-admin trainers only see own trainings: created by them OR assigned to them."""
     if _is_admin() or not _is_trainer():
         return {}
-    return {"owner": frappe.session.user}
+    scope = {"owner": frappe.session.user}
+    trainer_name = _my_trainer_name()
+    if trainer_name:
+        scope["trainer"] = trainer_name
+    return scope
 
 
 def _safe_year_month(year, month):
@@ -260,11 +268,12 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         # Any training whose date range overlaps the requested month
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
-    filters.update(_owner_scope())
+    scope_or_filters = _owner_scope()
 
     rows = frappe.db.get_all(
         "Training",
         filters=filters,
+        or_filters=scope_or_filters,
         fields=CALENDAR_FIELDS + BUDGET_FIELDS,
         order_by="from_date asc, start_time asc",
     )
@@ -354,7 +363,7 @@ def get_training_list(
 ):
     """Flat, filterable list of training records for the Trainings tab."""
     filters = {"docstatus": ["<", 2]}
-    filters.update(_owner_scope())
+    scope_or_filters = _owner_scope()
     if from_date:
         filters["from_date"] = [">=", from_date]
     if to_date:
@@ -367,6 +376,7 @@ def get_training_list(
     rows = frappe.db.get_all(
         "Training",
         filters=filters,
+        or_filters=scope_or_filters,
         fields=CALENDAR_FIELDS + BUDGET_FIELDS,
         order_by="from_date desc, start_time desc",
         limit_page_length=limit,
@@ -444,8 +454,11 @@ def get_training_list(
 def get_training_details(name):
     """Single training record (drawer view)."""
     if not _is_admin() and _is_trainer():
-        owner = frappe.db.get_value("Training", name, "owner")
-        if owner != frappe.session.user:
+        info = frappe.db.get_value("Training", name, ["owner", "trainer"], as_dict=True) or {}
+        is_own = info.owner == frappe.session.user or (
+            info.trainer and info.trainer == _my_trainer_name()
+        )
+        if not is_own:
             frappe.throw(_("You don't have permission to view this training."))
     doc = frappe.get_doc("Training", name)
     r = doc.as_dict()
@@ -505,10 +518,10 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
         "docstatus": ["<", 2],
         "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
     }
-    filters.update(_owner_scope())
+    scope_or_filters = _owner_scope()
 
     rows = frappe.db.get_all(
-        "Training", filters=filters, fields=["name", "from_date", "to_date", "docstatus", "status", *COMPLETION_FIELDS, "zone", "region", "district", "branch"]
+        "Training", filters=filters, or_filters=scope_or_filters, fields=["name", "from_date", "to_date", "docstatus", "status", *COMPLETION_FIELDS, "zone", "region", "district", "branch"]
     )
     month_start = f"{year}-{month:02d}-01"
     rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
@@ -554,8 +567,7 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
 def create_training(**kwargs):
     """
     Schedule a training (L&D Admin / Trainer).
-    The form is non-submittable: created trainings are Submitted right away
-    (the legacy `submit` flag is accepted but ignored).
+    Plain form, no submit workflow: the record is usable right after insert.
 
     Geography: accepts either single legacy fields (branch/zone/region/district)
     or new `geographies` param (JSON list of {branch} or branch codes). When
@@ -570,7 +582,6 @@ def create_training(**kwargs):
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
     }
     doc = frappe.new_doc("Training")
-    doc.form_status = "Submitted"
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
     geographies = frappe.parse_json(kwargs.get("geographies") or "[]")
     for field in allowed:
@@ -710,18 +721,15 @@ def _attendance_summary(training_name):
 
 
 @frappe.whitelist()
-def sync_draft_participants(training_name, participants=None):
-    """Add/remove participants on a DRAFT training (docstatus 0 only).
+def sync_participants(training_name, participants=None):
+    """Add/remove participants on a training (no locks).
 
     `participants`: JSON list of {reference_doctype, agent_employee}.
     Sent as the full current list: missing pairs are appended, pairs absent
     from the list are removed. Kept rows (incl. attendance) are untouched.
-    Submitted trainings are rejected — use cancel/amend for those.
     """
     doc = frappe.get_doc("Training", training_name)
     _ensure_can_update(doc)
-    if get_form_status(doc) != "Draft":
-        frappe.throw(_("Participants can only be changed while the training is in Draft."))
 
     wanted = frappe.parse_json(participants or "[]") or []
     seen = set()
@@ -731,21 +739,30 @@ def sync_draft_participants(training_name, participants=None):
         if ref_id:
             seen.add((ref_type, ref_id))
 
-    existing = {(r.reference_doctype, r.agent_employee): r for r in (doc.participants or [])}
-    for ref_type, ref_id in seen:
-        if (ref_type, ref_id) in existing:
-            continue
-        full_name = frappe.db.get_value(
-            "Agent" if ref_type == "Agent" else "Employee",
-            ref_id,
-            "agent_name" if ref_type == "Agent" else "employee_name",
-        ) or ref_id
-        doc.append("participants", {
-            "reference_doctype": ref_type,
-            "agent_employee": ref_id,
-            "full_name": full_name,
-        })
-    doc.save(ignore_permissions=True)
+    for attempt in (1, 2):
+        try:
+            existing = {(r.reference_doctype, r.agent_employee): r for r in (doc.participants or [])}
+            for ref_type, ref_id in seen:
+                if (ref_type, ref_id) in existing:
+                    continue
+                full_name = frappe.db.get_value(
+                    "Agent" if ref_type == "Agent" else "Employee",
+                    ref_id,
+                    "agent_name" if ref_type == "Agent" else "employee_name",
+                ) or ref_id
+                doc.append("participants", {
+                    "reference_doctype": ref_type,
+                    "agent_employee": ref_id,
+                    "full_name": full_name,
+                })
+            doc.save(ignore_permissions=True)
+            break
+        except frappe.TimestampMismatchError:
+            # Parallel/stale writer bumped `modified` — reload fresh and retry once
+            if attempt == 2:
+                raise
+            frappe.db.rollback()
+            doc.reload()
 
     # Drop rows removed in the dialog (kept rows — incl. attendance — are untouched)
     for (ref_type, ref_id), row in existing.items():
@@ -761,6 +778,9 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
     """L&D Admin only — budget/expense capture."""
     if not _is_admin():
         frappe.throw("Only L&D Admin can update budget/expenses.")
+    if budget_amount is None and actual_expense is None:
+        # Nothing to change (DB columns are NOT NULL) — don't touch stored values
+        return {"success": True}
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
@@ -1951,7 +1971,6 @@ def bulk_upload_training():
                     skipped += 1
                     continue
                 doc = frappe.new_doc("Training")
-                doc.form_status = "Submitted"
                 doc.training_program = g["program"]
                 doc.from_date = from_date
                 doc.to_date = to_date
