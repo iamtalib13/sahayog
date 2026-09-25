@@ -1870,7 +1870,8 @@
       #addModal .modal { width:min(960px,96vw); max-width:96vw; border-radius:20px; }
       #addModal .nt-scroll { background:#fff; }
       #addModal .nt-head { padding:14px 32px 12px; border-bottom:1px solid var(--border); }
-      #addModal .nt-head h3 { font-size:17px; font-weight:700; margin:0; }
+      #addModal .nt-head h3 { font-size:17px; font-weight:700; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      #addModal .nt-head > div { min-width:0; }
       #dlg-doc-chip { font-size:11px; }
       #addModal .modal-close { background:var(--surface-2); border-radius:8px; width:32px; height:32px; }
       #addModal #btn-save-training { height:32px; padding:7px 18px; font-size:13px; border-radius:8px;
@@ -1958,8 +1959,6 @@
       #addModal #participant-dropdown .branch-opt .fx-sug-meta { flex:1; min-width:0; display:flex; flex-direction:column; }
       #addModal #participant-dropdown .branch-opt .fx-sug-name { font-size:13px; font-weight:600; color:var(--ink-1); }
       #addModal #participant-dropdown .branch-opt .fx-sug-sub { font-size:11px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-      #addModal #participant-dropdown .branch-opt .enter-hint { display:none; font-size:12px; font-weight:600; color:var(--accent); white-space:nowrap; }
-      #addModal #participant-dropdown .branch-opt:first-child .enter-hint { display:inline; }
       /* selected list */
       .fx-sel-head { display:flex; align-items:center; justify-content:space-between; }
       .fx-sel-head .t { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-2); }
@@ -2088,8 +2087,8 @@
       #addModal.editing .nt-edit-extra { padding:0; min-width:0; order:3; }
       #addModal.editing .ee-grid { grid-template-columns:1fr; }
       #addModal.editing .ee-grid .budget-edit { grid-template-columns:1fr 1fr; }
-      /* Attendance capsules live inside column 2 (no outer padding) */
-      #addModal #att-top { display:flex; gap:8px; padding:0; }
+      /* Attendance capsules centered in header (edit mode) */
+      #addModal .nt-head #att-top { flex:1 1 auto; max-width:620px; margin:0 auto; padding:0; display:flex; gap:8px; }
       .att-cap { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px;
         border-radius:10px; padding:6px; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
       .att-cap b { font-size:14px; }
@@ -4096,9 +4095,15 @@
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
         <div class="nt-head">
-          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
             <h3>New Training</h3>
             <span id="dlg-doc-chip" style="display:none"></span>
+          </div>
+          <!-- Attendance capsules (edit mode only, centered over column 2) -->
+          <div id="att-top" style="display:none">
+            <span class="att-cap p">Present <b id="att-cap-p">0</b> <i id="att-cap-pp"></i></span>
+            <span class="att-cap a">Absent <b id="att-cap-a">0</b> <i id="att-cap-ap"></i></span>
+            <span class="att-cap n">Pending <b id="att-cap-n">0</b> <i id="att-cap-np"></i></span>
           </div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
             <!-- Reschedule (temporarily disabled — Save already handles schedule changes)
@@ -4118,12 +4123,6 @@
             <!-- 70/30 split: participants (70%) + details (30%) -->
             <div class="nt-split">
               <div class="nt-part fx-right">
-                <!-- Attendance capsules (edit mode only) -->
-                <div id="att-top" style="display:none">
-                  <span class="att-cap p">Present <b id="att-cap-p">0</b> <i id="att-cap-pp"></i></span>
-                  <span class="att-cap a">Absent <b id="att-cap-a">0</b> <i id="att-cap-ap"></i></span>
-                  <span class="att-cap n">Pending <b id="att-cap-n">0</b> <i id="att-cap-np"></i></span>
-                </div>
                 <!-- Search (legacy IDs — selection logic fully preserved) -->
                 <div class="fx-field">
                   <div class="fx-label-row">
@@ -4604,8 +4603,13 @@
         function evEnd(ev) {
           return ev.to_date || ev.from_date || ev.date || "";
         }
+        function formStatusOf(ev) {
+          if (!ev) return "Draft";
+          if (ev.form_status === "Draft" || ev.form_status === "Submitted") return ev.form_status;
+          return (ev.docstatus || 0) !== 0 ? "Submitted" : "Draft";
+        }
         function statusOf(ev) {
-          if (ev.docstatus === 0) return "draft";
+          if (formStatusOf(ev) === "Draft") return "draft";
           var s = completionScore(ev);
           if (s === 5) return "completed";
           if (s > 0) return "inprogress";
@@ -4700,8 +4704,7 @@
         /* Participants are locked in edit mode once submitted; drafts stay editable. */
         function participantsLocked() {
           if (state.dialogMode !== "edit") return false;
-          var ev = state.currentEvent;
-          return !ev || (ev.docstatus || 0) !== 0;
+          return formStatusOf(state.currentEvent) !== "Draft";
         }
 
         function setupRoleUI() {
@@ -6222,13 +6225,13 @@
           addModal.classList.toggle("editing", mode === "edit");
           var h = document.querySelector("#addModal .nt-head h3");
           if (h)
-            h.textContent = mode === "edit" ? "Edit Training" : "New Training";
+            h.textContent = mode === "edit" ? ((ev && (ev.training_program || ev.topic)) || "Edit Training") : "New Training";
           var docChip = document.getElementById("dlg-doc-chip");
           if (docChip) {
             if (mode === "edit" && ev && ev.name) {
-              var dst = (ev.docstatus || 0) === 0 ? "Draft" : "Submitted";
+              var dst = formStatusOf(ev);
               docChip.style.display = "";
-              docChip.className = "chip " + ((ev.docstatus || 0) === 0 ? "chip-gray" : "chip-blue");
+              docChip.className = "chip " + (dst === "Draft" ? "chip-gray" : "chip-blue");
               docChip.textContent = ev.name + " · " + dst;
             } else {
               docChip.style.display = "none";
@@ -6513,7 +6516,7 @@
             );
           }
           // Draft only: sync added/removed participants (submitted stays locked)
-          if ((ev.docstatus || 0) === 0) {
+          if (formStatusOf(ev) === "Draft") {
             var beforePairs = {};
             (ev.participant_list || []).forEach(function (p) {
               beforePairs[(p.reference_doctype || "Employee") + ":" + (p.agent_employee || "")] = true;
@@ -7655,8 +7658,8 @@
             return n === 1 ? "1 participant" : n + " participants";
           }
 
-          /* ----- Type toggle ----- */
-          function setPickType(type) {
+          /* ----- Type toggle (keeps the typed query so switching feels instant) ----- */
+          function setPickType(type, keepQuery) {
             state.participantPickType = type;
             if (pBtnEmp) {
               pBtnEmp.className = type === "Employee" ? "btn btn-primary" : "btn";
@@ -7668,12 +7671,15 @@
             }
             if (pSearch) {
               pSearch.placeholder = type === "Agent" ? "Search agents..." : "Search employees...";
-              pSearch.value = "";
+              if (!keepQuery) pSearch.value = "";
             }
-            renderPDd("");
+            // Hardening: toggle must always leave the popover open with results
+            if (pPop) pPop.style.display = "block";
+            if (pDd) pDd.style.display = "block";
+            renderPDd(pSearch ? pSearch.value : "");
           }
-          if (pBtnEmp) pBtnEmp.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Employee"); });
-          if (pBtnAgent) pBtnAgent.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Agent"); });
+          if (pBtnEmp) pBtnEmp.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Employee", true); });
+          if (pBtnAgent) pBtnAgent.addEventListener("mousedown", function(e){ e.preventDefault(); setPickType("Agent", true); });
 
           /* ----- Already-selected key for dedup ----- */
           function pKey(p) { return p.reference_doctype + ":" + p.agent_employee; }
@@ -7719,7 +7725,6 @@
               '<span class="fx-ava">' + esc(initials) + "</span>" +
               '<span class="fx-sug-meta"><span class="fx-sug-name">' + esc(displayName) + "</span>" +
               '<span class="fx-sug-sub">' + esc(sub) + "</span></span>" +
-              '<span class="enter-hint">Press Enter to Add</span>' +
               "</div>"
             );
           }
