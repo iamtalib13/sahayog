@@ -1739,9 +1739,9 @@
         border-radius:8px; padding:0 12px; height:30px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
       .nt-branch-add .btn-mini:hover { background:var(--surface-2); color:var(--ink-1); }
       .nt-branch-summary { display:flex; gap:8px; align-items:center;
-        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;
+        background:#f0fdf4; border:1px solid #bbf7d0; border-radius:16px;
         padding:8px 12px; font-size:11.5px; color:#15803d;
-        box-shadow:0 1px 2px rgba(16,24,40,.05); }
+        box-shadow:0 8px 24px rgba(16,24,40,.08); }
       .nt-branch-summary .muted { color:var(--ink-3); }
       .nt-branch-summary .bs-label { font-weight:700; white-space:nowrap; }
       .nt-branch-view { position:relative; flex:1; min-width:0; display:flex; }
@@ -1799,9 +1799,9 @@
       .nt-branch-pop .branch-opt:hover { background:var(--surface-2); }
       .nt-branch-pop .empty { padding:10px 12px; font-size:12.5px; color:var(--ink-3); }
       .nt-ptable tr.sel-first-sep td { border-bottom:2px solid var(--border); }
-      .nt-ptable { border:1px solid var(--border); border-radius:12px; overflow:hidden;
+      .nt-ptable { border:1px solid var(--border); border-radius:16px; overflow:hidden;
         display:flex; flex-direction:column; min-height:0; background:var(--surface);
-        flex:1 1 0; box-shadow:0 1px 2px rgba(16,24,40,.05); }
+        flex:1 1 0; box-shadow:0 8px 24px rgba(16,24,40,.08); }
       .nt-ptable-head { display:flex; align-items:center; gap:8px; padding:10px 12px;
         border-bottom:1px solid var(--border); background:#f8fafc;
         position:sticky; top:0; z-index:5; }
@@ -2075,9 +2075,23 @@
       #addModal.modal-wrap.open { background:rgba(15,23,42,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
       /* Edit mode: 3-column full-width — 3rd column is completion/budget */
       #addModal.editing .modal { width:min(1600px,98vw); max-width:98vw; }
-      #addModal.editing .nt-split { display:grid; grid-template-columns:0.8fr 1.3fr 0.9fr; }
-      /* Column dividers (edit 3-col) */
-      #addModal.editing .nt-split > * + * { border-left:1px solid #CBD5E1; padding-left:20px; }
+      #addModal.editing .nt-split { display:grid; grid-template-columns:minmax(0,0.85fr) minmax(0,1.4fr) 280px; }
+      @media (max-width: 1200px) {
+        #addModal.editing .nt-split { grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); }
+      }
+      /* Left form column: single clean card (uniform 3-column cards) */
+      .fx-col-card {
+        background:#ffffff; border:1px solid #E2E8F0; border-radius:16px;
+        padding:18px; box-shadow:0 8px 24px rgba(16,24,40,.08);
+        display:flex; flex-direction:column; gap:14px; flex:1; min-height:0;
+      }
+      #addModal .fx-col-card .fx-card {
+        background:transparent; border:none; box-shadow:none; padding:0;
+      }
+      #addModal .fx-col-card .fx-card-t {
+        font-size:14px; font-weight:700; color:var(--ink-1);
+        padding-bottom:10px; border-bottom:1px solid #E2E8F0; margin-bottom:2px;
+      }
       /* Never allow horizontal scrolling — vertical stays safe for small screens */
       #addModal .nt-scroll { overflow-x:clip; }
       /* Inputs must never force horizontal overflow */
@@ -2086,8 +2100,20 @@
       #addModal.editing .ee-card { padding:12px; }
       #addModal.editing .nt-edit-extra { padding:0; min-width:0; order:3; }
       #addModal.editing .ee-grid { grid-template-columns:1fr; }
-      #addModal.editing .ee-grid .budget-edit { grid-template-columns:1fr 1fr; }
+      #addModal.editing .ee-grid .budget-edit { grid-template-columns:1fr; gap:0; }
+      /* Checkout-summary rows: label left, value right */
+      #addModal.editing .ee-grid .budget-edit label {
+        flex-direction:row; align-items:center; justify-content:space-between; gap:10px;
+        font-size:12.5px; font-weight:600; text-transform:none; letter-spacing:0;
+        color:var(--ink-2); border-bottom:1px dashed var(--border); padding:10px 0; margin:0;
+      }
+      #addModal.editing .ee-grid .budget-edit label:last-child { border-bottom:none; }
+      #addModal.editing .ee-grid .budget-edit input {
+        width:130px; flex-shrink:0; text-align:right; font-weight:700;
+      }
       /* Attendance capsules centered in header (edit mode) */
+      /* Attendance capsules: always one compact row inside column 2 */
+      #addModal #att-top { display:flex; gap:8px; width:auto; margin-left:10px; }
       #addModal .nt-head #att-top { flex:1 1 auto; max-width:620px; margin:0 auto; padding:0; display:flex; gap:8px; }
       .att-cap { flex:1; min-width:0; display:flex; align-items:center; justify-content:center; gap:6px;
         border-radius:10px; padding:6px; font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; }
@@ -2100,10 +2126,13 @@
       .ee-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
       .ee-grid .drawer-section { margin-bottom:0; }
       .ee-card {
-        background:var(--surface); border:1px solid var(--border); border-radius:12px;
-        padding:16px; box-shadow:0 1px 2px rgba(16,24,40,.05);
+        background:#ffffff; border:1px solid #E2E8F0; border-radius:16px;
+        padding:18px; box-shadow:0 8px 24px rgba(16,24,40,.08);
       }
-      .ee-card .drawer-section-title { margin-bottom:10px; }
+      .ee-card .drawer-section-title {
+        margin-bottom:12px; font-size:14px; font-weight:700; color:var(--ink-1);
+        padding-bottom:10px; border-bottom:1px solid #E2E8F0;
+      }
       .ee-card .check-item { padding:8px 10px; border-radius:8px; }
       .ee-grid .budget-edit { grid-template-columns:1fr; }
       /* Edit completion toggle (header + progress always visible) */
@@ -4251,6 +4280,7 @@
               </div><!-- /nt-part (participants, right) -->
 
             <div class="nt-details fx-left">
+            <div class="fx-col-card">
             <div class="fx-field">
               <span class="fx-label">Training Title <b>*</b></span>
               <input
@@ -4333,6 +4363,7 @@
                 placeholder="Add any specific prerequisites, materials, or classroom guidelines..."
               ></textarea>
             </div>
+            </div><!-- /fx-col-card -->
             <div id="geo-card-legacy" style="display:none" aria-hidden="true">
               <button type="button" id="btn-add-geo" style="display:none">+ Add Branch</button>
               <div id="geo-rows"></div>
@@ -6409,7 +6440,6 @@
             checkList +
             "</div>";
           if (r.showBudget) {
-            var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
             var budgetHtml =
               '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
               '<div class="budget-edit">' +
@@ -6419,12 +6449,6 @@
               '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
               (ev.actual_expense == null ? "" : ev.actual_expense) +
               '" /></label>' +
-              "</div>" +
-              '<div class="budget-edit-foot">' +
-              '<span class="budget-exp-status">Expense Status: <strong>' +
-              expStatus +
-              "</strong></span>" +
-              '<span class="budget-hint">Saved with Save Changes</span>' +
               "</div></div>";
             html += '<div class="ee-grid" id="ee-body">' + statusHtml + budgetHtml + "</div>";
           } else {
