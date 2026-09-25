@@ -1965,7 +1965,6 @@
       #btn-clear-sel { border:none; background:none; color:var(--accent); font-size:11px; font-weight:600; cursor:pointer; padding:0; }
       #btn-clear-sel:hover { text-decoration:underline; }
       #btn-clear-sel:disabled { opacity:.4; cursor:default; }
-      .fx-sel-break { font-weight:600; text-transform:none; color:var(--ink-3); font-size:11px; }
       #sel-list { display:flex; flex-direction:column; gap:8px; max-height:clamp(240px,44vh,560px); overflow-y:auto; }
       /* Inline attendance (edit mode): staged Present/Absent per row, capsules on top */
       .fx-att-seg { display:flex; border:1px solid var(--border); border-radius:999px;
@@ -4198,7 +4197,7 @@
 
                 <!-- Selected participants -->
                 <div class="fx-sel-head">
-                  <span class="t">Selected Participants (<span id="sel-count">0</span>) <span class="fx-sel-break" id="sel-break"></span></span>
+                  <span class="t">Total Participants (<span id="sel-count">0</span>)</span>
                   <span class="fx-sel-actions">
                     <button type="button" class="btn" id="btn-att-all" style="display:none">Mark all present</button>
                     <button type="button" id="btn-clear-sel">Clear All</button>
@@ -6177,13 +6176,13 @@
           document.getElementById("new-program").value = "";
           document.getElementById("new-program").readOnly = false;
           document.getElementById("new-from-date").value = fmtDMY(todayIso());
-          document.getElementById("new-from-date").readOnly = false;
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
-          document.getElementById("new-to-date").readOnly = false;
           document.getElementById("new-time").value = "";
-          document.getElementById("new-time").readOnly = false;
           document.getElementById("new-end-time").value = "";
-          document.getElementById("new-end-time").readOnly = false;
+          ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) { el.readOnly = false; el.style.background = ""; el.title = ""; }
+          });
           var typeSel = document.getElementById("new-training-type");
           if (typeSel) {
             typeSel.value = "";
@@ -6207,6 +6206,10 @@
           if (pcount) pcount.textContent = "Add participants";
           var pdrop = document.getElementById("participant-dropdown-count");
           if (pdrop) pdrop.textContent = "0 selected";
+          var pte = document.getElementById("p-type-employee");
+          if (pte) pte.textContent = "Employees";
+          var pta = document.getElementById("p-type-agent");
+          if (pta) pta.textContent = "Agents";
           var agenda = document.getElementById("new-agenda");
           if (agenda) {
             agenda.value = "";
@@ -6312,6 +6315,21 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
+          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap)
+          var canResched = state.role === "ld_admin";
+          ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+              el.readOnly = !canResched;
+              el.style.background = canResched ? "" : "var(--surface-2)";
+              el.title = canResched ? "" : "Only L&D Admin can change the schedule";
+            }
+          });
+          var typeSel2 = document.getElementById("new-training-type");
+          if (typeSel2) {
+            typeSel2.disabled = !canResched;
+            typeSel2.title = canResched ? "" : "Only L&D Admin can change the schedule";
+          }
           if (ev.geographies && ev.geographies.length) {
             state.selectedGeographies = ev.geographies.map(function(g){ return {branch:g.branch, zone:g.zone||"", region:g.region||"", district:g.district||""}; });
           } else if (ev.branch) {
@@ -6487,7 +6505,8 @@
           var startTime = (document.getElementById("new-time") || {}).value.trim();
           var endTime   = (document.getElementById("new-end-time") || {}).value.trim();
           var trainingType = (document.getElementById("new-training-type") || {}).value || "";
-          var trainingLocation = ((document.getElementById("new-location") || {}).value || "").trim();
+          var locEl = document.getElementById("new-location");
+          var trainingLocation = locEl ? ((locEl.value || "").trim()) : (ev.training_location || "");
           var scheduleChanged = fromDate !== (ev.from_date||"") || toDate !== (ev.to_date||"") || startTime !== fmtTimeInput(ev.start_time||"") || endTime !== fmtTimeInput(ev.end_time||"") || trainingType !== (ev.training_type||"") || trainingLocation !== (ev.training_location||"");
           if (scheduleChanged) {
             if (!fromDate) { showToast("From Date is required"); return; }
@@ -7825,6 +7844,9 @@
                 "</span>";
             }).join("");
             var n = (state.selectedParticipants || []).length;
+            var ne = (state.selectedParticipants || []).filter(function (p) { return p.reference_doctype === "Employee"; }).length;
+            if (pBtnEmp) pBtnEmp.textContent = "Employees" + (ne ? " (" + ne + ")" : "");
+            if (pBtnAgent) pBtnAgent.textContent = "Agents" + ((n - ne) ? " (" + (n - ne) + ")" : "");
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
@@ -8313,8 +8335,6 @@
             var ne = sel.filter(function (p) { return p.reference_doctype === "Employee"; }).length;
             var na = sel.length - ne;
             if (countEl) countEl.textContent = sel.length;
-            var brk = document.getElementById("sel-break");
-            if (brk) brk.textContent = sel.length ? ("· " + ne + " emp · " + na + " agents") : "";
             if (clearBtn) { clearBtn.disabled = !sel.length; clearBtn.style.display = ""; }
             if (!sel.length) {
               listEl.innerHTML = '<div class="fx-empty">No participants yet — search above or import CSV.</div>';
