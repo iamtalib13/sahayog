@@ -139,7 +139,7 @@ frappe.listview_settings['Audit and Compliance'] = {
                             <div>
                                 <div>
                                     <b>Required Excel Columns for Com Visit:</b><br>
-                                    <span>Branch Code, Date of Visit, Visit Score, Last Visit Score</span>
+                                    <span>Branch Code, Date of Visit, Visit Score</span>
                                 </div>
                                 <button class="btn btn-xs btn-default btn-download-com-visit-template">
                                     <i class="fa fa-download"></i> Download Template
