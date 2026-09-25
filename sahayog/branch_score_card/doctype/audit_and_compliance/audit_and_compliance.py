@@ -287,7 +287,7 @@ def process_com_visit_excel(file_url):
     df = pd.read_excel(file_path)
 
     # Validate essential columns
-    required_cols = ["Branch Code", "Date of Visit", "Visit Score", "Last Visit Score"]
+    required_cols = ["Branch Code", "Date of Visit", "Visit Score"]
     for col in required_cols:
         if col not in df.columns:
             frappe.throw(_("Excel file is missing required column: {0}").format(col))
@@ -338,8 +338,7 @@ def process_com_visit_excel(file_url):
         row_data = {
             "month": month_name,
             "date_of_visit": date_of_visit,
-            "visit_score_i": str(row["Visit Score"]) if pd.notnull(row["Visit Score"]) else "",
-            "visit_score_ii": str(row["Last Visit Score"]) if pd.notnull(row["Last Visit Score"]) else ""
+            "visit_score_i": str(row["Visit Score"]) if pd.notnull(row["Visit Score"]) else ""
         }
 
         if existing_row:
