@@ -8516,7 +8516,7 @@
                   return;
                 }
 
-                var added = 0, skipped = 0, notFound = [];
+                var added = 0, addedEmp = 0, addedAgt = 0, skipped = 0, notFound = [];
 
                 lines.slice(1).forEach(function (line) {
                   var cols = line.split(",").map(function (c) { return c.trim(); });
@@ -8541,28 +8541,34 @@
                       agent_employee: id,
                       full_name: fullName,
                     });
-                    if (type === "Employee" && dialogFn.autoAddBranch && item.sahayog_branch) {
-                      dialogFn.autoAddBranch(item.sahayog_branch);
+                    // Auto-add participant's branch (employees + agents alike)
+                    if (dialogFn.autoAddBranch) {
+                      if (type === "Employee" && item.sahayog_branch) {
+                        dialogFn.autoAddBranch(item.sahayog_branch);
+                      } else if (type === "Agent" && item.branch_name) {
+                        var wantBr = String(item.branch_name).trim().toLowerCase(), brCode = "";
+                        (state.branchPick || []).forEach(function (b) {
+                          if (brCode) return;
+                          if ((b.name && String(b.name).trim().toLowerCase() === wantBr) ||
+                              (b.branch && String(b.branch).trim().toLowerCase() === wantBr)) brCode = b.name;
+                        });
+                        dialogFn.autoAddBranch(brCode || item.branch_name);
+                      }
                     }
                     added++;
+                    if (type === "Agent") addedAgt++; else addedEmp++;
                     return true;
                   }
 
-                  /* Error if both filled in same row */
-                  if (empId && agentId) {
-                    notFound.push("Row has both Emp ID '" + empId + "' and Agent ID '" + agentId + "' — fill only one");
-                    return;
-                  }
-
-                  /* Emp ID or Agent ID */
-                  if (!tryAdd("Employee", empId)) {
-                    tryAdd("Agent", agentId);
-                  }
+                  /* Emp ID and/or Agent ID — each valid ID becomes a participant */
+                  tryAdd("Employee", empId);
+                  tryAdd("Agent", agentId);
                 });
 
                 if (typeof dialogFn.renderPChips === "function") dialogFn.renderPChips();
 
                 var msg = added + " participant" + (added === 1 ? "" : "s") + " added";
+                if (addedEmp && addedAgt) msg += " (" + addedEmp + " emp + " + addedAgt + " agents)";
                 if (skipped) msg += ", " + skipped + " already present";
                 if (notFound.length) msg += ", " + notFound.length + " not found: " + notFound.slice(0, 5).join(", ") + (notFound.length > 5 ? "…" : "");
                 if (statusEl) statusEl.textContent = msg;
