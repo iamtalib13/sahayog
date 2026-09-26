@@ -2490,6 +2490,24 @@
       #addModal .fx-select:focus {
         border-color: var(--accent);
       }
+      /* Consistent custom chevron + breathing room on all dropdowns */
+      #addModal .fx-select,
+      #addModal select.fx-input {
+        appearance: none;
+        -webkit-appearance: none;
+        padding-right: 36px;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 14px 14px;
+        cursor: pointer;
+      }
+      #addModal .fx-select:disabled,
+      #addModal select.fx-input:disabled {
+        background-color: var(--surface-2);
+        cursor: default;
+      }
       #addModal #new-program.fx-input:focus {
         border-width: 1.5px;
       }
@@ -5658,12 +5676,13 @@
                 <div class="fx-col-card">
                   <div class="fx-field">
                     <span class="fx-label">Training Title <b>*</b></span>
-                    <input
+                    <select
                       class="fx-input"
                       id="new-program"
-                      placeholder="Operational Excellence & Customer Relations"
-                      autocomplete="off"
-                    />
+                      style="cursor: pointer"
+                    >
+                      <option value="">Select program</option>
+                    </select>
                   </div>
                   <div class="fx-row2 tt-row">
                     <div class="fx-field">
@@ -7753,12 +7772,69 @@
         /* ---------- Add training ---------- */
         var addModal = document.getElementById("addModal");
 
+        /* Training programs per division (trainer sees only their own division) */
+        var TRAINING_PROGRAMS = [
+          { name: "Audit Training Program", div: "retail branch banking" },
+          { name: "Branch Business Master Class/ License to Operate", div: "retail branch banking" },
+          { name: "Branch Manager Business Accumen Program", div: "retail branch banking" },
+          { name: "CASA Product Training", div: "retail branch banking" },
+          { name: "CRM Training", div: "retail branch banking" },
+          { name: "DDS Product Training", div: "retail branch banking" },
+          { name: "Drishti Training", div: "retail branch banking" },
+          { name: "Branch Operation Excellence Program", div: "retail branch banking" },
+          { name: "Insurance Excellence Program", div: "retail branch banking" },
+          { name: "RO Bootcamp", div: "retail branch banking" },
+          { name: "S-ONE Program - Orientation for New Employees", div: "retail branch banking" },
+          { name: "Aarambha Workshop", div: "retail branch banking" },
+          { name: "Nirman workshop", div: "retail branch banking" },
+          { name: "Pragati work shop", div: "retail branch banking" },
+          { name: "FOT Star Induction Program", div: "jll" },
+          { name: "JLL Process Training", div: "jll" },
+          { name: "JLL Refresher Training", div: "jll" },
+          { name: "Retail Asset Master Class/ License to Operate", div: "jll" },
+        ];
+        function trainerDivisionOf(trainerName) {
+          var e =
+            (state.allEmployees || []).find(function (x) {
+              return (x.employee_name || "") === (trainerName || "");
+            }) || {};
+          return ((e.custom_division || e.department) || "").trim().toLowerCase();
+        }
+        function populateTrainingTitles(trainerName, currentValue) {
+          var sel = document.getElementById("new-program");
+          if (!sel) return;
+          var div = trainerDivisionOf(trainerName);
+          var list = TRAINING_PROGRAMS.filter(function (p) {
+            return !div || p.div === div;
+          });
+          if (!list.length) list = TRAINING_PROGRAMS;
+          var cur = (currentValue || "").trim();
+          var html = '<option value="">Select program</option>';
+          list.forEach(function (p) {
+            html +=
+              '<option value="' +
+              esc(p.name) +
+              '"' +
+              (cur && cur === p.name ? " selected" : "") +
+              ">" +
+              esc(p.name) +
+              "</option>";
+          });
+          if (cur && !list.some(function (p) { return p.name === cur; })) {
+            html += '<option value="' + esc(cur) + '" selected>' + esc(cur) + "</option>";
+          }
+          sel.innerHTML = html;
+          if (!cur) sel.value = "";
+        }
+
         function openAddModal() {
           if (!role().canAdd) return;
           var extra = document.getElementById("nt-edit-extra");
           if (extra) extra.innerHTML = "";
-          document.getElementById("new-program").value = "";
-          document.getElementById("new-program").readOnly = false;
+          var progEl = document.getElementById("new-program");
+          if (progEl) {
+            progEl.disabled = false;
+          }
           document.getElementById("new-from-date").value = fmtDMY(todayIso());
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-time").value = "";
@@ -7812,6 +7888,9 @@
           var trainerInput = document.getElementById("new-trainer");
           if (trainerInput) {
             trainerInput.value = state.currentEmployeeName || "";
+          }
+          if (typeof populateTrainingTitles === "function") {
+            populateTrainingTitles(trainerInput ? trainerInput.value : "", "");
           }
           var locInput = document.getElementById("new-location");
           if (locInput) {
@@ -7979,10 +8058,15 @@
               if (agRow) agRow.classList.add("open");
             }
           }
-          ["new-program", "new-branch"].forEach(function (id) {
+          ["new-branch"].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
           });
+          var progLock = document.getElementById("new-program");
+          if (progLock) progLock.disabled = true;
+          if (typeof populateTrainingTitles === "function") {
+            populateTrainingTitles(ev.trainer || ev.trainer_name || "", ev.training_program || ev.topic || "");
+          }
           // Schedule fields remain editable for reschedule/modification
           state.selectedParticipants = (ev.participant_list || []).map(
             function (p) {
