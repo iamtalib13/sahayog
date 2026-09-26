@@ -1,25 +1,65 @@
 import frappe
 
 
+# =========================================================
+# CONSTANTS
+# =========================================================
+
+MONTH_NUMBERS = {
+    "January": 1,
+    "February": 2,
+    "March": 3,
+    "April": 4,
+    "May": 5,
+    "June": 6,
+    "July": 7,
+    "August": 8,
+    "September": 9,
+    "October": 10,
+    "November": 11,
+    "December": 12,
+}
+
+MONTH_ORDER = [
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+    "January",
+    "February",
+    "March",
+]
+
+
+# =========================================================
+# BASIC API
+# =========================================================
+
 @frappe.whitelist()
 def get_branch_scorecards():
     try:
-        records = frappe.get_all(
+        return frappe.get_all(
             "Branch Score Card",
             fields=[
                 "name",
                 "branch",
                 "branch_name",
                 "month",
-                "year"
+                "year",
             ],
-            order_by="creation desc"
+            order_by="creation desc",
+            limit_page_length=0,
         )
-        return records
+
     except Exception:
         frappe.log_error(
             frappe.get_traceback(),
-            "Branch Scorecard Error"
+            "Branch Scorecard Error",
         )
         return []
 
@@ -27,15 +67,15 @@ def get_branch_scorecards():
 @frappe.whitelist()
 def get_scorecard_details(docname):
     try:
-        doc = frappe.get_doc(
+        return frappe.get_doc(
             "Branch Score Card",
-            docname
+            docname,
         )
-        return doc
+
     except Exception:
         frappe.log_error(
             frappe.get_traceback(),
-            "Branch Scorecard Details Error"
+            "Branch Scorecard Details Error",
         )
         return {}
 
@@ -47,24 +87,129 @@ def get_scorecard_details(docname):
 def _get_financial_year_start_year(financial_year):
     try:
         return int(
-            str(financial_year).split("-")[0]
+            str(financial_year).strip().split("-")[0]
         )
-    except Exception:
-        frappe.throw(
-            "Invalid Financial Year"
-        )
+    except (ValueError, TypeError, IndexError):
+        frappe.throw("Invalid Financial Year")
+
+
+def _get_month_year_map(start_year):
+    """
+    Returns the calendar year for each month
+    of the selected financial year.
+    """
+
+    return {
+        "April": start_year,
+        "May": start_year,
+        "June": start_year,
+        "July": start_year,
+        "August": start_year,
+        "September": start_year,
+        "October": start_year,
+        "November": start_year,
+        "December": start_year,
+        "January": start_year + 1,
+        "February": start_year + 1,
+        "March": start_year + 1,
+    }
+
+
+def _get_previous_period(month, year):
+    """
+    Returns previous calendar month.
+
+    August 2026 -> July 2026
+    April 2026  -> March 2026
+    January 2027 -> December 2026
+    """
+
+    month = str(month or "").strip()
+
+    month_number = MONTH_NUMBERS.get(month)
+
+    if not month_number:
+        return None
+
+    try:
+        year = int(year)
+    except (ValueError, TypeError):
+        return None
+
+    previous_month_number = month_number - 1
+    previous_year = year
+
+    if previous_month_number == 0:
+        previous_month_number = 12
+        previous_year -= 1
+
+    previous_month = next(
+        (
+            name
+            for name, number in MONTH_NUMBERS.items()
+            if number == previous_month_number
+        ),
+        None,
+    )
+
+    if not previous_month:
+        return None
+
+    return {
+        "month": previous_month,
+        "year": previous_year,
+    }
+
+
+def _normalize_zone(zone):
+    """
+    Converts old and new zone formats to a common format.
+
+    Examples:
+        ZONE-1       -> ZONE-1
+        ZONE-1(MH)   -> ZONE-1
+        ZONE-4(KN)   -> ZONE-4
+        zone-6(UK)   -> ZONE-6
+    """
+
+    zone = str(zone or "").strip().upper()
+
+    if not zone.startswith("ZONE-"):
+        return ""
+
+    # Keep only the main zone number.
+    zone_number = zone.split("-", 1)[1].split("(", 1)[0].strip()
+
+    if not zone_number.isdigit():
+        return ""
+
+    return f"ZONE-{zone_number}"
+
+
+def _is_zonal_branch(branch_type):
+    return (
+        str(branch_type or "")
+        .strip()
+        .lower()
+        == "zonal"
+    )
 
 
 def _get_branch_zone_map():
     """
     Returns:
+
         {
-            "1092": "ZONE-1(MH)",
-            "1214": "ZONE-2(MH)",
+            "1092": "ZONE-1",
+            "1214": "ZONE-2",
             ...
         }
 
-    Only valid non-zonal branches are included.
+    Supports both old zone values:
+        ZONE-1(MH)
+
+    and new normalized values:
+        ZONE-1
     """
 
     branch_records = frappe.get_all(
@@ -74,17 +219,81 @@ def _get_branch_zone_map():
             "sol_id",
             "branch",
             "branch_type",
-            "zone"
+            "zone",
         ],
-        limit_page_length=0
+        limit_page_length=0,
     )
 
     branch_zone_map = {}
 
     for branch in branch_records:
 
+        if _is_zonal_branch(
+            branch.get("branch_type")
+        ):
+            continue
+
+        # Prefer sol_id.
+        # If unavailable, use DocType name.
         sol_id = str(
-            branch.get("sol_id") or ""
+            branch.get("sol_id")
+            or branch.get("name")
+            or ""
+        ).strip()
+
+        if not sol_id:
+            continue
+
+        # Branch SOL IDs should be numeric.
+        if not sol_id.isdigit():
+            continue
+
+        zone = _normalize_zone(
+            branch.get("zone")
+        )
+
+        if not zone:
+            continue
+
+        branch_zone_map[sol_id] = zone
+
+    return branch_zone_map
+
+
+def _get_branch_records():
+    """
+    Loads valid non-zonal branches once.
+
+    Returns a normalized structure that can be reused
+    by Zone Wise and COM Wise calculations.
+    """
+
+    records = frappe.get_all(
+        "Sahayog Branch",
+        fields=[
+            "name",
+            "sol_id",
+            "branch",
+            "branch_type",
+            "zone",
+            "cluster_operations_manager",
+        ],
+        limit_page_length=0,
+    )
+
+    branches = []
+
+    for record in records:
+
+        if _is_zonal_branch(
+            record.get("branch_type")
+        ):
+            continue
+
+        sol_id = str(
+            record.get("sol_id")
+            or record.get("name")
+            or ""
         ).strip()
 
         if not sol_id:
@@ -93,41 +302,44 @@ def _get_branch_zone_map():
         if not sol_id.isdigit():
             continue
 
-        branch_type = str(
-            branch.get("branch_type") or ""
-        ).strip().lower()
-
-        if branch_type == "zonal":
-            continue
-
-        zone = str(
-            branch.get("zone") or ""
-        ).strip()
+        zone = _normalize_zone(
+            record.get("zone")
+        )
 
         if not zone:
             continue
 
-        if not zone.startswith("ZONE-"):
-            continue
+        com = str(
+            record.get("cluster_operations_manager")
+            or ""
+        ).strip()
 
-        if "(" not in zone or ")" not in zone:
-            continue
+        if not com:
+            com = "Not Assigned"
 
-        if not zone.endswith(")"):
-            continue
+        branches.append(
+            {
+                "sol_id": sol_id,
+                "name": str(
+                    record.get("name") or ""
+                ).strip(),
+                "branch": str(
+                    record.get("branch") or ""
+                ).strip(),
+                "zone": zone,
+                "com": com,
+            }
+        )
 
-        branch_zone_map[sol_id] = zone
-
-    return branch_zone_map
+    return branches
 
 
 def _get_branch_score_percentage(doc):
     """
-    Calculates BHSC percentage using the same logic
-    used by the existing Zone Wise average.
+    BHSC Percentage:
 
-    Score Percentage =
-        Sum(score_obtain) / Sum(weightage) * 100
+        Sum(score_obtain) /
+        Sum(weightage) * 100
 
     Returns None when no valid weightage exists.
     """
@@ -135,11 +347,7 @@ def _get_branch_score_percentage(doc):
     total_score = 0.0
     total_weightage = 0.0
 
-    child_rows = (
-        doc.get("table_cxyy") or []
-    )
-
-    for row in child_rows:
+    for row in doc.get("table_cxyy") or []:
 
         score = frappe.utils.flt(
             row.get("score_obtain")
@@ -155,107 +363,126 @@ def _get_branch_score_percentage(doc):
     if total_weightage <= 0:
         return None
 
-    percentage = (
+    return (
         total_score /
         total_weightage
     ) * 100
 
-    return percentage
 
-
-def _get_previous_period(
-    month,
-    year
+def _get_latest_scorecard_records(
+    branch_sols,
+    months=None,
+    years=None,
 ):
     """
-    Returns previous calendar month.
+    Returns latest Branch Score Card record for each:
 
-    Examples:
-        August 2026
-            -> July 2026
+        branch + month + year
 
-        April 2026
-            -> March 2026
-
-        January 2027
-            -> December 2026
+    This avoids duplicate scorecards.
     """
 
-    month_numbers = {
-        "January": 1,
-        "February": 2,
-        "March": 3,
-        "April": 4,
-        "May": 5,
-        "June": 6,
-        "July": 7,
-        "August": 8,
-        "September": 9,
-        "October": 10,
-        "November": 11,
-        "December": 12
+    if not branch_sols:
+        return {}
+
+    filters = {
+        "branch": ["in", list(branch_sols)],
     }
 
-    month_names = {
-        1: "January",
-        2: "February",
-        3: "March",
-        4: "April",
-        5: "May",
-        6: "June",
-        7: "July",
-        8: "August",
-        9: "September",
-        10: "October",
-        11: "November",
-        12: "December"
-    }
+    if months:
+        filters["month"] = ["in", list(months)]
 
-    month_number = month_numbers.get(
-        str(month).strip()
+    if years:
+        filters["year"] = ["in", list(years)]
+
+    records = frappe.get_all(
+        "Branch Score Card",
+        filters=filters,
+        fields=[
+            "name",
+            "branch",
+            "month",
+            "year",
+            "modified",
+        ],
+        order_by="modified desc",
+        limit_page_length=0,
     )
 
-    if not month_number:
-        return None
+    latest = {}
 
-    try:
-        year = int(year)
-    except Exception:
-        return None
+    for record in records:
 
-    previous_month_number = month_number - 1
-    previous_year = year
+        branch = str(
+            record.get("branch") or ""
+        ).strip()
 
-    if previous_month_number == 0:
-        previous_month_number = 12
-        previous_year -= 1
+        month = str(
+            record.get("month") or ""
+        ).strip()
 
-    return {
-        "month": month_names[
-            previous_month_number
-        ],
-        "year": previous_year
-    }
+        try:
+            year = int(
+                float(
+                    record.get("year")
+                )
+            )
+        except (ValueError, TypeError):
+            continue
+
+        key = (
+            branch,
+            month,
+            year,
+        )
+
+        if key not in latest:
+            latest[key] = record["name"]
+
+    return latest
+
+
+def _get_scorecard_percentages(record_map):
+    """
+    Converts scorecard document names into:
+
+        {
+            (branch, month, year): percentage
+        }
+    """
+
+    percentages = {}
+
+    for key, docname in record_map.items():
+
+        try:
+            doc = frappe.get_doc(
+                "Branch Score Card",
+                docname,
+            )
+
+            percentage = _get_branch_score_percentage(
+                doc
+            )
+
+            if percentage is not None:
+                percentages[key] = percentage
+
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(),
+                f"Scorecard Calculation Error: {docname}",
+            )
+
+    return percentages
 
 
 # =========================================================
-# EXISTING ZONE WISE SCORE DATA
+# ZONE WISE SCORE DATA
 # =========================================================
 
 @frappe.whitelist()
-def get_zone_wise_scorecard_data(
-    financial_year
-):
-    """
-    Returns real Zone Wise BHSC average score month-wise.
-
-    Source:
-    1. Sahayog Branch
-    2. Branch Score Card
-    3. Branch Score Card child table: table_cxyy
-
-    No zone or score is hardcoded.
-    """
+def get_zone_wise_scorecard_data(financial_year):
 
     if not financial_year:
         frappe.throw(
@@ -268,35 +495,9 @@ def get_zone_wise_scorecard_data(
 
     end_year = start_year + 1
 
-    month_order = [
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-        "January",
-        "February",
-        "March"
-    ]
-
-    calendar_month_number = {
-        "January": 1,
-        "February": 2,
-        "March": 3,
-        "April": 4,
-        "May": 5,
-        "June": 6,
-        "July": 7,
-        "August": 8,
-        "September": 9,
-        "October": 10,
-        "November": 11,
-        "December": 12
-    }
+    month_year_map = _get_month_year_map(
+        start_year
+    )
 
     today = frappe.utils.getdate()
 
@@ -306,67 +507,72 @@ def get_zone_wise_scorecard_data(
         else today.year - 1
     )
 
+    # -----------------------------------------------------
+    # Visible months
+    # -----------------------------------------------------
+
     if start_year < current_fy_start_year:
 
-        visible_months = month_order
+        visible_months = MONTH_ORDER.copy()
 
     elif start_year == current_fy_start_year:
 
-        current_month = today.month
-
-        if current_month >= 4:
+        if today.month >= 4:
 
             visible_months = [
                 month
-                for month in month_order
-                if (
-                    calendar_month_number[month] >= 4
-                    and
-                    calendar_month_number[month] <= current_month
-                )
+                for month in MONTH_ORDER
+                if MONTH_NUMBERS[month] >= 4
+                and MONTH_NUMBERS[month] <= today.month
             ]
 
         else:
             visible_months = []
 
     else:
+
         visible_months = []
 
-    periods = []
+    # -----------------------------------------------------
+    # Periods
+    # -----------------------------------------------------
 
-    # March baseline for April comparison
-    periods.append(
+    periods = [
         {
             "month": "March",
             "year": start_year,
-            "label": f"Mar-{str(start_year)[-2:]}"
+            "label": f"Mar-{str(start_year)[-2:]}",
         }
-    )
+    ]
 
     for month in visible_months:
 
-        if month in [
-            "January",
-            "February",
-            "March"
-        ]:
-            year = end_year
-        else:
-            year = start_year
+        year = month_year_map[month]
 
         periods.append(
             {
                 "month": month,
                 "year": year,
-                "label": f"{month[:3]}-{str(year)[-2:]}"
+                "label": (
+                    f"{month[:3]}-"
+                    f"{str(year)[-2:]}"
+                ),
             }
         )
+
+    # -----------------------------------------------------
+    # Branch -> Zone
+    # -----------------------------------------------------
 
     branch_zone_map = _get_branch_zone_map()
 
     zones = sorted(
         set(branch_zone_map.values()),
-        key=lambda value: value.lower()
+        key=lambda value: (
+            int(value.split("-")[1])
+            if value.split("-")[1].isdigit()
+            else 999
+        ),
     )
 
     result = {
@@ -377,158 +583,106 @@ def get_zone_wise_scorecard_data(
         for zone in zones
     }
 
-    valid_sols = list(
+    valid_sols = set(
         branch_zone_map.keys()
     )
 
     if not valid_sols:
+
         return {
             "financial_year": financial_year,
             "periods": periods,
             "zones": zones,
-            "data": result
+            "data": result,
+            "grand_total": {
+                period["label"]: None
+                for period in periods
+            },
         }
 
-    scorecard_records = frappe.get_all(
-        "Branch Score Card",
-        filters={
-            "branch": ["in", valid_sols]
+    # -----------------------------------------------------
+    # Scorecards
+    # -----------------------------------------------------
+
+    record_map = _get_latest_scorecard_records(
+        valid_sols,
+        months={
+            period["month"]
+            for period in periods
         },
-        fields=[
-            "name",
-            "branch",
-            "month",
-            "year",
-            "modified"
-        ],
-        order_by="modified desc",
-        limit_page_length=0
+        years={
+            period["year"]
+            for period in periods
+        },
     )
 
-    period_lookup = {}
-
-    for period in periods:
-
-        key = (
-            period["month"],
-            int(period["year"])
+    score_percentages = (
+        _get_scorecard_percentages(
+            record_map
         )
+    )
 
-        period_lookup[key] = period["label"]
-
-    selected_records = {}
-
-    for record in scorecard_records:
-
-        branch = str(
-            record.get("branch") or ""
-        ).strip()
-
-        month = str(
-            record.get("month") or ""
-        ).strip()
-
-        year_value = record.get("year")
-
-        if branch not in branch_zone_map:
-            continue
-
-        try:
-            record_year = int(
-                float(year_value)
-            )
-        except Exception:
-            continue
-
-        period_key = (
-            month,
-            record_year
-        )
-
-        if period_key not in period_lookup:
-            continue
-
-        unique_key = (
-            branch,
-            month,
-            record_year
-        )
-
-        if unique_key not in selected_records:
-
-            selected_records[
-                unique_key
-            ] = record["name"]
+    # -----------------------------------------------------
+    # Calculate Zone Wise scores
+    # -----------------------------------------------------
 
     zone_month_scores = {}
 
-    for unique_key, docname in selected_records.items():
+    for (
+        branch,
+        month,
+        year,
+    ), percentage in score_percentages.items():
 
-        branch, month, record_year = unique_key
-
-        zone = branch_zone_map.get(
-            branch
-        )
+        zone = branch_zone_map.get(branch)
 
         if not zone:
             continue
 
-        doc = frappe.get_doc(
-            "Branch Score Card",
-            docname
-        )
-
-        branch_percentage = _get_branch_score_percentage(
-            doc
-        )
-
-        if branch_percentage is None:
-            continue
-
-        label = period_lookup.get(
+        period_label = next(
             (
-                month,
-                record_year
-            )
+                period["label"]
+                for period in periods
+                if (
+                    period["month"] == month
+                    and
+                    period["year"] == year
+                )
+            ),
+            None,
         )
 
-        if not label:
+        if not period_label:
             continue
 
         zone_month_scores.setdefault(
-            (
-                zone,
-                label
-            ),
-            []
-        ).append(
-            branch_percentage
-        )
+            (zone, period_label),
+            [],
+        ).append(percentage)
 
     grand_total_month_scores = {}
 
     for (
         zone,
-        label
+        label,
     ), scores in zone_month_scores.items():
 
         if not scores:
             continue
 
-        average_score = (
-            sum(scores) /
-            len(scores)
-        )
-
         result[zone][label] = round(
-            average_score,
-            2
+            sum(scores) / len(scores),
+            2,
         )
 
         grand_total_month_scores.setdefault(
             label,
-            []
+            [],
         ).extend(scores)
+
+    # -----------------------------------------------------
+    # Grand Total
+    # -----------------------------------------------------
 
     grand_total = {}
 
@@ -538,56 +692,35 @@ def get_zone_wise_scorecard_data(
 
         scores = grand_total_month_scores.get(
             label,
-            []
+            [],
         )
 
-        if scores:
-
-            grand_total[label] = round(
+        grand_total[label] = (
+            round(
                 sum(scores) / len(scores),
-                2
+                2,
             )
-
-        else:
-            grand_total[label] = None
+            if scores
+            else None
+        )
 
     return {
         "financial_year": financial_year,
         "periods": periods,
         "zones": zones,
         "data": result,
-        "grand_total": grand_total
+        "grand_total": grand_total,
     }
 
 
 # =========================================================
-# NEW: ZONE WISE TREND COMPARISON
+# ZONE WISE TREND COMPARISON
 # =========================================================
 
 def get_zone_wise_trend_comparison_data(
     selected_fy,
-    selected_month
+    selected_month,
 ):
-    """
-    Compares selected month with the immediately
-    previous calendar month.
-
-    Example:
-        August 2026 vs July 2026
-        September 2026 vs August 2026
-        April 2026 vs March 2026
-        January 2027 vs December 2026
-
-    A branch is counted only when BOTH months
-    have a valid BHSC score.
-
-    Categories:
-        Constant
-        Down
-        Up
-
-    Grand Total = Constant + Down + Up
-    """
 
     selected_fy = str(
         selected_fy or ""
@@ -595,40 +728,27 @@ def get_zone_wise_trend_comparison_data(
 
     selected_month = str(
         selected_month or ""
-    ).strip()
+    ).strip().capitalize()
 
     if not selected_fy:
         return {
             "available": False,
-            "message": "Financial Year is required."
+            "message": "Financial Year is required.",
         }
 
     if not selected_month:
         return {
             "available": False,
-            "message": "Month is required."
+            "message": "Month is required.",
         }
 
     start_year = _get_financial_year_start_year(
         selected_fy
     )
 
-    end_year = start_year + 1
-
-    month_year_map = {
-        "April": start_year,
-        "May": start_year,
-        "June": start_year,
-        "July": start_year,
-        "August": start_year,
-        "September": start_year,
-        "October": start_year,
-        "November": start_year,
-        "December": start_year,
-        "January": end_year,
-        "February": end_year,
-        "March": end_year
-    }
+    month_year_map = _get_month_year_map(
+        start_year
+    )
 
     current_year = month_year_map.get(
         selected_month
@@ -637,18 +757,18 @@ def get_zone_wise_trend_comparison_data(
     if not current_year:
         return {
             "available": False,
-            "message": "Invalid selected month."
+            "message": "Invalid selected month.",
         }
 
     previous_period = _get_previous_period(
         selected_month,
-        current_year
+        current_year,
     )
 
     if not previous_period:
         return {
             "available": False,
-            "message": "Unable to determine previous month."
+            "message": "Unable to determine previous month.",
         }
 
     previous_month = previous_period["month"]
@@ -658,21 +778,24 @@ def get_zone_wise_trend_comparison_data(
 
     zones = sorted(
         set(branch_zone_map.values()),
-        key=lambda value: value.lower()
+        key=lambda value: (
+            int(value.split("-")[1])
+            if value.split("-")[1].isdigit()
+            else 999
+        ),
     )
 
-    comparison = {}
-
-    for zone in zones:
-
-        comparison[zone] = {
+    comparison = {
+        zone: {
             "constant": 0,
             "down": 0,
             "up": 0,
-            "grand_total": 0
+            "grand_total": 0,
         }
+        for zone in zones
+    }
 
-    valid_sols = list(
+    valid_sols = set(
         branch_zone_map.keys()
     )
 
@@ -696,136 +819,56 @@ def get_zone_wise_trend_comparison_data(
                 "constant": 0,
                 "down": 0,
                 "up": 0,
-                "grand_total": 0
-            }
+                "grand_total": 0,
+            },
         }
 
-    scorecard_records = frappe.get_all(
-        "Branch Score Card",
-        filters={
-            "branch": ["in", valid_sols]
+    # -----------------------------------------------------
+    # Latest records
+    # -----------------------------------------------------
+
+    record_map = _get_latest_scorecard_records(
+        valid_sols,
+        months={
+            selected_month,
+            previous_month,
         },
-        fields=[
-            "name",
-            "branch",
-            "month",
-            "year",
-            "modified"
-        ],
-        order_by="modified desc",
-        limit_page_length=0
+        years={
+            current_year,
+            previous_year,
+        },
+    )
+
+    branch_scores = _get_scorecard_percentages(
+        record_map
     )
 
     # -----------------------------------------------------
-    # Select latest scorecard for each
-    # branch + month + year
-    # -----------------------------------------------------
-
-    selected_records = {}
-
-    for record in scorecard_records:
-
-        branch = str(
-            record.get("branch") or ""
-        ).strip()
-
-        month = str(
-            record.get("month") or ""
-        ).strip()
-
-        if branch not in branch_zone_map:
-            continue
-
-        try:
-            record_year = int(
-                float(
-                    record.get("year")
-                )
-            )
-        except Exception:
-            continue
-
-        if month not in [
-            selected_month,
-            previous_month
-        ]:
-            continue
-
-        if record_year not in [
-            current_year,
-            previous_year
-        ]:
-            continue
-
-        unique_key = (
-            branch,
-            month,
-            record_year
-        )
-
-        if unique_key not in selected_records:
-
-            selected_records[
-                unique_key
-            ] = record["name"]
-
-    # -----------------------------------------------------
-    # Calculate branch scores
-    # -----------------------------------------------------
-
-    branch_scores = {}
-
-    for unique_key, docname in selected_records.items():
-
-        branch, month, record_year = unique_key
-
-        doc = frappe.get_doc(
-            "Branch Score Card",
-            docname
-        )
-
-        percentage = _get_branch_score_percentage(
-            doc
-        )
-
-        if percentage is None:
-            continue
-
-        branch_scores[
-            unique_key
-        ] = percentage
-
-    # -----------------------------------------------------
-    # Compare branch scores
+    # Compare
     # -----------------------------------------------------
 
     for sol_id, zone in branch_zone_map.items():
 
-        current_key = (
-            sol_id,
-            selected_month,
-            current_year
-        )
-
-        previous_key = (
-            sol_id,
-            previous_month,
-            previous_year
-        )
-
         current_score = branch_scores.get(
-            current_key
+            (
+                sol_id,
+                selected_month,
+                current_year,
+            )
         )
 
         previous_score = branch_scores.get(
-            previous_key
+            (
+                sol_id,
+                previous_month,
+                previous_year,
+            )
         )
 
-        # Missing either month = do not count
+        # Both months are mandatory
         if (
             current_score is None
-            or
-            previous_score is None
+            or previous_score is None
         ):
             continue
 
@@ -834,8 +877,6 @@ def get_zone_wise_trend_comparison_data(
             previous_score
         )
 
-        # Small floating point differences are
-        # treated as Constant.
         if abs(difference) < 0.005:
 
             comparison[zone]["constant"] += 1
@@ -858,28 +899,20 @@ def get_zone_wise_trend_comparison_data(
         "constant": 0,
         "down": 0,
         "up": 0,
-        "grand_total": 0
+        "grand_total": 0,
     }
 
     for zone in zones:
 
         zone_data = comparison[zone]
 
-        grand_total["constant"] += (
-            zone_data["constant"]
-        )
-
-        grand_total["down"] += (
-            zone_data["down"]
-        )
-
-        grand_total["up"] += (
-            zone_data["up"]
-        )
-
-        grand_total["grand_total"] += (
-            zone_data["grand_total"]
-        )
+        for key in [
+            "constant",
+            "down",
+            "up",
+            "grand_total",
+        ]:
+            grand_total[key] += zone_data[key]
 
     return {
         "available": True,
@@ -895,25 +928,19 @@ def get_zone_wise_trend_comparison_data(
         ),
         "zones": zones,
         "data": comparison,
-        "grand_total": grand_total
+        "grand_total": grand_total,
     }
 
 
 # =========================================================
-# ZONE WISE BHSC
+# ZONE WISE BHSC API
 # =========================================================
 
 @frappe.whitelist()
 def get_zone_wise_bhsc(
     selected_fy,
-    selected_month=None
+    selected_month=None,
 ):
-    """
-    Returns Zone Wise BHSC data for the
-    Branch Scorecard page.
-
-    Also returns dynamic Zone Wise Trend Comparison.
-    """
 
     selected_fy = str(
         selected_fy or ""
@@ -921,7 +948,7 @@ def get_zone_wise_bhsc(
 
     selected_month = str(
         selected_month or ""
-    ).strip()
+    ).strip().capitalize()
 
     if not selected_fy:
         frappe.throw(
@@ -932,25 +959,30 @@ def get_zone_wise_bhsc(
         selected_fy
     )
 
-    if not result:
+    periods = result.get(
+        "periods",
+        [],
+    )
 
-        return {
-            "financial_year": selected_fy,
-            "periods": [],
-            "zones": [],
-            "data": {},
-            "selected_fy": selected_fy,
-            "selected_month": selected_month,
-            "trend_comparison": {
-                "available": False
-            }
-        }
+    # -----------------------------------------------------
+    # Filter till selected month
+    # IMPORTANT:
+    # Match month + year, not month only.
+    # This avoids March baseline/current-year conflict.
+    # -----------------------------------------------------
 
     if selected_month:
 
-        periods = result.get(
-            "periods",
-            []
+        start_year = _get_financial_year_start_year(
+            selected_fy
+        )
+
+        month_year_map = _get_month_year_map(
+            start_year
+        )
+
+        selected_year = month_year_map.get(
+            selected_month
         )
 
         selected_index = None
@@ -960,58 +992,52 @@ def get_zone_wise_bhsc(
             if (
                 period.get("month")
                 == selected_month
+                and
+                period.get("year")
+                == selected_year
             ):
                 selected_index = index
                 break
 
         if selected_index is not None:
 
-            result["periods"] = periods[
+            periods = periods[
                 :selected_index + 1
             ]
 
+            result["periods"] = periods
+
             allowed_labels = {
-                period.get("label")
-                for period in result["periods"]
+                period["label"]
+                for period in periods
             }
 
-            filtered_data = {}
-
-            for zone, zone_data in result.get(
-                "data",
-                {}
-            ).items():
-
-                filtered_data[zone] = {
-                    label: zone_data.get(label)
+            result["data"] = {
+                zone: {
+                    label: values.get(label)
                     for label in allowed_labels
                 }
-
-            result["data"] = filtered_data
-
-            grand_total = result.get(
-                "grand_total",
-                {}
-            )
-
-            result["grand_total"] = {
-                label: grand_total.get(label)
-                for label in allowed_labels
+                for zone, values
+                in result.get("data", {}).items()
             }
 
-    # -----------------------------------------------------
-    # NEW TREND COMPARISON DATA
-    # -----------------------------------------------------
+            result["grand_total"] = {
+                label: result.get(
+                    "grand_total",
+                    {},
+                ).get(label)
+                for label in allowed_labels
+            }
 
     result["trend_comparison"] = (
         get_zone_wise_trend_comparison_data(
             selected_fy,
-            selected_month
+            selected_month,
         )
         if selected_month
         else {
             "available": False,
-            "message": "Month is not selected."
+            "message": "Month is not selected.",
         }
     )
 
@@ -1026,311 +1052,154 @@ def get_zone_wise_bhsc(
 # =========================================================
 
 @frappe.whitelist()
-def get_com_wise_bhsc(selected_fy, selected_month=None):
+def get_com_wise_bhsc(
+    selected_fy,
+    selected_month=None,
+):
+
+    selected_fy = str(
+        selected_fy or ""
+    ).strip()
+
+    selected_month = str(
+        selected_month or ""
+    ).strip().capitalize()
 
     if not selected_fy:
         return {
             "available": False,
-            "message": "Financial Year is required."
+            "message": "Financial Year is required.",
         }
 
     if not selected_month:
         return {
             "available": False,
-            "message": "Month is required."
+            "message": "Month is required.",
         }
 
-    # =========================================================
-    # FINANCIAL YEAR / MONTH
-    # =========================================================
+    start_year = _get_financial_year_start_year(
+        selected_fy
+    )
 
-    start_year = _get_financial_year_start_year(selected_fy)
+    month_year_map = _get_month_year_map(
+        start_year
+    )
 
-    month_name = str(
-        selected_month or ""
-    ).strip().capitalize()
-
-    month_year_map = {
-        "April": start_year,
-        "May": start_year,
-        "June": start_year,
-        "July": start_year,
-        "August": start_year,
-        "September": start_year,
-        "October": start_year,
-        "November": start_year,
-        "December": start_year,
-        "January": start_year + 1,
-        "February": start_year + 1,
-        "March": start_year + 1,
-    }
-
-    selected_year = month_year_map.get(month_name)
+    selected_year = month_year_map.get(
+        selected_month
+    )
 
     if not selected_year:
         return {
             "available": False,
-            "message": "Invalid month."
+            "message": "Invalid month.",
         }
 
     selected_year = str(selected_year)
 
-    # =========================================================
-    # GET ALL BRANCHES
-    # =========================================================
-    #
-    # COM is taken DIRECTLY from:
-    # Sahayog Branch.cluster_operations_manager
-    #
-    # No Employee lookup is used.
-    #
-    # Only valid zones such as:
-    # ZONE-1(MH)
-    # ZONE-2(MH)
-    # ZONE-5(MP)
-    #
-    # are accepted.
-    #
-    # Invalid values such as:
-    # ZONE-1
-    # ZONE-2
-    # etc.
-    #
-    # are ignored.
-    # =========================================================
+    # -----------------------------------------------------
+    # Branch data
+    # -----------------------------------------------------
 
-    branch_records = frappe.get_all(
-        "Sahayog Branch",
-        fields=[
-            "name",
-            "sol_id",
-            "branch",
-            "branch_type",
-            "zone",
-            "cluster_operations_manager"
-        ],
-        limit_page_length=0
-    )
+    branches = _get_branch_records()
 
-    zone_com_map = {}
-
-    # ---------------------------------------------------------
-    # Branch lookup map
-    #
-    # Score Card "branch" can contain either:
-    # - Sahayog Branch name
-    # - SOL ID
-    #
-    # So both are mapped.
-    # ---------------------------------------------------------
-
-    branch_map = {}
-
-    for branch in branch_records:
-
-        branch_name = str(
-            branch.get("name") or ""
-        ).strip()
-
-        sol_id = str(
-            branch.get("sol_id") or ""
-        ).strip()
-
-        zone = str(
-            branch.get("zone") or ""
-        ).strip()
-
-        branch_type = str(
-            branch.get("branch_type") or ""
-        ).strip().lower()
-
-        # -----------------------------------------------------
-        # Do not include Zonal branch
-        # -----------------------------------------------------
-
-        if branch_type == "zonal":
-            continue
-
-        # -----------------------------------------------------
-        # Zone validation
-        #
-        # ONLY accept:
-        # ZONE-1(MH)
-        # ZONE-2(MH)
-        # ZONE-5(MP)
-        #
-        # Reject:
-        # ZONE-1
-        # ZONE-2
-        # ZONE-5
-        # -----------------------------------------------------
-
-        if not zone:
-            continue
-
-        if not zone.startswith("ZONE-"):
-            continue
-
-        if "(" not in zone or ")" not in zone:
-            continue
-
-        if not zone.endswith(")"):
-            continue
-
-        # -----------------------------------------------------
-        # COM directly from Sahayog Branch
-        # -----------------------------------------------------
-
-        com = str(
-            branch.get("cluster_operations_manager") or ""
-        ).strip()
-
-        if not com:
-            com = "Not Assigned"
-
-        branch_info = {
-            "zone": zone,
-            "com": com
-        }
-
-        # -----------------------------------------------------
-        # Map using Sahayog Branch name
-        # -----------------------------------------------------
-
-        if branch_name:
-            branch_map[branch_name] = branch_info
-
-        # -----------------------------------------------------
-        # Map using SOL ID
-        # -----------------------------------------------------
-
-        if sol_id:
-            branch_map[sol_id] = branch_info
-
-        # -----------------------------------------------------
-        # Initialize Zone + COM
-        #
-        # Initially has_data = False.
-        #
-        # Therefore frontend can display "-"
-        # until actual scorecard is found.
-        # -----------------------------------------------------
-
-        if zone not in zone_com_map:
-            zone_com_map[zone] = {}
-
-        if com not in zone_com_map[zone]:
-
-            zone_com_map[zone][com] = {
+    if not branches:
+        return {
+            "available": True,
+            "selected_fy": selected_fy,
+            "selected_month": selected_month,
+            "selected_year": selected_year,
+            "zones": [],
+            "data": {},
+            "zone_totals": {},
+            "grand_total": {
                 "excellent": 0,
                 "good": 0,
                 "needs_improvement": 0,
                 "grand_total": 0,
-                "has_data": False
-            }
+                "has_data": False,
+            },
+        }
 
-    # =========================================================
-    # GET SELECTED MONTH SCORECARDS
-    # =========================================================
+    # -----------------------------------------------------
+    # Zone + COM structure
+    # -----------------------------------------------------
 
-    scorecards = frappe.get_all(
-        "Branch Score Card",
-        filters={
-            "month": month_name,
-            "year": selected_year
-        },
-        fields=[
-            "name",
-            "branch",
-            "month",
-            "year",
-            "modified"
-        ],
-        order_by="modified desc",
-        limit_page_length=0
+    zone_com_map = {}
+
+    branch_lookup = {}
+
+    for branch in branches:
+
+        sol_id = branch["sol_id"]
+        branch_name = branch["name"]
+        zone = branch["zone"]
+        com = branch["com"]
+
+        branch_info = {
+            "zone": zone,
+            "com": com,
+        }
+
+        branch_lookup[sol_id] = branch_info
+
+        if branch_name:
+            branch_lookup[branch_name] = branch_info
+
+        zone_com_map.setdefault(
+            zone,
+            {},
+        )
+
+        zone_com_map[zone].setdefault(
+            com,
+            {
+                "excellent": 0,
+                "good": 0,
+                "needs_improvement": 0,
+                "grand_total": 0,
+                "has_data": False,
+            },
+        )
+
+    # -----------------------------------------------------
+    # Scorecards
+    # -----------------------------------------------------
+
+    valid_sols = {
+        branch["sol_id"]
+        for branch in branches
+    }
+
+    record_map = _get_latest_scorecard_records(
+        valid_sols,
+        months={selected_month},
+        years={int(selected_year)},
     )
 
-    # =========================================================
-    # PROCESS SCORECARDS
-    # =========================================================
+    score_percentages = _get_scorecard_percentages(
+        record_map
+    )
 
-    # ---------------------------------------------------------
-    # Keep latest scorecard for each branch.
-    #
-    # Because records are already ordered:
-    # modified desc
-    #
-    # first record for a branch is the latest one.
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
+    # Process scorecards
+    # -----------------------------------------------------
 
-    processed_branches = set()
+    for (
+        branch,
+        month,
+        year,
+    ), score_percentage in score_percentages.items():
 
-    for record in scorecards:
-
-        branch = str(
-            record.get("branch") or ""
-        ).strip()
-
-        if not branch:
-            continue
-
-        # -----------------------------------------------------
-        # Avoid duplicate counting for same branch
-        # -----------------------------------------------------
-
-        if branch in processed_branches:
-            continue
-
-        branch_info = branch_map.get(branch)
-
-        # -----------------------------------------------------
-        # If Branch Score Card branch value does not match
-        # Sahayog Branch name/SOL ID, skip it.
-        # -----------------------------------------------------
+        branch_info = branch_lookup.get(
+            branch
+        )
 
         if not branch_info:
             continue
 
-        processed_branches.add(branch)
-
         zone = branch_info["zone"]
         com = branch_info["com"]
-
-        # -----------------------------------------------------
-        # Get scorecard document
-        # -----------------------------------------------------
-
-        try:
-
-            doc = frappe.get_doc(
-                "Branch Score Card",
-                record["name"]
-            )
-
-        except Exception:
-
-            continue
-
-        # -----------------------------------------------------
-        # Existing Branch Score Card scoring calculation
-        #
-        # _get_branch_score_percentage() remains unchanged.
-        # -----------------------------------------------------
-
-        score_percentage = _get_branch_score_percentage(doc)
-
-        if score_percentage is None:
-            continue
-
-        # =====================================================
-        # CATEGORY CALCULATION
-        #
-        # Existing logic:
-        #
-        # >= 85  = Excellent
-        # >= 65  = Good
-        # < 65   = Needs Improvement
-        # =====================================================
 
         if score_percentage >= 85:
 
@@ -1344,71 +1213,59 @@ def get_com_wise_bhsc(selected_fy, selected_month=None):
 
             category = "needs_improvement"
 
-        # -----------------------------------------------------
-        # Safety initialization
-        # -----------------------------------------------------
+        zone_com_map.setdefault(
+            zone,
+            {},
+        )
 
-        if zone not in zone_com_map:
-
-            zone_com_map[zone] = {}
-
-        if com not in zone_com_map[zone]:
-
-            zone_com_map[zone][com] = {
+        zone_com_map[zone].setdefault(
+            com,
+            {
                 "excellent": 0,
                 "good": 0,
                 "needs_improvement": 0,
                 "grand_total": 0,
-                "has_data": False
-            }
+                "has_data": False,
+            },
+        )
 
-        # -----------------------------------------------------
-        # Increment actual category count
-        # -----------------------------------------------------
+        zone_com_map[zone][com][
+            category
+        ] += 1
 
-        zone_com_map[zone][com][category] += 1
+        zone_com_map[zone][com][
+            "grand_total"
+        ] += 1
 
-        # -----------------------------------------------------
-        # Grand Total = actual scorecard count
-        # -----------------------------------------------------
+        zone_com_map[zone][com][
+            "has_data"
+        ] = True
 
-        zone_com_map[zone][com]["grand_total"] += 1
-
-        # -----------------------------------------------------
-        # Mark that this COM has actual data
-        # -----------------------------------------------------
-
-        zone_com_map[zone][com]["has_data"] = True
-
-    # =========================================================
-    # SORT ZONES
-    # =========================================================
+    # -----------------------------------------------------
+    # Zone sorting
+    # -----------------------------------------------------
 
     def zone_sort_key(zone_name):
 
         try:
-
             return int(
                 zone_name
                 .split("-")[1]
                 .split("(")[0]
             )
-
-        except Exception:
-
+        except (ValueError, IndexError):
             return 999
 
     zones = sorted(
         zone_com_map.keys(),
-        key=zone_sort_key
+        key=zone_sort_key,
     )
 
-    # =========================================================
-    # BUILD FINAL DATA
-    # =========================================================
+    # -----------------------------------------------------
+    # Final data
+    # -----------------------------------------------------
 
     data = {}
-
     zone_totals = {}
 
     for zone in zones:
@@ -1420,115 +1277,87 @@ def get_com_wise_bhsc(selected_fy, selected_month=None):
             "good": 0,
             "needs_improvement": 0,
             "grand_total": 0,
-            "has_data": False
+            "has_data": False,
         }
 
-        # -----------------------------------------------------
-        # Sort COM names alphabetically
-        # -----------------------------------------------------
-
-        sorted_coms = sorted(
+        for com in sorted(
             zone_com_map[zone].keys(),
-            key=lambda value: value.lower()
-        )
+            key=lambda value: value.lower(),
+        ):
 
-        for com in sorted_coms:
-
-            com_data = zone_com_map[zone][com]
-
-            # -------------------------------------------------
-            # Keep actual 0 values.
-            #
-            # Frontend will decide:
-            #
-            # has_data = True
-            #     -> 0 should remain 0
-            #
-            # has_data = False
-            #     -> display "-"
-            # -------------------------------------------------
+            com_data = zone_com_map[
+                zone
+            ][com]
 
             data[zone][com] = {
-                "excellent": com_data["excellent"],
-                "good": com_data["good"],
-                "needs_improvement": com_data["needs_improvement"],
-                "grand_total": com_data["grand_total"],
-                "has_data": com_data["has_data"]
+                "excellent": com_data[
+                    "excellent"
+                ],
+                "good": com_data[
+                    "good"
+                ],
+                "needs_improvement": com_data[
+                    "needs_improvement"
+                ],
+                "grand_total": com_data[
+                    "grand_total"
+                ],
+                "has_data": com_data[
+                    "has_data"
+                ],
             }
 
-            # -------------------------------------------------
-            # Zone Total
-            #
-            # Only actual scorecard counts are added.
-            # -------------------------------------------------
-
-            zone_totals[zone]["excellent"] += (
-                com_data["excellent"]
-            )
-
-            zone_totals[zone]["good"] += (
-                com_data["good"]
-            )
-
-            zone_totals[zone]["needs_improvement"] += (
-                com_data["needs_improvement"]
-            )
-
-            zone_totals[zone]["grand_total"] += (
-                com_data["grand_total"]
-            )
+            for key in [
+                "excellent",
+                "good",
+                "needs_improvement",
+                "grand_total",
+            ]:
+                zone_totals[zone][key] += (
+                    com_data[key]
+                )
 
             if com_data["has_data"]:
+                zone_totals[zone][
+                    "has_data"
+                ] = True
 
-                zone_totals[zone]["has_data"] = True
-
-    # =========================================================
-    # GRAND TOTAL
-    # =========================================================
+    # -----------------------------------------------------
+    # Grand Total
+    # -----------------------------------------------------
 
     grand_total = {
         "excellent": 0,
         "good": 0,
         "needs_improvement": 0,
         "grand_total": 0,
-        "has_data": False
+        "has_data": False,
     }
 
     for zone in zones:
 
         zone_total = zone_totals[zone]
 
-        grand_total["excellent"] += (
-            zone_total["excellent"]
-        )
-
-        grand_total["good"] += (
-            zone_total["good"]
-        )
-
-        grand_total["needs_improvement"] += (
-            zone_total["needs_improvement"]
-        )
-
-        grand_total["grand_total"] += (
-            zone_total["grand_total"]
-        )
+        for key in [
+            "excellent",
+            "good",
+            "needs_improvement",
+            "grand_total",
+        ]:
+            grand_total[key] += (
+                zone_total[key]
+            )
 
         if zone_total["has_data"]:
-
             grand_total["has_data"] = True
-
-    # =========================================================
-    # FINAL RESPONSE
-    # =========================================================
 
     return {
         "available": True,
         "selected_fy": selected_fy,
-        "selected_month": month_name,
+        "selected_month": selected_month,
         "selected_year": selected_year,
         "zones": zones,
         "data": data,
         "zone_totals": zone_totals,
-        "grand_total": grand_total
+        "grand_total": grand_total,
     }
