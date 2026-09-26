@@ -2496,6 +2496,13 @@
       #addModal #new-trainer.fx-input {
         background: var(--surface-2);
         cursor: default;
+        padding: 12px 14px;
+        font-size: 13.5px;
+      }
+      .fx-row2.tt-row > .fx-field:first-child .fx-select {
+        font-size: 12.5px;
+        padding-left: 10px;
+        padding-right: 6px;
       }
       .fx-row2 {
         display: flex;
@@ -2506,9 +2513,13 @@
         flex: 1;
         min-width: 0;
       }
-      /* Type options are short — give the width to the trainer name */
+      /* Type + Trainer side-by-side; type hugs content, trainer takes the rest */
+      .fx-row2.tt-row {
+        flex-direction: row;
+      }
       .fx-row2.tt-row > .fx-field:first-child {
-        flex: 0 0 132px;
+        flex: 0 0 auto;
+        min-width: 118px;
       }
       .fx-card {
         background: var(--surface-2);
@@ -5677,7 +5688,7 @@
                     <div class="fx-card-t">Schedule Range</div>
                     <div class="fx-row2">
                       <div class="fx-field">
-                        <span class="fx-label">Start Date</span>
+                        <span class="fx-label">Start Date <b>*</b></span>
                         <input
                           type="text"
                           class="nt-sched-date"
@@ -5689,7 +5700,7 @@
                         />
                       </div>
                       <div class="fx-field">
-                        <span class="fx-label">End Date</span>
+                        <span class="fx-label">End Date <b>*</b></span>
                         <input
                           type="text"
                           class="nt-sched-date"
@@ -8413,12 +8424,29 @@
             showToast("Training program is required");
             return;
           }
+          var typeReq =
+            (document.getElementById("new-training-type") || {}).value || "";
+          if (!typeReq) {
+            showToast("Training Type is required");
+            return;
+          }
+          var trainerReq = (
+            (document.getElementById("new-trainer") || {}).value || ""
+          ).trim();
+          if (!trainerReq) {
+            showToast("Trainer is required");
+            return;
+          }
           if (!fromRaw.trim()) {
             showToast("From Date is required");
             return;
           }
+          if (!toRaw.trim()) {
+            showToast("End Date is required");
+            return;
+          }
           var date = parseDMY(fromRaw);
-          var toDate = parseDMY(toRaw) || date;
+          var toDate = parseDMY(toRaw);
           if (!date) {
             showToast("Enter dates as DD-MM-YYYY");
             return;
