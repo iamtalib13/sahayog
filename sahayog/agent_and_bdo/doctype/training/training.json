@@ -24,9 +24,10 @@
   "branch",
   "column_break_geo",
   "geographies",
-  "section_break_participants",
-  "participants",
-  "section_break_status",
+   "section_break_participants",
+   "participants",
+   "number_of_participants",
+   "section_break_status",
   "column_break_status",
   "status",
   "trainer_remarks",
@@ -162,12 +163,19 @@
    "fieldtype": "Section Break",
    "label": "Participants"
   },
-  {
-   "fieldname": "participants",
-   "fieldtype": "Table",
-   "label": "Participants",
-   "options": "Training Participant"
-  },
+   {
+    "fieldname": "participants",
+    "fieldtype": "Table",
+    "label": "Participants",
+    "options": "Training Participant"
+   },
+   {
+    "default": "0",
+    "description": "Expected headcount (set by bulk upload; participant rows are added separately)",
+    "fieldname": "number_of_participants",
+    "fieldtype": "Int",
+    "label": "Number of Participants"
+   },
   {
    "fieldname": "section_break_status",
    "fieldtype": "Section Break",
