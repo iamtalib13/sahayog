@@ -1599,8 +1599,11 @@ def get_team_training_report(
 
     q = (employee or "").strip().lower()
     if q:
+        # Search covers member (id/name) + trainer + program so reporting
+        # managers can find trainings either way (additive ORs only).
         conds.append(
-            "(LOWER(p.agent_employee) LIKE %(q)s OR LOWER(p.full_name) LIKE %(q)s)"
+            "(LOWER(p.agent_employee) LIKE %(q)s OR LOWER(p.full_name) LIKE %(q)s "
+            "OR LOWER(t.trainer) LIKE %(q)s OR LOWER(t.training_program) LIKE %(q)s)"
         )
         params["q"] = f"%{q}%"
 
