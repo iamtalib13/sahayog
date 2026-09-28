@@ -721,6 +721,8 @@ def update_participant_attendance(training_name, participant_name, attendance_st
     row = next((p for p in (doc.participants or []) if p.name == participant_name), None)
     if not row:
         frappe.throw(_("Participant not found in this training."))
+    if (row.reference_doctype or "Employee") != "Agent":
+        frappe.throw(_("Attendance marking is only applicable for Agents."))
 
     # Direct set_value: avoids re-running full doc validations (e.g. the
     # Sunday/holiday schedule check) for an attendance-only change.
