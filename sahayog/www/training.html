@@ -5800,6 +5800,19 @@
                       />
                     </div>
                   </div>
+                  <div class="fx-row2 tt-row">
+                    <div class="fx-field">
+                      <span class="fx-label">Expected Participants</span>
+                      <input
+                        type="number"
+                        class="fx-input"
+                        id="new-expected-count"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 25"
+                      />
+                    </div>
+                  </div>
                   <div class="fx-card">
                     <div class="fx-card-t">Schedule Range</div>
                     <div class="fx-row2">
@@ -6663,6 +6676,12 @@
           content.appendChild(grid);
         }
 
+        /* "~N" marker when a training has an expected headcount (bulk upload)
+           but no participant rows yet. Empty otherwise. */
+        function calExp(ev) {
+          if (ev.participants || !ev.number_of_participants) return "";
+          return "~" + ev.number_of_participants;
+        }
         function eventChip(ev) {
           var st = statusOf(ev);
           var meta = STATUS_META[st];
@@ -6685,7 +6704,11 @@
             "</span>" +
             "</span>" +
             '<span class="event-chip-time">' +
-            esc(ev.time || "") +
+            (function () {
+              var t = esc(ev.time || "");
+              var e = calExp(ev);
+              return t + (t && e ? " · " : "") + e;
+            })() +
             "</span>" +
             delX;
           chip.addEventListener("mouseenter", function () {
@@ -6905,7 +6928,11 @@
                   esc(ev.training_program || ev.topic || "Training") +
                   "</span>" +
                   '<br><span class="week-event-time">' +
-                  esc(ev.time || "") +
+                  (function () {
+                    var t = esc(ev.time || "");
+                    var e = calExp(ev);
+                    return t + (t && e ? " · " : "") + e;
+                  })() +
                   (ev.training_location
                     ? " • " + esc(ev.training_location)
                     : "") +
@@ -6993,6 +7020,10 @@
                   ? " &middot; " + esc(ev.training_location)
                   : "") +
                 (ev.trainer_name ? " &middot; " + esc(ev.trainer_name) : "") +
+                (function () {
+                  var e = calExp(ev);
+                  return e ? " &middot; " + e + " expected" : "";
+                })() +
                 "</div></div>";
               item.addEventListener("click", function (e) {
                 e.stopPropagation();
@@ -8117,9 +8148,10 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
-          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap)
+          f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
+          // Schedule is L&D Admin only — lock date/time/type/expected-count for trainers (no 417 trap)
           var canResched = state.role === "ld_admin";
-          ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
+          ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-expected-count"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -8377,7 +8409,17 @@
             endTime !== fmtTimeInput(ev.end_time || "") ||
             trainingType !== (ev.training_type || "") ||
             trainingLocation !== (ev.training_location || "");
-          if (scheduleChanged) {
+          /* Expected headcount rides the same admin-only schedule call. */
+          var expRaw = (
+            (document.getElementById("new-expected-count") || {}).value || ""
+          ).trim();
+          var expVal = expRaw === "" ? 0 : parseInt(expRaw, 10);
+          if (isNaN(expVal) || expVal < 0) {
+            showToast("Expected Participants must be 0 or more");
+            return;
+          }
+          var expChanged = expVal !== (ev.number_of_participants || 0);
+          if (scheduleChanged || expChanged) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -8428,6 +8470,7 @@
                 end_time: endTime || null,
                 training_type: trainingType || null,
                 training_location: trainingLocation || null,
+                number_of_participants: expChanged ? expVal : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -8436,6 +8479,7 @@
                 ev.time = startTime;
                 ev.training_type = trainingType;
                 ev.training_location = trainingLocation;
+                if (expChanged) ev.number_of_participants = expVal;
               }),
             );
           }
@@ -8725,6 +8769,17 @@
 
           var trainerSel = document.getElementById("new-trainer");
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
+          var expCreateRaw = (
+            (document.getElementById("new-expected-count") || {}).value || ""
+          ).trim();
+          var expCreateVal = null;
+          if (expCreateRaw !== "") {
+            expCreateVal = parseInt(expCreateRaw, 10);
+            if (isNaN(expCreateVal) || expCreateVal < 0) {
+              showToast("Expected Participants must be 0 or more");
+              return;
+            }
+          }
           var agenda =
             (document.getElementById("new-agenda") || {}).value || "";
           if (!state.selectedGeographies || !state.selectedGeographies.length) {
@@ -8764,6 +8819,7 @@
             geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
+            number_of_participants: expCreateVal,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
