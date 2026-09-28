@@ -4243,7 +4243,7 @@
         color: var(--ink-3);
       }
       /* ---------- Team dashboard insights (manager view, compact) ---------- */
-      /* Slim KPI row: 6 cards, one line on desktop */
+      /* Slim KPI rows: one line on desktop (team + trainings alike) */
       #teamCards {
         flex-wrap: nowrap;
         gap: 8px;
@@ -4259,6 +4259,31 @@
       }
       #teamCards .tr-stat-card .sc-label {
         font-size: 11px;
+      }
+      #trStats {
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      #trStats .tr-stat-card {
+        padding: 8px 10px;
+        gap: 2px;
+        min-width: 0;
+        flex: 1 1 0;
+      }
+      #trStats .tr-stat-card .sc-num {
+        font-size: 19px;
+      }
+      #trStats .tr-stat-card .sc-label {
+        font-size: 11px;
+      }
+      @media (max-width: 900px) {
+        #trStats {
+          flex-wrap: wrap;
+        }
+        #trStats .tr-stat-card {
+          flex: 1 1 28%;
+        }
       }
       /* Team insight panels removed (filhal) — KPI cards + list only. */
       #teamView .tr-toolbar .field-select {
@@ -4863,6 +4888,8 @@
             </div>
           </div>
 
+          <div class="tr-stats" id="trStats"></div>
+
           <div class="tr-toolbar">
             <div class="tr-search">
               <svg
@@ -4935,16 +4962,13 @@
             </button>
           </div>
 
-          <div class="tr-stats" id="trStats"></div>
-
           <div class="tr-table-wrap">
             <table class="tr-table">
               <thead>
                 <tr>
-                  <th>Training</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Trainer</th>
+                   <th>Training</th>
+                   <th>Date</th>
+                   <th>Trainer</th>
                   <th>Branch Name</th>
                   <th>Participants</th>
                   <th>Status</th>
@@ -6340,6 +6364,14 @@
               state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
               state.branchPick = Array.isArray(res[1]) ? res[1] : [];
               state.allAgents = Array.isArray(res[2]) ? res[2] : [];
+              /* Branch names may have arrived after the trainings list
+                 rendered — repaint so codes become names without any
+                 user action (e.g. changing rows-per-page). */
+              if (
+                state.trainingsLoaded &&
+                typeof renderTrainings === "function"
+              )
+                renderTrainings();
             });
         }
 
@@ -11424,7 +11456,7 @@
           var tbody = document.getElementById("trBody");
           if (tbody)
             tbody.innerHTML =
-              '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--ink-3)">Loading...</td></tr>';
+              '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--ink-3)">Loading...</td></tr>';
           api("get_training_list", { limit: 500 })
             .then(function (rows) {
               state.trainingsList = Array.isArray(rows) ? rows : [];
@@ -11651,12 +11683,6 @@
                     " – " +
                     fmtDateShort(ev.to_date)
                   : fmtDateShort(ev.from_date || ev.date);
-              var timeStr =
-                ev.time && ev.end_time
-                  ? esc(ev.time) + " – " + esc(ev.end_time)
-                  : ev.time
-                    ? esc(ev.time)
-                    : "—";
               var pillBg =
                 st === "completed"
                   ? "var(--green-soft)"
@@ -11702,9 +11728,6 @@
                 dateStr +
                 "</td>" +
                 '<td class="td-meta">' +
-                timeStr +
-                "</td>" +
-                '<td class="td-meta">' +
                 (ev.trainer
                   ? esc(ev.trainer)
                   : '<span style="color:var(--ink-3);font-style:italic">Not Assigned</span>') +
@@ -11716,7 +11739,9 @@
                   var binfo = (state.branchPick || []).find(function (b) {
                     return b.name === code;
                   });
-                  var disp = (binfo && binfo.branch) || "";
+                  /* Fall back to the raw branch code when branchPick hasn't
+                     loaded yet (avoids a "—" flash on first render). */
+                  var disp = (binfo && binfo.branch) || code || "";
                   if (geos.length > 1) {
                     return (
                       esc(disp || "—") +
