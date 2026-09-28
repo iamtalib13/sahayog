@@ -7940,10 +7940,12 @@
 
           Promise.all(tasks)
             .then(function () {
-              closeDrawer();
               render();
               renderTrainings();
               showToast("Training updated");
+              if (state.currentEvent && state.currentEvent.name === ev.name) {
+                openDrawer(ev);
+              }
             })
             .catch(function (e) {
               showToast("Could not save changes: " + e.message);
