@@ -103,6 +103,25 @@ def _owner_scope():
     return scope
 
 
+def _owner_scope_sql(params, prefix="scope"):
+    """SQL equivalent of _owner_scope() for raw-SQL reports.
+
+    Returns a condition string ("" for admins). Non-admin non-trainers are
+    rejected by callers before reaching here.
+    """
+    scope = _owner_scope()
+    if not scope:
+        return ""
+    parts = []
+    if scope.get("owner"):
+        params[prefix + "_owner"] = scope["owner"]
+        parts.append(f"t.owner = %({prefix}_owner)s")
+    if scope.get("trainer"):
+        params[prefix + "_trainer"] = scope["trainer"]
+        parts.append(f"t.trainer = %({prefix}_trainer)s")
+    return "(" + " OR ".join(parts) + ")"
+
+
 def _safe_year_month(year, month):
     try:
         year = int(year)
@@ -305,7 +324,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         rows = filtered
 
     participants = _participant_counts([r.name for r in rows])
-    show_budget = _is_admin()
+    show_budget = True
 
     out = []
     for r in rows:
@@ -405,7 +424,7 @@ def get_training_list(
         geo_map = _get_geographies_map([r.name for r in rows])
 
     participants = _participant_counts([r.name for r in rows])
-    show_budget = _is_admin()
+    show_budget = True
     req_status = (status or "").strip().lower().replace(" ", "") or None
 
     out = []
@@ -484,9 +503,7 @@ def get_training_details(name):
     )
     r["participant_list"] = participants_list
     r["participants"] = len(participants_list)
-    if not _is_admin():
-        r["budget_amount"] = None
-        r["actual_expense"] = None
+    # Budget visible to all roles (writes stay L&D Admin-only).
     return r
 
 
@@ -999,8 +1016,8 @@ def get_mis_report(
     exactly one row), sliced with LIMIT/OFFSET. ``page_size=0`` (or ``None``
     combined with ``page_size<=0``) returns the full dataset for CSV export.
     """
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can generate this report."))
+    if not (_is_admin() or _is_trainer()):
+        frappe.throw(_("Only L&D Admin and Trainers can generate this report."))
     parts = str(month or "").split("-")
     if len(parts) != 2:
         frappe.throw(_("Month is required in YYYY-MM format."))
@@ -1024,6 +1041,9 @@ def get_mis_report(
         val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
         if val:
             conds.append(_geo_sql(col, val, "val_" + col, params))
+    scope_cond = _owner_scope_sql(params)
+    if scope_cond:
+        conds.append(scope_cond)
     where = " AND ".join(conds)
 
     base = """
@@ -1180,8 +1200,8 @@ def get_adherence_report(
     page_size=None,
 ):
     """Training-level adherence & costing rows for a month (YYYY-MM)."""
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can generate this report."))
+    if not (_is_admin() or _is_trainer()):
+        frappe.throw(_("Only L&D Admin and Trainers can generate this report."))
     parts = str(month or "").split("-")
     if len(parts) != 2:
         frappe.throw(_("Month is required in YYYY-MM format."))
@@ -1205,6 +1225,9 @@ def get_adherence_report(
         val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
         if val:
             conds.append(_geo_sql(col, val, "val_" + col, params))
+    scope_cond = _owner_scope_sql(params)
+    if scope_cond:
+        conds.append(scope_cond)
     where = " AND ".join(conds)
 
     base = "FROM `tabTraining` t WHERE {where}".format(where=where)
@@ -1380,8 +1403,8 @@ def get_employee_training_report(
     Rows are paged at the SQL level (INNER JOIN on participants, LIMIT/OFFSET);
     ``page_size=0``/``None`` returns the full dataset for CSV export.
     """
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can generate this report."))
+    if not (_is_admin() or _is_trainer()):
+        frappe.throw(_("Only L&D Admin and Trainers can generate this report."))
 
     today_dt = frappe.utils.getdate()
     from_dt = frappe.utils.getdate(from_date) if from_date else frappe.utils.getdate(f"{today_dt.year}-01-01")
@@ -1399,6 +1422,9 @@ def get_employee_training_report(
         val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
         if val:
             conds.append(_geo_sql(col, val, "val_" + col, params))
+    scope_cond = _owner_scope_sql(params)
+    if scope_cond:
+        conds.append(scope_cond)
 
     q = (employee or "").strip().lower()
     if q:
