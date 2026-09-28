@@ -2045,10 +2045,11 @@ def bulk_upload_training():
 def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
+    # Sample uses real program / SOL ID / trainer ID values from the system.
     header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Number of Participants"]
     sample = [
-        ["1", "01/08/2026", "S-ONE", "1168", "1039", "1", "25"],
-        ["2", "02/08/2026", "S-TWO", "1096", "1039", "2", "30"],
+        ["1", "28/09/2026", "Training SK", "1000", "1754", "3", "20"],
+        ["2", "29/09/2026", "JLL Training", "1012", "8751", "1", "15"],
     ]
     import csv, io
     out = io.StringIO()
