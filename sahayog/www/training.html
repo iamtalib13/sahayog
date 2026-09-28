@@ -8590,9 +8590,17 @@
             })
             .then(function () {
               state.savingTraining = false;
-              closeModal("addModal");
               loadData(true);
               showToast("Training updated");
+              return api("get_training_details", { name: ev.name });
+            })
+            .then(function (d) {
+              if (d && state.currentEvent && state.currentEvent.name === ev.name) {
+                for (var k in d) {
+                  if (d[k] !== undefined && d[k] !== null) ev[k] = d[k];
+                }
+                fillEditDialog(ev);
+              }
             })
             .catch(function (e) {
               state.savingTraining = false;
