@@ -7136,6 +7136,17 @@
               ? code + " - " + binfo.branch
               : code || "—";
           }
+          var dateLabel = evStart(ev)
+            ? evStart(ev) === evEnd(ev)
+              ? fmtDateShort(evStart(ev))
+              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
+            : "—";
+          var rawTime = ev.time
+            ? ev.end_time
+              ? ev.time + " – " + ev.end_time
+              : ev.time
+            : "";
+          var timeLabel = rawTime ? esc(rawTime) : "—";
           var body =
             '<div class="drawer-section">' +
             '<div class="drawer-section-title">Details</div>' +
@@ -11723,18 +11734,7 @@
                 "</td>" +
                 '<td class="td-meta">' +
                 (function () {
-          var geos = ev.geographies || [];
-          var dateLabel = evStart(ev)
-            ? evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
-            : "—";
-          var rawTime = ev.time
-            ? ev.end_time
-              ? ev.time + " – " + ev.end_time
-              : ev.time
-            : "";
-          var timeLabel = rawTime ? esc(rawTime) : "—";
+                  var geos = ev.geographies || [];
                   var code = (geos[0] && geos[0].branch) || ev.branch || "";
                   var binfo = (state.branchPick || []).find(function (b) {
                     return b.name === code;
