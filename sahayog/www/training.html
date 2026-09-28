@@ -1220,6 +1220,7 @@
       .drawer-body {
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 14px 18px 20px;
       }
       .drawer-section {
@@ -7118,6 +7119,9 @@
             (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : "") +
             "</div>" +
             "</div>" +
+            (editable
+              ? '<button class="btn btn-primary" id="drawerSaveTop" style="height:30px;padding:0 14px;font-size:12.5px;flex-shrink:0;">Save</button>'
+              : "") +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg></button>';
           var headEl = document.getElementById("drawerHead");
@@ -7280,17 +7284,14 @@
 
           document.getElementById("drawerBody").innerHTML = body;
 
-          var actions = editable
-            ? '<button class="btn" id="drawerCancel">Cancel</button>' +
-              '<button class="btn btn-primary" id="drawerSave">Save Changes</button>'
-            : "";
+          /* Bottom action bar removed — Save lives in the header now. */
           var actionsEl = document.getElementById("drawerActions");
-          actionsEl.innerHTML = actions;
-          actionsEl.style.display = actions ? "" : "none";
+          actionsEl.innerHTML = "";
+          actionsEl.style.display = "none";
 
           if (editable) {
-            document.getElementById("drawerSave").onclick = saveDrawerChanges;
-            document.getElementById("drawerCancel").onclick = closeDrawer;
+            var saveTop = document.getElementById("drawerSaveTop");
+            if (saveTop) saveTop.onclick = saveDrawerChanges;
             document
               .querySelectorAll("#drawerBody .check-item input")
               .forEach(function (inp) {
