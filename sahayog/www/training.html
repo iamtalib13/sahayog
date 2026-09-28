@@ -3329,13 +3329,6 @@
         justify-content: space-between;
         gap: 8px;
       }
-      .budget-exp-status {
-        font-size: 12px;
-        color: var(--ink-3);
-      }
-      .budget-exp-status strong {
-        color: var(--ink-1);
-      }
       .budget-hint {
         font-size: 11px;
         color: var(--ink-3);
@@ -5964,7 +5957,7 @@
             sub: "Trainer Dashboard - update training status after completion",
             canAdd: true,
             canEdit: true,
-            showBudget: false,
+            showBudget: true,
             showMis: false,
           },
           viewer: {
@@ -5973,7 +5966,7 @@
             sub: "Leadership View - read-only training calendar",
             canAdd: false,
             canEdit: false,
-            showBudget: false,
+            showBudget: true,
             showMis: false,
           },
           general: {
@@ -5982,7 +5975,7 @@
             sub: "General View",
             canAdd: false,
             canEdit: false,
-            showBudget: false,
+            showBudget: true,
             showMis: false,
           },
         };
@@ -6271,7 +6264,10 @@
           if (bulkBtnEl)
             bulkBtnEl.style.display = r.showMis ? "inline-flex" : "none";
           var navRep = document.getElementById("nav-reports");
-          if (navRep) navRep.style.display = r.showMis ? "" : "none";
+          /* Reports visible to all roles; data is scoped server-side
+             (trainers see only own trainings). Pure team-verifiers
+             still see only the Team tab (handled below). */
+          if (navRep) navRep.style.display = "";
           /* Team Training tab: reportees + L&D role (L&D Viewer for leaders).
              Pure verifiers (viewer/general + team) see ONLY this tab. */
           var navTeam = document.getElementById("nav-team");
@@ -7127,8 +7123,6 @@
             ) +
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
-            metaRow("Venue", esc(ev.training_location || "—")) +
-            metaRow("Type", esc(ev.training_type || "—")) +
             "</div></div>";
           // All branches as compact chips (full geo stays one line per branch in title tooltip)
           if (geos.length > 1) {
@@ -7210,8 +7204,9 @@
           }
 
           if (r.showBudget) {
-            var expStatus = ev.actual_expense > 0 ? "Recorded" : "Pending";
-            if (editable) {
+            /* Budget inputs are L&D Admin-only; everyone else sees values
+               read-only (writes stay admin-only server-side too). */
+            if (editable && state.role === "ld_admin") {
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
@@ -7223,9 +7218,6 @@
                 '" /></label>' +
                 "</div>" +
                 '<div class="budget-edit-foot">' +
-                '<span class="budget-exp-status">Expense Status: <strong>' +
-                expStatus +
-                "</strong></span>" +
                 '<span class="budget-hint">Saved with Save Changes</span>' +
                 "</div></div>";
             } else {
@@ -7234,7 +7226,6 @@
                 '<div class="meta-grid">' +
                 metaRow("Budget Amount", inrOrDash(ev.budget_amount)) +
                 metaRow("Actual Expense", inrOrDash(ev.actual_expense)) +
-                metaRow("Expense Status", expStatus) +
                 "</div></div>";
             }
           }
@@ -7819,7 +7810,7 @@
             );
           }
 
-          if (role().showBudget) {
+          if (state.role === "ld_admin") {
             var b = document.getElementById("drw-budget-amount");
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
@@ -8264,16 +8255,27 @@
             checkList +
             "</div>";
           if (r.showBudget) {
-            var budgetHtml =
-              '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
-              '<div class="budget-edit">' +
-              '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
-              (ev.budget_amount == null ? "" : ev.budget_amount) +
-              '" /></label>' +
-              '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
-              (ev.actual_expense == null ? "" : ev.actual_expense) +
-              '" /></label>' +
-              "</div></div>";
+            /* Budget inputs are L&D Admin-only; others see read-only values. */
+            var budgetHtml;
+            if (state.role === "ld_admin") {
+              budgetHtml =
+                '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+                '<div class="budget-edit">' +
+                '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
+                (ev.budget_amount == null ? "" : ev.budget_amount) +
+                '" /></label>' +
+                '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
+                (ev.actual_expense == null ? "" : ev.actual_expense) +
+                '" /></label>' +
+                "</div></div>";
+            } else {
+              budgetHtml =
+                '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
+                '<div class="meta-grid">' +
+                metaRow("Budget Amount", inrOrDash(ev.budget_amount)) +
+                metaRow("Actual Expense", inrOrDash(ev.actual_expense)) +
+                "</div></div>";
+            }
             html +=
               '<div class="ee-grid" id="ee-body">' +
               statusHtml +
@@ -8449,7 +8451,7 @@
               };
             }
           }
-          if (role().showBudget) {
+          if (state.role === "ld_admin") {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
@@ -8796,10 +8798,6 @@
         }
 
         function openReportDetail(type) {
-          if (!role().showMis) {
-            showToast("Reports are available to L&D Admin only");
-            return;
-          }
           if (!REPORT_DEFS[type]) return;
           activeReport = type;
           var def = REPORT_DEFS[type];
@@ -12949,8 +12947,7 @@
             } catch (e) {}
             if (state.teamOnly) switchTab("team");
             else if (savedTab === "trainings") switchTab("trainings");
-            else if (savedTab === "reports" && role().showMis)
-              switchTab("reports");
+            else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
             return loadGeo();
           })
