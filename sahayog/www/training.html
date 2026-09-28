@@ -5800,19 +5800,6 @@
                       />
                     </div>
                   </div>
-                  <div class="fx-row2 tt-row">
-                    <div class="fx-field">
-                      <span class="fx-label">Expected Participants</span>
-                      <input
-                        type="number"
-                        class="fx-input"
-                        id="new-expected-count"
-                        min="0"
-                        step="1"
-                        placeholder="e.g. 25"
-                      />
-                    </div>
-                  </div>
                   <div class="fx-card">
                     <div class="fx-card-t">Schedule Range</div>
                     <div class="fx-row2">
@@ -7362,9 +7349,16 @@
           if (!show) return;
           var sumEl = document.getElementById("nt-att-summary");
           var paint = function () {
+            var list = ev.participant_list || [];
+            var isAgent = list.some(function (p) { return p.reference_doctype === "Agent"; });
+            if (list.length > 0 && !isAgent) {
+              wrap.style.display = "none";
+              return;
+            }
             if (sumEl)
               sumEl.innerHTML = attendanceSummaryHTML(
-                attendanceSummary(ev.participant_list || []),
+                attendanceSummary(list),
+                list.length ? isAgent : undefined,
               );
           };
           if (ev.participant_list) {
@@ -7461,14 +7455,17 @@
         function paintAttPopCount(ev) {
           var el = document.getElementById("nt-attendance-count");
           if (!el) return;
-          var merged = (ev.participant_list || []).map(function (p) {
+          var list = ev.participant_list || [];
+          var isAgent = list.some(function(p) { return p.reference_doctype === "Agent"; });
+          var merged = list.map(function (p) {
             var key = attRowKey(p);
             return {
+              reference_doctype: p.reference_doctype,
               attendance_status:
                 key in attPopDirty ? attPopDirty[key] : attStatusOf(p),
             };
           });
-          el.innerHTML = attendanceSummaryHTML(attendanceSummary(merged));
+          el.innerHTML = attendanceSummaryHTML(attendanceSummary(merged), list.length ? isAgent : undefined);
           var saveBtn = document.getElementById("btn-attendance-save");
           if (saveBtn) saveBtn.disabled = Object.keys(attPopDirty).length === 0;
         }
@@ -7602,9 +7599,18 @@
           });
           return s;
         }
-        function attendanceSummaryHTML(s) {
+        function attendanceSummaryHTML(s, isAgent) {
           if (!s.total)
             return '<span class="att-summary">No participants</span>';
+          if (isAgent === false) {
+            return (
+              '<span class="att-summary">' +
+              s.total +
+              ' Employee' +
+              (s.total === 1 ? '' : 's') +
+              '</span>'
+            );
+          }
           if (s.unmarked === s.total)
             return (
               '<span class="att-summary">⚪ Not Marked · 0/' +
@@ -7637,7 +7643,27 @@
           var list = ev.participant_list || [];
           if (!list.length)
             return '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
-          /* View mode: compact 2-column chips (dot = status). Fits dozens
+          var isAgent = list.some(function(p) { return p.reference_doctype === "Agent"; });
+          /* Employee participants: attendance is not marked, render clean list */
+          if (!isAgent) {
+            return (
+              '<div class="att-compact">' +
+              list
+                .map(function (p) {
+                  var name = esc(p.full_name || p.agent_employee || "—");
+                  return (
+                    '<span class="att-chip" title="' +
+                    name +
+                    '"><span class="dot" style="background:var(--ink-4);"></span><span class="nm">' +
+                    name +
+                    "</span></span>"
+                  );
+                })
+                .join("") +
+              "</div>"
+            );
+          }
+          /* View mode for Agents: compact 2-column chips (dot = status). Fits dozens
              of participants in ~168px with internal scroll. */
           if (!editable) {
             return (
@@ -7668,7 +7694,7 @@
               "</div>"
             );
           }
-          /* Edit mode: full rows with Present/Absent buttons (unchanged). */
+          /* Edit mode for Agents: full rows with Present/Absent buttons. */
           return (
             '<div class="att-list">' +
             list
@@ -7699,8 +7725,10 @@
           var inner =
             '<div style="font-size:13px;color:var(--ink-3)">Loading participants…</div>';
           if (ev.participant_list) {
+            var isAgt = ev.participant_list.some(function(p) { return p.reference_doctype === "Agent"; });
             summary = attendanceSummaryHTML(
               attendanceSummary(ev.participant_list),
+              ev.participant_list.length ? isAgt : undefined,
             );
             inner = attendanceRowsHTML(ev, editable);
           }
@@ -7721,10 +7749,13 @@
             box.innerHTML = attendanceRowsHTML(ev, editable);
             bindAttendanceButtons(ev);
             var s0 = document.getElementById("drw-att-summary");
-            if (s0)
+            if (s0) {
+              var isAgt0 = ev.participant_list.some(function(p) { return p.reference_doctype === "Agent"; });
               s0.innerHTML = attendanceSummaryHTML(
                 attendanceSummary(ev.participant_list),
+                ev.participant_list.length ? isAgt0 : undefined,
               );
+            }
             return;
           }
           api("get_training_details", { name: ev.name })
@@ -7737,10 +7768,13 @@
               b.innerHTML = attendanceRowsHTML(ev, editable);
               bindAttendanceButtons(ev);
               var s = document.getElementById("drw-att-summary");
-              if (s)
+              if (s) {
+                var isAgt = ev.participant_list.some(function(p) { return p.reference_doctype === "Agent"; });
                 s.innerHTML = attendanceSummaryHTML(
                   attendanceSummary(ev.participant_list),
+                  ev.participant_list.length ? isAgt : undefined,
                 );
+              }
             })
             .catch(function () {
               var b = document.getElementById("drw-attendance");
@@ -8148,10 +8182,9 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
-          f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
-          // Schedule is L&D Admin only — lock date/time/type/expected-count for trainers (no 417 trap)
+          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap)
           var canResched = state.role === "ld_admin";
-          ["new-from-date", "new-to-date", "new-time", "new-end-time", "new-expected-count"].forEach(
+          ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -8409,16 +8442,13 @@
             endTime !== fmtTimeInput(ev.end_time || "") ||
             trainingType !== (ev.training_type || "") ||
             trainingLocation !== (ev.training_location || "");
-          /* Expected headcount rides the same admin-only schedule call. */
-          var expRaw = (
-            (document.getElementById("new-expected-count") || {}).value || ""
-          ).trim();
-          var expVal = expRaw === "" ? 0 : parseInt(expRaw, 10);
+          var expEl = document.getElementById("new-expected-count");
+          var expVal = expEl ? (expEl.value.trim() === "" ? 0 : parseInt(expEl.value.trim(), 10)) : (ev.number_of_participants || 0);
           if (isNaN(expVal) || expVal < 0) {
             showToast("Expected Participants must be 0 or more");
             return;
           }
-          var expChanged = expVal !== (ev.number_of_participants || 0);
+          var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
           if (scheduleChanged || expChanged) {
             if (!fromDate) {
               showToast("From Date is required");
@@ -8769,17 +8799,6 @@
 
           var trainerSel = document.getElementById("new-trainer");
           var isAdhoc = document.getElementById("new-adhoc").checked ? 1 : 0;
-          var expCreateRaw = (
-            (document.getElementById("new-expected-count") || {}).value || ""
-          ).trim();
-          var expCreateVal = null;
-          if (expCreateRaw !== "") {
-            expCreateVal = parseInt(expCreateRaw, 10);
-            if (isNaN(expCreateVal) || expCreateVal < 0) {
-              showToast("Expected Participants must be 0 or more");
-              return;
-            }
-          }
           var agenda =
             (document.getElementById("new-agenda") || {}).value || "";
           if (!state.selectedGeographies || !state.selectedGeographies.length) {
@@ -8819,7 +8838,6 @@
             geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
             is_adhoc: isAdhoc,
-            number_of_participants: expCreateVal,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
@@ -10103,6 +10121,13 @@
 
           function addParticipant(val) {
             var type = state.participantPickType || "Employee";
+            var otherType = (state.selectedParticipants || []).find(function (p) {
+              return p.reference_doctype !== type;
+            });
+            if (otherType) {
+              showToast("Cannot mix Employees and Agents. Please remove existing " + otherType.reference_doctype + "s first.");
+              return;
+            }
             var key = type + ":" + val;
             var already = (state.selectedParticipants || []).some(function (p) {
               return pKey(p) === key;
@@ -10356,6 +10381,13 @@
             if (idx !== -1) {
               state.selectedParticipants.splice(idx, 1);
             } else {
+              var otherType = (state.selectedParticipants || []).find(function (p) {
+                return p.reference_doctype !== type;
+              });
+              if (otherType) {
+                showToast("Cannot mix Employees and Agents. Please unselect existing " + otherType.reference_doctype + "s first.");
+                return;
+              }
               state.selectedParticipants.push({
                 reference_doctype: type,
                 agent_employee: id,
@@ -10896,7 +10928,7 @@
                   (branch ? " • " + branch : "") +
                   (div ? " • " + div : "");
                 var tail;
-                if (isEdit) {
+                if (isEdit && isAgent) {
                   var cur = effAtt(p);
                   var dis = attSaving || !p.row_name ? " disabled" : "";
                   tail =
@@ -10948,6 +10980,7 @@
           function attDirtyList(sel) {
             return (sel || []).filter(function (p) {
               return (
+                p.reference_doctype === "Agent" &&
                 p.row_name &&
                 p._att !== undefined &&
                 p._att !== (p.attendance_status || "")
@@ -10956,7 +10989,8 @@
           }
           function syncAttBar(sel) {
             // Top capsules (edit mode) + Mark-all visibility; saving happens via dialog Save
-            var show = state.dialogMode === "edit" && sel.length > 0;
+            var isAnyAgent = (sel || []).some(function (p) { return p.reference_doctype === "Agent"; });
+            var show = state.dialogMode === "edit" && sel.length > 0 && isAnyAgent;
             if (attTop) attTop.style.display = show ? "flex" : "none";
             if (attAllBtn) attAllBtn.style.display = show ? "" : "none";
             if (!show) return;
@@ -11171,6 +11205,13 @@
 
                   function tryAdd(type, id) {
                     if (!id) return false;
+                    var otherType = (state.selectedParticipants || []).find(function (p) {
+                      return p.reference_doctype !== type;
+                    });
+                    if (otherType) {
+                      skipped++;
+                      return false;
+                    }
                     var sourceList =
                       type === "Agent"
                         ? state.allAgents || []
