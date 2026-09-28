@@ -7134,25 +7134,6 @@
             '<div class="meta-grid">' +
             metaRow("Date", dateLabel) +
             metaRow("Time", timeLabel) +
-            metaRow("Zone", esc(ev.zone || (geos[0] && geos[0].zone) || "—")) +
-            metaRow(
-              "Region",
-              esc(ev.region || (geos[0] && geos[0].region) || "—"),
-            ) +
-            metaRow(
-              "District",
-              esc(ev.district || (geos[0] && geos[0].district) || "—"),
-            ) +
-            metaRow(
-              "Branch",
-              esc(
-                ev.branch
-                  ? geoDisp(ev.branch)
-                  : geos[0] && geos[0].branch
-                    ? geoDisp(geos[0].branch)
-                    : "—",
-              ),
-            ) +
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
             "</div></div>";
