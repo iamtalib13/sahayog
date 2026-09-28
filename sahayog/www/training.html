@@ -1204,6 +1204,24 @@
         margin: 4px 0 4px;
         line-height: 1.3;
       }
+      /* Status-tinted header (set inline per training) + one-line summary */
+      .drawer-head {
+        transition: background 0.15s ease;
+      }
+      .drw-chips {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .drw-sub {
+        font-size: 12px;
+        color: var(--ink-2);
+        margin-top: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .drawer-body {
         flex: 1;
         overflow-y: auto;
@@ -7086,6 +7104,33 @@
                   ? "chip-blue"
                   : "chip-gray";
 
+          /* Header summary line: date · time · trainer · participants */
+          var dateLabel = evStart(ev)
+            ? evStart(ev) === evEnd(ev)
+              ? fmtDateShort(evStart(ev))
+              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
+            : "—";
+          var rawTime = ev.time
+            ? ev.end_time
+              ? ev.time + " – " + ev.end_time
+              : ev.time
+            : "";
+          var timeLabel = rawTime ? esc(rawTime) : "—";
+          var trainerName = ev.trainer_name || ev.trainer || "";
+          var pCount = ev.participants || 0;
+          var subParts = [];
+          if (dateLabel !== "—") subParts.push(dateLabel);
+          if (rawTime) subParts.push(rawTime);
+          if (trainerName) subParts.push(trainerName);
+          subParts.push(
+            pCount + (pCount === 1 ? " participant" : " participants"),
+          );
+          var subHtml = subParts
+            .map(function (x) {
+              return esc(x);
+            })
+            .join(" · ");
+
           var head =
             '<div class="title">' +
             '<div class="drawer-kicker">' +
@@ -7094,6 +7139,7 @@
             "<h3>" +
             esc(ev.training_program || ev.topic || "Training") +
             "</h3>" +
+            '<div class="drw-chips">' +
             '<span class="chip ' +
             chipClass +
             '"><span class="status-dot" style="background:' +
@@ -7101,23 +7147,23 @@
             '"></span> ' +
             meta.label +
             "</span>" +
+            '<span class="chip chip-gray">' +
+            score +
+            "/5 done</span>" +
             (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : "") +
+            "</div>" +
+            '<div class="drw-sub">' +
+            subHtml +
+            "</div>" +
             "</div>" +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg></button>';
-          document.getElementById("drawerHead").innerHTML = head;
+          var headEl = document.getElementById("drawerHead");
+          headEl.innerHTML = head;
+          /* Status-tinted header: soft background + accent top border. */
+          headEl.style.background = meta.soft;
+          headEl.style.borderTop = "3px solid " + meta.color;
           document.getElementById("drawerClose").onclick = closeDrawer;
-
-          var dateLabel = evStart(ev)
-            ? evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
-            : "—";
-          var timeLabel = ev.time
-            ? ev.end_time
-              ? esc(ev.time) + " – " + esc(ev.end_time)
-              : esc(ev.time)
-            : "—";
 
           var geos = ev.geographies || [];
           function geoDisp(code) {
