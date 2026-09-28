@@ -1872,159 +1872,174 @@ def bulk_upload_training():
             return {"success": False, "message": _("File is empty or has no data rows")}
         header = [h.strip() for h in rows[0]]
         header_lower = [h.strip().lower() for h in header]
-        # Required columns (case-insensitive) — Branch Code preferred, Branch Name also accepted
-        required = ["emp id", "training date", "program name", "trainer id"]
+        # Required columns (case-insensitive). Title accepts "Program Name"
+        # or "Training Title"; branch is the SOL ID (Sahayog Branch code).
+        # One row = one training; no participant rows are added here.
+        required = ["training date", "branch code", "trainer name"]
         missing = [r for r in required if r not in header_lower]
-        if "branch code" not in header_lower and "branch name" not in header_lower:
-            missing.append("Branch Code or Branch Name")
+        if "program name" not in header_lower and "training title" not in header_lower:
+            missing.append("Program Name or Training Title")
         if missing:
             return {"success": False, "message": _("Missing required column(s): {0}. Found: {1}").format(", ".join(missing), ", ".join(header))}
 
         # Map lower->index
         col_idx = {h.lower(): i for i, h in enumerate(header)}
 
-        def get_val(row, key):
-            idx = col_idx.get(key.lower())
-            if idx is None or idx >= len(row):
-                return ""
-            return str(row[idx] or "").strip()
+        def get_val(row, *keys):
+            for key in keys:
+                idx = col_idx.get(key.lower())
+                if idx is not None and idx < len(row):
+                    val = str(row[idx] or "").strip()
+                    if val:
+                        return val
+            return ""
 
-        # Group trainings
-        groups = {}  # key -> {training_date, training_days, program, trainer_id, trainer_name, branches:set, participants:[{emp_id}]}
+        def resolve_trainer(name):
+            """Employee name -> Employee row. Exact match first, then
+            case-insensitive; None when missing or ambiguous."""
+            if not name:
+                return None
+            hit = frappe.db.get_value("Employee", {"employee_name": name}, ["name", "employee_name"], as_dict=True)
+            if hit:
+                return hit
+            hits = frappe.db.sql(
+                "SELECT name, employee_name FROM `tabEmployee` WHERE LOWER(employee_name) = %s",
+                name.lower(), as_dict=True,
+            )
+            if len(hits) == 1:
+                return hits[0]
+            return None
+
+        def parse_training_date(raw):
+            # Supports DD/MM/YY, DD/MM/YYYY, YYYY-MM-DD
+            if "/" in raw:
+                parts = raw.split("/")
+                if len(parts) == 3:
+                    dd = parts[0].zfill(2)
+                    mm = parts[1].zfill(2)
+                    yy = parts[2]
+                    if len(yy) == 2:
+                        yy = "20" + yy
+                    dated = f"{yy}-{mm}-{dd}"
+                    frappe.utils.getdate(dated)  # validate
+                    return dated
+            return str(frappe.utils.getdate(raw))
+
+        trainings = []
         errors = []
         for i, row in enumerate(rows[1:], start=2):
             if not any(str(c or "").strip() for c in row):
                 continue
-            emp_id = get_val(row, "Emp ID")
-            branch_raw = get_val(row, "Branch Code") or get_val(row, "Branch Name")
             training_date_raw = get_val(row, "Training Date")
-            training_days_raw = get_val(row, "Training Days") or "1"
-            program = get_val(row, "Program Name")
-            trainer_id = get_val(row, "Trainer ID")
-            trainer_name = get_val(row, "Trainer Name")
+            program = get_val(row, "Program Name", "Training Title")
+            branch_raw = get_val(row, "Branch Code")
+            trainer_raw = get_val(row, "Trainer Name")
+            duration_raw = get_val(row, "Training Duration", "Duration", "Duration (Days)", "Training Days")
+            count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
 
-            if not emp_id:
-                errors.append(f"Row {i}: Emp ID is required")
+            if not training_date_raw:
+                errors.append(f"Row {i}: Training Date is required")
                 continue
-            if not frappe.db.exists("Employee", emp_id):
-                errors.append(f"Row {i}: Employee '{emp_id}' not found")
+            try:
+                training_date = parse_training_date(training_date_raw)
+            except Exception as e:
+                errors.append(f"Row {i}: Invalid Training Date '{training_date_raw}': {e}")
+                continue
+            if not program:
+                errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue
             if not branch_raw:
                 errors.append(f"Row {i}: Branch Code is required")
                 continue
-            # Branch Code or Name -> code (Sahayog Branch.name is code, branch is display name)
+            # SOL ID (Sahayog Branch.name) first, display name as fallback
             branch_code = frappe.db.get_value("Sahayog Branch", branch_raw, "name") or frappe.db.get_value("Sahayog Branch", {"branch": branch_raw}, "name")
             if not branch_code:
                 branch_code = frappe.db.get_value("Sahayog Branch", {"branch": ["like", branch_raw]}, "name")
             if not branch_code:
                 errors.append(f"Row {i}: Branch '{branch_raw}' not found")
                 continue
-            if not training_date_raw:
-                errors.append(f"Row {i}: Training Date is required")
+            if not trainer_raw:
+                errors.append(f"Row {i}: Trainer Name is required")
                 continue
-            # Parse training date: supports DD/MM/YY, DD/MM/YYYY, YYYY-MM-DD
-            try:
-                # Handle DD/MM/YY
-                if "/" in training_date_raw:
-                    parts = training_date_raw.split("/")
-                    if len(parts) == 3:
-                        dd = parts[0].zfill(2)
-                        mm = parts[1].zfill(2)
-                        yy = parts[2]
-                        if len(yy) == 2:
-                            yy = "20" + yy
-                        training_date = f"{yy}-{mm}-{dd}"
-                        frappe.utils.getdate(training_date)  # validate
-                    else:
-                        training_date = str(frappe.utils.getdate(training_date_raw))
-                else:
-                    training_date = str(frappe.utils.getdate(training_date_raw))
-            except Exception as e:
-                errors.append(f"Row {i}: Invalid Training Date '{training_date_raw}': {e}")
+            trainer = resolve_trainer(trainer_raw)
+            if not trainer:
+                errors.append(f"Row {i}: Trainer '{trainer_raw}' not found or ambiguous (match Employee name exactly)")
                 continue
-            try:
-                training_days = int(float(training_days_raw)) if training_days_raw else 1
-                if training_days < 1:
-                    training_days = 1
-            except:
-                training_days = 1
-            if not program:
-                errors.append(f"Row {i}: Program Name is required")
-                continue
-            if not trainer_id:
-                errors.append(f"Row {i}: Trainer ID is required")
-                continue
-            # Validate trainer exists
-            if not frappe.db.exists("Employee", trainer_id):
-                errors.append(f"Row {i}: Trainer ID '{trainer_id}' not found")
-                continue
-            if not trainer_name:
-                trainer_name = frappe.db.get_value("Employee", trainer_id, "employee_name") or trainer_id
-
-            key = f"{training_date}_{program.strip().lower()}_{trainer_id.strip().lower()}"
-            if key not in groups:
-                groups[key] = {
-                    "training_date": training_date,
-                    "training_days": training_days,
-                    "program": program.strip(),
-                    "trainer_id": trainer_id.strip(),
-                    "trainer_name": trainer_name.strip(),
-                    "branches": set(),
-                    "participants": [],
-                }
-                # Keep max training_days for the group
+            if not duration_raw:
+                duration = 1
             else:
-                # Update training_days to max
-                if training_days > groups[key]["training_days"]:
-                    groups[key]["training_days"] = training_days
-            groups[key]["branches"].add(branch_code)
-            # Deduplicate participant within same training
-            existing_emp_ids = [p["emp_id"] for p in groups[key]["participants"]]
-            if emp_id not in existing_emp_ids:
-                groups[key]["participants"].append({"emp_id": emp_id})
+                try:
+                    duration = int(float(duration_raw))
+                except Exception:
+                    errors.append(f"Row {i}: Invalid Training Duration '{duration_raw}'")
+                    continue
+                if duration < 1:
+                    errors.append(f"Row {i}: Training Duration must be 1 or more")
+                    continue
+            if not count_raw:
+                count = 0
+            else:
+                try:
+                    count = int(float(count_raw))
+                except Exception:
+                    errors.append(f"Row {i}: Invalid Number of Participants '{count_raw}'")
+                    continue
+                if count < 0:
+                    errors.append(f"Row {i}: Number of Participants cannot be negative")
+                    continue
+            trainings.append({
+                "training_date": training_date,
+                "program": program.strip(),
+                "branch_code": branch_code,
+                "trainer_name": (trainer.get("employee_name") or trainer_raw).strip(),
+                "duration": duration,
+                "count": count,
+            })
 
-        if not groups:
+        if not trainings:
             return {"success": False, "message": _("No valid trainings found"), "errors": errors}
 
         created = 0
         skipped = 0
-        for key, g in groups.items():
-            training_date = g["training_date"]
-            training_days = g["training_days"]
+        seen = set()
+        for t in trainings:
+            from_date = t["training_date"]
+            # Duration: to_date = from_date + (duration - 1)
+            to_date = str(frappe.utils.add_days(from_date, t["duration"] - 1))
+            # Skip when the same program already exists on the same date
+            # (trainer may differ) — within file and in the database.
+            key = (from_date, t["program"].strip().lower())
             try:
-                from_date = training_date
-                to_date = str(frappe.utils.add_days(training_date, training_days - 1))
-                # Check duplicate: same from_date + program + trainer
-                if frappe.db.exists("Training", {"from_date": from_date, "training_program": g["program"], "trainer": g["trainer_name"]}):
-                    # Add participants to existing? For minimal, skip creation
+                if key in seen or frappe.db.exists("Training", {"from_date": from_date, "training_program": t["program"]}):
                     skipped += 1
+                    seen.add(key)
                     continue
+                seen.add(key)
                 doc = frappe.new_doc("Training")
-                doc.training_program = g["program"]
+                doc.training_program = t["program"]
                 doc.from_date = from_date
                 doc.to_date = to_date
-                doc.trainer = g["trainer_name"]
+                doc.trainer = t["trainer_name"]
+                doc.number_of_participants = t["count"]
                 doc.start_time = ""
                 doc.end_time = ""
-                # Geographies
-                for br_code in g["branches"]:
-                    geo = frappe.db.get_value("Sahayog Branch", br_code, ["zone", "region", "district"], as_dict=True) or {}
-                    doc.append("geographies", {"branch": br_code, "zone": geo.zone or "", "region": geo.region or "", "district": geo.district or ""})
+                # Single branch geography (zone/region/district auto-fetched)
+                geo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["zone", "region", "district"], as_dict=True) or {}
+                doc.append("geographies", {"branch": t["branch_code"], "zone": geo.zone or "", "region": geo.region or "", "district": geo.district or ""})
                 # Legacy sync handled in before_save, but set first for safety
                 if doc.geographies:
                     doc.branch = doc.geographies[0].branch
                     doc.zone = doc.geographies[0].zone
                     doc.region = doc.geographies[0].region
                     doc.district = doc.geographies[0].district
-                for p in g["participants"]:
-                    emp_name = frappe.db.get_value("Employee", p["emp_id"], "employee_name") or p["emp_id"]
-                    doc.append("participants", {"reference_doctype": "Employee", "agent_employee": p["emp_id"], "full_name": emp_name})
+                # No participant rows here — headcount lives in
+                # number_of_participants; rows are added separately.
                 doc.insert(ignore_permissions=True)
                 created += 1
             except Exception as e:
                 import traceback
                 frappe.log_error(traceback.format_exc(), "Bulk Upload Training")
-                errors.append(f"Training {g['program']} on {training_date}: {str(e)}")
+                errors.append(f"Training {t['program']} on {from_date}: {str(e)}")
 
         # Build response
         msg = f"Created {created} trainings"
@@ -2032,7 +2047,7 @@ def bulk_upload_training():
             msg += f", Skipped {skipped} duplicates"
         if errors:
             msg += f", {len(errors)} errors"
-        return {"success": True, "message": msg, "created": created, "skipped": skipped, "errors": errors, "total_groups": len(groups)}
+        return {"success": True, "message": msg, "created": created, "skipped": skipped, "errors": errors, "total_groups": len(trainings)}
     except Exception as e:
         import traceback
         frappe.log_error(traceback.format_exc(), "Bulk Upload Training")
@@ -2041,11 +2056,12 @@ def bulk_upload_training():
 
 @frappe.whitelist()
 def get_bulk_upload_template():
-    # Return sample CSV content for download (frontend can also generate)
-    header = ["S.No", "Emp ID", "Employee Name", "Branch Code", "Training Date", "Training Days", "Program Name", "Trainer ID", "Trainer Name"]
+    # One row = one training. No participant rows — headcount goes in
+    # "Number of Participants". Duration auto-sets To Date in the app.
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer Name", "Training Duration", "Number of Participants"]
     sample = [
-        ["1", "12565", "Anis Samad Pathan", "1168", "01/08/2026", "1", "S-ONE", "1039", "Ankush Wankhade"],
-        ["2", "12664", "Ganesh Vishnu Kadukar", "1096", "01/08/2026", "1", "S-ONE", "1039", "Ankush Wankhade"],
+        ["1", "01/08/2026", "S-ONE", "1168", "Ankush Wankhade", "1", "25"],
+        ["2", "02/08/2026", "S-TWO", "1096", "Ankush Wankhade", "2", "30"],
     ]
     import csv, io
     out = io.StringIO()
