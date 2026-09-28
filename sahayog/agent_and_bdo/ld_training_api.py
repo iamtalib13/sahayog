@@ -1831,8 +1831,8 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     if training_location is not None:
         updates["training_location"] = training_location
     if training_type is not None:
-        if training_type not in ("", "Classroom", "Virtual"):
-            frappe.throw(_("Training Type must be Classroom or Virtual."))
+        if not training_type or training_type not in ("Classroom", "Virtual"):
+            frappe.throw(_("Training Type is required and must be Classroom or Virtual."))
         updates["training_type"] = training_type
     if number_of_participants is not None:
         try:
