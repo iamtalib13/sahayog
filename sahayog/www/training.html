@@ -7157,6 +7157,9 @@
             metaRow("Time", timeLabel) +
             metaRow("Trainer", esc(ev.trainer_name || ev.trainer || "—")) +
             metaRow("Participants", ev.participants || 0) +
+            ((ev.number_of_participants || 0)
+              ? metaRow("Expected Participants", ev.number_of_participants)
+              : "") +
             "</div></div>";
           // All branches as compact chips (full geo stays one line per branch in title tooltip)
           if (geos.length > 1) {
@@ -11751,7 +11754,18 @@
                 })() +
                 "</td>" +
                 '<td class="td-meta" style="text-align:center">' +
-                (ev.participants || 0) +
+                (function () {
+                  /* Bulk trainings have no participant rows yet — show the
+                     expected headcount with a ~ prefix in that case. */
+                  var actual = ev.participants || 0;
+                  var expected = ev.number_of_participants || 0;
+                  if (actual) return String(actual);
+                  if (expected)
+                    return '<span title="Expected participants (bulk upload)">~' +
+                      expected +
+                      "</span>";
+                  return "0";
+                })() +
                 "</td>" +
                 '<td><span class="tr-status-pill" style="background:' +
                 pillBg +
