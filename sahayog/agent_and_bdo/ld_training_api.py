@@ -1844,9 +1844,9 @@ def delete_training(name):
 
 @frappe.whitelist()
 def bulk_upload_training():
-    # Combined bulk upload: creates Trainings grouped by (Training Date + Program Name + Trainer ID)
-    # Sheet columns as per user's sheet: S.No, Emp ID, Name, Department, Division, Designation,
-    # Date of Joining, Manager ID, Manager Name, Branch Name, State, Zone, Training Date, Training Days, Program Name, Trainer Name, Trainer ID
+    # Bulk upload v2: one row = one training. Columns: Training Date,
+    # Program Name (or Training Title), Branch Code (SOL ID), Trainer ID
+    # (Employee ID), Training Duration (days), Number of Participants.
     if not _is_admin():
         frappe.throw(_("Only L&D Admin can bulk upload trainings."))
     from frappe.utils.csvutils import read_csv_content
@@ -1873,9 +1873,10 @@ def bulk_upload_training():
         header = [h.strip() for h in rows[0]]
         header_lower = [h.strip().lower() for h in header]
         # Required columns (case-insensitive). Title accepts "Program Name"
-        # or "Training Title"; branch is the SOL ID (Sahayog Branch code).
+        # or "Training Title"; branch is the SOL ID (Sahayog Branch code);
+        # trainer is the Employee ID (deterministic, no name ambiguity).
         # One row = one training; no participant rows are added here.
-        required = ["training date", "branch code", "trainer name"]
+        required = ["training date", "branch code", "trainer id"]
         missing = [r for r in required if r not in header_lower]
         if "program name" not in header_lower and "training title" not in header_lower:
             missing.append("Program Name or Training Title")
@@ -1893,22 +1894,6 @@ def bulk_upload_training():
                     if val:
                         return val
             return ""
-
-        def resolve_trainer(name):
-            """Employee name -> Employee row. Exact match first, then
-            case-insensitive; None when missing or ambiguous."""
-            if not name:
-                return None
-            hit = frappe.db.get_value("Employee", {"employee_name": name}, ["name", "employee_name"], as_dict=True)
-            if hit:
-                return hit
-            hits = frappe.db.sql(
-                "SELECT name, employee_name FROM `tabEmployee` WHERE LOWER(employee_name) = %s",
-                name.lower(), as_dict=True,
-            )
-            if len(hits) == 1:
-                return hits[0]
-            return None
 
         def parse_training_date(raw):
             # Supports DD/MM/YY, DD/MM/YYYY, YYYY-MM-DD
@@ -1933,7 +1918,7 @@ def bulk_upload_training():
             training_date_raw = get_val(row, "Training Date")
             program = get_val(row, "Program Name", "Training Title")
             branch_raw = get_val(row, "Branch Code")
-            trainer_raw = get_val(row, "Trainer Name")
+            trainer_id = get_val(row, "Trainer ID")
             duration_raw = get_val(row, "Training Duration", "Duration", "Duration (Days)", "Training Days")
             count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
 
@@ -1958,13 +1943,13 @@ def bulk_upload_training():
             if not branch_code:
                 errors.append(f"Row {i}: Branch '{branch_raw}' not found")
                 continue
-            if not trainer_raw:
-                errors.append(f"Row {i}: Trainer Name is required")
+            if not trainer_id:
+                errors.append(f"Row {i}: Trainer ID is required")
                 continue
-            trainer = resolve_trainer(trainer_raw)
-            if not trainer:
-                errors.append(f"Row {i}: Trainer '{trainer_raw}' not found or ambiguous (match Employee name exactly)")
+            if not frappe.db.exists("Employee", trainer_id):
+                errors.append(f"Row {i}: Trainer ID '{trainer_id}' not found")
                 continue
+            trainer_name = frappe.db.get_value("Employee", trainer_id, "employee_name") or trainer_id
             if not duration_raw:
                 duration = 1
             else:
@@ -1991,7 +1976,7 @@ def bulk_upload_training():
                 "training_date": training_date,
                 "program": program.strip(),
                 "branch_code": branch_code,
-                "trainer_name": (trainer.get("employee_name") or trainer_raw).strip(),
+                "trainer_name": trainer_name.strip(),
                 "duration": duration,
                 "count": count,
             })
@@ -2058,10 +2043,10 @@ def bulk_upload_training():
 def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer Name", "Training Duration", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Number of Participants"]
     sample = [
-        ["1", "01/08/2026", "S-ONE", "1168", "Ankush Wankhade", "1", "25"],
-        ["2", "02/08/2026", "S-TWO", "1096", "Ankush Wankhade", "2", "30"],
+        ["1", "01/08/2026", "S-ONE", "1168", "1039", "1", "25"],
+        ["2", "02/08/2026", "S-TWO", "1096", "1039", "2", "30"],
     ]
     import csv, io
     out = io.StringIO()
