@@ -22,7 +22,7 @@ TRAINER_ROLES = {"Trainer", "Trainer Head"}
 CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
-    "is_adhoc", "docstatus", "status", "trainer_remarks",
+    "is_adhoc", "docstatus", "status", "trainer_remarks", "number_of_participants",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
 ]
@@ -352,6 +352,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "geographies": geos,
             "branches": branches,
             "participants": participants.get(r.name, 0),
+            "number_of_participants": r.number_of_participants or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": r.status or get_training_status(r),
@@ -454,6 +455,7 @@ def get_training_list(
             "geographies": geos,
             "branches": branches,
             "participants": participants.get(r.name, 0),
+            "number_of_participants": r.number_of_participants or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": st,
