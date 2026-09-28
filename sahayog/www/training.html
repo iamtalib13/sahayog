@@ -8433,6 +8433,10 @@
           ).value.trim();
           var trainingType =
             (document.getElementById("new-training-type") || {}).value || "";
+          if (!trainingType) {
+            showToast("Training Type is required");
+            return;
+          }
           var locEl = document.getElementById("new-location");
           var trainingLocation = locEl
             ? (locEl.value || "").trim()
