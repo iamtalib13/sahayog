@@ -761,41 +761,53 @@ def sync_participants(training_name, participants=None):
     _ensure_can_update(doc)
 
     wanted = frappe.parse_json(participants or "[]") or []
-    seen = set()
+    seen = []
+    seen_set = set()
+    types = set()
     for p in wanted:
         ref_type = (p.get("reference_doctype") or "Employee") if isinstance(p, dict) else "Employee"
         ref_id = (p.get("agent_employee") or p.get("employee") or "") if isinstance(p, dict) else ""
-        if ref_id:
-            seen.add((ref_type, ref_id))
+        if ref_id and (ref_type, ref_id) not in seen_set:
+            seen_set.add((ref_type, ref_id))
+            seen.append((ref_type, ref_id))
+            types.add(ref_type)
 
-    for attempt in (1, 2):
-        try:
-            existing = {(r.reference_doctype, r.agent_employee): r for r in (doc.participants or [])}
-            for ref_type, ref_id in seen:
-                if (ref_type, ref_id) in existing:
-                    continue
-                full_name = frappe.db.get_value(
-                    "Agent" if ref_type == "Agent" else "Employee",
-                    ref_id,
-                    "agent_name" if ref_type == "Agent" else "employee_name",
-                ) or ref_id
-                doc.append("participants", {
-                    "reference_doctype": ref_type,
-                    "agent_employee": ref_id,
-                    "full_name": full_name,
-                })
-            doc.save(ignore_permissions=True)
-            break
-        except frappe.TimestampMismatchError:
-            # Parallel/stale writer bumped `modified` — reload fresh and retry once
-            if attempt == 2:
-                raise
-            frappe.db.rollback()
-            doc.reload()
+    if len(types) > 1:
+        frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
 
-    # Drop rows removed in the dialog (kept rows — incl. attendance — are untouched)
-    for (ref_type, ref_id), row in existing.items():
-        if (ref_type, ref_id) not in seen:
+    existing_rows = frappe.db.get_all(
+        "Training Participant",
+        filters={"parent": training_name, "parenttype": "Training"},
+        fields=["name", "reference_doctype", "agent_employee", "idx"],
+        order_by="idx asc",
+    )
+    existing_map = {((r.reference_doctype or "Employee"), r.agent_employee): r for r in existing_rows}
+
+    # Append newly added participants
+    max_idx = max([r.idx for r in existing_rows] or [0])
+    for ref_type, ref_id in seen:
+        if (ref_type, ref_id) in existing_map:
+            continue
+        max_idx += 1
+        full_name = frappe.db.get_value(
+            "Agent" if ref_type == "Agent" else "Employee",
+            ref_id,
+            "agent_name" if ref_type == "Agent" else "employee_name",
+        ) or ref_id
+        frappe.get_doc({
+            "doctype": "Training Participant",
+            "parent": training_name,
+            "parenttype": "Training",
+            "parentfield": "participants",
+            "idx": max_idx,
+            "reference_doctype": ref_type,
+            "agent_employee": ref_id,
+            "full_name": full_name,
+        }).insert(ignore_permissions=True)
+
+    # Delete participants removed in the UI
+    for (ref_type, ref_id), row in existing_map.items():
+        if (ref_type, ref_id) not in seen_set:
             frappe.db.delete("Training Participant", row.name)
 
     frappe.db.commit()
@@ -1790,10 +1802,16 @@ def _require_can_write():
 def _ensure_can_update(doc):
     if _is_admin():
         return
-    employee_name = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
-    is_owner = doc.owner == frappe.session.user or doc.trainer == employee_name
+    emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"], as_dict=True) or {}
+    emp_id = emp.get("name")
+    emp_name = emp.get("employee_name")
+    is_owner = (
+        doc.owner == frappe.session.user
+        or (emp_id and doc.trainer == emp_id)
+        or (emp_name and doc.trainer == emp_name)
+    )
     if not is_owner:
-        frappe.throw("You don't have permission to update this training's status.")
+        frappe.throw(_("You don't have permission to update this training."))
 
 
 @frappe.whitelist()
