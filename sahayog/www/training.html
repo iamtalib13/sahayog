@@ -5901,17 +5901,17 @@
       </div>
     </div>
 
-    <!-- Bulk Upload Modal — FEATURE DISABLED (commented out, keep for later)
+    <!-- Bulk Upload Modal: one row = one training (no participant rows) -->
     <div class="modal-wrap" id="bulkUploadModal">
       <div class="modal" style="width:min(640px,96vw);max-height:90vh;overflow:auto;">
         <div class="modal-head">
           <h3>Bulk Upload Trainings</h3>
           <button class="modal-close" data-close="bulkUploadModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
         </div>
-        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX with minimal columns: <b>Emp ID, Branch Code, Training Date, Program Name, Trainer ID</b>. Grouped by <b>Training Date + Program + Trainer ID</b> into one Training (multiple Branch Codes → multiple geographies, zone/region auto-fetched).</div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX — one row per training: <b>Training Date, Program Name, Branch Code (SOL ID), Trainer Name, Training Duration (days), Number of Participants</b>. To Date is auto-set from duration; rows with the same Program + Date are skipped as duplicates.</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
-          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Emp ID, Employee Name, Branch Code, Training Date, Training Days, Program Name, Trainer ID, Trainer Name</span>
+          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer Name, Training Duration, Number of Participants</span>
         </div>
         <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
           <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
@@ -5924,7 +5924,6 @@
         </div>
       </div>
     </div>
-    End disabled Bulk Upload Modal -->
 
     <div class="toast" id="toast"></div>
 
@@ -9382,7 +9381,7 @@
         addTrainingBtn.onclick = openAddModal;
         document.querySelector(".header-right").appendChild(addTrainingBtn);
 
-        /* BULK UPLOAD HEADER BUTTON DISABLED (commented out — keep for later)
+        /* Bulk upload header button (L&D Admin only — see setupRoleUI). */
         var bulkBtn = document.createElement("button");
         bulkBtn.className = "btn";
         bulkBtn.id = "btn-bulk-upload";
@@ -9395,7 +9394,6 @@
         bulkBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Bulk Upload';
         bulkBtn.onclick = function(){ document.getElementById("bulkUploadModal").classList.add("open"); document.getElementById("bulkResult").innerHTML=""; document.getElementById("bulkFile").value=""; };
         document.querySelector(".header-right").appendChild(bulkBtn);
-        END DISABLED */
 
         document.getElementById("btn-save-training").onclick = saveTraining;
         var markBtn = document.getElementById("btn-mark-attendance");
@@ -9420,7 +9418,7 @@
             closeAttPop();
         });
 
-        /* BULK UPLOAD LOGIC DISABLED (commented out — keep for later)
+        /* Bulk upload: template download + CSV/XLSX upload. */
         (function(){
           var dlBtn = document.getElementById("btn-download-template");
           if (dlBtn) dlBtn.addEventListener("click", function(){
@@ -9457,7 +9455,6 @@
             }).finally(function(){ upBtn.disabled=false; upBtn.textContent="Upload"; });
           });
         })();
-        END DISABLED BULK UPLOAD LOGIC */
 
         /* ---------- Multi-Geography Branch picker (Add Training modal) — 2 per row ---------- */
         var dialogFn = {
