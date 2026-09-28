@@ -599,6 +599,7 @@ def create_training(**kwargs):
         "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
         "trainer_remarks", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
+        "number_of_participants",
     }
     doc = frappe.new_doc("Training")
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
@@ -606,6 +607,13 @@ def create_training(**kwargs):
     for field in allowed:
         if kwargs.get(field) not in (None, ""):
             doc.set(field, kwargs[field])
+    if doc.get("number_of_participants") not in (None, ""):
+        try:
+            doc.number_of_participants = int(doc.number_of_participants)
+        except (TypeError, ValueError):
+            frappe.throw(_("Number of Participants must be a whole number."))
+        if doc.number_of_participants < 0:
+            frappe.throw(_("Number of Participants cannot be negative."))
     if doc.start_time:
         doc.start_time = _normalize_time(doc.start_time)
     if doc.end_time:
@@ -1787,10 +1795,11 @@ def _ensure_can_update(doc):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None):
     """
     Reschedule a training — L&D Admin only.
     Updates date/time/location directly via db.set_value (no cancel/amend needed).
+    Also accepts number_of_participants (expected headcount).
     """
     if not _is_admin():
         frappe.throw(_("Only L&D Admin can reschedule trainings."))
@@ -1823,6 +1832,13 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
         if training_type not in ("", "Classroom", "Virtual"):
             frappe.throw(_("Training Type must be Classroom or Virtual."))
         updates["training_type"] = training_type
+    if number_of_participants is not None:
+        try:
+            updates["number_of_participants"] = int(number_of_participants)
+        except (TypeError, ValueError):
+            frappe.throw(_("Number of Participants must be a whole number."))
+        if updates["number_of_participants"] < 0:
+            frappe.throw(_("Number of Participants cannot be negative."))
 
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
