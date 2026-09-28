@@ -58,6 +58,7 @@ class Training(Document):
                 frappe.throw(_("End Time cannot be before Start Time."))
         self._validate_geographies()
         self._validate_no_holiday_sunday()
+        self._validate_participant_types()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -148,6 +149,12 @@ class Training(Document):
             if d_str in holiday_map:
                 frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_str))
             curr = frappe.utils.add_days(curr, 1)
+
+    def _validate_participant_types(self):
+        if self.get("participants"):
+            types = {p.reference_doctype or "Employee" for p in self.participants if p.agent_employee}
+            if len(types) > 1:
+                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee
