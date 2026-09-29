@@ -690,6 +690,7 @@
         min-height: 0;
         display: flex;
         padding: 0 20px 12px;
+        overflow-y: auto;
       }
       .cal-content {
         flex: 1;
@@ -733,12 +734,14 @@
         color: #fff;
       }
 
-      /* Pixel-perfect grid: 1px gutters drawn by the shared background */
+      /* Pixel-perfect grid: 1px gutters drawn by the shared background.
+         Rows size to content (min 96px) and the body scrolls — dense months
+         never get cut off at the bottom; sparse months stretch as before. */
       .month-grid {
-        flex: 1;
+        flex: 1 0 auto;
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        grid-auto-rows: 1fr;
+        grid-auto-rows: minmax(96px, auto);
         gap: 1px;
         background: var(--border);
         border-bottom: 1px solid var(--border);
