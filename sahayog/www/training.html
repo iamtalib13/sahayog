@@ -5938,9 +5938,9 @@
           <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer ID, Training Duration, Program Duration in Hours, Number of Participants</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
-          <span style="font-size:12px;font-weight:600;">Uploading for month:</span>
-          <input type="month" id="bulkMonth" class="field-select" title="Trainings in the sheet belong to this month" />
-          <span style="font-size:11px;color:var(--ink-3);">Lock applies to this month, not today — September locked ho to October upload ho sakta hai.</span>
+          <span style="font-size:12px;font-weight:600;white-space:nowrap;">Uploading for:</span>
+          <input type="month" id="bulkMonth" class="field-select" title="Lock applies to this month" style="max-width:150px;" />
+          <span style="font-size:11px;color:var(--ink-3);">Lock applies to the selected month.</span>
         </div>
         <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
           <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
