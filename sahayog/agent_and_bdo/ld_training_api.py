@@ -1376,6 +1376,158 @@ def get_adherence_report(
     return {"columns": ADHERENCE_REPORT_COLUMNS, "rows": out, "total": total}
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Trainer Performance report: one row per trainer (trainer × status matrix)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TRAINER_REPORT_COLUMNS = [
+    {"key": "trainer_id", "label": "Trainer ID"},
+    {"key": "trainer_name", "label": "Trainer Name"},
+    {"key": "branch", "label": "Branch"},
+    {"key": "total", "label": "Trainings"},
+    {"key": "upcoming", "label": "Upcoming"},
+    {"key": "inprogress", "label": "In Progress"},
+    {"key": "completed", "label": "Completed"},
+    {"key": "pending", "label": "Pending"},
+    {"key": "overdue", "label": "Overdue"},
+    {"key": "participants", "label": "Participants"},
+    {"key": "hours", "label": "Training Hours"},
+]
+
+
+@frappe.whitelist()
+def get_trainer_performance_report(
+    month,
+    zone=None,
+    region=None,
+    district=None,
+    branch=None,
+    page=None,
+    page_size=None,
+):
+    """Trainer × status matrix for a month (YYYY-MM).
+
+    One row per trainer with training counts by status, total participants
+    handled and total program hours. Admins see all trainers; trainers see
+    only their own row (same owner-scope policy as other reports).
+    """
+    if not (_is_admin() or _is_trainer()):
+        frappe.throw(_("Only L&D Admin and Trainers can generate this report."))
+    parts = str(month or "").split("-")
+    if len(parts) != 2:
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    try:
+        year, mm = int(parts[0]), int(parts[1])
+    except (TypeError, ValueError):
+        frappe.throw(_("Month is required in YYYY-MM format."))
+    if mm < 1 or mm > 12:
+        frappe.throw(_("Month must be between 01 and 12."))
+    last_day = calendar.monthrange(year, mm)[1]
+    start = f"{year}-{mm:02d}-01"
+    end = f"{year}-{mm:02d}-{last_day}"
+
+    conds = [
+        "t.docstatus < 2",
+        "t.from_date <= %(end)s",
+        "COALESCE(t.to_date, t.from_date) >= %(start)s",
+    ]
+    params = {"start": start, "end": end}
+    for col in ("zone", "region", "district", "branch"):
+        val = {"zone": zone, "region": region, "district": district, "branch": branch}[col]
+        if val:
+            conds.append(_geo_sql(col, val, "val_" + col, params))
+    scope_cond = _owner_scope_sql(params)
+    if scope_cond:
+        conds.append(scope_cond)
+    where = " AND ".join(conds)
+
+    trainings = frappe.db.sql(
+        "SELECT t.name, t.training_program, t.from_date, t.to_date, t.trainer, "
+        "t.program_duration_hours, t.training_delivered, t.attendance_marked, "
+        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status "
+        "FROM `tabTraining` t WHERE {where} "
+        "ORDER BY t.from_date ASC, t.start_time ASC".format(where=where),
+        params,
+        as_dict=True,
+    )
+    if not trainings:
+        return {"columns": TRAINER_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    names = [t.name for t in trainings]
+    placeholders = ", ".join(["%s"] * len(names))
+    pcounts = {}
+    for parent, cnt in frappe.db.sql(
+        f"SELECT parent, COUNT(*) FROM `tabTraining Participant` "
+        f"WHERE parenttype = 'Training' AND parent IN ({placeholders}) "
+        f"GROUP BY parent",
+        names,
+    ):
+        pcounts[parent] = cnt
+
+    today_str = str(frappe.utils.getdate())
+    agg = {}
+    for t in trainings:
+        trainer = (t.trainer or "").strip()
+        if not trainer:
+            continue
+        a = agg.setdefault(trainer, {
+            "total": 0, "upcoming": 0, "inprogress": 0, "completed": 0,
+            "pending": 0, "overdue": 0, "participants": 0, "hours": 0.0,
+        })
+        a["total"] += 1
+        status = t.status or get_training_status(_row_tag(t))
+        end_str = str(t.to_date or t.from_date or "")[:10]
+        if status == "Completed":
+            a["completed"] += 1
+        elif status == "In Progress":
+            a["inprogress"] += 1
+        elif status == "Upcoming":
+            a["upcoming"] += 1
+        else:
+            a["pending"] += 1
+        if end_str and end_str < today_str and status != "Completed":
+            a["overdue"] += 1
+        a["participants"] += pcounts.get(t.name, 0)
+        try:
+            a["hours"] += float(t.program_duration_hours or 0)
+        except (TypeError, ValueError):
+            pass
+
+    trainer_ids = _trainer_ids([_row_tag({"trainer": name}) for name in agg])
+    emp_data = _employee_master({tid for tid in trainer_ids.values() if tid})
+    emp_by_name = {}
+    for emp_id, e in emp_data.items():
+        if getattr(e, "employee_name", ""):
+            emp_by_name[e.employee_name] = e
+
+    out = []
+    for name, a in agg.items():
+        tid = trainer_ids.get(name) or ""
+        e = emp_data.get(tid) if tid else emp_by_name.get(name)
+        branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+        hours = round(a["hours"], 1)
+        out.append({
+            "trainer_id": tid,
+            "trainer_name": name,
+            "branch": branch_code,
+            "total": a["total"],
+            "upcoming": a["upcoming"],
+            "inprogress": a["inprogress"],
+            "completed": a["completed"],
+            "pending": a["pending"],
+            "overdue": a["overdue"],
+            "participants": a["participants"],
+            "hours": int(hours) if float(hours).is_integer() else hours,
+        })
+    out.sort(key=lambda r: (-r["total"], r["trainer_name"]))
+
+    total = len(out)
+    page, page_size, offset = _paginate_args(page, page_size)
+    if page_size:
+        out = out[offset:offset + page_size]
+    return {"columns": TRAINER_REPORT_COLUMNS, "rows": out, "total": total}
+
+
 class _RowTag(dict):
     """Minimal mapping so get_training_status / _trainer_ids accept a row."""
 
