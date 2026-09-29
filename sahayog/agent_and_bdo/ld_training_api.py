@@ -1210,11 +1210,18 @@ ADHERENCE_REPORT_COLUMNS = [
     # {"key": "additional_invitation", "label": "Additional Invitatation"},
     # {"key": "actual_invited", "label": "Actual Invited"},
     {"key": "training_completed", "label": "Training Completed/ Not Completed"},
+    {"key": "training_status", "label": "Training Status"},
+    {"key": "training_delivered", "label": "Training Delivered"},
+    {"key": "attendance_marked", "label": "Attendance Marked"},
+    {"key": "pre_assessment_taken", "label": "Pre-Assessment Taken"},
+    {"key": "post_assessment_taken", "label": "Post-Assessment Taken"},
+    {"key": "feedback_taken", "label": "Feedback Taken"},
     {"key": "participants_attended", "label": "Number of participants  attended the session"},
     {"key": "closure_report_shared", "label": "Clouser Report Shared  ( Yes/No)"},
     {"key": "absentee_count", "label": "Abseentee count"},
     {"key": "absentee_pct", "label": "Abseentee %"},
     {"key": "training_remark", "label": "Training Remark"},
+    {"key": "budget_amount", "label": "Budget Amount"},
     {"key": "training_costing", "label": "Training Costing"},
     # NOTE (no budget-remark field on Training):
     # {"key": "costing_remark", "label": "Costing Remark"},
@@ -1271,7 +1278,7 @@ def get_adherence_report(
         "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
         "t.post_assessment_taken, t.feedback_taken, "
-        "t.trainer_remarks, t.actual_expense, t.closure_sent "
+        "t.trainer_remarks, t.budget_amount, t.actual_expense, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
     if page_size:
@@ -1351,11 +1358,18 @@ def get_adherence_report(
             "additional_invitation": "",
             "actual_invited": "",
             "training_completed": "Completed" if status == "Completed" else "Not Completed",
+            "training_status": status,
+            "training_delivered": "Yes" if t.training_delivered else "No",
+            "attendance_marked": "Yes" if t.attendance_marked else "No",
+            "pre_assessment_taken": "Yes" if t.pre_assessment_taken else "No",
+            "post_assessment_taken": "Yes" if t.post_assessment_taken else "No",
+            "feedback_taken": "Yes" if t.feedback_taken else "No",
             "participants_attended": present,
             "closure_report_shared": "Yes" if t.closure_sent else "No",
             "absentee_count": absent,
             "absentee_pct": round(absent * 100 / invited, 1) if invited else "",
             "training_remark": t.trainer_remarks or "",
+            "budget_amount": t.budget_amount or "",
             "training_costing": t.actual_expense or "",
             "costing_remark": "",
         })
