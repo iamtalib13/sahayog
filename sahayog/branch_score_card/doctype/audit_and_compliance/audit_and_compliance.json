@@ -100,7 +100,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-25 16:39:20.053951",
+ "modified": "2026-09-28 13:39:59.849012",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Audit and Compliance",
@@ -115,6 +115,7 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "select": 1,
    "share": 1,
    "write": 1
   },

@@ -260,6 +260,80 @@ def _get_branch_zone_map():
     return branch_zone_map
 
 
+@frappe.whitelist()
+def get_visible_branch_records():
+    return _get_branch_records()
+
+@frappe.whitelist()
+def get_branch_scorecard_access():
+    roles = frappe.get_roles()
+
+    # Branch Scorecard Editor has existing unrestricted access
+    if "Branch Scorecard Editor" in roles:
+        return {
+            "is_editor": True,
+            "has_access": True,
+            "access_type": None,
+            "has_zone_access": False,
+            "has_region_access": False,
+            "has_sol_access": False,
+        }
+
+    preference_name = frappe.db.get_value(
+        "Report Preference",
+        {
+            "user": frappe.session.user,
+            "enabled": 1,
+        },
+        "name",
+    )
+
+    if not preference_name:
+        return {
+            "is_editor": False,
+            "has_access": False,
+            "access_type": None,
+            "has_zone_access": False,
+            "has_region_access": False,
+            "has_sol_access": False,
+        }
+
+    report_preference = frappe.get_doc(
+        "Report Preference",
+        preference_name,
+    )
+
+    has_sol_access = any(
+        row.sol_id
+        for row in report_preference.sol_id
+    )
+
+    has_zone_access = any(
+        row.zone
+        for row in report_preference.zone
+    )
+
+    has_region_access = any(
+        row.region
+        for row in report_preference.region
+    )
+
+    has_access = (
+        has_sol_access
+        or has_zone_access
+        or has_region_access
+    )
+
+    return {
+        "is_editor": False,
+        "has_access": has_access,
+        "access_type": report_preference.access_type,
+        "has_zone_access": has_zone_access,
+        "has_region_access": has_region_access,
+        "has_sol_access": has_sol_access,
+    }
+
+
 def _get_branch_records():
     """
     Loads valid non-zonal branches once.
@@ -276,10 +350,74 @@ def _get_branch_records():
             "branch",
             "branch_type",
             "zone",
+            "region",
+            "district",
+            "state",
+            "regional_operations_manager",
+            "regional__zonal_head",
+            "ch_dh_adh",
             "cluster_operations_manager",
         ],
         limit_page_length=0,
     )
+
+    # Apply Report Preference branch restriction
+    preference_name = frappe.db.get_value(
+        "Report Preference",
+        {"user": frappe.session.user, "enabled": 1},
+        "name",
+    )
+
+    # Branch Scorecard Editor has unrestricted access
+    if "Branch Scorecard Editor" in frappe.get_roles():
+        report_preference = None
+    else:
+        if not preference_name:
+            return []
+
+        report_preference = frappe.get_doc(
+            "Report Preference",
+            preference_name,
+        )
+
+    access_type = report_preference.access_type if report_preference else None
+
+    allowed_sol_ids = set()
+    allowed_zones = set()
+    allowed_regions = set()
+    allowed_districts = set()
+    allowed_states = set()
+
+    if report_preference:
+        allowed_sol_ids = {
+            str(row.sol_id).strip()
+            for row in report_preference.sol_id
+            if row.sol_id
+        }
+
+        allowed_zones = {
+            _normalize_zone(row.zone)
+            for row in report_preference.zone
+            if row.zone
+        }
+
+        allowed_regions = {
+            str(row.region).strip()
+            for row in report_preference.region
+            if row.region
+        }
+
+        allowed_districts = {
+            str(row.district).strip()
+            for row in report_preference.district
+            if row.district
+        }
+
+        allowed_states = {
+            str(row.state).strip()
+            for row in report_preference.state
+            if row.state
+        }
 
     branches = []
 
@@ -302,12 +440,49 @@ def _get_branch_records():
         if not sol_id.isdigit():
             continue
 
+        if access_type == "Specific Branches (SOL ID)":
+            if not allowed_sol_ids or sol_id not in allowed_sol_ids:
+                continue
+
         zone = _normalize_zone(
             record.get("zone")
         )
 
         if not zone:
             continue
+
+        region = str(
+            record.get("region") or ""
+        ).strip()
+
+        district = str(
+            record.get("district") or ""
+        ).strip()
+
+        state = str(
+            record.get("state") or ""
+        ).strip()
+
+        if access_type == "Geographical (Zone / Region / District)":
+            if not (
+                allowed_zones
+                or allowed_regions
+                or allowed_states
+                or allowed_districts
+            ):
+                continue
+
+            if allowed_zones and zone not in allowed_zones:
+                continue
+
+            if allowed_regions and region not in allowed_regions:
+                continue
+
+            if allowed_districts and district not in allowed_districts:
+                continue
+
+            if allowed_states and state not in allowed_states:
+                continue
 
         com = str(
             record.get("cluster_operations_manager")
@@ -327,6 +502,22 @@ def _get_branch_records():
                     record.get("branch") or ""
                 ).strip(),
                 "zone": zone,
+                "region": str(
+                    record.get("region") or ""
+                ).strip(),
+                "district": str(
+                    record.get("district") or ""
+                ).strip(),
+                "state": state,
+                "regional_operations_manager": str(
+                    record.get("regional_operations_manager") or ""
+                ).strip(),
+                "regional__zonal_head": str(
+                    record.get("regional__zonal_head") or ""
+                ).strip(),
+                "ch_dh_adh": str(
+                    record.get("ch_dh_adh") or ""
+                ).strip(),
                 "com": com,
             }
         )

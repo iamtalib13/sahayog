@@ -3,6 +3,12 @@
 
 frappe.ui.form.on("Branch Score Card Deductions", {
     refresh(frm) {
+
+        // Always show KYC Deviation table, even when it has no rows
+        if (frm.fields_dict.kyc_deviation) {
+            frm.fields_dict.kyc_deviation.$wrapper.removeClass("hide-control");
+        }
+
         // Inject Custom CSS Styles matching your application's design system (#0d5c75 theme)
         frappe.dom.set_style(`
             .form-grid {

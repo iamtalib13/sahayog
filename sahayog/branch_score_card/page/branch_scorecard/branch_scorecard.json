@@ -3,14 +3,24 @@
  "creation": "2026-09-17 16:31:39.692683",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 0,
- "modified": "2026-09-17 16:32:42.710987",
+ "idx": 1,
+ "modified": "2026-09-29 15:16:35.988321",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "branch-scorecard",
  "owner": "Administrator",
  "page_name": "branch-scorecard",
- "roles": [],
+ "roles": [
+  {
+   "role": "Branch Scorecard Editor"
+  },
+  {
+   "role": "HR Support Executive"
+  },
+  {
+   "role": "All"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

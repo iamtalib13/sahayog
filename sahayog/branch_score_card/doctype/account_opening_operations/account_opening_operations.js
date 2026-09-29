@@ -1,10 +1,6 @@
 frappe.ui.form.on('Account Opening Operations', {
     refresh(frm) {
 
-        // Save button ko completely hide/disable karne ke liye
-        frm.disable_save();
-        frm.set_read_only();
-
         setTimeout(() => {
             let sol_field = frm.get_field('sol_id');
             if (sol_field && sol_field.$wrapper) {
@@ -205,40 +201,51 @@ frappe.ui.form.on('Account Opening Operations', {
         // Setup Tables
         ['table_dllf', 'table_zero_ip_funding'].forEach(fieldname => {
             let field = frm.get_field(fieldname);
+
             if (field) {
                 field.df.hidden = 0;
-                
+
                 if (field.section && field.section.wrapper) {
                     field.section.wrapper.show().removeClass('hidden hidden-section');
                 }
-                
+
                 if (field.$wrapper) {
                     field.$wrapper.show().removeClass('hidden');
                 }
 
                 if (field.grid) {
-                    field.grid.cannot_add_rows = true;
-                    field.grid.only_sortable();
+
+                    // Allow adding new rows
+                    field.grid.cannot_add_rows = false;
+
+                    // Allow editing existing rows
+                    field.grid.only_sortable = false;
+
+                    // Refresh grid
                     field.grid.refresh();
-                    
+
                     if (field.grid.wrapper) {
                         field.grid.wrapper.show();
-                        field.grid.wrapper.find('.grid-add-row, .grid-remove-rows, .grid-append-row, .grid-edit-row, .edit-grid-row').hide();
 
+                        // Show Add / Remove / Edit controls
+                        field.grid.wrapper.find(
+                            '.grid-add-row, .grid-remove-rows, .grid-append-row, .grid-edit-row, .edit-grid-row'
+                        ).show();
+
+                        // Do NOT block row click / edit
+                        field.grid.wrapper.off(
+                            'click dblclick',
+                            '.grid-row'
+                        );
+
+                        // Empty message handling
                         let row_count = (frm.doc[fieldname] || []).length;
+
                         if (row_count > 0) {
                             field.grid.wrapper.find('.grid-empty, .no-data').hide();
                         } else {
                             field.grid.wrapper.find('.grid-empty, .no-data').show();
                         }
-
-                        field.grid.wrapper.off('click dblclick', '.grid-row');
-                        field.grid.wrapper.on('click dblclick', '.grid-row', function(e) {
-                            if ($(e.target).is('select, option, input, textarea')) return;
-                            e.stopPropagation();
-                            e.preventDefault();
-                            return false;
-                        });
                     }
                 }
             }
