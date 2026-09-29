@@ -6732,6 +6732,19 @@
             e.stopPropagation();
             openTrainingDialog(ev);
           });
+          /* Hover tooltip carries the extras that don't fit on the chip. */
+          chip.title =
+            (ev.training_program || ev.topic || "Training") +
+            " · " +
+            (evStart(ev) === evEnd(ev)
+              ? fmtDateShort(evStart(ev))
+              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))) +
+            ((ev.program_duration_hours || 0)
+              ? " · " + ev.program_duration_hours + " hrs"
+              : "") +
+            ((ev.number_of_participants || 0) && !(ev.participants || 0)
+              ? " · ~" + ev.number_of_participants + " expected"
+              : "");
           return chip;
         }
 
@@ -6923,6 +6936,9 @@
                   (ev.training_location
                     ? " • " + esc(ev.training_location)
                     : "") +
+                  (ev.program_duration_hours
+                    ? " • " + ev.program_duration_hours + " hrs"
+                    : "") +
                   "</span></span>";
                 item.addEventListener("click", function (e) {
                   e.stopPropagation();
@@ -7011,6 +7027,9 @@
                   var e = calExp(ev);
                   return e ? " &middot; " + e + " expected" : "";
                 })() +
+                (ev.program_duration_hours
+                  ? " &middot; " + ev.program_duration_hours + " hrs"
+                  : "") +
                 "</div></div>";
               item.addEventListener("click", function (e) {
                 e.stopPropagation();
