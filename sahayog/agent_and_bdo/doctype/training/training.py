@@ -16,17 +16,14 @@ COMPLETION_FIELDS = [
 
 def get_training_status(doc, for_date=None):
     """
-    Derive the calendar status of a Training.
+    Derive the calendar status of a Training (plain, non-submittable form).
 
-    Draft          -> not yet submitted (docstatus 0)
-    Completed      -> submitted and all 5 completion checks ticked
-    In Progress    -> submitted and 1-4 completion checks ticked
-    Upcoming       -> submitted, 0 checks, on/after today
-    Pending        -> submitted, 0 checks, before today
+    Draft          -> no schedule yet (dates missing)
+    Completed      -> all 5 completion checks ticked
+    In Progress    -> 1-4 completion checks ticked
+    Upcoming       -> 0 checks, on/after today
+    Pending        -> 0 checks, before today
     """
-    if doc.docstatus == 0:
-        return "Draft"
-
     score = sum(1 for f in COMPLETION_FIELDS if doc.get(f))
     if score == len(COMPLETION_FIELDS):
         return "Completed"
@@ -34,8 +31,10 @@ def get_training_status(doc, for_date=None):
         return "In Progress"
 
     ref = for_date or frappe.utils.getdate()
-    end = doc.to_date or doc.from_date
-    training_date = frappe.utils.getdate(end) if end else None
+    end = doc.get("to_date") or doc.get("from_date")
+    if not end:
+        return "Draft"
+    training_date = frappe.utils.getdate(end)
     if training_date and training_date >= ref:
         return "Upcoming"
     return "Pending"
@@ -59,6 +58,7 @@ class Training(Document):
                 frappe.throw(_("End Time cannot be before Start Time."))
         self._validate_geographies()
         self._validate_no_holiday_sunday()
+        self._validate_participant_types()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -137,7 +137,9 @@ class Training(Document):
                 for r in rows:
                     d = frappe.utils.getdate(r.holiday_date)
                     if from_d <= d <= to_d:
-                        holiday_map[str(d)] = r.description or "Holiday"
+                        # Descriptions may contain rich-text HTML — keep validation messages readable
+                        desc = frappe.utils.strip_html_tags(r.description or "") if r.description else ""
+                        holiday_map[str(d)] = " ".join(desc.split()) or "Holiday"
         # Check each date in range
         curr = from_d
         while curr <= to_d:
@@ -148,10 +150,11 @@ class Training(Document):
                 frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_str))
             curr = frappe.utils.add_days(curr, 1)
 
-    def on_submit(self):
-        status = get_training_status(self)
-        if status != self.status:
-            frappe.db.set_value("Training", self.name, "status", status)
+    def _validate_participant_types(self):
+        if self.get("participants"):
+            types = {p.reference_doctype or "Employee" for p in self.participants if p.agent_employee}
+            if len(types) > 1:
+                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee

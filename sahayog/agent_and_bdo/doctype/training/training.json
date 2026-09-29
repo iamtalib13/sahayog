@@ -12,9 +12,10 @@
   "from_date",
   "to_date",
   "column_break_details",
-  "start_time",
-  "end_time",
-  "training_location",
+   "start_time",
+   "end_time",
+   "program_duration_hours",
+   "training_location",
   "training_type",
   "trainer",
   "section_break_geo",
@@ -24,9 +25,10 @@
   "branch",
   "column_break_geo",
   "geographies",
-  "section_break_participants",
-  "participants",
-  "section_break_status",
+   "section_break_participants",
+   "participants",
+   "number_of_participants",
+   "section_break_status",
   "column_break_status",
   "status",
   "trainer_remarks",
@@ -92,11 +94,17 @@
    "fieldtype": "Time",
    "label": "Start Time"
   },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Time",
-   "label": "End Time"
-  },
+   {
+    "fieldname": "end_time",
+    "fieldtype": "Time",
+    "label": "End Time"
+   },
+   {
+    "description": "How many hours the program runs (numbers only, e.g. 2.5)",
+    "fieldname": "program_duration_hours",
+    "fieldtype": "Float",
+    "label": "Program Duration (Hours)"
+   },
   {
    "description": "Who conducts this training",
    "fieldname": "trainer",
@@ -162,12 +170,19 @@
    "fieldtype": "Section Break",
    "label": "Participants"
   },
-  {
-   "fieldname": "participants",
-   "fieldtype": "Table",
-   "label": "Participants",
-   "options": "Training Participant"
-  },
+   {
+    "fieldname": "participants",
+    "fieldtype": "Table",
+    "label": "Participants",
+    "options": "Training Participant"
+   },
+   {
+    "default": "0",
+    "description": "Expected headcount (set by bulk upload; participant rows are added separately)",
+    "fieldname": "number_of_participants",
+    "fieldtype": "Int",
+    "label": "Number of Participants"
+   },
   {
    "fieldname": "section_break_status",
    "fieldtype": "Section Break",
@@ -280,7 +295,7 @@
   }
  ],
  "grid_page_length": 50,
- "is_submittable": 1,
+ "is_submittable": 0,
  "links": [],
  "modified": "2026-09-22 11:46:08.251763",
  "modified_by": "Administrator",
