@@ -5918,6 +5918,7 @@
           <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">CSV or XLSX — max 2000 rows</div>
         </div>
         <div id="bulkResult" style="font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:none;"></div>
+        <div id="bulkLockNote" style="display:none;font-size:12px;color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:7px 10px;margin-top:8px;"></div>
         <div class="form-actions" style="margin-top:12px;">
           <button class="btn" data-close="bulkUploadModal">Cancel</button>
           <button class="btn btn-primary" id="btn-do-bulk-upload" type="button">Upload</button>
@@ -9533,6 +9534,66 @@
 
         /* Bulk upload: template download + CSV/XLSX upload. */
         (function(){
+          /* ---- Monthly lock (browser-local): asked only after a fully-clean
+             upload (created > 0, zero errors). Partial uploads never lock,
+             so the sheet can always be fixed and re-uploaded. ---- */
+          function bulkMonthKey(d) {
+            d = d || new Date();
+            return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          }
+          function bulkMonthLabel() {
+            var d = new Date();
+            return MONTHS[d.getMonth()] + " " + d.getFullYear();
+          }
+          function bulkLockKey() {
+            return "ld_bulk_lock_" + bulkMonthKey();
+          }
+          function isBulkLocked() {
+            try {
+              return !!localStorage.getItem(bulkLockKey());
+            } catch (e) {
+              return false;
+            }
+          }
+          function paintBulkLock() {
+            var upBtn = document.getElementById("btn-do-bulk-upload");
+            var note = document.getElementById("bulkLockNote");
+            if (!upBtn || !note) return;
+            if (isBulkLocked()) {
+              upBtn.disabled = true;
+              upBtn.textContent = "Locked for " + bulkMonthLabel();
+              note.style.display = "block";
+              note.innerHTML =
+                "Bulk upload for <b>" + esc(bulkMonthLabel()) + "</b> is locked after a successful import. " +
+                '<a href="#" id="bulkUnlock" style="color:var(--accent-ink);font-weight:600;">Unlock</a>';
+              var un = document.getElementById("bulkUnlock");
+              if (un)
+                un.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  if (!confirm("Unlock bulk upload for " + bulkMonthLabel() + "?")) return;
+                  try {
+                    localStorage.removeItem(bulkLockKey());
+                  } catch (err) {}
+                  paintBulkLock();
+                  showToast("Bulk upload unlocked for " + bulkMonthLabel());
+                });
+            } else {
+              if (upBtn.textContent !== "Uploading...") {
+                upBtn.disabled = false;
+                upBtn.textContent = "Upload";
+              }
+              note.style.display = "none";
+              note.innerHTML = "";
+            }
+          }
+          /* Refresh lock state every time the modal opens. */
+          if (typeof bulkBtn !== "undefined" && bulkBtn) {
+            var prevOpen = bulkBtn.onclick;
+            bulkBtn.onclick = function () {
+              if (prevOpen) prevOpen();
+              paintBulkLock();
+            };
+          }
           var dlBtn = document.getElementById("btn-download-template");
           if (dlBtn) dlBtn.addEventListener("click", function(){
             api("get_bulk_upload_template", {}).then(function(csv){
@@ -9592,6 +9653,16 @@
               el.style.color = "";
               if (res.success && res.created>0) { loadData(true); loadTrainingsList(); showToast("Bulk upload: " + res.created + " trainings created"); }
               else if (!res.success) showToast(res.message||"Upload failed");
+              /* Fully-clean upload only: ask once whether to lock this month. */
+              if (res.success && (res.created || 0) > 0 && !(res.errors && res.errors.length)) {
+                if (confirm("Bulk upload successful — " + res.created + " trainings created with no errors.\n\nLock bulk upload for " + bulkMonthLabel() + "? (You can unlock later if needed.)")) {
+                  try {
+                    localStorage.setItem(bulkLockKey(), "1");
+                  } catch (e) {}
+                  paintBulkLock();
+                  showToast("Bulk upload locked for " + bulkMonthLabel());
+                }
+              }
             }).catch(function(e){
               var el=document.getElementById("bulkResult"); el.style.display="block"; el.style.whiteSpace="normal";
               el.innerHTML = '<div style="background:#fef2f2;color:#b91c1c;font-weight:700;font-size:13px;border-radius:6px;padding:7px 10px;">Upload failed</div>' +
