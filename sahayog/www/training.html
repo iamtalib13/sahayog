@@ -5937,6 +5937,11 @@
           <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
           <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer ID, Training Duration, Program Duration in Hours, Number of Participants</span>
         </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:600;">Uploading for month:</span>
+          <input type="month" id="bulkMonth" class="field-select" title="Trainings in the sheet belong to this month" />
+          <span style="font-size:11px;color:var(--ink-3);">Lock applies to this month, not today — September locked ho to October upload ho sakta hai.</span>
+        </div>
         <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
           <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
           <div style="font-size:11px;color:var(--ink-3);margin-top:6px;">CSV or XLSX — max 2000 rows</div>
@@ -9560,46 +9565,55 @@
         (function(){
           /* ---- Monthly lock (browser-local): asked only after a fully-clean
              upload (created > 0, zero errors). Partial uploads never lock,
-             so the sheet can always be fixed and re-uploaded. ---- */
-          function bulkMonthKey(d) {
-            d = d || new Date();
+             so the sheet can always be fixed and re-uploaded.
+             Lock key = the SELECTED sheet month (not today), so a locked
+             September never blocks an October upload. ---- */
+          function wallBulkMonth() {
+            var d = new Date();
             return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
           }
-          function bulkMonthLabel() {
-            var d = new Date();
-            return MONTHS[d.getMonth()] + " " + d.getFullYear();
+          function selectedBulkMonth() {
+            var el = document.getElementById("bulkMonth");
+            var v = (el && el.value) || "";
+            return /^\d{4}-\d{2}$/.test(v) ? v : wallBulkMonth();
           }
-          function bulkLockKey() {
-            return "ld_bulk_lock_" + bulkMonthKey();
+          function bulkMonthLabel(ym) {
+            ym = ym || selectedBulkMonth();
+            var p = ym.split("-");
+            return MONTHS[parseInt(p[1], 10) - 1] + " " + p[0];
           }
-          function isBulkLocked() {
+          function bulkLockKey(ym) {
+            return "ld_bulk_lock_" + (ym || selectedBulkMonth());
+          }
+          function isBulkLocked(ym) {
             try {
-              return !!localStorage.getItem(bulkLockKey());
+              return !!localStorage.getItem(bulkLockKey(ym));
             } catch (e) {
               return false;
             }
           }
           function paintBulkLock() {
+            var ym = selectedBulkMonth();
             var upBtn = document.getElementById("btn-do-bulk-upload");
             var note = document.getElementById("bulkLockNote");
             if (!upBtn || !note) return;
-            if (isBulkLocked()) {
+            if (isBulkLocked(ym)) {
               upBtn.disabled = true;
-              upBtn.textContent = "Locked for " + bulkMonthLabel();
+              upBtn.textContent = "Locked for " + bulkMonthLabel(ym);
               note.style.display = "block";
               note.innerHTML =
-                "Bulk upload for <b>" + esc(bulkMonthLabel()) + "</b> is locked after a successful import. " +
+                "Bulk upload for <b>" + esc(bulkMonthLabel(ym)) + "</b> is locked after a successful import. " +
                 '<a href="#" id="bulkUnlock" style="color:var(--accent-ink);font-weight:600;">Unlock</a>';
               var un = document.getElementById("bulkUnlock");
               if (un)
                 un.addEventListener("click", function (e) {
                   e.preventDefault();
-                  if (!confirm("Unlock bulk upload for " + bulkMonthLabel() + "?")) return;
+                  if (!confirm("Unlock bulk upload for " + bulkMonthLabel(ym) + "?")) return;
                   try {
-                    localStorage.removeItem(bulkLockKey());
+                    localStorage.removeItem(bulkLockKey(ym));
                   } catch (err) {}
                   paintBulkLock();
-                  showToast("Bulk upload unlocked for " + bulkMonthLabel());
+                  showToast("Bulk upload unlocked for " + bulkMonthLabel(ym));
                 });
             } else {
               if (upBtn.textContent !== "Uploading...") {
@@ -9610,14 +9624,19 @@
               note.innerHTML = "";
             }
           }
-          /* Refresh lock state every time the modal opens. */
+          /* Refresh lock state every time the modal opens + on month change. */
           if (typeof bulkBtn !== "undefined" && bulkBtn) {
             var prevOpen = bulkBtn.onclick;
             bulkBtn.onclick = function () {
               if (prevOpen) prevOpen();
+              var mEl = document.getElementById("bulkMonth");
+              if (mEl && !mEl.value) mEl.value = wallBulkMonth();
               paintBulkLock();
             };
           }
+          var bulkMonthEl = document.getElementById("bulkMonth");
+          if (bulkMonthEl)
+            bulkMonthEl.addEventListener("change", paintBulkLock);
           var dlBtn = document.getElementById("btn-download-template");
           if (dlBtn) dlBtn.addEventListener("click", function(){
             api("get_bulk_upload_template", {}).then(function(csv){
@@ -9677,14 +9696,15 @@
               el.style.color = "";
               if (res.success && res.created>0) { loadData(true); loadTrainingsList(); showToast("Bulk upload: " + res.created + " trainings created"); }
               else if (!res.success) showToast(res.message||"Upload failed");
-              /* Fully-clean upload only: ask once whether to lock this month. */
+              /* Fully-clean upload only: ask once whether to lock the sheet's month. */
               if (res.success && (res.created || 0) > 0 && !(res.errors && res.errors.length)) {
-                if (confirm("Bulk upload successful — " + res.created + " trainings created with no errors.\n\nLock bulk upload for " + bulkMonthLabel() + "? (You can unlock later if needed.)")) {
+                var lockYm = selectedBulkMonth();
+                if (confirm("Bulk upload successful — " + res.created + " trainings created with no errors.\n\nLock bulk upload for " + bulkMonthLabel(lockYm) + "? (You can unlock later if needed.)")) {
                   try {
-                    localStorage.setItem(bulkLockKey(), "1");
+                    localStorage.setItem(bulkLockKey(lockYm), "1");
                   } catch (e) {}
                   paintBulkLock();
-                  showToast("Bulk upload locked for " + bulkMonthLabel());
+                  showToast("Bulk upload locked for " + bulkMonthLabel(lockYm));
                 }
               }
             }).catch(function(e){
