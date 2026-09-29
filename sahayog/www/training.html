@@ -878,6 +878,27 @@
         text-overflow: ellipsis;
         max-width: 100%;
       }
+      /* Compact single-line chips inside the month grid so dense months fit
+         without scrolling (time sits inline; full text stays in tooltip). */
+      .month-grid .event-chip {
+        flex-direction: row;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 5px;
+      }
+      .month-grid .event-chip-top {
+        flex: 1 1 auto;
+        width: auto;
+      }
+      .month-grid .event-chip-time {
+        padding-left: 0;
+        flex-shrink: 0;
+        max-width: 45%;
+      }
+      .month-grid .day-cell {
+        padding: 6px;
+        gap: 4px;
+      }
       .event-more {
         font-size: 11px;
         color: var(--accent-ink);
