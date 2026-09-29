@@ -924,6 +924,7 @@ MIS_REPORT_COLUMNS = [
     # {"key": "day_5", "label": "Day-5"},
     # {"key": "day_6", "label": "Day -6"},
     {"key": "total_present", "label": "Total Present"},
+    {"key": "attendance_pct", "label": "Attendance  %"},
     # NOTE (needs scores/certification tracking):
     # {"key": "attendance_pct", "label": "Attendance  %"},
     # {"key": "pre_test_score", "label": "Pre Test score"},
@@ -1092,7 +1093,8 @@ def get_mis_report(
         page_params = dict(params, page_size=page_size, offset=offset)
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, t.is_adhoc, t.start_time, t.end_time, t.trainer_remarks, "
+            "t.trainer, t.is_adhoc, t.training_type, t.start_time, t.end_time, t.trainer_remarks, "
+            "t.program_duration_hours, "
             "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
@@ -1103,7 +1105,8 @@ def get_mis_report(
     else:
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
-            "t.trainer, t.is_adhoc, t.start_time, t.end_time, t.trainer_remarks, "
+            "t.trainer, t.is_adhoc, t.training_type, t.start_time, t.end_time, t.trainer_remarks, "
+            "t.program_duration_hours, "
             "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
@@ -1113,6 +1116,26 @@ def get_mis_report(
 
     if not rows:
         return {"columns": MIS_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    # Per-training attendance buckets (for Attendance %); strict buckets —
+    # only explicit Present counts, blank historic rows stay unmarked.
+    _att = {}
+    _pnames = list({r.training_name for r in rows if r.training_name})
+    if _pnames:
+        _ph = ", ".join(["%s"] * len(_pnames))
+        for _parent, _status, _cnt in frappe.db.sql(
+            f"SELECT parent, attendance_status, COUNT(*) FROM `tabTraining Participant` "
+            f"WHERE parenttype = 'Training' AND parent IN ({_ph}) "
+            f"GROUP BY parent, attendance_status",
+            _pnames,
+        ):
+            _att.setdefault(_parent, {"Present": 0, "Absent": 0, "Unmarked": 0})
+            if _status == "Present":
+                _att[_parent]["Present"] = _cnt
+            elif _status == "Absent":
+                _att[_parent]["Absent"] = _cnt
+            else:
+                _att[_parent]["Unmarked"] = _att[_parent].get("Unmarked", 0) + _cnt
 
     # Only Employee-type participants can be enriched from Employee master
     emp_ids = {r.agent_employee for r in rows if r.agent_employee and r.reference_doctype == "Employee"}
@@ -1142,6 +1165,18 @@ def get_mis_report(
         except Exception:
             no_of_days = 1
         display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
+        # Attendance % is per-training (present ÷ invited), repeated on each row.
+        _b = _att.get(r.training_name, {"Present": 0, "Absent": 0, "Unmarked": 0})
+        _inv = _b.get("Present", 0) + _b.get("Absent", 0) + _b.get("Unmarked", 0)
+        _pct = round(_b.get("Present", 0) * 100 / _inv, 1) if _inv else ""
+        # Duration: computed from times, else the stored program hours.
+        _dur = _training_hours(r.start_time, r.end_time, no_of_days)
+        if _dur == "":
+            try:
+                _hrs = float(r.program_duration_hours or 0)
+                _dur = int(_hrs) if _hrs and float(_hrs).is_integer() else (_hrs or "")
+            except (TypeError, ValueError):
+                _dur = ""
         out.append({
             "s_no": seq,
             "emp_id": (r.agent_employee or "") if is_emp else "",
@@ -1163,9 +1198,9 @@ def get_mis_report(
             "training_end_date": to_str,
             "program_name": r.training_program or "",
             "program_sub_type": "",
-            "training_type": "Ad-hoc" if r.is_adhoc else "Planned",
+            "training_type": r.training_type or "",
             "no_of_days": no_of_days,
-            "duration_hours": _training_hours(r.start_time, r.end_time, no_of_days),
+            "duration_hours": _dur,
             "day_1": "",
             "day_2": "",
             "day_3": "",
@@ -1173,7 +1208,7 @@ def get_mis_report(
             "day_5": "",
             "day_6": "",
             "total_present": "" if not r.agent_employee else (1 if r.attendance_status == "Present" else 0),
-            "attendance_pct": "",
+            "attendance_pct": _pct,
             "pre_test_score": "",
             "post_test_score": "",
             "total_score": "",
