@@ -1277,7 +1277,7 @@ def get_adherence_report(
         "SELECT t.name, t.training_program, t.training_type, t.from_date, t.to_date, "
         "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
-        "t.post_assessment_taken, t.feedback_taken, "
+        "t.post_assessment_taken, t.feedback_taken, t.number_of_participants, "
         "t.trainer_remarks, t.budget_amount, t.actual_expense, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
@@ -1340,6 +1340,14 @@ def get_adherence_report(
         present = c.get("Present", 0)
         absent = c.get("Absent", 0)
         invited = present + absent + c.get("Unmarked", 0)
+        # Bulk trainings have no participant rows yet — fall back to the
+        # expected headcount so "invited" is never understated.
+        try:
+            expected = int(t.number_of_participants or 0)
+        except (TypeError, ValueError):
+            expected = 0
+        if expected > invited:
+            invited = expected
         status = t.status or get_training_status(_row_tag(t))
         geos = geo_map.get(t.name, [])
         codes = [g["branch"] for g in geos if g["branch"]] or ([t.branch] if t.branch else [])
