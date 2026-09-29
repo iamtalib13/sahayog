@@ -6185,6 +6185,15 @@
             return ev[f.key];
           }).length;
         }
+        /* Assigned trainer (owner or trainer match) with 5/5 checks gets
+           extended edit rights: training type, time and budget. */
+        function isOwnCompletedTraining(ev) {
+          if (!ev || completionScore(ev) !== 5) return false;
+          return (
+            ev.trainer === state.currentEmployee ||
+            ev.trainer === state.currentEmployeeName
+          );
+        }
         function evStart(ev) {
           return ev.from_date || ev.date || "";
         }
@@ -7311,9 +7320,9 @@
           }
 
           if (r.showBudget) {
-            /* Budget inputs are L&D Admin-only; everyone else sees values
-               read-only (writes stay admin-only server-side too). */
-            if (editable && state.role === "ld_admin") {
+            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks;
+               everyone else sees values read-only. */
+            if (editable && (state.role === "ld_admin" || isOwnCompletedTraining(ev))) {
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
@@ -7961,7 +7970,7 @@
             );
           }
 
-          if (state.role === "ld_admin") {
+          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
             var b = document.getElementById("drw-budget-amount");
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
@@ -8074,6 +8083,8 @@
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-time").value = "";
           document.getElementById("new-end-time").value = "";
+          var expCreateEl = document.getElementById("new-expected-count");
+          if (expCreateEl) expCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
             function (id) {
               var el = document.getElementById(id);
@@ -8236,9 +8247,13 @@
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
-          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap)
+          f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
+          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap).
+          // Own trainings at 5/5 checks unlock type + time (dates/count stay Admin).
           var canResched = state.role === "ld_admin";
-          ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
+          var ownDone = isOwnCompletedTraining(ev);
+          var canEditTime = canResched || ownDone;
+          ["new-from-date", "new-to-date", "new-expected-count"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -8246,16 +8261,28 @@
                 el.style.background = canResched ? "" : "var(--surface-2)";
                 el.title = canResched
                   ? ""
-                  : "Only L&D Admin can change the schedule";
+                  : "Only L&D Admin can change this";
+              }
+            },
+          );
+          ["new-time", "new-end-time"].forEach(
+            function (id) {
+              var el = document.getElementById(id);
+              if (el) {
+                el.readOnly = !canEditTime;
+                el.style.background = canEditTime ? "" : "var(--surface-2)";
+                el.title = canEditTime
+                  ? ""
+                  : "Available to trainers after all checks are done";
               }
             },
           );
           var typeSel2 = document.getElementById("new-training-type");
           if (typeSel2) {
-            typeSel2.disabled = !canResched;
-            typeSel2.title = canResched
+            typeSel2.disabled = !(canResched || ownDone);
+            typeSel2.title = canResched || ownDone
               ? ""
-              : "Only L&D Admin can change the schedule";
+              : "Available to trainers after all checks are done";
           }
           if (ev.geographies && ev.geographies.length) {
             state.selectedGeographies = ev.geographies.map(function (g) {
@@ -8408,9 +8435,9 @@
             checkList +
             "</div>";
           if (r.showBudget) {
-            /* Budget inputs are L&D Admin-only; others see read-only values. */
+            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks. */
             var budgetHtml;
-            if (state.role === "ld_admin") {
+            if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
@@ -8617,7 +8644,7 @@
               };
             }
           }
-          if (state.role === "ld_admin") {
+          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
