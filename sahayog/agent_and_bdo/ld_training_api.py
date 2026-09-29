@@ -819,9 +819,14 @@ def sync_participants(training_name, participants=None):
 
 @frappe.whitelist()
 def update_budget(training_name, budget_amount=None, actual_expense=None):
-    """L&D Admin only — budget/expense capture."""
-    if not _is_admin():
-        frappe.throw("Only L&D Admin can update budget/expenses.")
+    """Budget/expense capture — L&D Admin, plus the assigned trainer (owner or
+    trainer match) after all 5 completion checks are ticked."""
+    if _is_admin():
+        pass
+    else:
+        _doc = frappe.get_doc("Training", training_name)
+        _ensure_can_update(_doc)
+        _require_completed(_doc)
     if budget_amount is None and actual_expense is None:
         # Nothing to change (DB columns are NOT NULL) — don't touch stored values
         return {"success": True}
@@ -1817,15 +1822,36 @@ def _ensure_can_update(doc):
         frappe.throw(_("You don't have permission to update this training."))
 
 
+def _require_completed(doc):
+    """Extended trainer rights (type/time/budget) unlock only at 5/5 checks."""
+    if not all(doc.get(f) for f in COMPLETION_FIELDS):
+        frappe.throw(_("Allowed only after all completion checks are ticked."))
+
+
 @frappe.whitelist()
 def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None):
     """
-    Reschedule a training — L&D Admin only.
+    Reschedule a training — L&D Admin only, with one exception: the assigned
+    trainer (owner or trainer match) may update training_type/start/end_time
+    AFTER all 5 completion checks are ticked. Dates/location/count stay Admin.
     Updates date/time/location directly via db.set_value (no cancel/amend needed).
-    Also accepts number_of_participants (expected headcount).
+    Also accepts number_of_participants (expected headcount, Admin only).
     """
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can reschedule trainings."))
+    if _is_admin():
+        pass
+    else:
+        doc = frappe.get_doc("Training", name)
+        _ensure_can_update(doc)
+        _require_completed(doc)
+        # Dates/location/count are Admin-only even after completion.
+        if from_date is not None and str(from_date) != str(doc.from_date or ""):
+            frappe.throw(_("Only L&D Admin can change training dates."))
+        if to_date is not None and str(to_date) != str(doc.to_date or doc.from_date or ""):
+            frappe.throw(_("Only L&D Admin can change training dates."))
+        if training_location is not None and (training_location or "") != (doc.training_location or ""):
+            frappe.throw(_("Only L&D Admin can change the location."))
+        if number_of_participants is not None and int(number_of_participants or 0) != int(doc.number_of_participants or 0):
+            frappe.throw(_("Only L&D Admin can change the expected headcount."))
 
     if not from_date:
         frappe.throw(_("From Date is required."))
