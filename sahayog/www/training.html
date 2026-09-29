@@ -9557,13 +9557,45 @@
               var res=d.message;
               var el=document.getElementById("bulkResult");
               el.style.display="block";
-              var errs = res.errors && res.errors.length ? "\nErrors:\n" + res.errors.slice(0,20).join("\n") + (res.errors.length>20 ? "\n... and " + (res.errors.length-20) + " more" : "") : "";
-              el.textContent = (res.message||"Done") + "\nCreated: " + (res.created||0) + "  Skipped: " + (res.skipped||0) + errs;
-              el.style.color = res.success ? "var(--ink-1)" : "#b91c1c";
+              el.style.whiteSpace="normal";
+              /* Structured summary: headline + count pills + readable error list. */
+              var created = res.created || 0, skipped = res.skipped || 0;
+              var errList = (res.errors && res.errors.length) ? res.errors : [];
+              var headColor = res.success ? "#15803d" : "#b91c1c";
+              var headBg = res.success ? "var(--green-soft)" : "#fef2f2";
+              var html =
+                '<div style="background:' + headBg + ";color:" + headColor +
+                ';font-weight:700;font-size:13px;border-radius:6px;padding:7px 10px;margin-bottom:8px;">' +
+                esc(res.success
+                  ? (created ? created + (created === 1 ? " training created" : " trainings created") : "Upload finished")
+                  : (res.message || "Upload failed")) +
+                "</div>" +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' +
+                '<span class="tr-status-pill" style="background:var(--green-soft);color:#15803d;">Created · ' + created + "</span>" +
+                '<span class="tr-status-pill" style="background:var(--orange-soft);color:#b45309;">Skipped duplicates · ' + skipped + "</span>" +
+                '<span class="tr-status-pill" style="background:' + (errList.length ? "#fef2f2;color:#b91c1c;" : "var(--gray-soft);color:var(--ink-3);") + '">Errors · ' + errList.length + "</span>" +
+                "</div>";
+              if (errList.length) {
+                html +=
+                  '<div style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:4px;">What needs fixing (' + errList.length + "):</div>" +
+                  '<div style="max-height:150px;overflow-y:auto;border:1px solid #fecaca;border-radius:6px;background:#fff;">' +
+                  errList.map(function (msg, idx) {
+                    return '<div style="display:flex;gap:8px;padding:5px 9px;font-size:12px;border-bottom:1px solid var(--border);">' +
+                      '<span style="font-weight:700;color:#b91c1c;flex-shrink:0;">' + (idx + 1) + ".</span>" +
+                      "<span>" + esc(msg) + "</span></div>";
+                  }).join("") +
+                  "</div>";
+              } else if (res.success && created) {
+                html += '<div style="font-size:12px;color:var(--ink-2);">All rows imported — find the new trainings in the Trainings tab.</div>';
+              }
+              el.innerHTML = html;
+              el.style.color = "";
               if (res.success && res.created>0) { loadData(true); loadTrainingsList(); showToast("Bulk upload: " + res.created + " trainings created"); }
               else if (!res.success) showToast(res.message||"Upload failed");
             }).catch(function(e){
-              var el=document.getElementById("bulkResult"); el.style.display="block"; el.textContent="Upload failed: "+(e.message||e); el.style.color="#b91c1c";
+              var el=document.getElementById("bulkResult"); el.style.display="block"; el.style.whiteSpace="normal";
+              el.innerHTML = '<div style="background:#fef2f2;color:#b91c1c;font-weight:700;font-size:13px;border-radius:6px;padding:7px 10px;">Upload failed</div>' +
+                '<div style="font-size:12px;margin-top:6px;">' + esc((e && e.message) || e) + "</div>";
               showToast("Upload failed: "+e.message);
             }).finally(function(){ upBtn.disabled=false; upBtn.textContent="Upload"; });
           });
