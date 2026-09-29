@@ -1,9 +1,6 @@
 frappe.ui.form.on('Miscellaneous', {
     refresh(frm) {
 
-        // Save button disable aur form read-only karne ke liye
-        frm.disable_save();
-        frm.set_read_only();
         
     setTimeout(() => {
     frm.get_field('sol_id')?.$wrapper.find('a')
@@ -242,7 +239,6 @@ frappe.ui.form.on('Miscellaneous', {
 
                 /* Clean Empty Row State */
                 .grid-empty {
-                    display: block !important;
                     text-align: center !important;
                     padding: 15px !important;
                     color: #64748b !important;
@@ -334,57 +330,38 @@ frappe.ui.form.on('Miscellaneous', {
 
         // 5. SETUP CHILD TABLES (ALLOW VISIBILITY FOR EMPTY TABLES & LOCK EDITING)
         ['account_opening_error', 'bank_reconciliation_discrepancy'].forEach(fieldname => {
-            let field = frm.get_field(fieldname);
-            if (field) {
-                field.df.read_only = 1;
-                field.df.hidden = 0;
+    let field = frm.get_field(fieldname);
 
-                if (field.section && field.section.wrapper) {
-                    field.section.wrapper.show().removeClass('hidden hidden-section');
-                }
+    if (field) {
+        field.df.read_only = 0;
+        field.df.hidden = 0;
 
-                if (field.$wrapper) {
-                    field.$wrapper.show().removeClass('hidden');
-                }
+        if (field.section && field.section.wrapper) {
+            field.section.wrapper.show().removeClass('hidden hidden-section');
+        }
 
-                if (field.grid) {
-                    field.grid.cannot_add_rows = true;
-                    field.grid.only_sortable();
-                    
-                    // Native empty state trigger karne ke liye static flag set karein
-                    field.grid.static_rows = true;
-                    field.grid.refresh();
+        if (field.$wrapper) {
+            field.$wrapper.show().removeClass('hidden');
+        }
 
-                    if (field.grid.wrapper) {
-                        field.grid.wrapper.show();
-                        field.grid.wrapper.find('.grid-add-row, .grid-remove-rows, .grid-append-row, .grid-edit-row, .edit-grid-row').hide();
+        if (field.grid) {
+            // Enable normal Frappe Grid operations
+            field.grid.cannot_add_rows = false;
 
-                        let row_count = (frm.doc[fieldname] || []).length;
-                        let $grid_body = field.grid.wrapper.find('.grid-body');
+            // Refresh grid after enabling edit/add
+            field.grid.refresh();
 
-                        if (row_count === 0) {
-                            if ($grid_body.find('.grid-empty').length === 0) {
-                                $grid_body.append(`
-                                    <div class="grid-empty text-center text-muted p-3">
-                                        No Data
-                                    </div>
-                                `);
-                            }
-                        } else {
-                            $grid_body.find('.grid-empty').remove();
-                        }
+            if (field.grid.wrapper) {
+                field.grid.wrapper.show();
 
-                        field.grid.wrapper.off('click dblclick', '.grid-row');
-                        field.grid.wrapper.on('click dblclick', '.grid-row', function(e) {
-                            if ($(e.target).is('select, option, input, textarea')) return;
-                            e.stopPropagation();
-                            e.preventDefault();
-                            return false;
-                        });
-                    }
-                }
+                // Show normal Grid controls
+                field.grid.wrapper.find(
+                    '.grid-add-row, .grid-remove-rows, .grid-append-row, .grid-edit-row, .edit-grid-row'
+                ).show();
             }
-        });
+        }
+    }
+});
 
     },
 

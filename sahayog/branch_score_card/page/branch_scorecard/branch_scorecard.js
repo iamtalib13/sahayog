@@ -3034,16 +3034,52 @@ style="display:none;">
 
     <div id="com-wise-content">
         <div class="com-wise-loading">
-            Loading COM Wise Score Card...
+            No data till now
         </div>
     </div>
 
 </div>
 </div>
 `);
+function apply_branch_scorecard_access(){
+    frappe.call({
+        method:"sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_branch_scorecard_access",
+        callback:function(r){
+            let access = r.message || {};
+
+            if(access.is_editor){
+                load_sahayog_branches();
+                return;
+            }
+
+            if(!access.has_access){
+                frappe.msgprint({
+                    title:"No Access",
+                    message:"You have no access to view Branch Scorecard. Please coordinate with Manager 😟",
+                    indicator:"red"
+                });
+
+                $("#scorecard-root").empty();
+                return;
+            }
+
+            if(access.has_sol_access){
+                $(".scorecard-view-tab[data-view='zone']").hide();
+                $(".scorecard-view-tab[data-view='com']").hide();
+            }else if(access.has_zone_access){
+                $(".scorecard-view-tab[data-view='com']").hide();
+            }else if(access.has_region_access){
+                $(".scorecard-view-tab[data-view='zone']").hide();
+            }
+
+            load_sahayog_branches();
+        }
+    });
+}
+
 initialize_zone_wise_filters();
 initialize_com_wise_filters();
-load_sahayog_branches();
+apply_branch_scorecard_access();
 /* =========================================================
    HARD REFRESH
    ========================================================= */
@@ -4004,26 +4040,9 @@ return is_numeric_sol&&is_not_zonal;
    ========================================================= */
 function load_sahayog_branches(){
 frappe.call({
-method:"frappe.client.get_list",
-args:{
-doctype:"Sahayog Branch",
-fields:[
-"name",
-"sol_id",
-"branch",
-"branch_type",
-"zone",
-"region",
-"district",
-"regional_operations_manager",
-"cluster_operations_manager",
-"regional__zonal_head",
-"ch_dh_adh"
-],
-order_by:"branch asc",
-limit_page_length:5000
-},
+method:"sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_visible_branch_records",
 callback:function(r){
+
 if(r.message){
 let all_records=
 r.message||[];
@@ -4114,6 +4133,12 @@ record=>
 is_valid_sahayog_branch(record)
 );
 if(!valid_branches.length){
+    frappe.msgprint({
+        title: __("No Access"),
+        message: __("You have no access to view Branch Scorecard. Please coordinate with Manager 😟"),
+        indicator: "red"
+    });
+    return;
 $("#scorecard-list").html(`
 <div
 class="text-muted text-center p-2"
@@ -5249,6 +5274,9 @@ style="width:${bar_width}%">
 </div>
 `;
 });
+let can_function_write =
+frappe.user.has_role("System Manager") ||
+frappe.user.has_role("Branch Scorecard Editor");
 let is_crl_function=
 function_name===
 "CRL Monitoring and Branch Opening / Closing";
@@ -5262,7 +5290,7 @@ function_name===
 function_name===
 "Deductions towards Errors / Lapses";
 let function_title_html;
-if(is_crl_function){
+if(is_crl_function && can_function_write){
 function_title_html=`
 <div
 class="function-title function-link"
@@ -5280,7 +5308,7 @@ title="Open / Edit CRL Record">
 </span>
 </div>
 `;
-}else if(is_other_navigation_function){
+}else if(is_other_navigation_function && can_function_write){
 function_title_html=`
 <div
 class="function-title scorecard-function-nav-link"
@@ -5462,7 +5490,7 @@ function load_com_wise_data(
 
     $("#com-wise-content").html(`
         <div class="com-wise-loading">
-            Loading COM Wise Score Card...
+            No data till now
         </div>
     `);
 
@@ -5492,9 +5520,11 @@ function load_com_wise_data(
                 return;
             }
 
+            /*
             render_com_wise_table(
                 r.message
             );
+            */
         },
 
         error:function(){
@@ -6628,93 +6658,98 @@ function render_zone_wise_trend_comparison(
             </td>
         </tr>
     `;
-    container.html(`
-        <div class="zone-comparison-card">
-            <div class="zone-comparison-header">
-                <div>
-                    <div class="zone-comparison-title">
-                        Zone-wise Trend Compared to
-                        ${frappe.utils.escape_html(
-                            previous_label
-                        )}
-                    </div>
-                    <div class="zone-comparison-subtitle">
-                        ${frappe.utils.escape_html(
-                            selected_label
-                        )}
-                        score is compared with the immediately
-                        previous month's score. Only branches
-                        having valid scores in both months are included.
-                    </div>
-                </div>
-                <div class="zone-comparison-period">
-                    ${frappe.utils.escape_html(
-                        selected_label
-                    )}
-                    vs
-                    ${frappe.utils.escape_html(
-                        previous_label
-                    )}
-                </div>
-            </div>
-            <div class="zone-comparison-table-wrap">
-                <table class="zone-comparison-table">
-                    <thead>
-                        <tr>
-                            <th>
-                                Zone
-                            </th>
-                            <th>
-                                Constant
-                            </th>
-                            <th>
-                                Down
-                            </th>
-                            <th>
-                                Up
-                            </th>
-                            <th>
-                                Grand Total
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows_html}
-                    </tbody>
-                </table>
-            </div>
-            <div class="zone-comparison-legend">
-                <div class="zone-comparison-legend-item">
-                    <span
-                        class="zone-comparison-legend-dot"
-                        style="background:#718084;">
-                    </span>
-                    Constant
-                </div>
-                <div class="zone-comparison-legend-item">
-                    <span
-                        class="zone-comparison-legend-dot"
-                        style="background:#b45353;">
-                    </span>
-                    Down
-                </div>
-                <div class="zone-comparison-legend-item">
-                    <span
-                        class="zone-comparison-legend-dot"
-                        style="background:#42805a;">
-                    </span>
-                    Up
-                </div>
-                <div class="zone-comparison-legend-item">
-                    <span
-                        class="zone-comparison-legend-dot"
-                        style="background:#3a6f75;">
-                    </span>
-                    Grand Total
-                </div>
-            </div>
-        </div>
-    `);
+    /*
+     * COMMENTED_ZONE_COMPARISON_TABLE
+     *
+     *     container.html(`
+     *         <div class="zone-comparison-card">
+     *             <div class="zone-comparison-header">
+     *                 <div>
+     *                     <div class="zone-comparison-title">
+     *                         Zone-wise Trend Compared to
+     *                         ${frappe.utils.escape_html(
+     *                             previous_label
+     *                         )}
+     *                     </div>
+     *                     <div class="zone-comparison-subtitle">
+     *                         ${frappe.utils.escape_html(
+     *                             selected_label
+     *                         )}
+     *                         score is compared with the immediately
+     *                         previous month's score. Only branches
+     *                         having valid scores in both months are included.
+     *                     </div>
+     *                 </div>
+     *                 <div class="zone-comparison-period">
+     *                     ${frappe.utils.escape_html(
+     *                         selected_label
+     *                     )}
+     *                     vs
+     *                     ${frappe.utils.escape_html(
+     *                         previous_label
+     *                     )}
+     *                 </div>
+     *             </div>
+     *             <div class="zone-comparison-table-wrap">
+     *                 <table class="zone-comparison-table">
+     *                     <thead>
+     *                         <tr>
+     *                             <th>
+     *                                 Zone
+     *                             </th>
+     *                             <th>
+     *                                 Constant
+     *                             </th>
+     *                             <th>
+     *                                 Down
+     *                             </th>
+     *                             <th>
+     *                                 Up
+     *                             </th>
+     *                             <th>
+     *                                 Grand Total
+     *                             </th>
+     *                         </tr>
+     *                     </thead>
+     *                     <tbody>
+     *                         ${rows_html}
+     *                     </tbody>
+     *                 </table>
+     *             </div>
+     *             <div class="zone-comparison-legend">
+     *                 <div class="zone-comparison-legend-item">
+     *                     <span
+     *                         class="zone-comparison-legend-dot"
+     *                         style="background:#718084;">
+     *                     </span>
+     *                     Constant
+     *                 </div>
+     *                 <div class="zone-comparison-legend-item">
+     *                     <span
+     *                         class="zone-comparison-legend-dot"
+     *                         style="background:#b45353;">
+     *                     </span>
+     *                     Down
+     *                 </div>
+     *                 <div class="zone-comparison-legend-item">
+     *                     <span
+     *                         class="zone-comparison-legend-dot"
+     *                         style="background:#42805a;">
+     *                     </span>
+     *                     Up
+     *                 </div>
+     *                 <div class="zone-comparison-legend-item">
+     *                     <span
+     *                         class="zone-comparison-legend-dot"
+     *                         style="background:#3a6f75;">
+     *                     </span>
+     *                     Grand Total
+     *                 </div>
+     *             </div>
+     *         </div>
+     *     `);
+     */
+
 }
 /* =========================================================
    ZONE WISE - RENDER BACKEND RESULT
