@@ -23,6 +23,7 @@ CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
     "is_adhoc", "docstatus", "status", "trainer_remarks", "number_of_participants",
+    "program_duration_hours",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
 ]
@@ -353,6 +354,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "branches": branches,
             "participants": participants.get(r.name, 0),
             "number_of_participants": r.number_of_participants or 0,
+            "program_duration_hours": r.program_duration_hours or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": r.status or get_training_status(r),
@@ -456,6 +458,7 @@ def get_training_list(
             "branches": branches,
             "participants": participants.get(r.name, 0),
             "number_of_participants": r.number_of_participants or 0,
+            "program_duration_hours": r.program_duration_hours or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": st,
@@ -1910,19 +1913,32 @@ def bulk_upload_training():
             return {"success": False, "message": _("File is empty or has no data rows")}
         header = [h.strip() for h in rows[0]]
         header_lower = [h.strip().lower() for h in header]
-        # Required columns (case-insensitive). Title accepts "Program Name"
-        # or "Training Title"; branch is the SOL ID (Sahayog Branch code);
-        # trainer is the Employee ID (deterministic, no name ambiguity).
+        # Required columns (case-insensitive). Client-sheet aliases accepted:
+        # Date->Training Date, Topic->Program Name, Branch Name->Branch Code,
+        # "Program Duration in hours..."->duration hours,
+        # "Number of participants invited"->headcount.
+        # Day is derived from the date; Zone/Region auto-fetch from branch;
+        # "attended" is marked later in the portal — all three are ignored.
         # One row = one training; no participant rows are added here.
-        required = ["training date", "branch code", "trainer id"]
-        missing = [r for r in required if r not in header_lower]
-        if "program name" not in header_lower and "training title" not in header_lower:
-            missing.append("Program Name or Training Title")
-        if missing:
-            return {"success": False, "message": _("Missing required column(s): {0}. Found: {1}").format(", ".join(missing), ", ".join(header))}
+        required = []
+        if "training date" not in header_lower and "date" not in header_lower:
+            required.append("Training Date (or Date)")
+        if "branch code" not in header_lower and "branch name" not in header_lower:
+            required.append("Branch Code (or Branch Name)")
+        if "trainer id" not in header_lower:
+            required.append("Trainer ID")
+        if "program name" not in header_lower and "training title" not in header_lower and "topic" not in header_lower:
+            required.append("Program Name / Training Title (or Topic)")
+        if required:
+            return {"success": False, "message": _("Missing required column(s): {0}. Found: {1}").format(", ".join(required), ", ".join(header))}
 
-        # Map lower->index
+        # Map lower->index (+ client header variants)
         col_idx = {h.lower(): i for i, h in enumerate(header)}
+        for _h, _key in list(col_idx.items()):
+            if _h.startswith("program duration"):
+                col_idx.setdefault("program duration in hours", col_idx[_h])
+            if _h.startswith("number of participants invited"):
+                col_idx.setdefault("number of participants", col_idx[_h])
 
         def get_val(row, *keys):
             for key in keys:
@@ -1953,12 +1969,13 @@ def bulk_upload_training():
         for i, row in enumerate(rows[1:], start=2):
             if not any(str(c or "").strip() for c in row):
                 continue
-            training_date_raw = get_val(row, "Training Date")
-            program = get_val(row, "Program Name", "Training Title")
-            branch_raw = get_val(row, "Branch Code")
+            training_date_raw = get_val(row, "Training Date", "Date")
+            program = get_val(row, "Program Name", "Training Title", "Topic")
+            branch_raw = get_val(row, "Branch Code", "Branch Name")
             trainer_id = get_val(row, "Trainer ID")
             duration_raw = get_val(row, "Training Duration", "Duration", "Duration (Days)", "Training Days")
             count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
+            hours_raw = get_val(row, "Program Duration in Hours", "Program Duration", "Duration in Hours", "Duration Hours")
 
             if not training_date_raw:
                 errors.append(f"Row {i}: Training Date is required")
@@ -2010,6 +2027,18 @@ def bulk_upload_training():
                 if count < 0:
                     errors.append(f"Row {i}: Number of Participants cannot be negative")
                     continue
+            # Program duration in hours: numbers only, blank allowed
+            if not hours_raw:
+                hours = None
+            else:
+                try:
+                    hours = float(hours_raw)
+                except Exception:
+                    errors.append(f"Row {i}: Invalid Program Duration in Hours '{hours_raw}' (numbers only)")
+                    continue
+                if hours < 0:
+                    errors.append(f"Row {i}: Program Duration in Hours cannot be negative")
+                    continue
             trainings.append({
                 "training_date": training_date,
                 "program": program.strip(),
@@ -2017,6 +2046,7 @@ def bulk_upload_training():
                 "trainer_name": trainer_name.strip(),
                 "duration": duration,
                 "count": count,
+                "hours": hours,
             })
 
         if not trainings:
@@ -2044,6 +2074,8 @@ def bulk_upload_training():
                 doc.to_date = to_date
                 doc.trainer = t["trainer_name"]
                 doc.number_of_participants = t["count"]
+                if t["hours"] is not None:
+                    doc.program_duration_hours = t["hours"]
                 doc.start_time = ""
                 doc.end_time = ""
                 # Single branch geography (zone/region/district auto-fetched)
@@ -2082,10 +2114,10 @@ def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
     # Sample uses real program / SOL ID / trainer ID values from the system.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Program Duration in Hours", "Number of Participants"]
     sample = [
-        ["1", "28/09/2026", "Training SK", "1000", "1754", "3", "20"],
-        ["2", "29/09/2026", "JLL Training", "1012", "8751", "1", "15"],
+        ["1", "28/09/2026", "Training SK", "1000", "1754", "3", "6", "20"],
+        ["2", "29/09/2026", "JLL Training", "1012", "8751", "1", "2", "15"],
     ]
     import csv, io
     out = io.StringIO()
