@@ -5908,10 +5908,10 @@
           <h3>Bulk Upload Trainings</h3>
           <button class="modal-close" data-close="bulkUploadModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
         </div>
-        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX — one row per training: <b>Training Date, Program Name, Branch Code (SOL ID), Trainer ID (Employee ID), Training Duration (days), Number of Participants</b>. To Date is auto-set from duration; rows with the same Program + Date are skipped as duplicates.</div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX — one row per training: <b>Training Date, Program Name, Branch Code (SOL ID), Trainer ID (Employee ID), Training Duration (days), Program Duration in Hours (numbers only), Number of Participants</b>. To Date is auto-set from duration; rows with the same Program + Date are skipped as duplicates. Day / Zone / Region / Attended columns are ignored (derived or marked later).</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
-          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer ID, Training Duration, Number of Participants</span>
+          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer ID, Training Duration, Program Duration in Hours, Number of Participants</span>
         </div>
         <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;margin-bottom:12px;">
           <input type="file" id="bulkFile" accept=".csv,.xlsx,.xls" style="font-size:13px;" />
@@ -7177,6 +7177,9 @@
             metaRow("Participants", ev.participants || 0) +
             ((ev.number_of_participants || 0)
               ? metaRow("Expected Participants", ev.number_of_participants)
+              : "") +
+            ((ev.program_duration_hours || 0)
+              ? metaRow("Duration (Hours)", ev.program_duration_hours)
               : "") +
             "</div></div>";
           // All branches as compact chips (full geo stays one line per branch in title tooltip)
