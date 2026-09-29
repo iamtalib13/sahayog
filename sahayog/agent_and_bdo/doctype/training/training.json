@@ -12,9 +12,10 @@
   "from_date",
   "to_date",
   "column_break_details",
-  "start_time",
-  "end_time",
-  "training_location",
+   "start_time",
+   "end_time",
+   "program_duration_hours",
+   "training_location",
   "training_type",
   "trainer",
   "section_break_geo",
@@ -93,11 +94,17 @@
    "fieldtype": "Time",
    "label": "Start Time"
   },
-  {
-   "fieldname": "end_time",
-   "fieldtype": "Time",
-   "label": "End Time"
-  },
+   {
+    "fieldname": "end_time",
+    "fieldtype": "Time",
+    "label": "End Time"
+   },
+   {
+    "description": "How many hours the program runs (numbers only, e.g. 2.5)",
+    "fieldname": "program_duration_hours",
+    "fieldtype": "Float",
+    "label": "Program Duration (Hours)"
+   },
   {
    "description": "Who conducts this training",
    "fieldname": "trainer",
