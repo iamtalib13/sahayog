@@ -1,3 +1,5 @@
+import re
+
 import frappe
 from frappe import _
 from erpnext.stock.report.stock_balance.stock_balance import execute
@@ -592,6 +594,76 @@ def get_movement_list(limit=20, start=0, search_text=None):
     }
 
 
+def _name_key(value):
+    return re.sub(r"[^A-Z0-9]", "", (value or "").upper())
+
+
+def get_user_division_warehouse(user=None):
+    """
+    Resolve the warehouse of a non-admin user's Employee division
+    (`custom_division` / `sub_department`), e.g. division JLL -> warehouse "Gondia JLL"
+    for branch GONDIA HO.
+
+    Division takes precedence over the Sahayog Settings warehouse.
+    Returns the warehouse name, or None when no division warehouse applies.
+    """
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator" or "Administrator" in frappe.get_roles(user):
+        return None
+
+    emp = frappe.db.get_value(
+        "Employee",
+        {"user_id": user},
+        ["branch", "custom_division", "sub_department"],
+        as_dict=True,
+    )
+    if not emp:
+        return None
+
+    division = (emp.custom_division or emp.sub_department or "").strip()
+    if not division:
+        return None
+
+    warehouses = frappe.get_all(
+        "Warehouse",
+        filters={"is_group": 0, "name": ("like", "%{0}%".format(division))},
+        pluck="name",
+    )
+    if not warehouses:
+        return None
+
+    branch_key = _name_key(emp.branch)
+    matches = []
+    for wh in warehouses:
+        base = wh
+        if base[:9].lower() == "branch - ":
+            base = base[9:]
+        base = re.sub(re.escape(division), "", base, flags=re.IGNORECASE).strip()
+        base_key = _name_key(base)
+        if not base_key or not branch_key:
+            continue
+        if base_key == branch_key:
+            score = 0
+        elif branch_key.startswith(base_key):
+            score = 1
+        elif base_key.startswith(branch_key):
+            score = 2
+        else:
+            continue
+        if not wh.upper().endswith(division.upper()):
+            score += 10
+        if wh[:9].lower() == "branch - ":
+            score += 5
+        matches.append((score, len(wh), wh))
+
+    if not matches:
+        return None
+    matches.sort()
+    return matches[0][2]
+
+
 @frappe.whitelist()
 def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter_type=None, item_code=None, warehouse_filter=None):
     """
@@ -624,7 +696,11 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
     _, data = execute(filters)
 
     # Determine user_warehouse with fallback logic
-    if assigned_warehouse:
+    # Division warehouse (e.g. JLL) wins over the Sahayog Settings warehouse
+    division_warehouse = get_user_division_warehouse(user)
+    if division_warehouse:
+        user_warehouse = division_warehouse
+    elif assigned_warehouse:
         # Check if the assigned warehouse exists in the data
         has_match = any(row.get("warehouse") == assigned_warehouse for row in data)
         if has_match:
@@ -681,12 +757,21 @@ def get_branch_stock(warehouse=None, limit=20, start=0, search_text=None, filter
 def get_user_branch_warehouse(user=None):
     """
     Get the warehouse linked to the branch of the specified user or current session user.
-    Checks Sahayog Settings first, then falls back to sol_id from Employee
+    Checks the Employee division (e.g. JLL) first, then Sahayog Settings,
+    then falls back to sol_id from Employee
     """
     if not user:
         user = frappe.session.user
 
-    # 1. Check Sahayog Settings (Default Warehouse table)
+    # 1. Division warehouse (e.g. JLL -> "Gondia JLL") takes precedence
+    division_warehouse = get_user_division_warehouse(user)
+    if division_warehouse:
+        return {
+            "warehouse": division_warehouse,
+            "branch": division_warehouse,
+        }
+
+    # 2. Check Sahayog Settings (Default Warehouse table)
     try:
         # Fetching directly from the child table for better performance
         assigned_warehouse = frappe.db.get_value(
@@ -702,7 +787,7 @@ def get_user_branch_warehouse(user=None):
     except Exception as e:
         frappe.log_error(f"Error in get_user_branch_warehouse (Sahayog Settings): {str(e)}")
 
-    # 2. Fallback to sol_id from Employee (matches Branch Stock report logic)
+    # 3. Fallback to sol_id from Employee (matches Branch Stock report logic)
     sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     if not sol_id:

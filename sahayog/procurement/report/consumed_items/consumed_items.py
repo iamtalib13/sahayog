@@ -69,7 +69,41 @@ def get_columns():
     ]
 
 
+def get_user_scope():
+    """
+    Return (show_all, warehouse).
+    - User has a record in Sahayog Settings -> wh_dept_map : sees every warehouse
+    - Otherwise : sees only their own branch warehouse (Employee.sol_id)
+    """
+    user = frappe.session.user
+    if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+        return True, None
+
+    settings = frappe.get_single("Sahayog Settings")
+    for row in settings.wh_dept_map or []:
+        if (row.user_id or "").strip() == user:
+            return True, None
+
+    sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+    return False, sol_id
+
+
 def get_data():
+    show_all, warehouse = get_user_scope()
+
+    if not show_all and not warehouse:
+        return []
+
+    conditions = """
+            se.stock_entry_type = 'Material Issue'
+            AND se.docstatus = 1
+    """
+    values = {}
+
+    if not show_all:
+        conditions += " AND sed.s_warehouse = %(warehouse)s"
+        values["warehouse"] = warehouse
+
     return frappe.db.sql(
         """
         SELECT
@@ -87,11 +121,10 @@ def get_data():
             `tabStock Entry Detail` sed
             ON sed.parent = se.name
         WHERE
-            se.stock_entry_type = 'Material Issue'
-            AND se.docstatus = 1
-            AND sed.s_warehouse = 'Stores - S'
+            {conditions}
         ORDER BY
             se.posting_date DESC
-        """,
+        """.format(conditions=conditions),
+        values,
         as_dict=True,
     )

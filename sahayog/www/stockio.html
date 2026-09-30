@@ -4738,7 +4738,7 @@
                         type="number"
                         v-model.number="item.use_qty"
                         :min="1"
-                        :max="item.stock_balance"
+                        :max="item.closing_balance"
                         class="form-input"
                         style="
                           width: 70px;
@@ -8684,7 +8684,7 @@
           >
             <div class="reports-grid">
               <div
-                v-for="card in currentView.reportCards"
+                v-for="card in visibleReportCards"
                 :key="card.label"
                 class="report-card"
                 @click="openReport(card.route)"
@@ -13195,7 +13195,8 @@
             { label: "Item Name", key: "item_name", width: 2.5 },
             { label: "SOL ID", key: "warehouse_name", width: 1.5 },
             { label: "Warehouse", key: "branch_name", width: 1.5 },
-            { label: "Stock Balance", key: "stock_balance", width: 1 },
+            { label: "Opening Balance", key: "opening_balance", width: 1 },
+            { label: "Closing Balance", key: "closing_balance", width: 1 },
           ],
         },
         Requests: {
@@ -13583,6 +13584,7 @@
       showDispatchItems: false,
       dispatchForm: {
         name: "",
+        department: "",
         source_warehouse: "",
         target_warehouse: "",
         stock_entry_type: "Material Issue",
@@ -13726,6 +13728,9 @@
       userDesignation: null,
       userInventoryType: null,
       branchStockFilter: "My Stock",
+      brandTitles: ["StockIO", "स्टॉकआईओ"],
+      brandIndex: 0,
+      brandTimerInterval: null,
       get hasWarehouseAccess() {
         if (this.isAdmin) return true;
         return this.wh_dept_map.some(m => m.user_id === frappe.session.user);
@@ -14743,6 +14748,8 @@
           this.isFullscreen = !!document.fullscreenElement;
         });
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
+        // Rotate sidebar brand title (English <-> Hindi) every 2 minutes
+        this.startBrandTimer();
         this.isAdmin =
           frappe.session.user === "Administrator" ||
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
@@ -17721,6 +17728,7 @@
         }
 
         this.dispatchForm.name = row.name;
+        this.dispatchForm.department = row.department || "";
         this.dispatchForm.source_warehouse = row.source_warehouse;
         this.dispatchForm.target_warehouse = row.target_warehouse;
         this.dispatchForm.stock_entry_type = "Material Transfer";
@@ -17760,6 +17768,8 @@
               }
 
               // Override target warehouse from the full document
+              this.dispatchForm.department =
+                res.message.department || this.dispatchForm.department;
               this.dispatchForm.target_warehouse =
                 res.message.target_warehouse || row.target_warehouse;
 
@@ -17891,6 +17901,19 @@
         if (this.emailTimerInterval) {
           clearInterval(this.emailTimerInterval);
           this.emailTimerInterval = null;
+        }
+      },
+      startBrandTimer() {
+        this.stopBrandTimer();
+        this.brandTimerInterval = setInterval(() => {
+          this.brandIndex = (this.brandIndex + 1) % this.brandTitles.length;
+          this.sidebar.header.title = this.brandTitles[this.brandIndex];
+        }, 2 * 60 * 1000);
+      },
+      stopBrandTimer() {
+        if (this.brandTimerInterval) {
+          clearInterval(this.brandTimerInterval);
+          this.brandTimerInterval = null;
         }
       },
       formatTimer(secs) {
@@ -18082,15 +18105,57 @@
         }
 
         // Validate Dispatch Qty against Approved Qty
-        for (const item of this.dispatchForm.items) {
-          if (item.dispatch_qty > (item.approved_quantity || 0)) {
+        const overQtyItems = this.dispatchForm.items.filter(
+          (item) => (item.dispatch_qty || 0) > (item.approved_quantity || 0),
+        );
+
+        if (overQtyItems.length > 0) {
+          const isStationery =
+            String(this.dispatchForm.department || "")
+              .trim()
+              .toLowerCase() === "stationery";
+
+          // Stationery requests may dispatch more than approved after confirmation
+          if (!isStationery) {
+            const item = overQtyItems[0];
             frappe.msgprint(
               `Dispatch Qty for ${item.item_code} cannot be greater than Approved Qty (${item.approved_quantity || 0})`,
             );
             return;
           }
+
+          const overQtySummary = overQtyItems
+            .map(
+              (i) =>
+                `${i.item_code} (${i.dispatch_qty} > ${i.approved_quantity || 0})`,
+            )
+            .join(", ");
+
+          const overDispatchData = { over_dispatch_remark: "" };
+          this.showConfirm(
+            "Confirm Over Dispatch",
+            `Dispatch Qty is greater than Approved Qty for: ${overQtySummary}. Dispatch will be created with the same value.`,
+            async () => {
+              await this.processDispatch(
+                overDispatchData.over_dispatch_remark,
+              );
+            },
+            [
+              {
+                fieldname: "over_dispatch_remark",
+                label: "Reason / Remarks (Optional)",
+                placeholder: "Enter reason for dispatching more than approved qty",
+              },
+            ],
+            overDispatchData,
+            "Confirm & Dispatch",
+          );
+          return;
         }
 
+        await this.processDispatch("");
+      },
+      async processDispatch(overDispatchRemark = "") {
         // Fetch company from warehouse
         let company = "";
         try {
@@ -18152,6 +18217,7 @@
                   dispatch_location: this.dispatchForm.dispatch_location,
                   address: this.dispatchForm.address,
                   mobile_number: this.dispatchForm.mobile_number,
+                  over_dispatch_remark: overDispatchRemark || "",
                 },
               },
             });
@@ -19356,6 +19422,39 @@
         return (this.currentView && this.currentView.columns) || [];
       },
 
+      get visibleReportCards() {
+        const cards = (this.currentView && this.currentView.reportCards) || [];
+        if (this.isAdmin) return cards;
+
+        const type = this.userInventoryType
+          ? String(this.userInventoryType).trim().toLowerCase()
+          : "";
+
+        if (type === "stationery") {
+          const allowed = [
+            "My Material Requests",
+            "Store Material Request",
+            "My Pending Approvals",
+            "Consumed Items",
+            "Branch Stock",
+          ];
+          return cards.filter((card) => allowed.includes(card.label));
+        }
+
+        if (type === "it") {
+          const allowed = [
+            "My Material Requests",
+            "Store Asset Master",
+            "Asset Transfer",
+            "My Assets",
+          ];
+          return cards.filter((card) => allowed.includes(card.label));
+        }
+
+        // No Sahayog Settings record (admin/normal user) or inventory type "other"
+        return cards;
+      },
+
       getFieldValue(row, key) {
         if (!row || !key) return "";
 
@@ -19599,8 +19698,8 @@
           keys     = ["name", "asset_name", "serial_no", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
           baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
         } else {
-          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Opening Balance", "Closing Balance"];
+          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "opening_balance", "closing_balance"];
           baseName = `Branch_Stock_${new Date().toISOString().slice(0,10)}`;
         }
 
