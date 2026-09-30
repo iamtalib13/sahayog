@@ -45,12 +45,22 @@ def execute(filters=None):
             # Fallback to sol_id or Admin check
             user_roles = frappe.get_roles(user)
             if user != "Administrator" and "System Manager" not in user_roles:
-                sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
-                if sol_id:
-                    conditions += " AND base.warehouse = %(sol_id)s"
-                    values["sol_id"] = sol_id
+                from sahayog.procurement.api.stock_balance_ledger import (
+                    get_user_division_warehouse,
+                )
+
+                # Division users (e.g. JLL) see their division warehouse
+                division_warehouse = get_user_division_warehouse(user)
+                if division_warehouse:
+                    conditions += " AND base.warehouse = %(division_warehouse)s"
+                    values["division_warehouse"] = division_warehouse
                 else:
-                    return columns, []
+                    sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+                    if sol_id:
+                        conditions += " AND base.warehouse = %(sol_id)s"
+                        values["sol_id"] = sol_id
+                    else:
+                        return columns, []
 
     # Opening Balance = balance after yesterday's inward/outward (i.e. before today's movement)
     # Closing Balance  = opening balance + today's inward - today's outward for that item/warehouse
