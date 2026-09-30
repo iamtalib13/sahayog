@@ -12,7 +12,8 @@
     "delivery_date",
     "dispatch_location",
     "address",
-    "mobile_number"
+    "mobile_number",
+    "over_dispatch_remark"
   ],
   "fields": [
     {
@@ -60,6 +61,11 @@
       "fieldname": "mobile_number",
       "fieldtype": "Data",
       "label": "Mobile Number"
+    },
+    {
+      "fieldname": "over_dispatch_remark",
+      "fieldtype": "Small Text",
+      "label": "Over Dispatch Remark"
     }
   ],
   "grid_page_length": 50,
