@@ -4738,7 +4738,7 @@
                         type="number"
                         v-model.number="item.use_qty"
                         :min="1"
-                        :max="item.stock_balance"
+                        :max="item.closing_balance"
                         class="form-input"
                         style="
                           width: 70px;
@@ -13195,7 +13195,8 @@
             { label: "Item Name", key: "item_name", width: 2.5 },
             { label: "SOL ID", key: "warehouse_name", width: 1.5 },
             { label: "Warehouse", key: "branch_name", width: 1.5 },
-            { label: "Stock Balance", key: "stock_balance", width: 1 },
+            { label: "Opening Balance", key: "opening_balance", width: 1 },
+            { label: "Closing Balance", key: "closing_balance", width: 1 },
           ],
         },
         Requests: {
@@ -19646,8 +19647,8 @@
           keys     = ["name", "asset_name", "serial_no", "item_code", "asset_category", "location", "custodian", "status", "purchase_date"];
           baseName = `Asset_Master_${new Date().toISOString().slice(0,10)}`;
         } else {
-          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Stock Balance"];
-          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "stock_balance"];
+          headers  = ["Item", "Item Name", "SOL ID", "Warehouse", "Opening Balance", "Closing Balance"];
+          keys     = ["item_code", "item_name", "warehouse_name", "branch_name", "opening_balance", "closing_balance"];
           baseName = `Branch_Stock_${new Date().toISOString().slice(0,10)}`;
         }
 
