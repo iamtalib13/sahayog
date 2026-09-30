@@ -42,7 +42,7 @@ def get_serial_warehouse_map():
 def get_available_assets():
     """
     Get assets and serial nos that are available for assignment:
-    - Serial Nos not linked to any submitted Asset
+    - Serial Nos not linked to any submitted Asset and not belonging to a scrapped Asset
     - Assets with no movement at all, OR
     - Assets with movement but no source_location and no from_employee
     """
@@ -57,6 +57,19 @@ def get_available_assets():
     )
     used_serials = [a.serial_no for a in all_assets if a.serial_no]
 
+    # 1b. Serials of scrapped assets belong to the Scraped board, not Available
+    scrapped_serials = {
+        a.serial_no
+        for a in frappe.db.get_all(
+            "Asset",
+            filters={"status": "Scrapped"},
+            fields=["serial_no"],
+            limit_page_length=0,
+            ignore_permissions=True
+        )
+        if a.serial_no
+    }
+
     # 2. Get all Serial Nos and filter unassigned ones
     all_serials = frappe.db.get_all(
         "Serial No",
@@ -64,7 +77,11 @@ def get_available_assets():
         limit_page_length=0,
         ignore_permissions=True
     )
-    unassigned_serials = [s for s in all_serials if s.name not in used_serials]
+    unassigned_serials = [
+        s
+        for s in all_serials
+        if s.name not in used_serials and s.name not in scrapped_serials
+    ]
 
     # 3. Get warehouse map for unassigned serials
     warehouse_map = _get_serial_warehouse_map()
