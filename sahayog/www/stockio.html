@@ -13583,6 +13583,7 @@
       showDispatchItems: false,
       dispatchForm: {
         name: "",
+        department: "",
         source_warehouse: "",
         target_warehouse: "",
         stock_entry_type: "Material Issue",
@@ -17721,6 +17722,7 @@
         }
 
         this.dispatchForm.name = row.name;
+        this.dispatchForm.department = row.department || "";
         this.dispatchForm.source_warehouse = row.source_warehouse;
         this.dispatchForm.target_warehouse = row.target_warehouse;
         this.dispatchForm.stock_entry_type = "Material Transfer";
@@ -17760,6 +17762,8 @@
               }
 
               // Override target warehouse from the full document
+              this.dispatchForm.department =
+                res.message.department || this.dispatchForm.department;
               this.dispatchForm.target_warehouse =
                 res.message.target_warehouse || row.target_warehouse;
 
@@ -18082,15 +18086,57 @@
         }
 
         // Validate Dispatch Qty against Approved Qty
-        for (const item of this.dispatchForm.items) {
-          if (item.dispatch_qty > (item.approved_quantity || 0)) {
+        const overQtyItems = this.dispatchForm.items.filter(
+          (item) => (item.dispatch_qty || 0) > (item.approved_quantity || 0),
+        );
+
+        if (overQtyItems.length > 0) {
+          const isStationery =
+            String(this.dispatchForm.department || "")
+              .trim()
+              .toLowerCase() === "stationery";
+
+          // Stationery requests may dispatch more than approved after confirmation
+          if (!isStationery) {
+            const item = overQtyItems[0];
             frappe.msgprint(
               `Dispatch Qty for ${item.item_code} cannot be greater than Approved Qty (${item.approved_quantity || 0})`,
             );
             return;
           }
+
+          const overQtySummary = overQtyItems
+            .map(
+              (i) =>
+                `${i.item_code} (${i.dispatch_qty} > ${i.approved_quantity || 0})`,
+            )
+            .join(", ");
+
+          const overDispatchData = { over_dispatch_remark: "" };
+          this.showConfirm(
+            "Confirm Over Dispatch",
+            `Dispatch Qty is greater than Approved Qty for: ${overQtySummary}. Dispatch will be created with the same value.`,
+            async () => {
+              await this.processDispatch(
+                overDispatchData.over_dispatch_remark,
+              );
+            },
+            [
+              {
+                fieldname: "over_dispatch_remark",
+                label: "Reason / Remarks (Optional)",
+                placeholder: "Enter reason for dispatching more than approved qty",
+              },
+            ],
+            overDispatchData,
+            "Confirm & Dispatch",
+          );
+          return;
         }
 
+        await this.processDispatch("");
+      },
+      async processDispatch(overDispatchRemark = "") {
         // Fetch company from warehouse
         let company = "";
         try {
@@ -18152,6 +18198,7 @@
                   dispatch_location: this.dispatchForm.dispatch_location,
                   address: this.dispatchForm.address,
                   mobile_number: this.dispatchForm.mobile_number,
+                  over_dispatch_remark: overDispatchRemark || "",
                 },
               },
             });
