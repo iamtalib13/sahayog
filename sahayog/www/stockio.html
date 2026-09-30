@@ -8503,7 +8503,7 @@
               class="analytics-chart-container mt-4"
             >
               <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <h3>[[ assetStatusFilter === 'Available' ? 'Asset Availability for Assignment' : 'Assigned Asset Board' ]]</h3>
+                <h3>[[ assetStatusFilter === 'Available' ? 'Asset Availability for Assignment' : (assetStatusFilter === 'Assigned' ? 'Assigned Asset Board' : 'Scraped') ]]</h3>
                 <div style="display: flex; gap: 8px;">
                     <!-- Group By Toggle (Available) -->
                     <div v-if="assetStatusFilter === 'Available'" class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm); display: flex; gap: 4px;">
@@ -8586,6 +8586,14 @@
                         >
                             Assigned
                         </button>
+                        <button 
+                            class="btn-create-inline" 
+                            style="padding: 4px 12px; height: 32px; min-width: auto; font-size: 11px; transition: all 0.2s; box-shadow: none !important; border: none !important;" 
+                            :style="assetStatusFilter === 'Scraped' ? 'background: #369696 !important; color: white !important;' : 'background: transparent !important; color: var(--text-main) !important;'" 
+                            @click="assetStatusFilter = 'Scraped'"
+                        >
+                            Scraped
+                        </button>
                     </div>
                     <div class="view-toggle" style="background: var(--bg-main); padding: 4px; border-radius: var(--border-radius-sm);">
                         <button class="btn-create-inline" style="background: transparent; color: var(--text-main);" @click="assetViewMode = (assetViewMode === 'cards' ? 'list' : 'cards')">
@@ -8595,8 +8603,13 @@
                 </div>
               </div>
               
+              <!-- Scraped (coming soon) -->
+              <div v-if="assetStatusFilter === 'Scraped'" style="text-align: center; padding: 40px; margin-top: 16px; color: var(--text-muted); font-weight: 600;">
+                hi not yet
+              </div>
+
               <!-- Card View -->
-              <div v-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+              <div v-else-if="assetViewMode === 'cards'" class="card-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
                 <div v-if="assetAvailability.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
                   <i class="fas fa-box-open" style="font-size: 2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i>
                   No [[ assetStatusFilter ]] items
