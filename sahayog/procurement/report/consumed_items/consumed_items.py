@@ -89,7 +89,6 @@ def get_data():
         WHERE
             se.stock_entry_type = 'Material Issue'
             AND se.docstatus = 1
-            AND sed.s_warehouse = 'Stores - S'
         ORDER BY
             se.posting_date DESC
         """,
