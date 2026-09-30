@@ -13728,6 +13728,9 @@
       userDesignation: null,
       userInventoryType: null,
       branchStockFilter: "My Stock",
+      brandTitles: ["StockIO", "स्टॉकआईओ"],
+      brandIndex: 0,
+      brandTimerInterval: null,
       get hasWarehouseAccess() {
         if (this.isAdmin) return true;
         return this.wh_dept_map.some(m => m.user_id === frappe.session.user);
@@ -14745,6 +14748,8 @@
           this.isFullscreen = !!document.fullscreenElement;
         });
         this.itemView = localStorage.getItem("stockio_item_view") || "list";
+        // Rotate sidebar brand title (English <-> Hindi) every 2 minutes
+        this.startBrandTimer();
         this.isAdmin =
           frappe.session.user === "Administrator" ||
           (frappe.user_roles && frappe.user_roles.includes("Administrator"));
@@ -17896,6 +17901,19 @@
         if (this.emailTimerInterval) {
           clearInterval(this.emailTimerInterval);
           this.emailTimerInterval = null;
+        }
+      },
+      startBrandTimer() {
+        this.stopBrandTimer();
+        this.brandTimerInterval = setInterval(() => {
+          this.brandIndex = (this.brandIndex + 1) % this.brandTitles.length;
+          this.sidebar.header.title = this.brandTitles[this.brandIndex];
+        }, 2 * 60 * 1000);
+      },
+      stopBrandTimer() {
+        if (this.brandTimerInterval) {
+          clearInterval(this.brandTimerInterval);
+          this.brandTimerInterval = null;
         }
       },
       formatTimer(secs) {
