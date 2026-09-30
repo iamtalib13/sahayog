@@ -175,22 +175,25 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             COALESCE(l.mobile_no, l.phone, '-') as contact,
             l.source,
             l.lead_owner,
+            l.owner,
             l.sol_id,
             l.creation,
+            l.custom_employee_name,
+            l.custom_employee_id,
+            l.custom_designation,
+            l.custom_branch,
+            l.custom_district,
+            l.custom_region,
+            l.custom_zone,
             COALESCE(lp.product, '-') as product_code,
             COALESCE(lp.product_name, '-') as product_name,
             COALESCE(lp.product_amount, 0) as amount,
-            COALESCE(emp.employee_name, emp_owner.employee_name, '-') as employee_name,
-            COALESCE(emp.employee_number, emp_owner.employee_number, '-') as employee_id,
-            COALESCE(emp.designation, emp_owner.designation, '-') as designation,
             b.branch,
             b.district,
             b.region,
             b.zone
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-        LEFT JOIN `tabEmployee` emp ON (LOWER(emp.user_id) = LOWER(l.lead_owner) OR emp.employee_number = l.lead_owner)
-        LEFT JOIN `tabEmployee` emp_owner ON (LOWER(emp_owner.user_id) = LOWER(l.owner) OR emp_owner.employee_number = l.owner)
         LEFT JOIN `tabSahayog Branch` b ON b.sol_id = l.sol_id
         WHERE {where_clause}
         ORDER BY l.creation DESC
@@ -201,15 +204,45 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
     frappe.db.sql("SET SESSION sql_select_limit = DEFAULT;")
     raw_leads = frappe.db.sql(query, values, as_dict=True)
 
+    owners = set()
+    for r in raw_leads:
+        if r.get("lead_owner"): owners.add(r["lead_owner"])
+        if r.get("owner"): owners.add(r["owner"])
+
+    emp_map = {}
+    if owners:
+        emp_records = frappe.db.sql("""
+            SELECT user_id, employee_number, employee_name, designation
+            FROM `tabEmployee`
+            WHERE user_id IN %(owners)s OR employee_number IN %(owners)s
+        """, {"owners": tuple(owners)}, as_dict=True)
+
+        for e in emp_records:
+            if e.get("user_id"):
+                emp_map[e["user_id"].lower()] = e
+                emp_map[e["user_id"]] = e
+            if e.get("employee_number"):
+                emp_map[e["employee_number"]] = e
+
     final_leads = []
     for r in raw_leads:
         new_row = frappe._dict(r)
+
+        lead_owner_val = (r.get("lead_owner") or "").lower()
+        owner_val = (r.get("owner") or "").lower()
+
+        emp = emp_map.get(r.get("lead_owner")) or emp_map.get(lead_owner_val) or emp_map.get(r.get("owner")) or emp_map.get(owner_val) or {}
+
+        new_row["employee_name"] = emp.get("employee_name") or r.get("custom_employee_name") or "-"
+        new_row["employee_id"] = emp.get("employee_number") or r.get("custom_employee_id") or "-"
+        new_row["designation"] = emp.get("designation") or r.get("custom_designation") or "-"
+
         # Reconstruct branch_info dictionary for compatibility with frontend/KPI loops
         new_row["branch_info"] = {
-            "branch": r.get("branch") or "No SOL",
-            "district": r.get("district") or "-",
-            "region": r.get("region") or "-",
-            "zone": r.get("zone") or "-"
+            "branch": r.get("custom_branch") or r.get("branch") or "No SOL",
+            "district": r.get("custom_district") or r.get("district") or "-",
+            "region": r.get("custom_region") or r.get("region") or "-",
+            "zone": r.get("custom_zone") or r.get("zone") or "-"
         }
         final_leads.append(new_row)
 
@@ -342,14 +375,21 @@ def get_all_products_sources():
 @frappe.whitelist()
 def get_crm_top_analytics(from_date, to_date):
     user = frappe.session.user
+    _cache_key = f"crm_top_analytics:{user}:{from_date}:{to_date}"
+    _cached = frappe.cache().get_value(_cache_key)
+    if _cached is not None:
+        return _cached
+
     final_leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user)
 
     if not final_leads:
-        return {
+        res = {
             "top_branches": [],
             "top_employees": [],
             "lowest_usage_branches": []
         }
+        frappe.cache().set_value(_cache_key, res, expires_in_sec=120)
+        return res
 
     branch_stats = {}
     employee_stats = {}
@@ -419,11 +459,13 @@ def get_crm_top_analytics(from_date, to_date):
         key=lambda x: x["usage_percent"]
     )[:5]
 
-    return {
+    res = {
         "top_branches": top_branches,
         "top_employees": top_employees,
         "lowest_usage_branches": lowest_usage_branches
     }
+    frappe.cache().set_value(_cache_key, res, expires_in_sec=120)
+    return res
 import frappe
 
 @frappe.whitelist()
