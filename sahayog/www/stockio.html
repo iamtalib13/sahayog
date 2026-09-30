@@ -8684,7 +8684,7 @@
           >
             <div class="reports-grid">
               <div
-                v-for="card in currentView.reportCards"
+                v-for="card in visibleReportCards"
                 :key="card.label"
                 class="report-card"
                 @click="openReport(card.route)"
@@ -19402,6 +19402,39 @@
 
       get visibleColumns() {
         return (this.currentView && this.currentView.columns) || [];
+      },
+
+      get visibleReportCards() {
+        const cards = (this.currentView && this.currentView.reportCards) || [];
+        if (this.isAdmin) return cards;
+
+        const type = this.userInventoryType
+          ? String(this.userInventoryType).trim().toLowerCase()
+          : "";
+
+        if (type === "stationery") {
+          const allowed = [
+            "My Material Requests",
+            "Store Material Request",
+            "My Pending Approvals",
+            "Consumed Items",
+            "Branch Stock",
+          ];
+          return cards.filter((card) => allowed.includes(card.label));
+        }
+
+        if (type === "it") {
+          const allowed = [
+            "My Material Requests",
+            "Store Asset Master",
+            "Asset Transfer",
+            "My Assets",
+          ];
+          return cards.filter((card) => allowed.includes(card.label));
+        }
+
+        // No Sahayog Settings record (admin/normal user) or inventory type "other"
+        return cards;
       },
 
       getFieldValue(row, key) {
