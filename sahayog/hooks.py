@@ -571,6 +571,7 @@ override_whitelisted_methods = {
     "frappe.core.doctype.employee.employee.Employee.validate_for_enabled_user_id": "sahayog.override.employee_active_inactive.employee_active_inactive",
     "erpnext.stock.get_item_details.get_item_details": "sahayog.override.custom_get_item_details.custom_get_item_details",
     "erpnext.selling.doctype.customer.customer": "sahayog.override.override_make_contact.custom_make_contact",
+    "erpnext.crm.utils.get_open_activities": "sahayog.scrm.controller.lead.lead.get_open_activities",
     # "frappe.core.doctype.communication.email.make": "sahayog.override.email_sender_override.make"
 }
 #
