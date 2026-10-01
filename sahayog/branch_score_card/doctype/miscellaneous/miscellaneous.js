@@ -1,7 +1,7 @@
 frappe.ui.form.on('Miscellaneous', {
     refresh(frm) {
 
-        
+
     setTimeout(() => {
     frm.get_field('sol_id')?.$wrapper.find('a')
         .removeAttr('href')
@@ -30,10 +30,10 @@ frappe.ui.form.on('Miscellaneous', {
                                 <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                     <div>
                                         <b>Required Excel Columns for Account Opening Error:</b><br>
-                                        <span style="color: #555;">BRANCH CODE ( SOL ID ), A/C Opening Date</span>
+                                        <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">BRANCH CODE ( SOL ID ), A/C Opening Date</span>
                                     </div>
                                     <div>
-                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
+                                        <button class="btn btn-xs btn-default btn-download-template" style="/* CSS_COMMENTED_BY_PURVI color: #0d5c75; font-weight: 600; text-decoration: none; */">
                                             <i class="fa fa-download"></i> Download Template
                                         </button>
                                     </div>
@@ -79,9 +79,9 @@ frappe.ui.form.on('Miscellaneous', {
                                                 }
                                             );
                                         } else if (r.message.status === "success") {
-                                            frappe.show_alert({ 
-                                                message: __('Account Opening Error excel processed successfully!'), 
-                                                indicator: 'green' 
+                                            frappe.show_alert({
+                                                message: __('Account Opening Error excel processed successfully!'),
+                                                indicator: 'green'
                                             });
                                             frm.reload_doc();
                                         }
@@ -122,10 +122,10 @@ frappe.ui.form.on('Miscellaneous', {
                                 <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                     <div>
                                         <b>Required Excel Columns for Bank Reconciliation:</b><br>
-                                        <span style="color: #555;">BRANCH CODE ( SOL ID ), Discrepancy Date</span>
+                                        <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">BRANCH CODE ( SOL ID ), Discrepancy Date</span>
                                     </div>
                                     <div>
-                                        <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
+                                        <button class="btn btn-xs btn-default btn-download-template" style="/* CSS_COMMENTED_BY_PURVI color: #0d5c75; font-weight: 600; text-decoration: none; */">
                                             <i class="fa fa-download"></i> Download Template
                                         </button>
                                     </div>
@@ -171,9 +171,9 @@ frappe.ui.form.on('Miscellaneous', {
                                                 }
                                             );
                                         } else if (r.message.status === "success") {
-                                            frappe.show_alert({ 
-                                                message: __('Bank Reconciliation excel processed successfully!'), 
-                                                indicator: 'green' 
+                                            frappe.show_alert({
+                                                message: __('Bank Reconciliation excel processed successfully!'),
+                                                indicator: 'green'
                                             });
                                             frm.reload_doc();
                                         }
@@ -198,8 +198,9 @@ frappe.ui.form.on('Miscellaneous', {
         // 2. STYLING INJECTION FOR ALIGNMENT AND LOOK
         if (!$('#force-miscellaneous-show-style').length) {
             $('head').append(`
-                <style id="force-miscellaneous-show-style">
-                /* Table Wrapper Visibility Fix */
+                <style>/* CSS_COMMENTED_BY_PURVI
+
+
                 [data-fieldname="account_opening_error"],
                 [data-fieldname="bank_reconciliation_discrepancy"] {
                     display: block !important;
@@ -213,7 +214,7 @@ frappe.ui.form.on('Miscellaneous', {
                     box-shadow: none !important;
                 }
 
-                /* Native Header Styling (Flex Overrides Removed to Fix Gear Icon & Columns Alignment) */
+
                 .grid-heading-row {
                     background-color: #0d5c75 !important;
                     border-bottom: 1px solid #0d5c75 !important;
@@ -237,7 +238,7 @@ frappe.ui.form.on('Miscellaneous', {
                     color: #ffffff !important;
                 }
 
-                /* Clean Empty Row State */
+
                 .grid-empty {
                     text-align: center !important;
                     padding: 15px !important;
@@ -247,7 +248,7 @@ frappe.ui.form.on('Miscellaneous', {
                     border-bottom: 1px solid #e2e8f0 !important;
                 }
 
-                /* Grid Row Alignment & Filtering */
+
                 .grid-filter-row input,
                 .grid-row .col input,
                 .grid-heading-row .grid-row-filter input,
@@ -272,11 +273,11 @@ frappe.ui.form.on('Miscellaneous', {
                 .grid-body .grid-row:nth-child(even) { background-color: #f8fafc !important; }
                 .grid-body .grid-row:hover { background-color: #f1f5f9 !important; }
 
-                /* Inputs and Controls */
-                .form-control, 
+
+                .form-control,
                 .input-with-feedback,
-                .frappe-control input, 
-                .frappe-control select, 
+                .frappe-control input,
+                .frappe-control select,
                 .frappe-control textarea,
                 .control-input .like-disabled-input {
                     background-color: #f8fafc !important;
@@ -287,27 +288,28 @@ frappe.ui.form.on('Miscellaneous', {
                     box-shadow: none !important;
                 }
 
-                .form-control:focus, 
+                .form-control:focus,
                 .frappe-control input:focus {
                     background-color: #ffffff !important;
                     border-color: #0d5c75 !important;
                     box-shadow: 0 0 0 2px rgba(42, 126, 120, 0.15) !important;
                 }
 
-                .form-control[disabled], 
+                .form-control[disabled],
                 .form-control[readonly],
                 .control-value {
                     background-color: #f1f5f9 !important;
                     border-color: #cbd5e1 !important;
                     color: #475569 !important;
                 }
-            </style>
+
+CSS_COMMENTED_BY_PURVI */</style>
             `);
         }
 
         // 3. READ-ONLY VISIBILITY FOR COUNTS
         const readonly_fields = [
-            'account_opening_error_count', 
+            'account_opening_error_count',
             'reconciliation_discrepancy_count'
         ];
 
@@ -388,11 +390,11 @@ frappe.ui.form.on('Miscellaneous', {
 // NATIVE KEYBOARD CAPTURE FOR ALPHABET RESTRICTION ON GRID FILTERS
 document.addEventListener('keydown', function (e) {
     let target = e.target;
-    if (target && target.tagName === 'INPUT' && 
+    if (target && target.tagName === 'INPUT' &&
        (target.closest('.grid-filter-row') || target.closest('.grid-row-filter') || target.closest('.grid-heading-row'))) {
-        
+
         let key = e.key;
-        if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(key) || 
+        if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'].includes(key) ||
             e.ctrlKey || e.metaKey || e.altKey) {
             return true;
         }
@@ -407,9 +409,9 @@ document.addEventListener('keydown', function (e) {
 
 document.addEventListener('input', function (e) {
     let target = e.target;
-    if (target && target.tagName === 'INPUT' && 
+    if (target && target.tagName === 'INPUT' &&
        (target.closest('.grid-filter-row') || target.closest('.grid-row-filter') || target.closest('.grid-heading-row'))) {
-        
+
         target.style.textAlign = 'left';
         let val = target.value;
         let clean = val.replace(/[^0-9\-\/]/g, '');
@@ -422,8 +424,8 @@ document.addEventListener('input', function (e) {
 
 // CHILD TABLE HANDLERS
 frappe.ui.form.on('Account Opening Error Item', {
-    error_count(frm) { 
-        frm.trigger('calculate_miscellaneous_totals'); 
+    error_count(frm) {
+        frm.trigger('calculate_miscellaneous_totals');
     },
     account_opening_error_add(frm) {
         frm.trigger('calculate_miscellaneous_totals');
@@ -436,8 +438,8 @@ frappe.ui.form.on('Account Opening Error Item', {
 });
 
 frappe.ui.form.on('Bank Reconciliation Item', {
-    error_count(frm) { 
-        frm.trigger('calculate_miscellaneous_totals'); 
+    error_count(frm) {
+        frm.trigger('calculate_miscellaneous_totals');
     },
     bank_reconciliation_discrepancy_add(frm) {
         frm.trigger('calculate_miscellaneous_totals');

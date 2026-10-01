@@ -293,7 +293,7 @@ def process_consolidated_excel(file_url=None, confirm=False):
                 )
 
             try:
-                entry_date = getdate(date_raw)
+                entry_date = datetime.strptime(str(date_raw).strip(), "%d-%m-%Y").date()
                 date_str = str(entry_date)
                 month_name = entry_date.strftime("%B")
                 year_num = entry_date.year
@@ -522,7 +522,7 @@ def process_zero_ip_excel(file_url=None, confirm=False):
                 )
 
             try:
-                entry_date = getdate(date_raw)
+                entry_date = datetime.strptime(str(date_raw).strip(), "%d-%m-%Y").date()
                 date_str = str(entry_date)
                 month_name = entry_date.strftime("%B")
                 year_num = entry_date.year

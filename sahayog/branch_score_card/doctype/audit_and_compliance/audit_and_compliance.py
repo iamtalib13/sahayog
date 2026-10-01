@@ -117,7 +117,7 @@ def process_audit_score_excel(file_url):
         if pd.isnull(row["Audit Start Date"]):
             continue
 
-        raw_start_date = pd.to_datetime(row["Audit Start Date"])
+        raw_start_date = pd.to_datetime(str(row["Audit Start Date"]).strip(), format="%d-%m-%Y")
         audit_start_date = raw_start_date.strftime("%Y-%m-%d")
 
         # Extract Month Name and Financial Year
@@ -127,7 +127,7 @@ def process_audit_score_excel(file_url):
         # Parse Audit Completed Date if present
         audit_completed_date = None
         if pd.notnull(row.get("Audit Completed Date")):
-            audit_completed_date = pd.to_datetime(row["Audit Completed Date"]).strftime("%Y-%m-%d")
+            audit_completed_date = pd.to_datetime(str(row["Audit Completed Date"]).strip(), format="%d-%m-%Y").strftime("%Y-%m-%d")
             audit_status = "Completed"
         else:
             audit_status = "Pending"
@@ -211,7 +211,7 @@ def process_audit_closure_excel(file_url):
         if pd.isnull(row["Report Published Date"]):
             continue
 
-        report_published_dt = pd.to_datetime(row["Report Published Date"])
+        report_published_dt = pd.to_datetime(str(row["Report Published Date"]).strip(), format="%d-%m-%Y")
         report_published_date = report_published_dt.strftime("%Y-%m-%d")
 
         month_name = report_published_dt.strftime("%B")
@@ -220,7 +220,7 @@ def process_audit_closure_excel(file_url):
         recived_date = None
         
         if pd.notnull(row.get("Received Date")):
-            recived_dt = pd.to_datetime(row["Received Date"])
+            recived_dt = pd.to_datetime(str(row["Received Date"]).strip(), format="%d-%m-%Y")
             recived_date = recived_dt.strftime("%Y-%m-%d")
             delay_in_closure = str((recived_dt - report_published_dt).days)
             compliance_report_status = "Received"
@@ -303,7 +303,7 @@ def process_com_visit_excel(file_url):
         if pd.isnull(row["Date of Visit"]):
             continue
 
-        raw_visit_date = pd.to_datetime(row["Date of Visit"])
+        raw_visit_date = pd.to_datetime(str(row["Date of Visit"]).strip(), format="%d-%m-%Y")
         date_of_visit = raw_visit_date.strftime("%Y-%m-%d")
 
         # Auto-extract month name & year
@@ -385,7 +385,7 @@ def process_com_visit_compliance_excel(file_url):
         if pd.isnull(row["Date of publish"]):
             continue
 
-        raw_publish_date = pd.to_datetime(row["Date of publish"])
+        raw_publish_date = pd.to_datetime(str(row["Date of publish"]).strip(), format="%d-%m-%Y")
         date_of_publish = raw_publish_date.strftime("%Y-%m-%d")
 
         month_name = raw_publish_date.strftime("%B")
@@ -398,7 +398,7 @@ def process_com_visit_compliance_excel(file_url):
 
         # If Date of Closure is present, validate & update Status & Turnaround Time
         if pd.notnull(row.get("Date of closure")):
-            raw_closure_date = pd.to_datetime(row["Date of closure"])
+            raw_closure_date = pd.to_datetime(str(row["Date of closure"]).strip(), format="%d-%m-%Y")
             
             # Validation: Date of closure cannot be earlier than Date of publish
             if raw_closure_date < raw_publish_date:

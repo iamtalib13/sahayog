@@ -44,9 +44,9 @@ function render_manual_sync_button_filter(listview) {
     // 1. Manual Sync Button
     let $sync_btn_group = $(`
         <div id="manual-sync-filter-btn-group" class="btn-group" style="margin-right: 8px;">
-            <button id="manual-sync-filter-btn" class="btn btn-default btn-xs btn-sm" style="background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fa fa-refresh" style="margin-right: 5px; color: #ffffff; font-size: 11px;"></i> 
-                <span style="color: #ffffff;">${__('Manual Sync')}</span>
+            <button id="manual-sync-filter-btn" class="btn btn-default btn-xs btn-sm" style="/* CSS_COMMENTED_BY_PURVI background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; */ display: inline-flex; align-items: center; justify-content: center;">
+                <i class="fa fa-refresh" style="/* CSS_COMMENTED_BY_PURVI margin-right: 5px; color: #ffffff; font-size: 11px; */"></i> 
+                <span style="/* CSS_COMMENTED_BY_PURVI color: #ffffff; */">${__('Manual Sync')}</span>
             </button>
         </div>
     `);
@@ -63,9 +63,9 @@ function render_manual_sync_button_filter(listview) {
     // 2. Status Dropdown (Z-Index fix applied to list container/dropdown)
     let $status_btn_group = $(`
         <div id="status-filter-btn-group" class="btn-group" style="margin-right: 8px; z-index: 100;">
-            <button class="btn btn-default btn-xs btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fa fa-filter" style="margin-right: 5px; color: #ffffff; font-size: 11px;"></i> 
-                <span id="selected-status-label" style="color: #ffffff;">${current_label}</span> 
+            <button class="btn btn-default btn-xs btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="/* CSS_COMMENTED_BY_PURVI background-color: #0d5c75; color: #ffffff; border-color: #0d5c75; */ display: inline-flex; align-items: center; justify-content: center;">
+                <i class="fa fa-filter" style="/* CSS_COMMENTED_BY_PURVI margin-right: 5px; color: #ffffff; font-size: 11px; */"></i> 
+                <span id="selected-status-label" style="/* CSS_COMMENTED_BY_PURVI color: #ffffff; */">${current_label}</span> 
                 <span class="caret" style="border-top-color: #ffffff; margin-left: 5px;"></span>
             </button>
             <ul class="dropdown-menu" style="min-width: 160px; padding: 6px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1050;">
@@ -281,9 +281,9 @@ function fetch_and_render_warnings(listview) {
                 let alert_html = `
                     <div id="list-sync-alert-banner" class="alert alert-danger" style="margin: 10px 15px; padding: 12px 18px; border-radius: 8px; background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13px; position: relative; z-index: 1;">
                         <div style="display: flex; align-items: flex-start; gap: 10px;">
-                            <i class="fa fa-exclamation-triangle" style="font-size: 18px; color: #dc2626; margin-top: 2px;"></i>
+                            <i class="fa fa-exclamation-triangle" style="/* CSS_COMMENTED_BY_PURVI font-size: 18px; color: #dc2626; margin-top: 2px; */"></i>
                             <div style="flex-grow: 1;">
-                                <div style="font-weight: bold; font-size: 14px; color: #7f1d1d;">
+                                <div style="/* CSS_COMMENTED_BY_PURVI font-weight: bold; font-size: 14px; color: #7f1d1d; */">
                                     Attention: Data Integrity & Sync Issues Detected!
                                 </div>
                                 <div style="margin-top: 2px;">
@@ -356,11 +356,13 @@ function show_bulk_sync_dialog(listview) {
 
     let $primary_btn = d.get_primary_btn();
     if ($primary_btn && $primary_btn.length) {
+        /*
         $primary_btn.css({
             'background-color': '#0d5c75',
             'border-color': '#0d5c75',
             'color': '#ffffff'
         });
+        */
     }
 }
 

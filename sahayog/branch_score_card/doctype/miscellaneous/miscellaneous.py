@@ -91,18 +91,11 @@ def extract_dates_from_cell(cell_value):
         if not clean_token:
             continue
         try:
-            d_obj = getdate(clean_token)
-            if d_obj:
-                parsed_dates.append(d_obj)
-        except Exception:
-            # Fallback format checking if standard getdate fails
-            for fmt in ('%d-%m-%Y', '%d/%m/%Y', '%m/%d/%Y', '%Y-%m-%d', '%d.%m.%Y'):
-                try:
-                    d_obj = datetime.strptime(clean_token, fmt).date()
-                    parsed_dates.append(d_obj)
-                    break
-                except ValueError:
-                    pass
+            # Standard date format only: YYYY-MM-DD
+            d_obj = datetime.strptime(clean_token, "%d-%m-%Y").date()
+            parsed_dates.append(d_obj)
+        except ValueError:
+            pass
 
     return parsed_dates
 

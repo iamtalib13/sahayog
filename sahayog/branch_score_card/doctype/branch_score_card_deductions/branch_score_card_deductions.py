@@ -76,7 +76,7 @@ def process_kyc_deviation_excel(file_url):
         if pd.isnull(row["Date of Deviation"]):
             continue
 
-        raw_dev_date = pd.to_datetime(row["Date of Deviation"])
+        raw_dev_date = pd.to_datetime(str(row["Date of Deviation"]).strip(), format="%d-%m-%Y")
         date_of_deviation = raw_dev_date.strftime("%Y-%m-%d")
         
         # FIX: Define month_name here so it's available for row_data

@@ -10,7 +10,8 @@ frappe.ui.form.on("Branch Score Card Deductions", {
         }
 
         // Inject Custom CSS Styles matching your application's design system (#0d5c75 theme)
-        frappe.dom.set_style(`
+        frappe.dom.set_style(`/* CSS_COMMENTED_BY_PURVI
+
             .form-grid {
                 border: 1px solid #cbd5e1 !important;
                 border-radius: 8px !important;
@@ -59,10 +60,10 @@ frappe.ui.form.on("Branch Score Card Deductions", {
                 background-color: #f1f5f9 !important;
             }
 
-            .form-control, 
+            .form-control,
             .input-with-feedback,
-            .frappe-control input, 
-            .frappe-control select, 
+            .frappe-control input,
+            .frappe-control select,
             .frappe-control textarea,
             .control-input .like-disabled-input {
                 background-color: #f8fafc !important;
@@ -73,14 +74,15 @@ frappe.ui.form.on("Branch Score Card Deductions", {
                 box-shadow: none !important;
             }
 
-            .form-control[disabled], 
+            .form-control[disabled],
             .form-control[readonly],
             .control-value {
                 background-color: #f1f5f9 !important;
                 border-color: #cbd5e1 !important;
                 color: #475569 !important;
             }
-        `);
+
+CSS_COMMENTED_BY_PURVI */`);
     }
 });
 
@@ -94,10 +96,10 @@ frappe.ui.form.on("Overdue Account Opening Deviations", {
             let parsed_date = moment(row.date_of_deviation, 'YYYY-MM-DD');
             let year_val = parsed_date.format('YYYY');
             let month_val = parsed_date.format('MMMM'); // Month ka full name (jaise August)
-            
+
             // Auto-populate Month field in the child table row
             frappe.model.set_value(cdt, cdn, 'month', month_val);
-            
+
             // Auto-populate parent year if empty based on entered date
             if (!frm.doc.year && year_val) {
                 frm.set_value('year', year_val);
@@ -149,7 +151,7 @@ frappe.listview_settings['Branch Score Card Deductions'] = {
                                     indicator: 'green',
                                     message: r.message.message
                                 });
-                                
+
                                 // Instant List View Refresh
                                 listview.refresh();
                             }

@@ -41,7 +41,7 @@ frappe.ui.form.on("CRL Monitoring and Branch Opening and Closing", {
             frappe.validated = false;
         }
     },
-    
+
     // Child table me row add hone par trigger
     table_nzzy_add(frm) {
         handle_score_fields_visibility(frm);
@@ -173,10 +173,10 @@ function check_and_show_sync_warning(frm) {
 
         if (is_cron_missing || is_failed) {
             let formatted_date = row.date ? frappe.datetime.str_to_user(row.date) : "N/A";
-            let log_msg = is_cron_missing 
-                ? "Cron Job did not run / Entry Missing" 
+            let log_msg = is_cron_missing
+                ? "Cron Job did not run / Entry Missing"
                 : (row.sync_log || "Status: Fail");
-            
+
             sync_issues.push({
                 idx: row.idx,
                 name: row.name,
@@ -189,7 +189,7 @@ function check_and_show_sync_warning(frm) {
     // Render Clean Alert Banner
     if (sync_issues.length > 0) {
         let details_html = `<ul style="margin-top: 8px; margin-bottom: 0; padding-left: 18px; font-size: 12px; line-height: 1.6;">`;
-        
+
         sync_issues.forEach(item => {
             details_html += `<li><b>${item.date}</b> — ${item.log}</li>`;
         });
@@ -257,19 +257,19 @@ function build_search_row(grid, $wrapper, $header) {
         if (fieldname) {
             // OVAL & 3D STYLED SEARCH INPUT
             let $input = $(`
-                <input type="text" 
-                       class="form-control input-xs custom-col-filter" 
-                       data-fieldname="${fieldname}" 
-                       placeholder="Search..." 
+                <input type="text"
+                       class="form-control input-xs custom-col-filter"
+                       data-fieldname="${fieldname}"
+                       placeholder="Search..."
                        style="
-                           height: 26px; 
-                           font-size: 11px; 
-                           padding: 2px 10px; 
-                           border: 1.5px solid #006768; 
-                           border-radius: 15px; 
-                           color: #006768; 
-                           background: #ffffff; 
-                           box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.25), 0px 2px 4px rgba(0, 103, 104, 0.2); 
+                           height: 26px;
+                           font-size: 11px;
+                           padding: 2px 10px;
+                           border: 1.5px solid #006768;
+                           border-radius: 15px;
+                           color: #006768;
+                           background: #ffffff;
+                           box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.25), 0px 2px 4px rgba(0, 103, 104, 0.2);
                            outline: none;
                            transition: all 0.2s ease-in-out;
                        "
@@ -349,7 +349,7 @@ function auto_set_month_dates(frm) {
     if (frm.doc.month && frm.doc.year) {
         let month_idx = moment().month(frm.doc.month).format("MM");
         let start_date = moment(`${frm.doc.year}-${month_idx}-01`, "YYYY-MM-DD").format("YYYY-MM-DD");
-        
+
         let end_of_month = moment(start_date).endOf('month');
         let yesterday = moment().subtract(1, 'days');
         let end_date = end_of_month.isAfter(yesterday) ? yesterday.format("YYYY-MM-DD") : end_of_month.format("YYYY-MM-DD");
@@ -449,7 +449,8 @@ function validate_date_range(frm, triggered_field = null) {
 
 function apply_custom_grid_theme(frm) {
     let style = `
-        <style>
+        <style>/* CSS_COMMENTED_BY_PURVI
+
             .form-layout .control-label {
                 color: #4a5568 !important;
                 font-weight: 500 !important;
@@ -481,7 +482,7 @@ function apply_custom_grid_theme(frm) {
                 border-color: #e2e8f0 !important;
             }
 
-            /* Child Table Header Background */
+
             .grid-heading-row {
                 background-color: #0d5c75 !important;
                 border-radius: 6px 6px 0 0 !important;
@@ -506,7 +507,7 @@ function apply_custom_grid_theme(frm) {
                 border-bottom: 1px solid #e2e8f0 !important;
             }
 
-            /* Custom Column Filter Input */
+
             .custom-col-filter {
                 height: 26px !important;
                 font-size: 11px !important;
@@ -536,7 +537,7 @@ function apply_custom_grid_theme(frm) {
                 background-color: #f1f5f9 !important;
             }
 
-            /* Re Sync & Manual Action Buttons */
+
             [data-fieldname="re_sync"] button,
             .btn-manual-sync,
             .btn-primary-teal {
@@ -554,7 +555,8 @@ function apply_custom_grid_theme(frm) {
             .btn-primary-teal:hover {
                 background-color: #0e4a5d !important;
             }
-        </style>
+
+CSS_COMMENTED_BY_PURVI */</style>
     `;
 
     if ($('#custom-grid-theme-style').length === 0) {
