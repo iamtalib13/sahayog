@@ -2201,6 +2201,33 @@ def bulk_upload_training():
                     return dated
             return str(frappe.utils.getdate(raw))
 
+        # System zone/region masters (for fuzzy sheet matching)
+        valid_zones = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT zone FROM `tabSahayog Branch` "
+            "WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")]
+        valid_regions = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT region FROM `tabSahayog Branch` "
+            "WHERE region IS NOT NULL AND region != '' ORDER BY region")]
+
+        def resolve_geo(raw, valid):
+            """Sheet value -> system value. Exact (spacing/case-insensitive)
+            first, then number-based (e.g. 'Zone 1' -> 'ZONE-1'). None = no match."""
+            import re as _re
+            token = _re.sub(r"\s+", " ", (raw or "")).strip().lower()
+            if not token:
+                return ""
+            lmap = {str(v).lower(): v for v in valid}
+            if token in lmap:
+                return lmap[token]
+            m = _re.search(r"(\d+)", token)
+            if m:
+                num = m.group(1).lstrip("0") or "0"
+                for v in valid:
+                    vm = _re.search(r"(\d+)", str(v))
+                    if vm and (vm.group(1).lstrip("0") or "0") == num:
+                        return v
+            return None
+
         trainings = []
         errors = []
         for i, row in enumerate(rows[1:], start=2):
@@ -2210,7 +2237,8 @@ def bulk_upload_training():
             program = get_val(row, "Program Name", "Training Title", "Topic")
             branch_raw = get_val(row, "Branch Code", "Branch Name")
             trainer_id = get_val(row, "Trainer ID")
-            duration_raw = get_val(row, "Training Duration", "Duration", "Duration (Days)", "Training Days")
+            type_raw = get_val(row, "Training Type", "Type")
+            duration_raw = get_val(row, "Training Days", "Training Duration", "Duration", "Duration (Days)")
             count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
             hours_raw = get_val(row, "Program Duration in Hours", "Program Duration", "Duration in Hours", "Duration Hours")
 
@@ -2242,6 +2270,35 @@ def bulk_upload_training():
                 errors.append(f"Row {i}: Trainer ID '{trainer_id}' not found")
                 continue
             trainer_name = frappe.db.get_value("Employee", trainer_id, "employee_name") or trainer_id
+            # Training Type: Classroom / Virtual (case & spacing tolerant)
+            type_token = "".join(str(type_raw or "").split()).lower()
+            if type_token in ("classroom",):
+                training_type = "Classroom"
+            elif type_token in ("virtual",):
+                training_type = "Virtual"
+            else:
+                errors.append(f"Row {i}: Training Type must be Classroom or Virtual (found '{type_raw}')")
+                continue
+            # Zone / Region: fuzzy-match sheet value to system master, then
+            # cross-check against the branch's own geography. Sheet wins when
+            # the branch master is blank; conflicts are rejected.
+            branch_geo = frappe.db.get_value("Sahayog Branch", branch_code, ["zone", "region"], as_dict=True) or {}
+            zone_sheet = resolve_geo(get_val(row, "Zone"), valid_zones)
+            region_sheet = resolve_geo(get_val(row, "Region"), valid_regions)
+            if get_val(row, "Zone") and zone_sheet is None:
+                errors.append(f"Row {i}: Zone '{get_val(row, 'Zone')}' not recognised (valid: {', '.join(valid_zones)})")
+                continue
+            if get_val(row, "Region") and region_sheet is None:
+                errors.append(f"Row {i}: Region '{get_val(row, 'Region')}' not recognised (valid: {', '.join(valid_regions)})")
+                continue
+            zone_final = zone_sheet or (branch_geo.zone or "")
+            region_final = region_sheet or (branch_geo.region or "")
+            if zone_sheet and (branch_geo.zone or "") and zone_sheet != branch_geo.zone:
+                errors.append(f"Row {i}: Zone '{zone_sheet}' does not match branch '{branch_code}' (branch is in '{branch_geo.zone}')")
+                continue
+            if region_sheet and (branch_geo.region or "") and region_sheet != branch_geo.region:
+                errors.append(f"Row {i}: Region '{region_sheet}' does not match branch '{branch_code}' (branch is in '{branch_geo.region}')")
+                continue
             if not duration_raw:
                 duration = 1
             else:
@@ -2281,6 +2338,9 @@ def bulk_upload_training():
                 "program": program.strip(),
                 "branch_code": branch_code,
                 "trainer_name": trainer_name.strip(),
+                "training_type": training_type,
+                "zone": zone_final,
+                "region": region_final,
                 "duration": duration,
                 "count": count,
                 "hours": hours,
@@ -2310,14 +2370,16 @@ def bulk_upload_training():
                 doc.from_date = from_date
                 doc.to_date = to_date
                 doc.trainer = t["trainer_name"]
+                doc.training_type = t["training_type"]
                 doc.number_of_participants = t["count"]
                 if t["hours"] is not None:
                     doc.program_duration_hours = t["hours"]
                 doc.start_time = ""
                 doc.end_time = ""
-                # Single branch geography (zone/region/district auto-fetched)
-                geo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["zone", "region", "district"], as_dict=True) or {}
-                doc.append("geographies", {"branch": t["branch_code"], "zone": geo.zone or "", "region": geo.region or "", "district": geo.district or ""})
+                # Single branch geography (zone/region validated above;
+                # district comes from the branch master)
+                _dgeo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["district"], as_dict=True) or {}
+                doc.append("geographies", {"branch": t["branch_code"], "zone": t["zone"], "region": t["region"], "district": _dgeo.district or ""})
                 # Legacy sync handled in before_save, but set first for safety
                 if doc.geographies:
                     doc.branch = doc.geographies[0].branch
@@ -2353,10 +2415,10 @@ def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
     # Sample uses real program / SOL ID / trainer ID values from the system.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Program Duration in Hours", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Days", "Program Duration in Hours", "Number of Participants"]
     sample = [
-        ["1", "28/09/2026", "Training SK", "1000", "1754", "3", "6", "20"],
-        ["2", "29/09/2026", "JLL Training", "1012", "8751", "1", "2", "15"],
+        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "3", "6", "20"],
+        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "1", "2", "15"],
     ]
     import csv, io
     out = io.StringIO()
