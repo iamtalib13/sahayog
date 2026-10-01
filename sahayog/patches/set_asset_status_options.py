@@ -1,7 +1,7 @@
 import frappe
 
 
-CUSTOM_ASSET_STATUS_OPTIONS = "Draft\nAvailable\nAssigned\nIn Repair\nScrapped\nSubmitted\nCancelled"
+CUSTOM_ASSET_STATUS_OPTIONS = "Draft\nAvailable\nAssigned\nIn Repair\nScrapped\nSubmitted\nCancelled\nWarranty Status"
 
 
 def create_or_update_property_setter(doc_type, field_name, property_name, value, property_type, module="Procurement"):

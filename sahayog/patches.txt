@@ -67,3 +67,4 @@ sahayog.patches.set_common_hr_stamp
 sahayog.patches.set_domestic_enquiry_stamp
 sahayog.patches.add_index_to_lead_mobile_no
 sahayog.patches.custom_fields.add_sub_department_to_employee
+sahayog.patches.set_asset_status_options
