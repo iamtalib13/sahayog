@@ -2331,7 +2331,9 @@ def bulk_upload_training():
             except Exception as e:
                 import traceback
                 frappe.log_error(traceback.format_exc(), "Bulk Upload Training")
-                errors.append(f"Training {t['program']} on {from_date}: {str(e)}")
+                _fd = from_date
+                _fd_disp = f"{_fd[8:10]}/{_fd[5:7]}/{_fd[0:4]}" if len(_fd) == 10 else _fd
+                errors.append(f"Training {t['program']} on {_fd_disp}: {str(e)}")
 
         # Build response
         msg = f"Created {created} trainings"
