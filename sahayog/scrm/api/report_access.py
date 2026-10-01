@@ -178,6 +178,7 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             l.owner,
             l.sol_id,
             l.creation,
+            l.modified,
             l.custom_employee_name,
             l.custom_employee_id,
             l.custom_designation,
@@ -879,7 +880,9 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(sb.district, ''),
             IFNULL(sb.region, ''),
             IFNULL(sb.zone, ''),
-            DATE_FORMAT(l.creation, '%d-%m-%Y') as created_on,
+            DATE_FORMAT(l.creation, '%d-%m-%Y %H:%i:%s') as created_on,
+            DATE_FORMAT(l.modified, '%d-%m-%Y %H:%i:%s') as last_modified,
+            CONCAT(TIMESTAMPDIFF(DAY, l.creation, NOW()), ' Days') as lead_age,
             IFNULL(l.lead_owner, '')
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
@@ -897,7 +900,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
-        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
+        "SOL ID", "Branch", "District", "Region", "Zone",
+        "Created On", "Last Modified", "Lead Age", "Owner Email"
     ]
 
     new_leads_map = {}
@@ -1157,7 +1161,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
-        "SOL ID", "Branch", "District", "Region", "Zone", "Created On", "Owner Email"
+        "SOL ID", "Branch", "District", "Region", "Zone",
+        "Created On", "Last Modified", "Lead Age", "Owner Email"
     ]
 
     if target_path and os.path.exists(target_path):
@@ -1192,7 +1197,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
 
             def parse_csv_date(date_str):
                 try:
-                    return datetime.datetime.strptime(date_str, "%d-%m-%Y").date()
+                    clean_date = date_str.strip().split()[0]
+                    return datetime.datetime.strptime(clean_date, "%d-%m-%Y").date()
                 except Exception:
                     return None
 
@@ -1210,7 +1216,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                     if not row_date or row_date < from_date_obj or row_date > to_date_obj:
                         continue
                     if user != "Administrator" and not has_pref:
-                        if len(row) > 17 and row[17] != user:
+                        owner_val = row[19] if len(row) > 19 else (row[17] if len(row) > 17 else "")
+                        if owner_val and owner_val != user:
                             continue
                     if sol_ids_pref and row[11] not in sol_ids_pref:
                         continue
@@ -1234,9 +1241,16 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     # Automatic fallback to direct DB query if CSV file had 0 matching rows
     if not matching_rows:
         leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user, ui_filters)
+        now_dt = frappe.utils.now_datetime()
         for r in leads:
             b = r.get("branch_info", {})
-            created_on_str = format_date(r.get("creation"), "dd-mm-yyyy") if r.get("creation") else ""
+            cre_dt = frappe.utils.get_datetime(r.get("creation")) if r.get("creation") else None
+            mod_dt = frappe.utils.get_datetime(r.get("modified")) if r.get("modified") else None
+
+            created_on_str = cre_dt.strftime("%d-%m-%Y %H:%M:%S") if cre_dt else ""
+            last_modified_str = mod_dt.strftime("%d-%m-%Y %H:%M:%S") if mod_dt else ""
+            lead_age_str = f"{(now_dt - cre_dt).days} Days" if cre_dt else "-"
+
             row = [
                 r.get("name") or "",
                 r.get("status") or "",
@@ -1255,6 +1269,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                 b.get("region") or "",
                 b.get("zone") or "",
                 created_on_str,
+                last_modified_str,
+                lead_age_str,
                 r.get("lead_owner") or ""
             ]
             matching_rows.append(row)
