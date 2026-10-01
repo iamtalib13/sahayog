@@ -2154,14 +2154,13 @@ def bulk_upload_training():
         # Date->Training Date, Topic->Program Name, Branch Name->Branch Code,
         # "Program Duration in hours..."->duration hours,
         # "Number of participants invited"->headcount.
+        # Branch Code is OPTIONAL (row + training can exist without a branch).
         # Day is derived from the date; Zone/Region auto-fetch from branch;
         # "attended" is marked later in the portal — all three are ignored.
         # One row = one training; no participant rows are added here.
         required = []
         if "training date" not in header_lower and "date" not in header_lower:
             required.append("Training Date (or Date)")
-        if "branch code" not in header_lower and "branch name" not in header_lower:
-            required.append("Branch Code (or Branch Name)")
         if "trainer id" not in header_lower:
             required.append("Trainer ID")
         if "program name" not in header_lower and "training title" not in header_lower and "topic" not in header_lower:
@@ -2260,16 +2259,16 @@ def bulk_upload_training():
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue
-            if not branch_raw:
-                errors.append(f"Row {i}: Branch Code is required")
-                continue
-            # SOL ID (Sahayog Branch.name) first, display name as fallback
-            branch_code = frappe.db.get_value("Sahayog Branch", branch_raw, "name") or frappe.db.get_value("Sahayog Branch", {"branch": branch_raw}, "name")
-            if not branch_code:
-                branch_code = frappe.db.get_value("Sahayog Branch", {"branch": ["like", branch_raw]}, "name")
-            if not branch_code:
-                errors.append(f"Row {i}: Branch '{branch_raw}' not found")
-                continue
+            # Branch is optional: resolve when given, else blank geography.
+            branch_code = ""
+            if branch_raw:
+                # SOL ID (Sahayog Branch.name) first, display name as fallback
+                branch_code = frappe.db.get_value("Sahayog Branch", branch_raw, "name") or frappe.db.get_value("Sahayog Branch", {"branch": branch_raw}, "name")
+                if not branch_code:
+                    branch_code = frappe.db.get_value("Sahayog Branch", {"branch": ["like", branch_raw]}, "name")
+                if not branch_code:
+                    errors.append(f"Row {i}: Branch '{branch_raw}' not found")
+                    continue
             if not trainer_id:
                 errors.append(f"Row {i}: Trainer ID is required")
                 continue
@@ -2287,9 +2286,10 @@ def bulk_upload_training():
                 errors.append(f"Row {i}: Training Type must be Classroom or Virtual (found '{type_raw}')")
                 continue
             # Zone / Region: fuzzy-match sheet value to system master, then
-            # cross-check against the branch's own geography. Sheet wins when
-            # the branch master is blank; conflicts are rejected.
-            branch_geo = frappe.db.get_value("Sahayog Branch", branch_code, ["zone", "region"], as_dict=True) or {}
+            # cross-check against the branch's own geography (when a branch
+            # is given). Sheet wins when the branch master is blank;
+            # conflicts are rejected.
+            branch_geo = frappe.db.get_value("Sahayog Branch", branch_code, ["zone", "region"], as_dict=True) if branch_code else None
             zone_sheet = resolve_geo(get_val(row, "Zone"), valid_zones)
             region_sheet = resolve_geo(get_val(row, "Region"), valid_regions)
             if get_val(row, "Zone") and zone_sheet is None:
@@ -2298,13 +2298,15 @@ def bulk_upload_training():
             if get_val(row, "Region") and region_sheet is None:
                 errors.append(f"Row {i}: Region '{get_val(row, 'Region')}' not recognised (valid: {', '.join(valid_regions)})")
                 continue
-            zone_final = zone_sheet or (branch_geo.zone or "")
-            region_final = region_sheet or (branch_geo.region or "")
-            if zone_sheet and (branch_geo.zone or "") and zone_sheet != branch_geo.zone:
-                errors.append(f"Row {i}: Zone '{zone_sheet}' does not match branch '{branch_code}' (branch is in '{branch_geo.zone}')")
+            _bz = (branch_geo.zone or "") if branch_geo else ""
+            _br = (branch_geo.region or "") if branch_geo else ""
+            zone_final = zone_sheet or _bz
+            region_final = region_sheet or _br
+            if zone_sheet and _bz and zone_sheet != _bz:
+                errors.append(f"Row {i}: Zone '{zone_sheet}' does not match branch '{branch_code}' (branch is in '{_bz}')")
                 continue
-            if region_sheet and (branch_geo.region or "") and region_sheet != branch_geo.region:
-                errors.append(f"Row {i}: Region '{region_sheet}' does not match branch '{branch_code}' (branch is in '{branch_geo.region}')")
+            if region_sheet and _br and region_sheet != _br:
+                errors.append(f"Row {i}: Region '{region_sheet}' does not match branch '{branch_code}' (branch is in '{_br}')")
                 continue
             if not duration_raw:
                 duration = 1
@@ -2383,16 +2385,20 @@ def bulk_upload_training():
                     doc.program_duration_hours = t["hours"]
                 doc.start_time = ""
                 doc.end_time = ""
-                # Single branch geography (zone/region validated above;
-                # district comes from the branch master)
-                _dgeo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["district"], as_dict=True) or {}
-                doc.append("geographies", {"branch": t["branch_code"], "zone": t["zone"], "region": t["region"], "district": _dgeo.district or ""})
+                # Branch geography only when a branch was given (district from
+                # master); otherwise zone/region live on the legacy fields.
+                if t["branch_code"]:
+                    _dgeo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["district"], as_dict=True) or {}
+                    doc.append("geographies", {"branch": t["branch_code"], "zone": t["zone"], "region": t["region"], "district": _dgeo.district or ""})
                 # Legacy sync handled in before_save, but set first for safety
                 if doc.geographies:
                     doc.branch = doc.geographies[0].branch
                     doc.zone = doc.geographies[0].zone
                     doc.region = doc.geographies[0].region
                     doc.district = doc.geographies[0].district
+                else:
+                    doc.zone = t["zone"]
+                    doc.region = t["region"]
                 # No participant rows here — headcount lives in
                 # number_of_participants; rows are added separately.
                 doc.insert(ignore_permissions=True)
