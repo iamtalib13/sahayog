@@ -162,15 +162,67 @@ def _pref_geo_scope():
         d = _digits(s)
         return d if d is not None else str(s or "").strip().lower()
 
-    zones = {_norm_zone(d.zone) for d in doc.get("zone", []) if d.zone}
-    regions = {_norm_region(d.region) for d in doc.get("region", []) if d.region}
-    districts = {str(d.district or "").strip().lower() for d in doc.get("district", []) if d.district}
-    sols = {str(d.sol_id or "").strip() for d in doc.get("sol_id", []) if d.sol_id}
+    zones, regions, districts, sols = set(), set(), set(), set()
+    dzones, dregions, ddistricts, dsols = [], [], [], []
+    for d in doc.get("zone", []):
+        if not d.zone:
+            continue
+        z = _norm_zone(d.zone)
+        if z is None:
+            continue
+        zones.add(z)
+        dz = ("ZONE-" + z) if z[:1].isdigit() else str(d.zone).strip()
+        if dz not in dzones:
+            dzones.append(dz)
+    for d in doc.get("region", []):
+        if not d.region:
+            continue
+        r = _norm_region(d.region)
+        if r is None:
+            continue
+        regions.add(r)
+        dr = "HO" if r == "HO" else (("REGION-" + r) if r[:1].isdigit() else str(d.region).strip())
+        if dr not in dregions:
+            dregions.append(dr)
+    for d in doc.get("district", []):
+        if not d.district:
+            continue
+        v = str(d.district).strip()
+        districts.add(v.lower())
+        if v not in ddistricts:
+            ddistricts.append(v)
+    for d in doc.get("sol_id", []):
+        if not d.sol_id:
+            continue
+        v = str(d.sol_id).strip()
+        sols.add(v)
+        if v not in dsols:
+            dsols.append(v)
     zones.discard(None)
     regions.discard(None)
     if not (zones or regions or districts or sols):
         return None
-    return {"zones": zones, "regions": regions, "districts": districts, "sols": sols}
+    return {
+        "zones": zones, "regions": regions, "districts": districts, "sols": sols,
+        "display": {"zones": dzones, "regions": dregions, "districts": ddistricts, "branches": dsols},
+    }
+
+
+@frappe.whitelist()
+def get_my_access_scope():
+    """Current user's geo access (training vocab) for prefilling UI filters."""
+    scope = _pref_geo_scope()
+    empty = {"restricted": False, "zones": [], "regions": [], "districts": [], "branches": []}
+    if not scope:
+        return empty
+    d = scope.get("display", {})
+    return {
+        "restricted": True,
+        "zones": d.get("zones", []),
+        "regions": d.get("regions", []),
+        "districts": d.get("districts", []),
+        "branches": d.get("branches", []),
+    }
 
 
 def _in_pref_geo(geos, legacy, scope):
