@@ -184,7 +184,12 @@ def get_task_permission(user):
     # safe LIKE filter
     return f"""(`tabTask`.`_assign` LIKE '%"{user}"%')"""
 
-# permission query_conditions for purchase receipt based on warehouse(inward)
+# permission query_conditions for purchase receipt (inward) based on
+# Sahayog Settings inventory_type:
+# - Administrator: all
+# - Stationery users: all except records created by 'other' users
+# - 'other' users: only records created by 'other' users
+# - everyone else (no settings row, IT, ...): own records only
 def get_purchase_receipt_permission_for_warehouse(user, doctype=None):
     if not user:
         user = frappe.session.user
@@ -193,17 +198,36 @@ def get_purchase_receipt_permission_for_warehouse(user, doctype=None):
     if user == "Administrator":
         return ""
 
-    # Allow owner to see their own records
-    # Also allow warehouse match
+    u = user.replace("'", "''")
     return f"""
-        (`tabPurchase Receipt`.owner = '{user}'
-        or exists(
-            select 1
-            from `tabDefault Warehouse` dw
-            where dw.parenttype = 'Sahayog Settings'
-            and dw.user_id = '{user}'
-            and dw.warehouse = `tabPurchase Receipt`.set_warehouse
-        ))
+        (
+            (exists(select 1
+                from `tabDefault Warehouse` me
+                where me.parenttype = 'Sahayog Settings'
+                and me.user_id = '{u}'
+                and lower(me.inventory_type) = 'stationery')
+            and not exists(select 1
+                from `tabDefault Warehouse` cr
+                where cr.parenttype = 'Sahayog Settings'
+                and cr.user_id = `tabPurchase Receipt`.owner
+                and lower(cr.inventory_type) = 'other'))
+            or (exists(select 1
+                from `tabDefault Warehouse` me
+                where me.parenttype = 'Sahayog Settings'
+                and me.user_id = '{u}'
+                and lower(me.inventory_type) = 'other')
+            and exists(select 1
+                from `tabDefault Warehouse` cr
+                where cr.parenttype = 'Sahayog Settings'
+                and cr.user_id = `tabPurchase Receipt`.owner
+                and lower(cr.inventory_type) = 'other'))
+            or (not exists(select 1
+                from `tabDefault Warehouse` me
+                where me.parenttype = 'Sahayog Settings'
+                and me.user_id = '{u}'
+                and lower(me.inventory_type) in ('stationery', 'other'))
+            and `tabPurchase Receipt`.owner = '{u}')
+        )
     """
 
 def get_stock_entry_permission_for_warehouse(user, doctype=None):
