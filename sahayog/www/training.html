@@ -579,6 +579,19 @@
         background: transparent;
         color: var(--accent-ink);
       }
+      /* Your-access scope note in the calendar filters bar */
+      .access-note {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-ink);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 3px 10px;
+        white-space: nowrap;
+        margin-left: 2px;
+      }
 
       /* Toolbar */
       .cal-toolbar {
@@ -4871,6 +4884,7 @@
               </svg>
               Reset
             </button>
+            <span class="access-note" id="accessNote" style="display: none"></span>
           </div>
 
           <div class="cal-toolbar">
@@ -6559,9 +6573,62 @@
                 document.getElementById(s).value = "";
               },
             );
+            /* Reset restores your access scope (server still enforces it). */
+            applyAccessDefaults();
             state.selectedDate = new Date(today);
             loadData(true);
           };
+        }
+        /* Prefill calendar filters from Report Preference access so the
+           applied scope is visible (single-value scopes get selected). */
+        function applyAccessDefaults() {
+          var s = state.accessScope;
+          var note = document.getElementById("accessNote");
+          if (!s || !s.restricted) {
+            if (note) note.style.display = "none";
+            return false;
+          }
+          var pairs = [
+            ["fil-zone", "zone", s.zones || []],
+            ["fil-region", "region", s.regions || []],
+            ["fil-district", "district", s.districts || []],
+            ["fil-branch", "branch", s.branches || []],
+          ];
+          pairs.forEach(function (p) {
+            var el = document.getElementById(p[0]);
+            if (!el || p[2].length !== 1) return;
+            var want = p[2][0];
+            for (var i = 0; i < el.options.length; i++) {
+              if (el.options[i].value === want || el.options[i].text === want) {
+                el.selectedIndex = i;
+                state.calFilters[p[1]] = el.options[i].value;
+                break;
+              }
+            }
+          });
+          var bits = [];
+          ["zones", "regions", "districts", "branches"].forEach(function (k) {
+            var v = s[k] || [];
+            if (v.length === 1) bits.push(v[0]);
+            else if (v.length > 1) bits.push(v.length + " " + k);
+          });
+          if (note) {
+            note.textContent = "Your access: " + (bits.join(" · ") || "restricted");
+            note.style.display = bits.length ? "inline-flex" : "none";
+            note.title = "Calendar is filtered to your Report Preference access";
+          }
+          return true;
+        }
+        function loadAccessScope() {
+          state.accessScope = null;
+          return api("get_my_access_scope", {})
+            .then(function (res) {
+              state.accessScope = res || null;
+              applyAccessDefaults();
+            })
+            .catch(function () {
+              state.accessScope = null;
+            });
         }
         function pickRelevantDate() {
           var evs = filteredEvents();
@@ -13337,6 +13404,9 @@
             else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
             return loadGeo();
+          })
+          .then(function () {
+            return loadAccessScope();
           })
           .then(function () {
             loadData(true);
