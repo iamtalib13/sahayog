@@ -2246,6 +2246,7 @@ def bulk_upload_training():
             type_raw = get_val(row, "Training Type", "Type")
             duration_raw = get_val(row, "Training Days", "Training Duration", "Duration", "Duration (Days)")
             count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
+            location_raw = get_val(row, "Training Location", "Location", "Venue")
             hours_raw = get_val(row, "Program Duration in Hours", "Program Duration", "Duration in Hours", "Duration Hours")
 
             if not training_date_raw:
@@ -2353,6 +2354,7 @@ def bulk_upload_training():
                 "duration": duration,
                 "count": count,
                 "hours": hours,
+                "location": location_raw,
             })
 
         if not trainings:
@@ -2380,6 +2382,7 @@ def bulk_upload_training():
                 doc.to_date = to_date
                 doc.trainer = t["trainer_name"]
                 doc.training_type = t["training_type"]
+                doc.training_location = t["location"]
                 doc.number_of_participants = t["count"]
                 if t["hours"] is not None:
                     doc.program_duration_hours = t["hours"]
@@ -2428,10 +2431,10 @@ def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
     # Sample uses real program / SOL ID / trainer ID values from the system.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Days", "Program Duration in Hours", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Location", "Training Days", "Program Duration in Hours", "Number of Participants"]
     sample = [
-        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "3", "6", "20"],
-        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "1", "2", "15"],
+        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "GONDIA-HO", "3", "6", "20"],
+        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "GONDIA", "1", "2", "15"],
     ]
     import csv, io
     out = io.StringIO()
