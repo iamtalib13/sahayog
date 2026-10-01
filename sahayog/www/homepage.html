@@ -807,17 +807,13 @@
           </div>
           <span class="icon-label">Branch Master</span>
         </a>
-        <!-- Taskflow (with Timesheet dropdown) -->
-        <div class="icon-item" id="taskflow-link" data-taskflow="true" role="button" tabindex="0" aria-haspopup="true">
+        <!-- Taskflow -->
+        <a class="icon-item" href="/taskflow" role="link" tabindex="0">
           <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
             <i class="fa fa-tasks"></i>
           </div>
           <span class="icon-label">Taskflow</span>
-          <div class="taskflow-dropdown hidden" id="taskflow-dropdown">
-            <a href="/taskflow" class="taskflow-option">Taskflow</a>
-            <a href="/app/taskflow-timesheet" class="taskflow-option">Timesheet</a>
-          </div>
-        </div>
+        </a>
         <!-- Permission Manager -->
         <a class="icon-item" href="/app/permission-config" role="link" tabindex="0">
           <div class="icon-circle bg-purple-200 text-purple-800">
@@ -1242,8 +1238,6 @@
       iconItems.forEach((item) => {
         if (item.id === "crm-link") {
           item.addEventListener("click", openCRMModal);
-        } else if (item.dataset.taskflow === "true") {
-          item.addEventListener("click", toggleTaskflowDropdown);
         } else {
           item.addEventListener("click", handleLinkClick);
         }
