@@ -179,24 +179,38 @@ def validate_lead_mobile(doc, method):
             )
 
 
-def validate_lead_products(doc, method):
-    """Validate Lead product table — at least 1 product, all products have amount > 0."""
-    if not doc.get("custom_product_table") or len(doc.custom_product_table) == 0:
+def validate_lead_products(doc, method=None):
+    """Validate Lead product table — at least 1 product, all products have valid product link and amount > 0."""
+    products = doc.get("custom_product_table") or []
+
+    valid_rows = [
+        row for row in products
+        if row and (row.get("product") or row.get("product_name") or row.get("product_amount"))
+    ]
+
+    if not valid_rows:
         frappe.throw(
-            title="Missing Products",
-            msg="At least one product is required. Please add a product before saving."
+            title=_("Missing Products"),
+            msg=_("At least one product is required. Please add a product before saving.")
         )
 
-    for i, row in enumerate(doc.custom_product_table, 1):
-        if not row.product:
+    for i, row in enumerate(valid_rows, 1):
+        if not row.get("product") or not str(row.get("product")).strip():
             frappe.throw(
-                title="Missing Product",
-                msg=f"Row {i}: Product is required."
+                title=_("Missing Product"),
+                msg=_("Row {0}: Product is required.").format(i)
             )
-        if not row.product_amount or row.product_amount <= 0:
+        amount = row.get("product_amount")
+        try:
+            if amount is None or float(amount) <= 0:
+                frappe.throw(
+                    title=_("Invalid Amount"),
+                    msg=_("Row {0}: Product amount must be greater than 0.").format(i)
+                )
+        except (ValueError, TypeError):
             frappe.throw(
-                title="Invalid Amount",
-                msg=f"Row {i}: Product amount must be greater than 0."
+                title=_("Invalid Amount"),
+                msg=_("Row {0}: Product amount must be a valid number greater than 0.").format(i)
             )
 
 
@@ -387,3 +401,18 @@ def get_users_by_branch_and_designation(
         "start": start,
         "page_len": page_len,
     })
+
+
+@frappe.whitelist()
+def get_open_activities(ref_doctype=None, ref_docname=None):
+    """Safely return open tasks and events for reference doc without 404 errors on new/unsaved docs."""
+    if not ref_doctype or not ref_docname or str(ref_docname).startswith("new-"):
+        return {"tasks": [], "events": []}
+    try:
+        from erpnext.crm.utils import get_open_todos, get_open_events
+        tasks = get_open_todos(ref_doctype, ref_docname)
+        events = get_open_events(ref_doctype, ref_docname)
+        return {"tasks": tasks, "events": events}
+    except Exception:
+        return {"tasks": [], "events": []}
+
