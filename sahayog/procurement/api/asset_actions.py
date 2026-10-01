@@ -7,10 +7,11 @@ ALLOWED_STATUS_FLOW = {
     "assign": {"to_status": "Assigned", "allowed_from": {"", "Draft", "Submitted", "Available", "In Repair", "Scrapped"}, "purpose": "Receipt"},
     "transfer": {"to_status": "Assigned", "allowed_from": {"Assigned"}, "purpose": "Transfer"},
     "return": {"to_status": "Available", "allowed_from": {"Assigned"}, "purpose": "Transfer"},
-    "send_for_repair": {"to_status": "In Repair", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
-    "mark_available": {"to_status": "Available", "allowed_from": {"In Repair", "Scrapped"}, "purpose": "Transfer"},
-    "scrap": {"to_status": "Scrapped", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair"}, "purpose": "Transfer"},
+    "send_for_repair": {"to_status": "In Repair", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair", "Warranty Status"}, "purpose": "Transfer"},
+    "mark_available": {"to_status": "Available", "allowed_from": {"In Repair", "Scrapped", "Warranty Status"}, "purpose": "Transfer"},
+    "scrap": {"to_status": "Scrapped", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair", "Warranty Status"}, "purpose": "Transfer"},
     "restore_to_previous": {"to_status": "Assigned", "allowed_from": {"Scrapped"}, "purpose": "Transfer"},
+    "warranty": {"to_status": "Warranty Status", "allowed_from": {"", "Draft", "Submitted", "Available", "Assigned", "In Repair", "Scrapped"}, "purpose": "Transfer"},
 }
 
 
@@ -64,6 +65,11 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
             location = prev.target_location
         else:
             frappe.throw(_("No previous custodian/location found to restore."))
+
+    # Warranty Status only flips the status - custodian and location stay as they are
+    if action == "warranty":
+        custodian = asset.custodian
+        location = location or asset.location
 
     # For submitted assets, we create a Movement record first
     if asset.docstatus == 1 and action != "scrap":
