@@ -2211,11 +2211,18 @@ def bulk_upload_training():
 
         def resolve_geo(raw, valid):
             """Sheet value -> system value. Exact (spacing/case-insensitive)
-            first, then number-based (e.g. 'Zone 1' -> 'ZONE-1'). None = no match."""
+            first, then known aliases (HO = head office), then number-based
+            (e.g. 'Zone 1' -> 'ZONE-1'). None = no match."""
             import re as _re
             token = _re.sub(r"\s+", " ", (raw or "")).strip().lower()
             if not token:
                 return ""
+            aliases = {
+                "head office": "HO", "headoffice": "HO", "h.o.": "HO",
+                "h o": "HO", "ho.": "HO",
+            }
+            if token in aliases and aliases[token] in valid:
+                return aliases[token]
             lmap = {str(v).lower(): v for v in valid}
             if token in lmap:
                 return lmap[token]
