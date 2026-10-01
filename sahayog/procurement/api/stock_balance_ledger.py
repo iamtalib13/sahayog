@@ -1344,6 +1344,43 @@ def get_inward_list(limit=20, start=0, search_text=None, receipt=None, supplier=
         conditions.append("pr.posting_date <= %(end_date)s")
         values["end_date"] = end_date
 
+    # Record visibility by Sahayog Settings inventory_type:
+    # - Administrator: all
+    # - Stationery users: all except records created by 'other' users
+    # - 'other' users: only records created by 'other' users
+    # - everyone else (no settings row, IT, ...): own records only
+    user = frappe.session.user
+    if user != "Administrator":
+        user_types = {
+            (r.inventory_type or "").strip().lower()
+            for r in frappe.db.get_all(
+                "Default Warehouse",
+                filters={
+                    "parent": "Sahayog Settings",
+                    "parenttype": "Sahayog Settings",
+                    "user_id": user,
+                },
+                fields=["inventory_type"],
+            )
+        }
+        if "stationery" in user_types:
+            conditions.append("""NOT EXISTS (
+                SELECT 1 FROM `tabDefault Warehouse` dwx
+                WHERE dwx.parenttype = 'Sahayog Settings'
+                AND dwx.user_id = pr.owner
+                AND LOWER(dwx.inventory_type) = 'other'
+            )""")
+        elif "other" in user_types:
+            conditions.append("""EXISTS (
+                SELECT 1 FROM `tabDefault Warehouse` dwx
+                WHERE dwx.parenttype = 'Sahayog Settings'
+                AND dwx.user_id = pr.owner
+                AND LOWER(dwx.inventory_type) = 'other'
+            )""")
+        else:
+            conditions.append("pr.owner = %(me)s")
+            values["me"] = user
+
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
 
     # Total count
