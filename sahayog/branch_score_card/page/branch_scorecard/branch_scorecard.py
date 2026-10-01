@@ -1559,3 +1559,665 @@ def get_com_wise_bhsc(
         "zone_totals": zone_totals,
         "grand_total": grand_total,
     }
+
+# =========================================================
+# REGION WISE BHSC PERFORMANCE
+# =========================================================
+
+@frappe.whitelist()
+def get_region_wise_bhsc(
+    selected_fy,
+    selected_month=None,
+):
+
+    selected_fy = str(
+        selected_fy or ""
+    ).strip()
+
+    selected_month = str(
+        selected_month or ""
+    ).strip().capitalize()
+
+    if not selected_fy:
+        return {
+            "available": False,
+            "message": "Financial Year is required.",
+        }
+
+    if not selected_month:
+        return {
+            "available": False,
+            "message": "Month is required.",
+        }
+
+    start_year = _get_financial_year_start_year(
+        selected_fy
+    )
+
+    month_year_map = _get_month_year_map(
+        start_year
+    )
+
+    selected_year = month_year_map.get(
+        selected_month
+    )
+
+    if not selected_year:
+        return {
+            "available": False,
+            "message": "Invalid month.",
+        }
+
+    selected_year = int(selected_year)
+
+    # -----------------------------------------------------
+    # Previous month
+    # -----------------------------------------------------
+
+    selected_month_number = MONTH_NUMBERS.get(
+        selected_month
+    )
+
+    if selected_month_number is None:
+        return {
+            "available": False,
+            "message": "Invalid month.",
+        }
+
+    if selected_month_number == 1:
+        previous_month = "December"
+        previous_year = selected_year - 1
+
+    else:
+        previous_month_number = (
+            selected_month_number - 1
+        )
+
+        previous_month = next(
+            (
+                month
+                for month, number
+                in MONTH_NUMBERS.items()
+                if number == previous_month_number
+            ),
+            None,
+        )
+
+        previous_year = selected_year
+
+    if not previous_month:
+        return {
+            "available": False,
+            "message": "Unable to determine previous month.",
+        }
+
+    # -----------------------------------------------------
+    # Real branch hierarchy
+    # -----------------------------------------------------
+
+    branches = _get_branch_records()
+
+    if not branches:
+        return {
+            "available": True,
+            "selected_fy": selected_fy,
+            "selected_month": selected_month,
+            "selected_year": selected_year,
+            "previous_month": previous_month,
+            "previous_year": previous_year,
+            "zones": [],
+            "data": {},
+            "grand_total": {
+                "selected": None,
+                "previous": None,
+                "has_data": False,
+            },
+        }
+
+    # -----------------------------------------------------
+    # Real branch lookup
+    # -----------------------------------------------------
+
+    branch_lookup = {}
+
+    for branch in branches:
+
+        sol_id = str(
+            branch.get("sol_id") or ""
+        ).strip()
+
+        if not sol_id:
+            continue
+
+        zone = str(
+            branch.get("zone") or ""
+        ).strip()
+
+        region = str(
+            branch.get("region") or ""
+        ).strip()
+
+        com = str(
+            branch.get("com") or ""
+        ).strip()
+
+        if not zone:
+            continue
+
+        if not region or region.lower() == "not assigned":
+            continue
+
+        if not com or com.lower() == "not assigned":
+            continue
+
+        branch_lookup[sol_id] = {
+            "zone": zone,
+            "region": region,
+            "com": com,
+        }
+
+    valid_sols = set(
+        branch_lookup.keys()
+    )
+
+    if not valid_sols:
+        return {
+            "available": True,
+            "selected_fy": selected_fy,
+            "selected_month": selected_month,
+            "selected_year": selected_year,
+            "previous_month": previous_month,
+            "previous_year": previous_year,
+            "zones": [],
+            "data": {},
+            "grand_total": {
+                "selected": None,
+                "previous": None,
+                "has_data": False,
+            },
+        }
+
+    # -----------------------------------------------------
+    # Latest scorecards
+    # -----------------------------------------------------
+
+    record_map = _get_latest_scorecard_records(
+        valid_sols,
+        months={
+            selected_month,
+            previous_month,
+        },
+        years={
+            selected_year,
+            previous_year,
+        },
+    )
+
+    score_percentages = _get_scorecard_percentages(
+        record_map
+    )
+
+    # -----------------------------------------------------
+    # Real Zone -> Region -> COM hierarchy
+    # -----------------------------------------------------
+
+    hierarchy = {}
+
+    for branch in branches:
+
+        sol_id = str(
+            branch.get("sol_id") or ""
+        ).strip()
+
+        if sol_id not in valid_sols:
+            continue
+
+        zone = str(
+            branch.get("zone") or ""
+        ).strip()
+
+        region = str(
+            branch.get("region") or ""
+        ).strip()
+
+        com = str(
+            branch.get("com") or ""
+        ).strip()
+
+        if not zone:
+            continue
+
+        if not region or region.lower() == "not assigned":
+            continue
+
+        if not com or com.lower() == "not assigned":
+            continue
+
+        hierarchy.setdefault(
+            zone,
+            {}
+        ).setdefault(
+            region,
+            {}
+        ).setdefault(
+            com,
+            {
+                "branches": set(),
+            }
+        )
+
+        hierarchy[zone][region][com][
+            "branches"
+        ].add(sol_id)
+
+    # -----------------------------------------------------
+    # Aggregation helper
+    # -----------------------------------------------------
+
+    def aggregate(
+        branch_sols,
+        month,
+        year,
+    ):
+
+        total_score = 0.0
+        total_weightage = 0.0
+        branch_scores = []
+
+        for sol_id in branch_sols:
+
+            key = (
+                sol_id,
+                month,
+                int(year),
+            )
+
+            score_percentage = (
+                score_percentages.get(key)
+            )
+
+            if score_percentage is None:
+                continue
+
+            # Fetch actual scorecard again so totals
+            # are calculated from actual score/weightage.
+            docname = record_map.get(key)
+
+            if not docname:
+                continue
+
+            try:
+                doc = frappe.get_doc(
+                    "Branch Score Card",
+                    docname,
+                )
+            except Exception:
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"Region Wise Scorecard Error: {docname}",
+                )
+                continue
+
+            branch_score = 0.0
+            branch_weightage = 0.0
+
+            for row in doc.get("table_cxyy") or []:
+
+                branch_score += frappe.utils.flt(
+                    row.get("score_obtain")
+                )
+
+                branch_weightage += frappe.utils.flt(
+                    row.get("weightage")
+                )
+
+            if branch_weightage <= 0:
+                continue
+
+            total_score += branch_score
+            total_weightage += branch_weightage
+
+            branch_scores.append(
+                score_percentage
+            )
+
+        if total_weightage <= 0:
+            return {
+                "score": None,
+                "branch_count": 0,
+                "has_data": False,
+            }
+
+        return {
+            "score": (
+                total_score /
+                total_weightage
+            ) * 100,
+            "branch_count": len(
+                branch_scores
+            ),
+            "has_data": True,
+        }
+
+    # -----------------------------------------------------
+    # Sort zones using actual zone names
+    # -----------------------------------------------------
+
+    def zone_sort_key(zone_name):
+
+        try:
+            return (
+                0,
+                int(
+                    zone_name
+                    .split("-")[1]
+                    .split("(")[0]
+                ),
+                zone_name.lower(),
+            )
+        except (
+            ValueError,
+            IndexError,
+        ):
+            return (
+                1,
+                0,
+                zone_name.lower(),
+            )
+
+    zones = sorted(
+        hierarchy.keys(),
+        key=zone_sort_key,
+    )
+
+    # -----------------------------------------------------
+    # Build final response
+    # -----------------------------------------------------
+
+    data = {}
+    zone_totals = {}
+
+    grand_selected_score = 0.0
+    grand_previous_score = 0.0
+    grand_selected_weightage = 0.0
+    grand_previous_weightage = 0.0
+
+    for zone in zones:
+
+        data[zone] = {}
+
+        zone_selected_score = 0.0
+        zone_selected_weightage = 0.0
+
+        zone_previous_score = 0.0
+        zone_previous_weightage = 0.0
+
+        for region in sorted(
+            hierarchy[zone].keys(),
+            key=lambda value: value.lower(),
+        ):
+
+            data[zone][region] = {}
+
+            region_selected_score = 0.0
+            region_selected_weightage = 0.0
+
+            region_previous_score = 0.0
+            region_previous_weightage = 0.0
+
+            for com in sorted(
+                hierarchy[zone][region].keys(),
+                key=lambda value: value.lower(),
+            ):
+
+                branch_sols = hierarchy[
+                    zone
+                ][region][com]["branches"]
+
+                selected = aggregate(
+                    branch_sols,
+                    selected_month,
+                    selected_year,
+                )
+
+                previous = aggregate(
+                    branch_sols,
+                    previous_month,
+                    previous_year,
+                )
+
+                data[zone][region][com] = {
+                    "selected": selected["score"],
+                    "previous": previous["score"],
+                    "selected_branch_count": selected[
+                        "branch_count"
+                    ],
+                    "previous_branch_count": previous[
+                        "branch_count"
+                    ],
+                    "has_selected_data": selected[
+                        "has_data"
+                    ],
+                    "has_previous_data": previous[
+                        "has_data"
+                    ],
+                }
+
+                # Rebuild actual totals from the
+                # scorecard documents for this COM.
+                for sol_id in branch_sols:
+
+                    selected_key = (
+                        sol_id,
+                        selected_month,
+                        selected_year,
+                    )
+
+                    previous_key = (
+                        sol_id,
+                        previous_month,
+                        previous_year,
+                    )
+
+                    selected_docname = record_map.get(
+                        selected_key
+                    )
+
+                    previous_docname = record_map.get(
+                        previous_key
+                    )
+
+                    if selected_docname:
+
+                        try:
+                            doc = frappe.get_doc(
+                                "Branch Score Card",
+                                selected_docname,
+                            )
+
+                            for row in (
+                                doc.get("table_cxyy")
+                                or []
+                            ):
+                                region_selected_score += (
+                                    frappe.utils.flt(
+                                        row.get(
+                                            "score_obtain"
+                                        )
+                                    )
+                                )
+                                region_selected_weightage += (
+                                    frappe.utils.flt(
+                                        row.get(
+                                            "weightage"
+                                        )
+                                    )
+                                )
+
+                        except Exception:
+                            frappe.log_error(
+                                frappe.get_traceback(),
+                                f"Region Wise Selected Error: {selected_docname}",
+                            )
+
+                    if previous_docname:
+
+                        try:
+                            doc = frappe.get_doc(
+                                "Branch Score Card",
+                                previous_docname,
+                            )
+
+                            for row in (
+                                doc.get("table_cxyy")
+                                or []
+                            ):
+                                region_previous_score += (
+                                    frappe.utils.flt(
+                                        row.get(
+                                            "score_obtain"
+                                        )
+                                    )
+                                )
+                                region_previous_weightage += (
+                                    frappe.utils.flt(
+                                        row.get(
+                                            "weightage"
+                                        )
+                                    )
+                                )
+
+                        except Exception:
+                            frappe.log_error(
+                                frappe.get_traceback(),
+                                f"Region Wise Previous Error: {previous_docname}",
+                            )
+
+            if region_selected_weightage > 0:
+                region_selected = (
+                    region_selected_score /
+                    region_selected_weightage
+                ) * 100
+            else:
+                region_selected = None
+
+            if region_previous_weightage > 0:
+                region_previous = (
+                    region_previous_score /
+                    region_previous_weightage
+                ) * 100
+            else:
+                region_previous = None
+
+            data[zone][region]["_total"] = {
+                "selected": region_selected,
+                "previous": region_previous,
+                "has_selected_data": (
+                    region_selected is not None
+                ),
+                "has_previous_data": (
+                    region_previous is not None
+                ),
+            }
+
+            zone_selected_score += (
+                region_selected_score
+            )
+            zone_selected_weightage += (
+                region_selected_weightage
+            )
+
+            zone_previous_score += (
+                region_previous_score
+            )
+            zone_previous_weightage += (
+                region_previous_weightage
+            )
+
+            grand_selected_score += (
+                region_selected_score
+            )
+            grand_selected_weightage += (
+                region_selected_weightage
+            )
+
+            grand_previous_score += (
+                region_previous_score
+            )
+            grand_previous_weightage += (
+                region_previous_weightage
+            )
+
+        if zone_selected_weightage > 0:
+            zone_selected = (
+                zone_selected_score /
+                zone_selected_weightage
+            ) * 100
+        else:
+            zone_selected = None
+
+        if zone_previous_weightage > 0:
+            zone_previous = (
+                zone_previous_score /
+                zone_previous_weightage
+            ) * 100
+        else:
+            zone_previous = None
+
+        zone_totals[zone] = {
+            "selected": zone_selected,
+            "previous": zone_previous,
+            "has_selected_data": (
+                zone_selected is not None
+            ),
+            "has_previous_data": (
+                zone_previous is not None
+            ),
+        }
+
+    # -----------------------------------------------------
+    # Grand Total
+    # -----------------------------------------------------
+
+    grand_selected = None
+
+    if grand_selected_weightage > 0:
+        grand_selected = (
+            grand_selected_score /
+            grand_selected_weightage
+        ) * 100
+
+    grand_previous = None
+
+    if grand_previous_weightage > 0:
+        grand_previous = (
+            grand_previous_score /
+            grand_previous_weightage
+        ) * 100
+
+    return {
+        "available": True,
+        "selected_fy": selected_fy,
+        "selected_month": selected_month,
+        "selected_year": selected_year,
+        "previous_month": previous_month,
+        "previous_year": previous_year,
+        "zones": zones,
+        "data": data,
+        "zone_totals": zone_totals,
+        "grand_total": {
+            "selected": grand_selected,
+            "previous": grand_previous,
+            "has_selected_data": (
+                grand_selected is not None
+            ),
+            "has_previous_data": (
+                grand_previous is not None
+            ),
+        },
+    }
+
+
+# =========================================================
+# REGION WISE BHSC PERFORMANCE
+# =========================================================

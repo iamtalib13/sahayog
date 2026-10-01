@@ -2879,7 +2879,7 @@ data-view="com">
 ♟
 </span>
 <span>
-COM Wise
+Region Wise
 </span>
 </div>
 </div>
@@ -5526,7 +5526,7 @@ function load_com_wise_data(
     frappe.call({
 
         method:
-            "sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_com_wise_bhsc",
+            "sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_region_wise_bhsc",
 
         args:{
             selected_fy:selected_fy,
@@ -5542,25 +5542,23 @@ function load_com_wise_data(
 
                 $("#com-wise-content").html(`
                     <div class="com-wise-empty">
-                        No COM Wise data available.
+                        No Region Wise data available.
                     </div>
                 `);
 
                 return;
             }
 
-            /*
             render_com_wise_table(
                 r.message
             );
-            */
         },
 
         error:function(){
 
             $("#com-wise-content").html(`
                 <div class="com-wise-empty">
-                    Unable to load COM Wise data.
+                    Unable to load Region Wise data.
                 </div>
             `);
         }
@@ -5583,7 +5581,7 @@ function render_com_wise_table(
                 ${
                     result && result.message
                     ? result.message
-                    : "No COM Wise data available."
+                    : "No Region Wise data available."
                 }
             </div>
         `);
@@ -5601,19 +5599,41 @@ function render_com_wise_table(
         result.zone_totals || {};
 
     let grand_total =
-        result.grand_total || {
-            excellent: 0,
-            good: 0,
-            needs_improvement: 0,
-            grand_total: 0,
-            has_data: false
-        };
+        result.grand_total || {};
 
     let selected_month =
         result.selected_month || "";
 
     let selected_year =
         result.selected_year || "";
+
+    let previous_month =
+        result.previous_month || "";
+
+    let previous_year =
+        result.previous_year || "";
+
+    function format_score(value){
+
+        if(
+            value === null ||
+            value === undefined ||
+            value === ""
+        ){
+            return "-";
+        }
+
+        let number =
+            Number(value);
+
+        if(
+            !Number.isFinite(number)
+        ){
+            return "-";
+        }
+
+        return number.toFixed(2);
+    }
 
     let html = "";
 
@@ -5623,12 +5643,15 @@ function render_com_wise_table(
 
     html += `
         <div class="com-wise-title">
-            COM Wise BHSC Performance – ${frappe.utils.escape_html(selected_month)} ${frappe.utils.escape_html(String(selected_year))}
+            Region Wise BHSC Performance
         </div>
 
         <div class="com-wise-subtitle">
-            Branches are categorized using their BHSC percentage:
-            Excellent ≥ 85, Good ≥ 65 and Needs Improvement &lt; 65.
+            ${frappe.utils.escape_html(selected_month)}
+            ${frappe.utils.escape_html(String(selected_year))}
+            vs
+            ${frappe.utils.escape_html(previous_month)}
+            ${frappe.utils.escape_html(String(previous_year))}
         </div>
     `;
 
@@ -5643,21 +5666,19 @@ function render_com_wise_table(
 
         html += `
             <div class="com-wise-empty">
-                No COM Wise data available for
+                No Region Wise data available for
                 ${frappe.utils.escape_html(selected_month)}
                 ${frappe.utils.escape_html(String(selected_year))}.
             </div>
         `;
 
-        $("#com-wise-content").html(
-            html
-        );
+        $("#com-wise-content").html(html);
 
         return;
     }
 
     // =====================================================
-    // TABLE
+    // TABLE HEADER
     // =====================================================
 
     html += `
@@ -5668,11 +5689,16 @@ function render_com_wise_table(
                 <thead>
                     <tr>
                         <th>Zone</th>
+                        <th>Region</th>
                         <th>COM</th>
-                        <th>Excellent</th>
-                        <th>Good</th>
-                        <th>Needs Improvement</th>
-                        <th>Grand Total</th>
+                        <th>
+                            ${frappe.utils.escape_html(selected_month)}
+                            BHSC
+                        </th>
+                        <th>
+                            ${frappe.utils.escape_html(previous_month)}
+                            BHSC
+                        </th>
                     </tr>
                 </thead>
 
@@ -5688,161 +5714,221 @@ function render_com_wise_table(
         let zone_data =
             data[zone] || {};
 
-        let coms =
+        let regions =
             Object.keys(zone_data);
 
+        // Remove any accidental total key.
+        regions =
+            regions.filter(function(region){
+                return region !== "_total";
+            });
+
         // -------------------------------------------------
-        // If zone has no COM data
+        // Calculate total visible COM rows for this Zone.
+        // This is used for Zone rowspan.
         // -------------------------------------------------
 
-        if(!coms.length){
+        let zone_row_count = 0;
 
-            html += `
-                <tr>
+        regions.forEach(function(region){
 
-                    <td class="com-zone">
-                        ${frappe.utils.escape_html(zone)}
-                    </td>
+            let region_data =
+                zone_data[region] || {};
 
-                    <td class="com-name">
-                        No COM Data
-                    </td>
+            let coms =
+                Object.keys(region_data)
+                .filter(function(com){
+                    return (
+                        com !== "_total" &&
+                        com &&
+                        com.toLowerCase() !== "not assigned"
+                    );
+                });
 
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+            zone_row_count += Math.max(
+                coms.length,
+                1
+            );
+        });
 
-                </tr>
-            `;
+        let zone_cell_written = false;
 
-        }else{
+        regions.forEach(function(region){
+
+            let region_data =
+                zone_data[region] || {};
+
+            let coms =
+                Object.keys(region_data)
+                .filter(function(com){
+                    return (
+                        com !== "_total" &&
+                        com &&
+                        com.toLowerCase() !== "not assigned"
+                    );
+                });
 
             // -------------------------------------------------
-            // COM ROWS
+            // Skip empty / Not Assigned regions.
             // -------------------------------------------------
 
-            coms.forEach(function(com, index){
+            if(
+                !region ||
+                region.toLowerCase() === "not assigned"
+            ){
+                return;
+            }
+
+            // -------------------------------------------------
+            // If no valid COM exists, don't create
+            // a fake "No COM Data" row.
+            // -------------------------------------------------
+
+            if(!coms.length){
+                return;
+            }
+
+            // -------------------------------------------------
+            // REGION ROWSPAN
+            // -------------------------------------------------
+
+            let region_rowspan =
+                coms.length;
+
+            coms.forEach(function(com, com_index){
 
                 let item =
-                    zone_data[com] || {};
+                    region_data[com] || {};
 
-                let has_data =
-                    item.has_data === true;
-
-                html += `
-                    <tr>
-                `;
+                html += `<tr>`;
 
                 // -------------------------------------------------
-                // Show Zone only once
+                // ZONE CELL
                 // -------------------------------------------------
 
-                if(index === 0){
+                if(!zone_cell_written){
 
                     html += `
                         <td
                             class="com-zone"
-                            rowspan="${coms.length}"
+                            rowspan="${zone_row_count}"
                         >
                             ${frappe.utils.escape_html(zone)}
                         </td>
                     `;
+
+                    zone_cell_written = true;
                 }
 
+                // -------------------------------------------------
+                // REGION CELL
+                // -------------------------------------------------
+
+                if(com_index === 0){
+
+                    html += `
+                        <td
+                            class="com-region"
+                            rowspan="${region_rowspan}"
+                        >
+                            ${frappe.utils.escape_html(region)}
+                        </td>
+                    `;
+                }
+
+                // -------------------------------------------------
+                // COM
+                // -------------------------------------------------
+
                 html += `
-                        <td class="com-name">
-                            ${frappe.utils.escape_html(com)}
-                        </td>
+                    <td class="com-name">
+                        ${frappe.utils.escape_html(com)}
+                    </td>
 
-                        <td>
-                            ${
-                                has_data
-                                ? item.excellent
-                                : "-"
-                            }
-                        </td>
+                    <td>
+                        ${
+                            item.has_selected_data
+                            ? format_score(item.selected)
+                            : "-"
+                        }
+                    </td>
 
-                        <td>
-                            ${
-                                has_data
-                                ? item.good
-                                : "-"
-                            }
-                        </td>
+                    <td>
+                        ${
+                            item.has_previous_data
+                            ? format_score(item.previous)
+                            : "-"
+                        }
+                    </td>
 
-                        <td>
-                            ${
-                                has_data
-                                ? item.needs_improvement
-                                : "-"
-                            }
-                        </td>
-
-                        <td>
-                            ${
-                                has_data
-                                ? item.grand_total
-                                : "-"
-                            }
-                        </td>
-
-                    </tr>
+                </tr>
                 `;
             });
-        }
 
-        // =================================================
+            // =================================================
+            // REGION TOTAL
+            // =================================================
+
+            let region_total =
+                region_data["_total"] || {};
+
+            html += `
+                <tr class="zone-total-row">
+
+                    <td colspan="2">
+                        ${frappe.utils.escape_html(zone)}
+                        -
+                        ${frappe.utils.escape_html(region)}
+                        Total
+                    </td>
+
+                    <td>
+                        ${
+                            region_total.has_selected_data
+                            ? format_score(region_total.selected)
+                            : "-"
+                        }
+                    </td>
+
+                    <td>
+                        ${
+                            region_total.has_previous_data
+                            ? format_score(region_total.previous)
+                            : "-"
+                        }
+                    </td>
+
+                </tr>
+            `;
+        });
+
+        // =====================================================
         // ZONE TOTAL
-        // =================================================
+        // =====================================================
 
         let zone_total =
-            zone_totals[zone] || {
-                excellent: 0,
-                good: 0,
-                needs_improvement: 0,
-                grand_total: 0,
-                has_data: false
-            };
-
-        let zone_has_data =
-            zone_total.has_data === true;
+            zone_totals[zone] || {};
 
         html += `
             <tr class="zone-total-row">
 
-                <td colspan="2">
-                    ${frappe.utils.escape_html(zone)} Total
+                <td colspan="3">
+                    ${frappe.utils.escape_html(zone)}
+                    Total
                 </td>
 
                 <td>
                     ${
-                        zone_has_data
-                        ? zone_total.excellent
+                        zone_total.has_selected_data
+                        ? format_score(zone_total.selected)
                         : "-"
                     }
                 </td>
 
                 <td>
                     ${
-                        zone_has_data
-                        ? zone_total.good
-                        : "-"
-                    }
-                </td>
-
-                <td>
-                    ${
-                        zone_has_data
-                        ? zone_total.needs_improvement
-                        : "-"
-                    }
-                </td>
-
-                <td>
-                    ${
-                        zone_has_data
-                        ? zone_total.grand_total
+                        zone_total.has_previous_data
+                        ? format_score(zone_total.previous)
                         : "-"
                     }
                 </td>
@@ -5856,44 +5942,25 @@ function render_com_wise_table(
     // GRAND TOTAL
     // =====================================================
 
-    let grand_has_data =
-        grand_total.has_data === true;
-
     html += `
         <tr class="grand-total-row">
 
-            <td colspan="2">
+            <td colspan="3">
                 Grand Total
             </td>
 
             <td>
                 ${
-                    grand_has_data
-                    ? grand_total.excellent
+                    grand_total.has_selected_data
+                    ? format_score(grand_total.selected)
                     : "-"
                 }
             </td>
 
             <td>
                 ${
-                    grand_has_data
-                    ? grand_total.good
-                    : "-"
-                }
-            </td>
-
-            <td>
-                ${
-                    grand_has_data
-                    ? grand_total.needs_improvement
-                    : "-"
-                }
-            </td>
-
-            <td>
-                ${
-                    grand_has_data
-                    ? grand_total.grand_total
+                    grand_total.has_previous_data
+                    ? format_score(grand_total.previous)
                     : "-"
                 }
             </td>
@@ -5909,13 +5976,10 @@ function render_com_wise_table(
         </div>
     `;
 
-    $("#com-wise-content").html(
-        html
-    );
+    $("#com-wise-content").html(html);
 }
-/* =========================================================
-   ZONE WISE TREND GRAPH
-   ========================================================= */
+
+
 function render_zone_wise_trend_graph(
 periods,
 zones,
