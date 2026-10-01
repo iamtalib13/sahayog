@@ -1993,9 +1993,11 @@ def get_agent_options(enabled_only=True):
     Filters by agent_status = 'live' (case-insensitive) when enabled_only is truthy.
     """
     if enabled_only:
+        # Live agents only. Status vocabulary differs across sites
+        # ('live' vs 'active'), so accept both; closed/inactive stay out.
         rows = frappe.db.sql(
             "SELECT name, agent_name, branch_name FROM `tabAgent` "
-            "WHERE LOWER(agent_status) = 'live' ORDER BY agent_name ASC",
+            "WHERE LOWER(TRIM(agent_status)) IN ('live', 'active') ORDER BY agent_name ASC",
             as_dict=True,
         )
         return rows
