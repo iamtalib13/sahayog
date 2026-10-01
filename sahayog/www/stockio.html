@@ -6435,7 +6435,7 @@
                       
                       <!-- Asset Status Bar -->
                       <div style="display: flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 15px;">
-                        <div v-for="s in ['Available', 'Assigned', 'In Repair', 'Scrapped']" 
+                        <div v-for="s in ['Available', 'Assigned', 'In Repair', 'Warranty Status', 'Scrapped']" 
                              class="status-pill"
                              :style="{
                                 padding: '3px 10px',
@@ -6446,13 +6446,13 @@
                                 letterSpacing: '0.04em',
                                 cursor: 'default',
                                 border: '1px solid ' + (detailRecord.status === s 
-                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.4)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.4)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)') 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.4)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.4)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.4)' : s === 'Warranty Status' ? 'rgba(139, 92, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)') 
                                     : 'var(--border-color)'),
                                 background: detailRecord.status === s 
-                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.15)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.15)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)') 
+                                    ? (s === 'Available' ? 'rgba(16, 185, 129, 0.15)' : s === 'Assigned' ? 'rgba(59, 130, 246, 0.15)' : s === 'In Repair' ? 'rgba(245, 158, 11, 0.15)' : s === 'Warranty Status' ? 'rgba(139, 92, 246, 0.15)' : 'rgba(239, 68, 68, 0.15)') 
                                     : 'transparent',
                                 color: detailRecord.status === s 
-                                    ? (s === 'Available' ? '#10b981' : s === 'Assigned' ? '#3b82f6' : s === 'In Repair' ? '#f59e0b' : '#ef4444') 
+                                    ? (s === 'Available' ? '#10b981' : s === 'Assigned' ? '#3b82f6' : s === 'In Repair' ? '#f59e0b' : s === 'Warranty Status' ? '#8b5cf6' : '#ef4444') 
                                     : 'var(--text-muted)',
                                 opacity: detailRecord.status === s ? '1' : '0.4',
                                 animation: detailRecord.status === s ? 'activeGlow 1.8s ease-in-out infinite' : 'none'
@@ -16878,19 +16878,27 @@
               actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
               actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
               actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+              actions.push({label: 'Warranty Status', action: (d) => this.warrantyAsset(d)});
           } else if (status === 'Assigned') {
               actions.push({label: 'Transfer', action: (d) => this.transferAsset(d)});
               actions.push({label: 'Return', action: (d) => this.returnAsset(d)});
               actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
               actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+              actions.push({label: 'Warranty Status', action: (d) => this.warrantyAsset(d)});
           } else if (status === 'In Repair') {
               actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
               actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
               actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
+              actions.push({label: 'Warranty Status', action: (d) => this.warrantyAsset(d)});
           } else if (status === 'Scrapped') {
               actions.push({label: 'Assign', action: (d) => this.assignCustodian(d)});
               actions.push({label: 'Restore to Previous', action: (d) => this.restoreToPrevious(d)});
               actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+              actions.push({label: 'Warranty Status', action: (d) => this.warrantyAsset(d)});
+          } else if (status === 'Warranty Status') {
+              actions.push({label: 'Mark Available', action: (d) => this.markAvailable(d)});
+              actions.push({label: 'Send For Repair', action: (d) => this.sendForRepair(d)});
+              actions.push({label: 'Scrap', action: (d) => this.scrapAsset(d)});
           }
           console.log("Debug Asset Actions - Returning:", actions);
           return actions;
@@ -16962,6 +16970,14 @@
           this.assetActionTitle = 'Restore Asset';
           this.assetActionFields = [];
           this.assetActionData = { action: 'restore_to_previous', asset_name: doc.name };
+          this.showAssetActionModal = true;
+      },
+      warrantyAsset(doc) {
+          this.assetActionTitle = 'Move Asset To Warranty Status';
+          this.assetActionFields = [
+              {label: 'Warranty Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
+          ];
+          this.assetActionData = { action: 'warranty', asset_name: doc.name, location: doc.location, location_display: doc.location };
           this.showAssetActionModal = true;
       },
       
