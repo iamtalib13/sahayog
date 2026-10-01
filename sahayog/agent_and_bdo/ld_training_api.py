@@ -123,6 +123,101 @@ def _owner_scope_sql(params, prefix="scope"):
     return "(" + " OR ".join(parts) + ")"
 
 
+def _pref_geo_scope():
+    """Current user's geography access from Report Preference (Permission Mgr).
+
+    Returns None when unrestricted (admin, or no/disabled/empty preference),
+    else {"zones": set, "regions": set, "districts": set, "sols": set} in
+    TRAINING vocab (zones/regions digit-normalised, HO kept as-is).
+    Training rows match when ANY of their geographies (or legacy fields)
+    intersects the allowed sets.
+    """
+    import re as _re
+    if _is_admin():
+        return None
+    pref_name = frappe.db.get_value("Report Preference", {"user": frappe.session.user}, "name")
+    if not pref_name and frappe.db.exists("Report Preference", frappe.session.user):
+        pref_name = frappe.session.user
+    if not pref_name:
+        return None
+    try:
+        doc = frappe.get_doc("Report Preference", pref_name)
+    except Exception:
+        return None
+    if not doc.get("enabled"):
+        return None
+
+    def _digits(s):
+        m = _re.findall(r"\d+", str(s or ""))
+        return m[0].lstrip("0") or "0" if m else None
+
+    def _norm_region(s):
+        s = str(s or "").strip()
+        if s.lower() in ("ho", "head office", "h.o."):
+            return "HO"
+        d = _digits(s)
+        return d if d is not None else s.strip().lower()
+
+    def _norm_zone(s):
+        d = _digits(s)
+        return d if d is not None else str(s or "").strip().lower()
+
+    zones = {_norm_zone(d.zone) for d in doc.get("zone", []) if d.zone}
+    regions = {_norm_region(d.region) for d in doc.get("region", []) if d.region}
+    districts = {str(d.district or "").strip().lower() for d in doc.get("district", []) if d.district}
+    sols = {str(d.sol_id or "").strip() for d in doc.get("sol_id", []) if d.sol_id}
+    zones.discard(None)
+    regions.discard(None)
+    if not (zones or regions or districts or sols):
+        return None
+    return {"zones": zones, "regions": regions, "districts": districts, "sols": sols}
+
+
+def _in_pref_geo(geos, legacy, scope):
+    """True when a training (geographies list + legacy row) is inside the
+    user's Report Preference access. Empty scope handled by caller (None)."""
+    import re as _re
+
+    def _zdigits(s):
+        m = _re.findall(r"\d+", str(s or ""))
+        return (m[0].lstrip("0") or "0") if m else None
+
+    def _zmatch(val):
+        d = _zdigits(val)
+        v = d if d is not None else str(val or "").strip().lower()
+        return v in scope["zones"]
+
+    def _rmatch(val):
+        s = str(val or "").strip()
+        if s.lower() in ("ho", "head office", "h.o."):
+            v = "HO"
+        else:
+            d = _zdigits(s)
+            v = d if d is not None else s.lower()
+        return v in scope["regions"]
+
+    candidates = []
+    for g in geos or []:
+        candidates.append(g)
+    if legacy is not None:
+        candidates.append({
+            "branch": legacy.branch or "",
+            "zone": legacy.zone or "",
+            "region": legacy.region or "",
+            "district": legacy.district or "",
+        })
+    for c in candidates:
+        if scope["sols"] and (c.get("branch") or "") in scope["sols"]:
+            return True
+        if scope["zones"] and _zmatch(c.get("zone")):
+            return True
+        if scope["regions"] and _rmatch(c.get("region")):
+            return True
+        if scope["districts"] and str(c.get("district") or "").strip().lower() in scope["districts"]:
+            return True
+    return False
+
+
 def _safe_year_month(year, month):
     try:
         year = int(year)
@@ -324,6 +419,13 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             filtered.append(r)
         rows = filtered
 
+    # Report Preference access (Permission Manager): user only sees trainings
+    # inside their allowed zones/regions/districts/branches. Intersects with
+    # any explicit filters above; admins are unrestricted.
+    _pref = _pref_geo_scope()
+    if _pref:
+        rows = [r for r in rows if _in_pref_geo(geo_map.get(r.name, []), r, _pref)]
+
     participants = _participant_counts([r.name for r in rows])
     show_budget = True
 
@@ -425,6 +527,11 @@ def get_training_list(
         rows = filtered
     else:
         geo_map = _get_geographies_map([r.name for r in rows])
+
+    # Report Preference access (Permission Manager) — same rule as calendar.
+    _pref = _pref_geo_scope()
+    if _pref:
+        rows = [r for r in rows if _in_pref_geo(geo_map.get(r.name, []), r, _pref)]
 
     participants = _participant_counts([r.name for r in rows])
     show_budget = True
